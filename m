@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935581Ab3FTC1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 22:27:45 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:44720 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935506Ab3FTC1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 22:27:43 -0400
-Date: Wed, 19 Jun 2013 21:27:39 -0500
-From: Robin Holt <holt@sgi.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        linux-doc@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
-Message-ID: <20130620022739.GF3658@sgi.com>
-References: <1370967244-5610-1-git-send-email-athorlton@sgi.com>
- <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com>
- <20130618164537.GJ16067@sgi.com>
- <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com>
- <20130619093212.GX3658@sgi.com>
- <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com>
+	id S965020Ab3FTC1r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 22:27:47 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:46448 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935506Ab3FTC1q convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 22:27:46 -0400
+From: Chao Xie <cxie4@marvell.com>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yi Zhang <yizhang@marvell.com>
+Date: Wed, 19 Jun 2013 19:25:26 -0700
+Subject: RE: linux-next: build failure after merge of the final tree (mfd
+ tree related)
+Thread-Topic: linux-next: build failure after merge of the final tree (mfd
+ tree related)
+Thread-Index: Ac5sxn2QLOULZnwlSVeX1tpHjNPFDAAio3CQ
+Message-ID: <AAD1C6EB06EE3649B35B7E026785068D2581671C20@SC-VEXCH2.marvell.com>
+References: <20130618171957.9d8fbcf376243d1d5f1d92b0@canb.auug.org.au>
+ <20130619082456.GR7161@zurbaran>
+In-Reply-To: <20130619082456.GR7161@zurbaran>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 02:24:07PM -0700, David Rientjes wrote:
-> On Wed, 19 Jun 2013, Robin Holt wrote:
-> 
-> > The convenience being that many batch schedulers have added cpuset
-> > support.  They create the cpuset's and configure them as appropriate
-> > for the job as determined by a mixture of input from the submitting
-> > user but still under the control of the administrator.  That seems like
-> > a fairly significant convenience given that it took years to get the
-> > batch schedulers to adopt cpusets in the first place.  At this point,
-> > expanding their use of cpusets is under the control of the system
-> > administrator and would not require any additional development on
-> > the batch scheduler developers part.
-> > 
-> 
-> You can't say the same for memcg?
+> -----Original Message-----
+> From: Samuel Ortiz [mailto:sameo@linux.intel.com] 
+> Sent: Wednesday, June 19, 2013 4:25 PM
+> To: Stephen Rothwell
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Chao Xie; Yi Zhang
+> Subject: Re: linux-next: build failure after merge of the final tree (mfd tree related)
 
-I am not aware of batch scheduler support for memory controllers.
-The request came from our benchmarking group.
+> Hi Stephen,
 
-> > Here are the entries in the cpuset:
-> > cgroup.event_control  mem_exclusive    memory_pressure_enabled  notify_on_release         tasks
-> > cgroup.procs          mem_hardwall     memory_spread_page       release_agent
-> > cpu_exclusive         memory_migrate   memory_spread_slab       sched_load_balance
-> > cpus                  memory_pressure  mems                     sched_relax_domain_level
-> > 
-> > There are scheduler, slab allocator, page_cache layout, etc controls.
-> 
-> I think this is mostly for historical reasons since cpusets were 
-> introduced before cgroups.
-> 
-> > Why _NOT_ add a thp control to that nicely contained central location?
-> > It is a concise set of controls for the job.
-> > 
-> 
-> All of the above seem to be for cpusets primary purpose, i.e. NUMA 
-> optimizations.  It has nothing to do with transparent hugepages.  (I'm not 
-> saying thp has anything to do with memcg either, but a "memory controller" 
-> seems more appropriate for controlling thp behavior.)
+>>On Tue, Jun 18, 2013 at 05:19:57PM +1000, Stephen Rothwell wrote:
+>> Hi all,
+>> 
+>> After merging the final tree, today's linux-next build (powerpc
+>> allyesconfig) failed like this:
+>> 
+>> drivers/mfd/88pm800.c: In function 'pm800_pages_init':
+>> drivers/mfd/88pm800.c:434:2: error: implicit declaration of function 'IS_ERR' [-Werror=implicit-function-declaration]
+>>   if (IS_ERR(subchip->regmap_power)) {
+>>   ^
+>> drivers/mfd/88pm800.c:435:3: error: implicit declaration of function 'PTR_ERR' [-Werror=implicit-function-declaration]
+>>    ret = PTR_ERR(subchip->regmap_power);
+>>    ^
+>> 
+>> Caused by commit f8ca616f67f7 ("mfd: 88pm800: Enhance error handling for
+>> sub pages probe/remove") from the mfd tree.  Forgot to include
+>> linux/err.h (see Rule 1 in Documentation/SubmitChecklist).
+>Sorry about that. This is fixed now.
 
-cpusets was not for NUMA.  It has no preference for "nodes" or anything like
-that.  It was for splitting a machine into layered smaller groups.  Usually,
-we see one cpuset with contains the batch scheduler.  The batch scheduler then
-creates cpusets for jobs it starts.  Has nothing to do with nodes.  That is
-more an administrator issue.  They set the minimum grouping of resources
-for scheduled jobs.
+It is my fault. Thanks for fixing it.
 
-> > Maybe I am misunderstanding.  Are you saying you want to put memcg
-> > information into the cpuset or something like that?
-> > 
-> 
-> I'm saying there's absolutely no reason to have thp controlled by a 
-> cpuset, or ANY cgroup for that matter, since you chose not to respond to 
-> the question I asked: why do you want to control thp behavior for certain 
-> static binaries and not others?  Where is the performance regression or 
-> the downside?  Is it because of max_ptes_none for certain jobs blowing up 
-> the rss?  We need information, and even if were justifiable then it 
-> wouldn't have anything to do with ANY cgroup but rather a per-process 
-> control.  It has nothing to do with cpusets whatsoever.
+> Cheers,
+> Samuel.
 
-It was a request from our benchmarking group that has found some jobs
-benefit from thp, while other are harmed.  Let me ask them for more
-details.
-
-> (And I'm very curious why you didn't even cc the cpusets maintainer on 
-> this patch in the first place who would probably say the same thing.)
-
-I didn't know there was a cpuset maintainer.  Paul Jackson (SGI retired)
-had originally worked to get cpusets introduced and then converted to
-use cgroups.  I had never known there was a maintainer after him.  Sorry
-for that.
-
-Robin
+> -- 
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
