@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab3FTIMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:12:42 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49293 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab3FTIMi (ORCPT
+	id S1755419Ab3FTIOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:14:10 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:65060 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353Ab3FTIOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:12:38 -0400
-Date: Thu, 20 Jun 2013 11:12:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Imre Deak <imre.deak@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
+	Thu, 20 Jun 2013 04:14:07 -0400
+Message-ID: <1371716040.3252.389.camel@edumazet-glaptop>
+Subject: Re: [PATCH] net bridge: add null pointer check, fix panic
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: xiaoming gao <gxm.linux.kernel@gmail.com>
+Cc: stephen@networkplumber.org, davem@davemloft.net,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch] lib/scatterlist: error handling in __sg_alloc_table()
-Message-ID: <20130620081218.GC15095@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Date: Thu, 20 Jun 2013 01:14:00 -0700
+In-Reply-To: <51C2B3A9.5070904@gmail.com>
+References: <51C2710D.2060405@gmail.com> <51C2721B.9050603@gmail.com>
+	  <1371704129.3252.356.camel@edumazet-glaptop> <51C2A8AA.5010902@gmail.com>
+	 <1371713342.3252.371.camel@edumazet-glaptop> <51C2B3A9.5070904@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was reviewing code which I suspected might allocate a zero size SG
-table.  That will cause memory corruption.  Also we can't return before
-doing the memset or we could end up using uninitialized memory in the
-cleanup path.
+On Thu, 2013-06-20 at 15:47 +0800, xiaoming gao wrote:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> if you remove the test on FF_BRIDGE_PORT, and br_port_get_rcu never returns NULL, the problem is fixed.
+> but the codes in mainline is still bugged, am i right??
+> by the way, kernel-stable 3.0 and 3.4 tree also have this bug, and is very easily to reproduce.
 
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index a1cf8ca..d39178b 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -247,13 +247,15 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
- 	struct scatterlist *sg, *prv;
- 	unsigned int left;
- 
-+	memset(table, 0, sizeof(*table));
-+
-+	if (nents == 0)
-+		return -EINVAL;
- #ifndef ARCH_HAS_SG_CHAIN
- 	if (WARN_ON_ONCE(nents > max_ents))
- 		return -EINVAL;
- #endif
- 
--	memset(table, 0, sizeof(*table));
--
- 	left = nents;
- 	prv = NULL;
- 	do {
+Commit 00cfec37484761a4 has to be backported anyway, if not already
+backported.
+
+I would rather fix things properly, instead of adding defensive code.
+
+
