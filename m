@@ -1,387 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423557Ab3FUXvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 19:51:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21580 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423151Ab3FUXvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 19:51:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,916,1363158000"; 
-   d="scan'208";a="333617618"
-Subject: [PATCH 2/2] rwsem: do optimistic spinning for writer lock
- acquisition
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <cover.1371855277.git.tim.c.chen@linux.intel.com>
-References: <cover.1371855277.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jun 2013 16:51:40 -0700
-Message-ID: <1371858700.22432.5.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1423466Ab3FUXzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 19:55:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35764 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423208Ab3FUXzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 19:55:23 -0400
+Date: Fri, 21 Jun 2013 16:56:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anders Hammarquist <iko@iko.pp.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] *** SUBJECT HERE ***
+Message-ID: <20130621235603.GA1603@kroah.com>
+References: <201306190012.r5J0CNJZ031854@eskarina.iko.pp.se>
+ <20130619225315.GB12282@kroah.com>
+ <201306212308.r5LN8C7M020720@eskarina.iko.pp.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201306212308.r5LN8C7M020720@eskarina.iko.pp.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce in this patch optimistic spinning for writer lock
-acquisition in read write semaphore.  The logic is
-similar to the optimistic spinning in mutex but without
-the MCS lock queueing of the spinner.  This provides a
-better chance for a writer to acquire the lock before
-being we block it and put it to sleep.
+On Sat, Jun 22, 2013 at 01:08:12AM +0200, Anders Hammarquist wrote:
+> In a message of Wed, 19 Jun 2013 15:53:15 -0700, Greg KH writes:
+> >I think you forgot a Subject :)
+> 
+> Indeed. I blame it on my first fight with git format-patch ;-)
+> 
+> >On Wed, Jun 19, 2013 at 02:05:07AM +0200, Anders Hammarquist wrote:
+> >> This patch set adds the product id to the driver, and makes the
+> >> product type more explicit. Arguably, the ABBOTT_PRODUCT_ID
+> >> define could be removed, but I left it on the off chance that
+> >> someone other that the TI 3410 driver uses it.
+> >
+> >No, it doesn't, please fix up that last patch and resend it.
+> 
+> Right, and in removing it I actually found that it was used in
+> two places in the driver. I lost my second fight with format-patch
+> so I'll just enclose the fixed patch below.
+> 
+> /Anders
+> 
+> ---8<---
+> ti_usb_3410_5052:
+> * Remove unspecific ABBOTT_PRODUCT_ID
+> * Fix size of statically sized arrays
+> 
+> Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
 
-Disabling of pre-emption during optimistic spinning
-was suggested by Davidlohr Bueso.  It
-improved performance of aim7 for his test suite.
+Please resend this in a format that I can apply it in (i.e. one that
+does not require me to edit it by hand...)
 
-Combined with the patch to avoid unnecesary cmpxchg,
-in testing by Davidlohr Bueso on aim7 workloads
-on 8 socket 80 cores system, he saw improvements of
-alltests (+14.5%), custom (+17%), disk (+11%), high_systime
-(+5%), shared (+15%) and short (+4%), most of them after around 500
-users when he implemented i_mmap as rwsem.
+Also, please cc: the linux-usb@vger.kernel.org mailing list for usb
+patches.
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- Makefile              |    2 +-
- include/linux/rwsem.h |    3 +
- init/Kconfig          |    9 +++
- kernel/rwsem.c        |   29 +++++++++-
- lib/rwsem.c           |  148 +++++++++++++++++++++++++++++++++++++++++++++----
- 5 files changed, 178 insertions(+), 13 deletions(-)
+> diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
+> index e581c25..26c1161 100644
+> --- a/drivers/usb/serial/ti_usb_3410_5052.c
+> +++ b/drivers/usb/serial/ti_usb_3410_5052.c
+> @@ -158,7 +158,7 @@ static unsigned int product_5052_count;
+>  /* the array dimension is the number of default entries plus */
+>  /* TI_EXTRA_VID_PID_COUNT user defined entries plus 1 terminating */
+>  /* null entry */
+> -static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
+> +static struct usb_device_id ti_id_table_3410[16+TI_EXTRA_VID_PID_COUNT+1] = {
 
-diff --git a/Makefile b/Makefile
-index 49aa84b..7d1ef64 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 3
- PATCHLEVEL = 10
- SUBLEVEL = 0
--EXTRAVERSION = -rc4
-+EXTRAVERSION = -rc4-optspin4
- NAME = Unicycling Gorilla
- 
- # *DOCUMENTATION*
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 0616ffe..0c5933b 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -29,6 +29,9 @@ struct rw_semaphore {
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map	dep_map;
- #endif
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+	struct task_struct	*owner;
-+#endif
- };
- 
- extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
-diff --git a/init/Kconfig b/init/Kconfig
-index 9d3a788..1c582d1 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1595,6 +1595,15 @@ config TRACEPOINTS
- 
- source "arch/Kconfig"
- 
-+config RWSEM_SPIN_ON_WRITE_OWNER
-+	bool "Optimistic spin write acquisition for writer owned rw-sem"
-+	default n
-+	depends on SMP
-+	help
-+	  Allows a writer to perform optimistic spinning if another writer own
-+	  the read write semaphore.  This gives a greater chance for writer to
-+	  acquire a semaphore before blocking it and putting it to sleep.
-+
- endmenu		# General setup
- 
- config HAVE_GENERIC_DMA_COHERENT
-diff --git a/kernel/rwsem.c b/kernel/rwsem.c
-index cfff143..a32990a 100644
---- a/kernel/rwsem.c
-+++ b/kernel/rwsem.c
-@@ -12,6 +12,26 @@
- 
- #include <linux/atomic.h>
- 
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+static inline void rwsem_set_owner(struct rw_semaphore *sem)
-+{
-+	sem->owner = current;
-+}
-+
-+static inline void rwsem_clear_owner(struct rw_semaphore *sem)
-+{
-+	sem->owner = NULL;
-+}
-+#else
-+static inline void rwsem_set_owner(struct rw_semaphore *sem)
-+{
-+}
-+
-+static inline void rwsem_clear_owner(struct rw_semaphore *sem)
-+{
-+}
-+#endif
-+
- /*
-  * lock for reading
-  */
-@@ -48,6 +68,7 @@ void __sched down_write(struct rw_semaphore *sem)
- 	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
- 
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
- }
- 
- EXPORT_SYMBOL(down_write);
-@@ -59,8 +80,10 @@ int down_write_trylock(struct rw_semaphore *sem)
- {
- 	int ret = __down_write_trylock(sem);
- 
--	if (ret == 1)
-+	if (ret == 1) {
- 		rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
-+		rwsem_set_owner(sem);
-+	}
- 	return ret;
- }
- 
-@@ -86,6 +109,7 @@ void up_write(struct rw_semaphore *sem)
- 	rwsem_release(&sem->dep_map, 1, _RET_IP_);
- 
- 	__up_write(sem);
-+	rwsem_clear_owner(sem);
- }
- 
- EXPORT_SYMBOL(up_write);
-@@ -100,6 +124,7 @@ void downgrade_write(struct rw_semaphore *sem)
- 	 * dependency.
- 	 */
- 	__downgrade_write(sem);
-+	rwsem_clear_owner(sem);
- }
- 
- EXPORT_SYMBOL(downgrade_write);
-@@ -122,6 +147,7 @@ void _down_write_nest_lock(struct rw_semaphore *sem, struct lockdep_map *nest)
- 	rwsem_acquire_nest(&sem->dep_map, 0, 0, nest, _RET_IP_);
- 
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
- }
- 
- EXPORT_SYMBOL(_down_write_nest_lock);
-@@ -141,6 +167,7 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
- 	rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
- 
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
- }
- 
- EXPORT_SYMBOL(down_write_nested);
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 2072af5..8e331c5 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -8,6 +8,7 @@
-  */
- #include <linux/rwsem.h>
- #include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/init.h>
- #include <linux/export.h>
- 
-@@ -27,6 +28,9 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 	sem->count = RWSEM_UNLOCKED_VALUE;
- 	raw_spin_lock_init(&sem->wait_lock);
- 	INIT_LIST_HEAD(&sem->wait_list);
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+	sem->owner = NULL;
-+#endif
- }
- 
- EXPORT_SYMBOL(__init_rwsem);
-@@ -192,6 +196,128 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 	return sem;
- }
- 
-+static inline int rwsem_try_write_lock(long count, bool need_lock,
-+	struct rw_semaphore *sem)
-+{
-+	if (!(count & RWSEM_ACTIVE_MASK)) {
-+		/* Try acquiring the write lock. */
-+		if (sem->count == RWSEM_WAITING_BIAS &&
-+		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-+			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-+			if (need_lock)
-+				raw_spin_lock_irq(&sem->wait_lock);
-+			if (!list_is_singular(&sem->wait_list))
-+				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-+			return 1;
-+		}
-+	}
-+	return 0;
-+}
-+
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-+{
-+	int retval = true;
-+
-+	/* Spin only if active writer running */
-+	if (!sem->owner)
-+		return false;
-+
-+	rcu_read_lock();
-+	if (sem->owner)
-+		retval = sem->owner->on_cpu;
-+	rcu_read_unlock();
-+	/*
-+	 * if lock->owner is not set, the sem owner may have just acquired
-+	 * it and not set the owner yet, or the sem has been released, or
-+	 * reader active.
-+	 */
-+	return retval;
-+}
-+
-+static inline bool owner_running(struct rw_semaphore *lock,
-+				struct task_struct *owner)
-+{
-+	if (lock->owner != owner)
-+		return false;
-+
-+	/*
-+	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
-+	 * lock->owner still matches owner, if that fails, owner might
-+	 * point to free()d memory, if it still matches, the rcu_read_lock()
-+	 * ensures the memory stays valid.
-+	 */
-+	barrier();
-+
-+	return owner->on_cpu;
-+}
-+
-+static noinline
-+int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
-+{
-+	rcu_read_lock();
-+	while (owner_running(lock, owner)) {
-+		if (need_resched())
-+			break;
-+
-+		arch_mutex_cpu_relax();
-+	}
-+	rcu_read_unlock();
-+
-+	/*
-+	 * We break out the loop above on need_resched() and when the
-+	 * owner changed, which is a sign for heavy contention. Return
-+	 * success only when lock->owner is NULL.
-+	 */
-+	return lock->owner == NULL;
-+}
-+
-+int rwsem_optimistic_spin(struct rw_semaphore *sem)
-+{
-+	struct	task_struct	*owner;
-+	int	ret = 0;
-+
-+	/* sem->wait_lock should not be held when doing optimistic spinning */
-+	if (!rwsem_can_spin_on_owner(sem))
-+		return ret;
-+
-+	preempt_disable();
-+	for (;;) {
-+		owner = ACCESS_ONCE(sem->owner);
-+		if (owner && !rwsem_spin_on_owner(sem, owner))
-+			break;
-+
-+		/* wait_lock will be acquired if write_lock is obtained */
-+		if (rwsem_try_write_lock(sem->count, true, sem)) {
-+			ret = 1;
-+			goto out;
-+		}
-+
-+		/*
-+		 * When there's no owner, we might have preempted between the
-+		 * owner acquiring the lock and setting the owner field. If
-+		 * we're an RT task that will live-lock because we won't let
-+		 * the owner complete.
-+		 */
-+		if (!owner && (need_resched() || rt_task(current)))
-+			break;
-+
-+		/*
-+		 * The cpu_relax() call is a compiler barrier which forces
-+		 * everything in this loop to be re-loaded. We don't need
-+		 * memory barriers as we'll eventually observe the right
-+		 * values at the cost of a few extra spins.
-+		 */
-+		arch_mutex_cpu_relax();
-+
-+	}
-+
-+out:
-+	preempt_enable();
-+	return ret;
-+}
-+#endif
-+
- /*
-  * wait until we successfully acquire the write lock
-  */
-@@ -200,6 +326,9 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk = current;
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+	bool try_optimistic_spin = true;
-+#endif
- 
- 	/* set up my own style of waitqueue */
- 	waiter.task = tsk;
-@@ -223,20 +352,17 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 	/* wait until we successfully acquire the lock */
- 	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
- 	while (true) {
--		if (!(count & RWSEM_ACTIVE_MASK)) {
--			/* Try acquiring the write lock. */
--			count = RWSEM_ACTIVE_WRITE_BIAS;
--			if (!list_is_singular(&sem->wait_list))
--				count += RWSEM_WAITING_BIAS;
--
--			if (sem->count == RWSEM_WAITING_BIAS &&
--			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
--							RWSEM_WAITING_BIAS)
--				break;
--		}
-+		if (rwsem_try_write_lock(count, false, sem))
-+			break;
- 
- 		raw_spin_unlock_irq(&sem->wait_lock);
- 
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+		/* do optimistic spinning */
-+		if (try_optimistic_spin && rwsem_optimistic_spin(sem))
-+			break;
-+		try_optimistic_spin = false;
-+#endif
- 		/* Block until there are no active lockers. */
- 		do {
- 			schedule();
--- 
-1.7.4.4
+That's a mess, why have it be a static array at all?  Just include an
+empty one at the end.
 
 
+>  	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
+>  	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
+>  	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
+> @@ -172,8 +172,8 @@ static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
+>  	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
+>  	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
+>  	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
+> -	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_ID) },
+> -	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
+> +	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_PRODUCT_ID) },
+> +	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_PRODUCT_ID) },
+>  	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
+>  };
+>  
+> @@ -184,7 +184,7 @@ static struct usb_device_id ti_id_table_5052[5+TI_EXTRA_VID_PID_COUNT+1] = {
+>  	{ USB_DEVICE(TI_VENDOR_ID, TI_5052_FIRMWARE_PRODUCT_ID) },
+>  };
+>  
+> -static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1] = {
+> +static struct usb_device_id ti_id_table_combined[20+2*TI_EXTRA_VID_PID_COUNT+1] = {
+
+Same here.  Although that might take another patch, to handle it all
+correctly, separate from this "change the device id names" patch.
+
+thanks,
+
+greg k-h
