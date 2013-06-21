@@ -1,147 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946211Ab3FUWHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 18:07:23 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:8106 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946172Ab3FUWHW (ORCPT
+	id S1946215Ab3FUWJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 18:09:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35081 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946172Ab3FUWJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 18:07:22 -0400
-Message-ID: <1371852439.1798.27.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: linux-next: Tree for Jun 21 [ BROKEN ipc/ipc-msg ]
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: sedat.dilek@gmail.com
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Date: Fri, 21 Jun 2013 15:07:19 -0700
-In-Reply-To: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jun 2013 18:09:27 -0400
+Date: Fri, 21 Jun 2013 15:10:05 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH staging-next] zram: remove zram_sysfs file
+Message-ID: <20130621221005.GA1842@kroah.com>
+References: <20130621152914.GA2371@swordfish.minsk.epam.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130621152914.GA2371@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 21:34 +0200, Sedat Dilek wrote:
-> On Fri, Jun 21, 2013 at 10:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi all,
-> >
-> > Happy solstice!
-> >
-> > Changes since 20130620:
-> >
-> > Dropped tree: mailbox (really bad merge conflicts with the arm-soc tree)
-> >
-> > The net-next tree gained a conflict against the net tree.
-> >
-> > The leds tree still had its build failure, so I used the version from
-> > next-20130607.
-> >
-> > The arm-soc tree gained conflicts against the tip, net-next, mfd and
-> > mailbox trees.
-> >
-> > The staging tree still had its build failure for which I disabled some
-> > code.
-> >
-> > The akpm tree lost a few patches that turned up elsewhere and gained
-> > conflicts against the ftrace and arm-soc trees.
-> >
-> > ----------------------------------------------------------------------------
-> >
+On Fri, Jun 21, 2013 at 06:29:14PM +0300, Sergey Senozhatsky wrote:
+> Move zram sysfs code to zram drv and remove zram_sysfs file.
+> This gives ability to make static a number of previously exported
+> zram functions, used from zram sysfs, e.g. internal zram
+> zram_meta_alloc/free(). We also can drop several zram_drv wrapper
+> functions, used from zram sysfs:
+> e.g. zram_reset_device()/__zram_reset_device() pair.
 > 
-> [ CC IPC folks ]
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 > 
-> Building via 'make deb-pkg' with fakeroot fails here like this:
+> ---
+>  drivers/staging/zram/Makefile     |   2 +-
+>  drivers/staging/zram/zram_drv.c   | 524 +++++++++++++++++++++++++-------------
+>  drivers/staging/zram/zram_drv.h   |  10 -
+>  drivers/staging/zram/zram_sysfs.c | 209 ---------------
+>  4 files changed, 354 insertions(+), 391 deletions(-)
 > 
-> make: *** [deb-pkg] Terminated
-> /usr/bin/fakeroot: line 181:  2386 Terminated
-> FAKEROOTKEY=$FAKEROOTKEY LD_LIBRARY_PATH="$PATHS" LD_PRELOAD="$LIB"
-> "$@"
-> semop(1): encountered an error: Identifier removed
-> semop(2): encountered an error: Invalid argument
-> semop(1): encountered an error: Identifier removed
-> semop(1): encountered an error: Identifier removed
-> semop(1): encountered an error: Invalid argument
-> semop(1): encountered an error: Invalid argument
-> semop(1): encountered an error: Invalid argument
-> 
+> diff --git a/drivers/staging/zram/Makefile b/drivers/staging/zram/Makefile
+> index 7f4a301..cb0f9ce 100644
+> --- a/drivers/staging/zram/Makefile
+> +++ b/drivers/staging/zram/Makefile
+> @@ -1,3 +1,3 @@
+> -zram-y	:=	zram_drv.o zram_sysfs.o
+> +zram-y	:=	zram_drv.o
+>  
+>  obj-$(CONFIG_ZRAM)	+=	zram.o
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index ec2b2b5..f32fcca 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -42,6 +42,111 @@ static struct zram *zram_devices;
+>  /* Module params (documentation at end) */
+>  static unsigned int num_devices = 1;
+>  
+> +module_param(num_devices, uint, 0);
+> +MODULE_PARM_DESC(num_devices, "Number of zram devices");
+> +
+> +MODULE_LICENSE("Dual BSD/GPL");
+> +MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
+> +MODULE_DESCRIPTION("Compressed RAM Block Device");
 
-Hmmm those really shouldn't be related to the message queue changes. Are
-you sure you got the right bisect? 
+This is usually best put at the bottom of the file, not at the top.
 
-Manfred has a few ipc/sem.c patches in linux-next, starting at commit
-c50df1b4 (ipc/sem.c: cacheline align the semaphore structures), does
-reverting any of those instead of "ipc,msg: shorten critical region in
-msgrcv" help at all? Also, anything reported in dmesg?
+Why did you move it?
 
-> The issue is present since next-20130606!
-> 
-> LAST KNOWN GOOD: next-20130605
-> FIRST KNOWN BAD: next-20130606
-> 
-> KNOWN GOOD: next-20130604
-> KNOWN BAD:  next-20130607 || next-20130619 || next-20130620 || next-20130621
-> 
-> git-bisect says CULPRIT commit is...
-> 
->      "ipc,msg: shorten critical region in msgrcv"
+thanks,
 
-This I get. I went through the code again and it looks correct and
-functionally equivalent to the old msgrcv.
-
-> 
-> NOTE: msg_lock_(check_) routines have to be restored (one more revert needed)!
-
-This I don't get. Restoring msg_lock_[check] is already equivalent to
-reverting "ipc,msg: shorten critical region in msgrcv" and several other
-of the msq patches. What other patch needs reverted?
-
-Anyway, I'll see if I can reproduce the issue, maybe I'm missing
-something.
-
-Thanks,
-Davidlohr
-
-> 
-> Reverting both (below) commits makes fakeroot build via 'make dep-pkg" again.
-> 
-> I have tested the revert-patches with next-20130606 and next-20130621
-> (see file-attachments).
-> 
-> My build-script is attached!
-> 
-> Can someone of the IPC folks look at that?
-> Thanks!
-> 
-> - Sedat -
-> 
-> 
-> P.S.: Commit-IDs listed below.
-> 
-> [ next-20130606 ]
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130606
-> 
-> "ipc: remove unused functions"
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=8793fdfb0d0a6ed5916767e29a15d3eb56e04e79
-> 
-> "ipc,msg: shorten critical region in msgrcv"
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=c0ff93322847a54f74a5450032c4df64c17fdaed
-> 
-> [ next-20130621 ]
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130621
-> 
-> "ipc: remove unused functions"
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=941ce57c81dcceadf55265616ee1e8bef18b0ad3
-> 
-> "ipc,msg: shorten critical region in msgrcv"
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=62190df4081ee8504e3611d45edb40450cb408ac
-
-
+greg k-h
