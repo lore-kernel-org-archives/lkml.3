@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965904Ab3FUA51 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 20:57:27 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58738 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965356Ab3FUA50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 20:57:26 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v6 1/6] mm/writeback: remove wb_reason_name
-Date: Fri, 21 Jun 2013 08:57:08 +0800
-Message-Id: <1371776233-9364-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062100-5816-0000-0000-0000088C50C7
+	id S965916Ab3FUA7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 20:59:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37981 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965307Ab3FUA7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 20:59:10 -0400
+Date: Fri, 21 Jun 2013 01:59:05 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Geremy Condra <gcondra@google.com>
+Cc: dm-devel@redhat.com, wad@chromium.org, linux-kernel@vger.kernel.org,
+        agk@redhat.com
+Subject: Re: [dm-devel] [PATCH] dm: verity: Add support for emitting
+	uevents on dm-verity errors.
+Message-ID: <20130621005905.GI23042@agk-dp.fab.redhat.com>
+Mail-Followup-To: Geremy Condra <gcondra@google.com>, dm-devel@redhat.com,
+	wad@chromium.org, linux-kernel@vger.kernel.org, agk@redhat.com
+References: <1371763260-9933-1-git-send-email-gcondra@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371763260-9933-1-git-send-email-gcondra@google.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wb_reason_name is not used any more, this patch remove it.
-
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- include/linux/writeback.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index e27468e..8b5cec4 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -51,7 +51,6 @@ enum wb_reason {
+On Thu, Jun 20, 2013 at 02:21:00PM -0700, Geremy Condra wrote:
+> With this change and config option, dm-verity errors
+> will cause uevents to be sent to userspace, notifying
+> it that an error has occurred and potentially
+> triggering recovery actions.
  
- 	WB_REASON_MAX,
- };
--extern const char *wb_reason_name[];
- 
- /*
-  * A control structure which tells the writeback code what to do.  These are
--- 
-1.7.5.4
+> +config DM_VERITY_ERROR_NOTIFY
+> +	tristate "Notify userspace of verity errors through uevents"
+> +	depends on DM_VERITY && DM_UEVENT
+> +	---help---
+> +	  This option instructs dm-verity to send uevents on error.
+> +
+
+Would it cause any problems if we had this feature enabled all the time,
+controlled only by DM_UEVENT?
+
+In other words, if we delete DM_VERITY_ERROR_NOTIFY from the upstream patch?
+
+Alasdair
 
