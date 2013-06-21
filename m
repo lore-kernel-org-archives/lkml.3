@@ -1,51 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423127Ab3FUG3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:29:35 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:61944 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030533Ab3FUG3d (ORCPT
+	id S1030546Ab3FUGa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:30:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:50812 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030412Ab3FUGaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:29:33 -0400
-Date: Thu, 20 Jun 2013 23:29:29 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Matthew Garrett <mjg@redhat.com>, Liu Jiang <liuj97@gmail.com>,
-        Dirk Griesbach <spamthis@freenet.de>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Liu Jiang <jiang.liu@huawei.com>
-Subject: Re: [PATCH] libata: remove dead code from libata-acpi.c
-Message-ID: <20130621062929.GB11014@mtj.dyndns.org>
-References: <1371265368-7334-1-git-send-email-liuj97@gmail.com>
- <51BE6B5C.70803@intel.com>
- <20130617180151.GG32663@mtj.dyndns.org>
- <51C02571.3090100@intel.com>
- <51C26861.9050106@intel.com>
- <51C2E12F.4000603@cogentembedded.com>
- <51C3A489.1050905@intel.com>
+	Fri, 21 Jun 2013 02:30:25 -0400
+Date: Fri, 21 Jun 2013 08:30:22 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+Subject: [PATCH 1/2] regulators: max8973: fix multiple instance support
+Message-ID: <Pine.LNX.4.64.1306210825040.27277@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C3A489.1050905@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:ogqbjZhI9doCvGL0G7nRmhe4TW53KFk2VX2z+bIKpif
+ G2AAWwh7BLy01w3YMkFtqZdMQxx5B4npBG1oNt1l5VekSBkQfS
+ n7AVd0HGd4NshiJ74B3bj0ujthpcpRHQLQQzB+KRb5r5p9T5TQ
+ NzfKKaDWvMJGMsKM3RlV+JUr5XsL1XBaiXN5a4NDt5hTiQXjtF
+ MW+NWnW/8zO0IBlhZrHKAGr3y7HHrHyJy1nN3n8SslPpkcvpfM
+ 49i+kHJ5ya8m0nfMqPQTFWRC9cvMDK6t54C+sRwC2L68PDkKuN
+ QSPsKP6ue00c5YCr9ZUD+3Y9PbP3hV3liCCKc1ta5Fja2A4cH/
+ USeOMt6BAtjyl/O6olydcgb2J2+ceQyerQQuvhx3j49UMEDS+m
+ 8/b/mdySFRrVA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Currently the max8973 regulator driver uses a single static struct of
+regulator operations for all chip instances, but can overwrite some of its
+members depending on configuration. This will affect all other MAX8973
+instances on the system. This patch fixes this bug by allocating a separate
+copy of the struct for each chip instance.
 
-On Fri, Jun 21, 2013 at 08:55:37AM +0800, Aaron Lu wrote:
-> >     Please indent this line under the next character after ( above.
-> 
-> Is there a link about this rule? I might have missed something about
-> coding style.
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
+ drivers/regulator/max8973-regulator.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-I don't think there's an explicit rule about that and I don't follow
-it religiously but I think it does make things easier on the eyes and
-emacs does that by default so I just got used to it.  It's a very
-minor thing but FWIW I prefer things that way.
-
-Thanks.
-
+diff --git a/drivers/regulator/max8973-regulator.c b/drivers/regulator/max8973-regulator.c
+index adb1414..b2dbdd7 100644
+--- a/drivers/regulator/max8973-regulator.c
++++ b/drivers/regulator/max8973-regulator.c
+@@ -100,6 +100,7 @@ struct max8973_chip {
+ 	int curr_vout_reg;
+ 	int curr_gpio_val;
+ 	bool valid_dvs_gpio;
++	struct regulator_ops ops;
+ };
+ 
+ /*
+@@ -240,7 +241,7 @@ static unsigned int max8973_dcdc_get_mode(struct regulator_dev *rdev)
+ 		REGULATOR_MODE_FAST : REGULATOR_MODE_NORMAL;
+ }
+ 
+-static struct regulator_ops max8973_dcdc_ops = {
++static const struct regulator_ops max8973_dcdc_ops = {
+ 	.get_voltage_sel	= max8973_dcdc_get_voltage_sel,
+ 	.set_voltage_sel	= max8973_dcdc_set_voltage_sel,
+ 	.list_voltage		= regulator_list_voltage_linear,
+@@ -388,10 +389,11 @@ static int max8973_probe(struct i2c_client *client,
+ 	}
+ 
+ 	i2c_set_clientdata(client, max);
++	max->ops = max8973_dcdc_ops;
+ 	max->dev = &client->dev;
+ 	max->desc.name = id->name;
+ 	max->desc.id = 0;
+-	max->desc.ops = &max8973_dcdc_ops;
++	max->desc.ops = &max->ops;
+ 	max->desc.type = REGULATOR_VOLTAGE;
+ 	max->desc.owner = THIS_MODULE;
+ 	max->desc.min_uV = MAX8973_MIN_VOLATGE;
+@@ -401,9 +403,9 @@ static int max8973_probe(struct i2c_client *client,
+ 	if (!pdata->enable_ext_control) {
+ 		max->desc.enable_reg = MAX8973_VOUT;
+ 		max->desc.enable_mask = MAX8973_VOUT_ENABLE;
+-		max8973_dcdc_ops.enable = regulator_enable_regmap;
+-		max8973_dcdc_ops.disable = regulator_disable_regmap;
+-		max8973_dcdc_ops.is_enabled = regulator_is_enabled_regmap;
++		max->ops.enable = regulator_enable_regmap;
++		max->ops.disable = regulator_disable_regmap;
++		max->ops.is_enabled = regulator_is_enabled_regmap;
+ 	}
+ 
+ 	max->enable_external_control = pdata->enable_ext_control;
 -- 
-tejun
+1.7.2.5
+
