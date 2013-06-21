@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422894Ab3FUNAk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 09:00:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29051 "EHLO mx1.redhat.com"
+	id S1422827Ab3FUNAi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 09:00:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24859 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422676Ab3FUM7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 08:59:07 -0400
+	id S1422706Ab3FUM7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 08:59:08 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
 Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
@@ -15,147 +15,220 @@ Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
         linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v4 11/14] locks: add a new "lm_owner_key" lock operation
-Date: Fri, 21 Jun 2013 08:58:19 -0400
-Message-Id: <1371819502-26363-12-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v4 12/14] locks: give the blocked_hash its own spinlock
+Date: Fri, 21 Jun 2013 08:58:20 -0400
+Message-Id: <1371819502-26363-13-git-send-email-jlayton@redhat.com>
 In-Reply-To: <1371819502-26363-1-git-send-email-jlayton@redhat.com>
 References: <1371819502-26363-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the hashing that the locking code uses to add these values
-to the blocked_hash is simply calculated using fl_owner field. That's
-valid in most cases except for server-side lockd, which validates the
-owner of a lock based on fl_owner and fl_pid.
-
-In the case where you have a small number of NFS clients doing a lot
-of locking between different processes, you could end up with all
-the blocked requests sitting in a very small number of hash buckets.
-
-Add a new lm_owner_key operation to the lock_manager_operations that
-will generate an unsigned long to use as the key in the hashtable.
-That function is only implemented for server-side lockd, and simply
-XORs the fl_owner and fl_pid.
+There's no reason we have to protect the blocked_hash and file_lock_list
+with the same spinlock. With the tests I have, breaking it in two gives
+a barely measurable performance benefit, but it seems reasonable to make
+this locking as granular as possible.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Acked-by: J. Bruce Fields <bfields@fieldses.org>
 ---
- Documentation/filesystems/Locking |   16 +++++++++++-----
- fs/lockd/svclock.c                |   12 ++++++++++++
- fs/locks.c                        |   12 ++++++++++--
- include/linux/fs.h                |    1 +
- 4 files changed, 34 insertions(+), 7 deletions(-)
+ Documentation/filesystems/Locking |   16 +++++++-------
+ fs/locks.c                        |   41 +++++++++++++++++++-----------------
+ 2 files changed, 30 insertions(+), 27 deletions(-)
 
 diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 413685f..dfeb01b 100644
+index dfeb01b..cf04448 100644
 --- a/Documentation/filesystems/Locking
 +++ b/Documentation/filesystems/Locking
-@@ -351,6 +351,7 @@ fl_release_private:	maybe		no
- ----------------------- lock_manager_operations ---------------------------
- prototypes:
- 	int (*lm_compare_owner)(struct file_lock *, struct file_lock *);
-+	unsigned long (*lm_owner_key)(struct file_lock *);
- 	void (*lm_notify)(struct file_lock *);  /* unblock callback */
- 	int (*lm_grant)(struct file_lock *, struct file_lock *, int);
- 	void (*lm_break)(struct file_lock *); /* break_lease callback */
-@@ -360,16 +361,21 @@ locking rules:
+@@ -359,20 +359,20 @@ prototypes:
  
- 			inode->i_lock	file_lock_lock	may block
- lm_compare_owner:	yes[1]		maybe		no
-+lm_owner_key		yes[1]		yes		no
- lm_notify:		yes		yes		no
- lm_grant:		no		no		no
- lm_break:		yes		no		no
- lm_change		yes		no		no
+ locking rules:
  
--[1]:	->lm_compare_owner is generally called with *an* inode->i_lock held. It
--may not be the i_lock of the inode for either file_lock being compared! This is
--the case with deadlock detection, since the code has to chase down the owners
--of locks that may be entirely unrelated to the one on which the lock is being
--acquired. When doing a search for deadlocks, the file_lock_lock is also held.
-+[1]:	->lm_compare_owner and ->lm_owner_key are generally called with
-+*an* inode->i_lock held. It may not be the i_lock of the inode
-+associated with either file_lock argument! This is the case with deadlock
-+detection, since the code has to chase down the owners of locks that may
-+be entirely unrelated to the one on which the lock is being acquired.
-+For deadlock detection however, the file_lock_lock is also held. The
-+fact that these locks are held ensures that the file_locks do not
-+disappear out from under you while doing the comparison or generating an
-+owner key.
+-			inode->i_lock	file_lock_lock	may block
+-lm_compare_owner:	yes[1]		maybe		no
+-lm_owner_key		yes[1]		yes		no
+-lm_notify:		yes		yes		no
+-lm_grant:		no		no		no
+-lm_break:		yes		no		no
+-lm_change		yes		no		no
++			inode->i_lock	blocked_lock_lock	may block
++lm_compare_owner:	yes[1]		maybe			no
++lm_owner_key		yes[1]		yes			no
++lm_notify:		yes		yes			no
++lm_grant:		no		no			no
++lm_break:		yes		no			no
++lm_change		yes		no			no
  
- --------------------------- buffer_head -----------------------------------
- prototypes:
-diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-index a469098..067778b 100644
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -744,8 +744,20 @@ static int nlmsvc_same_owner(struct file_lock *fl1, struct file_lock *fl2)
- 	return fl1->fl_owner == fl2->fl_owner && fl1->fl_pid == fl2->fl_pid;
- }
- 
-+/*
-+ * Since NLM uses two "keys" for tracking locks, we need to hash them down
-+ * to one for the blocked_hash. Here, we're just xor'ing the host address
-+ * with the pid in order to create a key value for picking a hash bucket.
-+ */
-+static unsigned long
-+nlmsvc_owner_key(struct file_lock *fl)
-+{
-+	return (unsigned long)fl->fl_owner ^ (unsigned long)fl->fl_pid;
-+}
-+
- const struct lock_manager_operations nlmsvc_lock_operations = {
- 	.lm_compare_owner = nlmsvc_same_owner,
-+	.lm_owner_key = nlmsvc_owner_key,
- 	.lm_notify = nlmsvc_notify_blocked,
- 	.lm_grant = nlmsvc_grant_deferred,
- };
+ [1]:	->lm_compare_owner and ->lm_owner_key are generally called with
+ *an* inode->i_lock held. It may not be the i_lock of the inode
+ associated with either file_lock argument! This is the case with deadlock
+ detection, since the code has to chase down the owners of locks that may
+ be entirely unrelated to the one on which the lock is being acquired.
+-For deadlock detection however, the file_lock_lock is also held. The
++For deadlock detection however, the blocked_lock_lock is also held. The
+ fact that these locks are held ensures that the file_locks do not
+ disappear out from under you while doing the comparison or generating an
+ owner key.
 diff --git a/fs/locks.c b/fs/locks.c
-index 71d847c..6242e0b 100644
+index 6242e0b..04e2c1f 100644
 --- a/fs/locks.c
 +++ b/fs/locks.c
-@@ -521,10 +521,18 @@ locks_delete_global_locks(struct file_lock *fl)
+@@ -159,10 +159,11 @@ int lease_break_time = 45;
+  * by the file_lock_lock.
+  */
+ static HLIST_HEAD(file_lock_list);
++static DEFINE_SPINLOCK(file_lock_lock);
+ 
+ /*
+  * The blocked_hash is used to find POSIX lock loops for deadlock detection.
+- * It is protected by file_lock_lock.
++ * It is protected by blocked_lock_lock.
+  *
+  * We hash locks by lockowner in order to optimize searching for the lock a
+  * particular lockowner is waiting on.
+@@ -175,8 +176,8 @@ static HLIST_HEAD(file_lock_list);
+ static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
+ 
+ /*
+- * This lock protects the blocked_hash and the file_lock_list. Generally, if
+- * you're accessing one of those lists, you want to be holding this lock.
++ * This lock protects the blocked_hash. Generally, if you're accessing it, you
++ * want to be holding this lock.
+  *
+  * In addition, it also protects the fl->fl_block list, and the fl->fl_next
+  * pointer for file_lock structures that are acting as lock requests (in
+@@ -191,7 +192,7 @@ static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
+  * both the i_lock and the blocked_lock_lock (acquired in that order). Deleting
+  * an entry from the list however only requires the file_lock_lock.
+  */
+-static DEFINE_SPINLOCK(file_lock_lock);
++static DEFINE_SPINLOCK(blocked_lock_lock);
+ 
+ static struct kmem_cache *filelock_cache __read_mostly;
+ 
+@@ -544,7 +545,7 @@ locks_delete_global_blocked(struct file_lock *waiter)
+ /* Remove waiter from blocker's block list.
+  * When blocker ends up pointing to itself then the list is empty.
+  *
+- * Must be called with file_lock_lock held.
++ * Must be called with blocked_lock_lock held.
+  */
+ static void __locks_delete_block(struct file_lock *waiter)
+ {
+@@ -555,9 +556,9 @@ static void __locks_delete_block(struct file_lock *waiter)
+ 
+ static void locks_delete_block(struct file_lock *waiter)
+ {
+-	spin_lock(&file_lock_lock);
++	spin_lock(&blocked_lock_lock);
+ 	__locks_delete_block(waiter);
+-	spin_unlock(&file_lock_lock);
++	spin_unlock(&blocked_lock_lock);
+ }
+ 
+ /* Insert waiter into blocker's block list.
+@@ -565,9 +566,9 @@ static void locks_delete_block(struct file_lock *waiter)
+  * the order they blocked. The documentation doesn't require this but
+  * it seems like the reasonable thing to do.
+  *
+- * Must be called with both the i_lock and file_lock_lock held. The fl_block
++ * Must be called with both the i_lock and blocked_lock_lock held. The fl_block
+  * list itself is protected by the file_lock_list, but by ensuring that the
+- * i_lock is also held on insertions we can avoid taking the file_lock_lock
++ * i_lock is also held on insertions we can avoid taking the blocked_lock_lock
+  * in some cases when we see that the fl_block list is empty.
+  */
+ static void __locks_insert_block(struct file_lock *blocker,
+@@ -584,9 +585,9 @@ static void __locks_insert_block(struct file_lock *blocker,
+ static void locks_insert_block(struct file_lock *blocker,
+ 					struct file_lock *waiter)
+ {
+-	spin_lock(&file_lock_lock);
++	spin_lock(&blocked_lock_lock);
+ 	__locks_insert_block(blocker, waiter);
+-	spin_unlock(&file_lock_lock);
++	spin_unlock(&blocked_lock_lock);
+ }
+ 
+ /*
+@@ -601,12 +602,12 @@ static void locks_wake_up_blocks(struct file_lock *blocker)
+ 	 * blocked requests are only added to the list under the i_lock, and
+ 	 * the i_lock is always held here. Note that removal from the fl_block
+ 	 * list does not require the i_lock, so we must recheck list_empty()
+-	 * after acquiring the file_lock_lock.
++	 * after acquiring the blocked_lock_lock.
+ 	 */
+ 	if (list_empty(&blocker->fl_block))
+ 		return;
+ 
+-	spin_lock(&file_lock_lock);
++	spin_lock(&blocked_lock_lock);
+ 	while (!list_empty(&blocker->fl_block)) {
+ 		struct file_lock *waiter;
+ 
+@@ -618,7 +619,7 @@ static void locks_wake_up_blocks(struct file_lock *blocker)
+ 		else
+ 			wake_up(&waiter->fl_wait);
+ 	}
+-	spin_unlock(&file_lock_lock);
++	spin_unlock(&blocked_lock_lock);
+ }
+ 
+ /* Insert file lock fl into an inode's lock list at the position indicated
+@@ -772,7 +773,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
+ 	return NULL;
+ }
+ 
+-/* Must be called with the file_lock_lock held! */
++/* Must be called with the blocked_lock_lock held! */
+ static int posix_locks_deadlock(struct file_lock *caller_fl,
+ 				struct file_lock *block_fl)
+ {
+@@ -920,12 +921,12 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 			 * locks list must be done while holding the same lock!
+ 			 */
+ 			error = -EDEADLK;
+-			spin_lock(&file_lock_lock);
++			spin_lock(&blocked_lock_lock);
+ 			if (likely(!posix_locks_deadlock(request, fl))) {
+ 				error = FILE_LOCK_DEFERRED;
+ 				__locks_insert_block(fl, request);
+ 			}
+-			spin_unlock(&file_lock_lock);
++			spin_unlock(&blocked_lock_lock);
+ 			goto out;
+   		}
+   	}
+@@ -2212,12 +2213,12 @@ posix_unblock_lock(struct file_lock *waiter)
+ {
+ 	int status = 0;
+ 
+-	spin_lock(&file_lock_lock);
++	spin_lock(&blocked_lock_lock);
+ 	if (waiter->fl_next)
+ 		__locks_delete_block(waiter);
+ 	else
+ 		status = -ENOENT;
+-	spin_unlock(&file_lock_lock);
++	spin_unlock(&blocked_lock_lock);
+ 	return status;
+ }
+ EXPORT_SYMBOL(posix_unblock_lock);
+@@ -2332,6 +2333,7 @@ static void *locks_start(struct seq_file *f, loff_t *pos)
+ 	loff_t *p = f->private;
+ 
+ 	spin_lock(&file_lock_lock);
++	spin_lock(&blocked_lock_lock);
+ 	*p = (*pos + 1);
+ 	return seq_hlist_start(&file_lock_list, *pos);
+ }
+@@ -2345,6 +2347,7 @@ static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
+ 
+ static void locks_stop(struct seq_file *f, void *v)
+ {
++	spin_unlock(&blocked_lock_lock);
  	spin_unlock(&file_lock_lock);
  }
  
-+static unsigned long
-+posix_owner_key(struct file_lock *fl)
-+{
-+	if (fl->fl_lmops && fl->fl_lmops->lm_owner_key)
-+		return fl->fl_lmops->lm_owner_key(fl);
-+	return (unsigned long)fl->fl_owner;
-+}
-+
- static inline void
- locks_insert_global_blocked(struct file_lock *waiter)
- {
--	hash_add(blocked_hash, &waiter->fl_link, (unsigned long)waiter->fl_owner);
-+	hash_add(blocked_hash, &waiter->fl_link, posix_owner_key(waiter));
- }
- 
- static inline void
-@@ -757,7 +765,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
- {
- 	struct file_lock *fl;
- 
--	hash_for_each_possible(blocked_hash, fl, fl_link, (unsigned long)block_fl->fl_owner) {
-+	hash_for_each_possible(blocked_hash, fl, fl_link, posix_owner_key(block_fl)) {
- 		if (posix_same_owner(fl, block_fl))
- 			return fl->fl_next;
- 	}
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 85ef56a..e42e04f 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -908,6 +908,7 @@ struct file_lock_operations {
- 
- struct lock_manager_operations {
- 	int (*lm_compare_owner)(struct file_lock *, struct file_lock *);
-+	unsigned long (*lm_owner_key)(struct file_lock *);
- 	void (*lm_notify)(struct file_lock *);	/* unblock callback */
- 	int (*lm_grant)(struct file_lock *, struct file_lock *, int);
- 	void (*lm_break)(struct file_lock *);
 -- 
 1.7.1
 
