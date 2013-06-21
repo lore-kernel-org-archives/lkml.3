@@ -1,221 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946241Ab3FUXLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 19:11:49 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:3803 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423360Ab3FUXLs (ORCPT
+	id S1946251Ab3FUXNt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 19:13:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41918 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946207Ab3FUXNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 19:11:48 -0400
-Message-ID: <1371856305.13136.6.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: linux-next: Tree for Jun 21 [ BROKEN ipc/ipc-msg ]
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: sedat.dilek@gmail.com
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Date: Fri, 21 Jun 2013 16:11:45 -0700
-In-Reply-To: <CA+icZUUdwAiyVq5-7+qo3YL-ka4y6DfbMmjy_MTiZ+Y70y55Cw@mail.gmail.com>
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
-	 <1371852439.1798.27.camel@buesod1.americas.hpqcorp.net>
-	 <CA+icZUUdwAiyVq5-7+qo3YL-ka4y6DfbMmjy_MTiZ+Y70y55Cw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jun 2013 19:13:47 -0400
+Date: Sat, 22 Jun 2013 01:13:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <john.stultz@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCHv3/RESEND 4/4] clocksource: arch_timer: Add support for
+ memory mapped timers
+In-Reply-To: <51C4DB44.7030909@codeaurora.org>
+Message-ID: <alpine.DEB.2.02.1306220110110.4013@ionos.tec.linutronix.de>
+References: <1371836361-20574-1-git-send-email-sboyd@codeaurora.org> <1371836361-20574-5-git-send-email-sboyd@codeaurora.org> <alpine.DEB.2.02.1306212304480.4013@ionos.tec.linutronix.de> <51C4DB44.7030909@codeaurora.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-22 at 00:54 +0200, Sedat Dilek wrote:
-> On Sat, Jun 22, 2013 at 12:07 AM, Davidlohr Bueso
-> <davidlohr.bueso@hp.com> wrote:
-> > On Fri, 2013-06-21 at 21:34 +0200, Sedat Dilek wrote:
-> >> On Fri, Jun 21, 2013 at 10:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >> > Hi all,
-> >> >
-> >> > Happy solstice!
-> >> >
-> >> > Changes since 20130620:
-> >> >
-> >> > Dropped tree: mailbox (really bad merge conflicts with the arm-soc tree)
-> >> >
-> >> > The net-next tree gained a conflict against the net tree.
-> >> >
-> >> > The leds tree still had its build failure, so I used the version from
-> >> > next-20130607.
-> >> >
-> >> > The arm-soc tree gained conflicts against the tip, net-next, mfd and
-> >> > mailbox trees.
-> >> >
-> >> > The staging tree still had its build failure for which I disabled some
-> >> > code.
-> >> >
-> >> > The akpm tree lost a few patches that turned up elsewhere and gained
-> >> > conflicts against the ftrace and arm-soc trees.
-> >> >
-> >> > ----------------------------------------------------------------------------
-> >> >
-> >>
-> >> [ CC IPC folks ]
-> >>
-> >> Building via 'make deb-pkg' with fakeroot fails here like this:
-> >>
-> >> make: *** [deb-pkg] Terminated
-> >> /usr/bin/fakeroot: line 181:  2386 Terminated
-> >> FAKEROOTKEY=$FAKEROOTKEY LD_LIBRARY_PATH="$PATHS" LD_PRELOAD="$LIB"
-> >> "$@"
-> >> semop(1): encountered an error: Identifier removed
-> >> semop(2): encountered an error: Invalid argument
-> >> semop(1): encountered an error: Identifier removed
-> >> semop(1): encountered an error: Identifier removed
-> >> semop(1): encountered an error: Invalid argument
-> >> semop(1): encountered an error: Invalid argument
-> >> semop(1): encountered an error: Invalid argument
-> >>
+On Fri, 21 Jun 2013, Stephen Boyd wrote:
+> On 06/21/13 14:18, Thomas Gleixner wrote:
+> > Something in my little brain yells: function pointer
 > >
-> > Hmmm those really shouldn't be related to the message queue changes. Are
-> > you sure you got the right bisect?
+> > You can't be serious about hacking nested if/else/switch constructs
+> > into a hot path.
 > >
-> > Manfred has a few ipc/sem.c patches in linux-next, starting at commit
-> > c50df1b4 (ipc/sem.c: cacheline align the semaphore structures), does
-> > reverting any of those instead of "ipc,msg: shorten critical region in
-> > msgrcv" help at all? Also, anything reported in dmesg?
+> > Why not making your cpu data:
 > >
+> > struct arch_timer {
+> >        struct clock_event_device evt;
+> >        ....
+> >        void (*write_ctrl)(val, timer);
+> >        void (*write_tval)(val, timer);
+> >        ....
+> > }
+> >
+> > and get rid of all that conditionals?
 > 
-> First, I reverted all IPC patches from akpm-tree within -next.
-> Then, I isolated the culprit by git-bisecting.
-> As I checked my logs I did not see anything helpful.
-> 
-> >> The issue is present since next-20130606!
-> >>
-> >> LAST KNOWN GOOD: next-20130605
-> >> FIRST KNOWN BAD: next-20130606
-> >>
-> >> KNOWN GOOD: next-20130604
-> >> KNOWN BAD:  next-20130607 || next-20130619 || next-20130620 || next-20130621
-> >>
-> >> git-bisect says CULPRIT commit is...
-> >>
-> >>      "ipc,msg: shorten critical region in msgrcv"
-> >
-> > This I get. I went through the code again and it looks correct and
-> > functionally equivalent to the old msgrcv.
-> >
-> 
-> Hmm, I guess a rcu_read_unlock() is missing?
-> 
-> [ next-20130605 ]
-> ...
-> 		/* Lockless receive, part 3:
-> 		 * Acquire the queue spinlock.
-> 		 */
-> 		ipc_lock_by_ptr(&msq->q_perm);
-> 		rcu_read_unlock();
-> ...
-> [ next-20130621 ]
-> ...
-> 		/* Lockless receive, part 3:
-> 		 * Acquire the queue spinlock.
-> 		 */
-> 		ipc_lock_object(&msq->q_perm);
-> ...
-> 
-> Whereas ipc_lock_by_ptr() is equivalent to:
-> rcu_read_lock();
-> ipc_lock_object();
+> It sounds like that's undesirable according to the comment above
+> arch_timer_reg_write(). It seems that all this code was written under
+> the assumption that the compiler is good enough to optimize all the code
+> paths and only generate the code that is necessary. So far this seems to
+> be working and the hotpath is optimized for each type of access.
 
-Yeah, I noticed that, but it's not an error. In the older code we have
+That might be true for kernels which are optimized for a specific
+target, but this will fall flat for any multi-platform kernel.
 
-rcu_read_lock (Lockless receive, part 1)
-[...]
-/* Lockless receive, part 3:
- * Acquire the queue spinlock.
- */
-ipc_lock_by_ptr(&msq->q_perm);
-rcu_read_unlock();
-
-
-Which translates to:
-rcu_read_lock (Lockless receive, part 1)
-[...]
-/* Lockless receive, part 3:
- * Acquire the queue spinlock.
- */
-rcu_read_lock();
-ipc_lock_object();
-rcu_read_unlock();
-
-And thus, after that last rcu_read_unlock we are left with
-rcu_read_lock()
-ipc_lock_object();
-
-If you notice, that's exactly what is done in the new code, only much
-more readable: We do rcu_read_lock in the part 1, then in part 3, we
-acquire the spinlock via ipc_lock_object(&msq->q_perm)
-
-
-> >>
-> >> NOTE: msg_lock_(check_) routines have to be restored (one more revert needed)!
-> >
-> > This I don't get. Restoring msg_lock_[check] is already equivalent to
-> > reverting "ipc,msg: shorten critical region in msgrcv" and several other
-> > of the msq patches. What other patch needs reverted?
-> >
-> 
-> No, you have to revert both patches as the other removed
-> msg_lock_[check] afterwards.
-> 
-> > Anyway, I'll see if I can reproduce the issue, maybe I'm missing
-> > something.
-> >
-> 
-> Yupp, I try with adding rcu_read_unlock()... and report.
-> 
-> - Sedat -
-> 
-> > Thanks,
-> > Davidlohr
-> >
-> >>
-> >> Reverting both (below) commits makes fakeroot build via 'make dep-pkg" again.
-> >>
-> >> I have tested the revert-patches with next-20130606 and next-20130621
-> >> (see file-attachments).
-> >>
-> >> My build-script is attached!
-> >>
-> >> Can someone of the IPC folks look at that?
-> >> Thanks!
-> >>
-> >> - Sedat -
-> >>
-> >>
-> >> P.S.: Commit-IDs listed below.
-> >>
-> >> [ next-20130606 ]
-> >>
-> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130606
-> >>
-> >> "ipc: remove unused functions"
-> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=8793fdfb0d0a6ed5916767e29a15d3eb56e04e79
-> >>
-> >> "ipc,msg: shorten critical region in msgrcv"
-> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=c0ff93322847a54f74a5450032c4df64c17fdaed
-> >>
-> >> [ next-20130621 ]
-> >>
-> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130621
-> >>
-> >> "ipc: remove unused functions"
-> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=941ce57c81dcceadf55265616ee1e8bef18b0ad3
-> >>
-> >> "ipc,msg: shorten critical region in msgrcv"
-> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=62190df4081ee8504e3611d45edb40450cb408ac
-> >
-> >
-
-
+Thanks,
+	
+	tglx
