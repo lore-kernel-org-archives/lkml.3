@@ -1,113 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757896Ab3FUKQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:16:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49690 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab3FUKQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:16:52 -0400
-Message-ID: <51C427E1.2000800@ti.com>
-Date: Fri, 21 Jun 2013 15:46:01 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S965525Ab3FUKY7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 06:24:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42592 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054Ab3FUKY5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 06:24:57 -0400
+Message-ID: <51C429F4.60709@arm.com>
+Date: Fri, 21 Jun 2013 11:24:52 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Joel A Fernandes <joelagnel@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <1371762407-24544-6-git-send-email-joelagnel@ti.com>
-In-Reply-To: <1371762407-24544-6-git-send-email-joelagnel@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v6 4/8] ARM: Add .init_platform() callback to machine
+ descriptor
+References: <1371774924-9224-1-git-send-email-tomasz.figa@gmail.com> <1371774924-9224-5-git-send-email-tomasz.figa@gmail.com>
+In-Reply-To: <1371774924-9224-5-git-send-email-tomasz.figa@gmail.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 21 Jun 2013 10:24:53.0479 (UTC) FILETIME=[91AA1F70:01CE6E69]
+X-MC-Unique: 113062111245404101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/21/2013 2:36 AM, Joel A Fernandes wrote:
-> From: Joel A Fernandes <agnel.joel@gmail.com>
-> 
-> Build TI_EDMA by default for ARCH_DAVINCI and ARCH_OMAP2PLUS
-> 
-> Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+On 21/06/13 01:35, Tomasz Figa wrote:
 
-You should sign-off with author e-mail address.
+Hi Tomasz,
 
+> Most ARM platforms have parts that should be initialized as early as
+> possible, which usually means as soon as memory management (kmalloc,
+> ioremap) starts to work,
+> 
+> However, currently there is no appropriate callback in machine_desc
+> struct to use for such initialization and platforms tend to stuff things
+> up .init_irq() and .init_time() callbacks.
+> 
+> Since all the DT-based platforms are going towards generic IRQ and time
+> initialization (using irqchip_init and clocksource_of_init) and current
+> code assumes that if custom callbacks are not provided in machine_desc
+> then generic ones should be used, this problem has become a bit more
+> inconvenient.
+> 
+> This patch tries to solve this issue by introducing new callback called
+> .init_platform(), where any custom low level initialization of platform
+> can be done safely.
+> 
+> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 > ---
->  arch/arm/Kconfig            |    1 +
->  arch/arm/mach-omap2/Kconfig |    1 +
->  drivers/dma/Kconfig         |    2 +-
->  3 files changed, 3 insertions(+), 1 deletion(-)
+>  arch/arm/include/asm/mach/arch.h | 1 +
+>  arch/arm/kernel/irq.c            | 3 +++
+>  2 files changed, 4 insertions(+)
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index b1c66a4..7d58cd9 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -841,6 +841,7 @@ config ARCH_DAVINCI
->  	select HAVE_IDE
->  	select NEED_MACH_GPIO_H
->  	select TI_PRIV_EDMA
-> +	select DMADEVICES
+> diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+> index 308ad7d..b2f4d11 100644
+> --- a/arch/arm/include/asm/mach/arch.h
+> +++ b/arch/arm/include/asm/mach/arch.h
+> @@ -46,6 +46,7 @@ struct machine_desc {
+>  	void			(*reserve)(void);/* reserve mem blocks	*/
+>  	void			(*map_io)(void);/* IO mapping function	*/
+>  	void			(*init_early)(void);
+> +	void			(*init_platform)(void);
+>  	void			(*init_irq)(void);
+>  	void			(*init_time)(void);
+>  	void			(*init_machine)(void);
+> diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
+> index 9723d17..61e2000 100644
+> --- a/arch/arm/kernel/irq.c
+> +++ b/arch/arm/kernel/irq.c
+> @@ -115,6 +115,9 @@ EXPORT_SYMBOL_GPL(set_irq_flags);
+>  
+>  void __init init_IRQ(void)
+>  {
+> +	if (machine_desc->init_platform)
+> +		machine_desc->init_platform();
+> +
+>  	if (IS_ENABLED(CONFIG_OF) && !machine_desc->init_irq)
+>  		irqchip_init();
+>  	else
 
-It is generally a bad idea to force select on something that can be
-enabled using menuconfig. Unless used carefully, select causes "unmet
-direct dependency" warnings which folks are already fighting hard to
-fix. This leads to what Russell referred in the past as "select madness" [1]
+To me, this new hook is strictly equivalent to init_irq. What do we gain
+exactly? I didn't think init_irq was going away...
 
-In this particular case, it is perfectly okay to have a DaVinci platform
-without DMA engine support. Drivers figure out they don't have DMA
-support and switch to PIO mode.
+I know init_irq is not pretty, and we tend to overload it with other
+stuff, but I don't really see the point of adding a new callback that
+has the exact same properties.
 
-Add this in defconfig if its useful for most folks using the platform,
-but don't force it for everyone through select.
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
->  	select USE_OF
->  	select ZONE_DMA
->  	help
-> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-> index f91b07f..c02f083 100644
-> --- a/arch/arm/mach-omap2/Kconfig
-> +++ b/arch/arm/mach-omap2/Kconfig
-> @@ -17,6 +17,7 @@ config ARCH_OMAP2PLUS
->  	select PROC_DEVICETREE if PROC_FS
->  	select SOC_BUS
->  	select SPARSE_IRQ
-> +	select DMADEVICES
->  	select TI_PRIV_EDMA
->  	select USE_OF
->  	help
-> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> index 3215a3c..b2d6f15 100644
-> --- a/drivers/dma/Kconfig
-> +++ b/drivers/dma/Kconfig
-> @@ -216,7 +216,7 @@ config TI_EDMA
->  	depends on ARCH_DAVINCI || ARCH_OMAP
->  	select DMA_ENGINE
->  	select DMA_VIRTUAL_CHANNELS
-> -	default n
-> +	default y
-
-Can't see why DMA support should default to y.
-
-Thanks,
-Sekhar
-
-[1] http://lkml.org/lkml/2013/3/4/114
