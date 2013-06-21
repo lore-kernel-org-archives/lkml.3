@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965740Ab3FTXsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 19:48:13 -0400
-Received: from mail-ve0-f202.google.com ([209.85.128.202]:47809 "EHLO
-	mail-ve0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965026Ab3FTXsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 19:48:12 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: dw_mmc: don't queue up a card detect at slot startup
-Date: Thu, 20 Jun 2013 16:47:44 -0700
-Message-Id: <1371772064-7505-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
+	id S965771Ab3FUABb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 20:01:31 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:22658
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965573Ab3FUABa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 20:01:30 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zzc89bh4015I14ffIzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh906i1155h192ch)
+Date: Thu, 20 Jun 2013 17:01:22 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+CC: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: clocksource with changing frequency?
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <f5e5d3d7-699d-4f89-80c8-849e432e8b26@VA3EHSMHS017.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MMC subsystem handles looking for a card at probe time.  Queuing
-up our own can race with the rest of the MMC subsystem and cause
-problems if we get unlucky with timing.  Just remove our own
-detection.
+Hi all,
 
-Specifically, I found that with just the right set of printouts in my
-system that one of the three SD/MMC devices in my system was having
-trouble probing.  It would get an err -123 (-ENOMEDIUM) during probe.
-I found that the source of the error was in
-dw_mci_work_routine_card().  Adding more printouts to the code
-sometimes made this error go away, so it's a little touchy.
+I have a question/problem with a clocksource whose input frequency can
+change.
+On Zynq we use the cadece_ttc timer as clocksource. Its input clock is
+tightly coupled to the CPU clock. I.e. it changes when cpufreq scales
+the CPU clocks.
+To compensate this, I added a clock notifier doing this on a frequency
+change:
+	clocksource_unregister(&ttccs->cs);                              
+	clocksource_register_hz(&ttccs->cs, ndata->new_rate / PRESCALE);
 
-You can see a snippet with my printouts in it (printouts were in
-set_ios() on an exynos5420 board with some of our local patches):
+This just seems not to be the most elegant way, a heavy weight operation
+and results in a couple of locking errors in combination with
+suspend/hotplug.
 
-[    4.216595] dwmmc_exynos 12210000.dwmmc1: Using internal DMA controller.
-[    4.395935] dwmmc_exynos 12210000.dwmmc1: Version ID is 250a
-[    4.401948] dwmmc_exynos 12210000.dwmmc1: DW MMC controller at irq 108, 64 bit host data width, 64 deep fifo
-[    4.424430] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
-[    4.453975] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
-[    4.459592] mmc_host mmc1: Bus speed (slot 0) = 100000000Hz (slot req 400000Hz, actual 400000HZ div = 125)
-[    4.484258] dwmmc_exynos 12210000.dwmmc1: 1 slots initialized
-[    4.485406] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
-[    4.487606] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
-[    4.489794] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
-[    4.509757] mmc1: error -123 whilst initialising SDIO card
+Is there a sane solution for such a case? E.g. for clockevent devices
+there is a 'clockevents_update_freq()' to adjust to changing
+frequencies.
 
-While digging I found that doing our own card detection at init time
-didn't appear to be necessary.  If I remove this code then cards that
-are in the system at bootup are still detected just fine.
+I assume the sanest solution is an external oscillator as clock input,
+but I think our platforms don't provide that :(
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/mmc/host/dw_mmc.c | 6 ------
- 1 file changed, 6 deletions(-)
+	Thanks,
+	Sören
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index bc3a1bc..c3a6fe9 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2016,12 +2016,6 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	/* Card initially undetected */
- 	slot->last_detect_state = 0;
- 
--	/*
--	 * Card may have been plugged in prior to boot so we
--	 * need to run the detect tasklet
--	 */
--	queue_work(host->card_workqueue, &host->card_work);
--
- 	return 0;
- 
- err_setup_bus:
--- 
-1.8.3
 
