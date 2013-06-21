@@ -1,127 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758434Ab3FUJP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 05:15:26 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:63490 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757896Ab3FUJPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 05:15:23 -0400
-Message-ID: <51C419A8.3010707@monstr.eu>
-Date: Fri, 21 Jun 2013 11:15:20 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1422979Ab3FUJQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 05:16:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:19709 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1422931Ab3FUJQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 05:16:57 -0400
+X-IronPort-AV: E=Sophos;i="4.87,911,1363104000"; 
+   d="scan'208";a="7627349"
+Message-ID: <51C41AB4.9070500@cn.fujitsu.com>
+Date: Fri, 21 Jun 2013 17:19:48 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-CC: Joe Perches <joe@perches.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] MAINTAINERS: Remove Hans J. Koch entries
-References: <086bdaf83fe546bd3c7fe163e565a0887770770f.1369317710.git.michal.simek@xilinx.com> <71c482e15ee32fa304db73b984f6d5a63441cd92.1369317710.git.michal.simek@xilinx.com> <51A5E644.1040901@monstr.eu> <51AC8D43.100@monstr.eu> <20130603210513.GA22606@kroah.com> <20130620160126.GB22115@amd.pavel.ucw.cz> <1371745227.2146.13.camel@joe-AO722> <20130621025031.GG4775@local>
-In-Reply-To: <20130621025031.GG4775@local>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2BBSWLHAESKEGKEXDECOW"
+To: Tejun Heo <tj@kernel.org>
+CC: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618020357.GZ32663@mtj.dyndns.org> <51BFF464.809@cn.fujitsu.com> <20130618172129.GH2767@htj.dyndns.org> <51C298B2.9060900@cn.fujitsu.com> <20130620061719.GA16114@mtj.dyndns.org>
+In-Reply-To: <20130620061719.GA16114@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/21 17:15:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/21 17:15:47,
+	Serialize complete at 2013/06/21 17:15:47
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2BBSWLHAESKEGKEXDECOW
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi tj,
 
-On 06/21/2013 04:50 AM, Hans J. Koch wrote:
-> On Thu, Jun 20, 2013 at 09:20:27AM -0700, Joe Perches wrote:
->> On Thu, 2013-06-20 at 18:01 +0200, Pavel Machek wrote:
->>> Anyway, Hans disappeared, so Greg takes patches, again.
->=20
-> I wasn't able to take part in kernel development because I was heavily
-> involved in hardware development project. I always thought it would be =
-just
-> a few more days, but then it became half a year. I know I should have g=
-iven
-> an explanation and didn't. Sorry for that.
->=20
->>
->> Maybe this is appropriate then.
->>
->> Signed-off-by: Joe Perches <joe@perches.com>
->> ---
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 69fea4f..dc9d04a 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -5253,9 +5253,8 @@ F:	Documentation/hwmon/max16065
->>  F:	drivers/hwmon/max16065.c
->> =20
->>  MAX6650 HARDWARE MONITOR AND FAN CONTROLLER DRIVER
->> -M:	"Hans J. Koch" <hjk@hansjkoch.de>
->>  L:	lm-sensors@lm-sensors.org
->> -S:	Maintained
->> +S:	Orphan
->>  F:	Documentation/hwmon/max6650
->>  F:	drivers/hwmon/max6650.c
->=20
-> ACK to that one. It was never my idea to have a MAINTAINERS entry for t=
-hat.
-> Jean Delvare suggested it, so it came in. The MAX6650 was in a project =
-I was
-> working on 6 years ago, and I wrote the driver at that time. Meanwhile,=
- I
-> don't even have hardware with a MAX6650 anymore.
->=20
-> Does each little driver really need a MAINTAINERS entry? In my opinion,=
- it
-> should only be there if it is clear that it's not just a short project =
-work.
->=20
->> =20
->> @@ -8795,7 +8794,6 @@ F:	fs/hostfs/
->>  F:	fs/hppfs/
->> =20
->>  USERSPACE I/O (UIO)
->> -M:	"Hans J. Koch" <hjk@hansjkoch.de>
->>  M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>  S:	Maintained
->>  F:	Documentation/DocBook/uio-howto.tmpl
->=20
-> Well, you can do that if you want. But I still feel associated with UIO=
+On 06/20/2013 02:17 PM, Tejun Heo wrote:
+......
+>
+> I was suggesting two separate things.
+>
+> * As memblock allocator can relocate itself.  There's no point in
+>    avoiding setting NUMA node while parsing and registering NUMA
+>    topology.  Just parse and register NUMA info and later tell it to
+>    relocate itself out of hot-pluggable node.  A number of patches in
+>    the series is doing this dancing - carefully reordering NUMA
+>    probing.  No need to do that.  It's really fragile thing to do.
+>
+> * Once you get the above out of the way, I don't think there are a lot
+>    of permanent allocations in the way before NUMA is initialized.
+>    Re-order the remaining ones if that's cleaner to do.  If that gets
+>    overly messy / fragile, copying them around or freeing and reloading
+>    afterwards could be an option too.
 
-> and sincerely hope I'm back again to fulfill my duties as a maintainer.=
+memblock allocator can relocate itself, but it cannot relocate the memory
+it allocated for users. There could be some pointers pointing to these
+memory ranges. If we do the relocation, how to update these pointers ?
+
+Or, do you mean modify the pagetable ?  I don't think so.
+
+So would you please tell me more about how to do the relocation ?
+
+Thanks. :)
 
 
-ok then can you please comment my patches?
-I think it is not necessary to have one driver which support UIO without =
-IRQ
-and then second which support both cases.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
-------enig2BBSWLHAESKEGKEXDECOW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHEGagACgkQykllyylKDCE2cQCfZIaEaxaIXON4fihbifxxswEL
-J8QAnjuhgaLaYS93c8ZWlD6DXuF7Lmk1
-=WXyB
------END PGP SIGNATURE-----
-
-------enig2BBSWLHAESKEGKEXDECOW--
