@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423616Ab3FURo6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:44:58 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:46623 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423421Ab3FURo5 convert rfc822-to-8bit (ORCPT
+	id S1423631Ab3FURpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 13:45:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52853 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423545Ab3FURph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:44:57 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 21 Jun 2013 13:45:37 -0400
+Message-ID: <51C4913F.2020608@codeaurora.org>
+Date: Fri, 21 Jun 2013 10:45:35 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1371725238-25437-1-git-send-email-tushar.behera@linaro.org>
-Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, patches@linaro.org
-References: <1371725238-25437-1-git-send-email-tushar.behera@linaro.org>
-Message-ID: <20130621174453.20448.59791@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH v2 0/2] Clock update for EXYNOS4210-CPUFREQ driver
-Date: Fri, 21 Jun 2013 10:44:53 -0700
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v4] clocksource:arm_global_timer: Add ARM global timer
+ support.
+References: <1371820267-12099-1-git-send-email-srinivas.kandagatla@st.com> <alpine.DEB.2.02.1306211634510.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306211634510.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tushar Behera (2013-06-20 03:47:16)
-> cpufreq driver for EXYNOS4 based SoCs are not platform drivers, hence
-> we cannot currently pass the clock names through a device tree node.
-> Instead, we need to make them available through global alias.
-> 
-> The patches are based on next-20130618.
-> 
-> Patch 1 has not been modified.
-> Patch 2 has been updated to include EXYNOS4X12 releated clocks.
+On 06/21/13 08:56, Thomas Gleixner wrote:
+>
+>> +static irqreturn_t gt_clockevent_interrupt(int irq, void *dev_id)
+>> +{
+>> +	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
+> What kind of construct is this?
+>
+> You are using request_percpu_irq() and the device id is pointing to
+> per cpu memory. Why do you need this horrible pointer indirection?
+>
+> Because a lot of other ARM code uses the same broken construct?
 
-Patch and changelogs look good to me now. Tomasz, any comments? I am
-happy to take these into clk-next with your review.
+This is an artifact of the ARM local timer API. I have been trying for a
+few months to remove the API but I need my first two patches to go
+through the tip/timers tree. Please accept them so we don't have this
+construct anymore.
 
-Regards,
-Mike
+https://lkml.org/lkml/2013/6/3/584
 
-> 
-> Tushar Behera (2):
->   clk: samsung: Add MUX_FA macro to pass flag and alias
->   clk: exynos4: Fix clock aliases for cpufreq related clocks
-> 
->  drivers/clk/samsung/clk-exynos4.c |   21 +++++++++++----------
->  drivers/clk/samsung/clk.h         |    3 +++
->  2 files changed, 14 insertions(+), 10 deletions(-)
-> 
-> -- 
-> 1.7.9.5
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
