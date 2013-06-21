@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946067Ab3FUUpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 16:45:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59748 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945963Ab3FUUpQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 16:45:16 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 21 Jun 2013 13:45:18 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Christoph Anton Mitterer <calestyo@scientia.net>,
-        linux-kernel@vger.kernel.org, wokeswang@qnap.com
-Subject: Re: support for Intel Atom based QNAP LEDs/buttons/buzzer in Linux?
-Message-ID: <20130621204518.GA9370@roeck-us.net>
-References: <1371259861.12984.6.camel@heisenberg.scientia.net>
- <1371687272.30351.13.camel@heisenberg.scientia.net>
- <20130620025900.GA21820@kroah.com>
- <1371763706.5197.6.camel@fermat.scientia.net>
- <20130620214207.GA12922@kroah.com>
+	id S1946074Ab3FUUrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 16:47:55 -0400
+Received: from [207.46.163.236] ([207.46.163.236]:12243 "EHLO
+	na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1945963Ab3FUUry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 16:47:54 -0400
+Message-ID: <51C4BB86.1020004@caviumnetworks.com>
+Date: Fri, 21 Jun 2013 13:45:58 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130620214207.GA12922@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: David Daney <ddaney.cavm@gmail.com>, James Hogan <james.hogan@imgtec.com>,
+        <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kees Cook" <keescook@chromium.org>,
+        David Daney <david.daney@cavium.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        <linux-mips@linux-mips.org>
+Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
+References: <1371821962-9151-1-git-send-email-james.hogan@imgtec.com> <51C47864.9030200@gmail.com> <20130621202244.GA16610@redhat.com>
+In-Reply-To: <20130621202244.GA16610@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-Forefront-Antispam-Report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:0;SRVR:SN2PR07MB016;H:BN1PRD0712HT002.namprd07.prod.outlook.com;LANG:en;
+X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 02:42:07PM -0700, Greg KH wrote:
-> On Thu, Jun 20, 2013 at 11:28:26PM +0200, Christoph Anton Mitterer wrote:
-> > Hey Greg.
-> > 
-> > On Wed, 2013-06-19 at 19:59 -0700, Greg KH wrote:
-> > > If you can dig the code out into a stand-alone form that I can make into
-> > > a patch for the drivers/staging/ tree, I'll be glad to take it.
-> > Well I don't think my kernel/hardware development skills are enough for
-> > that... especially as Guenter already said that the code shouldn't be
-> > part of hwmon/it87 ... but rather a separate gpio driver...
-> 
-> Fair enough.
-> 
-The best/cleanest option would be to have a mfd core driver for the IT87xx
-variants and client drivers for hwmon, gpio, etc. Given that this might be
-a bit complicated, another option would be to add gpio support into the
-it87 driver itself. Unfortunately, I won't have time to do any of that.
+On 06/21/2013 01:22 PM, Oleg Nesterov wrote:
+> On 06/21, David Daney wrote:
+>>
+>> On 06/21/2013 06:39 AM, James Hogan wrote:
+>>> Therefore add sig_to_exitcode() and exitcode_to_sig() functions which
+>>> map signal numbers > 126 to exit code 126 and puts the remainder (i.e.
+>>> sig - 126) in higher bits. This allows WIFSIGNALED() to return true for
+>>> both SIG127 and SIG128, and allows WTERMSIG to be later updated to read
+>>> the correct signal number for SIG127 and SIG128.
+>>
+>> I really hate this approach.
+>>
+>> Can we just change the ABI to reduce the number of signals so that all
+>> the standard C library wait related macros don't have to be changed?
+>>
+>> Think about it, any user space program using signal numbers 127 and 128
+>> doesn't work correctly as things exist today, so removing those two will
+>> be no great loss.
+>
+> Oh, I agree.
+>
+> Besides, this changes ABI anyway. And if we change it we can do this in
+> a more clean way, afaics. MIPS should simply use 2 bytes in exit_code for
+> signal number.
 
-What is worse is that the QNAP folks hacked the kernel all over the place.
-There isn't just GPIO access added to the it87 driver (without using the gpio
-subsystem), but platform initialization as well as code to access LEDs
-and power buttonswere added to it as well. Overall they have hundreds of
-patches on top of a 3.4.6 kernel. So we are not only talking about adding
-support for the GPIO pins of IT87xx, and adding LED support as well as power
-button handling on top of that, but about digging through a whole lot of
-changes all over the place to find what is relevant.
+Wouldn't that break *all* existing programs that use signals?  Perhaps I 
+misunderstand what you are suggesting.
 
-The bad thing about it is really that many of the changes they made would be
-beneficial to have in the upstream kernel, only it would probably take
-man-years to clean it all up and get it there. Now the code isn't upstream,
-they have a maintenance nightmare, and no one benefits from it :(.
+I am proposing that we just reduce the number of usable signals such 
+that existing libc status checking macros/functions don't change in any way.
 
-Guenter
+  Yes, this means we need replace 0x80/0x7f in exit.c by
+> ifdef'ed numbers. And yes, this means that WIFSIGNALED/etc should be
+> updated too, but this is also true with this patch.
+>
+> Oleg.
+>
+>
 
-> > > Or, if
-> > > you get a contact at QNAP, I'll be glad to help out there as well
-> > Well I've asked them again,... no reply so far.
-> > The only direct contact I know (from the sources of their drivers) is
-> > Wokes Wang, which I've CCed. Perhaps he can help.
-> 
-> That would be great.  Also, do you have a pointer to the git tree for
-> the hardware again, I can't seem to find it.  I can dig through the tree
-> to see if I can make something "self-contained", if you are willing to
-> test it out.
-> 
-> thanks,
-> 
-> greg k-h
-> 
