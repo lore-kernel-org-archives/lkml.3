@@ -1,186 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946237Ab3FUWyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 18:54:14 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58588 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946196Ab3FUWyM (ORCPT
+	id S1946243Ab3FUWz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 18:55:56 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:41310 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946172Ab3FUWzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 18:54:12 -0400
+	Fri, 21 Jun 2013 18:55:55 -0400
+Date: Sat, 22 Jun 2013 00:55:41 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: "opensource@tigusoft.pl" <opensource@tigusoft.pl>
+Cc: linux-kernel@vger.kernel.org, security@debian.org
+Subject: Re: hanging, and possible exploit/ddos from LAN for RTL and other
+ cards (watchdog netdev)
+Message-ID: <20130621225541.GA29801@electric-eye.fr.zoreil.com>
+References: <201306160933.45961.opensource@tigusoft.pl>
+ <20130616163921.GA28368@electric-eye.fr.zoreil.com>
+ <201306211603.53725.opensource@tigusoft.pl>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1371852439.1798.27.camel@buesod1.americas.hpqcorp.net>
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
-	<1371852439.1798.27.camel@buesod1.americas.hpqcorp.net>
-Date: Sat, 22 Jun 2013 00:54:10 +0200
-Message-ID: <CA+icZUUdwAiyVq5-7+qo3YL-ka4y6DfbMmjy_MTiZ+Y70y55Cw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 21 [ BROKEN ipc/ipc-msg ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201306211603.53725.opensource@tigusoft.pl>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 12:07 AM, Davidlohr Bueso
-<davidlohr.bueso@hp.com> wrote:
-> On Fri, 2013-06-21 at 21:34 +0200, Sedat Dilek wrote:
->> On Fri, Jun 21, 2013 at 10:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> > Hi all,
->> >
->> > Happy solstice!
->> >
->> > Changes since 20130620:
->> >
->> > Dropped tree: mailbox (really bad merge conflicts with the arm-soc tree)
->> >
->> > The net-next tree gained a conflict against the net tree.
->> >
->> > The leds tree still had its build failure, so I used the version from
->> > next-20130607.
->> >
->> > The arm-soc tree gained conflicts against the tip, net-next, mfd and
->> > mailbox trees.
->> >
->> > The staging tree still had its build failure for which I disabled some
->> > code.
->> >
->> > The akpm tree lost a few patches that turned up elsewhere and gained
->> > conflicts against the ftrace and arm-soc trees.
->> >
->> > ----------------------------------------------------------------------------
->> >
->>
->> [ CC IPC folks ]
->>
->> Building via 'make deb-pkg' with fakeroot fails here like this:
->>
->> make: *** [deb-pkg] Terminated
->> /usr/bin/fakeroot: line 181:  2386 Terminated
->> FAKEROOTKEY=$FAKEROOTKEY LD_LIBRARY_PATH="$PATHS" LD_PRELOAD="$LIB"
->> "$@"
->> semop(1): encountered an error: Identifier removed
->> semop(2): encountered an error: Invalid argument
->> semop(1): encountered an error: Identifier removed
->> semop(1): encountered an error: Identifier removed
->> semop(1): encountered an error: Invalid argument
->> semop(1): encountered an error: Invalid argument
->> semop(1): encountered an error: Invalid argument
->>
->
-> Hmmm those really shouldn't be related to the message queue changes. Are
-> you sure you got the right bisect?
->
-> Manfred has a few ipc/sem.c patches in linux-next, starting at commit
-> c50df1b4 (ipc/sem.c: cacheline align the semaphore structures), does
-> reverting any of those instead of "ipc,msg: shorten critical region in
-> msgrcv" help at all? Also, anything reported in dmesg?
->
+opensource@tigusoft.pl <opensource@tigusoft.pl> :
+> On Sunday 16 June 2013 18:39:21 Francois Romieu wrote:
+> 
+> Thank you for feedback. We provide XID, IRQ and additional info below.
 
-First, I reverted all IPC patches from akpm-tree within -next.
-Then, I isolated the culprit by git-bisecting.
-As I checked my logs I did not see anything helpful.
+Executive summary:
+1. affected Realtek nics are 8168evl (XID 0c900800) and an old PCI
+   (XID 18000000)
+2. failing marvell nic resorts to a proprietary fglrx tainted kernel
+   on a computer with several graphic cards
 
->> The issue is present since next-20130606!
->>
->> LAST KNOWN GOOD: next-20130605
->> FIRST KNOWN BAD: next-20130606
->>
->> KNOWN GOOD: next-20130604
->> KNOWN BAD:  next-20130607 || next-20130619 || next-20130620 || next-20130621
->>
->> git-bisect says CULPRIT commit is...
->>
->>      "ipc,msg: shorten critical region in msgrcv"
->
-> This I get. I went through the code again and it looks correct and
-> functionally equivalent to the old msgrcv.
->
+(2) is nothing I am thrilled to spend time on, especially in a
+clusterfucked openbsd-tor-bitcoin-grsecurity-backport-from-hell
+technical context.
 
-Hmm, I guess a rcu_read_unlock() is missing?
+b423e9ae49d78ea3f53b131c8d5a6087aed16fd6 must be applied if tx
+checksumming is enabled on your 8168evl (see 'ethtool -k eth0').
+b423e9ae49d78ea3f53b131c8d5a6087aed16fd6 is still pending inclusion
+in -stable so it can only be found in current -git.
 
-[ next-20130605 ]
-...
-		/* Lockless receive, part 3:
-		 * Acquire the queue spinlock.
-		 */
-		ipc_lock_by_ptr(&msq->q_perm);
-		rcu_read_unlock();
-...
-[ next-20130621 ]
-...
-		/* Lockless receive, part 3:
-		 * Acquire the queue spinlock.
-		 */
-		ipc_lock_object(&msq->q_perm);
-...
+[...]
+>  * We plan to connect -eth-tcpdump-eth- boxes between some computers and LAN
+>  * We plan to swap electrical devices: switches, even cables to exclude this
 
-Whereas ipc_lock_by_ptr() is equivalent to:
-rcu_read_lock();
-ipc_lock_object();
+No overclocking nor outdated gigabyte EP45xyz motherboard bioses ?
 
->>
->> NOTE: msg_lock_(check_) routines have to be restored (one more revert needed)!
->
-> This I don't get. Restoring msg_lock_[check] is already equivalent to
-> reverting "ipc,msg: shorten critical region in msgrcv" and several other
-> of the msq patches. What other patch needs reverted?
->
+[...]
+> --- possible solutions ------------------------------------
+> #1 the patch rtl8169-fix1a-3.2.46.patch below  (NO. not working)
 
-No, you have to revert both patches as the other removed
-msg_lock_[check] afterwards.
+As expected: 8168evl is RTL_GIGA_MAC_VER_34.
 
-> Anyway, I'll see if I can reproduce the issue, maybe I'm missing
-> something.
->
+> #2 kernel cmdline "pcie_aspm=off"  (not tested enough)
+> #3 kernel cmdline "clocksource=acpi_pm" (not tested enough)
+> 
+> Since rearranging the network as in <info1> below, the hang of
+> trident-mainboard-based computer no longer hangs entire network
+> easily, so we wait for the freezing of computers to reoccur.
 
-Yupp, I try with adding rcu_read_unlock()... and report.
+8168 may go into a mac pause frame frenzy if it fails.
 
-- Sedat -
+[...]
+> - when 2nd card was plugged in (usb0) it instantly was unhanging the computer 
+> same as replugging eth0 cable would, and seemed to immunize it from hanging
 
-> Thanks,
-> Davidlohr
->
->>
->> Reverting both (below) commits makes fakeroot build via 'make dep-pkg" again.
->>
->> I have tested the revert-patches with next-20130606 and next-20130621
->> (see file-attachments).
->>
->> My build-script is attached!
->>
->> Can someone of the IPC folks look at that?
->> Thanks!
->>
->> - Sedat -
->>
->>
->> P.S.: Commit-IDs listed below.
->>
->> [ next-20130606 ]
->>
->> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130606
->>
->> "ipc: remove unused functions"
->> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=8793fdfb0d0a6ed5916767e29a15d3eb56e04e79
->>
->> "ipc,msg: shorten critical region in msgrcv"
->> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=c0ff93322847a54f74a5450032c4df64c17fdaed
->>
->> [ next-20130621 ]
->>
->> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130621
->>
->> "ipc: remove unused functions"
->> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=941ce57c81dcceadf55265616ee1e8bef18b0ad3
->>
->> "ipc,msg: shorten critical region in msgrcv"
->> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=62190df4081ee8504e3611d45edb40450cb408ac
->
->
+Ok.
+
+[...]
+>         r8169 0000:02:00.0: eth4: unable to load firmware patch 
+> rtl_nic/rtl8168e-3.fw (-2)
+
+You can give it a try.
+
+-- 
+Ueimor
