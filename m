@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946021Ab3FUU1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 16:27:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7167 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945951Ab3FUU1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 16:27:14 -0400
-Date: Fri, 21 Jun 2013 22:22:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        David Daney <david.daney@cavium.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
-Message-ID: <20130621202244.GA16610@redhat.com>
-References: <1371821962-9151-1-git-send-email-james.hogan@imgtec.com> <51C47864.9030200@gmail.com>
+	id S1946029Ab3FUU2N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 16:28:13 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:39406 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945951Ab3FUU2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 16:28:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C47864.9030200@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <51C4A726.1090300@sgi.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
+	<20130621165142.GA32125@kroah.com>
+	<51C48745.9030304@zytor.com>
+	<CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com>
+	<20130621185056.GA23473@kroah.com>
+	<CAE9FiQVt7Fa5oTYR+yLsehboPMo86vEDsRUaqNLQD9fizD5=Fg@mail.gmail.com>
+	<51C4A726.1090300@sgi.com>
+Date: Fri, 21 Jun 2013 13:28:11 -0700
+X-Google-Sender-Auth: tnkt48mPO6OaGe0jQLI60ZAZEZk
+Message-ID: <CAE9FiQWWj8btGK68j6MO1iYwSXiF54h7SqrHCxKwXW5=fnb_0A@mail.gmail.com>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Robin Holt <holt@sgi.com>, Mike Travis <travis@sgi.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21, David Daney wrote:
->
-> On 06/21/2013 06:39 AM, James Hogan wrote:
->> Therefore add sig_to_exitcode() and exitcode_to_sig() functions which
->> map signal numbers > 126 to exit code 126 and puts the remainder (i.e.
->> sig - 126) in higher bits. This allows WIFSIGNALED() to return true for
->> both SIG127 and SIG128, and allows WTERMSIG to be later updated to read
->> the correct signal number for SIG127 and SIG128.
->
-> I really hate this approach.
->
-> Can we just change the ABI to reduce the number of signals so that all
-> the standard C library wait related macros don't have to be changed?
->
-> Think about it, any user space program using signal numbers 127 and 128
-> doesn't work correctly as things exist today, so removing those two will
-> be no great loss.
+On Fri, Jun 21, 2013 at 12:19 PM, Nathan Zimmer <nzimmer@sgi.com> wrote:
+> On 06/21/2013 02:10 PM, Yinghai Lu wrote:
+>> in this way we can keep all numa etc on the place when online ram, cpu,
+>> pci...
+>>
+>> For example if we have 32 sockets system, most time for boot is with
+>> *BIOS*
+>> instead of OS. In those kind of system boot is like this way:
+>> only first two sockets get booted from bios to OS.
+>> later use hot add every other two sockets.
+>>
+>> that will also make BIOS simpler, and it need to support hot-add for
+>> services purpose anyway.
+>>
+> Yes the hot add path was one option we looked at and it did shorten boot
+> times but the goal I had here is to get from power on to having the full
+> machine available as quick as possible. Several clients need significant
+> portions of ram for their key workloads.  So that guided my thoughts on this
+> patch.
 
-Oh, I agree.
+you mean boot small number sockets + hot add still take more time?
+hot add ram still in serialize mode?
 
-Besides, this changes ABI anyway. And if we change it we can do this in
-a more clean way, afaics. MIPS should simply use 2 bytes in exit_code for
-signal number. Yes, this means we need replace 0x80/0x7f in exit.c by
-ifdef'ed numbers. And yes, this means that WIFSIGNALED/etc should be
-updated too, but this is also true with this patch.
-
-Oleg.
-
+Yinghai
