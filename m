@@ -1,78 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab3FUKis (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:38:48 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58120 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab3FUKiq (ORCPT
+	id S1757991Ab3FUKnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 06:43:04 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:59596 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753368Ab3FUKnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:38:46 -0400
-Message-ID: <51C42CFF.10002@ti.com>
-Date: Fri, 21 Jun 2013 16:07:51 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Sourav Poddar <sourav.poddar@ti.com>, Joel A Fernandes <joelagnel@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v12 09/11] spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <1371762407-24544-10-git-send-email-joelagnel@ti.com> <51C42A71.1090403@ti.com>
-In-Reply-To: <51C42A71.1090403@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jun 2013 06:43:02 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@stlinux.com,
+        Arnd Bergmann <arnd@arndb.de>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH v4 0/7] ARM:STixxxx: Add STixxxx platform and board support
+Date: Fri, 21 Jun 2013 11:37:56 +0100
+Message-Id: <1371811076-27168-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing Mark's e-mail.
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Mark,
+Thankyou all for reviewing the v3 patches.
 
-On 6/21/2013 3:56 PM, Sourav Poddar wrote:
-> Hi Mark,
+This patch-set adds basic support for STMicroelectronics STixxxx SOCs
+which includes STiH415 and STiH416 with B2000 and B2020 board support.
 
-> On Friday 21 June 2013 02:36 AM, Joel A Fernandes wrote:
->> From: Matt Porter<mporter@ti.com>
->>
->> Convert dmaengine channel requests to use
->> dma_request_slave_channel_compat(). This supports the DT case of
->> platforms requiring channel selection from either the OMAP DMA or
->> the EDMA engine. AM33xx only boots from DT and is the only user
->> implementing EDMA so in the !DT case we can default to the OMAP DMA
->> filter.
->>
->> Signed-off-by: Matt Porter<mporter@ti.com>
->> Acked-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
->> Signed-off-by: Joel A Fernandes<joelagnel@ti.com>
+STiH415 and STiH416 are dual-core ARM Cortex-A9 CPU, designed for use in
+Set-top-boxes. The SOC support is available in mach-stixxxx which contains
+support code for STiH415, STiH416 SOCs including the generic board support.
 
-[...]
+The reason for adding two SOCs at this patch set is to show that no new
+C code is required for second SOC(STiH416) support.
 
-> Acked-by: Sourav Poddar <sourav.poddar@ti.com>
-> Tested-by: Sourav Poddar <sourav.poddar@ti.com>
-> 
-> This patch can go independently and does not depend on the rest of the
-> series.
-> Can these patch be pulled?
+This patch-set only contains the SOC support, all the driver support for
+this platform are submitted to respective mailing lists.
 
-We can resend the patch if you don't have it from the mailing list.
+Changes since v3:
+	- removed debug_ll_io_init callback from mach desc as suggested by Arnd.
+	- moved serial/pinctrl/clocksource driver patches out of this series as
+	prefered by Arnd.
 
-Thanks,
-Sekhar
+Changes since v2:
+	- Fixed few plat-* specfic references in comments pointed by Michal S.
+	- Removed un-used variables in mach code as pointed by Michal S.
+	- Split adding SOC to multi_v7_defconfig in to two patches as discussed
+	with Mark R.
+	
+Changes since RFC:
+	- all the SOC support code is moved to mach-stixxxx
+	- seperated DEBUG_LL code to new patch.
+	- removed unnecessary #interrupt-cells
+	- renamed uart to serial
+	- moved to multi_v7_defconfig
+	- used menuconfig in mach-stixxx/Kconfig
+	- removed of_platform_populate as generic code does it for you.
+	- scu address is ioremaped.
+
+Srinivas Kandagatla (7):
+  ARM:stixxxx: Add STiH415 SOC support
+  ARM:stixxxx: Add STiH416 SOC support
+  ARM:stixxxx: Add DEBUG_LL console support
+  ARM:multi_v7_defconfig: rerun savedefconfig
+  ARM:stixxxx: Add stixxxx options to  multi_v7_defconfig
+  ARM:stih41x: Add B2000 board support
+  ARM:stih41x: Add B2020 board support
+
+ Documentation/arm/stixxxx/overview.txt         |   33 +++
+ Documentation/arm/stixxxx/stih415-overview.txt |   12 +
+ Documentation/arm/stixxxx/stih416-overview.txt |   12 +
+ MAINTAINERS                                    |    9 +
+ arch/arm/Kconfig                               |    2 +
+ arch/arm/Kconfig.debug                         |   35 +++
+ arch/arm/Makefile                              |    1 +
+ arch/arm/boot/dts/Makefile                     |    4 +
+ arch/arm/boot/dts/st-pincfg.h                  |   71 ++++++
+ arch/arm/boot/dts/stih415-b2000.dts            |   15 ++
+ arch/arm/boot/dts/stih415-b2020.dts            |   15 ++
+ arch/arm/boot/dts/stih415-clock.dtsi           |   38 +++
+ arch/arm/boot/dts/stih415-pinctrl.dtsi         |  268 +++++++++++++++++++++
+ arch/arm/boot/dts/stih415.dtsi                 |   87 +++++++
+ arch/arm/boot/dts/stih416-b2000.dts            |   16 ++
+ arch/arm/boot/dts/stih416-b2020.dts            |   16 ++
+ arch/arm/boot/dts/stih416-clock.dtsi           |   41 ++++
+ arch/arm/boot/dts/stih416-pinctrl.dtsi         |  295 ++++++++++++++++++++++++
+ arch/arm/boot/dts/stih416.dtsi                 |   96 ++++++++
+ arch/arm/boot/dts/stih41x-b2000.dtsi           |   41 ++++
+ arch/arm/boot/dts/stih41x-b2020.dtsi           |   42 ++++
+ arch/arm/boot/dts/stih41x.dtsi                 |   38 +++
+ arch/arm/configs/multi_v7_defconfig            |   31 ++--
+ arch/arm/include/debug/stixxxx.S               |   61 +++++
+ arch/arm/mach-stixxxx/Kconfig                  |   45 ++++
+ arch/arm/mach-stixxxx/Makefile                 |    2 +
+ arch/arm/mach-stixxxx/board-dt.c               |   48 ++++
+ arch/arm/mach-stixxxx/headsmp.S                |   44 ++++
+ arch/arm/mach-stixxxx/platsmp.c                |  117 ++++++++++
+ arch/arm/mach-stixxxx/smp.h                    |   17 ++
+ 30 files changed, 1535 insertions(+), 17 deletions(-)
+ create mode 100644 Documentation/arm/stixxxx/overview.txt
+ create mode 100644 Documentation/arm/stixxxx/stih415-overview.txt
+ create mode 100644 Documentation/arm/stixxxx/stih416-overview.txt
+ create mode 100644 arch/arm/boot/dts/st-pincfg.h
+ create mode 100644 arch/arm/boot/dts/stih415-b2000.dts
+ create mode 100644 arch/arm/boot/dts/stih415-b2020.dts
+ create mode 100644 arch/arm/boot/dts/stih415-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stih415-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/stih415.dtsi
+ create mode 100644 arch/arm/boot/dts/stih416-b2000.dts
+ create mode 100644 arch/arm/boot/dts/stih416-b2020.dts
+ create mode 100644 arch/arm/boot/dts/stih416-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stih416-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/stih416.dtsi
+ create mode 100644 arch/arm/boot/dts/stih41x-b2000.dtsi
+ create mode 100644 arch/arm/boot/dts/stih41x-b2020.dtsi
+ create mode 100644 arch/arm/boot/dts/stih41x.dtsi
+ create mode 100644 arch/arm/include/debug/stixxxx.S
+ create mode 100644 arch/arm/mach-stixxxx/Kconfig
+ create mode 100644 arch/arm/mach-stixxxx/Makefile
+ create mode 100644 arch/arm/mach-stixxxx/board-dt.c
+ create mode 100644 arch/arm/mach-stixxxx/headsmp.S
+ create mode 100644 arch/arm/mach-stixxxx/platsmp.c
+ create mode 100644 arch/arm/mach-stixxxx/smp.h
+
+-- 
+1.7.6.5
+
