@@ -1,103 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422990Ab3FUHYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:24:10 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56433 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422821Ab3FUHYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:24:08 -0400
-Date: Fri, 21 Jun 2013 09:23:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-Message-ID: <20130621072356.GA22006@pd.tnic>
-References: <1371746775.2372.11.camel@dabdike>
- <20130620165426.GB26214@srcf.ucam.org>
- <20130620170124.GA19877@pd.tnic>
- <20130620171210.GA26593@srcf.ucam.org>
- <20130620180808.GB19877@pd.tnic>
- <20130620181015.GA27833@srcf.ucam.org>
- <20130620181445.GA791@pd.tnic>
- <20130620181731.GA27960@srcf.ucam.org>
- <20130620184736.GC19877@pd.tnic>
- <51C383AC.4060706@zytor.com>
+	id S1758575Ab3FUHY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 03:24:27 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:50917 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab3FUHYZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 03:24:25 -0400
+Date: Fri, 21 Jun 2013 00:24:32 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>, Achin Gupta <Achin.Gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [RFC PATCH v4 2/2] drivers: mfd: vexpress: add Serial Power
+ Controller (SPC) support
+Message-ID: <20130621072432.GB30076@quad.lixom.net>
+References: <1371484269-11743-1-git-send-email-lorenzo.pieralisi@arm.com>
+ <1371484269-11743-3-git-send-email-lorenzo.pieralisi@arm.com>
+ <20130617174451.GF28497@quad.lixom.net>
+ <20130618102213.GA1564@e102568-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51C383AC.4060706@zytor.com>
+In-Reply-To: <20130618102213.GA1564@e102568-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 03:35:24PM -0700, H. Peter Anvin wrote:
-> On 06/20/2013 11:47 AM, Borislav Petkov wrote:
-> > 
-> > I guess we can do a top-down allocation, starting from the highest
-> > virtual addresses:
-> > 
-> > EFI_HIGHEST_ADDRESS
-> > |
-> > | size1
-> > |
-> > --> region1
-> > |
-> > | size2
-> > |
-> > --> region2
-> > 
-> > ...
-> > 
-> > and we make EFI_HIGHEST_ADDRESS be the same absolute number on every
-> > system.
-> > 
-> > hpa, is this close to what you had in mind? It would be prudent to
-> > verify whether this will suit well with the kexec virtual space layout
-> > though...
-> > 
+Hi,
+
+On Tue, Jun 18, 2013 at 11:22:13AM +0100, Lorenzo Pieralisi wrote:
+> Hi Olof,
 > 
-> This would work really well, I think.  The tricky part here is to pick a
-> safe EFI_HIGHEST_ADDRESS as it is an ABI.
+> thanks a lot.
 > 
-> My preference would be to make EFI_HIGHEST_ADDRESS = -4 GB, which is
-> *not* what Windows uses, but will leave the high negative range clear,
-> and allows a range where we can grow down without much risk of
-> interfering with anything else.
+> On Mon, Jun 17, 2013 at 06:44:51PM +0100, Olof Johansson wrote:
+> > 
+> > Sorry, I got to think of this over the weekend and should have replied
+> > before you had a chance to repost, but still:
+> > 
+> > Why is the operating point and frequency change code in this driver at all?
+> > Usually, the MFD driver contains a shared method to access register space on
+> > a multifunction device, but the actual operation of each subdevice is handled
+> > by individual drivers in the regular locations.
+> > 
+> > So, in the case of operating points and requencies, that should be in
+> > a cpufreq driver. And the clock setup should presumably be in a clk
+> > framework driver if needed.
+> 
+> Well, yes this can be done. I will probably move this code out of mfd
+> since this choice caused more issues than the current driver solves.
+> 
+> By moving the frequency changes into subsystems, we are certainly
+> trimming down the code, not sure we improve the maintainability though,
+> keep in mind that we already had to change the vexpress-config interface
+> to cope with SPC oddities, at least now these intricacies are self-contained.
 
-Hmm, cool. Let me see whether my primitive math still has it:
+Yes, I think it makes sense to split up the "mess", and not expose
+everybody to all of the quirks and complexities of the system design
+unless it makes sense to need to know about it at a particular layer of
+the driver stack.
 
--(4 << 30) = 0xffffffff00000000.
+> What you are suggesting makes sense though, I will do it.
 
-Staring at Documentation/x86/x86_64/mm.txt, that's right in the unused
-hole, sandwiched between:
+Ok, cool. I think Sam will be happy to see a smaller driver (and hopefully be
+quick at merging it) once that's done too. But it looks like it'd be 3.12
+material given the current phase of 3.10 and the fact that it'll take a while
+to do the refactoring.
 
-ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+> > Then all that would be left here is the functionality for submitting the two
+> > kinds of commands, and handling interrupts.
+> 
+> Not really. There are still a bunch of registers to set-up wake-up IRQs,
+> power down flags and warm-boot jump addresses that do not go through the
+> vexpress interface, they are ad-hoc. I could also split that stuff, but I
+> really do not think it is worth the effort.
 
-xxxxxxxxxxxxxxxx - ffffffff00000000 (=XX bits, not a lot :-), maybe 4, i.e. 64G) EFI
+It _sounds_ like you could be fine with moving direct access to those pieces of
+hardware out to the drivers that need to touch them. MFD is mostly about
+allowing a arbitration point for when multiple drivers need to syncronize
+and/or share an interface such as a mapped register bank or i2c device.
 
-ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
+> > That'll trim down the driver to a point where I think you'll find it much
+> > easier to get merged. :-)
+> 
+> To start with I have to understand in which directory this code should
+> live. Moving the frequency settings in clk/CPUfreq drivers should be
+> feasible with extra DT complexity for their bindings.
 
-Now, if we go and do that, what are we going to say for the lower bound,
-in case later someone wants to use some more of the rest of the unused
-hole? Should we limit it to say
+Yes, clock and cpufreq would go in their corresponding driver trees. I'll need
+to revisit the code a bit tomorrow to see what else would be left and where
+good homes for them would be.
 
-0xffffffff00000000 -
-0xfffffff000000000 = 64G max EFI mappable region.
 
-Or am I too generous? The remaining hole is around
 
-(0xfffffff000000000 - 0xffffeaffffffffff) >> 40 = 20TB.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+-Olof
