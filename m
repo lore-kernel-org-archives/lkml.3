@@ -1,157 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab3FUEDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 00:03:14 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:36684 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3FUEDM (ORCPT
+	id S1752524Ab3FUEKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 00:10:51 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:62536 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3FUEKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 00:03:12 -0400
+	Fri, 21 Jun 2013 00:10:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <51C20E8D.8040005@ti.com>
-References: <1367489937-30725-1-git-send-email-amit.daniel@samsung.com>
-	<51C20E8D.8040005@ti.com>
-Date: Fri, 21 Jun 2013 09:33:11 +0530
-X-Google-Sender-Auth: Q0jTG2loZdZG60GAWg5whqoiBsc
-Message-ID: <CADGdYn5MCRwK8cE9jUG73afaLQ7gp4+1BbiswY+vptVcXuPcvA@mail.gmail.com>
-Subject: Re: [PATCH V2] thermal: exynos: Support for TMU regulator defined at
- device tree
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
+In-Reply-To: <002001ce6e2e$623d7970$26b86c50$@samsung.com>
+References: <002001ce6e2e$623d7970$26b86c50$@samsung.com>
+Date: Fri, 21 Jun 2013 09:40:48 +0530
+Message-ID: <CAK9yfHxCy0JcvsFHo8gERefdiZhxi1J8MNALe5-g6ooTGR-QjA@mail.gmail.com>
+Subject: Re: [PATCH V9 1/4] pci: Add PCIe driver for Samsung Exynos
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Surendranath Gurivireddy Balla <suren.reddy@samsung.com>,
+        Siva Reddy Kallam <siva.kallam@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Mohit KUMAR <Mohit.KUMAR@st.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 1:33 AM, Eduardo Valentin
-<eduardo.valentin@ti.com> wrote:
-> On 02-05-2013 06:18, Amit Daniel Kachhap wrote:
->> TMU probe function now checks for a device tree defined regulator.
->> For compatibility reasons it is allowed to probe driver even without
->> this regulator defined.
->>
->> Signed-off-by: Luk asz Majewski <l.majewski@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Hi Jingoo,
+
+Some small corrections inline.
+
+On 21 June 2013 08:51, Jingoo Han <jg1.han@samsung.com> wrote:
+> Exynos5440 has a PCIe controller which can be used as Root Complex.
+> This driver supports a PCIe controller as Root Complex mode.
 >
-> I assume this one got superseeded by the same patch on your 30 patch
-> series, right?
-> https://patchwork.kernel.org/patch/2731031/
-Yes right. In my re-structuring patch series this one is included.
+> Signed-off-by: Surendranath Gurivireddy Balla <suren.reddy@samsung.com>
+> Signed-off-by: Siva Reddy Kallam <siva.kallam@samsung.com>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  .../devicetree/bindings/pci/designware-pcie.txt    |   73 ++
+>  drivers/pci/host/Kconfig                           |    9 +
+>  drivers/pci/host/Makefile                          |    1 +
+>  drivers/pci/host/pci-designware.c                  | 1057 ++++++++++++++++++++
+>  4 files changed, 1140 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pci/designware-pcie.txt
+>  create mode 100644 drivers/pci/host/pci-designware.c
 >
->
->> ---
->>
->> Changes in V2:
->> * Added log message in regulator_get failure as suggested by Sylwester.
->> * Used IS_ERR for checking regulator pointer as suggested by Sylwester.
->>
->> This patch is repost of the patch posted by Lukasz Majewski
->> (https://patchwork.kernel.org/patch/2488211/). I have rebased this
->> patch on top of my TMU re-structured patch series
->> (http://lwn.net/Articles/548634/). Although I thought of handling
->> regulator as one type of feature (newly added) but could not do
->> so as regulator is a board/platform property and not SOC property so
->> leaving the device tree to define and handle it.
->>
->>  .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
->>  drivers/thermal/samsung/exynos_tmu.c               |   19 +++++++++++++++++++
->>  2 files changed, 23 insertions(+), 0 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> index 970eeba..ff62f7a 100644
->> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> @@ -14,6 +14,9 @@
->>  - interrupts : Should contain interrupt for thermal system
->>  - clocks : The main clock for TMU device
->>  - clock-names : Thermal system clock name
->> +- vtmu-supply: This entry is optional and provides the regulator node supplying
->> +             voltage to TMU. If needed this entry can be placed inside
->> +             board/platform specific dts file.
->>
->>  Example 1):
->>
->> @@ -25,6 +28,7 @@ Example 1):
->>               clocks = <&clock 383>;
->>               clock-names = "tmu_apbif";
->>               status = "disabled";
->> +             vtmu-supply = <&tmu_regulator_node>;
->>       };
->>
->>  Example 2):
->> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->> index 72446c9..b7c609a 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.c
->> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> @@ -32,6 +32,7 @@
->>  #include <linux/of_address.h>
->>  #include <linux/of_irq.h>
->>  #include <linux/platform_device.h>
->> +#include <linux/regulator/consumer.h>
->>  #include <linux/slab.h>
->>  #include <linux/workqueue.h>
->>  #include "exynos_thermal_common.h"
->> @@ -52,6 +53,7 @@
->>   * @clk: pointer to the clock structure.
->>   * @temp_error1: fused value of the first point trim.
->>   * @temp_error2: fused value of the second point trim.
->> + * @regulator: pointer to the TMU regulator structure.
->>   * @reg_conf: pointer to structure to register with core thermal.
->>   */
->>  struct exynos_tmu_data {
->> @@ -65,6 +67,7 @@ struct exynos_tmu_data {
->>       struct mutex lock;
->>       struct clk *clk;
->>       u8 temp_error1, temp_error2;
->> +     struct regulator *regulator;
->>       struct thermal_sensor_conf *reg_conf;
->>  };
->>
->> @@ -501,10 +504,23 @@ static int exynos_map_dt_data(struct platform_device *pdev)
->>       struct exynos_tmu_data *data = platform_get_drvdata(pdev);
->>       struct exynos_tmu_platform_data *pdata = data->pdata;
->>       struct resource res;
->> +     int ret;
->>
->>       if (!data)
->>               return -ENODEV;
->>
->> +     /* Try enabling the regulator if found */
->> +     data->regulator = devm_regulator_get(&pdev->dev, "vtmu");
->> +     if (!IS_ERR(data->regulator)) {
->> +             ret = regulator_enable(data->regulator);
->> +             if (ret) {
->> +                     dev_err(&pdev->dev, "failed to enable vtmu\n");
->> +                     return ret;
->> +             }
->> +     } else {
->> +             dev_info(&pdev->dev, "Regulator node (vtmu) not found\n");
->> +     }
->> +
->>       data->id = of_alias_get_id(pdev->dev.of_node, "tmuctrl");
->>       if (data->id < 0)
->>               data->id = 0;
->> @@ -669,6 +685,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
->>
->>       clk_unprepare(data->clk);
->>
->> +     if (!IS_ERR(data->regulator))
->> +             regulator_disable(data->regulator);
->> +
->>       platform_set_drvdata(pdev, NULL);
->>
->>       return 0;
->>
->
->
-> --
-> You have got to be excited about what you are doing. (L. Lamport)
->
-> Eduardo Valentin
->
+> diff --git a/Documentation/devicetree/bindings/pci/designware-pcie.txt b/Documentation/devicetree/bindings/pci/designware-pcie.txt
+> new file mode 100644
+> index 0000000..e4681e6
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pci/designware-pcie.txt
+> @@ -0,0 +1,73 @@
+> +* Synopsis Designware PCIe interface
+> +
+> +Required properties:
+> +-compatible: should contain "snps,dw-pcie" to identify the
+> +       core, plus an identifier for the specific instance, such
+> +       as "samsung,exynos5440-pcie".
+> +-reg: base addresses and lengths of the pcie conteroller,
+
+s/conteroller/controller
+
+> +       the phy controller, additional register for the phy controller.
+> +- interrupts: interrupt values for level interrupt,
+> +       pulse interrupt, special interrupt.
+> +- clocks: from common clock binding: handle to pci clock.
+> +- clock-names: from common clock binding: Shall be "pcie", "pcie_bus".
+
+s/Shall be .../should be "pcie" and "pcie_bus".
+
+[snip]
+
+> +
+> +MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
+> +MODULE_DESCRIPTION("Samsung PCIe host controller driver");
+> +MODULE_LICENSE("GPLv2");
+
+I think this should be "GPL v2"  (with a space between GPL and v2).
+
+
+-- 
+With warm regards,
+Sachin
