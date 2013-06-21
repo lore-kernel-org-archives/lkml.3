@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423494Ab3FURSQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:18:16 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:49473 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423152Ab3FURSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:18:14 -0400
-Message-ID: <51C48ADD.207@sgi.com>
-Date: Fri, 21 Jun 2013 12:18:21 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1423404Ab3FURWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 13:22:04 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53564 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423122Ab3FURWC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 13:22:02 -0400
+Message-ID: <51C48B5A.2040404@ti.com>
+Date: Fri, 21 Jun 2013 13:20:26 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, <holt@sgi.com>, <travis@sgi.com>,
-        <rob@landley.net>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <yinghai@kernel.org>, <akpm@linux-foundation.org>, <x86@kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com>
-In-Reply-To: <51C48745.9030304@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, <robherring2@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Vineet Gupta <vgupta@synopsys.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <x86@kernel.org>, <arm@kernel.org>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-c6x-dev@linux-c6x.org>,
+        <linux-mips@linux-mips.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-xtensa@linux-xtensa.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH] of: Specify initrd location using 64-bit
+References: <1371775956-16453-1-git-send-email-santosh.shilimkar@ti.com> <51C4171C.9050908@linutronix.de>
+In-Reply-To: <51C4171C.9050908@linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.140]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 12:03 PM, H. Peter Anvin wrote:
-> On 06/21/2013 09:51 AM, Greg KH wrote:
->> On Fri, Jun 21, 2013 at 11:25:32AM -0500, Nathan Zimmer wrote:
->>> This rfc patch set delays initializing large sections of memory until we have
->>> started cpus.  This has the effect of reducing startup times on large memory
->>> systems.  On 16TB it can take over an hour to boot and most of that time
->>> is spent initializing memory.
->>>
->>> We avoid that bottleneck by delaying initialization until after we have
->>> started multiple cpus and can initialize in a multithreaded manner.
->>> This allows us to actually reduce boot time rather then just moving around
->>> the point of initialization.
->>>
->>> Mike and I have worked on this set for a while, with him doing the most of the
->>> heavy lifting, and are eager for some feedback.
->> Why make this a config option at all, why not just always do this if the
->> memory size is larger than some specific number (like 8TB?)
->>
->> Otherwise the distros will always enable this option, and having it be a
->> configuration choice doesn't make any sense.
->>
-> Since you made it a compile time option, it would be good to know how
-> much code it adds, but otherwise I agree with Greg here... this really
-> shouldn't need to be an option.  It *especially* shouldn't need to be a
-> hand-set runtime option (which looks quite complex, to boot.)
-The patchset as a whole is just over 400 lines so it doesn't add alot.
-If I were to pull the .config option it would probably remove 30 lines.
+On Friday 21 June 2013 05:04 AM, Sebastian Andrzej Siewior wrote:
+> On 06/21/2013 02:52 AM, Santosh Shilimkar wrote:
+>> diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
+>> index 0a2c68f..62e2e8f 100644
+>> --- a/arch/microblaze/kernel/prom.c
+>> +++ b/arch/microblaze/kernel/prom.c
+>> @@ -136,8 +136,7 @@ void __init early_init_devtree(void *params)
+>>  }
+>>  
+>>  #ifdef CONFIG_BLK_DEV_INITRD
+>> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
+>> -		unsigned long end)
+>> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+>>  {
+>>  	initrd_start = (unsigned long)__va(start);
+>>  	initrd_end = (unsigned long)__va(end);
+> 
+> I think it would better to go here for phys_addr_t instead of u64. This
+> would force you in of_flat_dt_match() to check if the value passed from
+> DT specifies a memory address outside of 32bit address space and the
+> kernel can't deal with this because its phys_addr_t is 32bit only due
+> to a Kconfig switch.
+> 
+> For x86, the initrd has to remain in the 32bit address space so passing
+> the initrd in the upper range would violate the ABI. Not sure if this
+> is true for other archs as well (ARM obviously not).
+> 
+That pretty much means phys_addr_t. It will work for me as well but
+in last thread from consistency with memory and reserved node, Rob
+insisted to keep it as u64. So before I re-spin another version,
+would like to here what Rob has to say considering the x86 requirement.
 
-The command line option is too complex but some of the data I haven't 
-found a way
-to get at runtime yet.
+Rob,
+Are you ok with phys_addr_t since your concern was about rest
+of the memory specific bits of the device-tree code use u64 ?
 
+Regards,
+Santosh
 
->
-> I suspect the cutoff for this should be a lot lower than 8 TB even, more
-> like 128 GB or so.  The only concern is to not set the cutoff so low
-> that we can end up running out of memory or with suboptimal NUMA
-> placement just because of this.
-Even at lower amounts of ram there is an positive impact.I it knocks 
-time off
-boot even at as small as a 1TB of ram.
-
-> Also, in case it is not bloody obvious: whatever memory the kernel image
-> was loaded into MUST be considered "online", even if it is loaded way high.
->
-> 	-hpa
->
->
->
->
-
-
-Ok
