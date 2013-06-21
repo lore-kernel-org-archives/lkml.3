@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423595Ab3FUUsP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 16:48:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47919 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423350Ab3FUUsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 16:48:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,915,1363158000"; 
-   d="scan'208";a="320749277"
-Message-ID: <51C4BC09.3000708@linux.intel.com>
-Date: Fri, 21 Jun 2013 13:48:09 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1946036Ab3FUVAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:00:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41506 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945933Ab3FUVAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:00:44 -0400
+Date: Fri, 21 Jun 2013 23:00:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v4] clocksource:arm_global_timer: Add ARM global timer
+ support.
+In-Reply-To: <51C4913F.2020608@codeaurora.org>
+Message-ID: <alpine.DEB.2.02.1306212250450.4013@ionos.tec.linutronix.de>
+References: <1371820267-12099-1-git-send-email-srinivas.kandagatla@st.com> <alpine.DEB.2.02.1306211634510.4013@ionos.tec.linutronix.de> <51C4913F.2020608@codeaurora.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Re: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
- from apic.c to irq.c
-References: <1371835898.18733.122.camel@gandalf.local.home>
-In-Reply-To: <1371835898.18733.122.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 10:31 AM, Steven Rostedt wrote:
-> 
-> Peter,
-> 
-> I noticed that you pulled in Seiji's patches into tip. Last night I was
-> running my test suite on them, and this morning they showed the
-> following compile bug. I found the fix and attached it below. I pushed
-> it into my tree that's based on your x86/trace branch, for your
-> convenience.
-> 
-> My testing also triggered another bug, but I'm not sure it's related to
-> these patches or something that already existed. I'm currently
-> investigating it now.
-> 
-> -- Steve
-> 
-> 
-> Please pull the latest tip/x86/trace tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> tip/x86/trace
-> 
-> Head SHA1: 83ab85140bc1492f92de263a1c30ea04a0f465f7
-> 
+On Fri, 21 Jun 2013, Stephen Boyd wrote:
 
-Thanks, pulled!
+> On 06/21/13 08:56, Thomas Gleixner wrote:
+> >
+> >> +static irqreturn_t gt_clockevent_interrupt(int irq, void *dev_id)
+> >> +{
+> >> +	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
+> > What kind of construct is this?
+> >
+> > You are using request_percpu_irq() and the device id is pointing to
+> > per cpu memory. Why do you need this horrible pointer indirection?
+> >
+> > Because a lot of other ARM code uses the same broken construct?
+> 
+> This is an artifact of the ARM local timer API. I have been trying for a
 
-	-hpa
+No, it's not an artifact. It's a copy and paste issue. Looking at
+drivers/clocksource/arm_arch_timer.c
+
+        arch_timer_evt = alloc_percpu(struct clock_event_device);
+...
+	err = request_percpu_irq(ppi, arch_timer_handler_virt,
+                                 "arch_timer", arch_timer_evt);
+
+This code is correct and it does not need any of the changes.
+
+Doing it with the pointer madness is just wrong, nothing else. Even if
+there is a historic reason why the pointer juggling was necessary at
+some point, it's obviously not needed anymore.
+
+And historic crap is no justification for brainlessly copied code.
+
+Thanks,
+
+	tglx
 
 
