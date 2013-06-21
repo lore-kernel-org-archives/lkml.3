@@ -1,198 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422809Ab3FUCBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 22:01:49 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:47512 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422651Ab3FUCBr (ORCPT
+	id S1422843Ab3FUCF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 22:05:29 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:3450 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965573Ab3FUCF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 22:01:47 -0400
+	Thu, 20 Jun 2013 22:05:28 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C3B4B4.90603@asianux.com>
+Date: Fri, 21 Jun 2013 10:04:36 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <51C20CCC.3060502@ti.com>
-References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com>
-	<1371451599-31035-9-git-send-email-amit.daniel@samsung.com>
-	<51C20CCC.3060502@ti.com>
-Date: Fri, 21 Jun 2013 07:31:46 +0530
-X-Google-Sender-Auth: D-LUNezTNWFIPt3iaLX4EUJR9y4
-Message-ID: <CADGdYn6FHXd2YELP1z9zbqnf3Yd0PG0svaz7V6w9NYO3xSW8PQ@mail.gmail.com>
-Subject: Re: [PATCH V6 08/30] thermal: exynos: Add missing definations and
- code cleanup
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, jonghwa3.lee@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] kernel/itimer.c: beautify code, not need check 'value',
+ so save one instruction, simpler and easier for readers.
+References: <51C2E6F9.80107@asianux.com> <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
 
-On Thu, Jun 20, 2013 at 1:25 AM, Eduardo Valentin
-<eduardo.valentin@ti.com> wrote:
-> On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
->> This patch adds some extra register bitfield definations and cleans
->> up the code to prepare for moving register macros and definations inside
->> the TMU data section.
->>
->> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
->> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->> ---
->>  drivers/thermal/samsung/exynos_tmu.c |   62 +++++++++++++++++++++++++---------
->>  1 files changed, 46 insertions(+), 16 deletions(-)
->>
->> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->> index 5df04a1..fa33a48 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.c
->> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> @@ -43,9 +43,12 @@
->>
->>  #define EXYNOS_TMU_TRIM_TEMP_MASK    0xff
->>  #define EXYNOS_TMU_GAIN_SHIFT                8
->> +#define EXYNOS_TMU_GAIN_MASK         0xf
->>  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT 24
->> -#define EXYNOS_TMU_CORE_ON           3
->> -#define EXYNOS_TMU_CORE_OFF          2
->> +#define EXYNOS_TMU_REF_VOLTAGE_MASK  0x1f
->> +#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK        0xf
->> +#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT       8
->> +#define EXYNOS_TMU_CORE_EN_SHIFT     0
->>  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET   50
->>
->>  /* Exynos4210 specific registers */
->> @@ -63,6 +66,7 @@
->>  #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK      0x10
->>  #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK      0x100
->>  #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK      0x1000
->> +#define EXYNOS4210_TMU_TRIG_LEVEL_MASK       0x1111
->>  #define EXYNOS4210_TMU_INTCLEAR_VAL  0x1111
->>
->>  /* Exynos5250 and Exynos4412 specific registers */
->> @@ -72,17 +76,30 @@
->>  #define EXYNOS_EMUL_CON              0x80
->>
->>  #define EXYNOS_TRIMINFO_RELOAD               0x1
->> +#define EXYNOS_TRIMINFO_SHIFT                0x0
->> +#define EXYNOS_TMU_RISE_INT_MASK     0x111
->> +#define EXYNOS_TMU_RISE_INT_SHIFT    0
->> +#define EXYNOS_TMU_FALL_INT_MASK     0x111
->> +#define EXYNOS_TMU_FALL_INT_SHIFT    12
->>  #define EXYNOS_TMU_CLEAR_RISE_INT    0x111
->>  #define EXYNOS_TMU_CLEAR_FALL_INT    (0x111 << 12)
->> -#define EXYNOS_MUX_ADDR_VALUE                6
->> -#define EXYNOS_MUX_ADDR_SHIFT                20
->>  #define EXYNOS_TMU_TRIP_MODE_SHIFT   13
->> +#define EXYNOS_TMU_TRIP_MODE_MASK    0x7
->> +
->> +#define EXYNOS_TMU_INTEN_RISE0_SHIFT 0
->> +#define EXYNOS_TMU_INTEN_RISE1_SHIFT 4
->> +#define EXYNOS_TMU_INTEN_RISE2_SHIFT 8
->> +#define EXYNOS_TMU_INTEN_RISE3_SHIFT 12
->> +#define EXYNOS_TMU_INTEN_FALL0_SHIFT 16
->> +#define EXYNOS_TMU_INTEN_FALL1_SHIFT 20
->> +#define EXYNOS_TMU_INTEN_FALL2_SHIFT 24
->>
->>  #define EFUSE_MIN_VALUE 40
->>  #define EFUSE_MAX_VALUE 100
->>
->>  #ifdef CONFIG_THERMAL_EMULATION
->>  #define EXYNOS_EMUL_TIME     0x57F0
->> +#define EXYNOS_EMUL_TIME_MASK        0xffff
->>  #define EXYNOS_EMUL_TIME_SHIFT       16
->>  #define EXYNOS_EMUL_DATA_SHIFT       8
->>  #define EXYNOS_EMUL_DATA_MASK        0xFF
->> @@ -261,24 +278,37 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
->>       mutex_lock(&data->lock);
->>       clk_enable(data->clk);
->>
->> -     con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
->> -             pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
->> +     con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
->>
->> -     if (data->soc == SOC_ARCH_EXYNOS) {
->> -             con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
->> -             con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
->> +     if (pdata->reference_voltage) {
->> +             con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
->> +                             EXYNOS_TMU_REF_VOLTAGE_SHIFT);
->> +             con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
->> +     }
->> +
->> +     if (pdata->gain) {
->> +             con &= ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
->> +             con |= (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
->> +     }
->> +
->> +     if (pdata->noise_cancel_mode) {
->> +             con &= ~(EXYNOS_TMU_TRIP_MODE_MASK <<
->> +                                     EXYNOS_TMU_TRIP_MODE_SHIFT);
->> +             con |= (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
->>       }
->>
->>       if (on) {
->> -             con |= EXYNOS_TMU_CORE_ON;
->
->
->
-> Before, in order to turn core on you had:
->         con = con | 3;
->
-> now you do:
->         con = con | (1 << 0);
->
-> To me, before you would set bit 1 and 0, now you set bit 0.
->
->
->> -             interrupt_en = pdata->trigger_level3_en << 12 |
->> -                     pdata->trigger_level2_en << 8 |
->> -                     pdata->trigger_level1_en << 4 |
->> -                     pdata->trigger_level0_en;
->> +             con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
->> +             interrupt_en =
->> +             pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
->> +             pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
->> +             pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
->> +             pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
->>               if (pdata->threshold_falling)
->> -                     interrupt_en |= interrupt_en << 16;
->> +                     interrupt_en |=
->> +                             interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
->>       } else {
->> -             con |= EXYNOS_TMU_CORE_OFF;
->> +             con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
->
->
-> Before, in order to turno core off you had:
->         con = con | 2;
->
-> now you do:
->         con = con & ~(1 << 0);
->
-> To me, before you would set bit 2, now you clear bit 0.
->
-> Using the approach on this patch looks correct to me if you have 1 bit
-> core_en for instance.
->
-> so, Is this a fix?
->
-> Just to be clear, is this what you want ?
-Yes you are right. Bit 0 is the actual enable bit. Bit 1 is the
-reserve bit and its default value is 1. Earlier both bits are used to
-turn on/off the controller which was wrong so this patch rectifies it.
+Firstly, I guess:
 
-Thanks,
-Amit
->
->>               interrupt_en = 0; /* Disable all interrupts */
->>       }
->>       writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
->>
->
->
-> --
-> You have got to be excited about what you are doing. (L. Lamport)
->
-> Eduardo Valentin
->
+  since you can spend your time resource to reply, that means "you also
+think this patch is valuable, but the comments need improving"
+
+Is it correct ?
+
+
+On 06/20/2013 09:42 PM, Thomas Gleixner wrote:
+> On Thu, 20 Jun 2013, Chen Gang wrote:
+> 
+> kernel/itimer.c: beautify code, not need check 'value', so 
+>           save one instruction, simpler and easier for readers.
+> 
+> That's an essay and not a proper subject line for a patch. 
+> 
+> See Documentation/SubmittingPatches and look at the other patch
+> subject lines in git log.
+> 
+
+How about "kernel/itimer.c: remove the checking 'value' statement".
+
+Or please provide your samples for the subject.
+
+
+>> > Since copy_to_user() will check 'value', we do not need check it outside
+>> > again,  so can save one comparing instruction at least.
+> copy_to_user() does not check value, it will fault due to a NULL
+> pointer dereference and execute the exception fixup. 
+> 
+
+Change it to:
+
+Since copy_to_user() will process "bad address" internally, we need not
+check 'value' again, then can save one comparing instruction at least.
+
+
+> That's a massive difference which wants to be documented and argued
+> why it's ok to do so.
+> 
+> Aside of that, please line break the changelog lines around 78
+> characters.
+> 
+
+I use Thunderbird mail client, enable world wrap, is it OK ?
+
+
+>> > Also can let code simpler and easier for readers: if checking parameter
+>> > 'value', it will easily lead readers to think about why not return
+>> > -EINVAL instead of -EFAULT, when checking parameter failed.
+> So you are seriously claiming, that the check for !value makes people
+> think that the return value should be -EINVAL?
+> 
+> That's hillarious.
+> 
+
+That seems not a quite polite word, is it ?  ;-)
+
+
+> Can you please start to think about, why YOU thought that returning
+> -EINVAL is the proper return value for that case?
+> 
+
+If you check the parameter, and find it invalid, and want to return with
+failure, every one can assume you want to return -EINVAL.
+
+Hmm... in some of embedded system which NOMMU, 'NULL' does not means
+"bad address" (at least can write).
+
+
+> Simply because in your rush to submit patches according to your self
+> defined contribution plan, you fail to sit down and carefully study
+> the code and the according documentation (man page). Instead of that
+> you see some random snippet of code which looks wrong to you and you
+> send out patches without care. After someone points out your failure
+> you claim that the code is misleading to readers.
+> 
+> The code is not misleading to careful readers, it's only misleading to
+> sloppy readers.
+> 
+
+Do you mean this patch can not make the code simpler and clearer ?
+
+I guess, that is not your meaning, so how about this improving:
+
+"after remove the code, also can let it simpler and clearer for readers"
+
+Is it OK ?
+
+> And I'm neither accepting sloppy patches nor am I accepting sloppy
+> changelogs which make false claims.
+> 
+
+That is one of the reason for why we need reviewer, the work flow need
+be "providing patch --> review --> apply".
+
+
+BTW: Can you guess how many my patches have been applied by upstream,
+since this year ?  That seems most of appliers are very polite, I wish
+that will include you. ;-)
+
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
