@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422941Ab3FUNCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 09:02:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34896 "EHLO mx1.redhat.com"
+	id S965930Ab3FUM66 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 08:58:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23873 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965939Ab3FUM67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 08:58:59 -0400
+	id S965822Ab3FUM6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 08:58:54 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
 Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
@@ -15,103 +15,88 @@ Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
         linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v4 04/14] locks: comment cleanups and clarifications
-Date: Fri, 21 Jun 2013 08:58:12 -0400
-Message-Id: <1371819502-26363-5-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v4 02/14] cifs: use posix_unblock_lock instead of locks_delete_block
+Date: Fri, 21 Jun 2013 08:58:10 -0400
+Message-Id: <1371819502-26363-3-git-send-email-jlayton@redhat.com>
 In-Reply-To: <1371819502-26363-1-git-send-email-jlayton@redhat.com>
 References: <1371819502-26363-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c         |   21 +++++++++++++--------
- include/linux/fs.h |   18 ++++++++++++++++++
- 2 files changed, 31 insertions(+), 8 deletions(-)
+commit 66189be74 (CIFS: Fix VFS lock usage for oplocked files) exported
+the locks_delete_block symbol. There's already an exported helper
+function that provides this capability however, so make cifs use that
+instead and turn locks_delete_block back into a static function.
 
+Note that if fl->fl_next == NULL then this lock has already been through
+locks_delete_block(), so we should be OK to ignore an ENOENT error here
+and simply not retry the lock.
+
+Cc: Pavel Shilovsky <piastryyy@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: J. Bruce Fields <bfields@fieldses.org>
+---
+ fs/cifs/file.c     |    2 +-
+ fs/locks.c         |    3 +--
+ include/linux/fs.h |    5 -----
+ 3 files changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 48b29d2..1686e40 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -999,7 +999,7 @@ try_again:
+ 		rc = wait_event_interruptible(flock->fl_wait, !flock->fl_next);
+ 		if (!rc)
+ 			goto try_again;
+-		locks_delete_block(flock);
++		posix_unblock_lock(flock);
+ 	}
+ 	return rc;
+ }
 diff --git a/fs/locks.c b/fs/locks.c
-index 804bb9e..ddeab49 100644
+index 72fb2b7..d732e22 100644
 --- a/fs/locks.c
 +++ b/fs/locks.c
-@@ -518,9 +518,10 @@ static void locks_insert_block(struct file_lock *blocker,
- 		list_add(&waiter->fl_link, &blocked_list);
- }
+@@ -496,13 +496,12 @@ static void __locks_delete_block(struct file_lock *waiter)
  
--/* Wake up processes blocked waiting for blocker.
-- * If told to wait then schedule the processes until the block list
-- * is empty, otherwise empty the block list ourselves.
-+/*
-+ * Wake up processes blocked waiting for blocker.
-+ *
-+ * Must be called with the file_lock_lock held!
+ /*
   */
- static void locks_wake_up_blocks(struct file_lock *blocker)
+-void locks_delete_block(struct file_lock *waiter)
++static void locks_delete_block(struct file_lock *waiter)
  {
-@@ -806,6 +807,11 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 	}
- 
  	lock_flocks();
-+	/*
-+	 * New lock request. Walk all POSIX locks and look for conflicts. If
-+	 * there are any, either return error or put the request on the
-+	 * blocker's list of waiters and the global blocked_list.
-+	 */
- 	if (request->fl_type != F_UNLCK) {
- 		for_each_lock(inode, before) {
- 			fl = *before;
-@@ -844,7 +850,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 		before = &fl->fl_next;
- 	}
+ 	__locks_delete_block(waiter);
+ 	unlock_flocks();
+ }
+-EXPORT_SYMBOL(locks_delete_block);
  
--	/* Process locks with this owner.  */
-+	/* Process locks with this owner. */
- 	while ((fl = *before) && posix_same_owner(request, fl)) {
- 		/* Detect adjacent or overlapping regions (if same lock type)
- 		 */
-@@ -930,10 +936,9 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 	}
- 
- 	/*
--	 * The above code only modifies existing locks in case of
--	 * merging or replacing.  If new lock(s) need to be inserted
--	 * all modifications are done bellow this, so it's safe yet to
--	 * bail out.
-+	 * The above code only modifies existing locks in case of merging or
-+	 * replacing. If new lock(s) need to be inserted all modifications are
-+	 * done below this, so it's safe yet to bail out.
- 	 */
- 	error = -ENOLCK; /* "no luck" */
- 	if (right && left == right && !new_fl2)
+ /* Insert waiter into blocker's block list.
+  * We use a circular list so that processes can be easily woken up in
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index cabc08a..cba0fb5 100644
+index 9f160c6..cabc08a 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -926,6 +926,24 @@ int locks_in_grace(struct net *);
- /* that will die - we need it for nfs_lock_info */
- #include <linux/nfs_fs_i.h>
+@@ -1006,7 +1006,6 @@ extern int vfs_setlease(struct file *, long, struct file_lock **);
+ extern int lease_modify(struct file_lock **, int);
+ extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
+ extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
+-extern void locks_delete_block(struct file_lock *waiter);
+ extern void lock_flocks(void);
+ extern void unlock_flocks(void);
+ #else /* !CONFIG_FILE_LOCKING */
+@@ -1150,10 +1149,6 @@ static inline int lock_may_write(struct inode *inode, loff_t start,
+ 	return 1;
+ }
  
-+/*
-+ * struct file_lock represents a generic "file lock". It's used to represent
-+ * POSIX byte range locks, BSD (flock) locks, and leases. It's important to
-+ * note that the same struct is used to represent both a request for a lock and
-+ * the lock itself, but the same object is never used for both.
-+ *
-+ * FIXME: should we create a separate "struct lock_request" to help distinguish
-+ * these two uses?
-+ *
-+ * The i_flock list is ordered by:
-+ *
-+ * 1) lock type -- FL_LEASEs first, then FL_FLOCK, and finally FL_POSIX
-+ * 2) lock owner
-+ * 3) lock range start
-+ * 4) lock range end
-+ *
-+ * Obviously, the last two criteria only matter for POSIX locks.
-+ */
- struct file_lock {
- 	struct file_lock *fl_next;	/* singly linked list for this inode  */
- 	struct list_head fl_link;	/* doubly linked list of all locks */
+-static inline void locks_delete_block(struct file_lock *waiter)
+-{
+-}
+-
+ static inline void lock_flocks(void)
+ {
+ }
 -- 
 1.7.1
 
