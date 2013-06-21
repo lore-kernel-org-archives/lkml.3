@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086Ab3FUMtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 08:49:25 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52531 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278Ab3FUMtY (ORCPT
+	id S965806Ab3FUMua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 08:50:30 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:65150 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab3FUMu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 08:49:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 0/3] ARM: ux500: mop500_snowball_ethernet_clock_enable() removal
-Date: Fri, 21 Jun 2013 14:48:50 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-References: <1371545519-27119-1-git-send-email-lee.jones@linaro.org> <CACRpkdbpTMm8FG6KSwvq_7BQRGZ0P=PHHb+WikfRE6JqHv8xpw@mail.gmail.com>
-In-Reply-To: <CACRpkdbpTMm8FG6KSwvq_7BQRGZ0P=PHHb+WikfRE6JqHv8xpw@mail.gmail.com>
+	Fri, 21 Jun 2013 08:50:29 -0400
+Date: Fri, 21 Jun 2013 14:50:20 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix output directory of Documentation/
+Message-ID: <20130621124939.GB11635@rric.localhost>
+References: <1367865614-30876-1-git-send-email-rric@kernel.org>
+ <20130620134154.GC1083@krava.brq.redhat.com>
+ <20130620152603.GC4767@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306211448.50709.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZC1cnCbqFpN4DyFqCZ/pHmjVz6do6k/zCwUAhZJ9S9Q
- 004X+mGSX2rK+gWt1uAkWqp6GyHaO2YOyEYgNYxbBrM8cTfII5
- MsU1V1SobNRdIryTVxtPL5ry4IEaCQ8QeWQbDS6JyvgBeijOcs
- Iy3hBIGddcIc2Vb5o6BunENNBLpxv3OsuLorsYbsKd9r7ljG21
- /4+pBzA3U3hA1eivvF7amzJ+c93HvjDuSJTqpvwmnb3QKwZBjU
- Bx1Lck/GTFxAWLo3Ziruj9lJXBPpW7XW/giOrvalBP0puM/lKi
- 9GmlIWUGWqXn/imPYD9CExLS71yZnvxcBzKFjF+ifraSBfq4xT
- jzU1A9IlgeVV5wF8N3jw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130620152603.GC4767@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 June 2013, Linus Walleij wrote:
-> On Tue, Jun 18, 2013 at 10:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > As requested by you, this gets rid of  mop500_snowball_ethernet_clock_enable()
-> > which is no longer in use. It also straightens out a bug which ensures the
-> > SMSC911x's regulator is turned on at start-up when using Device Tree.
-> >
-> > This is based on your test-merge-20130615 branch.
-> 
-> All are Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> I suggest the ARM SoC folks merge these three patches directly.
-> I've queued 1/3 and 2/3 on my devicetree branch so they won't
-> be lost, but 3/3 does not apply on any of my branches, it
-> needs to be applied directly on some ARM SoC baseline.
-> 
+Jiri and Arnaldo,
 
-Applied to next/drivers, thanks!
+On 20.06.13 12:26:03, Arnaldo Carvalho de Melo wrote:
+> Robert, so this one is with:
+> 
+> 	cd tools/perf
+> 	make install-doc
+> 
+> I tested with:
+> 
+> 	make -C tools/perf O=/tmp/build/perf install-doc
+> 
+> and it works, so it is just the in tree build that fails.
 
-	Arnd
+The patch below fixes this. Thanks for reporting.
+
+-Robert
+
+
+>From 69714303856005a1dc84c0594a4c3ec1013f8a80 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@calxeda.com>
+Date: Fri, 21 Jun 2013 14:26:44 +0200
+Subject: [PATCH] perf tools: Fixing in-tree documentation build error
+
+Fixing build error for:
+
+ $ cd tools/perf
+ $ make install-doc
+
+The following patch changed handling of the OUTPUT variable:
+
+ 79e10cb perf tools: Fix output directory of Documentation/
+
+Now, OUTPUT is unset if the build directory is the current working dir
+which is the usual case for kbuild. The xmlto rule could not handle
+this. This patch fixes this.
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Robert Richter <robert.richter@calxeda.com>
+Signed-off-by: Robert Richter <rric@kernel.org>
+---
+ tools/perf/Documentation/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
+index 1368e88..5a37a7c 100644
+--- a/tools/perf/Documentation/Makefile
++++ b/tools/perf/Documentation/Makefile
+@@ -271,7 +271,7 @@ $(MAN_HTML): $(OUTPUT)%.html : %.txt
+ 
+ $(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
+ 	$(QUIET_XMLTO)$(RM) $@ && \
+-	$(XMLTO) -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
++	$(XMLTO) -o $(OUTPUT). -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
+ 
+ $(OUTPUT)%.xml : %.txt
+ 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
+-- 
+1.7.7.6
+
