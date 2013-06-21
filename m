@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab3FUGwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:52:20 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:55390 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab3FUGwT (ORCPT
+	id S1758623Ab3FUGxT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:53:19 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:62343 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758607Ab3FUGxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:52:19 -0400
-Message-ID: <51C3F81F.5090005@hitachi.com>
-Date: Fri, 21 Jun 2013 15:52:15 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 21 Jun 2013 02:53:18 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Mu0qZTUYwi3xFp2lMupXE
+Date: Thu, 20 Jun 2013 23:53:10 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Suman Anna <s-anna@ti.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the mailbox
+ tree
+Message-ID: <20130621065310.GK5523@atomide.com>
+References: <20130621162656.bb94e0fa8b6813781b804a73@canb.auug.org.au>
+ <20130621164149.598b39bb78b6015057d03f6f@canb.auug.org.au>
 MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] tracing: simplify event_enable_read()
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com> <5e57e22fc06131f05c010c044680d56b6d7dc3c9.1371751701.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <5e57e22fc06131f05c010c044680d56b6d7dc3c9.1371751701.git.tom.zanussi@linux.intel.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130621164149.598b39bb78b6015057d03f6f@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/21 3:31), Tom Zanussi wrote:
-> Rather than enumerating each permutation, build the enable state
-> string up from the combination of states.  This also allows for the
-> simpler addition of more states.
+* Stephen Rothwell <sfr@canb.auug.org.au> [130620 23:48]:
+> Hi all,
 > 
-> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
-
-Looks nicer for me :)
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thanks,
-
-> ---
->  kernel/trace/trace_events.c | 20 ++++++++++----------
->  1 file changed, 10 insertions(+), 10 deletions(-)
+> On Fri, 21 Jun 2013 16:26:56 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > drivers/mailbox/Kconfig between commit a1824eaab70f ("mailbox: OMAP:
+> > introduce mailbox framework") from the mailbox tree and commit
+> > c869c75c16b3 ("mailbox/omap: move the OMAP mailbox framework to drivers")
+> > from the arm-soc tree.
+> > 
+> > I fixed it up (I suspect not properly - see below) and can carry the fix
+> > as necessary (no action is required).
+> > 
+> > It looks like we have two different versions of these changes in
+> > linux-next now, so please clean it all up.  i.e. can I just drop the
+> > mailbox tree now?
 > 
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 27963e2..ecb2609 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -624,17 +624,17 @@ event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
->  		  loff_t *ppos)
->  {
->  	struct ftrace_event_file *file = filp->private_data;
-> -	char *buf;
-> +	char buf[4] = "0";
->  
-> -	if (file->flags & FTRACE_EVENT_FL_ENABLED) {
-> -		if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED)
-> -			buf = "0*\n";
-> -		else if (file->flags & FTRACE_EVENT_FL_SOFT_MODE)
-> -			buf = "1*\n";
-> -		else
-> -			buf = "1\n";
-> -	} else
-> -		buf = "0\n";
-> +	if (file->flags & FTRACE_EVENT_FL_ENABLED &&
-> +	    !(file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
-> +		strcpy(buf, "1");
-> +
-> +	if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED ||
-> +	    file->flags & FTRACE_EVENT_FL_SOFT_MODE)
-> +		strcat(buf, "*");
-> +
-> +	strcat(buf, "\n");
->  
->  	return simple_read_from_buffer(ubuf, cnt, ppos, buf, strlen(buf));
->  }
-> 
+> OK, things went steeply downhill from here, so I went back and removed
+> the mailbox tree ...
 
+I think Olof dropped the earlier version of the mailbox branch, and
+remerged the updated mailbox branch. So if there was also yet another
+mailbox branch being pulled into Linux next, then yes, dropping it is
+the way to go.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Regards,
 
-
+Tony
