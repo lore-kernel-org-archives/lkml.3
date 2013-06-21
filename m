@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965812Ab3FUD0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 23:26:17 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:52458 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965601Ab3FUD0O (ORCPT
+	id S1422962Ab3FUDeC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 23:34:02 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:34077 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422652Ab3FUDeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 23:26:14 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-b2-51c3c7d5ed70
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH V9 4/4] ARM: dts: Add pcie controller node for
- exynos5440-ssdk5440
-Date: Fri, 21 Jun 2013 12:26:13 +0900
-Message-id: <002401ce6e2f$14c20160$3e460420$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5uLw1iKbjar6HPR5ePTc4nM6HAKA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t8zA92rxw8HGry8rWDR/H87q8XfScfY
-	LZY0ZVi8PKRpcWD2Q1aLV2c2sllcXniJ1eL7DVOL3gVX2Sw2Pb7GanF51xw2i7PzjrNZzDi/
-	j8li49RfjBbtl5QtVjRtZbRYfHE5s8X6Ga9ZLHavXMJicWzGEkaLpw+amBxEPdbMW8Po8fvX
-	JEaPvilX2TyebLrI6LFgU6nHnWt72Dw2L6n3OD9jIaPH9x29QAVbVjF6/Hyp4/H0x15mj8+b
-	5AJ4o7hsUlJzMstSi/TtErgyNn/Yz1bwlLPi5dO1rA2M/9m7GDk4JARMJE7Oyu1i5AQyxSQu
-	3FvP1sXIxSEksIxRYtbKXewQCROJbz9bmSASixgl/q84ywrh/GKU+Lp1PyNIFZuAmsSXL4fB
-	OkQE/CWuXW1lASliFuhgk9g0bxMrSEJYIESi/8BXFhCbRUBV4uW7+YwgZ/AKWEr822ULEuYV
-	EJT4MfkeWAmzgJbE+p3HmSBseYnNa94yQ1ykILHj7GtGiF16EjcOXISqEZHY9+IdI8heCYE3
-	HBLbD69ngtglIPFt8iEWiJdlJTYdgJojKXFwxQ2WCYxis5CsnoVk9Swkq2chWbGAkWUVo2hq
-	QXJBcVJ6kYlecWJucWleul5yfu4mRkhymbCD8d4B60OMyUDrJzJLiSbnA5NTXkm8obGZkYWp
-	iamxkbmlGWnCSuK86i3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYLaZ4LX5quk7QQTOQ
-	4fjVr4ICez+WbprRL/1XNW3apuce+ZGsL65wLVwz+Z3uk4l7ev+xVbeIf7RkqOi+4J103vpB
-	3lldoeMaO8w+3FPxtSlzCMr1YGDxv6mgvmTZ1WRPI6G4SXViTrUCLmFXRM/utY2omjfVWrhZ
-	5NLTN3Ny1t350+fY+sNSiaU4I9FQi7moOBEAdhV2MkQDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnk+LIzCtJLcpLzFFi42I5/e+xgO7V44cDDeaukrJo/r+d1eLvpGPs
-	FkuaMixeHtK0ODD7IavFqzMb2SwuL7zEavH9hqlF74KrbBabHl9jtbi8aw6bxdl5x9ksZpzf
-	x2SxceovRov2S8oWK5q2Mlosvric2WL9jNcsFrtXLmGxODZjCaPF0wdNTA6iHmvmrWH0+P1r
-	EqNH35SrbB5PNl1k9FiwqdTjzrU9bB6bl9R7nJ+xkNHj+45eoIItqxg9fr7U8Xj6Yy+zx+dN
-	cgG8UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	7yoplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYMzZ/2M9W8JSz4uXTtawN
-	jP/Zuxg5OSQETCS+/WxlgrDFJC7cW8/WxcjFISSwiFHi/4qzrBDOL0aJr1v3M4JUsQmoSXz5
-	chisW0TAX+La1VYWkCJmgQ42iU3zNrGCJIQFQiT6D3xlAbFZBFQlXr6bD9TMwcErYCnxb5ct
-	SJhXQFDix+R7YCXMAloS63ceZ4Kw5SU2r3nLDHGRgsSOs68ZIXbpSdw4cBGqRkRi34t3jBMY
-	BWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw8nomvYNxVYPF
-	IUYBDkYlHt4ApcOBQqyJZcWVuYcYJTiYlUR4xSYChXhTEiurUovy44tKc1KLDzEmAz06kVlK
-	NDkfmFjzSuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoGx632P
-	TzlL8HMtO5vVt/PUNTo/Tfzf9P+OoILWKvVZT/9PXX8v0ZXn+tPp9+9rnk9nWlzyMfHIpqqS
-	0E65NfVSRr6lZ2pnL5BVUc1xCw/u9qpmY2rPE+NtsBWav3H+vAsfnS68SHLZcFR+zttdSUcN
-	rHc9k1B/P8nNftW5e4zTJE2e6lYdl/mgxFKckWioxVxUnAgAfqVxbaIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 20 Jun 2013 23:34:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <477F20668A386D41ADCC57781B1F70430EA2AA251A@SC-VEXCH1.marvell.com>
+References: <1363382956-14557-1-git-send-email-dianders@chromium.org>
+	<5146EAB0.1030705@samsung.com>
+	<CAD=FV=Ww-iK=-vg4jnJe6w4836-yQUoUyxNvCYsDQ5w0q-OMMQ@mail.gmail.com>
+	<515E88E3.5070507@samsung.com>
+	<003401ce3453$19d1e8c0$4d75ba40$%jun@samsung.com>
+	<CAD=FV=V+ZZ0MUtuWKUOgR9NPyAquUjFC6KtHvAP-4iHXAYpjqA@mail.gmail.com>
+	<001601ce35b9$652c5870$2f850950$%jun@samsung.com>
+	<CAD=FV=XKeRjpH1+ytjMfLuGGqQ5VVub22n=V+UpV=jBCD4LLHw@mail.gmail.com>
+	<001801ce6c20$6ba39900$42eacb00$%jun@samsung.com>
+	<477F20668A386D41ADCC57781B1F70430EA2AA2513@SC-VEXCH1.marvell.com>
+	<CAD=FV=Xz-Cp86u=w8m91AEMJgH-o6cLkz6_udVw_3bm7Tm0OiA@mail.gmail.com>
+	<477F20668A386D41ADCC57781B1F70430EA2AA251A@SC-VEXCH1.marvell.com>
+Date: Thu, 20 Jun 2013 20:33:58 -0700
+X-Google-Sender-Auth: Zuhs51kUABoLO9Ux1YdqCZlFKPc
+Message-ID: <CAD=FV=V6S7FsK+=+7EHDV74=Mw_iWecO2ZxVpVcd=p7ugW-sHA@mail.gmail.com>
+Subject: Re: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from STATE_DATA_ERROR
+From: Doug Anderson <dianders@chromium.org>
+To: Bing Zhao <bzhao@marvell.com>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@gmail.com>,
+        Ashok Nagarajan <asnagarajan@chromium.org>,
+        Paul Stewart <pstew@chromium.org>, Olof Johansson <olof@lixom.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds pcie controller node for exynos5440-ssdk5440,
-and also adds a phandle for pin controller node.
+Bing,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/boot/dts/exynos5440-ssdk5440.dts |    8 ++++++++
- arch/arm/boot/dts/exynos5440.dtsi         |    2 +-
- 2 files changed, 9 insertions(+), 1 deletion(-)
+On Tue, Jun 18, 2013 at 1:01 PM, Bing Zhao <bzhao@marvell.com> wrote:
+> Hi Doug,
+>
+>> > I tested Doug's patch on my failing unit.
+>> >
+>> > Without this patch, mmc got hung_task and rebooted eventually.
+>> > With this patch applied, mmc returns CRC error instead of hung_task, and the error is handled
+>> gracefully.
+>>
+>> Have you tried one or both or Seungwon's fixes without mine?
+>
+> I only tested your original patch. That was several months ago I think.
+>
+> I still have that unit. Let me know if you want me to try Seungwon's patches.
 
-diff --git a/arch/arm/boot/dts/exynos5440-ssdk5440.dts b/arch/arm/boot/dts/exynos5440-ssdk5440.dts
-index f32cd77..ede7727 100644
---- a/arch/arm/boot/dts/exynos5440-ssdk5440.dts
-+++ b/arch/arm/boot/dts/exynos5440-ssdk5440.dts
-@@ -65,4 +65,12 @@
- 			clock-frequency = <50000000>;
- 		};
- 	};
-+
-+	pcie@290000 {
-+		reset-gpio = <&pin_ctrl 5 0>;
-+	};
-+
-+	pcie@2a0000 {
-+		reset-gpio = <&pin_ctrl 22 0>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/exynos5440.dtsi b/arch/arm/boot/dts/exynos5440.dtsi
-index 1ac4f5b..ff7f5d8 100644
---- a/arch/arm/boot/dts/exynos5440.dtsi
-+++ b/arch/arm/boot/dts/exynos5440.dtsi
-@@ -126,7 +126,7 @@
- 		clock-names = "spi", "spi_busclk0";
- 	};
- 
--	pinctrl {
-+	pin_ctrl: pinctrl {
- 		compatible = "samsung,exynos5440-pinctrl";
- 		reg = <0xE0000 0x1000>;
- 		interrupts = <0 37 0>, <0 38 0>, <0 39 0>, <0 40 0>,
--- 
-1.7.10.4
+I think the proposal on the table is to take Seungwon's patches
+instead of mine.  Assuming they solve your problems, I'm OK with that.
+ I think he was requesting testing the first of his two patches alone
+and then both of his two patches together.
 
+Thanks!
 
+-Doug
