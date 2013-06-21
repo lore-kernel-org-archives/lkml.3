@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423605Ab3FURlM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:41:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53713 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423307Ab3FURlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:41:08 -0400
-Date: Fri, 21 Jun 2013 19:40:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, ananth@in.ibm.com,
-        masbock@linux.vnet.ibm.com, lcm@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>
-Subject: Re: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
- banks listed in APEI HEST CMC
-Message-ID: <20130621174057.GI22006@pd.tnic>
-References: <20130620073943.GE32694@pd.tnic>
- <51C3531D.3000600@linux.vnet.ibm.com>
- <20130620192928.GD19877@pd.tnic>
- <51C36288.4050405@linux.vnet.ibm.com>
- <20130620205726.GA20863@pd.tnic>
- <51C37291.40303@linux.vnet.ibm.com>
- <20130621073419.GC22006@pd.tnic>
- <51C404EA.10906@linux.vnet.ibm.com>
- <20130621083608.GE22006@pd.tnic>
- <CA+8MBbJkaiFhtmidBck6oiNXbzS=cUn-m2YkwWmNG+DjmtDiDQ@mail.gmail.com>
+	id S1423613Ab3FURmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 13:42:14 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:36796 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423307Ab3FURmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 13:42:13 -0400
+Message-ID: <51C49072.1060700@linaro.org>
+Date: Fri, 21 Jun 2013 10:42:10 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbJkaiFhtmidBck6oiNXbzS=cUn-m2YkwWmNG+DjmtDiDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        arm@kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv2 3/6] sched_clock: Make ARM's sched_clock generic for
+ all architectures
+References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org> <1370155183-31421-4-git-send-email-sboyd@codeaurora.org> <201306211745.57528.arnd@arndb.de> <20130621170523.GA14575@codeaurora.org>
+In-Reply-To: <20130621170523.GA14575@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 09:47:31AM -0700, Tony Luck wrote:
-> On Fri, Jun 21, 2013 at 1:36 AM, Borislav Petkov <bp@alien8.de> wrote:
-> > So ok, I'm persuaded, yet another bitfield it is ... :-\
-> 
-> Let's add some more comments on what each of these bitfields mean. Otherwise
-> we will be going back over this next time we have a patch that touches one
-> of them and we've all forgotten the subtle details explained in this
-> e-mail thread.
+On 06/21/2013 10:05 AM, Stephen Boyd wrote:
+> On 06/21, Arnd Bergmann wrote:
+>> This causes build failures when doing a simple merge with the arm-soc
+>> tree:
+>>
+>> ==> build/clps711x_defconfig/faillog <==
+>> /git/arm-soc/arch/arm/mach-clps711x/common.c:37:29: fatal error: asm/sched_clock.h: No such file or directory
+>>   #include <asm/sched_clock.h>
+>>                               ^
+>> ==> build/imx_v6_v7_defconfig/faillog <==
+>> /git/arm-soc/drivers/clocksource/vf_pit_timer.c:15:29: fatal error: asm/sched_clock.h: No such file or directory
+>>   #include <asm/sched_clock.h>
+>>
+>> How about adding back a temporary arch/arm/include/asm/sched_clock.h
+>> that only contains "#include <linux/sched_clock.h>" so we can change
+>> those two files after the merge and still get a bisectible history?
+>>
+> Sounds fine. John can you add this patch on top?
 
-Very good point - it's like you're reading my mind! I thought about
-suggesting exactly that but then it slipped my mind with all the details
-and commotion here.
+Thanks. I've queued this and will send it on to Thomas here shortly.
 
-:-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+thanks
+-john
