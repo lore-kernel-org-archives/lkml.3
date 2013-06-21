@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946148Ab3FUV0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:26:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54493 "EHLO bear.ext.ti.com"
+	id S1946164Ab3FUV0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:26:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51730 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946097Ab3FUV0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:26:32 -0400
+	id S1946144Ab3FUV0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:26:37 -0400
 From: Nishanth Menon <nm@ti.com>
 To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         Mark Brown <broonie@kernel.org>, Tony Lindgren <tony@atomide.com>
@@ -13,9 +13,9 @@ CC: Kevin Hilman <khilman@deeprootsystems.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
-Subject: [RFC PATCH V2 4/8] ARM: dts: OMAP4: add voltage controller nodes
-Date: Fri, 21 Jun 2013 16:25:45 -0500
-Message-ID: <1371849949-12649-5-git-send-email-nm@ti.com>
+Subject: [RFC PATCH V2 8/8] ARM: dts: OMAP4-panda-es: use tps regulator as cpu0 supply
+Date: Fri, 21 Jun 2013 16:25:49 -0500
+Message-ID: <1371849949-12649-9-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371849949-12649-1-git-send-email-nm@ti.com>
 References: <1371849949-12649-1-git-send-email-nm@ti.com>
@@ -25,108 +25,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP443x, OMAP446x SoC use same offsets for voltage controller,
-however their voltage characteristics differ a little.
-
-Introduce the voltage controller nodes for the same.
+TPS62361 is used for cpufreq regulation. As part of this change
+use labels that can be used to reference cpu0 to setup it's supply.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/boot/dts/omap4.dtsi    |   26 ++++++++++++++++++++++++++
- arch/arm/boot/dts/omap443x.dtsi |   15 +++++++++++++++
- arch/arm/boot/dts/omap4460.dtsi |   16 ++++++++++++++++
- 3 files changed, 57 insertions(+)
+ arch/arm/boot/dts/omap4-panda-es.dts |    4 ++++
+ arch/arm/boot/dts/omap4.dtsi         |    4 ++--
+ arch/arm/boot/dts/omap443x.dtsi      |    2 +-
+ arch/arm/boot/dts/omap4460.dtsi      |    2 +-
+ 4 files changed, 8 insertions(+), 4 deletions(-)
 
+diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+index 325816c..d2ce518 100644
+--- a/arch/arm/boot/dts/omap4-panda-es.dts
++++ b/arch/arm/boot/dts/omap4-panda-es.dts
+@@ -93,3 +93,7 @@
+ 	>;
+ 	gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+ };
++
++&cpu0 {
++	cpu0-supply = <&omap_tps62361>;
++};
 diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 3b44546..a153e8d 100644
+index 3c75b23..127b974 100644
 --- a/arch/arm/boot/dts/omap4.dtsi
 +++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -104,6 +104,11 @@
- 			ti,hwmods = "counter_32k";
- 		};
- 
-+		sysclk_in: sys_clkin {
-+			#clock-cells = <0>;
-+			compatible = "ti,omap-clock";
-+		};
-+
- 		dpll_mpu: dpll_mpu {
- 			#clock-cells = <0>;
- 			compatible = "ti,omap-clock";
-@@ -663,5 +668,26 @@
- 			ram-bits = <12>;
- 			ti,has-mailbox;
- 		};
-+
-+		vc: vc@0x4A307B88 {
-+			compatible = "ti,omap4-vc";
-+			clocks = <&sysclk_in>;
-+			reg = <0x4A307B88 0x40>;
-+			reg-names = "base-address";
-+
-+			ti,i2c-high-speed; /* belongs to board file */
-+			vc_mpu: vc_mpu {
-+				compatible = "ti,omap4-vc-channel-mpu";
-+				ti,master-channel;
-+			};
-+
-+			vc_iva: vc_iva {
-+				compatible = "ti,omap4-vc-channel-iva";
-+			};
-+
-+			vc_core: vc_core {
-+				compatible = "ti,omap4-vc-channel-core";
-+			};
-+		};
+@@ -24,13 +24,13 @@
  	};
- };
+ 
+ 	cpus {
+-		cpu@0 {
++		cpu0: cpu@0 {
+ 			compatible = "arm,cortex-a9";
+ 			next-level-cache = <&L2>;
+ 			clocks = <&dpll_mpu>;
+ 			clock-names = "cpu";
+ 		};
+-		cpu@1 {
++		cpu1: cpu@1 {
+ 			compatible = "arm,cortex-a9";
+ 			next-level-cache = <&L2>;
+ 		};
 diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
-index bcf455e..2b0deb5 100644
+index e759937..91a5f70 100644
 --- a/arch/arm/boot/dts/omap443x.dtsi
 +++ b/arch/arm/boot/dts/omap443x.dtsi
-@@ -31,3 +31,18 @@
- 		compatible = "ti,omap4430-bandgap";
- 	};
- };
-+
-+&vc_mpu {
-+	ti,retention-micro-volts = <750000>;
-+	ti,off-micro-volts = <0>;
-+};
-+
-+&vc_iva {
-+	ti,retention-micro-volts = <750000>;
-+	ti,off-micro-volts = <0>;
-+};
-+
-+&vc_core {
-+	ti,retention-micro-volts = <750000>;
-+	ti,off-micro-volts = <0>;
-+};
+@@ -12,7 +12,7 @@
+ 
+ / {
+ 	cpus {
+-		cpu@0 {
++		cpu0: cpu@0 {
+ 			/* OMAP443x variants OPP50-OPPNT */
+ 			operating-points = <
+ 				/* kHz    uV */
 diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
-index c2f0f39..16210a1 100644
+index 8320865..9827e35 100644
 --- a/arch/arm/boot/dts/omap4460.dtsi
 +++ b/arch/arm/boot/dts/omap4460.dtsi
-@@ -39,3 +39,19 @@
- 		gpios = <&gpio3 22 0>; /* tshut */
- 	};
- };
-+
-+&vc_mpu {
-+	ti,retention-micro-volts = <750000>;
-+	/* Erratum i738: Reliability impact work around */
-+	ti,off-micro-volts = <750000>;
-+};
-+
-+&vc_iva {
-+	ti,retention-micro-volts = <750000>;
-+	ti,off-micro-volts = <0>;
-+};
-+
-+&vc_core {
-+	ti,retention-micro-volts = <750000>;
-+	ti,off-micro-volts = <0>;
-+};
+@@ -12,7 +12,7 @@
+ / {
+ 	cpus {
+ 		/* OMAP446x 'standard device' variants OPP50 to OPPTurbo */
+-		cpu@0 {
++		cpu0: cpu@0 {
+ 			operating-points = <
+ 				/* kHz    uV */
+ 				350000  1025000
 -- 
 1.7.9.5
 
