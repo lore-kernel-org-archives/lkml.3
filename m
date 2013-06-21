@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946260Ab3FUXG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 19:06:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41896 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946172Ab3FUXGz (ORCPT
+	id S1946239Ab3FUXIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 19:08:24 -0400
+Received: from 100.204.216.81.static.g-hkn.siw.siwnet.net ([81.216.204.100]:47458
+	"EHLO iko.pp.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1946172Ab3FUXIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 19:06:55 -0400
-Date: Sat, 22 Jun 2013 01:06:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Vrabel <david.vrabel@citrix.com>
-cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/4] time: add a notifier chain for when the system time
- is stepped
-In-Reply-To: <51C44A09.9010402@citrix.com>
-Message-ID: <alpine.DEB.2.02.1306212328350.4013@ionos.tec.linutronix.de>
-References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-3-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306210953480.4013@ionos.tec.linutronix.de> <51C44A09.9010402@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 21 Jun 2013 19:08:23 -0400
+Message-Id: <201306212308.r5LN8C7M020720@eskarina.iko.pp.se>
+X-Face: ^"+mumOlNwo;yI>`\39\txuVze?eiR9uqpo2*mE!9MWXgXI0v(3ArwymNWe'.q:eLl!=guD
+ x{jGFEWN6,#HoN%2qRW;7.CL]9%Ap,067"u1%!NUqS.MhV'+,6$Fj-;W2Z}Y,JUZ'L+f<?~E{ID*=T
+ V\NxAOu>)|B@3k3n;gLl*#i[(J-os#fNnDJ8m["|JWNwpORh|_.MGkR#|a~QS!"4hEQ{O{[Ii14{xD
+ PU/:5wuv7m1=TK=.>G8wdfpY~]{H(Qa\1`%|Hz:!)c3f9UOW|WgE"4d\E7?oDu9.
+From: Anders Hammarquist <iko@iko.pp.se>
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] *** SUBJECT HERE ***
+In-Reply-To: Message from Greg KH <gregkh@linuxfoundation.org>
+   of "Wed, 19 Jun 2013 15:53:15 -0700." <20130619225315.GB12282@kroah.com>
+References: <201306190012.r5J0CNJZ031854@eskarina.iko.pp.se><20130619225315.GB12282@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <20718.1371856092.1@eskarina.iko.pp.se>
+Date: Sat, 22 Jun 2013 01:08:12 +0200
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (iko.pp.se [127.0.0.1]); Sat, 22 Jun 2013 01:08:16 +0200 (MEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jun 2013, David Vrabel wrote:
-> On 21/06/13 08:57, Thomas Gleixner wrote:
-> > On Thu, 20 Jun 2013, David Vrabel wrote:
-> > 
-> >> From: David Vrabel <david.vrabel@citrix.com>
-> >>
-> >> The high resolution timer code gets notified of step changes to the
-> >> system time with clock_was_set() or clock_was_set_delayed() calls.  If
-> >> other parts of the kernel require similar notification there is no
-> >> clear place to hook into.
-> > 
-> > You fail to explain why any other part of the kernel requires a
-> > notification.
-> 
-> This is needed by patch 3 in this series.
-> 
-> "The Xen wallclock is a software only clock within the Xen hypervisor
-> that is used by: a) PV guests as the equivalent of a hardware RTC; and
-> b) the hypervisor as the clock source for the emulated RTC provided to
-> HVM guests.
-> 
-> Currently the Xen wallclock is only updated every 11 minutes if NTP is
-> synchronized to its clock source.  If a guest is started before NTP is
-> synchronized it may see an incorrect wallclock time.
+In a message of Wed, 19 Jun 2013 15:53:15 -0700, Greg KH writes:
+>I think you forgot a Subject :)
 
-What you are saying is, that you are fixing Xens failure to implement
-a proper RTC emulation by hacking a notifier into the core code. You
-can't be serious about that.
+Indeed. I blame it on my first fight with git format-patch ;-)
 
-According to your changelog:
+>On Wed, Jun 19, 2013 at 02:05:07AM +0200, Anders Hammarquist wrote:
+>> This patch set adds the product id to the driver, and makes the
+>> product type more explicit. Arguably, the ABBOTT_PRODUCT_ID
+>> define could be removed, but I left it on the off chance that
+>> someone other that the TI 3410 driver uses it.
+>
+>No, it doesn't, please fix up that last patch and resend it.
 
-  Currently the Xen wallclock is only updated every 11 minutes if NTP is
-  synchronized to its clocksource.
+Right, and in removing it I actually found that it was used in
+two places in the driver. I lost my second fight with format-patch
+so I'll just enclose the fixed patch below.
 
-How is that related to clock_was_set() ?
+/Anders
 
-clock_was_set*() is invoked from:
+---8<---
+ti_usb_3410_5052:
+* Remove unspecific ABBOTT_PRODUCT_ID
+* Fix size of statically sized arrays
 
-	do_settimeofday()
-	timekeeping_inject_offset()
-	timekeeping_set_tai_offset()
-	timekeeping_inject_sleeptime()
-	update_wall_time()
-	do_adjtimex()
+Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
 
-The only function which calls clock_was_set() and can affect RTC is
-do_adjtimex(). Though you claim that the natural place to add a
-notifier is clock_was_set().
-
-So you went the other way round this time. In the hrtimers case you
-tried to fix shortcomings of the core code in some random Xen
-code. With this patch you try to fix Xen nonsense in the core code.
-
-Can you please provide a proper explanation of the problem you are
-trying to solve? This means that you should explain the semantics of
-the desired XEN RTC emulation and not the desired workarounds to fix
-the shortcommings current implementation.
-
-Thanks,
-
-	tglx
-
+diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
+index e581c25..26c1161 100644
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -158,7 +158,7 @@ static unsigned int product_5052_count;
+ /* the array dimension is the number of default entries plus */
+ /* TI_EXTRA_VID_PID_COUNT user defined entries plus 1 terminating */
+ /* null entry */
+-static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
++static struct usb_device_id ti_id_table_3410[16+TI_EXTRA_VID_PID_COUNT+1] = {
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
+ 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
+@@ -172,8 +172,8 @@ static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
+-	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_ID) },
+-	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
++	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_PRODUCT_ID) },
++	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_PRODUCT_ID) },
+ 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
+ };
+ 
+@@ -184,7 +184,7 @@ static struct usb_device_id ti_id_table_5052[5+TI_EXTRA_VID_PID_COUNT+1] = {
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_5052_FIRMWARE_PRODUCT_ID) },
+ };
+ 
+-static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1] = {
++static struct usb_device_id ti_id_table_combined[20+2*TI_EXTRA_VID_PID_COUNT+1] = {
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
+ 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
+@@ -202,7 +202,8 @@ static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1]
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
+-	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
++	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_PRODUCT_ID) },
++	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_PRODUCT_ID) },
+ 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
+ 	{ }
+ };
+diff --git a/drivers/usb/serial/ti_usb_3410_5052.h b/drivers/usb/serial/ti_usb_3410_5052.h
+index 4a2423e..d3ff470 100644
+--- a/drivers/usb/serial/ti_usb_3410_5052.h
++++ b/drivers/usb/serial/ti_usb_3410_5052.h
+@@ -52,9 +52,8 @@
+ 
+ /* Abbott Diabetics vendor and product ids */
+ #define ABBOTT_VENDOR_ID		0x1a61
+-#define ABBOTT_STEREO_PLUG_ID		0x3410
+-#define ABBOTT_PRODUCT_ID		ABBOTT_STEREO_PLUG_ID
+-#define ABBOTT_STRIP_PORT_ID		0x3420
++#define ABBOTT_STEREO_PLUG_PRODUCT_ID	0x3410
++#define ABBOTT_STRIP_PORT_PRODUCT_ID	0x3420
+ 
+ /* Commands */
+ #define TI_GET_VERSION			0x01
