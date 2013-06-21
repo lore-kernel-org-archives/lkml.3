@@ -1,139 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161475Ab3FUNwo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 09:52:44 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:35310 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161346Ab3FUNwn (ORCPT
+	id S1422732Ab3FUNzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 09:55:32 -0400
+Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:48188 "EHLO
+	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161367Ab3FUNza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 09:52:43 -0400
+	Fri, 21 Jun 2013 09:55:30 -0400
+Message-ID: <51C45A3F.7000009@st.com>
+Date: Fri, 21 Jun 2013 14:50:55 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAKoUArm0w70TZvaZSMa1C9vAj+UXsMkza7XTBX0Vq-7B3xrFLA@mail.gmail.com>
-References: <20130620231713.4f6a3c1f@xenia.leun.net>
-	<CAKoUArm0w70TZvaZSMa1C9vAj+UXsMkza7XTBX0Vq-7B3xrFLA@mail.gmail.com>
-Date: Fri, 21 Jun 2013 16:52:41 +0300
-Message-ID: <CAKoUArnyR+6bk9UU3GuyteznX-wWVQUfWuaiVuS0YOSKCKKF5w@mail.gmail.com>
-Subject: Re: Missing iproute2 support for 802.1ad
-From: Rami Rosen <roszenrami@gmail.com>
-To: Michael Leun <lkml20130126@newton.leun.net>
-Cc: Patrick McHardy <kaber@trash.net>, shemminger@linux-foundation.org,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        kernel@stlinux.com, linux-doc@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Rob Landley <rob@landley.net>,
+        linux-serial@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 01/10] serial:st-asc: Add ST ASC driver.
+References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com> <1371737103-8871-1-git-send-email-srinivas.kandagatla@st.com> <201306202101.11261.arnd@arndb.de>
+In-Reply-To: <201306202101.11261.arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,Michael,
+Hi Greg,
+If its not too late can this patch be considered for 3.11 via tty tree?
+Arnd preferred to take the SOC patches in this series via arm-soc tree.
+Also, there is no build dependency for this patch.
 
-You are right.
+Thanks,
+srini
 
-It is probably a matter of synchronization between iproute2 git version
-and kernel version.
+On 20/06/13 20:01, Arnd Bergmann wrote:
+> On Thursday 20 June 2013, Srinivas KANDAGATLA wrote:
+>> This patch adds support to ASC (asynchronous serial controller)
+>> driver, which is basically a standard serial driver. This IP is common
+>> across all the ST parts for settop box platforms.
+>>
+>> ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
+>> It support all industry standard baud rates.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>> CC: Stephen Gallimore <stephen.gallimore@st.com>
+>> CC: Stuart Menefy <stuart.menefy@st.com>
+>> CC: Arnd Bergmann <arnd@arndb.de>
+>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+>>From my point of view the series is ready for merging in 3.11,
+> I only had a few final comments. I would prefer the first three
+> patches to go through the respective serial/clocksource/pinctrl
+> trees, since there are no direct build dependencies to the
+> platform parts.
+> 
+> If there is a reason to take those through arm-soc, I would
+> insist on getting Acked-by's from the subsystem maintainers.
+> 
+> 	Arnd
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+> 
 
-This patch by Patrick McHardy, titled:
-"add 802.1ad support", seems to do the job:
-http://www.spinics.net/lists/netdev/msg233587.html
-
-But it was not integrated to iproute2 git tree.
-
-But don't be wrong: if you look into this patch, you will see that the
-first addition of it was integrated but as a part of a different
-patch:
-commit 79e9a1db11db494eade7bd6917a34f383c0774e3
-Author: Stephen Hemminger <stephen@networkplumber.org>
-    titled "Update headers to 3.10".
-
-But you should look at the rest of the patch  of Patrick McHardy ("add
-802.1ad support"), it does not appear in the latest git tree of
-iproute2.
-
-Please look for example in ip/iplink_vlan.c b/ip/iplink_vlan.c
-in the explain() method and compare to the above mentioned patch.
-
-
-Regards,
-Rami Rosen
-http://ramirose.wix.com/ramirosen
-
-On Fri, Jun 21, 2013 at 4:49 PM, Rami Rosen <roszenrami@gmail.com> wrote:
-> Hello,Michael,
->
-> You are right.
->
-> It is probably a matter of synchronization between iproute2 git version
-> and kernel version.
->
-> This patch by Patrick McHardy, titled:
-> "add 802.1ad support", seems to do the job:
-> http://www.spinics.net/lists/netdev/msg233587.html
->
-> But it was not integrated to iproute2 git tree.
->
-> But don't be wrong: if you look into this patch, you will see that the first
-> addition of it was integrated but as a part of a different patch:
-> commit 79e9a1db11db494eade7bd6917a34f383c0774e3
-> Author: Stephen Hemminger <stephen@networkplumber.org>
->     titled "Update headers to 3.10".
->
-> But you should look at the rest of the patch  of Patrick McHardy ("add
-> 802.1ad support"), it does not appear in the latest git tree of iproute2.
->
-> Please look for example in ip/iplink_vlan.c b/ip/iplink_vlan.c
-> in the explain() method and compare to the above mentioned patch.
->
->
-> Regards,
-> Rami Rosen
-> http://ramirose.wix.com/ramirosen
->
->
->
-> On Fri, Jun 21, 2013 at 12:17 AM, Michael Leun
-> <lkml20130126@newton.leun.net> wrote:
->>
->>
->>
->> 2013-04-19 12:04:31 GMT kaber@trash.net wrote:
->>
->> > Add support for 802.1ad VLAN devices. This mainly consists of checking
->> > for
->> > ETH_P_8021AD in addition to ETH_P_8021Q in a couple of places and check
->> > offloading capabilities based on the used protocol.
->>
->> > Configuration is done using "ip link":
->>
->> > # ip link add link eth0 eth0.1000 \
->> >       type vlan proto 802.1ad id 1000
->> > # ip link add link eth0.1000 eth0.1000.1000 \
->> >       type vlan proto 802.1q id 1000
->>
->> I fear, that does not work:
->>
->> lara:/home/ml # ip link add link eth0 eth0.1000 type vlan proto 802.1ad id
->> 1000
->> vlan: what is "proto"?
->> Usage: ... vlan id VLANID [ FLAG-LIST ]
->>                           [ ingress-qos-map QOS-MAP ] [ egress-qos-map
->> QOS-MAP ]
->> [...]
->>
->> ip does not seem to know about proto. This does not  have changed in
->> git either.
->>
->> I've seen there was an patch to add this around somewhen in 2011, but
->> it does not seem to have made it.
->>
->> Or did I miss something?
->>
->> --
->> MfG,
->>
->> Michael Leun
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe netdev" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
