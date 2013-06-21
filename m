@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946070Ab3FUVL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:11:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35584 "EHLO mx1.redhat.com"
+	id S1946084Ab3FUVMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:12:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50948 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945954Ab3FUVL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:11:27 -0400
-Subject: [PATCH] vfio/type1: Fix missed frees and zero sized removes
+	id S1945954Ab3FUVMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:12:48 -0400
+Subject: [PATCH] vfio: Limit group opens
 To: alex.williamson@redhat.com
 From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Fri, 21 Jun 2013 15:11:26 -0600
-Message-ID: <20130621211025.8188.99576.stgit@bling.home>
+Cc: aik@ozlabs.ru, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Fri, 21 Jun 2013 15:12:44 -0600
+Message-ID: <20130621211144.8237.7370.stgit@bling.home>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,192 +20,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With hugepage support we can only properly aligned and sized ranges.
-We only guarantee that we can unmap the same ranges mapped and not
-arbitrary sub-ranges.  This means we might not free anything or might
-free more than requested.  The vfio unmap interface started storing
-the unmapped size to return to userspace to handle this.  This patch
-fixes a few places where we don't properly handle those cases, moves
-a memory allocation to a place where failure is an option and checks
-our loops to make sure we don't get into an infinite loop trying to
-remove an overlap.
+vfio_group_fops_open attempts to limit concurrent sessions by
+disallowing opens once group->container is set.  This really doesn't
+do what we want and allow for inconsistent behavior, for instance a
+group can be opened twice, then a container set giving the user two
+file descriptors to the group.  But then it won't allow more to be
+opened.  There's not much reason to have the group opened multiple
+times since most access is through devices or the container, so
+complete what the original code intended and only allow a single
+instance.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/vfio/vfio_iommu_type1.c |   77 +++++++++++++++++++++------------------
- 1 file changed, 42 insertions(+), 35 deletions(-)
+ drivers/vfio/vfio.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-index 8a2be4e..98231d1 100644
---- a/drivers/vfio/vfio_iommu_type1.c
-+++ b/drivers/vfio/vfio_iommu_type1.c
-@@ -370,6 +370,9 @@ static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
- 	struct vfio_dma *split;
- 	int ret;
+diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+index 6d78736..d30f44d 100644
+--- a/drivers/vfio/vfio.c
++++ b/drivers/vfio/vfio.c
+@@ -76,6 +76,7 @@ struct vfio_group {
+ 	struct notifier_block		nb;
+ 	struct list_head		vfio_next;
+ 	struct list_head		container_next;
++	atomic_t			opened;
+ };
  
-+	if (!*size)
-+		return 0;
-+
- 	/*
- 	 * Existing dma region is completely covered, unmap all.  This is
- 	 * the likely case since userspace tends to map and unmap buffers
-@@ -411,7 +414,9 @@ static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
- 			dma->vaddr += overlap;
- 			dma->size -= overlap;
- 			vfio_insert_dma(iommu, dma);
--		}
-+		} else
-+			kfree(dma);
-+
- 		*size = overlap;
- 		return 0;
- 	}
-@@ -425,48 +430,41 @@ static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
- 		if (ret)
- 			return ret;
+ struct vfio_device {
+@@ -206,6 +207,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
+ 	INIT_LIST_HEAD(&group->device_list);
+ 	mutex_init(&group->device_lock);
+ 	atomic_set(&group->container_users, 0);
++	atomic_set(&group->opened, 0);
+ 	group->iommu_group = iommu_group;
  
--		/*
--		 * We may have unmapped the entire vfio_dma if the user is
--		 * trying to unmap a sub-region of what was originally
--		 * mapped.  If anything left, we can resize in place since
--		 * iova is unchanged.
--		 */
--		if (overlap < dma->size)
--			dma->size -= overlap;
--		else
--			vfio_remove_dma(iommu, dma);
--
-+		dma->size -= overlap;
- 		*size = overlap;
- 		return 0;
- 	}
+ 	group->nb.notifier_call = vfio_iommu_group_notifier;
+@@ -1236,12 +1238,22 @@ static long vfio_group_fops_compat_ioctl(struct file *filep,
+ static int vfio_group_fops_open(struct inode *inode, struct file *filep)
+ {
+ 	struct vfio_group *group;
++	int opened;
  
- 	/* Split existing */
-+	split = kzalloc(sizeof(*split), GFP_KERNEL);
-+	if (!split)
-+		return -ENOMEM;
-+
- 	offset = start - dma->iova;
+ 	group = vfio_group_get_from_minor(iminor(inode));
+ 	if (!group)
+ 		return -ENODEV;
  
- 	ret = vfio_unmap_unpin(iommu, dma, start, size);
- 	if (ret)
- 		return ret;
- 
--	WARN_ON(!*size);
-+	if (!*size) {
-+		kfree(split);
-+		return -EINVAL;
++	/* Do we need multiple instances of the group open?  Seems not. */
++	opened = atomic_cmpxchg(&group->opened, 0, 1);
++	if (opened) {
++		vfio_group_put(group);
++		return -EBUSY;
 +	}
 +
- 	tmp = dma->size;
++	/* Is something still in use from a previous open? */
+ 	if (group->container) {
++		atomic_dec(&group->opened);
+ 		vfio_group_put(group);
+ 		return -EBUSY;
+ 	}
+@@ -1259,6 +1271,8 @@ static int vfio_group_fops_release(struct inode *inode, struct file *filep)
  
--	/*
--	 * Resize the lower vfio_dma in place, insert new for remaining
--	 * upper segment.
--	 */
-+	/* Resize the lower vfio_dma in place, before the below insert */
- 	dma->size = offset;
+ 	vfio_group_try_dissolve_container(group);
  
--	if (offset + *size < tmp) {
--		split = kzalloc(sizeof(*split), GFP_KERNEL);
--		if (!split)
--			return -ENOMEM;
--
-+	/* Insert new for remainder, assuming it didn't all get unmapped */
-+	if (likely(offset + *size < tmp)) {
- 		split->size = tmp - offset - *size;
- 		split->iova = dma->iova + offset + *size;
- 		split->vaddr = dma->vaddr + offset + *size;
- 		split->prot = dma->prot;
- 		vfio_insert_dma(iommu, split);
--	}
-+	} else
-+		kfree(split);
++	atomic_dec(&group->opened);
++
+ 	vfio_group_put(group);
  
  	return 0;
- }
-@@ -483,7 +481,7 @@ static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
- 
- 	if (unmap->iova & mask)
- 		return -EINVAL;
--	if (unmap->size & mask)
-+	if (!unmap->size || unmap->size & mask)
- 		return -EINVAL;
- 
- 	WARN_ON(mask & PAGE_MASK);
-@@ -493,7 +491,7 @@ static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
- 	while ((dma = vfio_find_dma(iommu, unmap->iova, unmap->size))) {
- 		size = unmap->size;
- 		ret = vfio_remove_dma_overlap(iommu, unmap->iova, &size, dma);
--		if (ret)
-+		if (ret || !size)
- 			break;
- 		unmapped += size;
- 	}
-@@ -635,7 +633,6 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 			if (tmp && tmp->prot == prot &&
- 			    tmp->vaddr + tmp->size == vaddr) {
- 				tmp->size += size;
--
- 				iova = tmp->iova;
- 				size = tmp->size;
- 				vaddr = tmp->vaddr;
-@@ -643,19 +640,28 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 			}
- 		}
- 
--		/* Check if we abut a region above - nothing above ~0 + 1 */
-+		/*
-+		 * Check if we abut a region above - nothing above ~0 + 1.
-+		 * If we abut above and below, remove and free.  If only
-+		 * abut above, remove, modify, reinsert.
-+		 */
- 		if (likely(iova + size)) {
- 			struct vfio_dma *tmp;
--
- 			tmp = vfio_find_dma(iommu, iova + size, 1);
- 			if (tmp && tmp->prot == prot &&
- 			    tmp->vaddr == vaddr + size) {
- 				vfio_remove_dma(iommu, tmp);
--				if (dma)
-+				if (dma) {
- 					dma->size += tmp->size;
--				else
-+					kfree(tmp);
-+				} else {
- 					size += tmp->size;
--				kfree(tmp);
-+					tmp->size = size;
-+					tmp->iova = iova;
-+					tmp->vaddr = vaddr;
-+					vfio_insert_dma(iommu, tmp);
-+					dma = tmp;
-+				}
- 			}
- 		}
- 
-@@ -681,11 +687,10 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 		iova = map->iova;
- 		size = map->size;
- 		while ((tmp = vfio_find_dma(iommu, iova, size))) {
--			if (vfio_remove_dma_overlap(iommu, iova, &size, tmp)) {
--				pr_warn("%s: Error rolling back failed map\n",
--					__func__);
-+			int r = vfio_remove_dma_overlap(iommu, iova,
-+							&size, tmp);
-+			if (WARN_ON(r || !size))
- 				break;
--			}
- 		}
- 	}
- 
-@@ -813,6 +818,8 @@ static void vfio_iommu_type1_release(void *iommu_data)
- 		struct vfio_dma *dma = rb_entry(node, struct vfio_dma, node);
- 		size_t size = dma->size;
- 		vfio_remove_dma_overlap(iommu, dma->iova, &size, dma);
-+		if (WARN_ON(!size))
-+			break;
- 	}
- 
- 	iommu_domain_free(iommu->domain);
 
