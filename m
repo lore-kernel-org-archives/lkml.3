@@ -1,147 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161334Ab3FUMcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 08:32:39 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:4157 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161083Ab3FUMci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 08:32:38 -0400
-X-IronPort-AV: E=Sophos;i="4.87,912,1363132800"; 
-   d="scan'208";a="31076386"
-Message-ID: <51C447E3.9030009@citrix.com>
-Date: Fri, 21 Jun 2013 13:32:35 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <xen-devel@lists.xen.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/4] hrtimers: provide a hrtimers_late_resume() call
-References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-2-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306210947410.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306210947410.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+	id S1161343Ab3FUMeD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 08:34:03 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:62912 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161083Ab3FUMeA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 08:34:00 -0400
+X-AuditID: cbfec7f5-b7f376d000001ec6-94-51c448369aae
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Grant Likely <grant.likely@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        rtc-linux@googlegroups.com, Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH v2 0/3] regulator: max8998: Add support for Device Tree
+Date: Fri, 21 Jun 2013 14:33:34 +0200
+Message-id: <1371818017-5215-1-git-send-email-t.figa@samsung.com>
+X-Mailer: git-send-email 1.8.2.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xq7pmHkcCDVqbGS2WXLzKbjH14RM2
+	iwN/djBa7J6zmMWid8FVNotvVzqYLDY9vsZqcXnXHDaLGef3MVncvsxrcXjFASaLdS+ns1js
+	7+xgtDjdzWpxacZ1dov1M16zOAh4tDT3sHks+HyF3WPnrLvsHnsmnmTz2LSqk83j1eqZrB53
+	ru1h85h3MtBj85J6j74tqxg9ziw4wu4xfd5PJo/Pm+QCeKO4bFJSczLLUov07RK4Mtr6N7MU
+	HOGu2Nd8iaWBcRpHFyMnh4SAicTyr+dYIGwxiQv31rN1MXJxCAksZZS49vcSlNPHJDH3xzKw
+	KjYBNYnPDY/YQGwRAQWJzb3PWEFsZoHVLBLvVxSB2MIC7hJTHh9jArFZBFQlfp67wghi8wo4
+	SlzubGGD2KYgcXz7NsYJjNwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE8tcdjEuP
+	WR1iFOBgVOLhDVQ6HCjEmlhWXJl7iFGCg1lJhDf4DlCINyWxsiq1KD++qDQntfgQIxMHp1QD
+	Y8SFhfFp/9MbuHY27yv5su133QRn6b1iOw3OPtg878vWprPxs/8YMj4JOnTm/ZuU9Cv9Yfds
+	eiY/uJW/RXl23htD8W1vt79TvphYJv1H/wTDHrcbCu7GBWE/K9aKZrvLvM4TChMy3O0f8vLj
+	tVilpyWmj+TWPalrfSW/n+dZsPWiyuqNO65O4VRiKc5INNRiLipOBACBQwxzQgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/06/13 08:53, Thomas Gleixner wrote:
-> On Thu, 20 Jun 2013, David Vrabel wrote:
->> From: David Vrabel <david.vrabel@citrix.com>
->>
->> Xen suspends (and resumes) without disabling non-boot CPUs as doing so
->> adds considerable delay to live migrations.  A 4 VCPU guest had more
->> than 200 ms of additional downtime if disable_nonboot_cpus() was
->> called prior to suspending.
->>
->> As a consequence, only high resolution timers on the current CPU are
->> retriggered when resuming.  The Xen resume path worked around this
->> with a call to clock_was_set() to retrigger timers on all the CPUs.
->>
->> A subsequent change will make clock_was_set() internal to hrtimers so
->> add an new call (hrtimers_late_resume()) to do the same job.
->>
->> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> ---
->>  drivers/xen/manage.c    |    8 ++++++--
->>  include/linux/hrtimer.h |    1 +
->>  kernel/hrtimer.c        |    9 +++++++++
->>  3 files changed, 16 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
->> index 412b96c..75bc2d5 100644
->> --- a/drivers/xen/manage.c
->> +++ b/drivers/xen/manage.c
->> @@ -166,8 +166,12 @@ out_resume:
->>  
->>  	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
->>  
->> -	/* Make sure timer events get retriggered on all CPUs */
->> -	clock_was_set();
->> +	/*
->> +	 * syscore_resume() ends up calling hrtimer_resume() but this
->> +	 * only retriggers timer events on the current CPU.  We need
->> +	 * to retrigger the events on all the other CPUS.
->> +	 */
->> +	hrtimers_late_resume();
-> 
-> This is the completely wrong approach. If an architecture does not
-> shut down the non boot cpus on suspend, then this wants to be handled
-> in the core code and not in some random arch specific driver.
+This series adds Device Tree support to max8998 MFD driver.
 
-Agreed.  Does the following meet your requirements?
+First patch reworks max8998-irq driver to use IRQ domains. Second patch
+prepares platform data structure to ease generating it at runtime from
+data parsed from device tree. Third patch implements Device Tree
+binding and adds necessary documentation.
 
-David
+Tested on Universal C210 board.
 
-8<-------------------------------------------------------
-hrtimers: support resuming with two or more CPUs online (but stopped)
+Changes since v1:
+ - rebased to current for-next of regulator tree
 
-hrtimers_resume() only reprograms the timers for the current CPU as it
-assumes that all other CPUs are offline at this point in the resume
-process.  If other CPUs are online then their timers will not be
-corrected and they may fire at the wrong time.
+Tomasz Figa (3):
+  mfd: Add irq domain support for max8998 interrupts
+  regulator: max8998: Use arrays for specifying voltages in platform
+    data
+  mfd: max8998: Add support for Device Tree
 
-When running as a Xen guest, this assumption is not true.  Non-boot
-CPUs are only stopped with IRQs disabled instead of offlining them.
-This is a performance optimization as disabling the CPUs would add an
-unacceptable amount of additional downtime during a live migration (>
-200 ms for a 4 VCPU guest).
+ Documentation/devicetree/bindings/mfd/max8998.txt | 111 ++++++++++
+ arch/arm/mach-exynos/mach-universal_c210.c        |   8 +-
+ arch/arm/mach-s5pv210/mach-aquila.c               |   8 +-
+ arch/arm/mach-s5pv210/mach-goni.c                 |   8 +-
+ drivers/mfd/Kconfig                               |   1 +
+ drivers/mfd/max8998-irq.c                         |  61 +++---
+ drivers/mfd/max8998.c                             |  76 ++++++-
+ drivers/regulator/max8998.c                       | 254 ++++++++++++++++------
+ drivers/rtc/rtc-max8998.c                         |  14 +-
+ include/linux/mfd/max8998-private.h               |   6 +-
+ include/linux/mfd/max8998.h                       |  20 +-
+ 11 files changed, 433 insertions(+), 134 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max8998.txt
 
-hrtimers_resume() cannot call on_each_cpu(retrigger_next_event,...)
-as the other CPUs will be stopped with IRQs disabled.  Instead, defer
-the call to the next softirq.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/xen/manage.c |    3 ---
- kernel/hrtimer.c     |   10 +++++++---
- 2 files changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 412b96c..421da85 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -166,9 +166,6 @@ out_resume:
- 
- 	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
- 
--	/* Make sure timer events get retriggered on all CPUs */
--	clock_was_set();
--
- out_thaw:
- #ifdef CONFIG_PREEMPT
- 	thaw_processes();
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index fd4b13b..74aa7c5 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -773,15 +773,19 @@ void clock_was_set(void)
- 
- /*
-  * During resume we might have to reprogram the high resolution timer
-- * interrupt (on the local CPU):
-+ * interrupt on all online CPUs.  However, all other CPUs will be
-+ * stopped with IRQs interrupts disabled at this point so defer this
-+ * to the softirq.
-  */
- void hrtimers_resume(void)
- {
-+	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+
- 	WARN_ONCE(!irqs_disabled(),
- 		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
- 
--	retrigger_next_event(NULL);
--	timerfd_clock_was_set();
-+	cpu_base->clock_was_set = 1;
-+	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
- }
- 
- static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
 -- 
-1.7.2.5
+1.8.2.1
+
