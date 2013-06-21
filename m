@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161411Ab3FUJIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 05:08:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38586 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239Ab3FUJIm convert rfc822-to-8bit (ORCPT
+	id S1758384Ab3FUJMH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 05:12:07 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:52693 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab3FUJME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 05:08:42 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH 4/4] regulator: Palmas: Add TPS659038 support
-Thread-Topic: [PATCH 4/4] regulator: Palmas: Add TPS659038 support
-Thread-Index: AQHObaXOcBDbRKATXEyyLvcmOHJ1Xpk/4kGA
-Date: Fri, 21 Jun 2013 09:08:26 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EDC8A@DBDE04.ent.ti.com>
-References: <1371726135-9891-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1371726135-9891-1-git-send-email-j-keerthy@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 21 Jun 2013 05:12:04 -0400
+From: Hanjun Guo <hanjun.guo@linaro.org>
+To: Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, linux-acpi@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH v2] Documentation / cpu hotplug: Rephrase the outdated description for MADT entries
+Date: Fri, 21 Jun 2013 17:09:18 +0800
+Message-Id: <1371805758-2841-1-git-send-email-hanjun.guo@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+More than 256 entries in ACPI MADT is supported from ACPI 3.0, so the
+information should be updated.
 
-> -----Original Message-----
-> From: J, KEERTHY
-> Sent: Thursday, June 20, 2013 4:32 PM
-> To: linux-omap@vger.kernel.org; sameo@linux.intel.com
-> Cc: broonie@kernel.org; J, KEERTHY; ldewangan@nvidia.com;
-> grant.likely@secretlab.ca; swarren@nvidia.com; linux-
-> kernel@vger.kernel.org; linux-doc@vger.kernel.org; gg@slimlogic.co.uk
-> Subject: [PATCH 4/4] regulator: Palmas: Add TPS659038 support
-> 
-> Add TPS659038 support.
-> 
+-v2: Rephrase the information instead of simply removing it according
+to Rafael's advice.
 
-Could you pull this one too?
+Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ Documentation/cpu-hotplug.txt |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> Acked-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/regulator/palmas-regulator.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/regulator/palmas-regulator.c
-> b/drivers/regulator/palmas-regulator.c
-> index 1ae1e83..d0c8785 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -1054,6 +1054,7 @@ static struct of_device_id of_palmas_match_tbl[]
-> = {
->  	{ .compatible = "ti,tps65913-pmic", },
->  	{ .compatible = "ti,tps65914-pmic", },
->  	{ .compatible = "ti,tps80036-pmic", },
-> +	{ .compatible = "ti,tps659038-pmic", },
->  	{ /* end */ }
->  };
-> 
-> --
-> 1.7.5.4
+diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
+index 9f40135..67f733d 100644
+--- a/Documentation/cpu-hotplug.txt
++++ b/Documentation/cpu-hotplug.txt
+@@ -370,8 +370,10 @@ A: There is no clear spec defined way from ACPI that can give us that
+    CPUs in MADT as hotpluggable CPUS.  In the case there are no disabled CPUS
+    we assume 1/2 the number of CPUs currently present can be hotplugged.
+ 
+-   Caveat: Today's ACPI MADT can only provide 256 entries since the apicid field
+-   in MADT is only 8 bits.
++   Caveat: ACPI MADT can only provide 256 entries in systems with only ACPI 2.0c
++   or earlier ACPI version supported, because the apicid field in MADT is only
++   8 bits. From ACPI 3.0, this limitation was removed since the apicid field
++   was extended to 32 bits with x2APIC introduced.
+ 
+ User Space Notification
+ 
+-- 
+1.7.9.5
 
-Regards,
-Keerthy
