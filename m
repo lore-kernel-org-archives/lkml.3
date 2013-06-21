@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161563Ab3FUPJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 11:09:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50641 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161543Ab3FUPJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 11:09:08 -0400
-Date: Fri, 21 Jun 2013 17:09:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH v5] Soft limit rework
-Message-ID: <20130621150906.GM12424@dhcp22.suse.cz>
-References: <1371557387-22434-1-git-send-email-mhocko@suse.cz>
- <20130620111206.GA14809@suse.de>
- <20130621140627.GI12424@dhcp22.suse.cz>
- <20130621140938.GJ12424@dhcp22.suse.cz>
- <20130621150430.GL12424@dhcp22.suse.cz>
+	id S1161582Ab3FUPKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 11:10:31 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:52637 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161367Ab3FUPKa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 11:10:30 -0400
+Date: Fri, 21 Jun 2013 17:10:27 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Dirk Schmidt <derschmied@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Amd Phenom 2 X6 Cool&Quiet Issue.
+Message-ID: <20130621151027.GB526@x4>
+References: <51C4600E.6030005@gmx.de>
+ <20130621141906.GA526@x4>
+ <51C4665A.8010802@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130621150430.GL12424@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C4665A.8010802@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 21-06-13 17:04:30, Michal Hocko wrote:
-> On Fri 21-06-13 16:09:38, Michal Hocko wrote:
-> > On Fri 21-06-13 16:06:27, Michal Hocko wrote:
-> > [...]
-> > > > Can you try this monolithic patch please?
-> > > 
-> > > Wow, this looks much better!
-> > 
-> > Damn it! Scratch that. I have made a mistake in configuration so this
-> > all has been 0-no-limit in fact. Sorry about that. It's only now that
-> > I've noticed that so I am retesting. Hopefully it will be done before I
-> > leave today. I will post it on Monday otherwise.
+On 2013.06.21 at 16:42 +0200, Dirk Schmidt wrote:
+> Hello.
 > 
-> And for real now and it is still Wow!
+> Am 21.06.2013 16:19, schrieb Markus Trippelsdorf:
+> > On 2013.06.21 at 16:15 +0200, Dirk Schmidt wrote:
+> >> Amd Phenom 2 X6 Cool&Quiet Issue.
+> >>
+> >> Problem:
+> >>
+> >> dmesg | grep power
+> >> [   10.622426] powernow-k8: This CPU is not supported anymore, using
+> >> acpi-cpufreq instead.
+> >>
+> >> modprobe acpi_cpufreq
+> >> ERROR: could not insert 'acpi_cpufreq': No such device
+> >
+> > Please post your kernel .config.
+> >
+> 
+> config attached.
+> 
+> #
+> # x86 CPU frequency scaling drivers
+> #
+> # CONFIG_X86_INTEL_PSTATE is not set
+> CONFIG_X86_PCC_CPUFREQ=m
+> CONFIG_X86_ACPI_CPUFREQ=m
+> CONFIG_X86_ACPI_CPUFREQ_CPB=y
+> CONFIG_X86_POWERNOW_K8=m
+> # CONFIG_X86_AMD_FREQ_SENSITIVITY is not set
+> CONFIG_X86_SPEEDSTEP_CENTRINO=m
+> CONFIG_X86_P4_CLOCKMOD=m
 
-And I am total idiot. The machine was not booted with mem=1G so the
-figures are completely useless.
+Does it work if you disable everything under "x86 CPU frequency scaling
+drivers" and build CONFIG_X86_ACPI_CPUFREQ directly into the kernel?
 
-It is soooo Friday. I will start everything again on Monday with a clean
-head.
+#
+# x86 CPU frequency scaling drivers
+#
+# CONFIG_X86_INTEL_PSTATE is not set
+# CONFIG_X86_PCC_CPUFREQ is not set
+CONFIG_X86_ACPI_CPUFREQ=y
+# CONFIG_X86_ACPI_CPUFREQ_CPB is not set
+# CONFIG_X86_POWERNOW_K8 is not set
+# CONFIG_X86_AMD_FREQ_SENSITIVITY is not set
+# CONFIG_X86_SPEEDSTEP_CENTRINO is not set
+# CONFIG_X86_P4_CLOCKMOD is not set
 
-Sorry about all the noise.
+
 -- 
-Michal Hocko
-SUSE Labs
+Markus
