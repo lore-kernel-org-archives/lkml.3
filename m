@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422955Ab3FUBID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:08:03 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:39727 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965602Ab3FUBIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:08:00 -0400
+	id S1423014Ab3FUBJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 21:09:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:24330 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1423001Ab3FUBJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 21:09:51 -0400
+X-IronPort-AV: E=Sophos;i="4.87,908,1363104000"; 
+   d="scan'208";a="7621292"
+Message-ID: <51C3A88D.30408@cn.fujitsu.com>
+Date: Fri, 21 Jun 2013 09:12:45 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1306201319580.2063-100000@iolanthe.rowland.org>
-References: <20130620121749.GF9817@arwen.pp.htv.fi>
-	<Pine.LNX.4.44L0.1306201319580.2063-100000@iolanthe.rowland.org>
-Date: Fri, 21 Jun 2013 09:07:59 +0800
-Message-ID: <CADApbejTBAv0+XxkGLXuMVrLatbNurR0XBkK2gt6eQnXr+5yEA@mail.gmail.com>
-Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
- host controller
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
-        Chao Xie <chao.xie@marvell.com>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+CC: bcrl@kvack.org, akpm@linux-foundation.org, hpa@zytor.com,
+        trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] page_isolation: Fix a comment typo in test_pages_isolated()
+References: <1371723023-4060-1-git-send-email-tangchen@cn.fujitsu.com> <1371723023-4060-2-git-send-email-tangchen@cn.fujitsu.com> <51C300FF.50208@gmail.com>
+In-Reply-To: <51C300FF.50208@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/21 09:08:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/21 09:08:41,
+	Serialize complete at 2013/06/21 09:08:41
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 1:25 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Thu, 20 Jun 2013, Felipe Balbi wrote:
->
->> > In fact, the PHY setting and handling is related to platform or SOC,
->> > and for different SOC they can
->> > have same EHCI HCD but they PHY handling can be different.
->> > Omap'a case is the example, and i think some other vendors may have
->> > silimar cases.
->> > From above point, It is better to leave the PHY initialization and
->> > shutdown to be done by each echi-xxx driver.
->> >
->> > So Alan and Felipe
->> > What are your ideas about it?
+On 06/20/2013 09:17 PM, Zhang Yanfei wrote:
+> On 06/20/2013 06:10 PM, Tang Chen wrote:
+>> pageblock_nr_page should be pageblock_nr_pages, and fist is
+>> a typo of first.
 >>
->> If we have so many exceptions, then sure. But eventually, the common
->> case should be added generically with a flag so that non-generic cases
->> (like OMAP) can request to handle the PHY by themselves.
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> ---
+>>   mm/page_isolation.c |    8 ++++----
+>>   1 files changed, 4 insertions(+), 4 deletions(-)
 >>
->> Alan ?
+>> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+>> index 383bdbb..0cee10f 100644
+>> --- a/mm/page_isolation.c
+>> +++ b/mm/page_isolation.c
+>> @@ -226,9 +226,9 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
+>>   	int ret;
+>>
+>>   	/*
+>> -	 * Note: pageblock_nr_page != MAX_ORDER. Then, chunks of free page
+>> -	 * is not aligned to pageblock_nr_pages.
+>> -	 * Then we just check pagetype fist.
+>> +	 * Note: pageblock_nr_pages != MAX_ORDER. Then, chunks of free pages
 >
-> I don't have very strong feelings about this; Felipe has much more
-> experience with these things.
+> pageblock_nr_pages is the count of pages while MAX_ORDER is a order. Here
+> may be pageblock_order != MAX_ORDER.
+
+Hum, yes. Since we have:
+	#define pageblock_nr_pages      (1UL << pageblock_order)
+
+it should be pageblock_order.
 >
-> However, when the common case is added into the core, the simplest way
-> to indicate that the HCD wants to handle the PHY(s) by itself will be
-> to leave hcd->phy set to NULL or an ERR_PTR value.
+>> +	 * are not aligned to pageblock_nr_pages.
+>> +	 * Then we just check migratetype first.
+>>   	 */
+>>   	for (pfn = start_pfn; pfn<  end_pfn; pfn += pageblock_nr_pages) {
+>>   		page = __first_valid_page(pfn, pageblock_nr_pages);
+>> @@ -238,7 +238,7 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
+>>   	page = __first_valid_page(start_pfn, end_pfn - start_pfn);
+>>   	if ((pfn<  end_pfn) || !page)
+>>   		return -EBUSY;
+>> -	/* Check all pages are free or Marked as ISOLATED */
+>> +	/* Check all pages are free or marked as ISOLATED */
+>>   	zone = page_zone(page);
+>>   	spin_lock_irqsave(&zone->lock, flags);
+>>   	ret = __test_page_isolated_in_pageblock(start_pfn, end_pfn,
 >
-> One important thing that hasn't been pointed out yet: When we move
-> these calls into the core, the same patch must also remove those calls
-> from the glue drivers that currently do set hcd->phy.  And it must make
-> sure that the glue drivers which handle the PHY by themselves do not
-> set hcd->phy.
->
-
->From device point of view, EHCI is a standlone component. It has the
-standard sepcification, so each
-SOC vendor has EHCI HCD need to follow the standards. Then we have
-common EHCI HCD driver.
-The PHY is outside of EHCI component, each SOC vendor may have
-different PHY implementation. Then
-we have PHY driver.
-The EHCI glue driver ehci-xxx works like a SOC depended driver. It is
-its duty to handle the'
-relationship between the EHCI HCD driver and PHY driver.
-It is same as clk, irq requested by ehci-xxx driver.
-
-So i think add a flag and use usb_get_phy() is not very good.
-It is bette to make ehci-xxx to do the phy getting and EHCI HCD
-initialize it and shut down as the patch did, or let ehci-xxx to
-handle the PHY as Roger said.
-
-Based on the generic work is not too much, and does not look so
-meaningful. I suggest that let to echi-xxx
-do it.
-
-> Alan Stern
 >
