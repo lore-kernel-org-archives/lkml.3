@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab3FUHBp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:01:45 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:65481 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3FUHBo (ORCPT
+	id S1758698Ab3FUHFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 03:05:53 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:52299 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab3FUHFv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:01:44 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20130621065310.GK5523@atomide.com>
-References: <20130621162656.bb94e0fa8b6813781b804a73@canb.auug.org.au>
-	<20130621164149.598b39bb78b6015057d03f6f@canb.auug.org.au>
-	<20130621065310.GK5523@atomide.com>
-Date: Fri, 21 Jun 2013 00:01:43 -0700
-Message-ID: <CAOesGMjszju75jo6Ej6C=0-rfdPLuEj0mwmU1zYvFvYw1dyQCA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the mailbox tree
-From: Olof Johansson <olof@lixom.net>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-next@vger.kernel.org,
+	Fri, 21 Jun 2013 03:05:51 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: netdev <netdev@vger.kernel.org>, Francois Romieu <romieu@fr.zoreil.com>,
+        Joe Perches <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Suman Anna <s-anna@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: Re: [PATCH v6] ethernet/arc/arc_emac - Add new driver
+Thread-Topic: [PATCH v6] ethernet/arc/arc_emac - Add new driver
+Thread-Index: AQHObazEX0ZgxZxFm06ykyIbUaySYQ==
+Date: Fri, 21 Jun 2013 07:05:44 +0000
+Message-ID: <4881796E12491D4BB15146FE0209CE643F5F4A8F@DE02WEMBXB.internal.synopsys.com>
+References: <1371729196-4505-1-git-send-email-abrodkin@synopsys.com>
+ <CAHp75Vf8+z0B6PMjGqVNPuEJrVYiR-yMT5dvqqBAs=GA5utLrQ@mail.gmail.com>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.121.8.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 11:53 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Stephen Rothwell <sfr@canb.auug.org.au> [130620 23:48]:
->> Hi all,
->>
->> On Fri, 21 Jun 2013 16:26:56 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> >
->> > Today's linux-next merge of the arm-soc tree got a conflict in
->> > drivers/mailbox/Kconfig between commit a1824eaab70f ("mailbox: OMAP:
->> > introduce mailbox framework") from the mailbox tree and commit
->> > c869c75c16b3 ("mailbox/omap: move the OMAP mailbox framework to drivers")
->> > from the arm-soc tree.
->> >
->> > I fixed it up (I suspect not properly - see below) and can carry the fix
->> > as necessary (no action is required).
->> >
->> > It looks like we have two different versions of these changes in
->> > linux-next now, so please clean it all up.  i.e. can I just drop the
->> > mailbox tree now?
->>
->> OK, things went steeply downhill from here, so I went back and removed
->> the mailbox tree ...
+On 06/20/2013 08:00 PM, Andy Shevchenko wrote:
+> On Thu, Jun 20, 2013 at 2:53 PM, Alexey Brodkin
+>> +               if ((info & FOR_EMAC) || !txbd->data)
 >
-> I think Olof dropped the earlier version of the mailbox branch, and
-> remerged the updated mailbox branch. So if there was also yet another
-> mailbox branch being pulled into Linux next, then yes, dropping it is
-> the way to go.
+> Redundant internal braces. Up to you.
 
-No, I only reverted -- I didn't pull in any new branch.
+I left them so priorities of operations will be obvious.
 
-I wonder if this mess is caused by the fact that I did the revert
-instead of rebuilding our for-next and dropping the merge in the first
-place.
+>> +#define FRST_OR_LAST_MASK      (FRST_MASK | LAST_MASK)
+>
+> You may re-use it in *_tx_clean() above.
+> Also, please use full English word FIRST. Actually is there any
+> conflicts with existing drivers? Should it be with [ARC_]EMAC prefix?
 
-I'll rebuild our for-next (or maybe Arnd will beat me to it) before
-next linux-next build, i.e. Sunday night my time.
+Re-used it in 2 mentioned places. And changed FRST with FIRST.
+I don't see defines with the same name anywhere else.
 
+>
+>> +               /* Make sure pointer to data buffer is set */
+>> +               mb();
+>
+> I'm not so familiar with memory barriers, but is this somehow differ
+> from smp_mb()?
+> Which one suits better? And what about the other places in this file?
 
--Olof
+Since for now driver itself is not SMP-safe so I don't see any reason 
+for "smp_" barriers. Later I plan to add SMP compatibility and that this 
+point barriers will be replaced as well.
+
+Another thing is I switched to "wmb()" (which is a barrier fror write in 
+particular) instead of generic "mb()".
+
+>> +       /* Allocate Tx BD's similar to Rx BD's. All Tx BD's owned by CPU */
+>> +       bd = priv->txbd;
+>> +       for (i = 0; i < TX_BD_NUM; i++) {
+>> +               bd->data = 0;
+>> +               bd->info = 0;
+>> +               bd++;
+>> +       }
+>
+> Looks like
+> memset(priv->txbd, 0, siezeof(*priv->txbd) * TX_BD_NUM);
+
+Correct.
+
+>> +       /* Get "info" of the next BD */
+>
+>> +       /* Get PHY from device tree */
+>> +       phy_node = of_parse_phandle(pdev->dev.of_node, "phy", 0);
+>
+>> +       /* Get EMAC registers base address from device tree */
+>> +       err = of_address_to_resource(pdev->dev.of_node, 0, &res_regs);
+>
+>> +       /* Get CPU clock frequency from device tree */
+>> +       if (of_property_read_u32(pdev->dev.of_node, "clock-frequency",
+>> +                                &clock_frequency)) {
+>
+>> +       /* Get IRQ from device tree */
+>> +       err = of_irq_to_resource(pdev->dev.of_node, 0, &res_irq);
+>
+> So, you don't like the idea to get as much as possible before
+> alloc_netdev(), don't you?
+
+Ok, I did this change)))
+
+Regards,
+Alexey
