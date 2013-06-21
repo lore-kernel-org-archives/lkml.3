@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423240Ab3FUQUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 12:20:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423007Ab3FUQUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 12:20:54 -0400
-Message-ID: <1371831653.30572.126.camel@ul30vt.home>
-Subject: Re: [PATCH] vfio: fix documentation
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Fri, 21 Jun 2013 10:20:53 -0600
-In-Reply-To: <1371783114-22516-1-git-send-email-aik@ozlabs.ru>
-References: <1371783114-22516-1-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1423273Ab3FUQWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 12:22:51 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:64970 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423018Ab3FUQWt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 12:22:49 -0400
+Message-ID: <51C47DD6.3000004@linaro.org>
+Date: Fri, 21 Jun 2013 09:22:46 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/4] time: add a notifier chain for when the system time
+ is stepped
+References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-3-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306210953480.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306210953480.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 12:51 +1000, Alexey Kardashevskiy wrote:
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> ---
->  Documentation/vfio.txt |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/vfio.txt b/Documentation/vfio.txt
-> index c55533c..d7993dc 100644
-> --- a/Documentation/vfio.txt
-> +++ b/Documentation/vfio.txt
-> @@ -172,12 +172,12 @@ group and can access them as follows:
->  	struct vfio_device_info device_info = { .argsz = sizeof(device_info) };
->  
->  	/* Create a new container */
-> -	container = open("/dev/vfio/vfio, O_RDWR);
-> +	container = open("/dev/vfio/vfio", O_RDWR);
->  
->  	if (ioctl(container, VFIO_GET_API_VERSION) != VFIO_API_VERSION)
->  		/* Unknown API version */
->  
-> -	if (!ioctl(container, VFIO_CHECK_EXTENSION, VFIO_X86_IOMMU))
-> +	if (!ioctl(container, VFIO_CHECK_EXTENSION, VFIO_TYPE1_IOMMU))
->  		/* Doesn't support the IOMMU driver we want. */
->  
->  	/* Open the group */
-> @@ -193,7 +193,7 @@ group and can access them as follows:
->  	ioctl(group, VFIO_GROUP_SET_CONTAINER, &container);
->  
->  	/* Enable the IOMMU model we want */
-> -	ioctl(container, VFIO_SET_IOMMU, VFIO_X86_IOMMU)
-> +	ioctl(container, VFIO_SET_IOMMU, VFIO_TYPE1_IOMMU)
->  
->  	/* Get addition IOMMU info */
->  	ioctl(container, VFIO_IOMMU_GET_INFO, &iommu_info);
+On 06/21/2013 12:57 AM, Thomas Gleixner wrote:
+> On Thu, 20 Jun 2013, David Vrabel wrote:
+>
+>> From: David Vrabel <david.vrabel@citrix.com>
+>>
+>> The high resolution timer code gets notified of step changes to the
+>> system time with clock_was_set() or clock_was_set_delayed() calls.  If
+>> other parts of the kernel require similar notification there is no
+>> clear place to hook into.
+> You fail to explain why any other part of the kernel requires a
+> notification.
+>   
+> We went great length to confine timekeeping inside the core code and
+> now you add random notifiers along with totally ugly tasklet
+> constructs. What for?
+>
+> Without a reasonable explanation of the problem you are trying to
+> solve this is going nowhere near the tree.
 
+It took awhile for me to get why it was needed as well.
 
-Applied.  Thanks,
+My understanding is that on Xen, they want the hypervisor's virtual RTC 
+needs to be aligned with Dom0s system time (so that DomN guests boot 
+with the correct time). Thus changes to the system time need to cause 
+Dom0 to update the virtual RTC.
 
-Alex
+Its not terribly unlike the timerfd notification we do to userspace, but 
+instead is done for the Dom0 Xen management code.
+
+I do agree we need to keep users of the notification on a short leash 
+(hopefully keeping the interface behind some sort of internal.h header 
+file) so its easy to see when folks start trying to use it.
+
+thanks
+-john
+
 
