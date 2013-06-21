@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946134Ab3FUVaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:30:30 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:36172 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1946079Ab3FUVa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:30:29 -0400
-Message-ID: <51C4C5F3.3050800@sgi.com>
-Date: Fri, 21 Jun 2013 14:30:27 -0700
-From: Mike Travis <travis@sgi.com>
+	id S1946127Ab3FUVeD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:34:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27622 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945979Ab3FUVeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:34:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,915,1363158000"; 
+   d="scan'208";a="333565432"
+Message-ID: <51C4C6C8.1050008@linux.intel.com>
+Date: Fri, 21 Jun 2013 14:34:00 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Morten Rasmussen <morten.rasmussen@arm.com>, David Lang <david@lang.hm>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com> <20130621185056.GA23473@kroah.com>
-In-Reply-To: <20130621185056.GA23473@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+        "pjt@google.com" <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: power-efficient scheduling design
+References: <20130530134718.GB32728@e103034-lin> <20130531105204.GE30394@gmail.com> <20130614160522.GG32728@e103034-lin> <51C07ABC.2080704@linux.intel.com> <alpine.DEB.2.02.1306181039340.9258@nftneq.ynat.uz> <51C1D0BB.3040705@linux.intel.com> <20130619170042.GH5460@e103034-lin> <51C1E58D.9000408@linux.intel.com> <20130621085002.GJ5460@e103034-lin> <51C47377.2000208@linux.intel.com> <CAHkRjk5G7XJxzjcWa4BqRxz0AtAAh_-Eomzk4+dQRaFk1=HQqA@mail.gmail.com>
+In-Reply-To: <CAHkRjk5G7XJxzjcWa4BqRxz0AtAAh_-Eomzk4+dQRaFk1=HQqA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 6/21/2013 11:50 AM, Greg KH wrote:
-> On Fri, Jun 21, 2013 at 11:44:22AM -0700, Yinghai Lu wrote:
->> On Fri, Jun 21, 2013 at 10:03 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 06/21/2013 09:51 AM, Greg KH wrote:
->>>
->>> I suspect the cutoff for this should be a lot lower than 8 TB even, more
->>> like 128 GB or so.  The only concern is to not set the cutoff so low
->>> that we can end up running out of memory or with suboptimal NUMA
->>> placement just because of this.
+On 6/21/2013 2:23 PM, Catalin Marinas wrote:
 >>
->> I would suggest another way:
->> only boot the system with boot node (include cpu, ram and pci root buses).
->> then after boot, could add other nodes.
-> 
-> What exactly do you mean by "after boot"?  Often, the boot process of
-> userspace needs those additional cpus and ram in order to initialize
-> everything (like the pci devices) properly.
+>> oops sorry I misread your mail (lack of early coffee I suppose)
+>>
+>> I can see your point of having a thing for "did we ask for all the performance
+>> we could ask for" prior to doing a load balance (although, for power efficiency,
+>> if you have two tasks that could run in parallel, it's usually better to
+>> run them in parallel... so likely we should balance anyway)
+>
+> Not necessarily, especially if parallel running implies powering up a
+> full cluster just for one CPU (it depends on the hardware but for
+> example a cluster may not be able to go in deeper sleep states unless
+> all the CPUs in that cluster are idle).
 
-Exactly.  That's why I left both low and high memory on each node.
+I guess it depends on the system
 
-> 
-> thanks,
-> 
-> greg k-h
-> 
+the very first cpu needs to power on
+* the core itself
+* the "cluster" that you mention
+* the memory controller
+* the memory (out of self refresh)
+
+while the second cpu needs
+* the core itself
+* maybe a second cluster
+
+normally on Intel systems, the memory power delta is quite significant
+which then means the efficiency of the second core is huge compared to
+running things in sequence.
