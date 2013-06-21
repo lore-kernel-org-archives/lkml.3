@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab3FUCZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 22:25:21 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:58940 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757600Ab3FUCZT (ORCPT
+	id S1758215Ab3FUCak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 22:30:40 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:53788 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757878Ab3FUCaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 22:25:19 -0400
-Message-ID: <51C3B98C.3090405@hitachi.com>
-Date: Fri, 21 Jun 2013 11:25:16 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 20 Jun 2013 22:30:39 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] tracing/kprobes: perf_trace_buf_*() optimization
- + cleanups
-References: <20130620173748.GA13133@redhat.com> <1371753773.18733.102.camel@gandalf.local.home>
-In-Reply-To: <1371753773.18733.102.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51C318D6.4090601@gmail.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+	<1370589652-24549-5-git-send-email-alex.shi@intel.com>
+	<CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
+	<51BF2E37.5040400@intel.com>
+	<CALZhoSSweOzTgjykRMxv_kha9TH-8EAKvuhinf8ADFyFDzDTuQ@mail.gmail.com>
+	<CALZhoSSFr_HN9ccxNLK7HA-7O9soAU7VZ3njtKf=Ndw=_AbQRw@mail.gmail.com>
+	<51C318D6.4090601@gmail.com>
+Date: Fri, 21 Jun 2013 10:30:37 +0800
+Message-ID: <CALZhoSQgO-V-vkOy+urL_H4cjcCE8YY3w+K=mS8hptWteKGcFw@mail.gmail.com>
+Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue entity
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Alex Shi <seakeel@gmail.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/21 3:42), Steven Rostedt wrote:
-> On Thu, 2013-06-20 at 19:37 +0200, Oleg Nesterov wrote:
->> Steven,
+Hi Alex,
+
+On Thu, Jun 20, 2013 at 10:59 PM, Alex Shi <seakeel@gmail.com> wrote:
+> On 06/20/2013 10:46 AM, Lei Wen wrote:
 >>
->> Please consider this series for inclusion. It doesn't depend on
->> other changes we are discussing.
 >>
->> Only cosmetic changes since v1, everything was acked by Masami.
+>> But here I have a question, there is another usage of __synchronzie_entity_decay
+>> in current kernel, in the switched_from_fair function.
 >>
-> 
-> 
-> Not that I don't trust you :-)
-> 
-> But Masami, can you Ack all these patches one more time. I like to have
-> the Acked-by, a direct reply to the patches I pull. It's also fine to
-> reply to this email with "All patches in this series: Acked-by: ... " So
-> you don't need to reply to each patch individually.
+>> If task being frequently switched between rt and fair class, would it
+>> also bring the
+>> redundant issue? Do we need patch like below?
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index b5408e1..9640c66 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5856,7 +5856,7 @@ static void switched_from_fair(struct rq *rq,
+>> struct task_struct *p)
+>>         */
+>>         if (p->se.avg.decay_count) {
+>>                 struct cfs_rq *cfs_rq = cfs_rq_of(&p->se);
+>> -               se->avg.last_runnable_update +=
+>> +               p->se.avg.last_runnable_update +=
+>
+> what tree does this patch base on?
 
-Sure, all patches are fine for me :)
+I create the patch based on v3.9 kernel.
+If it is ok, I could create a formal one based on latest kernel.
 
-All patches in this series: Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Thanks,
+Lei
 
-Thank you!
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+>>                                 __synchronize_entity_decay(&p->se);
+>>                 subtract_blocked_load_contrib(cfs_rq,
+>>                                 p->se.avg.load_avg_contrib);
+>
+>
+> --
+> Thanks
+>     Alex
