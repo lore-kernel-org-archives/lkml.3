@@ -1,115 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946239Ab3FUXIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 19:08:24 -0400
-Received: from 100.204.216.81.static.g-hkn.siw.siwnet.net ([81.216.204.100]:47458
-	"EHLO iko.pp.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1946172Ab3FUXIX (ORCPT
+	id S1946241Ab3FUXLt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 19:11:49 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:3803 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423360Ab3FUXLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 19:08:23 -0400
-Message-Id: <201306212308.r5LN8C7M020720@eskarina.iko.pp.se>
-X-Face: ^"+mumOlNwo;yI>`\39\txuVze?eiR9uqpo2*mE!9MWXgXI0v(3ArwymNWe'.q:eLl!=guD
- x{jGFEWN6,#HoN%2qRW;7.CL]9%Ap,067"u1%!NUqS.MhV'+,6$Fj-;W2Z}Y,JUZ'L+f<?~E{ID*=T
- V\NxAOu>)|B@3k3n;gLl*#i[(J-os#fNnDJ8m["|JWNwpORh|_.MGkR#|a~QS!"4hEQ{O{[Ii14{xD
- PU/:5wuv7m1=TK=.>G8wdfpY~]{H(Qa\1`%|Hz:!)c3f9UOW|WgE"4d\E7?oDu9.
-From: Anders Hammarquist <iko@iko.pp.se>
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] *** SUBJECT HERE ***
-In-Reply-To: Message from Greg KH <gregkh@linuxfoundation.org>
-   of "Wed, 19 Jun 2013 15:53:15 -0700." <20130619225315.GB12282@kroah.com>
-References: <201306190012.r5J0CNJZ031854@eskarina.iko.pp.se><20130619225315.GB12282@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <20718.1371856092.1@eskarina.iko.pp.se>
-Date: Sat, 22 Jun 2013 01:08:12 +0200
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (iko.pp.se [127.0.0.1]); Sat, 22 Jun 2013 01:08:16 +0200 (MEST)
+	Fri, 21 Jun 2013 19:11:48 -0400
+Message-ID: <1371856305.13136.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: linux-next: Tree for Jun 21 [ BROKEN ipc/ipc-msg ]
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: sedat.dilek@gmail.com
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
+        Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+Date: Fri, 21 Jun 2013 16:11:45 -0700
+In-Reply-To: <CA+icZUUdwAiyVq5-7+qo3YL-ka4y6DfbMmjy_MTiZ+Y70y55Cw@mail.gmail.com>
+References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
+	 <1371852439.1798.27.camel@buesod1.americas.hpqcorp.net>
+	 <CA+icZUUdwAiyVq5-7+qo3YL-ka4y6DfbMmjy_MTiZ+Y70y55Cw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a message of Wed, 19 Jun 2013 15:53:15 -0700, Greg KH writes:
->I think you forgot a Subject :)
+On Sat, 2013-06-22 at 00:54 +0200, Sedat Dilek wrote:
+> On Sat, Jun 22, 2013 at 12:07 AM, Davidlohr Bueso
+> <davidlohr.bueso@hp.com> wrote:
+> > On Fri, 2013-06-21 at 21:34 +0200, Sedat Dilek wrote:
+> >> On Fri, Jun 21, 2013 at 10:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >> > Hi all,
+> >> >
+> >> > Happy solstice!
+> >> >
+> >> > Changes since 20130620:
+> >> >
+> >> > Dropped tree: mailbox (really bad merge conflicts with the arm-soc tree)
+> >> >
+> >> > The net-next tree gained a conflict against the net tree.
+> >> >
+> >> > The leds tree still had its build failure, so I used the version from
+> >> > next-20130607.
+> >> >
+> >> > The arm-soc tree gained conflicts against the tip, net-next, mfd and
+> >> > mailbox trees.
+> >> >
+> >> > The staging tree still had its build failure for which I disabled some
+> >> > code.
+> >> >
+> >> > The akpm tree lost a few patches that turned up elsewhere and gained
+> >> > conflicts against the ftrace and arm-soc trees.
+> >> >
+> >> > ----------------------------------------------------------------------------
+> >> >
+> >>
+> >> [ CC IPC folks ]
+> >>
+> >> Building via 'make deb-pkg' with fakeroot fails here like this:
+> >>
+> >> make: *** [deb-pkg] Terminated
+> >> /usr/bin/fakeroot: line 181:  2386 Terminated
+> >> FAKEROOTKEY=$FAKEROOTKEY LD_LIBRARY_PATH="$PATHS" LD_PRELOAD="$LIB"
+> >> "$@"
+> >> semop(1): encountered an error: Identifier removed
+> >> semop(2): encountered an error: Invalid argument
+> >> semop(1): encountered an error: Identifier removed
+> >> semop(1): encountered an error: Identifier removed
+> >> semop(1): encountered an error: Invalid argument
+> >> semop(1): encountered an error: Invalid argument
+> >> semop(1): encountered an error: Invalid argument
+> >>
+> >
+> > Hmmm those really shouldn't be related to the message queue changes. Are
+> > you sure you got the right bisect?
+> >
+> > Manfred has a few ipc/sem.c patches in linux-next, starting at commit
+> > c50df1b4 (ipc/sem.c: cacheline align the semaphore structures), does
+> > reverting any of those instead of "ipc,msg: shorten critical region in
+> > msgrcv" help at all? Also, anything reported in dmesg?
+> >
+> 
+> First, I reverted all IPC patches from akpm-tree within -next.
+> Then, I isolated the culprit by git-bisecting.
+> As I checked my logs I did not see anything helpful.
+> 
+> >> The issue is present since next-20130606!
+> >>
+> >> LAST KNOWN GOOD: next-20130605
+> >> FIRST KNOWN BAD: next-20130606
+> >>
+> >> KNOWN GOOD: next-20130604
+> >> KNOWN BAD:  next-20130607 || next-20130619 || next-20130620 || next-20130621
+> >>
+> >> git-bisect says CULPRIT commit is...
+> >>
+> >>      "ipc,msg: shorten critical region in msgrcv"
+> >
+> > This I get. I went through the code again and it looks correct and
+> > functionally equivalent to the old msgrcv.
+> >
+> 
+> Hmm, I guess a rcu_read_unlock() is missing?
+> 
+> [ next-20130605 ]
+> ...
+> 		/* Lockless receive, part 3:
+> 		 * Acquire the queue spinlock.
+> 		 */
+> 		ipc_lock_by_ptr(&msq->q_perm);
+> 		rcu_read_unlock();
+> ...
+> [ next-20130621 ]
+> ...
+> 		/* Lockless receive, part 3:
+> 		 * Acquire the queue spinlock.
+> 		 */
+> 		ipc_lock_object(&msq->q_perm);
+> ...
+> 
+> Whereas ipc_lock_by_ptr() is equivalent to:
+> rcu_read_lock();
+> ipc_lock_object();
 
-Indeed. I blame it on my first fight with git format-patch ;-)
+Yeah, I noticed that, but it's not an error. In the older code we have
 
->On Wed, Jun 19, 2013 at 02:05:07AM +0200, Anders Hammarquist wrote:
->> This patch set adds the product id to the driver, and makes the
->> product type more explicit. Arguably, the ABBOTT_PRODUCT_ID
->> define could be removed, but I left it on the off chance that
->> someone other that the TI 3410 driver uses it.
->
->No, it doesn't, please fix up that last patch and resend it.
+rcu_read_lock (Lockless receive, part 1)
+[...]
+/* Lockless receive, part 3:
+ * Acquire the queue spinlock.
+ */
+ipc_lock_by_ptr(&msq->q_perm);
+rcu_read_unlock();
 
-Right, and in removing it I actually found that it was used in
-two places in the driver. I lost my second fight with format-patch
-so I'll just enclose the fixed patch below.
 
-/Anders
+Which translates to:
+rcu_read_lock (Lockless receive, part 1)
+[...]
+/* Lockless receive, part 3:
+ * Acquire the queue spinlock.
+ */
+rcu_read_lock();
+ipc_lock_object();
+rcu_read_unlock();
 
----8<---
-ti_usb_3410_5052:
-* Remove unspecific ABBOTT_PRODUCT_ID
-* Fix size of statically sized arrays
+And thus, after that last rcu_read_unlock we are left with
+rcu_read_lock()
+ipc_lock_object();
 
-Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
+If you notice, that's exactly what is done in the new code, only much
+more readable: We do rcu_read_lock in the part 1, then in part 3, we
+acquire the spinlock via ipc_lock_object(&msq->q_perm)
 
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
-index e581c25..26c1161 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -158,7 +158,7 @@ static unsigned int product_5052_count;
- /* the array dimension is the number of default entries plus */
- /* TI_EXTRA_VID_PID_COUNT user defined entries plus 1 terminating */
- /* null entry */
--static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
-+static struct usb_device_id ti_id_table_3410[16+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
- 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
-@@ -172,8 +172,8 @@ static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- };
- 
-@@ -184,7 +184,7 @@ static struct usb_device_id ti_id_table_5052[5+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_5052_FIRMWARE_PRODUCT_ID) },
- };
- 
--static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1] = {
-+static struct usb_device_id ti_id_table_combined[20+2*TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
- 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
-@@ -202,7 +202,8 @@ static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1]
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- 	{ }
- };
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.h b/drivers/usb/serial/ti_usb_3410_5052.h
-index 4a2423e..d3ff470 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.h
-+++ b/drivers/usb/serial/ti_usb_3410_5052.h
-@@ -52,9 +52,8 @@
- 
- /* Abbott Diabetics vendor and product ids */
- #define ABBOTT_VENDOR_ID		0x1a61
--#define ABBOTT_STEREO_PLUG_ID		0x3410
--#define ABBOTT_PRODUCT_ID		ABBOTT_STEREO_PLUG_ID
--#define ABBOTT_STRIP_PORT_ID		0x3420
-+#define ABBOTT_STEREO_PLUG_PRODUCT_ID	0x3410
-+#define ABBOTT_STRIP_PORT_PRODUCT_ID	0x3420
- 
- /* Commands */
- #define TI_GET_VERSION			0x01
+
+> >>
+> >> NOTE: msg_lock_(check_) routines have to be restored (one more revert needed)!
+> >
+> > This I don't get. Restoring msg_lock_[check] is already equivalent to
+> > reverting "ipc,msg: shorten critical region in msgrcv" and several other
+> > of the msq patches. What other patch needs reverted?
+> >
+> 
+> No, you have to revert both patches as the other removed
+> msg_lock_[check] afterwards.
+> 
+> > Anyway, I'll see if I can reproduce the issue, maybe I'm missing
+> > something.
+> >
+> 
+> Yupp, I try with adding rcu_read_unlock()... and report.
+> 
+> - Sedat -
+> 
+> > Thanks,
+> > Davidlohr
+> >
+> >>
+> >> Reverting both (below) commits makes fakeroot build via 'make dep-pkg" again.
+> >>
+> >> I have tested the revert-patches with next-20130606 and next-20130621
+> >> (see file-attachments).
+> >>
+> >> My build-script is attached!
+> >>
+> >> Can someone of the IPC folks look at that?
+> >> Thanks!
+> >>
+> >> - Sedat -
+> >>
+> >>
+> >> P.S.: Commit-IDs listed below.
+> >>
+> >> [ next-20130606 ]
+> >>
+> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130606
+> >>
+> >> "ipc: remove unused functions"
+> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=8793fdfb0d0a6ed5916767e29a15d3eb56e04e79
+> >>
+> >> "ipc,msg: shorten critical region in msgrcv"
+> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=c0ff93322847a54f74a5450032c4df64c17fdaed
+> >>
+> >> [ next-20130621 ]
+> >>
+> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130621
+> >>
+> >> "ipc: remove unused functions"
+> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=941ce57c81dcceadf55265616ee1e8bef18b0ad3
+> >>
+> >> "ipc,msg: shorten critical region in msgrcv"
+> >> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=62190df4081ee8504e3611d45edb40450cb408ac
+> >
+> >
+
+
