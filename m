@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423103Ab3FUOwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:52:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61791 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161419Ab3FUOwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:52:34 -0400
-Date: Fri, 21 Jun 2013 16:52:28 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Mark Brown <broonie@kernel.org>
-cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 2/2] regulators: max8973: initial DT support
-In-Reply-To: <20130621144423.GX27646@sirena.org.uk>
-Message-ID: <Pine.LNX.4.64.1306211651120.27277@axis700.grange>
-References: <Pine.LNX.4.64.1306210825040.27277@axis700.grange>
- <Pine.LNX.4.64.1306210827090.27277@axis700.grange> <20130621144423.GX27646@sirena.org.uk>
+	id S1423142Ab3FUOxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:53:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43776 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423039Ab3FUOxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 10:53:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,913,1363158000"; 
+   d="scan'208";a="333394996"
+Date: Fri, 21 Jun 2013 19:43:30 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 0/6] Convert JZ4740 to dmaengine
+Message-ID: <20130621141330.GK23141@intel.com>
+References: <1369931105-28065-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:jSc9utd5YQoP+l5i+MFiUbz6/0HpFbaONIGddIZSJvj
- Y6FUXNIPtLtSVtENP/3oSI34YTR3OS9ACxgACkqdt9s+i/NRYy
- zfcZEQ0WHejl/vRQGqa23x0CaqEW6ozQTRpKsT+rx4hNvh1H/x
- fRRmne5Kk1sJcuddbbH+oK8ozwl+f3as1xIuFX1EyHPS9YruIg
- vsIkkeoomW2u3YBIxkr1WCXCUJAD+G7+lWaMGvmqQ6pKDm7Fb1
- vodil44TdogNy/NKXF1ruS98tNxhtMR/fDfksDeGGZMgnfxr7Y
- 407Wgrc22p5hGpCnkILKu13KmKbsqq1dlguL5VgzH4I2cP6Fbw
- kR3N8e6xLPWWNKdYkbfTgCnGaUDAUk+TB04mvf6BkdZPTPsCzD
- lTt1RZCbLEd7A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369931105-28065-1-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark
-
-Thanks for the review
-
-On Fri, 21 Jun 2013, Mark Brown wrote:
-
-> On Fri, Jun 21, 2013 at 08:30:26AM +0200, Guennadi Liakhovetski wrote:
+On Thu, May 30, 2013 at 06:24:59PM +0200, Lars-Peter Clausen wrote:
+> Hi,
 > 
-> > +Required properties:
-> > +
-> > +- compatible:	must be "maxium,max8973"
-> > +- reg:		the i2c slave address of the regulator. It should be 0x1b.
-> > +- regulators:	a subnode with a single regulator descriptor in it called "dcdc"
+> This series replaces the custom JZ4740 DMA API with a dmaengine driver. This is
+> done in 3 steps:
+> 	1) Add a dmaengine driver which wraps the custom JZ4740 DMA API
+> 	2) Update all users of the JZ4740 DMA API to use dmaengine instead
+> 	3) Remove the custom API and move all direct hardware access to the
+> 	   dmaengine driver.
 > 
-> Why make this a subnode - if there's only one regulator on the device
-> then it may as well just put all the regulator properties there?
-
-Right, I wasn't sure about this, I thought it was kind of a common 
-practice even for just one regulator. Will embed, sure.
-
+> The first two patches in the series also make sure that the clock of the DMA
+> core is enabled.
 > 
-> > +	if (!regulators) {
-> > +		dev_err(dev, "regulator node not found\n");
-> > +		return -ENODEV;
-> > +	}
-> > +
-> > +	ret = of_regulator_match(dev, regulators,
-> > +				 &max8973_regulator_match, 1);
-> > +	of_node_put(regulators);
-> > +	if (ret < 0) {
-> > +		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
-> > +		return ret;
-> > +	}
-> > +	if (!ret) {
-> > +		dev_err(dev, "No regulator configuration found\n");
-> > +		return -ENODEV;
-> > +	}
-> > +
-> > +	return 0;
+> Since the patches in this series depend on each other I'd prefer if they could
+> all go through the DMA tree.
 > 
-> This would simplify the code here, the driver can just call
-> of_get_regulator_init_data() directly with the node.
+> There are a few minor changes to the patch 3 in v2 of this series, all other
+> patches are identical to v1.
 
-Ok, I'll look at it.
+Applied all expect the "ASoC: jz4740: Use the generic dmaengine PCM driver". Can
+you rebase that on slave dma-next and resend
 
-> > -	if (!pdata->enable_ext_control) {
-> > +	if (!pdata || !pdata->enable_ext_control) {
-> >  		max->desc.enable_reg = MAX8973_VOUT;
-> >  		max->desc.enable_mask = MAX8973_VOUT_ENABLE;
-> >  		max->ops.enable = regulator_enable_regmap;
+Fixed up struct alignment manually in 4th one
+
+--
+~Vinod
 > 
-> A common approach here is just to embed the platform data in the
-> driver data then copy actual platform data in there or parse the device
-> tree bindings (when added) into the structure.  This means that most of
-> the driver can just assume there's platform data which makes life a bit
-> simpler.
+> - Lars
+> 
+> Lars-Peter Clausen (4):
+>   dma: Add a jz4740 dmaengine driver
+>   MIPS: jz4740: Register jz4740 DMA device
+>   ASoC: jz4740: Use the generic dmaengine PCM driver
+>   MIPS: jz4740: Remove custom DMA API
+> 
+> Maarten ter Huurne (2):
+>   MIPS: jz4740: Correct clock gate bit for DMA controller
+>   MIPS: jz4740: Acquire and enable DMA controller clock
+> 
+>  arch/mips/include/asm/mach-jz4740/dma.h      |  56 ---
+>  arch/mips/include/asm/mach-jz4740/platform.h |   1 +
+>  arch/mips/jz4740/Makefile                    |   2 +-
+>  arch/mips/jz4740/board-qi_lb60.c             |   1 +
+>  arch/mips/jz4740/clock.c                     |   2 +-
+>  arch/mips/jz4740/dma.c                       | 287 -------------
+>  arch/mips/jz4740/platform.c                  |  21 +
+>  drivers/dma/Kconfig                          |   6 +
+>  drivers/dma/Makefile                         |   1 +
+>  drivers/dma/dma-jz4740.c                     | 617 +++++++++++++++++++++++++++
+>  sound/soc/jz4740/Kconfig                     |   1 +
+>  sound/soc/jz4740/jz4740-i2s.c                |  48 +--
+>  sound/soc/jz4740/jz4740-pcm.c                | 310 +-------------
+>  sound/soc/jz4740/jz4740-pcm.h                |  20 -
+>  14 files changed, 676 insertions(+), 697 deletions(-)
+>  delete mode 100644 arch/mips/jz4740/dma.c
+>  create mode 100644 drivers/dma/dma-jz4740.c
+>  delete mode 100644 sound/soc/jz4740/jz4740-pcm.h
+> 
+> -- 
+> 1.8.2.1
+> 
 
-But we can do this later, when we add DT support for those parameters, 
-right?
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+-- 
