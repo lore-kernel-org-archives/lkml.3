@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423720Ab3FUTAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 15:00:48 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:59517 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423554Ab3FUTAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 15:00:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130621184434.GC26001@kroah.com>
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
-	<CAE9FiQVsNk0rjde8YQd_Bxvo8GFcpDoTeVRgvOMA8DVwhYO4kw@mail.gmail.com>
-	<20130621184434.GC26001@kroah.com>
-Date: Fri, 21 Jun 2013 12:00:44 -0700
-X-Google-Sender-Auth: ZLYzvAp2s4cC_s1Xacax9bsZkJA
-Message-ID: <CAE9FiQUfL9695iDY6zMwA5j6OGL8edotXwfSNBHsHC54qqEAGQ@mail.gmail.com>
-Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
-        Mike Travis <travis@sgi.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1423690Ab3FUTAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 15:00:43 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:44005 "EHLO
+	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1423554Ab3FUTAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 15:00:42 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: airlied@linux.ie
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>, stable@vger.kernel.org,
+        Frederic Crozat <fcrozat@suse.com>, Ben Skeggs <bskeggs@redhat.com>,
+        dri-devel@lists.freedesktop.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH -resend] drm/nouveau: use vmalloc for pgt allocation
+Date: Fri, 21 Jun 2013 21:00:38 +0200
+Message-Id: <1371841238-25075-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 11:44 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Jun 21, 2013 at 11:36:21AM -0700, Yinghai Lu wrote:
->> On Fri, Jun 21, 2013 at 9:25 AM, Nathan Zimmer <nzimmer@sgi.com> wrote:
->> > This rfc patch set delays initializing large sections of memory until we have
->> > started cpus.  This has the effect of reducing startup times on large memory
->> > systems.  On 16TB it can take over an hour to boot and most of that time
->> > is spent initializing memory.
->>
->> One hour on system with 16T ram? BIOS or OS?
->>
->> I use wall clock to check bootime on one system with 3T and 16 pcie cards,
->> Linus only takes about 3m and 30 seconds from bootloader.
->>
->> wonder if you boot delay is with so many cpu get onlined in serialized mode.
->>
->> so can you try boot your system with "maxcpus=128" to get the boot time with
->> wall clock ?
->
-> Why use the "wall clock" when we have the wonderful bootchart tools and
-> scripts that do this all for you, and can tell you exactly what part of
-> the kernel is taking what time, to help with fixing issues like this?
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-bootchart is not completed.
+Page tables on nv50 take 48kB, which can be hard to allocate in one piece.
+Let's use vmalloc.
 
-printk timestamp come after mem get initialized.
-....
-[    0.004000] tsc: Fast TSC calibration using PIT
+[js] It is a pain for opensuse users as they see it on a daily basis.
+Let's fix it for good. One example of a trace is as follows:
 
-before that stamp are all 0.
+firefox: page allocation failure. order:3, mode:0x2000d0
+Pid: 5068, comm: firefox Not tainted 3.7.9-3-desktop #1
+Call Trace:
+...
+ [<ffffffff81114a52>] warn_alloc_failed+0x102/0x1b0
+ [<ffffffff811189f3>] __alloc_pages_nodemask+0x793/0x9f0
+ [<ffffffff811597f7>] kmem_getpages+0x57/0x1b0
+ [<ffffffff8115a3e4>] fallback_alloc+0x174/0x270
+ [<ffffffff8115abd9>] __kmalloc+0x1d9/0x240
+ [<ffffffffa00ffb2b>] nouveau_vm_create+0xbb/0x160 [nouveau]
+ [<ffffffffa0149110>] nouveau_drm_open+0xb0/0x140 [nouveau]
+ [<ffffffffa0066a32>] drm_open+0x222/0x640 [drm]
+...
+SLAB: Unable to allocate memory on node 0 (gfp=0xd0)
+  cache: size-65536, object size: 65536, order: 4
+  node -1: slabs: 9/9, objs: 9/9, free: 0
 
-Yinghai
+References: https://bugzilla.novell.com/show_bug.cgi?id=802347
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: stable@vger.kernel.org
+Cc: Frederic Crozat <fcrozat@suse.com>
+Cc: David Airlie <airlied@linux.ie>
+Cc: Ben Skeggs <bskeggs@redhat.com>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/gpu/drm/nouveau/core/subdev/vm/base.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
+index 77c67fc..e66fb77 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
+@@ -362,7 +362,7 @@ nouveau_vm_create(struct nouveau_vmmgr *vmm, u64 offset, u64 length,
+ 	vm->fpde = offset >> (vmm->pgt_bits + 12);
+ 	vm->lpde = (offset + length - 1) >> (vmm->pgt_bits + 12);
+ 
+-	vm->pgt  = kcalloc(vm->lpde - vm->fpde + 1, sizeof(*vm->pgt), GFP_KERNEL);
++	vm->pgt  = vzalloc((vm->lpde - vm->fpde + 1) * sizeof(*vm->pgt));
+ 	if (!vm->pgt) {
+ 		kfree(vm);
+ 		return -ENOMEM;
+@@ -371,7 +371,7 @@ nouveau_vm_create(struct nouveau_vmmgr *vmm, u64 offset, u64 length,
+ 	ret = nouveau_mm_init(&vm->mm, mm_offset >> 12, mm_length >> 12,
+ 			      block >> 12);
+ 	if (ret) {
+-		kfree(vm->pgt);
++		vfree(vm->pgt);
+ 		kfree(vm);
+ 		return ret;
+ 	}
+@@ -446,7 +446,7 @@ nouveau_vm_del(struct nouveau_vm *vm)
+ 	}
+ 
+ 	nouveau_mm_fini(&vm->mm);
+-	kfree(vm->pgt);
++	vfree(vm->pgt);
+ 	kfree(vm);
+ }
+ 
+-- 
+1.8.3.1
+
