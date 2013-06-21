@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423108Ab3FUOoj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:44:39 -0400
-Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:34100 "EHLO
-	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161419Ab3FUOog (ORCPT
+	id S1423103Ab3FUOwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:52:35 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61791 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161419Ab3FUOwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:44:36 -0400
-Date: Fri, 21 Jun 2013 14:44:34 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Roland Dreier <roland@kernel.org>
-cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Motohiro KOSAKI <kosaki.motohiro@gmail.com>, penberg@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
-Subject: Re: [PATCH] mm: Revert pinned_vm braindamage
-In-Reply-To: <CAG4TOxNp8hrsC-1hbxGaR+xoUJYqUNv+sen4baukNCtASCwXOw@mail.gmail.com>
-Message-ID: <0000013f6731a2df-6b705743-51cd-44dd-959b-8f139d052f6c-000000@email.amazonses.com>
-References: <20130606124351.GZ27176@twins.programming.kicks-ass.net> <0000013f1ad00ec0-9574a936-3a75-4ccc-a84c-4a12a7ea106e-000000@email.amazonses.com> <20130607110344.GA27176@twins.programming.kicks-ass.net> <0000013f1f1f79d1-2cf8cb8c-7e63-4e83-9f2b-7acc0e0638a1-000000@email.amazonses.com>
- <20130617110832.GP3204@twins.programming.kicks-ass.net> <0000013f536c60ee-9a1ca9da-b798-416a-a32e-c896813d3bac-000000@email.amazonses.com> <20130620114943.GB12125@gmail.com> <0000013f620f4699-f484f28e-3d12-4560-adfe-3b00af995fd9-000000@email.amazonses.com>
- <CAG4TOxNp8hrsC-1hbxGaR+xoUJYqUNv+sen4baukNCtASCwXOw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 21 Jun 2013 10:52:34 -0400
+Date: Fri, 21 Jun 2013 16:52:28 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Mark Brown <broonie@kernel.org>
+cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 2/2] regulators: max8973: initial DT support
+In-Reply-To: <20130621144423.GX27646@sirena.org.uk>
+Message-ID: <Pine.LNX.4.64.1306211651120.27277@axis700.grange>
+References: <Pine.LNX.4.64.1306210825040.27277@axis700.grange>
+ <Pine.LNX.4.64.1306210827090.27277@axis700.grange> <20130621144423.GX27646@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.06.21-54.240.9.46
+X-Provags-ID: V02:K0:jSc9utd5YQoP+l5i+MFiUbz6/0HpFbaONIGddIZSJvj
+ Y6FUXNIPtLtSVtENP/3oSI34YTR3OS9ACxgACkqdt9s+i/NRYy
+ zfcZEQ0WHejl/vRQGqa23x0CaqEW6ozQTRpKsT+rx4hNvh1H/x
+ fRRmne5Kk1sJcuddbbH+oK8ozwl+f3as1xIuFX1EyHPS9YruIg
+ vsIkkeoomW2u3YBIxkr1WCXCUJAD+G7+lWaMGvmqQ6pKDm7Fb1
+ vodil44TdogNy/NKXF1ruS98tNxhtMR/fDfksDeGGZMgnfxr7Y
+ 407Wgrc22p5hGpCnkILKu13KmKbsqq1dlguL5VgzH4I2cP6Fbw
+ kR3N8e6xLPWWNKdYkbfTgCnGaUDAUk+TB04mvf6BkdZPTPsCzD
+ lTt1RZCbLEd7A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, Roland Dreier wrote:
+Hi Mark
 
-> Christoph, your argument would be a lot more convincing if you stopped
-> repeating this nonsense.  Sure, in a strict sense, it might be true
+Thanks for the review
 
-Well this is regarding tracking of pages that need to stay resident and
-since the kernel does the pinning through the IB subsystem it is trackable
-right there.  No nonsense and no need for a separate pinning system call.
+On Fri, 21 Jun 2013, Mark Brown wrote:
 
-> that the IB subsystem in the kernel is the code thatactually pins
-> memory, but given that unprivileged userspace can tell the kernel to
-> pin arbitrary parts of its memory for any amount of time, is that
-> relevant?  And in fact taking your "initiate" word choice above, I
-> don't even think your statement is true -- userspace initiates the
-> pinning by, for example, doing an IB memory registration (libibverbs
-> ibv_reg_mr() call), which turns into a system call, which leads to the
-> kernel trying to pin pages.  The pages aren't unpinned until userspace
-> unregisters the memory (or causes a cleanup by closing the context
-> fd).
+> On Fri, Jun 21, 2013 at 08:30:26AM +0200, Guennadi Liakhovetski wrote:
+> 
+> > +Required properties:
+> > +
+> > +- compatible:	must be "maxium,max8973"
+> > +- reg:		the i2c slave address of the regulator. It should be 0x1b.
+> > +- regulators:	a subnode with a single regulator descriptor in it called "dcdc"
+> 
+> Why make this a subnode - if there's only one regulator on the device
+> then it may as well just put all the regulator properties there?
 
-In some sense userspace initiates everything since the kernels purpose
-is to run applications. So you can say that everything is user initated if
-you wanted.
+Right, I wasn't sure about this, I thought it was kind of a common 
+practice even for just one regulator. Will embed, sure.
 
-However, the user visible mechanism here is a registration of memory with
-the IB subsystem for RDMA. The primary intend is not to pin the pages but
-to make memory available for remote I/O. The pages are pinned *because*
-otherwise remote RDMA operations could corrupt memory due to the kernel
-moving/evicting memory.
+> 
+> > +	if (!regulators) {
+> > +		dev_err(dev, "regulator node not found\n");
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	ret = of_regulator_match(dev, regulators,
+> > +				 &max8973_regulator_match, 1);
+> > +	of_node_put(regulators);
+> > +	if (ret < 0) {
+> > +		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
+> > +		return ret;
+> > +	}
+> > +	if (!ret) {
+> > +		dev_err(dev, "No regulator configuration found\n");
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	return 0;
+> 
+> This would simplify the code here, the driver can just call
+> of_get_regulator_init_data() directly with the node.
 
-> Here's an argument by analogy.  Would it make any sense for me to say
-> userspace can't mlock memory, because only the kernel can set
-> VM_LOCKED on a vma?  Of course not.  Userspace has the mlock() system
-> call, and although the actual work happens in the kernel, we clearly
-> want to be able to limit the amount of memory locked by the kernel ON
-> BEHALF OF USERSPACE.
+Ok, I'll look at it.
 
-I would think that mlock is a memory management function and therefore the
-app/user directly says that the memory is not to be evicted from memory.
+> > -	if (!pdata->enable_ext_control) {
+> > +	if (!pdata || !pdata->enable_ext_control) {
+> >  		max->desc.enable_reg = MAX8973_VOUT;
+> >  		max->desc.enable_mask = MAX8973_VOUT_ENABLE;
+> >  		max->ops.enable = regulator_enable_regmap;
+> 
+> A common approach here is just to embed the platform data in the
+> driver data then copy actual platform data in there or parse the device
+> tree bindings (when added) into the structure.  This means that most of
+> the driver can just assume there's platform data which makes life a bit
+> simpler.
 
-This is different for the IB subsystem which is dealing with I/O and only
-indirectly with memory. Would we have a different mechanism to prevent
-reclaim etc the we would not need to pin the pages.
+But we can do this later, when we add DT support for those parameters, 
+right?
 
-Actual there is such a mechanism that could be used here. If you had a
-reserved memory region that is not mapped by the kernel (boot time alloc,
-device memory) then you can use VM_PFNMAP to refer to that region and the
-kernel would not be able to do reclaim on that memory. No pinning
-necessary if the IB subsystem would register that type of memory.
-
-
-
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
