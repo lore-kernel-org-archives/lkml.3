@@ -1,242 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423424Ab3FUXrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 19:47:37 -0400
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:46140
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161536Ab3FUXrf (ORCPT
+	id S1423438Ab3FUXuv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 19:50:51 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:43373 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423151Ab3FUXuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 19:47:35 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zzbb2dI98dI9371I1dbaI1432Id799hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <51C4E5F2.8070500@freescale.com>
-Date: Sat, 22 Jun 2013 05:16:58 +0530
-From: pankaj chauhan <pankaj.chauhan@freescale.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Fri, 21 Jun 2013 19:50:50 -0400
+Date: Sat, 22 Jun 2013 02:50:39 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH staging-next] zram: remove zram_sysfs file
+Message-ID: <20130621235037.GA2191@swordfish>
+References: <20130621152914.GA2371@swordfish.minsk.epam.com>
+ <20130621221005.GA1842@kroah.com>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Lars-Peter Clausen <lars-peter.clausen@analog.com>
-CC: Goyal Akhil-B35197 <B35197@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chauhan Pankaj-B32944 <B32944@freescale.com>,
-        "Getz, Robin" <robin.getz@analog.com>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>
-Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for
- Radio phy
-References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-2-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-3-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-4-git-send-email-akhil.goyal@freescale.com> <51C1AAC4.3010605@metafoo.de> <51C2DAE8.2040100@freescale.com>
-In-Reply-To: <51C2DAE8.2040100@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130621221005.GA1842@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/2013 4:05 PM, pankaj chauhan wrote:
-> On 6/19/2013 6:27 PM, Lars-Peter Clausen wrote:
->> On 06/17/2013 10:09 AM, akhil.goyal@freescale.com wrote:
->>> From: Akhil Goyal <akhil.goyal@freescale.com>
->>>
->>> AD9361 is a radio phy(RFIC) for radio networks. This phy
->>> can support LTE-FDD/LTE-TDD and WCDMA networks. The RFIC
->>> can convert the analog radio signals from air to digital
->>> IQ samples.
->>>
->>> AD9361 is controlled via an SPI bus and all the register
->>> read/ write can be performed via SPI transactions.
->>>
->>> Driver provides various operations for configuring and
->>> controlling the AD PHY. These can be controlled from the
->>> user space via the rfdev framework.
->>>
->>> Driver also binds itself to one of AIC lane using RF framework.
->>> The combination of AIC lane and PHY connected to it works
->>> as one RF device.
->>>
->>> Signed-off-by: Shaveta Leekha <shaveta@freescale.com>
->>> Signed-off-by: Pankaj Chauhan <pankaj.chauhan@freescale.com>
->>> Signed-off-by: Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>
->>> Signed-off-by: Akhil Goyal <akhil.goyal@freescale.com>
->>
->> Hi,
->>
->> This is interesting. We at Analog Devices are currently also working on a
->> driver for this part. We are using the Linux Industrial IO (IIO)
->> framework
->> though, since the AD9361 is more or less a multifunction device
->> implementing
->> different functions already covered by the IIO framework, like ADCs,
->> DACs,
->> clock chips and so on.
->>
-> Yes i agree AD9361 is more of a multifunction device and it can fit in
-> IIO framework. This patch (ad9361: AD9361 device driver for Radio phy)
-> implements:
->
-> 1. Programming of AD9361 :
->
-> Most of initialization is done by parsing Low level script generated by
-> ADI tool, and sending the SPIwrite/read/wait calibration commands to the
-> driver. This is more of a raw write interface to device.
->
-> 2. Adding utility function APIs for higher layers:
->
-> We have LTE/WCDMA stacks running in user space. They have requirement of
-> monitoring RSSI, changing Attenuation, reading/changing Rx gain,
-> disable/enable of tx/rx antennas, changing LO frequency etc. This patch
-> exposes APIs which can be accessed through RF device layer user space
-> interface (explained later in the email).
->
-> 3. Control of Radio card (which has AD9361): We have radio card which
-> contains AD9361 and there are different set of PA/LNAs (Power
-> amplifier/Low Noise Amplifier). Each set caters a set of frequency
-> bands. This patch also exports functions to enable/disable a Tx/Rx path
-> (PA/LNAs) which are external to AD9361.
->
-> May be we can spit this driver in two parts :
->
-> 1. AD9361 driver: which covers #1 and #2 as mentioned as above. And this
-> can be merged with the driver you have in IIO framework.
->
-> 2. Radio card driver: which covers #3 and uses AD9361 driver's exported
-> APIs to program AD9361 OR may be we can program AD9361 from user space
-> using IIO interface.
->
-> pls let me know what do you think is best approach.
+On (06/21/13 15:10), Greg Kroah-Hartman wrote:
+> > Move zram sysfs code to zram drv and remove zram_sysfs file.
+> > This gives ability to make static a number of previously exported
+> > zram functions, used from zram sysfs, e.g. internal zram
+> > zram_meta_alloc/free(). We also can drop several zram_drv wrapper
+> > functions, used from zram sysfs:
+> > e.g. zram_reset_device()/__zram_reset_device() pair.
+> > 
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > 
+> > ---
+> >  drivers/staging/zram/Makefile     |   2 +-
+> >  drivers/staging/zram/zram_drv.c   | 524 +++++++++++++++++++++++++-------------
+> >  drivers/staging/zram/zram_drv.h   |  10 -
+> >  drivers/staging/zram/zram_sysfs.c | 209 ---------------
+> >  4 files changed, 354 insertions(+), 391 deletions(-)
+> > 
+> > diff --git a/drivers/staging/zram/Makefile b/drivers/staging/zram/Makefile
+> > index 7f4a301..cb0f9ce 100644
+> > --- a/drivers/staging/zram/Makefile
+> > +++ b/drivers/staging/zram/Makefile
+> > @@ -1,3 +1,3 @@
+> > -zram-y	:=	zram_drv.o zram_sysfs.o
+> > +zram-y	:=	zram_drv.o
+> >  
+> >  obj-$(CONFIG_ZRAM)	+=	zram.o
+> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> > index ec2b2b5..f32fcca 100644
+> > --- a/drivers/staging/zram/zram_drv.c
+> > +++ b/drivers/staging/zram/zram_drv.c
+> > @@ -42,6 +42,111 @@ static struct zram *zram_devices;
+> >  /* Module params (documentation at end) */
+> >  static unsigned int num_devices = 1;
+> >  
+> > +module_param(num_devices, uint, 0);
+> > +MODULE_PARM_DESC(num_devices, "Number of zram devices");
+> > +
+> > +MODULE_LICENSE("Dual BSD/GPL");
+> > +MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
+> > +MODULE_DESCRIPTION("Compressed RAM Block Device");
+> 
+> This is usually best put at the bottom of the file, not at the top.
+> 
+> Why did you move it?
+> 
 
-Lars pls suggest whether this split will work for both of us.
+Hello Greg,
+That's a good question, thanks. I was pretty sure that such information
+is usually put at the top of the file. At least what I saw (to name a
+few)
 
->
->> You seem to have made the kernel layer as thin as possible and provide a
->> IOCTL which allows userspace to directly modify the registers of the
->> hardware. So this sentence from the documentation "user space
->> interface is
->> independent of component (vendor specific) drivers" is not exactly
->> true. If
->> you write a userspace application it will still only work with one
->> specific
->> RF-frontend. There is only a common interface on how to talk to the
->> frontend. Your documentation on this is also a bit sparse, e.g. there
->> is no
->> explanation of the individual IOCTLs.
->>
-> Yes modifying registers from user space is part of the patch set and
-> register read/write interface is aimed only for two purposes:
->
-> 1. Debugging : taking register dumps etc.
-> 2. Initializing AD9361 using Low level script generated by ADI GUI tool.
->
-> I'll try to explain what we meant by 'independent of vendor specific
-> drivers' and the framework itself.
->
->
-> Following is the overview of hardware on which are running these drivers:
->
-> 1. Antenna controller : This is part of SOC. The controller has
->     multiple IQ data lanes. On the application core of SOC we run Linux.
->     LTE/WCDMA stacks run in user space, and they interact with antenna
->     controller and RFPHY.
-> 2. Radio card: This contains one or more RF PHYS (AD9361). Each AD9361
->     is connected to Antenna controller IQ lane over JESD207 bus.
->
-> With this patch set we aim to abstract combination of a IQ data lane and
-> RF PHY as a 'radio device'. So this patch set is divided in three parts:
->
-> 1. RF device layer :
->      - Exposes IOCTLS to user space for device configuration.
->      - Exposes registration APIs so that antenna controllers and PHYs
->        so that they can register their control operations.
->        antenna controller and RF PHYs don't interact with user space
->        directly.
->      - Maintains state of overall RF device. For example IQ data
->        transfer starts only when both the controller and PHY are
->        configured and ready.
->
-> 2. Antenna controller driver: This configures the Antenna controller
->     hardware. It registers its control functions as a ops structure
->     (containing function pointers) with RF device layer.
->
-> 3. RF PHY driver: This is AD9361 driver (in this patch set). This also
-> registers with it ops structure with RF device layer. One of the
-> operation is raw register read/write as you pointed out.
->
-> The RF device layer exposes the two (or more than two) devices (i.e
-> antenna controller and RF PHY) as a RF device 'rf0' to user space. It is
-> similar to Ethernet,  which  has two drivers (Ethernet MAC controller
-> driver, and the Ethernet PHY driver) under eth0/eth1 interface.
->
-> The exposed IOCTLs from RF device layer are generic or protocol specific
-> (except raw register read/write interface), for example:
->
-> 1. Setting network mode of device to LTE, WCDMA etc
-> 2. Configuring device in TDD or FDD mode.
-> 3. Setting bandwidth to 10 Mhz, 15 Mhz, or 20 Mz.
-> 4. Changing Downlink/Uplink LO frequency to 'X' Mhz.
-> 5. Capturing IQ data from controller.
-> 6. Changing RF settings: attenuation, rx gain etc.
-> 7. Raw register read/write: so that PHYS with programming model
->     similar to AD9361 (using script containing SPI commands) can
->     be supported.
->
-> Generally LTE/WCDMA stacks run in user space and they have to interact
-> with the antenna controller and the RF PHY (AD9361) for initialization,
-> control, IQ capture etc.
->
-> If we don't have RF device layer then these stacks have to write vendor
-> drivers (antenna controller and RF PHY) specific code for interaction
-> with underlying controller and PHY drivers.
->
-> The RF device layer solves this problem by exposing an interface which
-> is protocol/functionality specific, so that the user space stack do not
-> change if underlying antenna controller or RF phy changes.
->
-> In user space we have a library called 'rflib' which interacts with RF
-> device layer through exposed IOCTLs. User space LTE/WCDMA stacks
-> interact only with 'rflib' and they are immune to underlying vendor
-> specific drivers. This is the reason for calling 'vendor independent
-> interface'. And if user space wants to fine tune the RF PHY then raw
-> register read/write interface is also exposed.
->
-> We are not aware of any other subsystem which meets above mentioned
-> requirements, and exposes interface for LTE/WCDMA stacks for controlling
-> radio hardware. That's why we introduced RF device layer between user
-> space interface and controller specific drivers.
->
-> pls suggest what is best possible way/subsystem for hardware and
-> software requirements that i explained above.
->
+ arch/ia64/kernel/salinfo.c
+ drivers/ata/ata_piix.c
+ drivers/ata/ata_generic.c
+ drivers/ata/libata-core.c
+[..]
 
-I've tried to capture the need of a framework for drivers dealing with 
-IQ data which interact with LTE/WCDMA stacks. Pls suggest the way forward.
+MODULE_LICENSE and MODULE_AUTHOR are at the top. Of course I can move
+it back to original place, will resend soon.
 
->> Since it is probably not such a good idea to have two different
->> drivers for
->> the same device in different subsystems we should probably try to figure
->> something out that will work for us both.
->>
->
-> I agree, for AD9361 should have one driver, we'll figure out way how
-> requirements for both of us can be met by single driver.
->
->> I'd also be interested in learning more about how the userspace side
->> looks like.
->>
->
-> The user space (rflib) is not on a public repository yet, i'll try to
-> figure out how rflib can be
->> - Lars
->>
->
-> sorry for long reply, we'll cover the details of API/framework in
-> documentation in next version of patch.
->
+	-ss
+
 > thanks,
-> pankaj
->
-
-
-
+> 
+> greg k-h
+> 
