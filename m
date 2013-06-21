@@ -1,289 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161409Ab3FUMes (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 08:34:48 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:62912 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161196Ab3FUMeB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 08:34:01 -0400
-X-AuditID: cbfec7f5-b7f376d000001ec6-98-51c448364b2f
-From: Tomasz Figa <t.figa@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Grant Likely <grant.likely@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Masanari Iida <standby24x7@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        rtc-linux@googlegroups.com, Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH v2 1/3] mfd: Add irq domain support for max8998 interrupts
-Date: Fri, 21 Jun 2013 14:33:35 +0200
-Message-id: <1371818017-5215-2-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 1.8.2.1
-In-reply-to: <1371818017-5215-1-git-send-email-t.figa@samsung.com>
-References: <1371818017-5215-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t/xq7pmHkcCDRa3GlgsuXiV3WLqwyds
-	Fgf+7GC02D1nMYtF74KrbBZnm96wW3y70sFksenxNVaLy7vmsFnMOL+PyeL2ZV6LwysOMFms
-	ezmdxWJ/ZwejxeluVotLM66zW6yf8ZrFQdCjpbmHzWPB5yvsHjtn3WX32DPxJJvHplWdbB6v
-	Vs9k9bhzbQ+bx7yTgR6bl9R79G1ZxehxZsERdo/p834yeXzeJBfAG8Vlk5Kak1mWWqRvl8CV
-	8ePdIvaCl3YVS/bNY29gPGDcxcjJISFgItGyfBU7hC0mceHeerYuRi4OIYGljBINc64yQTh9
-	TBLrZv1hA6liE1CT+NzwCMwWEVCQ2Nz7jBWkiFngGovElis3wBLCAl4SczrmM4HYLAKqEmsX
-	/mMFsXkFHCX+/XrNCLFOQeL49m1gNqeAk8SnBUvAzhACqtnzcB/LBEbeBYwMqxhFU0uTC4qT
-	0nON9IoTc4tL89L1kvNzNzFCouDrDsalx6wOMQpwMCrx8AYqHQ4UYk0sK67MPcQowcGsJMIb
-	fAcoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgTF9zQ5rjVqtZ5baSZMuB9+3TF4X6lzUXrLx0Bxm
-	U6/o9G6hyBMfu5etN/izd46c1quSPo73pzQn2L3Nyf31JMtv18vNFo6/V9sve/9LKOaGb9SL
-	7PpXJuuPZ22ae+vZ1IvcXukHlLY0Bywre+j7t37NtITu56UTpqxSirrw7ZbztvRoje+Bh0OV
-	WIozEg21mIuKEwHFuP9sYAIAAA==
+	id S1161363Ab3FUMij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 08:38:39 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:45406 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161196Ab3FUMih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 08:38:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
+Date: Fri, 21 Jun 2013 14:47:56 +0200
+Message-ID: <1620890.UBBDKT8mbZ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAN_LGv2kZy_8SrKae5YUwHoUM+mf1OgH2HkAEtiC+ojKCFYSeg@mail.gmail.com>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <1436701.V8egnZxOqz@vostro.rjw.lan> <CAN_LGv2kZy_8SrKae5YUwHoUM+mf1OgH2HkAEtiC+ojKCFYSeg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds irq domain support for max8998 interrupts.
+On Friday, June 21, 2013 10:36:05 AM Alexander E. Patrakov wrote:
+> 2013/6/21 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Wednesday, June 19, 2013 11:18:41 AM Alexander E. Patrakov wrote:
+> >> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> > OK, let's try to untangle this a bit.
+> >> >
+> >> > If you applyt patches [1/4] and [4/4] from the $subject series only, what
+> >> > does remain unfixed?
+> >>
+> >> [not tested, can do so in 12 hours if needed]
+> >>
+> >> I think there will be problems on undocking and/or on the second
+> >> docking, as described in comments #6 - #8 of
+> >> https://bugzilla.kernel.org/show_bug.cgi?id=59501
+> >
+> > OK, I think I have something that might work.  It may not solve all problems,
+> > but maybe it helps a bit.  Unfortunately, I can't really test it, so please do
+> > if you can.
+> >
+> > Please apply [1/4] and [4/4] and the one below and see what happens.
+> 
+> Tested on top of 3.10-rc6.
+> 
+> Attached dmesg output for the following testcase: boot undocked, dock,
+> undock, dock.
+> 
+> The initial dock went OK. The subsequent undock resulted in the blue
+> led on the dock cable turning off quickly, but in PCI devices slowly,
+> one-by-one, disappearing from the bus. Also, there were "acpi_handle
+> corrupt" messages in dmesg. The subsequent dock resulted in no devices
+> added to the bus. So - your patch is not a good replacement for
+> patches 2 and 3 in the original series.
 
-The reverse mapping method used is linear mapping since the sub-drivers
-of max8998 such as regulator and charger drivers can use the max8998
-irq_domain to get the virtual irq number for max8998 interrupts.
+Well, this particular patch maybe not, but I like the direction better.
 
-All uses of irq_base in platform data and max8997 driver private data
-are removed.
+Here's the relevant piece of your dmesg:
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/mfd/Kconfig                 |  1 +
- drivers/mfd/max8998-irq.c           | 61 ++++++++++++++++++++++---------------
- drivers/mfd/max8998.c               |  1 -
- drivers/rtc/rtc-max8998.c           | 12 +++++++-
- include/linux/mfd/max8998-private.h |  4 ++-
- include/linux/mfd/max8998.h         |  2 --
- 6 files changed, 51 insertions(+), 30 deletions(-)
+[   43.635516] ACPI: \_SB_.DOCK: undocking
+[   44.108267] acpiphp_glue: _handle_hotplug_event_func: Device eject notify on \_SB_.PCI0.RP07.LPMB
+[   44.110349] xhci_hcd 0000:1b:00.0: remove, state 4
+[   44.110497] usb usb6: USB disconnect, device number 1
+[   44.112203]  port1: Oops, 'acpi_handle' corrupt
+[   44.112242]  port2: Oops, 'acpi_handle' corrupt
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index d54e985..360be92 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1002,6 +1002,7 @@ config MFD_TC6393XB
- config MFD_VX855
- 	tristate "VIA VX855/VX875 integrated south bridge"
- 	depends on PCI && GENERIC_HARDIRQS
-+	select IRQ_DOMAIN
- 	select MFD_CORE
- 	help
- 	  Say yes here to enable support for various functions of the
-diff --git a/drivers/mfd/max8998-irq.c b/drivers/mfd/max8998-irq.c
-index 5919710..f770abf 100644
---- a/drivers/mfd/max8998-irq.c
-+++ b/drivers/mfd/max8998-irq.c
-@@ -14,6 +14,7 @@
- #include <linux/device.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
-+#include <linux/irqdomain.h>
- #include <linux/mfd/max8998-private.h>
- 
- struct max8998_irq_data {
-@@ -99,7 +100,8 @@ static struct max8998_irq_data max8998_irqs[] = {
- static inline struct max8998_irq_data *
- irq_to_max8998_irq(struct max8998_dev *max8998, int irq)
- {
--	return &max8998_irqs[irq - max8998->irq_base];
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return &max8998_irqs[data->hwirq];
- }
- 
- static void max8998_irq_lock(struct irq_data *data)
-@@ -176,8 +178,10 @@ static irqreturn_t max8998_irq_thread(int irq, void *data)
- 
- 	/* Report */
- 	for (i = 0; i < MAX8998_IRQ_NR; i++) {
--		if (irq_reg[max8998_irqs[i].reg - 1] & max8998_irqs[i].mask)
--			handle_nested_irq(max8998->irq_base + i);
-+		if (irq_reg[max8998_irqs[i].reg - 1] & max8998_irqs[i].mask) {
-+			irq = irq_linear_revmap(max8998->irq_domain, i);
-+			handle_nested_irq(irq);
-+		}
- 	}
- 
- 	return IRQ_HANDLED;
-@@ -185,27 +189,40 @@ static irqreturn_t max8998_irq_thread(int irq, void *data)
- 
- int max8998_irq_resume(struct max8998_dev *max8998)
- {
--	if (max8998->irq && max8998->irq_base)
--		max8998_irq_thread(max8998->irq_base, max8998);
-+	if (max8998->irq && max8998->irq_domain)
-+		max8998_irq_thread(0, max8998);
-+	return 0;
-+}
-+
-+static int max8998_irq_domain_map(struct irq_domain *d, unsigned int irq,
-+					irq_hw_number_t hw)
-+{
-+	struct max8997_dev *max8998 = d->host_data;
-+
-+	irq_set_chip_data(irq, max8998);
-+	irq_set_chip_and_handler(irq, &max8998_irq_chip, handle_edge_irq);
-+	irq_set_nested_thread(irq, 1);
-+#ifdef CONFIG_ARM
-+	set_irq_flags(irq, IRQF_VALID);
-+#else
-+	irq_set_noprobe(irq);
-+#endif
- 	return 0;
- }
- 
-+static struct irq_domain_ops max8998_irq_domain_ops = {
-+	.map = max8998_irq_domain_map,
-+};
-+
- int max8998_irq_init(struct max8998_dev *max8998)
- {
- 	int i;
--	int cur_irq;
- 	int ret;
-+	struct irq_domain *domain;
- 
- 	if (!max8998->irq) {
- 		dev_warn(max8998->dev,
- 			 "No interrupt specified, no interrupts\n");
--		max8998->irq_base = 0;
--		return 0;
--	}
--
--	if (!max8998->irq_base) {
--		dev_err(max8998->dev,
--			"No interrupt base specified, no interrupts\n");
- 		return 0;
- 	}
- 
-@@ -221,19 +238,13 @@ int max8998_irq_init(struct max8998_dev *max8998)
- 	max8998_write_reg(max8998->i2c, MAX8998_REG_STATUSM1, 0xff);
- 	max8998_write_reg(max8998->i2c, MAX8998_REG_STATUSM2, 0xff);
- 
--	/* register with genirq */
--	for (i = 0; i < MAX8998_IRQ_NR; i++) {
--		cur_irq = i + max8998->irq_base;
--		irq_set_chip_data(cur_irq, max8998);
--		irq_set_chip_and_handler(cur_irq, &max8998_irq_chip,
--					 handle_edge_irq);
--		irq_set_nested_thread(cur_irq, 1);
--#ifdef CONFIG_ARM
--		set_irq_flags(cur_irq, IRQF_VALID);
--#else
--		irq_set_noprobe(cur_irq);
--#endif
-+	domain = irq_domain_add_linear(NULL, MAX8998_IRQ_NR,
-+					&max8998_irq_domain_ops, max8998);
-+	if (!domain) {
-+		dev_err(max8998->dev, "could not create irq domain\n");
-+		return -ENODEV;
- 	}
-+	max8998->irq_domain = domain;
- 
- 	ret = request_threaded_irq(max8998->irq, NULL, max8998_irq_thread,
- 				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index d7218cc..e9bd352 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -146,7 +146,6 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 	max8998->type = id->driver_data;
- 	if (pdata) {
- 		max8998->ono = pdata->ono;
--		max8998->irq_base = pdata->irq_base;
- 		max8998->wakeup = pdata->wakeup;
- 	}
- 	mutex_init(&max8998->iolock);
-diff --git a/drivers/rtc/rtc-max8998.c b/drivers/rtc/rtc-max8998.c
-index d5af7ba..46f2301 100644
---- a/drivers/rtc/rtc-max8998.c
-+++ b/drivers/rtc/rtc-max8998.c
-@@ -16,6 +16,7 @@
- #include <linux/i2c.h>
- #include <linux/slab.h>
- #include <linux/bcd.h>
-+#include <linux/irqdomain.h>
- #include <linux/rtc.h>
- #include <linux/platform_device.h>
- #include <linux/mfd/max8998.h>
-@@ -264,7 +265,6 @@ static int max8998_rtc_probe(struct platform_device *pdev)
- 	info->dev = &pdev->dev;
- 	info->max8998 = max8998;
- 	info->rtc = max8998->rtc;
--	info->irq = max8998->irq_base + MAX8998_IRQ_ALARM0;
- 
- 	platform_set_drvdata(pdev, info);
- 
-@@ -277,6 +277,15 @@ static int max8998_rtc_probe(struct platform_device *pdev)
- 		goto out_rtc;
- 	}
- 
-+	if (!max8998->irq_domain)
-+		goto no_irq;
-+
-+	info->irq = irq_create_mapping(max8998->irq_domain, MAX8998_IRQ_ALARM0);
-+	if (!info->irq) {
-+		dev_warn(&pdev->dev, "Failed to map alarm IRQ\n");
-+		goto no_irq;
-+	}
-+
- 	ret = devm_request_threaded_irq(&pdev->dev, info->irq, NULL,
- 				max8998_rtc_alarm_irq, 0, "rtc-alarm0", info);
- 
-@@ -284,6 +293,7 @@ static int max8998_rtc_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
- 			info->irq, ret);
- 
-+no_irq:
- 	dev_info(&pdev->dev, "RTC CHIP NAME: %s\n", pdev->id_entry->name);
- 	if (pdata && pdata->rtc_delay) {
- 		info->lp3974_bug_workaround = true;
-diff --git a/include/linux/mfd/max8998-private.h b/include/linux/mfd/max8998-private.h
-index effa5d3..e81077a 100644
---- a/include/linux/mfd/max8998-private.h
-+++ b/include/linux/mfd/max8998-private.h
-@@ -132,6 +132,8 @@ enum {
- 
- #define MAX8998_ENRAMP                  (1 << 4)
- 
-+struct irq_domain;
-+
- /**
-  * struct max8998_dev - max8998 master device for sub-drivers
-  * @dev: master device of the chip (can be used to access platform data)
-@@ -153,7 +155,7 @@ struct max8998_dev {
- 	struct mutex iolock;
- 	struct mutex irqlock;
- 
--	int irq_base;
-+	struct irq_domain *irq_domain;
- 	int irq;
- 	int ono;
- 	u8 irq_masks_cur[MAX8998_NUM_IRQ_REGS];
-diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
-index 6823548..9df60ba 100644
---- a/include/linux/mfd/max8998.h
-+++ b/include/linux/mfd/max8998.h
-@@ -68,7 +68,6 @@ struct max8998_regulator_data {
-  * struct max8998_board - packages regulator init data
-  * @regulators: array of defined regulators
-  * @num_regulators: number of regulators used
-- * @irq_base: base IRQ number for max8998, required for IRQs
-  * @ono: power onoff IRQ number for max8998
-  * @buck_voltage_lock: Do NOT change the values of the following six
-  *   registers set by buck?_voltage?. The voltage of BUCK1/2 cannot
-@@ -100,7 +99,6 @@ struct max8998_regulator_data {
- struct max8998_platform_data {
- 	struct max8998_regulator_data	*regulators;
- 	int				num_regulators;
--	int				irq_base;
- 	int				ono;
- 	bool				buck_voltage_lock;
- 	int				buck1_voltage1;
+What happens here is that USB ports are in the list of dock dependent devices,
+but they don't have the ops pointer set, so dock_remove_acpi_device() will be
+called for them *before* the usual USB teardown is triggered from the
+acpiphp_glue code for their parent.  I *think* the solution may be to simply
+skip those things from ds->dependent_list (as they depend on something already
+in that list anyway).
+
+I'll attach an updated patch with that change to the bug entry.
+
+[   44.112332] xHCI xhci_drop_endpoint called for root hub
+[   44.112334] xHCI xhci_check_bandwidth called for root hub
+[   44.114313] usb usb6: Oops, 'acpi_handle' corrupt
+
+Same thing again.
+
+[   44.114349] xhci_hcd 0000:1b:00.0: Host not halted after 16000 microseconds.
+[   44.114351] xhci_hcd 0000:1b:00.0: USB bus 6 deregistered
+[   44.114360] xhci_hcd 0000:1b:00.0: remove, state 4
+[   44.114392] usb usb5: USB disconnect, device number 1
+[   44.114394] usb 5-1: USB disconnect, device number 2
+[   49.120740] xhci_hcd 0000:1b:00.0: Timeout while waiting for configure endpoint command
+[   49.120750] xhci_hcd 0000:1b:00.0: Stopped the command ring failed, maybe the host is dead
+[   49.120757] xhci_hcd 0000:1b:00.0: Host not halted after 16000 microseconds.
+[   49.120759] xhci_hcd 0000:1b:00.0: Abort command ring failed
+[   49.120760] xhci_hcd 0000:1b:00.0: HC died; cleaning up
+[   49.122075] xHCI xhci_drop_endpoint called for root hub
+[   49.122076] xHCI xhci_check_bandwidth called for root hub
+[   49.123825] usb usb5: Oops, 'acpi_handle' corrupt
+
+Same thing again.
+
+[   49.123906] xhci_hcd 0000:1b:00.0: Host not halted after 16000 microseconds.
+[   49.124208] xhci_hcd 0000:1b:00.0: USB bus 5 deregistered
+[   52.150756] ata8.00: disabled
+[   52.172219] r8169 0000:19:00.0 enp25s0: rtl_counters_cond == 1 (loop: 1000, delay: 10).
+[   52.182516] r8169 0000:19:00.0 enp25s0: rtl_chipcmd_cond == 1 (loop: 100, delay: 100).
+[   52.188939] r8169 0000:19:00.0 enp25s0: rtl_phyar_cond == 1 (loop: 20, delay: 25).
+[   52.189542] r8169 0000:19:00.0 enp25s0: rtl_phyar_cond == 1 (loop: 20, delay: 25).
+[   52.190191] r8169 0000:19:00.0 enp25s0: rtl_phyar_cond == 1 (loop: 20, delay: 25).
+[   52.190746] r8169 0000:19:00.0 enp25s0: rtl_phyar_cond == 1 (loop: 20, delay: 25).
+[   52.191299] r8169 0000:19:00.0 enp25s0: rtl_phyar_cond == 1 (loop: 20, delay: 25).
+[   52.212009] r8169 0000:19:00.0 (unregistered net_device): rtl_eriar_cond == 1 (loop: 100, delay: 100).
+[   52.222185] r8169 0000:19:00.0 (unregistered net_device): rtl_eriar_cond == 1 (loop: 100, delay: 100).
+[   52.232357] r8169 0000:19:00.0 (unregistered net_device): rtl_eriar_cond == 1 (loop: 100, delay: 100).
+[   52.242529] r8169 0000:19:00.0 (unregistered net_device): rtl_eriar_cond == 1 (loop: 100, delay: 100).
+[   52.260158] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=none,decodes=io+mem:owns=none
+[   52.265799] [drm] radeon: finishing device.
+[   52.265804] [drm] Disabling audio support
+[   52.267668] radeon 0000:16:00.0: ffff880251e28400 unpin not necessary
+[   52.268033] [drm:drm_mm_takedown] *ERROR* Memory manager not clean. Delaying takedown
+[   52.268164] [TTM] Finalizing pool allocator
+[   52.268340] [TTM] Finalizing DMA pool allocator
+
+The thing below looks like a radeon problem?
+
+[   52.268389] ------------[ cut here ]------------
+[   52.268395] WARNING: at drivers/gpu/drm/ttm/ttm_page_alloc_dma.c:533 ttm_dma_free_pool+0x101/0x110 [ttm]()
+[   52.268396] Modules linked in: ata_generic pata_acpi pata_marvell radeon ttm zram(C) rfcomm bnep rtsx_pci_ms rtsx_pci_sdmmc mmc_core memstick iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm joydev pcspkr i2c_i801 uvcvideo qcserial usb_wwan videobuf2_vmalloc videobuf2_memops videobuf2_core usbserial btusb videodev bluetooth arc4 media iwldvm mac80211 snd_hda_codec_hdmi iwlwifi r8169 rtsx_pci mii cfg80211 snd_hda_codec_realtek i915 sony_laptop rfkill intel_agp snd_hda_intel intel_gtt snd_hda_codec i2c_algo_bit snd_hwdep drm_kms_helper snd_pcm snd_page_alloc drm snd_timer agpgart lpc_ich snd mfd_core sha256_ssse3 sha256_generic dm_crypt raid0 md_mod crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd xhci_hcd ehci_pci ehci_hcd dm_mirror
+[   52.268444]  dm_region_hash dm_log dm_mod [last unloaded: microcode]
+[   52.268449] CPU: 0 PID: 4 Comm: kworker/0:0 Tainted: G         C   3.10.0-rc6-rafael #1
+[   52.268450] Hardware name: Sony Corporation VPCZ23A4R/VAIO, BIOS R1013H5 05/21/2012
+[   52.268455] Workqueue: kacpi_hotplug _handle_hotplug_event_func
+[   52.268456]  ffffffffa081f268 ffff8802540d38b8 ffffffff8165af98 ffff8802540d38f8
+[   52.268460]  ffffffff8103c8cb ffff8802540d38c8 ffff880251f53700 ffff8802513e23c0
+[   52.268463]  0000000000000008 ffff880253d02530 ffff880254079730 ffff8802540d3908
+[   52.268466] Call Trace:
+[   52.268470]  [<ffffffff8165af98>] dump_stack+0x19/0x1b
+[   52.268474]  [<ffffffff8103c8cb>] warn_slowpath_common+0x6b/0xa0
+[   52.268476]  [<ffffffff8103c915>] warn_slowpath_null+0x15/0x20
+[   52.268480]  [<ffffffffa081cd01>] ttm_dma_free_pool+0x101/0x110 [ttm]
+[   52.268484]  [<ffffffffa081dee5>] ttm_dma_page_alloc_fini+0x85/0xcc [ttm]
+[   52.268487]  [<ffffffffa0813455>] ttm_mem_global_release+0x25/0xa0 [ttm]
+[   52.268497]  [<ffffffffa08494ed>] radeon_ttm_mem_global_release+0xd/0x10 [radeon]
+[   52.268507]  [<ffffffffa0176213>] drm_global_item_unref+0x63/0x90 [drm]
+[   52.268514]  [<ffffffffa084a721>] radeon_ttm_fini+0xd1/0xe0 [radeon]
+[   52.268522]  [<ffffffffa084b129>] radeon_bo_fini+0x9/0x10 [radeon]
+[   52.268531]  [<ffffffffa0893bf1>] evergreen_fini+0x91/0xc0 [radeon]
+[   52.268537]  [<ffffffffa08336ea>] radeon_device_fini+0x3a/0xf0 [radeon]
+[   52.268543]  [<ffffffffa08353d1>] radeon_driver_unload_kms+0x41/0x70 [radeon]
+[   52.268550]  [<ffffffffa016524e>] drm_put_dev+0x6e/0x210 [drm]
+[   52.268555]  [<ffffffffa0832068>] radeon_pci_remove+0x18/0x20 [radeon]
+[   52.268557]  [<ffffffff81385831>] pci_device_remove+0x41/0xc0
+[   52.268561]  [<ffffffff8143bfd7>] __device_release_driver+0x77/0xe0
+[   52.268563]  [<ffffffff8143c069>] device_release_driver+0x29/0x40
+[   52.268566]  [<ffffffff8143ba71>] bus_remove_device+0xf1/0x140
+[   52.268568]  [<ffffffff8143915d>] device_del+0x11d/0x1b0
+[   52.268572]  [<ffffffff8138082c>] pci_stop_bus_device+0x9c/0xb0
+[   52.268574]  [<ffffffff813807cb>] pci_stop_bus_device+0x3b/0xb0
+[   52.268576]  [<ffffffff813a11e5>] ? acpiphp_disable_slot+0x35/0x140
+[   52.268579]  [<ffffffff813807cb>] pci_stop_bus_device+0x3b/0xb0
+[   52.268581]  [<ffffffff813807cb>] pci_stop_bus_device+0x3b/0xb0
+[   52.268584]  [<ffffffff813807cb>] pci_stop_bus_device+0x3b/0xb0
+[   52.268586]  [<ffffffff81380991>] pci_stop_and_remove_bus_device+0x11/0x20
+[   52.268588]  [<ffffffff813a1236>] acpiphp_disable_slot+0x86/0x140
+[   52.268591]  [<ffffffff813a1622>] _handle_hotplug_event_func+0x102/0x1e0
+[   52.268594]  [<ffffffff8105c2c2>] process_one_work+0x1c2/0x560
+[   52.268597]  [<ffffffff8105c257>] ? process_one_work+0x157/0x560
+[   52.268599]  [<ffffffff8105d1d6>] worker_thread+0x116/0x370
+[   52.268601]  [<ffffffff8105d0c0>] ? manage_workers.isra.20+0x2d0/0x2d0
+[   52.268604]  [<ffffffff81063a36>] kthread+0xd6/0xe0
+[   52.268606]  [<ffffffff816611ab>] ? _raw_spin_unlock_irq+0x2b/0x60
+[   52.268609]  [<ffffffff81063960>] ? __init_kthread_worker+0x70/0x70
+[   52.268612]  [<ffffffff8166856c>] ret_from_fork+0x7c/0xb0
+[   52.268615]  [<ffffffff81063960>] ? __init_kthread_worker+0x70/0x70
+[   52.268669] ---[ end trace 46b4e977738a3df6 ]---
+[   52.269258] [TTM] Zone  kernel: Used memory at exit: 13 kiB
+[   52.269266] [TTM] Zone   dma32: Used memory at exit: 9 kiB
+[   52.269295] [drm] radeon: ttm finalized
+
+But it looks like the removal actually succeeded.
+
+[   52.273103] pci_bus 0000:0b: busn_res: [bus 0b] is released
+[   52.273732] pci_bus 0000:0c: busn_res: [bus 0c] is released
+[   52.273816] pci_bus 0000:16: busn_res: [bus 16] is released
+
+Is the re-dock attempt included?  It doesn't seem to leave any trace ...
+
+Thanks,
+Rafael
+
+
 -- 
-1.8.2.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
