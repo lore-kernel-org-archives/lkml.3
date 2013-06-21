@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423282Ab3FUPTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 11:19:36 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33653 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423173Ab3FUPTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 11:19:33 -0400
-Date: Fri, 21 Jun 2013 16:19:30 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Myungjoo Ham <myungjoo.ham@samsung.com>
-Message-ID: <20130621151930.GB27646@sirena.org.uk>
-References: <1371711806-18826-1-git-send-email-jonghwa3.lee@samsung.com>
+	id S1423304Ab3FUPTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 11:19:50 -0400
+Received: from mout.gmx.net ([212.227.17.21]:59180 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423228Ab3FUPTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 11:19:48 -0400
+X-Authenticated: #783749
+X-Provags-ID: V01U2FsdGVkX19BiGZGmedB9D4XBNq98/1GnekQBYnmUp0jS3HHW6
+	yuUO8o2Ntjk5jQ
+Message-ID: <51C46F11.9020009@gmx.de>
+Date: Fri, 21 Jun 2013 17:19:45 +0200
+From: Dirk Schmidt <derschmied@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fGPQ8TN6VVAOY/Hs"
-Content-Disposition: inline
-In-Reply-To: <1371711806-18826-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: max77693: Add max77693 regualtor driver.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Amd Phenom 2 X6 Cool&Quiet Issue.
+References: <51C4600E.6030005@gmx.de> <20130621141906.GA526@x4> <51C4665A.8010802@gmx.de> <20130621151027.GB526@x4>
+In-Reply-To: <20130621151027.GB526@x4>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---fGPQ8TN6VVAOY/Hs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It is a BIOS Bug of my Asrock K10N78D.
 
-On Thu, Jun 20, 2013 at 04:03:26PM +0900, Jonghwa Lee wrote:
-> This patch adds new regulator driver to support max77693 chip's regulators.
-> max77693 has two linear voltage regulators and one current regulator which
-> can be controlled through I2C bus. This driver also supports device tree.
+One has not only to enable Cool&Quiet but also AMD Turbo Core Technology 
+or whatever.
 
-This is fine but doesn't have a binding document which is needed for new
-DT bindings.
+I had AMD Turbo Core disabled so acpi_cpufreq would not load.
 
-A comment in the is_enabled() function explaining that more than one bit
-might be set (or replacing it with the generic function) would also be
-good.
+Solved ( for now ).
 
---fGPQ8TN6VVAOY/Hs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Sorry but I will not investigate further.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Thank you for your time and patience.
 
-iQIcBAEBAgAGBQJRxG7/AAoJELSic+t+oim9kLcP/A2HSKJMkWzX9E8Pq/08uE5E
-vge2oDezN7ivghKgHnDiTVNIjI1BWvfdFIQh8Vy5bWsyV/WSswqQGiYRiGOL2pvY
-vbgLwYnVxPOHOldc++H/hfzx7LANEiKj1mbwpwJ1sxCSqveAnmSDTfzpyJamAuVi
-JWbrU0xtOyWOhQlkbRczey0iy7tbjch/w86/1kQ9YyQgYFCZNUG4IwAYIw0zXius
-OP0Gy0hYOyRtYL+BvcanZmLILNxi9NdgybwLifxJKkOQ2uaZX3VFZDsrPSBWqnfg
-lgFKqPJFiRVJ4XIexJxkd3MEYuUb2/cNXOpGW7OLqjnkWA7ucjk+dac/Dcfu1ZUq
-ZYub3Y8WgwLON+8eMSQK3XSAkh8CW5ipaOSn4YBUeKW9bTwT+XkCjG61XIy2aZR1
-m+ICboUtdZws8MA+/20IntYKEr0Dbc1mmO2hK+DuZXUzKcbPOJ9NDThTA/c7NYAe
-2ZK7bdgzSRxy3VLLf0Io0amaF0MIpFWeJOY7UF8os6R02TKxzZ6NZnw3tqarWhrh
-NNwCNMhBMqJYKV9crfws7UoLgHe7QUqdFPMU3pg3kfoSXkgceXlIFhqljXgU5nPQ
-DVP221/x2BUxgClBTRcYQ7KckwKn6fXhJdBagBKt+HtnNQHE//hit+JS+rTsFCDk
-krVaD5jwZiKfezQxhrmR
-=P6yV
------END PGP SIGNATURE-----
+Bye.
+Dirk Schmidt
 
---fGPQ8TN6VVAOY/Hs--
+Am 21.06.2013 17:10, schrieb Markus Trippelsdorf:
+> On 2013.06.21 at 16:42 +0200, Dirk Schmidt wrote:
+>> Hello.
+>>
+>> Am 21.06.2013 16:19, schrieb Markus Trippelsdorf:
+>>> On 2013.06.21 at 16:15 +0200, Dirk Schmidt wrote:
+>>>> Amd Phenom 2 X6 Cool&Quiet Issue.
+>>>>
+>>>> Problem:
+>>>>
+>>>> dmesg | grep power
+>>>> [   10.622426] powernow-k8: This CPU is not supported anymore, using
+>>>> acpi-cpufreq instead.
+>>>>
+>>>> modprobe acpi_cpufreq
+>>>> ERROR: could not insert 'acpi_cpufreq': No such device
+>>>
+>>> Please post your kernel .config.
+>>>
+>>
+>> config attached.
+>>
+>> #
+>> # x86 CPU frequency scaling drivers
+>> #
+>> # CONFIG_X86_INTEL_PSTATE is not set
+>> CONFIG_X86_PCC_CPUFREQ=m
+>> CONFIG_X86_ACPI_CPUFREQ=m
+>> CONFIG_X86_ACPI_CPUFREQ_CPB=y
+>> CONFIG_X86_POWERNOW_K8=m
+>> # CONFIG_X86_AMD_FREQ_SENSITIVITY is not set
+>> CONFIG_X86_SPEEDSTEP_CENTRINO=m
+>> CONFIG_X86_P4_CLOCKMOD=m
+>
+> Does it work if you disable everything under "x86 CPU frequency scaling
+> drivers" and build CONFIG_X86_ACPI_CPUFREQ directly into the kernel?
+>
+> #
+> # x86 CPU frequency scaling drivers
+> #
+> # CONFIG_X86_INTEL_PSTATE is not set
+> # CONFIG_X86_PCC_CPUFREQ is not set
+> CONFIG_X86_ACPI_CPUFREQ=y
+> # CONFIG_X86_ACPI_CPUFREQ_CPB is not set
+> # CONFIG_X86_POWERNOW_K8 is not set
+> # CONFIG_X86_AMD_FREQ_SENSITIVITY is not set
+> # CONFIG_X86_SPEEDSTEP_CENTRINO is not set
+> # CONFIG_X86_P4_CLOCKMOD is not set
+>
+>
+
+
