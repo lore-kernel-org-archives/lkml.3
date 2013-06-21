@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423250Ab3FUGsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:48:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1699 "EHLO mga01.intel.com"
+	id S1423258Ab3FUGuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:50:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53521 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750730Ab3FUGr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:47:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,911,1363158000"; 
-   d="scan'208";a="357232185"
-Message-ID: <51C3F73D.3000603@intel.com>
-Date: Fri, 21 Jun 2013 14:48:29 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1750781Ab3FUGua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 02:50:30 -0400
+Message-ID: <51C3F7A1.5000602@redhat.com>
+Date: Fri, 21 Jun 2013 14:50:09 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Matthew Garrett <mjg@redhat.com>, Liu Jiang <liuj97@gmail.com>,
-        Dirk Griesbach <spamthis@freenet.de>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Liu Jiang <jiang.liu@huawei.com>
-Subject: Re: [PATCH] libata: remove dead code from libata-acpi.c
-References: <1371265368-7334-1-git-send-email-liuj97@gmail.com> <51BE6B5C.70803@intel.com> <20130617180151.GG32663@mtj.dyndns.org> <51C02571.3090100@intel.com> <51C26861.9050106@intel.com> <51C2E12F.4000603@cogentembedded.com> <51C3A489.1050905@intel.com> <20130621062929.GB11014@mtj.dyndns.org>
-In-Reply-To: <20130621062929.GB11014@mtj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Asias He <asias@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH net] vhost-net: fix use-after-free in vhost_net_flush
+References: <20130620114813.GA17373@redhat.com>
+In-Reply-To: <20130620114813.GA17373@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 02:29 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Jun 21, 2013 at 08:55:37AM +0800, Aaron Lu wrote:
->>>     Please indent this line under the next character after ( above.
->>
->> Is there a link about this rule? I might have missed something about
->> coding style.
-> 
-> I don't think there's an explicit rule about that and I don't follow
-> it religiously but I think it does make things easier on the eyes and
-> emacs does that by default so I just got used to it.  It's a very
-> minor thing but FWIW I prefer things that way.
+On 06/20/2013 07:48 PM, Michael S. Tsirkin wrote:
+> vhost_net_ubuf_put_and_wait has a confusing name:
+> it will actually also free it's argument.
+> Thus since commit 1280c27f8e29acf4af2da914e80ec27c3dbd5c01
+> vhost_net_flush tries to use the argument after passing it
+> to vhost_net_ubuf_put_and_wait, this results
+> in use after free.
+> To fix, don't free the argument in vhost_net_ubuf_put_and_wait,
+> add an new API for callers that want to free ubufs.
+>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>
+> Dave, this is needed for stable as well, but
+> the code has moved a bit since then.
+> I'll post a patch tweaked to apply against 3.9 and 3.8 separately.
+>
+>  drivers/vhost/net.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 5c77d6a..534adb0 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -149,6 +149,11 @@ static void vhost_net_ubuf_put_and_wait(struct vhost_net_ubuf_ref *ubufs)
+>  {
+>  	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
+>  	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
+> +}
+> +
+> +static void vhost_net_ubuf_put_wait_and_free(struct vhost_net_ubuf_ref *ubufs)
+> +{
+> +	vhost_net_ubuf_put_and_wait(ubufs);
+>  	kfree(ubufs);
+>  }
+>  
+> @@ -1073,7 +1078,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>  	mutex_unlock(&vq->mutex);
+>  
+>  	if (oldubufs) {
+> -		vhost_net_ubuf_put_and_wait(oldubufs);
+> +		vhost_net_ubuf_put_wait_and_free(oldubufs);
+>  		mutex_lock(&vq->mutex);
+>  		vhost_zerocopy_signal_used(n, vq);
+>  		mutex_unlock(&vq->mutex);
+> @@ -1091,7 +1096,7 @@ err_used:
+>  	vq->private_data = oldsock;
+>  	vhost_net_enable_vq(n, vq);
+>  	if (ubufs)
+> -		vhost_net_ubuf_put_and_wait(ubufs);
+> +		vhost_net_ubuf_put_wait_and_free(ubufs);
+>  err_ubufs:
+>  	fput(sock->file);
+>  err_vq:
 
-OK, will refresh the patch and send out again.
-
-Thanks,
-Aaron
+Acked-by: Jason Wang <jasowang@redhat.com>
