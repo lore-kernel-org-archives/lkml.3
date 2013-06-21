@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935757Ab3FUHde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:33:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55793 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933901Ab3FUHdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:33:32 -0400
-Date: Fri, 21 Jun 2013 17:33:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jamie Iles <jamie@jamieiles.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        Robin Holt <holt@sgi.com>
-Subject: linux-next: manual merge of the akpm tree with the arm-soc tree
-Message-Id: <20130621173326.42120edc7f766a527cef7470@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Jun_2013_17_33_26_+1000_EK+Qc=6AEG+YVi.X"
+	id S1423286Ab3FUHec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 03:34:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43383 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933901Ab3FUHea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 03:34:30 -0400
+Date: Fri, 21 Jun 2013 09:34:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
+        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, ying.huang@intel.com
+Subject: Re: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
+ banks listed in APEI HEST CMC
+Message-ID: <20130621073419.GC22006@pd.tnic>
+References: <20130619175438.2852.93449.stgit@localhost.localdomain>
+ <20130620073943.GE32694@pd.tnic>
+ <51C3531D.3000600@linux.vnet.ibm.com>
+ <20130620192928.GD19877@pd.tnic>
+ <51C36288.4050405@linux.vnet.ibm.com>
+ <20130620205726.GA20863@pd.tnic>
+ <51C37291.40303@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51C37291.40303@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Jun_2013_17_33_26_+1000_EK+Qc=6AEG+YVi.X
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 21, 2013 at 02:52:25AM +0530, Naveen N. Rao wrote:
+> Exactly, but mce_poll_banks also doesn't have bits set for banks on
+> which CMCI is enabled.
+>
+> Let's say we have a cpu with 2 banks (not shared), none of which work
+> in FF mode. Both these banks support CMCI, so mce_poll_banks won't
+> have these bits set.
+>
+> On cpu offline, we call cmci_clear() which disables CMCI on these two
+> banks before offlining it. When this cpu is brought online again, we
+> call cmci_discover() which sees that mce_poll_banks doesn't have these
+> two banks enabled and will skip enabling CMCI thinking these are in
+> FF.
 
-Hi Andrew,
+Hmm, mce_intel has yet another bitfield - mce_banks_owned. (Btw, this is
+why I have a problem with adding yet another bitfield).
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/arm/mach-picoxcell/common.c between commit 4b83f75a7af3 ("ARM:
-picoxcell: Remove init_irq declaration in machine description") from the
-arm-soc tree and commit "reboot: arm: change reboot_mode to use enum
-reboot_mode" from the akpm tree.
+The way I understand it is, if a bit is set in the owned bitfield, those
+banks belong to CMCI and are not polled.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Now, can we use both mce_banks_owned and mce_poll_banks? If a bit in
+both bifields is cleared, the corresponding bank is not polled *and* is
+not owned by CMCI => it is in FF mode.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Makes sense?
 
-diff --cc arch/arm/mach-picoxcell/common.c
-index b13f51b,37add6d..0000000
---- a/arch/arm/mach-picoxcell/common.c
-+++ b/arch/arm/mach-picoxcell/common.c
-@@@ -8,8 -8,13 +8,9 @@@
-   * All enquiries to support@picochip.com
-   */
-  #include <linux/delay.h>
- -#include <linux/irq.h>
- -#include <linux/irqchip.h>
- -#include <linux/irqdomain.h>
-+ #include <linux/reboot.h>
-  #include <linux/of.h>
-  #include <linux/of_address.h>
- -#include <linux/of_irq.h>
-  #include <linux/of_platform.h>
- =20
-  #include <asm/mach/arch.h>
+-- 
+Regards/Gruss,
+    Boris.
 
---Signature=_Fri__21_Jun_2013_17_33_26_+1000_EK+Qc=6AEG+YVi.X
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRxAHGAAoJEECxmPOUX5FELMwP/RwchtwM5dOb3XjAlqrm5c6V
-s/6rHt6m4I1+Y1ggLt7FbflmgQbCs2n875N/rqxUaO3QNJ1G1Zr6KPPmXpl4/vvB
-BFztB70tbL6ZT65ivJHBoE6SWTha6TulT9XHJ9eyE+216PqJi9GQAhV3Ybg/GUhC
-Kg263IN8s2asZGzVRDIoThEs2zwfpXt+Vwfojf7+atiKyZLEKHRkdGQzjpEQCL1o
-NfCkTuhrP+j7FmYePwBp3DFSHW/RE58+cPxsU6VU+9BC5TbjqT1KX2/8uRCR7Uuc
-RlXp2t1huXfMNRxrPW1StayLI16Pq5JhXmzZTvb91l2K8592rNkLS967mS3L5GZL
-JmyQBfCkeTgRX3m0bSW35v2SJ9f5j6ALwvgggD4kQMmC3iW2icU6q9zCewnbScDd
-fv5It6Cizcdnor2uDqrOBNPs7MMCZQOve40U6LRU2D5zaHFUD4r0SOpfrKX5AYdm
-C2Y1wMNYqm9DaoXdObISmrH1D7RGLbl6YQfnXNH93CtwvxVnHK5ImOo9c81xYgGV
-zbK+uX/SrpCGLVqEh8TdTOpXJOR+T+P7Rwt4TvAZBNOabqG5a19K7vu4g9YAnkCt
-2/WDSQuBNJqocRDGA3TZ+WoiGJyqyCDZ7f24S+xQyxiq90B/tjPGoBIrW1Mn4ruQ
-nd6tGxEXgPIEnXimF4IP
-=suaf
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_Jun_2013_17_33_26_+1000_EK+Qc=6AEG+YVi.X--
+Sent from a fat crate under my desk. Formatting is fine.
+--
