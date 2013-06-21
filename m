@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161614Ab3FURgi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:36:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42718 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161490Ab3FURgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:36:36 -0400
-Date: Fri, 21 Jun 2013 19:36:25 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: suravee.suthikulpanit@amd.com, iommu@lists.linux-foundation.org,
-        ddutile@redhat.com, alex.williamson@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] iommu/amd: IOMMU Error Reporting/Handling/Filtering
-Message-ID: <20130621173625.GH22006@pd.tnic>
-References: <1369250155-12226-1-git-send-email-suravee.suthikulpanit@amd.com>
- <20130621151459.GK11309@8bytes.org>
- <20130621155933.GA24385@pd.tnic>
- <20130621162455.GN11309@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130621162455.GN11309@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1423570Ab3FURja (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 13:39:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52068 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423424Ab3FURj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 13:39:26 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: [PATCHv3/RESEND 2/4] clocksource: arch_timer: Pass clock event to set_mode callback
+Date: Fri, 21 Jun 2013 10:39:19 -0700
+Message-Id: <1371836361-20574-3-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.1.448.gfb7dfaa
+In-Reply-To: <1371836361-20574-1-git-send-email-sboyd@codeaurora.org>
+References: <1371836361-20574-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 06:24:55PM +0200, Joerg Roedel wrote:
-> I would rather not create another user-space interface for this which
-> we then have to keep forever because someone started using it. What
-> we need is a well defined mechanism to report these kernel metrics to
-> userspace which can then do with it whatever it wants. I think EDAC
-> can provide that interface.
+There isn't any reason why we don't pass the event here and we'll
+need it in the near future for memory mapped arch timers anyway.
 
-What exactly do you think it should provide? A fast way to carry error
-info to userspace (tracepoint) or some sort of error collection and
-evaluation (need to do it yourself anyway - there's no such thing in
-EDAC).
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clocksource/arm_arch_timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-IOW, what specific functionality in EDAC are you actually thinking of?
-
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 053d846..220da0c 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -140,7 +140,7 @@ static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
+ 
+ 	clk->cpumask = cpumask_of(smp_processor_id());
+ 
+-	clk->set_mode(CLOCK_EVT_MODE_SHUTDOWN, NULL);
++	clk->set_mode(CLOCK_EVT_MODE_SHUTDOWN, clk);
+ 
+ 	clockevents_config_and_register(clk, arch_timer_rate,
+ 					0xf, 0x7fffffff);
 -- 
-Regards/Gruss,
-    Boris.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Sent from a fat crate under my desk. Formatting is fine.
---
