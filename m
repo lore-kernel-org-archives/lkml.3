@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423740Ab3FUV2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:28:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25535 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423678Ab3FUV2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:28:13 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BUyC4VmaGVwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5V7bKCsQ6TsA:10 a=rxLUQMSaNUCQszBDhbMA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371850091.18733.136.camel@gandalf.local.home>
-Subject: Re: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
- from apic.c to irq.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Fri, 21 Jun 2013 17:28:11 -0400
-In-Reply-To: <51C4C215.2040705@linux.intel.com>
-References: <1371835898.18733.122.camel@gandalf.local.home>
-	 <1371848976.18733.130.camel@gandalf.local.home>
-	 <51C4C215.2040705@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1946150Ab3FUV2m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:28:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51728 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946138Ab3FUV0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:26:36 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Mark Brown <broonie@kernel.org>, Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
+Subject: [RFC PATCH V2 7/8] ARM: dts: omap4-panda-es: add TPS62361 supply for vdd_mpu
+Date: Fri, 21 Jun 2013 16:25:48 -0500
+Message-ID: <1371849949-12649-8-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371849949-12649-1-git-send-email-nm@ti.com>
+References: <1371849949-12649-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 14:13 -0700, H. Peter Anvin wrote:
-> On 06/21/2013 02:09 PM, Steven Rostedt wrote:
-> > Call Trace:
-> >  [<ffffffff8103539d>] do_fork+0xa8/0x260
-> >  [<ffffffff810ca7b1>] ? trace_preempt_on+0x2a/0x2f
-> >  [<ffffffff812afb3e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> 
-> This bit of the call chain seems a little odd, no?
+Unlike other OMAP4 platforms including the the "vanilla" PandaBoard,
+PandaBoard-ES uses TPS62361 to supply vdd_mpu.
 
-Doesn't the "?" mean its just in the stack but not part of the call
-frame that was used. CONFIG_FRAME_POINTER is set in the config.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/boot/dts/omap4-panda-es.dts |   18 ++++++++++++++++++
+ arch/arm/boot/dts/tps62361_omap.dtsi |   18 ++++++++++++++++++
+ 2 files changed, 36 insertions(+)
+ create mode 100644 arch/arm/boot/dts/tps62361_omap.dtsi
 
-With lockdep and preempt tracing enabled, why would this seem strange?
-
--- Steve
-
+diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+index 49017c5..325816c 100644
+--- a/arch/arm/boot/dts/omap4-panda-es.dts
++++ b/arch/arm/boot/dts/omap4-panda-es.dts
+@@ -75,3 +75,21 @@
+ 	/* We use TPS62361 on this platform instead */
+ 	status = "disabled";
+ };
++
++#include "tps62361_omap.dtsi"
++
++&omap4_pmx_wkup {
++	tps62361_wkgpio_pins: pinmux_tps62361_wkpins {
++		pinctrl-single,pins = <
++			0x1a (PIN_OUTPUT | MUX_MODE3 | OFF_EN | OFFOUT_VAL) /* gpio_wk7 */
++		>;
++	};
++};
++
++&omap_tps62361 {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++		&tps62361_wkgpio_pins
++	>;
++	gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
++};
+diff --git a/arch/arm/boot/dts/tps62361_omap.dtsi b/arch/arm/boot/dts/tps62361_omap.dtsi
+new file mode 100644
+index 0000000..ee261ec
+--- /dev/null
++++ b/arch/arm/boot/dts/tps62361_omap.dtsi
+@@ -0,0 +1,18 @@
++/*
++ * TPS62361 entries specific for OMAP
++ *
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *	Nishanth Menon
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/ {
++	omap_tps62361: tps62361 {
++		compatible = "ti,omap-tps62361";
++		ti,boot-voltage-micro-volts = <1203000>;
++		ti,vp = <&vp_mpu>;
++	};
++};
+-- 
+1.7.9.5
 
