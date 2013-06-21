@@ -1,188 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946268Ab3FUXPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 19:15:10 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:37752 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946207Ab3FUXPI (ORCPT
+	id S1161585Ab3FUXZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 19:25:12 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:37749 "HELO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1161490Ab3FUXZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 19:15:08 -0400
+	Fri, 21 Jun 2013 19:25:11 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUUdwAiyVq5-7+qo3YL-ka4y6DfbMmjy_MTiZ+Y70y55Cw@mail.gmail.com>
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
-	<1371852439.1798.27.camel@buesod1.americas.hpqcorp.net>
-	<CA+icZUUdwAiyVq5-7+qo3YL-ka4y6DfbMmjy_MTiZ+Y70y55Cw@mail.gmail.com>
-Date: Sat, 22 Jun 2013 01:15:06 +0200
-Message-ID: <CA+icZUXn3qopO_Kgww1UtqUTN28N5rPV1NikjBpduWRgnpKyag@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 21 [ BROKEN ipc/ipc-msg ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>
+In-Reply-To: <51C46F9C.7020500@infradead.org>
+References: <20130621181721.11783d80583444868725b62c@canb.auug.org.au> <51C46F9C.7020500@infradead.org>
+From: Jesse Gross <jesse@nicira.com>
+Date: Fri, 21 Jun 2013 16:18:11 -0700
+Message-ID: <CAEP_g=8Oka3RXns4sazz5hX=nbUvXHgjAHCZkhKcwaNvBHxr-g@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jun 21 (netdev: openvswitch)
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "dev@openvswitch.org" <dev@openvswitch.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 12:54 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Sat, Jun 22, 2013 at 12:07 AM, Davidlohr Bueso
-> <davidlohr.bueso@hp.com> wrote:
->> On Fri, 2013-06-21 at 21:34 +0200, Sedat Dilek wrote:
->>> On Fri, Jun 21, 2013 at 10:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> > Hi all,
->>> >
->>> > Happy solstice!
->>> >
->>> > Changes since 20130620:
->>> >
->>> > Dropped tree: mailbox (really bad merge conflicts with the arm-soc tree)
->>> >
->>> > The net-next tree gained a conflict against the net tree.
->>> >
->>> > The leds tree still had its build failure, so I used the version from
->>> > next-20130607.
->>> >
->>> > The arm-soc tree gained conflicts against the tip, net-next, mfd and
->>> > mailbox trees.
->>> >
->>> > The staging tree still had its build failure for which I disabled some
->>> > code.
->>> >
->>> > The akpm tree lost a few patches that turned up elsewhere and gained
->>> > conflicts against the ftrace and arm-soc trees.
->>> >
->>> > ----------------------------------------------------------------------------
->>> >
->>>
->>> [ CC IPC folks ]
->>>
->>> Building via 'make deb-pkg' with fakeroot fails here like this:
->>>
->>> make: *** [deb-pkg] Terminated
->>> /usr/bin/fakeroot: line 181:  2386 Terminated
->>> FAKEROOTKEY=$FAKEROOTKEY LD_LIBRARY_PATH="$PATHS" LD_PRELOAD="$LIB"
->>> "$@"
->>> semop(1): encountered an error: Identifier removed
->>> semop(2): encountered an error: Invalid argument
->>> semop(1): encountered an error: Identifier removed
->>> semop(1): encountered an error: Identifier removed
->>> semop(1): encountered an error: Invalid argument
->>> semop(1): encountered an error: Invalid argument
->>> semop(1): encountered an error: Invalid argument
->>>
+On Fri, Jun 21, 2013 at 8:22 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 06/21/13 01:17, Stephen Rothwell wrote:
+>> Hi all,
 >>
->> Hmmm those really shouldn't be related to the message queue changes. Are
->> you sure you got the right bisect?
+>> Happy solstice!
 >>
->> Manfred has a few ipc/sem.c patches in linux-next, starting at commit
->> c50df1b4 (ipc/sem.c: cacheline align the semaphore structures), does
->> reverting any of those instead of "ipc,msg: shorten critical region in
->> msgrcv" help at all? Also, anything reported in dmesg?
+>> Changes since 20130620:
 >>
 >
-> First, I reverted all IPC patches from akpm-tree within -next.
-> Then, I isolated the culprit by git-bisecting.
-> As I checked my logs I did not see anything helpful.
+> when CONFIG_INET is not enabled:
 >
->>> The issue is present since next-20130606!
->>>
->>> LAST KNOWN GOOD: next-20130605
->>> FIRST KNOWN BAD: next-20130606
->>>
->>> KNOWN GOOD: next-20130604
->>> KNOWN BAD:  next-20130607 || next-20130619 || next-20130620 || next-20130621
->>>
->>> git-bisect says CULPRIT commit is...
->>>
->>>      "ipc,msg: shorten critical region in msgrcv"
->>
->> This I get. I went through the code again and it looks correct and
->> functionally equivalent to the old msgrcv.
->>
->
-> Hmm, I guess a rcu_read_unlock() is missing?
->
-> [ next-20130605 ]
-> ...
->                 /* Lockless receive, part 3:
->                  * Acquire the queue spinlock.
->                  */
->                 ipc_lock_by_ptr(&msq->q_perm);
->                 rcu_read_unlock();
-> ...
-> [ next-20130621 ]
-> ...
->                 /* Lockless receive, part 3:
->                  * Acquire the queue spinlock.
->                  */
->                 ipc_lock_object(&msq->q_perm);
-> ...
->
-> Whereas ipc_lock_by_ptr() is equivalent to:
-> rcu_read_lock();
-> ipc_lock_object();
->
->>>
->>> NOTE: msg_lock_(check_) routines have to be restored (one more revert needed)!
->>
->> This I don't get. Restoring msg_lock_[check] is already equivalent to
->> reverting "ipc,msg: shorten critical region in msgrcv" and several other
->> of the msq patches. What other patch needs reverted?
->>
->
-> No, you have to revert both patches as the other removed
-> msg_lock_[check] afterwards.
->
->> Anyway, I'll see if I can reproduce the issue, maybe I'm missing
->> something.
->>
->
-> Yupp, I try with adding rcu_read_unlock()... and report.
->
-> - Sedat -
->
->> Thanks,
->> Davidlohr
->>
->>>
->>> Reverting both (below) commits makes fakeroot build via 'make dep-pkg" again.
->>>
->>> I have tested the revert-patches with next-20130606 and next-20130621
->>> (see file-attachments).
->>>
->>> My build-script is attached!
->>>
->>> Can someone of the IPC folks look at that?
->>> Thanks!
->>>
->>> - Sedat -
->>>
->>>
->>> P.S.: Commit-IDs listed below.
->>>
->>> [ next-20130606 ]
->>>
->>> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130606
->>>
->>> "ipc: remove unused functions"
->>> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=8793fdfb0d0a6ed5916767e29a15d3eb56e04e79
->>>
->>> "ipc,msg: shorten critical region in msgrcv"
->>> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=c0ff93322847a54f74a5450032c4df64c17fdaed
->>>
->>> [ next-20130621 ]
->>>
->>> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?id=next-20130621
->>>
->>> "ipc: remove unused functions"
->>> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=941ce57c81dcceadf55265616ee1e8bef18b0ad3
->>>
->>> "ipc,msg: shorten critical region in msgrcv"
->>> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=62190df4081ee8504e3611d45edb40450cb408ac
->>
->>
+>   CC      net/openvswitch/flow.o
+> In file included from net/openvswitch/flow.c:43:0:
+> include/net/ip_tunnels.h: In function 'tunnel_ip_select_ident':
+> include/net/ip_tunnels.h:155:3: error: implicit declaration of function '__ip_select_ident' [-Werror=implicit-function-declaration]
+
+Thanks, I just sent out a couple of patches to fix config issues with
+the recent tunneling series.
