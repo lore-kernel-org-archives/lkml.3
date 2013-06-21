@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758452Ab3FUBmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:42:42 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:19100 "EHLO
+	id S1161101Ab3FUBpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 21:45:54 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:45095 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757596Ab3FUBmk (ORCPT
+	with ESMTP id S1758494Ab3FUBpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:42:40 -0400
+	Thu, 20 Jun 2013 21:45:53 -0400
 From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
 To: Boris BREZILLON <b.brezillon@overkiz.com>,
         Wim Van Sebroeck <wim@iguana.be>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+CC: Russell King <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH 2/4] watchdog: at91sam9_wdt: update device tree doc
-Thread-Topic: [RFC PATCH 2/4] watchdog: at91sam9_wdt: update device tree doc
-Thread-Index: AQHOZpKOuCa2VZRu9keXv8Ve8+W5RJk/c4dA
-Date: Fri, 21 Jun 2013 01:42:26 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641687DE052@penmbx01>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+Subject: RE: [RFC PATCH 3/4] ARM: at91/dt: add sam9 watchdog default options
+ to SoCs
+Thread-Topic: [RFC PATCH 3/4] ARM: at91/dt: add sam9 watchdog default
+ options to SoCs
+Thread-Index: AQHOZpKg9YP3H24bP0WZVy+hujzwhZk/dCSA
+Date: Fri, 21 Jun 2013 01:45:43 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641687DE064@penmbx01>
 References: <1370947890-954-1-git-send-email-b.brezillon@overkiz.com>
- <1370947890-954-3-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1370947890-954-3-git-send-email-b.brezillon@overkiz.com>
+ <1370947890-954-4-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1370947890-954-4-git-send-email-b.brezillon@overkiz.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -40,7 +38,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5L1gnPV005460
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5L1k6ZI005468
 
 
 
@@ -49,69 +47,128 @@ X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5L1gnPV005460
 > On Behalf Of Boris BREZILLON
 > Sent: 2013Äê6ÔÂ11ÈÕ 18:51
 > To: Wim Van Sebroeck; Jean-Christophe Plagniol-Villard; Ferre, Nicolas
-> Cc: linux-watchdog@vger.kernel.org; linux-doc@vger.kernel.org;
-> devicetree-discuss@lists.ozlabs.org; linux-kernel@vger.kernel.org; Rob
-> Herring; Boris BREZILLON; Rob Landley; Grant Likely;
-> linux-arm-kernel@lists.infradead.org
-> Subject: [RFC PATCH 2/4] watchdog: at91sam9_wdt: update device tree doc
+> Cc: Boris BREZILLON; Russell King; linux-kernel@vger.kernel.org;
+> linux-arm-kernel@lists.infradead.org; linux-watchdog@vger.kernel.org
+> Subject: [RFC PATCH 3/4] ARM: at91/dt: add sam9 watchdog default options to
+> SoCs
 > 
-> Add new at91sam9 watchdog properties to the documentation.
+> Set default watchdog options in every SoC compatible with the sam9 watchdog.
 > 
 > Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 > ---
->  .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30
-> ++++++++++++++++++--
->  1 file changed, 28 insertions(+), 2 deletions(-)
+>  arch/arm/boot/dts/at91sam9260.dtsi |    5 +++++
+>  arch/arm/boot/dts/at91sam9263.dtsi |    5 +++++
+>  arch/arm/boot/dts/at91sam9g45.dtsi |    5 +++++
+>  arch/arm/boot/dts/at91sam9n12.dtsi |    5 +++++
+>  arch/arm/boot/dts/at91sam9x5.dtsi  |    5 +++++
+>  arch/arm/boot/dts/sama5d3.dtsi     |    5 +++++
+>  6 files changed, 30 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-> b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-> index fcdd48f..e043106 100644
-> --- a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-> +++ b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-> @@ -9,11 +9,37 @@ Required properties:
+> diff --git a/arch/arm/boot/dts/at91sam9260.dtsi
+> b/arch/arm/boot/dts/at91sam9260.dtsi
+> index 899a7cf..6c44c35 100644
+> --- a/arch/arm/boot/dts/at91sam9260.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9260.dtsi
+> @@ -643,6 +643,11 @@
+>  			watchdog@fffffd40 {
+>  				compatible = "atmel,at91sam9260-wdt";
+>  				reg = <0xfffffd40 0x10>;
+> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+> +				atmel,watchdog-type = "hardware";
+> +				atmel,reset-type = "all";
+> +				atmel,dbg-halt;
+> +				atmel,idle-halt;
+>  				status = "disabled";
+>  			};
+>  		};
+> diff --git a/arch/arm/boot/dts/at91sam9263.dtsi
+> b/arch/arm/boot/dts/at91sam9263.dtsi
+> index ff63811..6b31ee0 100644
+> --- a/arch/arm/boot/dts/at91sam9263.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9263.dtsi
+> @@ -519,6 +519,11 @@
+>  			watchdog@fffffd40 {
+>  				compatible = "atmel,at91sam9260-wdt";
+>  				reg = <0xfffffd40 0x10>;
+> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+> +				atmel,watchdog-type = "hardware";
+> +				atmel,reset-type = "all";
+> +				atmel,dbg-halt;
+> +				atmel,idle-halt;
+>  				status = "disabled";
+>  			};
 > 
->  Optional properties:
->  - timeout-sec: contains the watchdog timeout in seconds.
-> +- interrupts : Should contain WDT interrupt.
-> +- atmel,max-heartbeat-sec : Should contain the maximum heartbeat value in
-> +	seconds. This value should be less than 16. It is used to compute the
-> +	WDV field.
-> +- atmel,max-heartbeat-sec : Should contain the minimum heartbeat value in
-Typo, should be,
-- atmel,min-heartbeat-sec
-> +	seconds. This value should be less than 4 times the max-heartbeat-sec
-> +	value. It is used to compute the WDD field.
-> +- atmel,watchdog-type : Should be "hardware" or "software". Hardware
-> watchdog
-> +	use the at91 watchdog reset. Software watchdog use the watcdog
-> interrup
-> +	to trigger a software reset.
-> +- atmel,reset-type : Should be "proc" or "all".
-> +	"all" : assert peripherals and processor reset signals
-> +	"proc" : assert the processor reset signal
-> +	This is valid only when using "hardware" watchdog.
-> +- atmel,disable : Should be present if you want to disable the watchdog.
-> +- atmel,idle-halt : Should be present if you want to stop the watchdog when
-> +	entering idle state.
-> +- atmel,dbg-halt : Should be present if you want to stop the watchdog when
-> +	entering debug state.
+> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi
+> b/arch/arm/boot/dts/at91sam9g45.dtsi
+> index faec17d..ca1a643 100644
+> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+> @@ -634,6 +634,11 @@
+>  			watchdog@fffffd40 {
+>  				compatible = "atmel,at91sam9260-wdt";
+>  				reg = <0xfffffd40 0x10>;
+> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+> +				atmel,watchdog-type = "hardware";
+> +				atmel,reset-type = "all";
+> +				atmel,dbg-halt;
+> +				atmel,idle-halt;
+>  				status = "disabled";
+>  			};
 > 
->  Example:
-> -
->  	watchdog@fffffd40 {
->  		compatible = "atmel,at91sam9260-wdt";
->  		reg = <0xfffffd40 0x10>;
-> -		timeout-sec = <10>;
-> +		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-> +		timeout-sec = <15>;
-> +		atmel,watchdog-type = "hardware";
-> +		atmel,reset-type = "all";
-> +		atmel,dbg-halt;
-> +		atmel,idle-halt;
-> +		atmel,max-heartbeat-sec = <16>;
-> +		atmel,min-heartbeat-sec = <0>;
-> +		status = "okay";
->  	};
+> diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi
+> b/arch/arm/boot/dts/at91sam9n12.dtsi
+> index 3166e1d..7c8a5ea 100644
+> --- a/arch/arm/boot/dts/at91sam9n12.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+> @@ -505,6 +505,11 @@
+>  			watchdog@fffffe40 {
+>  				compatible = "atmel,at91sam9260-wdt";
+>  				reg = <0xfffffe40 0x10>;
+> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+> +				atmel,watchdog-type = "hardware";
+> +				atmel,reset-type = "all";
+> +				atmel,dbg-halt;
+> +				atmel,idle-halt;
+>  				status = "disabled";
+>  			};
+>  		};
+> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi
+> b/arch/arm/boot/dts/at91sam9x5.dtsi
+> index e77106e..48eb1cc 100644
+> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+> @@ -742,6 +742,11 @@
+>  			watchdog@fffffe40 {
+>  				compatible = "atmel,at91sam9260-wdt";
+>  				reg = <0xfffffe40 0x10>;
+> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+> +				atmel,watchdog-type = "hardware";
+> +				atmel,reset-type = "all";
+> +				atmel,dbg-halt;
+> +				atmel,idle-halt;
+>  				status = "disabled";
+>  			};
+> 
+> diff --git a/arch/arm/boot/dts/sama5d3.dtsi
+> b/arch/arm/boot/dts/sama5d3.dtsi
+> index c00e158..7974723 100644
+> --- a/arch/arm/boot/dts/sama5d3.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3.dtsi
+> @@ -885,6 +885,11 @@
+>  			watchdog@fffffe40 {
+>  				compatible = "atmel,at91sam9260-wdt";
+>  				reg = <0xfffffe40 0x10>;
+> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+Change it with,
+				interrupts = <4 IRQ_TYPE_LEVEL_HIGH 7>;
+Because in sama5d3, watchdog interrupt is not shared with SYSC, it uses a separate interrupt line, 4.
+> +				atmel,watchdog-type = "hardware";
+> +				atmel,reset-type = "all";
+> +				atmel,dbg-halt;
+> +				atmel,idle-halt;
+>  				status = "disabled";
+>  			};
+> 
 > --
 > 1.7.9.5
 > 
