@@ -1,102 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab3FUKGG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:06:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55175 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750730Ab3FUKGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:06:04 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130621072356.GA22006@pd.tnic>
-References: <1371746775.2372.11.camel@dabdike> <20130620165426.GB26214@srcf.ucam.org> <20130620170124.GA19877@pd.tnic> <20130620171210.GA26593@srcf.ucam.org> <20130620180808.GB19877@pd.tnic> <20130620181015.GA27833@srcf.ucam.org> <20130620181445.GA791@pd.tnic> <20130620181731.GA27960@srcf.ucam.org> <20130620184736.GC19877@pd.tnic> <51C383AC.4060706@zytor.com> <20130621072356.GA22006@pd.tnic>
+	id S1754102Ab3FUKNZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 06:13:25 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55890 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab3FUKNX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 06:13:23 -0400
+Message-ID: <51C42705.1060803@ti.com>
+Date: Fri, 21 Jun 2013 15:42:21 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 21 Jun 2013 03:05:30 -0700
-To: Borislav Petkov <bp@alien8.de>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Message-ID: <ca8f8134-24d9-4f96-8876-e24892efc849@email.android.com>
+To: Joel A Fernandes <joelagnel@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v12 03/11] ARM: edma: Add EDMA crossbar event mux support
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <1371762407-24544-4-git-send-email-joelagnel@ti.com>
+In-Reply-To: <1371762407-24544-4-git-send-email-joelagnel@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you cap it you are basically imposing a constraint on the firmware and may not run properly (or at least have to turn off EFI runtime calls with all that implies.)  It might be good to have a sanity check but it needs to be pretty generous.
+On 6/21/2013 2:36 AM, Joel A Fernandes wrote:
+> From: Matt Porter <mporter@ti.com>
+> 
+> 
 
-Borislav Petkov <bp@alien8.de> wrote:
+You should add a description apart from just documenting what you
+changed in this patch.
 
->On Thu, Jun 20, 2013 at 03:35:24PM -0700, H. Peter Anvin wrote:
->> On 06/20/2013 11:47 AM, Borislav Petkov wrote:
->> > 
->> > I guess we can do a top-down allocation, starting from the highest
->> > virtual addresses:
->> > 
->> > EFI_HIGHEST_ADDRESS
->> > |
->> > | size1
->> > |
->> > --> region1
->> > |
->> > | size2
->> > |
->> > --> region2
->> > 
->> > ...
->> > 
->> > and we make EFI_HIGHEST_ADDRESS be the same absolute number on
->every
->> > system.
->> > 
->> > hpa, is this close to what you had in mind? It would be prudent to
->> > verify whether this will suit well with the kexec virtual space
->layout
->> > though...
->> > 
->> 
->> This would work really well, I think.  The tricky part here is to
->pick a
->> safe EFI_HIGHEST_ADDRESS as it is an ABI.
->> 
->> My preference would be to make EFI_HIGHEST_ADDRESS = -4 GB, which is
->> *not* what Windows uses, but will leave the high negative range
->clear,
->> and allows a range where we can grow down without much risk of
->> interfering with anything else.
->
->Hmm, cool. Let me see whether my primitive math still has it:
->
->-(4 << 30) = 0xffffffff00000000.
->
->Staring at Documentation/x86/x86_64/mm.txt, that's right in the unused
->hole, sandwiched between:
->
->ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
->
->xxxxxxxxxxxxxxxx - ffffffff00000000 (=XX bits, not a lot :-), maybe 4,
->i.e. 64G) EFI
->
->ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping,
->from phys 0
->
->Now, if we go and do that, what are we going to say for the lower
->bound,
->in case later someone wants to use some more of the rest of the unused
->hole? Should we limit it to say
->
->0xffffffff00000000 -
->0xfffffff000000000 = 64G max EFI mappable region.
->
->Or am I too generous? The remaining hole is around
->
->(0xfffffff000000000 - 0xffffeaffffffffff) >> 40 = 20TB.
->
->Thanks.
+Changes by Joel:
+> * Split EDMA xbar support out of original EDMA DT parsing patch
+> to keep it easier for review.
+> * Rewrite shift and offset calculation.
+> 
+> Suggested-by: Sekhar Nori <nsekhar@ti.com>
+> Suggested by: Andy Shevchenko <andy.shevchenko@gmail.com>
+> Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+> 
+> Reference:
+> [1] https://patchwork.kernel.org/patch/2226991/
+> ---
+>  arch/arm/common/edma.c             |   62 +++++++++++++++++++++++++++++++++++-
+>  include/linux/platform_data/edma.h |    1 +
+>  2 files changed, 62 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> index 407e01e..a03d4f0 100644
+> --- a/arch/arm/common/edma.c
+> +++ b/arch/arm/common/edma.c
+> @@ -568,7 +568,7 @@ static int prepare_unused_channel_list(struct device *dev, void *data)
+>  				(int)pdev->resource[i].start >= 0) {
+>  			ctlr = EDMA_CTLR(pdev->resource[i].start);
+>  			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+> -					edma_cc[ctlr]->edma_unused);
+> +						edma_cc[ctlr]->edma_unused);
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+There are two problems with this hunk:
+
+1) It does not belong to this patch. I said that earlier.
+2) It actually introduces a new checkpatch issue.
+
+I dropped this hunk.
+
+>  		}
+>  	}
+>  
+> @@ -1393,6 +1393,52 @@ static int edma_of_read_u32_to_s16_array(const struct device_node *np,
+>  	return 0;
+>  }
+>  
+> +static int edma_xbar_event_map(struct device *dev,
+> +			       struct device_node *node,
+> +			       struct edma_soc_info *pdata, int len)
+> +{
+> +	int ret = 0;
+
+No need to initialize ret here since you use it only after init.
+I fixed that.
+
+> +	int i;
+> +	struct resource res;
+> +	void __iomem *xbar;
+> +	const s16 (*xbar_chans)[2];
+> +	u32 shift, offset, mux;
+> +
+> +	xbar_chans = devm_kzalloc(dev,
+> +				  len/sizeof(s16) + 2*sizeof(s16),
+> +				  GFP_KERNEL);
+> +	if (!xbar_chans)
+> +		return -ENOMEM;
+> +
+> +	ret = of_address_to_resource(node, 1, &res);
+> +	if (ret)
+> +		return -EIO;
+> +
+> +	xbar = devm_ioremap(dev, res.start, resource_size(&res));
+> +	if (!xbar)
+> +		return -ENOMEM;
+> +
+> +	ret = edma_of_read_u32_to_s16_array(node,
+> +					    "ti,edma-xbar-event-map",
+> +					    (s16 *)xbar_chans,
+> +					    len/sizeof(u32));
+> +	if (ret)
+> +		return -EIO;
+> +
+> +	for (i = 0; xbar_chans[i][0] != -1; i++) {
+> +		shift = (xbar_chans[i][1] & 0x03) << 3;
+> +		offset = xbar_chans[i][1] & 0xfffffffc;
+> +		mux = readl(xbar + offset);
+> +		mux &= ~(0xff << shift);
+> +		mux |= xbar_chans[i][0] << shift;
+> +		writel(mux, (xbar + offset));
+> +	}
+> +
+> +	pdata->xbar_chans = xbar_chans;
+> +
+> +	return 0;
+> +}
+> +
+>  static int edma_of_parse_dt(struct device *dev,
+>  			    struct device_node *node,
+>  			    struct edma_soc_info *pdata)
+> @@ -1458,6 +1504,10 @@ static int edma_of_parse_dt(struct device *dev,
+>  
+>  	pdata->default_queue = 0;
+>  
+> +	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
+> +	if (prop)
+> +		ret = edma_xbar_event_map(dev, node, pdata, sz);
+> +
+>  	return ret;
+>  }
+>  
+> @@ -1476,6 +1526,7 @@ static int edma_probe(struct platform_device *pdev)
+>  	int			status = -1;
+>  	const s16		(*rsv_chans)[2];
+>  	const s16		(*rsv_slots)[2];
+> +	const s16		(*xbar_chans)[2];
+>  	int			irq[EDMA_MAX_CC] = {0, 0};
+>  	int			err_irq[EDMA_MAX_CC] = {0, 0};
+>  	struct resource		*r[EDMA_MAX_CC] = {NULL};
+> @@ -1591,6 +1642,15 @@ static int edma_probe(struct platform_device *pdev)
+>  			}
+>  		}
+>  
+> +		/* Clear the xbar mapped channels in unused list */
+> +		xbar_chans = info[j]->xbar_chans;
+> +		if (xbar_chans) {
+> +			for (i = 0; xbar_chans[i][1] != -1; i++) {
+> +				off = xbar_chans[i][1];
+> +				clear_bits(off, 1,
+> +					  edma_cc[j]->edma_unused);
+
+You ignored my request to fix the alignment issue here. I will send the
+updated patch separately.
+
+Thanks,
+Sekhar
