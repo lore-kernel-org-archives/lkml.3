@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030428Ab3FUNUh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 09:20:37 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18411 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030221Ab3FUNUg (ORCPT
+	id S1030438Ab3FUNZQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 09:25:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62473 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030216Ab3FUNZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 09:20:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 21 Jun 2013 06:18:35 -0700
-Message-ID: <51C45448.4080201@nvidia.com>
-Date: Fri, 21 Jun 2013 18:55:28 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Fri, 21 Jun 2013 09:25:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH] char: misc: assign file->private_data in all cases
+Date: Fri, 21 Jun 2013 15:25:06 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Samu Onkalo <samu.p.onkalo@nokia.com>,
+        michael.opdenacker@free-electrons.com,
+        gregory.clement@free-electrons.com, maxime.ripard@free-electrons.com,
+        alexandre.belloni@free-electrons.com
+References: <1371819665-3882-1-git-send-email-thomas.petazzoni@free-electrons.com>
+In-Reply-To: <1371819665-3882-1-git-send-email-thomas.petazzoni@free-electrons.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regulator: palmas: model SMPS10 as two regulators
-References: <1371717458-10307-1-git-send-email-kishon@ti.com> <1371717458-10307-3-git-send-email-kishon@ti.com> <51C2DEEB.9090600@nvidia.com> <51C3089F.5030003@ti.com> <51C30B95.4010406@nvidia.com> <51C30F60.3060100@ti.com> <51C31537.9030705@nvidia.com> <51C31F30.5000307@ti.com>
-In-Reply-To: <51C31F30.5000307@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306211525.06761.arnd@arndb.de>
+X-Provags-ID: V02:K0:9lLTvkuRVtOcuPSUA08V3HJZTRRZg6MR16a3g5mU8Gp
+ 6Xh1xd4BMyrMJbLZV5sKa5dn6h+S1UjF17pHvt+mRuZNJAytRe
+ M2mMMm8ZHpPI1DoFvqWoMF02gxQ12ipexGoYEF7IWtASZpKiaY
+ fBiCXfrQQRHIXFwdVSA8U1k2tLOhOPYtTsWfoaIQnqWqVQNmGZ
+ SCJka/lsnaBDU3XME+Bf2+eY/BBuJXd97Ce+EAkwSbonUBUub6
+ nY+yHbYj8gUnaiscPSw9dg4ZWo93wVdCxOGz+X+oMtClWNTkm5
+ 5X4+58bwp8YpqhooL8Vs9/I+JKe9RxV+03s1ojfxVh1ArOTv0F
+ Aa8DgwB0Y6IbrCRo4wC8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 June 2013 08:56 PM, Kishon Vijay Abraham I wrote:
-> Hi,
->
-> On Thursday 20 June 2013 08:14 PM, Laxman Dewangan wrote:
->>
->> Have you added the regulator supply entries?
->> Are you testing on mainline linux-next?
-> Not in linux-next :-( Tested only with mainline.
-> Does inverting the order helps?
->
+On Friday 21 June 2013, Thomas Petazzoni wrote:
+> n fa1f68db6ca ("drivers: misc: pass miscdevice pointer via file
+> private data"), the misc driver infrastructure was changed to assigned
+> file->private_data as a pointer to the 'struct miscdevice' that
+> corresponds to the device being opened.
+> 
+> However, this assignment was only done when the misc driver was
+> declaring a driver-specific ->open() operation in its
+> file_operations. This doesn't make sense, as the driver may not
+> necessarily have a custom ->open() operation, and might still be
+> interested in having file->private_data properly set for use in its
+> ->read() and write() operations.
+> 
+> Therefore, we move the assignment of file->private_data outside of the
+> condition that tests whether a driver-specific ->open() operation was
+> defined.
+> 
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-I think because you do not have entry of supply in your dt node, it gets 
-ignored by regulator_dev_lookup() and continue.
-
-I made the entry like (added entry form smps10-out2-supply and 
-smps10-in-supply in dt node) and then it failed.
-/***
-
-+                           smps10-out2-supply = <&palmas_smps10_out2_reg>;
-+                           smps10-in-supply = <&tps65090_dcdc3_reg>;
-                             ldo3-in-supply = <&palmas_smps3_reg>;
-@@ -903,6 +905,20 @@
-                                         regulator-always-on;
-                                 };
-
-+                               palmas_smps10_out1_reg: smps10_out1 {
-+                                       regulator-name = "smps10_out1";
-+                                       regulator-min-microvolt = <5000000>;
-+                                       regulator-max-microvolt = <5000000>;
-+                                       regulator-always-on;
-+                               };
-+
-+                               palmas_smps10_out2_reg: smps10_out2 {
-+                                       regulator-name = "smps10_out2";
-+                                       regulator-min-microvolt = <5000000>;
-+                                       regulator-max-microvolt = <5000000>;
-+                                       regulator-always-on;
-+                               };
-+
-**/
-
-
-After reversing the sequence, it worked fine.
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
