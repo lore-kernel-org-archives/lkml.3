@@ -1,491 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab3FUJya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 05:54:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54649 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757067Ab3FUJy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 05:54:27 -0400
-From: Sekhar Nori <nsekhar@ti.com>
-To: Joel A Fernandes <joelagnel@ti.com>
-CC: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S965366Ab3FUJym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 05:54:42 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:13587 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756049Ab3FUJyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 05:54:38 -0400
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Rob Landley <rob@landley.net>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Matt Porter <matt@ohporter.com>
-Subject: [PATCH v13] ARM: edma: Add DT and runtime PM support to the private EDMA API
-Date: Fri, 21 Jun 2013 15:23:10 +0530
-Message-ID: <1371808390-17971-1-git-send-email-nsekhar@ti.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <51C41ED1.5040509@ti.com>
-References: <51C41ED1.5040509@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Subject: [PATCH v9] i2c-designware: make SDA hold time configurable
+Date: Fri, 21 Jun 2013 11:53:42 +0200
+Message-Id: <1371808422-27742-1-git-send-email-christian.ruppert@abilis.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20130620203716.GF2961@katana>
+References: <20130620203716.GF2961@katana>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Porter <mporter@ti.com>
+This patch makes the SDA hold time configurable through device tree.
 
-Adds support for parsing the TI EDMA DT data into the required EDMA
-private API platform data. Enables runtime PM support to initialize
-the EDMA hwmod. Enables build on OMAP.
-
-Changes by Joel:
-* Setup default one-to-one mapping for queue_priority and queue_tc
-mapping as discussed in [1].
-* Split out xbar stuff to separate patch. [1]
-* Dropped unused DT helper to convert to array
-
-[1] https://patchwork.kernel.org/patch/2226761/
-
-Signed-off-by: Matt Porter <mporter@ti.com>
-[nsekhar@ti.com: fix checkpatch errors, build breakages. Introduce
-edma_setup_info_from_dt() as part of that effort]
-Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
 ---
- arch/arm/common/edma.c                    |  186 +++++++++++++++++++++++++++--
- arch/arm/mach-davinci/devices-da8xx.c     |    8 +-
- arch/arm/mach-davinci/devices-tnetv107x.c |    4 +-
- arch/arm/mach-davinci/dm355.c             |    4 +-
- arch/arm/mach-davinci/dm365.c             |    4 +-
- arch/arm/mach-davinci/dm644x.c            |    4 +-
- arch/arm/mach-davinci/dm646x.c            |    4 +-
- include/linux/platform_data/edma.h        |    4 +-
- 8 files changed, 189 insertions(+), 29 deletions(-)
+ .../devicetree/bindings/i2c/i2c-designware.txt     |   14 ++++++++++++++
+ arch/arc/boot/dts/abilis_tb100_dvk.dts             |   10 +++++-----
+ arch/arc/boot/dts/abilis_tb101_dvk.dts             |   10 +++++-----
+ drivers/i2c/busses/i2c-designware-core.c           |   13 +++++++++++++
+ drivers/i2c/busses/i2c-designware-core.h           |    1 +
+ drivers/i2c/busses/i2c-designware-platdrv.c        |   10 ++++++++++
+ 6 files changed, 48 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index 7658874..b3770ab 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -25,6 +25,13 @@
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+index e42a2ee..3266cc7 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+@@ -10,6 +10,9 @@ Recommended properties :
+ 
+  - clock-frequency : desired I2C bus clock frequency in Hz.
+ 
++Optional properties :
++ - i2c-sda-hold-time-ns : should contain the SDA hold time in nanoseconds.
++
+ Example :
+ 
+ 	i2c@f0000 {
+@@ -20,3 +23,14 @@ Example :
+ 		interrupts = <11>;
+ 		clock-frequency = <400000>;
+ 	};
++
++	i2c@1120000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "snps,designware-i2c";
++		reg = <0x1120000 0x1000>;
++		interrupt-parent = <&ictl>;
++		interrupts = <12 1>;
++		clock-frequency = <400000>;
++		i2c-sda-hold-time-ns = <300>;
++	};
+diff --git a/arch/arc/boot/dts/abilis_tb100_dvk.dts b/arch/arc/boot/dts/abilis_tb100_dvk.dts
+index 0fa0d4a..ebc313a 100644
+--- a/arch/arc/boot/dts/abilis_tb100_dvk.dts
++++ b/arch/arc/boot/dts/abilis_tb100_dvk.dts
+@@ -45,19 +45,19 @@
+ 		};
+ 
+ 		i2c0: i2c@FF120000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 		i2c1: i2c@FF121000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 		i2c2: i2c@FF122000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 		i2c3: i2c@FF123000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 		i2c4: i2c@FF124000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 
+ 		leds {
+diff --git a/arch/arc/boot/dts/abilis_tb101_dvk.dts b/arch/arc/boot/dts/abilis_tb101_dvk.dts
+index a4d80ce..b204657 100644
+--- a/arch/arc/boot/dts/abilis_tb101_dvk.dts
++++ b/arch/arc/boot/dts/abilis_tb101_dvk.dts
+@@ -45,19 +45,19 @@
+ 		};
+ 
+ 		i2c0: i2c@FF120000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 		i2c1: i2c@FF121000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 		i2c2: i2c@FF122000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 		i2c3: i2c@FF123000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 		i2c4: i2c@FF124000 {
+-			sda-hold-time = <432>;
++			i2c-sda-hold-time-ns = <432>;
+ 		};
+ 
+ 		leds {
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index c41ca63..66119e2 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -67,9 +67,12 @@
+ #define DW_IC_STATUS		0x70
+ #define DW_IC_TXFLR		0x74
+ #define DW_IC_RXFLR		0x78
++#define DW_IC_SDA_HOLD		0x7c
+ #define DW_IC_TX_ABRT_SOURCE	0x80
+ #define DW_IC_ENABLE_STATUS	0x9c
+ #define DW_IC_COMP_PARAM_1	0xf4
++#define DW_IC_COMP_VERSION	0xf8
++#define DW_IC_SDA_HOLD_MIN_VERS	0x3131312A
+ #define DW_IC_COMP_TYPE		0xfc
+ #define DW_IC_COMP_TYPE_VALUE	0x44570140
+ 
+@@ -332,6 +335,16 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
+ 	dw_writel(dev, lcnt, DW_IC_FS_SCL_LCNT);
+ 	dev_dbg(dev->dev, "Fast-mode HCNT:LCNT = %d:%d\n", hcnt, lcnt);
+ 
++	/* Configure SDA Hold Time if required */
++	reg = dw_readl(dev, DW_IC_COMP_VERSION);
++	if (dev->sda_hold_time) {
++		if (reg >= DW_IC_SDA_HOLD_MIN_VERS)
++			dw_writel(dev, dev->sda_hold_time, DW_IC_SDA_HOLD);
++		else
++			dev_warn(dev->dev,
++				"Hardware too old to adjust SDA hold time.");
++	}
++
+ 	/* Configure Tx/Rx FIFO threshold levels */
+ 	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
+ 	dw_writel(dev, 0, DW_IC_RX_TL);
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index e761ad1..912aa22 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -90,6 +90,7 @@ struct dw_i2c_dev {
+ 	unsigned int		tx_fifo_depth;
+ 	unsigned int		rx_fifo_depth;
+ 	int			rx_outstanding;
++	u32			sda_hold_time;
+ };
+ 
+ #define ACCESS_SWAP		0x00000001
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index 35b70a1..8b9d3f1 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -34,6 +34,7 @@
+ #include <linux/sched.h>
+ #include <linux/err.h>
+ #include <linux/interrupt.h>
++#include <linux/of.h>
+ #include <linux/of_i2c.h>
  #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/edma.h>
-+#include <linux/err.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+#include <linux/of_dma.h>
-+#include <linux/of_irq.h>
-+#include <linux/pm_runtime.h>
+ #include <linux/pm.h>
+@@ -121,6 +122,15 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 		return PTR_ERR(dev->clk);
+ 	clk_prepare_enable(dev->clk);
  
- #include <linux/platform_data/edma.h>
- 
-@@ -1369,13 +1376,118 @@ void edma_clear_event(unsigned channel)
- }
- EXPORT_SYMBOL(edma_clear_event);
- 
--/*-----------------------------------------------------------------------*/
-+#if IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_DMADEVICES)
- 
--static int __init edma_probe(struct platform_device *pdev)
-+static int edma_of_parse_dt(struct device *dev,
-+			    struct device_node *node,
-+			    struct edma_soc_info *pdata)
-+{
-+	int ret = 0, i;
-+	u32 value;
-+	struct edma_rsv_info *rsv_info;
-+	s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
++	if (pdev->dev.of_node) {
++		u32 ht = 0;
++		u32 ic_clk = dev->get_clk_rate_khz(dev);
 +
-+	memset(pdata, 0, sizeof(struct edma_soc_info));
-+
-+	ret = of_property_read_u32(node, "dma-channels", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_channel = value;
-+
-+	ret = of_property_read_u32(node, "ti,edma-regions", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_region = value;
-+
-+	ret = of_property_read_u32(node, "ti,edma-slots", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_slot = value;
-+
-+	pdata->n_cc = 1;
-+
-+	rsv_info = devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
-+	if (!rsv_info)
-+		return -ENOMEM;
-+	pdata->rsv = rsv_info;
-+
-+	queue_tc_map = devm_kzalloc(dev, 8*sizeof(s8), GFP_KERNEL);
-+	if (!queue_tc_map)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < 3; i++) {
-+		queue_tc_map[i][0] = i;
-+		queue_tc_map[i][1] = i;
-+	}
-+	queue_tc_map[i][0] = -1;
-+	queue_tc_map[i][1] = -1;
-+
-+	pdata->queue_tc_mapping = queue_tc_map;
-+
-+	queue_priority_map = devm_kzalloc(dev, 8*sizeof(s8), GFP_KERNEL);
-+	if (!queue_priority_map)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < 3; i++) {
-+		queue_priority_map[i][0] = i;
-+		queue_priority_map[i][1] = i;
-+	}
-+	queue_priority_map[i][0] = -1;
-+	queue_priority_map[i][1] = -1;
-+
-+	pdata->queue_priority_mapping = queue_priority_map;
-+
-+	pdata->default_queue = 0;
-+
-+	return ret;
-+}
-+
-+static struct of_dma_filter_info edma_filter_info = {
-+	.filter_fn = edma_filter_fn,
-+};
-+
-+static struct edma_soc_info **edma_setup_info_from_dt(struct device *dev,
-+						      struct device_node *node)
-+{
-+	static struct edma_soc_info **info;
-+	struct edma_soc_info *ninfo;
-+	int ret;
-+
-+	/* Check if this is a second instance registered */
-+	if (arch_num_cc) {
-+		dev_err(dev, "only one EDMA instance is supported via DT\n");
-+		return ERR_PTR(-ENODEV);
++		of_property_read_u32(pdev->dev.of_node,
++					"i2c-sda-hold-time-ns", &ht);
++		dev->sda_hold_time = ((u64)ic_clk * ht + 500000) / 1000000;
 +	}
 +
-+	ninfo = devm_kzalloc(dev, sizeof(struct edma_soc_info), GFP_KERNEL);
-+	if (!ninfo)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ret = edma_of_parse_dt(dev, node, ninfo);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	dma_cap_set(DMA_SLAVE, edma_filter_info.dma_cap);
-+	of_dma_controller_register(dev->of_node, of_dma_simple_xlate,
-+				   &edma_filter_info);
-+
-+	info = &ninfo;
-+
-+	return info;
-+}
-+#else
-+static struct edma_soc_info **edma_setup_info_from_dt(struct device *dev,
-+						      struct device_node *node)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
-+#endif
-+
-+static int edma_probe(struct platform_device *pdev)
- {
- 	struct edma_soc_info	**info = pdev->dev.platform_data;
--	const s8		(*queue_priority_mapping)[2];
--	const s8		(*queue_tc_mapping)[2];
-+	s8		(*queue_priority_mapping)[2];
-+	s8		(*queue_tc_mapping)[2];
- 	int			i, j, off, ln, found = 0;
- 	int			status = -1;
- 	const s16		(*rsv_chans)[2];
-@@ -1383,17 +1495,48 @@ static int __init edma_probe(struct platform_device *pdev)
- 	int			irq[EDMA_MAX_CC] = {0, 0};
- 	int			err_irq[EDMA_MAX_CC] = {0, 0};
- 	struct resource		*r[EDMA_MAX_CC] = {NULL};
-+	struct resource		res[EDMA_MAX_CC];
- 	char			res_name[10];
- 	char			irq_name[10];
-+	struct device_node	*node = pdev->dev.of_node;
-+	struct device		*dev = &pdev->dev;
-+	int			ret;
-+
-+	if (node) {
-+		info = edma_setup_info_from_dt(dev, node);
-+		if (IS_ERR(info)) {
-+			dev_err(dev, "failed to get DT data\n");
-+			return PTR_ERR(info);
-+		}
-+	}
- 
- 	if (!info)
- 		return -ENODEV;
- 
-+	pm_runtime_enable(dev);
-+	ret = pm_runtime_get_sync(dev);
-+	if (ret < 0) {
-+		dev_err(dev, "pm_runtime_get_sync() failed\n");
-+		return ret;
-+	}
-+
- 	for (j = 0; j < EDMA_MAX_CC; j++) {
--		sprintf(res_name, "edma_cc%d", j);
--		r[j] = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-+		if (!info[j]) {
-+			if (!found)
-+				return -ENODEV;
-+			break;
-+		}
-+		if (node) {
-+			ret = of_address_to_resource(node, j, &res[j]);
-+			if (!ret)
-+				r[j] = &res[j];
-+		} else {
-+			sprintf(res_name, "edma_cc%d", j);
-+			r[j] = platform_get_resource_byname(pdev,
-+						IORESOURCE_MEM,
- 						res_name);
--		if (!r[j] || !info[j]) {
-+		}
-+		if (!r[j]) {
- 			if (found)
- 				break;
- 			else
-@@ -1440,7 +1583,7 @@ static int __init edma_probe(struct platform_device *pdev)
- 					off = rsv_chans[i][0];
- 					ln = rsv_chans[i][1];
- 					clear_bits(off, ln,
--						edma_cc[j]->edma_unused);
-+						  edma_cc[j]->edma_unused);
- 				}
- 			}
- 
-@@ -1456,8 +1599,13 @@ static int __init edma_probe(struct platform_device *pdev)
- 			}
- 		}
- 
--		sprintf(irq_name, "edma%d", j);
--		irq[j] = platform_get_irq_byname(pdev, irq_name);
-+
-+		if (node) {
-+			irq[j] = irq_of_parse_and_map(node, 0);
-+		} else {
-+			sprintf(irq_name, "edma%d", j);
-+			irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		}
- 		edma_cc[j]->irq_res_start = irq[j];
- 		status = devm_request_irq(&pdev->dev, irq[j],
- 					  dma_irq_handler, 0, "edma",
-@@ -1469,8 +1617,12 @@ static int __init edma_probe(struct platform_device *pdev)
- 			return status;
- 		}
- 
--		sprintf(irq_name, "edma%d_err", j);
--		err_irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		if (node) {
-+			err_irq[j] = irq_of_parse_and_map(node, 2);
-+		} else {
-+			sprintf(irq_name, "edma%d_err", j);
-+			err_irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		}
- 		edma_cc[j]->irq_res_end = err_irq[j];
- 		status = devm_request_irq(&pdev->dev, err_irq[j],
- 					  dma_ccerr_handler, 0,
-@@ -1516,9 +1668,17 @@ static int __init edma_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id edma_of_ids[] = {
-+	{ .compatible = "ti,edma3", },
-+	{}
-+};
- 
- static struct platform_driver edma_driver = {
--	.driver.name	= "edma",
-+	.driver = {
-+		.name	= "edma",
-+		.of_match_table = edma_of_ids,
-+	},
-+	.probe = edma_probe,
- };
- 
- static int __init edma_init(void)
-diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-index e09647c..407d93c 100644
---- a/arch/arm/mach-davinci/devices-da8xx.c
-+++ b/arch/arm/mach-davinci/devices-da8xx.c
-@@ -133,27 +133,27 @@ struct platform_device da8xx_serial_device[] = {
- 	}
- };
- 
--static const s8 da8xx_queue_tc_mapping[][2] = {
-+static s8 da8xx_queue_tc_mapping[][2] = {
- 	/* {event queue no, TC no} */
- 	{0, 0},
- 	{1, 1},
- 	{-1, -1}
- };
- 
--static const s8 da8xx_queue_priority_mapping[][2] = {
-+static s8 da8xx_queue_priority_mapping[][2] = {
- 	/* {event queue no, Priority} */
- 	{0, 3},
- 	{1, 7},
- 	{-1, -1}
- };
- 
--static const s8 da850_queue_tc_mapping[][2] = {
-+static s8 da850_queue_tc_mapping[][2] = {
- 	/* {event queue no, TC no} */
- 	{0, 0},
- 	{-1, -1}
- };
- 
--static const s8 da850_queue_priority_mapping[][2] = {
-+static s8 da850_queue_priority_mapping[][2] = {
- 	/* {event queue no, Priority} */
- 	{0, 3},
- 	{-1, -1}
-diff --git a/arch/arm/mach-davinci/devices-tnetv107x.c b/arch/arm/mach-davinci/devices-tnetv107x.c
-index 04b1ae5..fc4a0fe 100644
---- a/arch/arm/mach-davinci/devices-tnetv107x.c
-+++ b/arch/arm/mach-davinci/devices-tnetv107x.c
-@@ -58,14 +58,14 @@
- #define TNETV107X_DMACH_SDIO1_RX		28
- #define TNETV107X_DMACH_SDIO1_TX		29
- 
--static const s8 edma_tc_mapping[][2] = {
-+static s8 edma_tc_mapping[][2] = {
- 	/* event queue no	TC no	*/
- 	{	 0,		 0	},
- 	{	 1,		 1	},
- 	{	-1,		-1	}
- };
- 
--static const s8 edma_priority_mapping[][2] = {
-+static s8 edma_priority_mapping[][2] = {
- 	/* event queue no	Prio	*/
- 	{	 0,		 3	},
- 	{	 1,		 7	},
-diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
-index ad520d7..29fdbae 100644
---- a/arch/arm/mach-davinci/dm355.c
-+++ b/arch/arm/mach-davinci/dm355.c
-@@ -569,7 +569,7 @@ static u8 dm355_default_priorities[DAVINCI_N_AINTC_IRQ] = {
- 
- /*----------------------------------------------------------------------*/
- 
--static const s8
-+static s8
- queue_tc_mapping[][2] = {
- 	/* {event queue no, TC no} */
- 	{0, 0},
-@@ -577,7 +577,7 @@ queue_tc_mapping[][2] = {
- 	{-1, -1},
- };
- 
--static const s8
-+static s8
- queue_priority_mapping[][2] = {
- 	/* {event queue no, Priority} */
- 	{0, 3},
-diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
-index b4230b1..b601189 100644
---- a/arch/arm/mach-davinci/dm365.c
-+++ b/arch/arm/mach-davinci/dm365.c
-@@ -826,7 +826,7 @@ static u8 dm365_default_priorities[DAVINCI_N_AINTC_IRQ] = {
- };
- 
- /* Four Transfer Controllers on DM365 */
--static const s8
-+static s8
- dm365_queue_tc_mapping[][2] = {
- 	/* {event queue no, TC no} */
- 	{0, 0},
-@@ -836,7 +836,7 @@ dm365_queue_tc_mapping[][2] = {
- 	{-1, -1},
- };
- 
--static const s8
-+static s8
- dm365_queue_priority_mapping[][2] = {
- 	/* {event queue no, Priority} */
- 	{0, 7},
-diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
-index 17d5459..490eb8c 100644
---- a/arch/arm/mach-davinci/dm644x.c
-+++ b/arch/arm/mach-davinci/dm644x.c
-@@ -497,7 +497,7 @@ static u8 dm644x_default_priorities[DAVINCI_N_AINTC_IRQ] = {
- 
- /*----------------------------------------------------------------------*/
- 
--static const s8
-+static s8
- queue_tc_mapping[][2] = {
- 	/* {event queue no, TC no} */
- 	{0, 0},
-@@ -505,7 +505,7 @@ queue_tc_mapping[][2] = {
- 	{-1, -1},
- };
- 
--static const s8
-+static s8
- queue_priority_mapping[][2] = {
- 	/* {event queue no, Priority} */
- 	{0, 3},
-diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
-index 48ece86..23609b1 100644
---- a/arch/arm/mach-davinci/dm646x.c
-+++ b/arch/arm/mach-davinci/dm646x.c
-@@ -531,7 +531,7 @@ static u8 dm646x_default_priorities[DAVINCI_N_AINTC_IRQ] = {
- /*----------------------------------------------------------------------*/
- 
- /* Four Transfer Controllers on DM646x */
--static const s8
-+static s8
- dm646x_queue_tc_mapping[][2] = {
- 	/* {event queue no, TC no} */
- 	{0, 0},
-@@ -541,7 +541,7 @@ dm646x_queue_tc_mapping[][2] = {
- 	{-1, -1},
- };
- 
--static const s8
-+static s8
- dm646x_queue_priority_mapping[][2] = {
- 	/* {event queue no, Priority} */
- 	{0, 4},
-diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
-index 2344ea2..317f2be 100644
---- a/include/linux/platform_data/edma.h
-+++ b/include/linux/platform_data/edma.h
-@@ -175,8 +175,8 @@ struct edma_soc_info {
- 	/* Resource reservation for other cores */
- 	struct edma_rsv_info	*rsv;
- 
--	const s8	(*queue_tc_mapping)[2];
--	const s8	(*queue_priority_mapping)[2];
-+	s8	(*queue_tc_mapping)[2];
-+	s8	(*queue_priority_mapping)[2];
- };
- 
- #endif
+ 	dev->functionality =
+ 		I2C_FUNC_I2C |
+ 		I2C_FUNC_10BIT_ADDR |
 -- 
-1.7.10.1
+1.7.1
 
