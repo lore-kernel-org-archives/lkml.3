@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422768Ab3FUA3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 20:29:17 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:46705 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422749Ab3FUA3P (ORCPT
+	id S1422789Ab3FUA3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 20:29:32 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:40570 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422750Ab3FUA3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 20:29:15 -0400
+	Thu, 20 Jun 2013 20:29:16 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
@@ -16,49 +16,53 @@ Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
         Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
         Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v5 5/6] mm/thp: fix doc for transparent huge zero page
-Date: Fri, 21 Jun 2013 08:28:53 +0800
-Message-Id: <1371774534-4139-5-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v5 6/6] mm/pgtable: Don't accumulate addr during pgd prepopulate pmd
+Date: Fri, 21 Jun 2013 08:28:54 +0800
+Message-Id: <1371774534-4139-6-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1371774534-4139-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1371774534-4139-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062100-5490-0000-0000-000003AF35D6
+x-cbid: 13062100-3864-0000-0000-000008BB3597
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Transparent huge zero page is used during the page fault instead of
-in khugepaged.
+The old codes accumulate addr to get right pmd, however,
+currently pmds are preallocated and transfered as a parameter,
+there is unnecessary to accumulate addr variable any more, this
+patch remove it.
 
-# ls /sys/kernel/mm/transparent_hugepage/
-defrag  enabled  khugepaged  use_zero_page
-# ls /sys/kernel/mm/transparent_hugepage/khugepaged/
-alloc_sleep_millisecs  defrag  full_scans  max_ptes_none  pages_collapsed  pages_to_scan  scan_sleep_millisecs
-
-This patch corrects the documentation just like the codes done.
-
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- Documentation/vm/transhuge.txt |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/mm/pgtable.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
-index 8785fb8..4a63953 100644
---- a/Documentation/vm/transhuge.txt
-+++ b/Documentation/vm/transhuge.txt
-@@ -120,8 +120,8 @@ By default kernel tries to use huge zero page on read page fault.
- It's possible to disable huge zero page by writing 0 or enable it
- back by writing 1:
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 17fda6a..dfa537a 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -240,7 +240,6 @@ static void pgd_mop_up_pmds(struct mm_struct *mm, pgd_t *pgdp)
+ static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
+ {
+ 	pud_t *pud;
+-	unsigned long addr;
+ 	int i;
  
--echo 0 >/sys/kernel/mm/transparent_hugepage/khugepaged/use_zero_page
--echo 1 >/sys/kernel/mm/transparent_hugepage/khugepaged/use_zero_page
-+echo 0 >/sys/kernel/mm/transparent_hugepage/use_zero_page
-+echo 1 >/sys/kernel/mm/transparent_hugepage/use_zero_page
+ 	if (PREALLOCATED_PMDS == 0) /* Work around gcc-3.4.x bug */
+@@ -248,8 +247,7 @@ static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
  
- khugepaged will be automatically started when
- transparent_hugepage/enabled is set to "always" or "madvise, and it'll
+ 	pud = pud_offset(pgd, 0);
+ 
+- 	for (addr = i = 0; i < PREALLOCATED_PMDS;
+-	     i++, pud++, addr += PUD_SIZE) {
++	for (i = 0; i < PREALLOCATED_PMDS; i++, pud++) {
+ 		pmd_t *pmd = pmds[i];
+ 
+ 		if (i >= KERNEL_PGD_BOUNDARY)
 -- 
 1.7.5.4
 
