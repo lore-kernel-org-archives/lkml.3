@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946045Ab3FUUjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 16:39:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16208 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945951Ab3FUUjc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 16:39:32 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5wS_mGLe7pQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=UM8sEat5ZzYA:10 a=WyBO8MM3-ynC3k5w-WwA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371847171.18733.128.camel@gandalf.local.home>
-Subject: Re: [PATCH 04/11] tracing: fix disabling of soft disable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Tom Zanussi <tom.zanussi@linux.intel.com>, linux-kernel@vger.kernel.org
-Date: Fri, 21 Jun 2013 16:39:31 -0400
-In-Reply-To: <51C43537.8070300@hitachi.com>
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-	 <f369f565dc440f40f027de0387c99dda4d36154e.1371751701.git.tom.zanussi@linux.intel.com>
-	 <51C43537.8070300@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1946049Ab3FUUkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 16:40:35 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:37863 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945951Ab3FUUke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 16:40:34 -0400
+Date: Fri, 21 Jun 2013 15:40:33 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Robin Holt <holt@sgi.com>,
+        Mike Travis <travis@sgi.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+Message-ID: <20130621204032.GA21126@gulag1.americas.sgi.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com> <20130621185056.GA23473@kroah.com> <CAE9FiQVt7Fa5oTYR+yLsehboPMo86vEDsRUaqNLQD9fizD5=Fg@mail.gmail.com> <51C4A726.1090300@sgi.com> <CAE9FiQWWj8btGK68j6MO1iYwSXiF54h7SqrHCxKwXW5=fnb_0A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQWWj8btGK68j6MO1iYwSXiF54h7SqrHCxKwXW5=fnb_0A@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 20:12 +0900, Masami Hiramatsu wrote:
-> (2013/06/21 3:31), Tom Zanussi wrote:
-> > The comment on the soft disable 'disable' case of
-> > __ftrace_event_enable_disable() states that the soft disable bit
-> > should be cleared in that case, but currently only the soft mode bit
-> > is actually cleared.
-> > 
-> > This essentially leaves the standard non-soft-enable enable/disable
-> > paths as the only way to clear the soft disable flag, but the soft
-> > disable bit should also be cleared when removing a trigger with '!'.
+On Fri, Jun 21, 2013 at 01:28:11PM -0700, Yinghai Lu wrote:
+> On Fri, Jun 21, 2013 at 12:19 PM, Nathan Zimmer <nzimmer@sgi.com> wrote:
+> > On 06/21/2013 02:10 PM, Yinghai Lu wrote:
+> >> in this way we can keep all numa etc on the place when online ram, cpu,
+> >> pci...
+> >>
+> >> For example if we have 32 sockets system, most time for boot is with
+> >> *BIOS*
+> >> instead of OS. In those kind of system boot is like this way:
+> >> only first two sockets get booted from bios to OS.
+> >> later use hot add every other two sockets.
+> >>
+> >> that will also make BIOS simpler, and it need to support hot-add for
+> >> services purpose anyway.
+> >>
+> > Yes the hot add path was one option we looked at and it did shorten boot
+> > times but the goal I had here is to get from power on to having the full
+> > machine available as quick as possible. Several clients need significant
+> > portions of ram for their key workloads.  So that guided my thoughts on this
+> > patch.
 > 
-> Indeed, the soft-disabled flag may remain after the event itself
-> disabled. However that soft-disabled flag will be cleared when
-> the event is re-enabled. it seems no bad side-effect.
+> you mean boot small number sockets + hot add still take more time?
+> hot add ram still in serialize mode?
 > 
-> Thus I doubt this patch is separately required. I guess this is
-> required for adding new trigger flag, isn't it? :)
+> Yinghai
 
-Tom, I'm guessing Masami is correct here. It's needed for the trigger
-work to work, correct?
+Yes the hot add path is still fairly serial.
+lock_memory_hotplug() is still a global lock, which effectivly serializes
+online pages.  Since the hotplug lock could done per node but for that to be 
+effective something would need to be done with lock_system_sleep() since is
+called by lock_memory_hotplug().
 
-Either way, I probably could add it as a clean up patch regardless. I'll
-just have to test the hell out of it some more, as the accounting for
-soft-disable vs real disable was a PITA.
-
--- Steve
-
+Nate
