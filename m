@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965657Ab3FUL3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 07:29:03 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48017 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab3FUL3A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 07:29:00 -0400
-Date: Fri, 21 Jun 2013 12:28:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, Joel A Fernandes <joelagnel@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Message-ID: <20130621112832.GS27646@sirena.org.uk>
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
- <1371762407-24544-10-git-send-email-joelagnel@ti.com>
- <51C42A71.1090403@ti.com>
- <51C42CFF.10002@ti.com>
+	id S965660Ab3FULbW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 07:31:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12553 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753054Ab3FULbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 07:31:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,912,1363158000"; 
+   d="scan'208";a="333308664"
+Date: Fri, 21 Jun 2013 16:21:39 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-mips@linux-mips.org, alsa-devel@alsa-project.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        Maarten ter Huurne <maarten@treewalker.org>
+Subject: Re: [alsa-devel] [PATCH v2 3/6] dma: Add a jz4740 dmaengine driver
+Message-ID: <20130621105139.GJ23141@intel.com>
+References: <1369931105-28065-1-git-send-email-lars@metafoo.de>
+ <1369931105-28065-4-git-send-email-lars@metafoo.de>
+ <20130530171225.GA3767@intel.com>
+ <51A79E8F.4070209@metafoo.de>
+ <51B60D0A.7040307@metafoo.de>
+ <20130612053810.GF4107@intel.com>
+ <51B8646E.5040907@metafoo.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="szdyR02yM8NCQUEm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51C42CFF.10002@ti.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v12 09/11] spi: omap2-mcspi: convert to
- dma_request_slave_channel_compat()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <51B8646E.5040907@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 12, 2013 at 02:07:10PM +0200, Lars-Peter Clausen wrote:
+> On 06/12/2013 07:38 AM, Vinod Koul wrote:
+> > On Mon, Jun 10, 2013 at 07:29:46PM +0200, Lars-Peter Clausen wrote:
+> >> On 05/30/2013 08:46 PM, Lars-Peter Clausen wrote:
+> >>>>> +static int jz4740_dma_alloc_chan_resources(struct dma_chan *c)
+> >>>>> +{
+> >>>>> +	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
+> >>>>> +
+> >>>>> +	chan->jz_chan = jz4740_dma_request(chan, NULL);
+> >>>>> +	if (!chan->jz_chan)
+> >>>>> +		return -EBUSY;
+> >>>>> +
+> >>>>> +	jz4740_dma_set_complete_cb(chan->jz_chan, jz4740_dma_complete_cb);
+> >>>>> +
+> >>>>> +	return 0;
+> >>>> Sorry, I didnt reply on this one. The API expects you to allocate a pool of
+> >>>> descriptors. These descriptors are to be used in .device_prep_xxx calls later.
+> >>>
+> >>> The size of the descriptor is not fixed, so they can not be pre-allocated. And
+> >>> this is nothing new either, most of the more recently added dmaengine drivers
+> >>> allocate their descriptors on demand.
+> >>
+> >> Vinod, are you ok with this explanation?
+> > Sorry, I was travelling...
+> > 
+> > Can you explain more of a bit when you say size is not fixed.
+> 
+> This is the function that allocates the descriptor:
+> 
+> static struct jz4740_dma_desc *jz4740_dma_alloc_desc(unsigned int num_sgs)
+> {
+> 	return kzalloc(sizeof(struct jz4740_dma_desc) +
+> 		sizeof(struct jz4740_dma_sg) * num_sgs, GFP_ATOMIC);
+> }
+> 
+> So the size depends on the entries in the sg list.
+> 
+> 
+> > Why would it be
+> > issue if we allocate descriptors at the alloc_chan. The idea is that you 
+> > preallocated pool at alloc_chan and since the .device_prep_xxx calls can be
+> > called from atomic context as well, you dont need to do this later. You can use use
+> > these descriptors at that time. The idea is keep rotating the descriptors from
+> > free poll to used one
+> 
+> Yes, I know all that. And it makes sense to use a pool in certain
+> situations, e.g. if the hardware only supports a limited set of physical
+> descriptors. But in this case the descriptors are completely virtual.
+> Forcing the driver to use a pool would make it more complex, use more memory
+> and also a bit slower (although probably not noticeable).
+Okay, I am going to try applying these now
 
---szdyR02yM8NCQUEm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Fri, Jun 21, 2013 at 04:07:51PM +0530, Sekhar Nori wrote:
-
-> We can resend the patch if you don't have it from the mailing list.
-
-I'll probably have it assuming it's been sent to some mailing list I
-read (the CC list here looks absurldy large...) but if you don't send me
-the patch and/or ignore bounces then it's going to take longer.
-
---szdyR02yM8NCQUEm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRxDjcAAoJELSic+t+oim96z0P/29SA62qwncC4OoCOsCTXDfE
-WY0WEnpjbPZ683bTorI3W3akXAvqpSgklbuqiu6ky7QzR1o2Z5ilBRlUa5F3ojRR
-qwlkRtWDPjZkfGGLCXDnCuAyzngC/5gNB+IuWWJ+Yi8Ph7SmwUuIVnRBLULKJr6E
-5Hc1awJHQCNfFxtxrTcPYKXeWn4uW9EUFDpQAY+eodLO9268BYybgjmf5qNUEOG+
-sXHwNMvAkt2wolb9Levc0/xgeCv2qhmbvXd3VTnfxdhO9uJcbmocdt8iTkOKsAin
-8gve0lFVi2gZpLSjBncz/wDavycoa1z4sefLN0BjbclmsRlbC7WxUK0NnRMr93rY
-IcgSqRsb4BQKQKsJOSIU9TT/0ZJKV3oj99/azpEZs4TdaxrUiSZmu3sEIxkbq3ww
-RLF74i83qXlVCUeNw1tA9GwiZmak09Eb2ydUmsHvapK2sGDz+ZYiD5OxgwqeT2Kf
-Kiu7PX8Ec0dSD4eANrn27yHWx+oB6VEjKS5Ow/zni9kk9qcWWDwnWv/cYA4BlF5p
-4kn2wQB6hHIJvttbH6eIJQwHFOIm68oHOyzfJokrPQIO74r2ouqC4dWsawfNl4Dc
-ujokrGoHThsnxszYzxmIMuh7SyQcR/8CssURVDJrzN8+NH5DdDl2TCM0oycz9EWO
-ERLp3bN3J5E89cBwqKtx
-=Amay
------END PGP SIGNATURE-----
-
---szdyR02yM8NCQUEm--
+--
+~Vinod
