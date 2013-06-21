@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965742Ab3FUL4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 07:56:32 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:49767 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965513Ab3FUL4b (ORCPT
+	id S965752Ab3FUL5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 07:57:55 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60431 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965662Ab3FUL5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 07:56:31 -0400
-Date: Fri, 21 Jun 2013 12:56:28 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux EFI <linux-efi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -v2 4/4] x86, efi: Map runtime services 1:1
-Message-ID: <20130621115628.GF5386@console-pimps.org>
-References: <1371491416-11037-1-git-send-email-bp@alien8.de>
- <1371491416-11037-5-git-send-email-bp@alien8.de>
+	Fri, 21 Jun 2013 07:57:54 -0400
+Date: Fri, 21 Jun 2013 04:57:46 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        asias.hejun@gmail.com
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+Message-ID: <20130621115746.GA5142@infradead.org>
+References: <20130522221737.GA12339@mtj.dyndns.org>
+ <519DC926.4000106@redhat.com>
+ <20130523090222.GA26592@mtj.dyndns.org>
+ <519DE5AD.7080303@redhat.com>
+ <20130524014405.GB16882@mtj.dyndns.org>
+ <519F12FF.6090809@redhat.com>
+ <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com>
+ <1369456502.5008.5.camel@dabdike>
+ <20130525052744.GA25186@infradead.org>
+ <51A062B5.8040601@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371491416-11037-5-git-send-email-bp@alien8.de>
+In-Reply-To: <51A062B5.8040601@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun, at 07:50:16PM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Due to the braindead design of EFI, we cannot map runtime services more
-> than once for the duration of a booted system. Thus, if we want to use
-> EFI runtime services in a kexec'ed kernel, maybe the only possible and
-> sensible approach would be to map them 1:1 so that when the kexec kernel
-> loads, it can simply call those addresses without the need for remapping
-> (which doesn't work anyway).
-> 
-> Furthermore, this mapping approach could be of help with b0rked EFI
-> implementations for a different set of reasons.
-> 
-> This implementation is 64-bit only for now.
-> 
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  arch/x86/include/asm/efi.h          |  67 +++++++++++----
->  arch/x86/platform/efi/efi.c         | 165 +++++++++++++++++++++++++++++-------
->  arch/x86/platform/efi/efi_stub_64.S |  56 ++++++++++++
->  3 files changed, 240 insertions(+), 48 deletions(-)
+On Sat, May 25, 2013 at 09:05:25AM +0200, Paolo Bonzini wrote:
+> Linus wanted to keep that for CAP_SYS_RAWIO.  We found two uses of SG_IO
+> on partitions: zfs-fuse used SYNCHRONIZE CACHE; some proprietary driver
+> used TEST UNIT READY.
 
-[...]
+FYI I looked at the zfs code and the way it uses it is part of a huge
+braindamage.
 
-> +	.macro SWITCH_PGT
-> +	cmpb $0, efi_use_11_map
-> +	je 1f;
+Given that the upstream appears dead I've Cc'd Asias He as he appears
+to somehow maintain it as part of the Debian package.
 
-Actually, this needs to be,
+Asias,
 
-	cmpb $0, efi_use_11_map(%rip)
+the flushwc() routine in zfs-fuse is overly complicated and will not do
+the right thing for many cases like using device mapper, many modern SSD
+device, or much simple file backed filesystems.
 
-because this code is built into the EFI boot stub which isn't loaded at
-a fixed address and needs to be position independent.
+Fortunately fixing this is trivial - the call to flushwc can be replaced
+with a call to fdatasync() and the the kernel will do the right thing
+for any backing device or file.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
