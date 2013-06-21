@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161467Ab3FUHgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:36:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:65006 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161296Ab3FUHgm (ORCPT
+	id S1422836Ab3FUHrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 03:47:06 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53708 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab3FUHrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:36:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the mailbox tree
-Date: Fri, 21 Jun 2013 09:36:09 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Suman Anna <s-anna@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-References: <20130621162656.bb94e0fa8b6813781b804a73@canb.auug.org.au> <CAOesGMjszju75jo6Ej6C=0-rfdPLuEj0mwmU1zYvFvYw1dyQCA@mail.gmail.com> <20130621071239.GM5523@atomide.com>
-In-Reply-To: <20130621071239.GM5523@atomide.com>
+	Fri, 21 Jun 2013 03:47:04 -0400
+Message-ID: <51C404EA.10906@linux.vnet.ibm.com>
+Date: Fri, 21 Jun 2013 13:16:50 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Borislav Petkov <bp@alien8.de>
+CC: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
+        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, ying.huang@intel.com
+Subject: Re: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
+ banks listed in APEI HEST CMC
+References: <20130619175438.2852.93449.stgit@localhost.localdomain> <20130620073943.GE32694@pd.tnic> <51C3531D.3000600@linux.vnet.ibm.com> <20130620192928.GD19877@pd.tnic> <51C36288.4050405@linux.vnet.ibm.com> <20130620205726.GA20863@pd.tnic> <51C37291.40303@linux.vnet.ibm.com> <20130621073419.GC22006@pd.tnic>
+In-Reply-To: <20130621073419.GC22006@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306210936.09593.arnd@arndb.de>
-X-Provags-ID: V02:K0:QQwJPoURxJdvFoteS0gWADSc3u9NOItmUw/M2wcnqrh
- kK9OkuENtlW4sGc0kl2OSLwItv698HrwVDDgBgsJARniLvw1Mm
- +Hj3Dm2o7RsqQhz/MlMAZE72jcZvq0NTNWztgot2mTExwy2MKQ
- vpl5q3AqDpiTg8g2FTLaS2+1bNxRkgM8hlYxsitXf2P9/QHASc
- pHS5Y19h2Mp7CUm3cmlda3R50+MfHKBBsbvlylHzZy9KIWmUEm
- qidIdYHVPjFOqQE05aYra1o4eDKTWK51tB8XbReW8NCqGdKYnI
- km8eoXlHg2RP4K/SMUKs3NFY7epZ25F+lySNRsytSX8CO603cP
- rEG5D6TzYE4R+TrK9U44=
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062107-8878-0000-0000-000007A07CA3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 June 2013, Tony Lindgren wrote:
-> > I wonder if this mess is caused by the fact that I did the revert
-> > instead of rebuilding our for-next and dropping the merge in the first
-> > place.
-> > 
-> > I'll rebuild our for-next (or maybe Arnd will beat me to it) before
-> > next linux-next build, i.e. Sunday night my time.
-> 
-> Could be, especially if some of the commits are the same in the reverted
-> branch and newly merged branch as git might think that some merges have
-> been already resolved the right way earlier.
+On 06/21/2013 01:04 PM, Borislav Petkov wrote:
+> On Fri, Jun 21, 2013 at 02:52:25AM +0530, Naveen N. Rao wrote:
+>> Exactly, but mce_poll_banks also doesn't have bits set for banks on
+>> which CMCI is enabled.
+>>
+>> Let's say we have a cpu with 2 banks (not shared), none of which work
+>> in FF mode. Both these banks support CMCI, so mce_poll_banks won't
+>> have these bits set.
+>>
+>> On cpu offline, we call cmci_clear() which disables CMCI on these two
+>> banks before offlining it. When this cpu is brought online again, we
+>> call cmci_discover() which sees that mce_poll_banks doesn't have these
+>> two banks enabled and will skip enabling CMCI thinking these are in
+>> FF.
+>
+> Hmm, mce_intel has yet another bitfield - mce_banks_owned. (Btw, this is
+> why I have a problem with adding yet another bitfield).
+>
+> The way I understand it is, if a bit is set in the owned bitfield, those
+> banks belong to CMCI and are not polled.
+>
+> Now, can we use both mce_banks_owned and mce_poll_banks? If a bit in
+> both bifields is cleared, the corresponding bank is not polled *and* is
+> not owned by CMCI => it is in FF mode.
+>
+> Makes sense?
+>
 
-I already rebuilt the arm-soc tree before Stephen started with today's
-linux-next, so I think the conflict is elsewhere.
+Yes, but I'm afraid this won't work either - mce_banks_owned is cleared 
+during cpu offline. This is necessary since a cmci rediscover is 
+triggered on cpu offline, so that if this bank is shared across cores, a 
+different cpu can claim ownership of this bank.
 
-It's probably best if Suman Anna rebases the mailbox tree on top of
-the omap mailbox branch that I took.
+The difference between the new bitfield and the existing bitfields is 
+that the new one is not per-cpu. This is a global list of banks across 
+cpus that we do not want enabled.
 
-	Arnd
+
+Thanks,
+Naveen
+
