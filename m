@@ -1,85 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab3FUCak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 22:30:40 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:53788 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757878Ab3FUCaj (ORCPT
+	id S1758503Ab3FUCdd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 22:33:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58962 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758085Ab3FUCdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 22:30:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <51C318D6.4090601@gmail.com>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-	<1370589652-24549-5-git-send-email-alex.shi@intel.com>
-	<CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
-	<51BF2E37.5040400@intel.com>
-	<CALZhoSSweOzTgjykRMxv_kha9TH-8EAKvuhinf8ADFyFDzDTuQ@mail.gmail.com>
-	<CALZhoSSFr_HN9ccxNLK7HA-7O9soAU7VZ3njtKf=Ndw=_AbQRw@mail.gmail.com>
-	<51C318D6.4090601@gmail.com>
-Date: Fri, 21 Jun 2013 10:30:37 +0800
-Message-ID: <CALZhoSQgO-V-vkOy+urL_H4cjcCE8YY3w+K=mS8hptWteKGcFw@mail.gmail.com>
-Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue entity
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Alex Shi <seakeel@gmail.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 20 Jun 2013 22:33:31 -0400
+Date: Fri, 21 Jun 2013 12:33:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>, Chris Healy <cphealy@gmail.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20130621123321.a6b54d66ef1a9f708caae452@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Jun_2013_12_33_21_+1000_1uwrfcQZwFdyVLeM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+--Signature=_Fri__21_Jun_2013_12_33_21_+1000_1uwrfcQZwFdyVLeM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jun 20, 2013 at 10:59 PM, Alex Shi <seakeel@gmail.com> wrote:
-> On 06/20/2013 10:46 AM, Lei Wen wrote:
->>
->>
->> But here I have a question, there is another usage of __synchronzie_entity_decay
->> in current kernel, in the switched_from_fair function.
->>
->> If task being frequently switched between rt and fair class, would it
->> also bring the
->> redundant issue? Do we need patch like below?
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index b5408e1..9640c66 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5856,7 +5856,7 @@ static void switched_from_fair(struct rq *rq,
->> struct task_struct *p)
->>         */
->>         if (p->se.avg.decay_count) {
->>                 struct cfs_rq *cfs_rq = cfs_rq_of(&p->se);
->> -               se->avg.last_runnable_update +=
->> +               p->se.avg.last_runnable_update +=
->
-> what tree does this patch base on?
+Hi all,
 
-I create the patch based on v3.9 kernel.
-If it is ok, I could create a formal one based on latest kernel.
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/ethernet/freescale/fec_main.c between commit d13919301d9a
+("net: fec: Fix build for MCF5272") from the net tree and commit
+32bc9b46d840 ("fec: Add support to restart autonegotiate") from the
+net-next tree.
 
-Thanks,
-Lei
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
->>                                 __synchronize_entity_decay(&p->se);
->>                 subtract_blocked_load_contrib(cfs_rq,
->>                                 p->se.avg.load_avg_contrib);
->
->
-> --
-> Thanks
->     Alex
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/ethernet/freescale/fec_main.c
+index d48099f,46f2544..0000000
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@@ -1444,13 -1435,20 +1443,24 @@@ static int fec_enet_set_pauseparam(stru
+  	return 0;
+  }
+ =20
+ +#endif /* !defined(CONFIG_M5272) */
+ +
++ static int fec_enet_nway_reset(struct net_device *dev)
++ {
++ 	struct fec_enet_private *fep =3D netdev_priv(dev);
++ 	struct phy_device *phydev =3D fep->phy_dev;
++=20
++ 	if (!phydev)
++ 		return -ENODEV;
++=20
++ 	return genphy_restart_aneg(phydev);
++ }
++=20
+  static const struct ethtool_ops fec_enet_ethtool_ops =3D {
+ +#if !defined(CONFIG_M5272)
+  	.get_pauseparam		=3D fec_enet_get_pauseparam,
+  	.set_pauseparam		=3D fec_enet_set_pauseparam,
+ +#endif
+  	.get_settings		=3D fec_enet_get_settings,
+  	.set_settings		=3D fec_enet_set_settings,
+  	.get_drvinfo		=3D fec_enet_get_drvinfo,
+@@@ -1891,9 -1887,13 +1900,14 @@@ fec_probe(struct platform_device *pdev
+  	if (pdev->id_entry &&
+  	    (pdev->id_entry->driver_data & FEC_QUIRK_HAS_GBIT))
+  		fep->pause_flag |=3D FEC_PAUSE_FLAG_AUTONEG;
+ +#endif
+ =20
+- 	fep->hwp =3D devm_request_and_ioremap(&pdev->dev, r);
++ 	fep->hwp =3D devm_ioremap_resource(&pdev->dev, r);
++ 	if (IS_ERR(fep->hwp)) {
++ 		ret =3D PTR_ERR(fep->hwp);
++ 		goto failed_ioremap;
++ 	}
++=20
+  	fep->pdev =3D pdev;
+  	fep->dev_id =3D dev_id++;
+ =20
+
+--Signature=_Fri__21_Jun_2013_12_33_21_+1000_1uwrfcQZwFdyVLeM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRw7t2AAoJEECxmPOUX5FEJnQP/18a3XuLiEllZnES9ToH36Zv
+6ANFOWlhKIYnpITBQ6PJGbvulx6kgXLTqjh/FoYoqVmTlUpBzdW1yVjFn+wlKokn
+M9njhNHioHixHPKa/qYUK5BXJKms7uy52F4KjSI2wlrEtU0oZbJRNJcZ2X9/xr+Z
+7HYHl3n0gg0P0vGFPfUJdYlvJSIWJnx8PhnmuJnSKY84cDPJbvRTaxPjoF+w/krG
+OTvHZrL6wkT253VlT7uGK9uIawuaoLdXHoxWH30l5ZJF+gC8ip1hRITLcnVLrXAI
+NgynkE/Ts+JNVZzDn4Ivd1WczYVEWHLcFHyW8jZ5r1OWesMEWOQPMgksCn7gDM7z
+AwMsj2daZVBcocgb5ncQjNDYJaGZ52aUd5p2N5AKHDldYNDzCcO0Lgy/Z6r2j+1g
+S5EdDs2UuwiTWBJM5GODo6aCYbtZwHNy2mC9FFkmM2nwi663r3WCa5yd4ykPqrH8
+1TVsbt6WiLPMpl+sQtGytY0BKDo5JCX+gbMsDr3dUb2E+iPIqrC5b2otywyuhGMo
+kGWcx1JIWaUuolFCYxxX9/PrkPv5w8bR23nr2ItrTpAPcixIZ5bCIAIrwAIK3FTr
+QReqnIJc6EGM+yZ4cT4iCxBSMG+l7bIE0ha1jPcFi6kX6+QsOsIFfWvLFZ8HKhCV
+Azy40VikB/osCwNm8olQ
+=JfTM
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_Jun_2013_12_33_21_+1000_1uwrfcQZwFdyVLeM--
