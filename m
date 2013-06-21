@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161075Ab3FUKoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:44:09 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:43049 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030336Ab3FUKoG (ORCPT
+	id S1758247Ab3FUKn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 06:43:59 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:57414 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754067Ab3FUKn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:44:06 -0400
+	Fri, 21 Jun 2013 06:43:56 -0400
 From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
@@ -16,9 +16,9 @@ Cc: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
         Arnd Bergmann <arnd@arndb.de>,
         Stephen Gallimore <stephen.gallimore@st.com>,
         Olof Johansson <olof@lixom.net>
-Subject: [PATCH v4 7/7] ARM:stih41x: Add B2020 board support
-Date: Fri, 21 Jun 2013 11:39:48 +0100
-Message-Id: <1371811188-27496-1-git-send-email-srinivas.kandagatla@st.com>
+Subject: [PATCH v4 5/7] ARM:stixxxx: Add stixxxx options to  multi_v7_defconfig
+Date: Fri, 21 Jun 2013 11:39:35 +0100
+Message-Id: <1371811175-27409-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1371811076-27168-1-git-send-email-srinivas.kandagatla@st.com>
 References: <1371811076-27168-1-git-send-email-srinivas.kandagatla@st.com>
@@ -28,133 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-B2020 ADI board is reference board for STIH415/416 SOCs, it has 2 x
-UART, 4x USB, 1 x Ethernet, 1 x SATA, 1 x PCIe, and 2GB RAM  with
-standard set-top box IPs.
-
-This patch adds initial support to B2020 with STiH415/416 with SBC_UART1
-as console and a heard beat LED.
+This patch adds stih415 and stih416 support to multi_v7_defconfig.
+CONFIG_ARM_ERRATA_754322 is removed as it is selected by the stixxxx
+mach level kconfig.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-CC: Stephen Gallimore <stephen.gallimore@st.com>
-CC: Stuart Menefy <stuart.menefy@st.com>
-CC: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/boot/dts/Makefile           |    4 ++-
- arch/arm/boot/dts/stih415-b2020.dts  |   15 ++++++++++++
- arch/arm/boot/dts/stih416-b2020.dts  |   16 +++++++++++++
- arch/arm/boot/dts/stih41x-b2020.dtsi |   42 ++++++++++++++++++++++++++++++++++
- 4 files changed, 76 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/boot/dts/stih415-b2020.dts
- create mode 100644 arch/arm/boot/dts/stih416-b2020.dts
- create mode 100644 arch/arm/boot/dts/stih41x-b2020.dtsi
+ arch/arm/configs/multi_v7_defconfig |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index d4615fd..0d24c95 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -178,7 +178,9 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
- 	spear320-hmi.dtb
- dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
- dtb-$(CONFIG_ARCH_STIXXXX)+= stih415-b2000.dtb \
--	stih416-b2000.dtb
-+	stih416-b2000.dtb \
-+	stih415-b2020.dtb \
-+	stih416-b2020.dtb
- dtb-$(CONFIG_ARCH_SUNXI) += \
- 	sun4i-a10-cubieboard.dtb \
- 	sun4i-a10-mini-xplus.dtb \
-diff --git a/arch/arm/boot/dts/stih415-b2020.dts b/arch/arm/boot/dts/stih415-b2020.dts
-new file mode 100644
-index 0000000..442b019
---- /dev/null
-+++ b/arch/arm/boot/dts/stih415-b2020.dts
-@@ -0,0 +1,15 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih415.dtsi"
-+#include "stih41x-b2020.dtsi"
-+/ {
-+	model = "STiH415 B2020 Board";
-+	compatible = "st,stih415", "st,stih415-b2020";
-+};
-diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
-new file mode 100644
-index 0000000..276f28d
---- /dev/null
-+++ b/arch/arm/boot/dts/stih416-b2020.dts
-@@ -0,0 +1,16 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih416.dtsi"
-+#include "stih41x-b2020.dtsi"
-+/ {
-+	model = "STiH416 B2020";
-+	compatible = "st,stih416", "st,stih416-b2020";
-+
-+};
-diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
-new file mode 100644
-index 0000000..133e181
---- /dev/null
-+++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
-@@ -0,0 +1,42 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/ {
-+	memory{
-+		device_type = "memory";
-+		reg = <0x40000000 0x80000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyAS0,115200";
-+		linux,stdout-path = &sbc_serial1;
-+	};
-+
-+	aliases {
-+		ttyAS0 = &sbc_serial1;
-+	};
-+	soc {
-+		sbc_serial1: serial@fe531000 {
-+			status = "okay";
-+		};
-+
-+		leds {
-+			compatible	= "gpio-leds";
-+			red {
-+				#gpio-cells = <1>;
-+				label	= "Front Panel LED";
-+				gpios	= <&PIO4 1>;
-+				linux,default-trigger	= "heartbeat";
-+			};
-+			green {
-+				gpios	= <&PIO4 7>;
-+				default-state = "off";
-+			};
-+		};
-+	};
-+};
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index f2b4957..c0cfac0 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -9,11 +9,11 @@ CONFIG_PLAT_SPEAR=y
+ CONFIG_ARCH_SPEAR13XX=y
+ CONFIG_MACH_SPEAR1310=y
+ CONFIG_MACH_SPEAR1340=y
++CONFIG_ARCH_STIXXXX=y
+ CONFIG_ARCH_SUNXI=y
+ CONFIG_ARCH_SIRF=y
+ CONFIG_ARCH_WM8850=y
+ CONFIG_ARCH_ZYNQ=y
+-CONFIG_ARM_ERRATA_754322=y
+ CONFIG_SMP=y
+ CONFIG_AEABI=y
+ CONFIG_HIGHMEM=y
+@@ -43,6 +43,8 @@ CONFIG_SERIAL_SIRFSOC_CONSOLE=y
+ CONFIG_SERIAL_VT8500=y
+ CONFIG_SERIAL_VT8500_CONSOLE=y
+ CONFIG_SERIAL_OF_PLATFORM=y
++CONFIG_SERIAL_ST_ASC=y
++CONFIG_SERIAL_ST_ASC_CONSOLE=y
+ CONFIG_IPMI_HANDLER=y
+ CONFIG_IPMI_SI=y
+ CONFIG_I2C=y
 -- 
 1.7.6.5
 
