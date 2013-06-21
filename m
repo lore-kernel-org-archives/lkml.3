@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab3FUKnc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:43:32 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:33709 "EHLO
+	id S1758062Ab3FUKn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 06:43:29 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:47982 "EHLO
 	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751350Ab3FUKna (ORCPT
+	by vger.kernel.org with ESMTP id S1753883Ab3FUKn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:43:30 -0400
+	Fri, 21 Jun 2013 06:43:26 -0400
 From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
@@ -17,9 +17,9 @@ Cc: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
         Stephen Gallimore <stephen.gallimore@st.com>,
         Olof Johansson <olof@lixom.net>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v4 2/7] ARM:stixxxx: Add STiH416 SOC support
-Date: Fri, 21 Jun 2013 11:39:13 +0100
-Message-Id: <1371811153-27284-1-git-send-email-srinivas.kandagatla@st.com>
+Subject: [PATCH v4 1/7] ARM:stixxxx: Add STiH415 SOC support
+Date: Fri, 21 Jun 2013 11:39:00 +0100
+Message-Id: <1371811140-27229-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1371811076-27168-1-git-send-email-srinivas.kandagatla@st.com>
 References: <1371811076-27168-1-git-send-email-srinivas.kandagatla@st.com>
@@ -29,8 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-The STiH416 is advanced HD AVC processor with 3D graphics acceleration
-and 1.2-GHz ARM Cortex-A9 SMP CPU.
+The STiH415 is the next generation of HD, AVC set-top box processors for
+satellite, cable, terrestrial and IP-STB markets. It is an ARM Cortex-A9
+1.0 GHz, dual-core CPU.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 CC: Stephen Gallimore <stephen.gallimore@st.com>
@@ -38,45 +39,224 @@ CC: Stuart Menefy <stuart.menefy@st.com>
 CC: Arnd Bergmann <arnd@arndb.de>
 CC: Linus Walleij <linus.walleij@linaro.org>
 ---
- Documentation/arm/stixxxx/stih416-overview.txt |   12 +
- arch/arm/boot/dts/stih416-clock.dtsi           |   41 ++++
- arch/arm/boot/dts/stih416-pinctrl.dtsi         |  295 ++++++++++++++++++++++++
- arch/arm/boot/dts/stih416.dtsi                 |   96 ++++++++
- arch/arm/mach-stixxxx/Kconfig                  |    9 +
- arch/arm/mach-stixxxx/board-dt.c               |    3 +-
- 6 files changed, 455 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/arm/stixxxx/stih416-overview.txt
- create mode 100644 arch/arm/boot/dts/stih416-clock.dtsi
- create mode 100644 arch/arm/boot/dts/stih416-pinctrl.dtsi
- create mode 100644 arch/arm/boot/dts/stih416.dtsi
+ Documentation/arm/stixxxx/overview.txt         |   33 +++
+ Documentation/arm/stixxxx/stih415-overview.txt |   12 +
+ MAINTAINERS                                    |    9 +
+ arch/arm/Kconfig                               |    2 +
+ arch/arm/Makefile                              |    1 +
+ arch/arm/boot/dts/st-pincfg.h                  |   71 +++++++
+ arch/arm/boot/dts/stih415-clock.dtsi           |   38 ++++
+ arch/arm/boot/dts/stih415-pinctrl.dtsi         |  268 ++++++++++++++++++++++++
+ arch/arm/boot/dts/stih415.dtsi                 |   87 ++++++++
+ arch/arm/boot/dts/stih41x.dtsi                 |   38 ++++
+ arch/arm/mach-stixxxx/Kconfig                  |   36 ++++
+ arch/arm/mach-stixxxx/Makefile                 |    2 +
+ arch/arm/mach-stixxxx/board-dt.c               |   47 ++++
+ arch/arm/mach-stixxxx/headsmp.S                |   44 ++++
+ arch/arm/mach-stixxxx/platsmp.c                |  117 ++++++++++
+ arch/arm/mach-stixxxx/smp.h                    |   17 ++
+ 16 files changed, 822 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/arm/stixxxx/overview.txt
+ create mode 100644 Documentation/arm/stixxxx/stih415-overview.txt
+ create mode 100644 arch/arm/boot/dts/st-pincfg.h
+ create mode 100644 arch/arm/boot/dts/stih415-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stih415-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/stih415.dtsi
+ create mode 100644 arch/arm/boot/dts/stih41x.dtsi
+ create mode 100644 arch/arm/mach-stixxxx/Kconfig
+ create mode 100644 arch/arm/mach-stixxxx/Makefile
+ create mode 100644 arch/arm/mach-stixxxx/board-dt.c
+ create mode 100644 arch/arm/mach-stixxxx/headsmp.S
+ create mode 100644 arch/arm/mach-stixxxx/platsmp.c
+ create mode 100644 arch/arm/mach-stixxxx/smp.h
 
-diff --git a/Documentation/arm/stixxxx/stih416-overview.txt b/Documentation/arm/stixxxx/stih416-overview.txt
+diff --git a/Documentation/arm/stixxxx/overview.txt b/Documentation/arm/stixxxx/overview.txt
 new file mode 100644
-index 0000000..558444c
+index 0000000..a2f6390
 --- /dev/null
-+++ b/Documentation/arm/stixxxx/stih416-overview.txt
++++ b/Documentation/arm/stixxxx/overview.txt
+@@ -0,0 +1,33 @@
++			STixxxx ARM Linux Overview
++			==========================
++
++Introduction
++------------
++
++  The ST Microelectronics Multimedia and Application Processors range of
++  CortexA9 System-on-Chip are supported by the 'STixxxx' platform of
++  ARM Linux. Currently STiH415, STiH416 SOCs are supported with both
++  B2000 and B2020 Reference boards.
++
++
++  configuration
++  -------------
++
++  A generic configuration is provided for both STiH415/416, and can be used as the
++  default by
++	make stih41x_defconfig
++
++  Layout
++  ------
++  All the files for multiple machine families (STiH415, STiH416, and STiG125)
++  are located in the platform code contained in arch/arm/mach-stixxxx
++
++  There is a generic board board-dt.c in the mach folder which support
++  Flattened Device Tree, which means, It works with any compatible board with
++  Device Trees.
++
++
++  Document Author
++  ---------------
++
++  Srinivas Kandagatla <srinivas.kandagatla@st.com>, (c) 2013 ST Microelectronics
+diff --git a/Documentation/arm/stixxxx/stih415-overview.txt b/Documentation/arm/stixxxx/stih415-overview.txt
+new file mode 100644
+index 0000000..1383e33
+--- /dev/null
++++ b/Documentation/arm/stixxxx/stih415-overview.txt
 @@ -0,0 +1,12 @@
-+			STiH416 Overview
++			STiH415 Overview
 +			================
 +
 +Introduction
 +------------
 +
-+    The STiH416 is the next generation of HD, AVC set-top box processors
++    The STiH415 is the next generation of HD, AVC set-top box processors
 +    for satellite, cable, terrestrial and IP-STB markets.
 +
 +    Features
-+    - ARM Cortex-A9 1.2 GHz dual core CPU
++    - ARM Cortex-A9 1.0 GHz, dual-core CPU
 +    - SATA2x2,USB 2.0x3, PCIe, Gbit Ethernet MACx2
-diff --git a/arch/arm/boot/dts/stih416-clock.dtsi b/arch/arm/boot/dts/stih416-clock.dtsi
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5be702c..f48c011 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1201,6 +1201,15 @@ M:	Dinh Nguyen <dinguyen@altera.com>
+ S:	Maintained
+ F:	drivers/clk/socfpga/
+ 
++ARM/STIXXXX ARCHITECTURE
++M:	Srinivas Kandagatla <srinivas.kandagatla@st.com>
++M:	Stuart Menefy <stuart.menefy@st.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++L:	kernel@stlinux.com
++W:	http://www.stlinux.com
++S:	Maintained
++F:	arch/arm/mach-stixxxx/
++
+ ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 49d993c..790e321 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -989,6 +989,8 @@ source "arch/arm/mach-socfpga/Kconfig"
+ 
+ source "arch/arm/mach-spear/Kconfig"
+ 
++source "arch/arm/mach-stixxxx/Kconfig"
++
+ source "arch/arm/mach-s3c24xx/Kconfig"
+ 
+ if ARCH_S3C64XX
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 1ba358b..c876e0a 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -191,6 +191,7 @@ machine-$(CONFIG_ARCH_W90X900)		+= w90x900
+ machine-$(CONFIG_FOOTBRIDGE)		+= footbridge
+ machine-$(CONFIG_ARCH_SOCFPGA)		+= socfpga
+ machine-$(CONFIG_PLAT_SPEAR)		+= spear
++machine-$(CONFIG_ARCH_STIXXXX)		+= stixxxx
+ machine-$(CONFIG_ARCH_VIRT)		+= virt
+ machine-$(CONFIG_ARCH_ZYNQ)		+= zynq
+ machine-$(CONFIG_ARCH_SUNXI)		+= sunxi
+diff --git a/arch/arm/boot/dts/st-pincfg.h b/arch/arm/boot/dts/st-pincfg.h
 new file mode 100644
-index 0000000..7026bf1
+index 0000000..8c45d85
 --- /dev/null
-+++ b/arch/arm/boot/dts/stih416-clock.dtsi
-@@ -0,0 +1,41 @@
++++ b/arch/arm/boot/dts/st-pincfg.h
+@@ -0,0 +1,71 @@
++#ifndef _ST_PINCFG_H_
++#define _ST_PINCFG_H_
++
++/* Alternate functions */
++#define ALT1	1
++#define ALT2	2
++#define ALT3	3
++#define ALT4	4
++#define ALT5	5
++#define ALT6	6
++#define ALT7	7
++
++/* Output enable */
++#define OE			(1 << 27)
++/* Pull Up */
++#define PU			(1 << 26)
++/* Open Drain */
++#define OD			(1 << 26)
++#define RT			(1 << 23)
++#define INVERTCLK		(1 << 22)
++#define CLKNOTDATA		(1 << 21)
++#define DOUBLE_EDGE		(1 << 20)
++#define CLK_A			(0 << 18)
++#define CLK_B			(1 << 18)
++#define CLK_C			(2 << 18)
++#define CLK_D			(3 << 18)
++
++/* User-frendly defines for Pin Direction */
++		/* oe = 0, pu = 0, od = 0 */
++#define IN			(0)
++		/* oe = 0, pu = 1, od = 0 */
++#define IN_PU			(PU)
++		/* oe = 1, pu = 0, od = 0 */
++#define OUT			(OE)
++		/* oe = 1, pu = 0, od = 1 */
++#define BIDIR			(OE | OD)
++		/* oe = 1, pu = 1, od = 1 */
++#define BIDIR_PU		(OE | PU | OD)
++
++/* RETIME_TYPE */
 +/*
-+ * Copyright (C) 2013 STMicroelectronics R&D Limited
-+ * <stlinux-devel@stlinux.com>
++ * B Mode
++ * Bypass retime with optional delay parameter
++ */
++#define BYPASS		(0)
++/*
++ * R0, R1, R0D, R1D modes
++ * single-edge data non inverted clock, retime data with clk
++ */
++#define SE_NICLK_IO	(RT)
++/*
++ * RIV0, RIV1, RIV0D, RIV1D modes
++ * single-edge data inverted clock, retime data with clk
++ */
++#define SE_ICLK_IO	(RT | INVERTCLK)
++/*
++ * R0E, R1E, R0ED, R1ED modes
++ * double-edge data, retime data with clk
++ */
++#define DE_IO		(RT | DOUBLE_EDGE)
++/*
++ * CIV0, CIV1 modes with inverted clock
++ * Retiming the clk pins will park clock & reduce the noise within the core.
++ */
++#define ICLK		(RT | CLKNOTDATA | INVERTCLK)
++/*
++ * CLK0, CLK1 modes with non-inverted clock
++ * Retiming the clk pins will park clock & reduce the noise within the core.
++ */
++#define NICLK		(RT | CLKNOTDATA)
++#endif /* _ST_PINCFG_H_ */
+diff --git a/arch/arm/boot/dts/stih415-clock.dtsi b/arch/arm/boot/dts/stih415-clock.dtsi
+new file mode 100644
+index 0000000..174c799
+--- /dev/null
++++ b/arch/arm/boot/dts/stih415-clock.dtsi
+@@ -0,0 +1,38 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -85,13 +265,12 @@ index 0000000..7026bf1
 +/ {
 +	clocks {
 +		/*
-+		 * Fixed 30MHz oscillator inputs to SoC
++		 * Fixed 30MHz oscillator input to SoC
 +		 */
 +		CLK_SYSIN: CLK_SYSIN {
 +			#clock-cells = <0>;
 +			compatible = "fixed-clock";
 +			clock-frequency = <30000000>;
-+			clock-output-names = "CLK_SYSIN";
 +		};
 +
 +		/*
@@ -100,30 +279,28 @@ index 0000000..7026bf1
 +		arm_periph_clk: arm_periph_clk {
 +			#clock-cells = <0>;
 +			compatible = "fixed-clock";
-+			clock-frequency = <600000000>;
++			clock-frequency = <500000000>;
 +		};
 +
 +		/*
 +		 * Bootloader initialized system infrastructure clock for
 +		 * serial devices.
 +		 */
-+		CLK_S_ICN_REG_0: clockgenA0@4 {
++		CLKS_ICN_REG_0: CLKS_ICN_REG_0 {
 +			#clock-cells = <0>;
 +			compatible = "fixed-clock";
 +			clock-frequency = <100000000>;
-+			clock-output-names = "CLK_S_ICN_REG_0";
 +		};
 +	};
 +};
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
 new file mode 100644
-index 0000000..957b21a
+index 0000000..1d322b2
 --- /dev/null
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -0,0 +1,295 @@
-+
++++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+@@ -0,0 +1,268 @@
 +/*
-+ * Copyright (C) 2013 STMicroelectronics Limited.
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
 + * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -139,44 +316,41 @@ index 0000000..957b21a
 +		gpio2	= &PIO2;
 +		gpio3	= &PIO3;
 +		gpio4	= &PIO4;
-+		gpio5	= &PIO40;
-+		gpio6	= &PIO5;
-+		gpio7	= &PIO6;
-+		gpio8	= &PIO7;
-+		gpio9	= &PIO8;
-+		gpio10	= &PIO9;
-+		gpio11	= &PIO10;
-+		gpio12	= &PIO11;
-+		gpio13	= &PIO12;
-+		gpio14	= &PIO30;
-+		gpio15	= &PIO31;
-+		gpio16	= &PIO13;
-+		gpio17	= &PIO14;
-+		gpio18	= &PIO15;
-+		gpio19	= &PIO16;
-+		gpio20	= &PIO17;
-+		gpio21	= &PIO18;
-+		gpio22	= &PIO100;
-+		gpio23	= &PIO101;
-+		gpio24	= &PIO102;
-+		gpio25	= &PIO103;
-+		gpio26	= &PIO104;
-+		gpio27	= &PIO105;
-+		gpio28	= &PIO106;
-+		gpio29	= &PIO107;
++		gpio5	= &PIO5;
++		gpio6	= &PIO6;
++		gpio7	= &PIO7;
++		gpio8	= &PIO8;
++		gpio9	= &PIO9;
++		gpio10	= &PIO10;
++		gpio11	= &PIO11;
++		gpio12	= &PIO12;
++		gpio13	= &PIO13;
++		gpio14	= &PIO14;
++		gpio15	= &PIO15;
++		gpio16	= &PIO16;
++		gpio17	= &PIO17;
++		gpio18	= &PIO18;
++		gpio19	= &PIO100;
++		gpio20	= &PIO101;
++		gpio21	= &PIO102;
++		gpio22	= &PIO103;
++		gpio23	= &PIO104;
++		gpio24	= &PIO105;
++		gpio25	= &PIO106;
++		gpio26	= &PIO107;
 +	};
 +
 +	soc {
 +		pin-controller-sbc {
 +			#address-cells	= <1>;
 +			#size-cells	= <1>;
-+			compatible	= "st,stih416-sbc-pinctrl";
++			compatible	= "st,stih415-sbc-pinctrl";
 +			st,syscfg	= <&syscfg_sbc>;
-+			ranges		= <0 0xfe610000 0x6000>;
++			ranges 		= <0 0xfe610000 0x5000>;
 +
 +			PIO0: gpio@fe610000 {
 +				gpio-controller;
-+				#gpio-cells = <1>;
++				#gpio-cells	= <1>;
 +				reg		= <0 0x100>;
 +				st,bank-name	= "PIO0";
 +			};
@@ -204,16 +378,9 @@ index 0000000..957b21a
 +				reg		= <0x4000 0x100>;
 +				st,bank-name	= "PIO4";
 +			};
-+			PIO40: gpio@fe615000 {
-+				gpio-controller;
-+				#gpio-cells	= <1>;
-+				reg		= <0x5000 0x100>;
-+				st,bank-name	= "PIO40";
-+				st,retime-pin-mask = <0x7f>;
-+			};
 +
 +			sbc_serial1 {
-+				pinctrl_sbc_serial1: sbc_serial1 {
++				pinctrl_sbc_serial1:sbc_serial1 {
 +					st,pins {
 +						tx	= <&PIO2 6 ALT3 OUT>;
 +						rx	= <&PIO2 7 ALT3 IN>;
@@ -225,9 +392,9 @@ index 0000000..957b21a
 +		pin-controller-front {
 +			#address-cells	= <1>;
 +			#size-cells	= <1>;
-+			compatible	= "st,stih416-front-pinctrl";
++			compatible	= "st,stih415-front-pinctrl";
 +			st,syscfg	= <&syscfg_front>;
-+			ranges		= <0 0xfee00000 0x10000>;
++			ranges		= <0 0xfee00000 0x8000>;
 +
 +			PIO5: gpio@fee00000 {
 +				gpio-controller;
@@ -277,26 +444,14 @@ index 0000000..957b21a
 +				reg		= <0x7000 0x100>;
 +				st,bank-name	= "PIO12";
 +			};
-+			PIO30: gpio@fee08000 {
-+				gpio-controller;
-+				#gpio-cells	= <1>;
-+				reg		= <0x8000 0x100>;
-+				st,bank-name	= "PIO30";
-+			};
-+			PIO31: gpio@fee09000 {
-+				gpio-controller;
-+				#gpio-cells	= <1>;
-+				reg		= <0x9000 0x100>;
-+				st,bank-name	= "PIO31";
-+			};
 +		};
 +
 +		pin-controller-rear {
 +			#address-cells	= <1>;
 +			#size-cells	= <1>;
-+			compatible	= "st,stih416-rear-pinctrl";
++			compatible	= "st,stih415-rear-pinctrl";
 +			st,syscfg	= <&syscfg_rear>;
-+			ranges 		= <0 0xfe820000 0x6000>;
++			ranges		= <0 0xfe820000 0x8000>;
 +
 +			PIO13: gpio@fe820000 {
 +				gpio-controller;
@@ -333,7 +488,6 @@ index 0000000..957b21a
 +				#gpio-cells	= <1>;
 +				reg		= <0x5000 0x100>;
 +				st,bank-name	= "PIO18";
-+				st,retime-pin-mask = <0xf>;
 +			};
 +
 +			serial2 {
@@ -341,17 +495,16 @@ index 0000000..957b21a
 +					st,pins {
 +						tx	= <&PIO17 4 ALT2 OUT>;
 +						rx	= <&PIO17 5 ALT2 IN>;
-+						output-enable	= <&PIO11 3 ALT2 OUT>;
 +					};
 +				};
 +			};
 +		};
 +
-+		pin-controller-fvdp-fe {
++		pin-controller-left {
 +			#address-cells	= <1>;
 +			#size-cells	= <1>;
-+			compatible	= "st,stih416-fvdp-fe-pinctrl";
-+			st,syscfg	= <&syscfg_fvdp_fe>;
++			compatible	= "st,stih415-left-pinctrl";
++			st,syscfg	= <&syscfg_left>;
 +			ranges		= <0 0xfd6b0000 0x3000>;
 +
 +			PIO100: gpio@fd6b0000 {
@@ -374,12 +527,12 @@ index 0000000..957b21a
 +			};
 +		};
 +
-+		pin-controller-fvdp-lite {
++		pin-controller-right {
 +			#address-cells	= <1>;
 +			#size-cells	= <1>;
-+			compatible	= "st,stih416-fvdp-lite-pinctrl";
-+			st,syscfg		= <&syscfg_fvdp_lite>;
-+			ranges			= <0 0xfd330000 0x5000>;
++			compatible	= "st,stih415-right-pinctrl";
++			st,syscfg	= <&syscfg_right>;
++			ranges		= <0 0xfd330000 0x5000>;
 +
 +			PIO103: gpio@fd330000 {
 +				gpio-controller;
@@ -405,25 +558,23 @@ index 0000000..957b21a
 +				reg		= <0x3000 0x100>;
 +				st,bank-name	= "PIO106";
 +			};
-+
 +			PIO107: gpio@fd334000 {
 +				gpio-controller;
 +				#gpio-cells	= <1>;
 +				reg		= <0x4000 0x100>;
 +				st,bank-name	= "PIO107";
-+				st,retime-pin-mask = <0xf>;
 +			};
 +		};
 +	};
 +};
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
 new file mode 100644
-index 0000000..3cecd96
+index 0000000..74ab8de
 --- /dev/null
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -0,0 +1,96 @@
++++ b/arch/arm/boot/dts/stih415.dtsi
+@@ -0,0 +1,87 @@
 +/*
-+ * Copyright (C) 2012 STMicroelectronics Limited.
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
 + * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -431,14 +582,15 @@ index 0000000..3cecd96
 + * publishhed by the Free Software Foundation.
 + */
 +#include "stih41x.dtsi"
-+#include "stih416-clock.dtsi"
-+#include "stih416-pinctrl.dtsi"
++#include "stih415-clock.dtsi"
++#include "stih415-pinctrl.dtsi"
 +/ {
++
 +	L2: cache-controller {
 +		compatible = "arm,pl310-cache";
 +		reg = <0xfffe2000 0x1000>;
-+		arm,data-latency = <3 3 3>;
-+		arm,tag-latency = <2 2 2>;
++		arm,data-latency = <3 2 2>;
++		arm,tag-latency = <1 1 1>;
 +		cache-unified;
 +		cache-level = <2>;
 +	};
@@ -450,109 +602,407 @@ index 0000000..3cecd96
 +		ranges;
 +		compatible	= "simple-bus";
 +
-+		syscfg_sbc:sbc-syscfg@fe600000{
-+			compatible	= "st,stih416-sbc-syscfg", "syscon";
-+			reg		= <0xfe600000 0x1000>;
++		syscfg_sbc: sbc-syscfg@fe600000{
++			compatible      = "st,stih415-sbc-syscfg", "syscon";
++			reg		= <0xfe600000 0xb4>;
 +		};
 +
-+		syscfg_front:front-syscfg@fee10000{
-+			compatible	= "st,stih416-front-syscfg", "syscon";
-+			reg		= <0xfee10000 0x1000>;
++		syscfg_front: front-syscfg@fee10000{
++			compatible      = "st,stih415-front-syscfg", "syscon";
++			reg		= <0xfee10000 0x194>;
 +		};
 +
-+		syscfg_rear:rear-syscfg@fe830000{
-+			compatible	= "st,stih416-rear-syscfg", "syscon";
-+			reg		= <0xfe830000 0x1000>;
++		syscfg_rear: rear-syscfg@fe830000{
++			compatible      = "st,stih415-rear-syscfg", "syscon";
++			reg		= <0xfe830000 0x190>;
 +		};
 +
-+		/* MPE */
-+		syscfg_fvdp_fe:fvdp-fe-syscfg@fddf0000{
-+			compatible	= "st,stih416-fvdp-fe-syscfg", "syscon";
-+			reg		= <0xfddf0000 0x1000>;
++		/* MPE syscfgs */
++		syscfg_left: left-syscfg@fd690000{
++			compatible      = "st,stih415-left-syscfg", "syscon";
++			reg		= <0xfd690000 0x78>;
 +		};
 +
-+		syscfg_fvdp_lite:fvdp-lite-syscfg@fd6a0000{
-+			compatible	= "st,stih416-fvdp-lite-syscfg", "syscon";
-+			reg		= <0xfd6a0000 0x1000>;
++		syscfg_right: right-syscfg@fd320000{
++			compatible      = "st,stih415-right-syscfg", "syscon";
++			reg		= <0xfd320000 0x180>;
 +		};
 +
-+		syscfg_cpu:cpu-syscfg@fdde0000{
-+			compatible	= "st,stih416-cpu-syscfg", "syscon";
-+			reg		= <0xfdde0000 0x1000>;
++		syscfg_system: system-syscfg@fdde0000  {
++			compatible      = "st,stih415-system-syscfg", "syscon";
++			reg		= <0xfdde0000 0x15c>;
 +		};
 +
-+		syscfg_compo:compo-syscfg@fd320000{
-+			compatible	= "st,stih416-compo-syscfg", "syscon";
-+			reg		= <0xfd320000 0x1000>;
++		syscfg_lpm: lpm-syscfg@fe4b5100{
++			compatible      = "st,stih415-lpm-syscfg", "syscon";
++			reg		= <0xfe4b5100 0x08>;
 +		};
 +
-+		syscfg_transport:transport-syscfg@fd690000{
-+			compatible	= "st,stih416-transport-syscfg", "syscon";
-+			reg		= <0xfd690000 0x1000>;
-+		};
-+
-+		syscfg_lpm:lpm-syscfg@fe4b5100{
-+			compatible	= "st,stih416-lpm-syscfg", "syscon";
-+			reg		= <0xfe4b5100 0x8>;
-+		};
-+
-+		serial2: serial@fed32000{
++		serial2: serial@fed32000 {
 +			compatible	= "st,asc";
 +			status 		= "disabled";
 +			reg		= <0xfed32000 0x2c>;
 +			interrupts	= <0 197 0>;
-+			clocks          = <&CLK_S_ICN_REG_0>;
 +			pinctrl-names 	= "default";
 +			pinctrl-0 	= <&pinctrl_serial2>;
++			clocks		= <&CLKS_ICN_REG_0>;
 +		};
 +
-+		/* SBC_UART1 */
++		/* SBC comms block ASCs in SASG1 */
 +		sbc_serial1: serial@fe531000 {
 +			compatible	= "st,asc";
 +			status 		= "disabled";
 +			reg		= <0xfe531000 0x2c>;
 +			interrupts	= <0 210 0>;
++			clocks		= <&CLK_SYSIN>;
 +			pinctrl-names 	= "default";
-+			pinctrl-0 	= <&pinctrl_sbc_serial1>;
-+			clocks          = <&CLK_SYSIN>;
++			pinctrl-0	= <&pinctrl_sbc_serial1>;
 +		};
 +	};
 +};
+diff --git a/arch/arm/boot/dts/stih41x.dtsi b/arch/arm/boot/dts/stih41x.dtsi
+new file mode 100644
+index 0000000..7321403
+--- /dev/null
++++ b/arch/arm/boot/dts/stih41x.dtsi
+@@ -0,0 +1,38 @@
++/ {
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		cpu@0 {
++			compatible = "arm,cortex-a9";
++			reg = <0>;
++		};
++		cpu@1 {
++			compatible = "arm,cortex-a9";
++			reg = <1>;
++		};
++	};
++
++	intc: interrupt-controller@fffe1000 {
++		compatible = "arm,cortex-a9-gic";
++		#interrupt-cells = <3>;
++		interrupt-controller;
++		reg = <0xfffe1000 0x1000>,
++		      <0xfffe0100 0x100>;
++	};
++
++	scu@fffe0000 {
++		compatible = "arm,cortex-a9-scu";
++		reg = <0xfffe0000 0x1000>;
++	};
++
++	timer@fffe0200 {
++		interrupt-parent = <&intc>;
++		compatible = "arm,cortex-a9-global-timer";
++		reg = <0xfffe0200 0x100>;
++		interrupts = <1 11 0x04>;
++		clocks = <&arm_periph_clk>;
++	};
++};
 diff --git a/arch/arm/mach-stixxxx/Kconfig b/arch/arm/mach-stixxxx/Kconfig
-index df0aff2..3e93711 100644
---- a/arch/arm/mach-stixxxx/Kconfig
+new file mode 100644
+index 0000000..df0aff2
+--- /dev/null
 +++ b/arch/arm/mach-stixxxx/Kconfig
-@@ -33,4 +33,13 @@ config SOC_STIH415
- 	  and other digital audio/video applications using Flattned Device
- 	  Trees.
- 
-+config SOC_STIH416
-+	bool "STiH416 STMicroelectronics Consumer Electronics family"
+@@ -0,0 +1,36 @@
++menuconfig ARCH_STIXXXX
++	bool "STMicroelectronics Consumer Electronics SOCs with Device Trees" if ARCH_MULTI_V7
++	select GENERIC_CLOCKEVENTS
++	select CLKDEV_LOOKUP
++	select ARM_GIC
++	select ARM_GLOBAL_TIMER
++	select PINCTRL
++	select PINCTRL_ST
++	select MFD_SYSCON
++	select MIGHT_HAVE_CACHE_L2X0
++	select HAVE_SMP
++	select HAVE_ARM_SCU if SMP
++	select ARCH_REQUIRE_GPIOLIB
++	select ARM_ERRATA_720789
++	select ARM_ERRATA_754322
++	select PL310_ERRATA_753970
++	select PL310_ERRATA_769419
++	help
++	  Include support for STiH41x SOCs like STiH415/416 using the device tree
++	  for discovery
++	  More information at Documentation/arm/STiH41x and
++	  at Documentation/devicetree
++
++
++if ARCH_STIXXXX
++
++config SOC_STIH415
++	bool "STiH415 STMicroelectronics Consumer Electronics family"
 +	default y
 +	help
 +	  This enables support for STMicroelectronics Digital Consumer
-+	  Electronics family StiH416 parts, primarily targetted at set-top-box
-+	  and other digital audio/video applications using Flattened Device
++	  Electronics family StiH415 parts, primarily targetted at set-top-box
++	  and other digital audio/video applications using Flattned Device
 +	  Trees.
 +
- endif
++endif
+diff --git a/arch/arm/mach-stixxxx/Makefile b/arch/arm/mach-stixxxx/Makefile
+new file mode 100644
+index 0000000..50bf128
+--- /dev/null
++++ b/arch/arm/mach-stixxxx/Makefile
+@@ -0,0 +1,2 @@
++obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
++obj-$(CONFIG_ARCH_STIXXXX) 		+= board-dt.o
 diff --git a/arch/arm/mach-stixxxx/board-dt.c b/arch/arm/mach-stixxxx/board-dt.c
-index 9c5addd..6487a12 100644
---- a/arch/arm/mach-stixxxx/board-dt.c
+new file mode 100644
+index 0000000..9c5addd
+--- /dev/null
 +++ b/arch/arm/mach-stixxxx/board-dt.c
-@@ -37,10 +37,11 @@ static void __init stih41x_timer_init(void)
- 
- static const char *stih41x_dt_match[] __initdata = {
- 	"st,stih415",
-+	"st,stih416",
- 	NULL
- };
- 
--DT_MACHINE_START(STM, "STiH415 SoC with Flattened Device Tree")
-+DT_MACHINE_START(STM, "STiH415/416 SoC with Flattened Device Tree")
- 	.init_time	= stih41x_timer_init,
- 	.smp		= smp_ops(stixxxx_smp_ops),
- 	.dt_compat	= stih41x_dt_match,
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author(s): Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/clocksource.h>
++#include <linux/irq.h>
++#include <asm/hardware/cache-l2x0.h>
++#include <asm/mach/arch.h>
++
++#include "smp.h"
++
++void __init stih41x_l2x0_init(void)
++{
++	u32 way_size = 0x4;
++	u32 aux_ctrl;
++	/* may be this can be encoded in macros like BIT*() */
++	aux_ctrl = (0x1 << L2X0_AUX_CTRL_SHARE_OVERRIDE_SHIFT) |
++		(0x1 << L2X0_AUX_CTRL_DATA_PREFETCH_SHIFT) |
++		(0x1 << L2X0_AUX_CTRL_INSTR_PREFETCH_SHIFT) |
++		(way_size << L2X0_AUX_CTRL_WAY_SIZE_SHIFT);
++
++	l2x0_of_init(aux_ctrl, L2X0_AUX_CTRL_MASK);
++}
++
++static void __init stih41x_timer_init(void)
++{
++	of_clk_init(NULL);
++	clocksource_of_init();
++	stih41x_l2x0_init();
++}
++
++static const char *stih41x_dt_match[] __initdata = {
++	"st,stih415",
++	NULL
++};
++
++DT_MACHINE_START(STM, "STiH415 SoC with Flattened Device Tree")
++	.init_time	= stih41x_timer_init,
++	.smp		= smp_ops(stixxxx_smp_ops),
++	.dt_compat	= stih41x_dt_match,
++MACHINE_END
+diff --git a/arch/arm/mach-stixxxx/headsmp.S b/arch/arm/mach-stixxxx/headsmp.S
+new file mode 100644
+index 0000000..146cf4f
+--- /dev/null
++++ b/arch/arm/mach-stixxxx/headsmp.S
+@@ -0,0 +1,44 @@
++/*
++ *  arch/arm/mach-stixxxx/headsmp.S
++ *
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ *		http://www.st.com
++ *
++ * Cloned from linux/arch/arm/mach-vexpress/headsmp.S
++ *
++ *  Copyright (c) 2003 ARM Limited
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/linkage.h>
++#include <linux/init.h>
++
++	__INIT
++
++/*
++ * ST specific entry point for secondary CPUs.  This provides
++ * a "holding pen" into which all secondary cores are held until we're
++ * ready for them to initialise.
++ */
++ENTRY(stixxxx_secondary_startup)
++	mrc	p15, 0, r0, c0, c0, 5
++	and	r0, r0, #15
++	adr	r4, 1f
++	ldmia	r4, {r5, r6}
++	sub	r4, r4, r5
++	add	r6, r6, r4
++pen:	ldr	r7, [r6]
++	cmp	r7, r0
++	bne	pen
++
++	/*
++	 * we've been released from the holding pen: secondary_stack
++	 * should now contain the SVC stack for this core
++	 */
++	b	secondary_startup
++
++1:	.long	.
++	.long	pen_release
+diff --git a/arch/arm/mach-stixxxx/platsmp.c b/arch/arm/mach-stixxxx/platsmp.c
+new file mode 100644
+index 0000000..0df91df
+--- /dev/null
++++ b/arch/arm/mach-stixxxx/platsmp.c
+@@ -0,0 +1,117 @@
++/*
++ *  arch/arm/mach-stixxxx/platsmp.c
++ *
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ *		http://www.st.com
++ *
++ * Cloned from linux/arch/arm/mach-vexpress/platsmp.c
++ *
++ *  Copyright (C) 2002 ARM Ltd.
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/init.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <linux/smp.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++
++#include <asm/cacheflush.h>
++#include <asm/smp_plat.h>
++#include <asm/smp_scu.h>
++
++#include "smp.h"
++
++static void __cpuinit write_pen_release(int val)
++{
++	pen_release = val;
++	smp_wmb();
++	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
++	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
++}
++
++static DEFINE_SPINLOCK(boot_lock);
++
++void __cpuinit stixxxx_secondary_init(unsigned int cpu)
++{
++	trace_hardirqs_off();
++
++	/*
++	 * let the primary processor know we're out of the
++	 * pen, then head off into the C entry point
++	 */
++	write_pen_release(-1);
++
++	/*
++	 * Synchronise with the boot thread.
++	 */
++	spin_lock(&boot_lock);
++	spin_unlock(&boot_lock);
++}
++
++int __cpuinit stixxxx_boot_secondary(unsigned int cpu, struct task_struct *idle)
++{
++	unsigned long timeout;
++
++	/*
++	 * set synchronisation state between this boot processor
++	 * and the secondary one
++	 */
++	spin_lock(&boot_lock);
++
++	/*
++	 * The secondary processor is waiting to be released from
++	 * the holding pen - release it, then wait for it to flag
++	 * that it has been released by resetting pen_release.
++	 *
++	 * Note that "pen_release" is the hardware CPU ID, whereas
++	 * "cpu" is Linux's internal ID.
++	 */
++	write_pen_release(cpu_logical_map(cpu));
++
++	/*
++	 * Send the secondary CPU a soft interrupt, thereby causing
++	 * it to jump to the secondary entrypoint.
++	 */
++	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
++
++	timeout = jiffies + (1 * HZ);
++	while (time_before(jiffies, timeout)) {
++		smp_rmb();
++		if (pen_release == -1)
++			break;
++
++		udelay(10);
++	}
++
++	/*
++	 * now the secondary core is starting up let it run its
++	 * calibrations, then wait for it to finish
++	 */
++	spin_unlock(&boot_lock);
++
++	return pen_release != -1 ? -ENOSYS : 0;
++}
++
++void __init stixxxx_smp_prepare_cpus(unsigned int max_cpus)
++{
++	void __iomem *scu_base = NULL;
++	struct device_node *np = of_find_compatible_node(
++					NULL, NULL, "arm,cortex-a9-scu");
++	if (np) {
++		scu_base = of_iomap(np, 0);
++		scu_enable(scu_base);
++		of_node_put(np);
++	}
++}
++
++struct smp_operations __initdata stixxxx_smp_ops = {
++	.smp_prepare_cpus	= stixxxx_smp_prepare_cpus,
++	.smp_secondary_init	= stixxxx_secondary_init,
++	.smp_boot_secondary	= stixxxx_boot_secondary,
++};
+diff --git a/arch/arm/mach-stixxxx/smp.h b/arch/arm/mach-stixxxx/smp.h
+new file mode 100644
+index 0000000..97c3689
+--- /dev/null
++++ b/arch/arm/mach-stixxxx/smp.h
+@@ -0,0 +1,17 @@
++/*
++ *  arch/arm/mach-stixxxx/smp.h
++ *
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ *		http://www.st.com
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __MACH_STIXXXX_SMP_H
++#define __MACH_STIXXXX_SMP_H
++
++extern struct smp_operations	stixxxx_smp_ops;
++
++#endif
 -- 
 1.7.6.5
 
