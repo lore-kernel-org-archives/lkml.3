@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161561Ab3FUOo2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:44:28 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53592 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161419Ab3FUOo0 (ORCPT
+	id S1423108Ab3FUOoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:44:39 -0400
+Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:34100 "EHLO
+	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161419Ab3FUOog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:44:26 -0400
-Date: Fri, 21 Jun 2013 15:44:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Message-ID: <20130621144423.GX27646@sirena.org.uk>
-References: <Pine.LNX.4.64.1306210825040.27277@axis700.grange>
- <Pine.LNX.4.64.1306210827090.27277@axis700.grange>
+	Fri, 21 Jun 2013 10:44:36 -0400
+Date: Fri, 21 Jun 2013 14:44:34 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Roland Dreier <roland@kernel.org>
+cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Motohiro KOSAKI <kosaki.motohiro@gmail.com>, penberg@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Subject: Re: [PATCH] mm: Revert pinned_vm braindamage
+In-Reply-To: <CAG4TOxNp8hrsC-1hbxGaR+xoUJYqUNv+sen4baukNCtASCwXOw@mail.gmail.com>
+Message-ID: <0000013f6731a2df-6b705743-51cd-44dd-959b-8f139d052f6c-000000@email.amazonses.com>
+References: <20130606124351.GZ27176@twins.programming.kicks-ass.net> <0000013f1ad00ec0-9574a936-3a75-4ccc-a84c-4a12a7ea106e-000000@email.amazonses.com> <20130607110344.GA27176@twins.programming.kicks-ass.net> <0000013f1f1f79d1-2cf8cb8c-7e63-4e83-9f2b-7acc0e0638a1-000000@email.amazonses.com>
+ <20130617110832.GP3204@twins.programming.kicks-ass.net> <0000013f536c60ee-9a1ca9da-b798-416a-a32e-c896813d3bac-000000@email.amazonses.com> <20130620114943.GB12125@gmail.com> <0000013f620f4699-f484f28e-3d12-4560-adfe-3b00af995fd9-000000@email.amazonses.com>
+ <CAG4TOxNp8hrsC-1hbxGaR+xoUJYqUNv+sen4baukNCtASCwXOw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s8wpp40TDz0KNMmP"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1306210827090.27277@axis700.grange>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulators: max8973: initial DT support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.06.21-54.240.9.46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Jun 2013, Roland Dreier wrote:
 
---s8wpp40TDz0KNMmP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Christoph, your argument would be a lot more convincing if you stopped
+> repeating this nonsense.  Sure, in a strict sense, it might be true
 
-On Fri, Jun 21, 2013 at 08:30:26AM +0200, Guennadi Liakhovetski wrote:
+Well this is regarding tracking of pages that need to stay resident and
+since the kernel does the pinning through the IB subsystem it is trackable
+right there.  No nonsense and no need for a separate pinning system call.
 
-> +Required properties:
-> +
-> +- compatible:	must be "maxium,max8973"
-> +- reg:		the i2c slave address of the regulator. It should be 0x1b.
-> +- regulators:	a subnode with a single regulator descriptor in it called "dcdc"
+> that the IB subsystem in the kernel is the code thatactually pins
+> memory, but given that unprivileged userspace can tell the kernel to
+> pin arbitrary parts of its memory for any amount of time, is that
+> relevant?  And in fact taking your "initiate" word choice above, I
+> don't even think your statement is true -- userspace initiates the
+> pinning by, for example, doing an IB memory registration (libibverbs
+> ibv_reg_mr() call), which turns into a system call, which leads to the
+> kernel trying to pin pages.  The pages aren't unpinned until userspace
+> unregisters the memory (or causes a cleanup by closing the context
+> fd).
 
-Why make this a subnode - if there's only one regulator on the device
-then it may as well just put all the regulator properties there?
+In some sense userspace initiates everything since the kernels purpose
+is to run applications. So you can say that everything is user initated if
+you wanted.
 
-> +	if (!regulators) {
-> +		dev_err(dev, "regulator node not found\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	ret = of_regulator_match(dev, regulators,
-> +				 &max8973_regulator_match, 1);
-> +	of_node_put(regulators);
-> +	if (ret < 0) {
-> +		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
-> +		return ret;
-> +	}
-> +	if (!ret) {
-> +		dev_err(dev, "No regulator configuration found\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	return 0;
+However, the user visible mechanism here is a registration of memory with
+the IB subsystem for RDMA. The primary intend is not to pin the pages but
+to make memory available for remote I/O. The pages are pinned *because*
+otherwise remote RDMA operations could corrupt memory due to the kernel
+moving/evicting memory.
 
-This would simplify the code here, the driver can just call
-of_get_regulator_init_data() directly with the node.
+> Here's an argument by analogy.  Would it make any sense for me to say
+> userspace can't mlock memory, because only the kernel can set
+> VM_LOCKED on a vma?  Of course not.  Userspace has the mlock() system
+> call, and although the actual work happens in the kernel, we clearly
+> want to be able to limit the amount of memory locked by the kernel ON
+> BEHALF OF USERSPACE.
 
-> -	if (!pdata->enable_ext_control) {
-> +	if (!pdata || !pdata->enable_ext_control) {
->  		max->desc.enable_reg = MAX8973_VOUT;
->  		max->desc.enable_mask = MAX8973_VOUT_ENABLE;
->  		max->ops.enable = regulator_enable_regmap;
+I would think that mlock is a memory management function and therefore the
+app/user directly says that the memory is not to be evicted from memory.
 
-A common approach here is just to embed the platform data in the
-driver data then copy actual platform data in there or parse the device
-tree bindings (when added) into the structure.  This means that most of
-the driver can just assume there's platform data which makes life a bit
-simpler.
+This is different for the IB subsystem which is dealing with I/O and only
+indirectly with memory. Would we have a different mechanism to prevent
+reclaim etc the we would not need to pin the pages.
 
---s8wpp40TDz0KNMmP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Actual there is such a mechanism that could be used here. If you had a
+reserved memory region that is not mapped by the kernel (boot time alloc,
+device memory) then you can use VM_PFNMAP to refer to that region and the
+kernel would not be able to do reclaim on that memory. No pinning
+necessary if the IB subsystem would register that type of memory.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRxGbEAAoJELSic+t+oim9y1YP/20vru+A9RC/W5aGXzNLmwbN
-SbGPlvMz49PEhMYLV0qopkh/LHl3R6IZa9AH+Ut6yEezBDiEvX7gXbdtA3w1AppX
-sORbw1DiSUE1veUtYxehVFS+YWhuJHguqZQG4Wn+8X5J2N/gArT3EsVMu/rs+Iap
-vIs+WJ8Y2pNMOoLmck4SNiQ/bqhWEJ1mK3I50TTSxYxhcxg4ZF1+EVHprQCQwkON
-Q8cTfA7mcG+gNmdDQq5qugAKP3gzKv9LJWli/vjbVhKtMvQ/RBbCOWBbi1D6dzn0
-Amt7P9G7M8+SE4dNAa8sB4EIReuLIbcfgFU6bFH/8S0P+NrWBoU8yYfB9KY9QgNS
-whqoSP/Wgb/evmH9k5IOAYqTtHYAQEcvEKiCm/XtcPGPYbMsR9tmnfPkIo6KDuay
-5ZURnlMMpUtXScSeeQ1DuNf7U+YNqLH2FChWe0lvgJJ8Bnk78d/m/ZWkopsAI5/B
-H9w+M8j8T1tWGdER1cP4TvoNKbU/sRKqsP+rrY58fJgTofP+cs2vd3c8f+fN1sse
-lShjsxOmUQ6nGuvlfvHhI2/c6uGrT6aCOVPBfxGJ4qkyqmnw6zxYsJvyK7eQ0x0O
-o52y9G90/rpUUIIv5GAbzm7fzB7Xj3jmuWEgVRCWqqQp7kNZyDsT9G/Qmmlpg54G
-Mx+ACHGsTgPirBu5Or9C
-=5pfA
------END PGP SIGNATURE-----
 
---s8wpp40TDz0KNMmP--
