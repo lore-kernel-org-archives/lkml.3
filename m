@@ -1,58 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030438Ab3FUNZQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 09:25:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:62473 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030216Ab3FUNZP (ORCPT
+	id S1030452Ab3FUN0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 09:26:10 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:60410 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030216Ab3FUN0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 09:25:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH] char: misc: assign file->private_data in all cases
-Date: Fri, 21 Jun 2013 15:25:06 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Samu Onkalo <samu.p.onkalo@nokia.com>,
-        michael.opdenacker@free-electrons.com,
-        gregory.clement@free-electrons.com, maxime.ripard@free-electrons.com,
-        alexandre.belloni@free-electrons.com
-References: <1371819665-3882-1-git-send-email-thomas.petazzoni@free-electrons.com>
-In-Reply-To: <1371819665-3882-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	Fri, 21 Jun 2013 09:26:08 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306211525.06761.arnd@arndb.de>
-X-Provags-ID: V02:K0:9lLTvkuRVtOcuPSUA08V3HJZTRRZg6MR16a3g5mU8Gp
- 6Xh1xd4BMyrMJbLZV5sKa5dn6h+S1UjF17pHvt+mRuZNJAytRe
- M2mMMm8ZHpPI1DoFvqWoMF02gxQ12ipexGoYEF7IWtASZpKiaY
- fBiCXfrQQRHIXFwdVSA8U1k2tLOhOPYtTsWfoaIQnqWqVQNmGZ
- SCJka/lsnaBDU3XME+Bf2+eY/BBuJXd97Ce+EAkwSbonUBUub6
- nY+yHbYj8gUnaiscPSw9dg4ZWo93wVdCxOGz+X+oMtClWNTkm5
- 5X4+58bwp8YpqhooL8Vs9/I+JKe9RxV+03s1ojfxVh1ArOTv0F
- Aa8DgwB0Y6IbrCRo4wC8=
+In-Reply-To: <51C4345E.1010604@gmail.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+	<1370589652-24549-5-git-send-email-alex.shi@intel.com>
+	<CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
+	<51BF2E37.5040400@intel.com>
+	<CALZhoSSweOzTgjykRMxv_kha9TH-8EAKvuhinf8ADFyFDzDTuQ@mail.gmail.com>
+	<CALZhoSSFr_HN9ccxNLK7HA-7O9soAU7VZ3njtKf=Ndw=_AbQRw@mail.gmail.com>
+	<51C318D6.4090601@gmail.com>
+	<CALZhoSQgO-V-vkOy+urL_H4cjcCE8YY3w+K=mS8hptWteKGcFw@mail.gmail.com>
+	<51C3BCE1.1080405@gmail.com>
+	<CALZhoSR8pLfqO+XfEfHB3-UuV5_xu=AV2mCf2BQgaaQoWd-tbw@mail.gmail.com>
+	<51C4152E.60906@gmail.com>
+	<CALZhoST001rHENqP8RncHL1zyN=D91D8-HzzFyiy+iqkY5KRCw@mail.gmail.com>
+	<51C4345E.1010604@gmail.com>
+Date: Fri, 21 Jun 2013 21:26:06 +0800
+Message-ID: <CALZhoSQhd2EmAJpoffSfyEW77R=HTy_61am_b74B2zRB7eo4wA@mail.gmail.com>
+Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue entity
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Alex Shi <seakeel@gmail.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 June 2013, Thomas Petazzoni wrote:
-> n fa1f68db6ca ("drivers: misc: pass miscdevice pointer via file
-> private data"), the misc driver infrastructure was changed to assigned
-> file->private_data as a pointer to the 'struct miscdevice' that
-> corresponds to the device being opened.
-> 
-> However, this assignment was only done when the misc driver was
-> declaring a driver-specific ->open() operation in its
-> file_operations. This doesn't make sense, as the driver may not
-> necessarily have a custom ->open() operation, and might still be
-> interested in having file->private_data properly set for use in its
-> ->read() and write() operations.
-> 
-> Therefore, we move the assignment of file->private_data outside of the
-> condition that tests whether a driver-specific ->open() operation was
-> defined.
-> 
-> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+On Fri, Jun 21, 2013 at 7:09 PM, Alex Shi <seakeel@gmail.com> wrote:
+>
+>>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>>> index c61a614..9640c66 100644
+>>>> --- a/kernel/sched/fair.c
+>>>> +++ b/kernel/sched/fair.c
+>>>> @@ -5856,7 +5856,8 @@ static void switched_from_fair(struct rq *rq,
+>>>> struct task_struct *p)
+>>>>         */
+>>>>         if (p->se.avg.decay_count) {
+>>>>                 struct cfs_rq *cfs_rq = cfs_rq_of(&p->se);
+>>>> -               __synchronize_entity_decay(&p->se);
+>>>> +               p->se.avg.last_runnable_update +=
+>>>> +                               __synchronize_entity_decay(&p->se);
+>>>
+>>> it is not needed, since the last_runnable_update will be reset if it
+>>> will be switched to fair.
+>>
+>> When it is backed to fair class, the only thing scheduler would do
+>> is to check whether it could preempt current running task, so
+>> where to reset the last_runnable_update?
+>
+> here, when the task enqueue to cfs_rq.
+> avg.decay_count == 0, so the last line will reset last_runnable_update.
+>
+> Anyway, you may consider to add a comment in the function, since it is bit hard
+> to understand for you.
+>
+> ---
+> /* Add the load generated by se into cfs_rq's child load-average */
+> static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>                                                   struct sched_entity *se,
+>                                                   int wakeup)
+> {
+>         /*
+>          * We track migrations using entity decay_count <= 0, on a wake-up
+>          * migration we use a negative decay count to track the remote decays
+>          * accumulated while sleeping.
+>          */
+>         if (unlikely(se->avg.decay_count <= 0)) {
+>                 se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+I see...
+I didn't notice before the switched_from_fair, we already called
+dequeue and enqueue.
+Since it works as expected, I have no question.
+
+Thanks for your detailed explanation! :)
+
+Thanks,
+Lei
+
+>
+>>
+>> Thanks,
+>> Lei
+>>
+>>>
+>>> --
+>>> Thanks
+>>>     Alex
+>
+>
+> --
+> Thanks
+>     Alex
