@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab3FUHMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:12:50 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40226 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758748Ab3FUHMs (ORCPT
+	id S1758786Ab3FUHQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 03:16:52 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:55460 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758770Ab3FUHQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:12:48 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18oQ5TW+ngpH3FWJw5R8gVS
-Date: Fri, 21 Jun 2013 00:12:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Suman Anna <s-anna@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the mailbox
- tree
-Message-ID: <20130621071239.GM5523@atomide.com>
-References: <20130621162656.bb94e0fa8b6813781b804a73@canb.auug.org.au>
- <20130621164149.598b39bb78b6015057d03f6f@canb.auug.org.au>
- <20130621065310.GK5523@atomide.com>
- <CAOesGMjszju75jo6Ej6C=0-rfdPLuEj0mwmU1zYvFvYw1dyQCA@mail.gmail.com>
+	Fri, 21 Jun 2013 03:16:51 -0400
+Date: Fri, 21 Jun 2013 15:16:03 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, patches@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org,
+        Dom Cobley <popcornmix@gmail.com>, Lubomir Rintel <lkundrak@v3.sk>,
+        Stephen Warren <swarren@wwwdotorg.org>, Matt Mackall <mpm@selenic.com>,
+        linux-rpi-kernel@lists.infradead.org
+Subject: Re: [PATCH 05/15] hwrng: bcm2835: fix MODULE_LICENSE tag
+Message-ID: <20130621071603.GA24151@gondor.apana.org.au>
+References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
+ <1370038972-2318779-6-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMjszju75jo6Ej6C=0-rfdPLuEj0mwmU1zYvFvYw1dyQCA@mail.gmail.com>
+In-Reply-To: <1370038972-2318779-6-git-send-email-arnd@arndb.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Olof Johansson <olof@lixom.net> [130621 00:07]:
-> On Thu, Jun 20, 2013 at 11:53 PM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Stephen Rothwell <sfr@canb.auug.org.au> [130620 23:48]:
-> >> Hi all,
-> >>
-> >> On Fri, 21 Jun 2013 16:26:56 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >> >
-> >> > Today's linux-next merge of the arm-soc tree got a conflict in
-> >> > drivers/mailbox/Kconfig between commit a1824eaab70f ("mailbox: OMAP:
-> >> > introduce mailbox framework") from the mailbox tree and commit
-> >> > c869c75c16b3 ("mailbox/omap: move the OMAP mailbox framework to drivers")
-> >> > from the arm-soc tree.
-> >> >
-> >> > I fixed it up (I suspect not properly - see below) and can carry the fix
-> >> > as necessary (no action is required).
-> >> >
-> >> > It looks like we have two different versions of these changes in
-> >> > linux-next now, so please clean it all up.  i.e. can I just drop the
-> >> > mailbox tree now?
-> >>
-> >> OK, things went steeply downhill from here, so I went back and removed
-> >> the mailbox tree ...
-> >
-> > I think Olof dropped the earlier version of the mailbox branch, and
-> > remerged the updated mailbox branch. So if there was also yet another
-> > mailbox branch being pulled into Linux next, then yes, dropping it is
-> > the way to go.
+On Sat, Jun 01, 2013 at 12:22:42AM +0200, Arnd Bergmann wrote:
+> The MODULE_LICENSE macro invocation must use either "GPL" or "GPL v2",
+> but not "GPLv2" in order to be detected by the module loader.
 > 
-> No, I only reverted -- I didn't pull in any new branch.
-
-Arnd pulled in tags/omap-for-v3.11/mailbox-signed, which is the branch
-that should get merged to the mainline tree while we're waiting for
-the generic mailbox framework from Jassi.
- 
-> I wonder if this mess is caused by the fact that I did the revert
-> instead of rebuilding our for-next and dropping the merge in the first
-> place.
+> This fixes the allmodconfig build error:
 > 
-> I'll rebuild our for-next (or maybe Arnd will beat me to it) before
-> next linux-next build, i.e. Sunday night my time.
+> FATAL: modpost: GPL-incompatible module bcm2835-rng.ko uses GPL-only symbol 'platform_driver_unregister'
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Dom Cobley <popcornmix@gmail.com>
+> Cc: Lubomir Rintel <lkundrak@v3.sk>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Cc: linux-rpi-kernel@lists.infradead.org
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> ---
+>  drivers/char/hw_random/bcm2835-rng.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/char/hw_random/bcm2835-rng.c b/drivers/char/hw_random/bcm2835-rng.c
+> index eb7f147..43577ca 100644
+> --- a/drivers/char/hw_random/bcm2835-rng.c
+> +++ b/drivers/char/hw_random/bcm2835-rng.c
+> @@ -110,4 +110,4 @@ module_platform_driver(bcm2835_rng_driver);
+>  
+>  MODULE_AUTHOR("Lubomir Rintel <lkundrak@v3.sk>");
+>  MODULE_DESCRIPTION("BCM2835 Random Number Generator (RNG) driver");
+> -MODULE_LICENSE("GPLv2");
+> +MODULE_LICENSE("GPL v2");
 
-Could be, especially if some of the commits are the same in the reverted
-branch and newly merged branch as git might think that some merges have
-been already resolved the right way earlier.
-
-Regards,
-
-Tony
+Patch applied.  Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
