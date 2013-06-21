@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946119Ab3FUVYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:24:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41592 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946078Ab3FUVYG (ORCPT
+	id S1946111Ab3FUV0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:26:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22520 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946061Ab3FUV0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:24:06 -0400
-Date: Fri, 21 Jun 2013 23:24:00 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Vrabel <david.vrabel@citrix.com>
-cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/4] hrtimers: provide a hrtimers_late_resume() call
-In-Reply-To: <51C48DA3.4010307@citrix.com>
-Message-ID: <alpine.DEB.2.02.1306212321440.4013@ionos.tec.linutronix.de>
-References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-2-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306210947410.4013@ionos.tec.linutronix.de> <51C447E3.9030009@citrix.com> <alpine.DEB.2.02.1306211610100.4013@ionos.tec.linutronix.de>
- <51C48DA3.4010307@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 21 Jun 2013 17:26:08 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BUyC4VmaGVwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5V7bKCsQ6TsA:10 a=Mz_pZ2u7bsVrBlvtC6EA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1371849967.18733.134.camel@gandalf.local.home>
+Subject: Re: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
+ from apic.c to irq.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Date: Fri, 21 Jun 2013 17:26:07 -0400
+In-Reply-To: <1371848976.18733.130.camel@gandalf.local.home>
+References: <1371835898.18733.122.camel@gandalf.local.home>
+	 <1371848976.18733.130.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jun 2013, David Vrabel wrote:
-> On 21/06/13 15:32, Thomas Gleixner wrote:
-> However, since hrtimers require the use of a one-shot ticker and when
-> one-shot timers are resumed they are armed to fire immediately (see
-> tick_resume_oneshot()) this interrupt is sufficient to kick the require
-> softirq.
+On Fri, 2013-06-21 at 17:09 -0400, Steven Rostedt wrote:
+> On Fri, 2013-06-21 at 13:31 -0400, Steven Rostedt wrote:
 > 
-> So, as proposed before:
+> > My testing also triggered another bug, but I'm not sure it's related to
+> > these patches or something that already existed. I'm currently
+> > investigating it now.
 > 
-> hrtimers_resume()
-> {
->    /* This CPU's tick is armed to fire immediately by
->       tick_oneshot_resume(). Just need raise a softirq to program
->       the timers on all CPUs. */
->    cpu_base->clock_was_set = 1;
->    __raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-> }
 > 
-> Do you agree or disagree?
+> I haven't been able to reproduce it.
 
-Fair enough. I did not think about that. With the comment in place it
-is clear. It might be a bit more elaborate for the casual reader.
+Correction, I am able to reproduce it. The trick is I need to kick off
+the test as soon as I get a login prompt, as the gui is still coming up
+(this time the crash happened on pulseaudio). The test suite runs the
+test when it detects the login. I was trying to reproduce it manually,
+which was well after login was set up.
 
-Thanks,
+I'll try to make sure I can reproduce it consistently, or at least in a
+short number of tries. And then remove all the patches and see if I can
+still trigger it.
 
-	tglx
+-- Steve
+
 
