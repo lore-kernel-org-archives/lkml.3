@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423690Ab3FUTAn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 15:00:43 -0400
-Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:44005 "EHLO
-	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1423554Ab3FUTAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 15:00:42 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: airlied@linux.ie
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Marcin Slusarz <marcin.slusarz@gmail.com>, stable@vger.kernel.org,
-        Frederic Crozat <fcrozat@suse.com>, Ben Skeggs <bskeggs@redhat.com>,
-        dri-devel@lists.freedesktop.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH -resend] drm/nouveau: use vmalloc for pgt allocation
-Date: Fri, 21 Jun 2013 21:00:38 +0200
-Message-Id: <1371841238-25075-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.8.3.1
+	id S1423712Ab3FUTGw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 15:06:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34413 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423612Ab3FUTGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 15:06:51 -0400
+Message-ID: <51C4A447.3090807@wwwdotorg.org>
+Date: Fri, 21 Jun 2013 13:06:47 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: James Hogan <james.hogan@imgtec.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        =?UTF-8?B?77+9?= <heiko@sntech.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
+References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com> <51C22A95.4050703@wwwdotorg.org> <51C2F7BE.2060805@imgtec.com>
+In-Reply-To: <51C2F7BE.2060805@imgtec.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+On 06/20/2013 06:38 AM, James Hogan wrote:
+> On 19/06/13 23:03, Stephen Warren wrote:
+>> On 06/16/2013 04:45 AM, Linus Walleij wrote:
+>>> From: Linus Walleij <linus.walleij@linaro.org>
+>>>
+>>> It is counter-intuitive to have "0" mean disable in a boolean
+>>> manner for electronic properties of pins such as pull-up and
+>>> pull-down. Therefore, define that a pull-up/pull-down argument
+>>> of 0 to such a generic option means that the pin is
+>>> short-circuited to VDD or GROUND. Pull disablement shall be
+>>> done using PIN_CONFIG_BIAS_DISABLE.
+>>>
+>>> Cc: Heiko St�bner <heiko@sntech.de>
+>>> Cc: James Hogan <james.hogan@imgtec.com>
+>>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>>> ---
+>>>  include/linux/pinctrl/pinconf-generic.h | 13 +++++++------
+>>>  1 file changed, 7 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+>>> index d414a77..67780f5 100644
+>>> --- a/include/linux/pinctrl/pinconf-generic.h
+>>> +++ b/include/linux/pinctrl/pinconf-generic.h
+>>> @@ -36,14 +36,15 @@
+>>>   *	tristate. The argument is ignored.
+>>>   * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
+>>>   *	impedance to VDD). If the argument is != 0 pull-up is enabled,
+>>> - *	if it is 0, pull-up is disabled.
+>>> + *	if it is 0, pull-up it total, i.e. the pin is connected to VDD.
+>>>   * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with high
+>>>   *	impedance to GROUND). If the argument is != 0 pull-down is enabled,
+>>> - *	if it is 0, pull-down is disabled.
+>>> + *	if it is 0, pull-down is total, i.e. the pin is connected to GROUND.
+>>>   * @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down based
+>>>   *	on embedded knowledge of the controller, like current mux function.
+>>> - *	If the argument is != 0 pull up/down is enabled, if it is 0,
+>>> - *	the pull is disabled.
+>>> + *	If the argument is != 0 pull up/down is enabled, if it is 0, the
+>>> + *	configuration is ignored. The proper way to disable it is to use
+>>> + *	@PIN_CONFIG_BIAS_DISABLE.
+>>
+>> Why treat PULL_UP/PULL_DOWN differently from PULL_PIN_DEFAULT?
+>> PULL_PIN_DEFAULT is logically simply a macro that selects PULL_UP/DOWN
+>> based on what's "normal" for the pin's expected usage, so surely the
+>> value associated with that option should behave identically?
+> 
+> I'm not familiar with hardware that does this so I could be way wrong
+> here, but presumably if there's a default up/down, there's probably a
+> default resistance too. Does it really make sense to say
+> "pull up or down depending on whatever the pin is intended for... but
+> whichever it is must be XXX Ohm"?
+> If you know the resistance you want, you surely already know whether you
+> want it pull up or down with that resistence.
 
-Page tables on nv50 take 48kB, which can be hard to allocate in one piece.
-Let's use vmalloc.
-
-[js] It is a pain for opensuse users as they see it on a daily basis.
-Let's fix it for good. One example of a trace is as follows:
-
-firefox: page allocation failure. order:3, mode:0x2000d0
-Pid: 5068, comm: firefox Not tainted 3.7.9-3-desktop #1
-Call Trace:
-...
- [<ffffffff81114a52>] warn_alloc_failed+0x102/0x1b0
- [<ffffffff811189f3>] __alloc_pages_nodemask+0x793/0x9f0
- [<ffffffff811597f7>] kmem_getpages+0x57/0x1b0
- [<ffffffff8115a3e4>] fallback_alloc+0x174/0x270
- [<ffffffff8115abd9>] __kmalloc+0x1d9/0x240
- [<ffffffffa00ffb2b>] nouveau_vm_create+0xbb/0x160 [nouveau]
- [<ffffffffa0149110>] nouveau_drm_open+0xb0/0x140 [nouveau]
- [<ffffffffa0066a32>] drm_open+0x222/0x640 [drm]
-...
-SLAB: Unable to allocate memory on node 0 (gfp=0xd0)
-  cache: size-65536, object size: 65536, order: 4
-  node -1: slabs: 9/9, objs: 9/9, free: 0
-
-References: https://bugzilla.novell.com/show_bug.cgi?id=802347
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: stable@vger.kernel.org
-Cc: Frederic Crozat <fcrozat@suse.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: Ben Skeggs <bskeggs@redhat.com>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/gpu/drm/nouveau/core/subdev/vm/base.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
-index 77c67fc..e66fb77 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
-@@ -362,7 +362,7 @@ nouveau_vm_create(struct nouveau_vmmgr *vmm, u64 offset, u64 length,
- 	vm->fpde = offset >> (vmm->pgt_bits + 12);
- 	vm->lpde = (offset + length - 1) >> (vmm->pgt_bits + 12);
- 
--	vm->pgt  = kcalloc(vm->lpde - vm->fpde + 1, sizeof(*vm->pgt), GFP_KERNEL);
-+	vm->pgt  = vzalloc((vm->lpde - vm->fpde + 1) * sizeof(*vm->pgt));
- 	if (!vm->pgt) {
- 		kfree(vm);
- 		return -ENOMEM;
-@@ -371,7 +371,7 @@ nouveau_vm_create(struct nouveau_vmmgr *vmm, u64 offset, u64 length,
- 	ret = nouveau_mm_init(&vm->mm, mm_offset >> 12, mm_length >> 12,
- 			      block >> 12);
- 	if (ret) {
--		kfree(vm->pgt);
-+		vfree(vm->pgt);
- 		kfree(vm);
- 		return ret;
- 	}
-@@ -446,7 +446,7 @@ nouveau_vm_del(struct nouveau_vm *vm)
- 	}
- 
- 	nouveau_mm_fini(&vm->mm);
--	kfree(vm->pgt);
-+	vfree(vm->pgt);
- 	kfree(vm);
- }
- 
--- 
-1.8.3.1
-
+IIRC the idea of the PULL_PIN_DEFAULT was to avoid having to specify
+UP/DOWN for each pin/group, but could just say "default", which would
+then reduce the number of pinctrl mapping table entries or pinctrl DT
+property entries. I don't think this would have any interaction with
+setting the resistance; it's entirely plausible that you'd want the same
+explicit, or same default, resistance, for all pins, irrespective of
+pull-up vs. down.
