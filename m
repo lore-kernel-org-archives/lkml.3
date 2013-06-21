@@ -1,83 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab3FUJrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 05:47:43 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42090 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab3FUJrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 05:47:40 -0400
-Date: Fri, 21 Jun 2013 10:47:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Phil Carmody <phil.carmody@partner.samsung.com>
-Cc: "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, alsa-devel@alsa-project.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Vinod Koul'" <vinod.koul@intel.com>, "'Dan Williams'" <djbw@fb.co>
-Message-ID: <20130621094704.GJ27646@sirena.org.uk>
-References: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
- <20130619174047.GB1403@sirena.org.uk>
- <3697657.tZFV7pR81Q@flatron>
- <20130619192211.GH1403@sirena.org.uk>
- <001201ce6d98$03d9b920$0b8d2b60$%carmody@partner.samsung.com>
- <20130620103532.GA27646@sirena.org.uk>
- <002501ce6da7$655924b0$300b6e10$%carmody@partner.samsung.com>
+	id S1753288Ab3FUJvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 05:51:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750824Ab3FUJvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 05:51:44 -0400
+Message-ID: <51C42221.3030206@redhat.com>
+Date: Fri, 21 Jun 2013 05:51:29 -0400
+From: Daniel J Walsh <dwalsh@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hk6Zb6cduJ+I0Tmj"
-Content-Disposition: inline
-In-Reply-To: <002501ce6da7$655924b0$300b6e10$%carmody@partner.samsung.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH 00/11] ARM: s3c64xx: Let amba-pl08x driver handle DMA
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Gao feng <gaofeng@cn.fujitsu.com>
+CC: Eric Paris <eparis@redhat.com>, containers@lists.linux-foundation.org,
+        serge.hallyn@ubuntu.com, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, ebiederm@xmission.com,
+        matthltc@linux.vnet.ibm.com, Aristeu Rozanski <aris@redhat.com>
+Subject: Re: [Part1 PATCH 00/22] Add namespace support for audit
+References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com> <20130619204927.GJ3212@redhat.com> <1371675095.16587.5.camel@dhcp137-13.rdu.redhat.com> <51C270AF.1080902@cn.fujitsu.com> <1371733353.16587.19.camel@dhcp137-13.rdu.redhat.com> <51C3CCFB.4030901@cn.fujitsu.com>
+In-Reply-To: <51C3CCFB.4030901@cn.fujitsu.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
---hk6Zb6cduJ+I0Tmj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Jun 20, 2013 at 02:14:53PM +0300, Phil Carmody wrote:
-
-> With my language-lawyer hat on, I'd suggest ``(get_signal)'' to prevent t=
-he
-> macro expansion:
-
-Right, which the patch I posted in the mail was doing IIRC.
-
-> However, it's more tempting (i.e. sensible) to just rename the=20
-> one with the weaker claim to the name.
-
-I sent a patch for that which Vinod has applied.
-
---hk6Zb6cduJ+I0Tmj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
+On 06/20/2013 11:48 PM, Gao feng wrote:
+> On 06/20/2013 09:02 PM, Eric Paris wrote:
+>> On Thu, 2013-06-20 at 11:02 +0800, Gao feng wrote:
+>>> On 06/20/2013 04:51 AM, Eric Paris wrote:
+>>>> On Wed, 2013-06-19 at 16:49 -0400, Aristeu Rozanski wrote:
+>>>>> On Wed, Jun 19, 2013 at 09:53:32AM +0800, Gao feng wrote:
+>>>>>> This patchset is first part of namespace support for audit. in
+>>>>>> this patchset, the mainly resources of audit system have been
+>>>>>> isolated. the audit filter, rules havn't been isolated now. It
+>>>>>> will be implemented in Part2. We finished the isolation of user
+>>>>>> audit message in this patchset.
+>>>>>> 
+>>>>>> I choose to assign audit to the user namespace. Right now,there
+>>>>>> are six kinds of namespaces, such as net, mount, ipc, pid, uts
+>>>>>> and user. the first five namespaces have special usage. the audit
+>>>>>> isn't suitable to belong to these five namespaces, And since the
+>>>>>> flag of system call clone is in short supply, we can't provide a
+>>>>>> new flag such as CLONE_NEWAUDIT to enable audit namespace
+>>>>>> separately. so the user namespace may be the best choice.
+>>>>> 
+>>>>> I thought it was said on the last submission that to tie userns
+>>>>> and audit namespace would be a bad idea?
+>>>> 
+>>>> I consider it a non-starter.  unpriv users are allowed to launch
+>>>> their own user namespace.  The whole point of audit is to have only a
+>>>> priv user be allowed to make changes.  If you tied audit namespace to
+>>>> user namespace you grant an unpriv user the ability to modify audit.
+>>>> 
+>>> 
+>>> I understand your views.
+>>> 
+>>> But ven the unpriv user are allowed to make changes, they can do no
+>>> harm. they can only make changes on the audit namespace they
+>>> created.they can only communicate with the audit namespace they
+>>> created.
+>> 
+>> Imagine I set up my machine to audit all user access to super secret 
+>> information.  With your patch set all an malicious user has to do is 
+>> create a new user namespace.  Now when he accesses the super secret 
+>> information it will be logged inside the user namespace he created.  So 
+>> he can just dump those logs in the trash.
+>> 
+> 
+> No, my v1 patchset only log the user audit message(which generated through 
+> auditctl -m "xxx") inside user namespace.
+> 
+> I agree with that we should not simply log audit message in the child audit
+> namespace. for some global resource related audit messages, they should be
+> logged in init audit namespace too.
+> 
+>> I believe that each audit namespace should require priv 
+>> (CAP_AUDIT_CONTROL) in the user namespace that created the current audit 
+>> namespace.  So lets say the machine boots and we are in the init_user and
+>> init_audit namespace.  Creating a new audit namespace should require 
+>> CAP_AUDIT_CONTROL in the init_user namespace.  If instead we spawned a 
+>> new user namespace userns1 and try to create a new audit namespace, we 
+>> should STILL check for CAP_AUDIT_CONTROL in the init_user namespace.
+>> 
+> 
+> Ok, I can add this permission check in next version, though this seems a 
+> litter strictness when we make sure child audit namespace won't fool the 
+> init audit namespace,
+> 
+>> Assuming we've spawned auditns1 in userns1 and want to spawn auditns2 it 
+>> should require CAP_AUDIT_CONTROL in userns1.  So now you only have 
+>> permission to change your audit config (create a new audit namespace) if 
+>> you already had permission to change your current audit config.
+>> 
+>> Now how to handle coding this...
+>> 
+>> When the kernel receives an audit message on the netlink socket it can 
+>> always check the current->[whatever] to figure out which audit namespace 
+>> it came from.  Then it can be processed accordingly...
+> 
+> Yes, this situation is easy to handle, since we are in process context... 
+> but in some situations, we are not running in process context... as I 
+> mentioned, audit messages generated by netfilter rules. current process is
+> untrustable. we can only get meaningful net namespace in this situation. 
+> Actually, it's meaningful to send net related audit messages to the user 
+> namespace which creates this net namespace.
+> 
+> 
+>> 
+>> Sending messages to the userspace auditd is a little more tricky.  We 
+>> need to somehow map the audit namespace to a socket connected to auditd 
+>> in userspace.  I'd imagine we'd have to either have per auditns backlog 
+>> queues and run one kauditd per audit namespace, or we'd have to tag the 
+>> skb's with the intended namespace somehow and then find the right socket 
+>> in kauditd.  Either way it doesn't seem too onerous (although I admit, I 
+>> don't know how to code the per namespace kauditd right offhand)
+>> 
+> 
+> As I said in "[PATCH 04/22] netlink: Add compare function for
+> netlink_table", netlink and socket are private resources of net namespace.
+> socket has no idea which audit namespace it belongs to,unless we add a
+> field to mark this. Through I think we can archive audit namespace in your
+> way,but maybe we should hack into the net namespace. I don't think the
+> network guys will like it.
+> 
+> There is one more thing we have to do if we don't tie audit namespace to
+> user namespace. we have to implement the audit proc
+> file(/proc/<pid>/ns/audit) and the clone/unshare/setns parts.
+> 
+> I still this my way is the simplest and can satisfy your requirement.
+> 
+> -- Linux-audit mailing list Linux-audit@redhat.com 
+> https://www.redhat.com/mailman/listinfo/linux-audit
+> 
+Will I be able to use the audit namespace without the user namespace.  I would
+prefer to be able to use the audit namespace long before I am willing to take
+a chance with the User Namespace for things like light weight virtualization
+and securing processes with MAC.
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJRxCEVAAoJELSic+t+oim9MF4P/j3hmWhKx7+3QMiWNLdHrvjD
-Z9E0j7GVEIirmknL8PlmwKFx971klj5tifU4U0xB0WZ9oQ7DTiTyiOprjLn4J46L
-7q2P0yJDjh4d4OnnK/uzkpGsqeOW1Umcnt+4bWfOp3Xv4bF/Nu8ZLYxn6ZTHhxS3
-KsnzaXVg9pazrS0apfzR8MxYO1xdML6jRSFeIjutY9DV0YieAgjVqfWbMYpYJ2JR
-9eHGUWeKUfDJQ8aBCzJ7XAKibbv7U9PvAVkrwWzFGD1OsCn8P6WT8bgsfza/FG03
-lUZemHlDV/RjNA/x0OaFKpSs1A2Ags9wTXe4cLWFhysr5n8H8CptDBPFgpsFJEdx
-6p8VcVugYl0nPw9oPhVQTjITNFQ2J/Qxu19NLME/EjV+UccJSCLFJub3CJzhycKj
-1hNEvqZnUSzDiKGd4V/uS8AbEtu0q1sIwSCRunJ//i6E/o/1LmXZnk6Ro/MXG93S
-my63lu/ZSA8c0DaHThifvA10+u5Sj7sCXZrr7kxtTR9lrEDcbueM6rT+nAoIL+JF
-7aqdoAKemYxG1I2VJNqwiXigbpOnpkZw0dmOMKGp9l06noeHrpW8CyjS24VIgE6w
-C251BOuUa5acjUwxqDJOcnscxMBZx5vyOUWgEIs5o+kwmor9Un98i/AUifV02xwV
-aakiqqM228fOgObR+J7p
-=2CYh
+iEYEARECAAYFAlHEIiEACgkQrlYvE4MpobP8awCcD4xO34I4IDD+qeHQLPFtWM0q
+vnMAn1PTatEUfPkeQG1+dG4ULKpOLCoB
+=nrRz
 -----END PGP SIGNATURE-----
-
---hk6Zb6cduJ+I0Tmj--
