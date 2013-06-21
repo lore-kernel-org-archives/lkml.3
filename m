@@ -1,135 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422843Ab3FUCF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 22:05:29 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:3450 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965573Ab3FUCF2 (ORCPT
+	id S1423024Ab3FUCRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 22:17:18 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:50111 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422881Ab3FUCRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 22:05:28 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C3B4B4.90603@asianux.com>
-Date: Fri, 21 Jun 2013 10:04:36 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 20 Jun 2013 22:17:14 -0400
+Message-ID: <51C3B76E.1090300@linaro.org>
+Date: Fri, 21 Jun 2013 10:16:14 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/itimer.c: beautify code, not need check 'value',
- so save one instruction, simpler and easier for readers.
-References: <51C2E6F9.80107@asianux.com> <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Rob Landley <rob@landley.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, linux-acpi@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH] Documentation / cpu hotplug: remove outdated description
+ for MADT entries
+References: <1371718482-452-1-git-send-email-hanjun.guo@linaro.org> <3504197.mRYUAZnZ9p@vostro.rjw.lan>
+In-Reply-To: <3504197.mRYUAZnZ9p@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Firstly, I guess:
-
-  since you can spend your time resource to reply, that means "you also
-think this patch is valuable, but the comments need improving"
-
-Is it correct ?
-
-
-On 06/20/2013 09:42 PM, Thomas Gleixner wrote:
-> On Thu, 20 Jun 2013, Chen Gang wrote:
+On 2013-6-21 3:52, Rafael J. Wysocki wrote:
+> On Thursday, June 20, 2013 04:54:42 PM Hanjun Guo wrote:
+>> More than 256 entries in ACPI MADT is supported from ACPI 3.0 Specification,
+>> So the outdated description for MADT entries should be removed.
 > 
-> kernel/itimer.c: beautify code, not need check 'value', so 
->           save one instruction, simpler and easier for readers.
+> Well, it kind of is still valid for systems pre-dating ACPI 3.0, isn't it?
+
+Yes, it is.
+
 > 
-> That's an essay and not a proper subject line for a patch. 
+> So perhaps instead of simply removing that information it would be better to
+> rephrase it?
+
+Good idea, I will update my patch and send out soon.
+
+Thanks
+Hanjun
+
 > 
-> See Documentation/SubmittingPatches and look at the other patch
-> subject lines in git log.
+> Thanks,
+> Rafael
 > 
-
-How about "kernel/itimer.c: remove the checking 'value' statement".
-
-Or please provide your samples for the subject.
-
-
->> > Since copy_to_user() will check 'value', we do not need check it outside
->> > again,  so can save one comparing instruction at least.
-> copy_to_user() does not check value, it will fault due to a NULL
-> pointer dereference and execute the exception fixup. 
 > 
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>  Documentation/cpu-hotplug.txt |    3 ---
+>>  1 file changed, 3 deletions(-)
+>>
+>> diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
+>> index 9f40135..2e36e40 100644
+>> --- a/Documentation/cpu-hotplug.txt
+>> +++ b/Documentation/cpu-hotplug.txt
+>> @@ -370,9 +370,6 @@ A: There is no clear spec defined way from ACPI that can give us that
+>>     CPUs in MADT as hotpluggable CPUS.  In the case there are no disabled CPUS
+>>     we assume 1/2 the number of CPUs currently present can be hotplugged.
+>>  
+>> -   Caveat: Today's ACPI MADT can only provide 256 entries since the apicid field
+>> -   in MADT is only 8 bits.
+>> -
+>>  User Space Notification
+>>  
+>>  Hotplug support for devices is common in Linux today. Its being used today to
+>>
 
-Change it to:
-
-Since copy_to_user() will process "bad address" internally, we need not
-check 'value' again, then can save one comparing instruction at least.
-
-
-> That's a massive difference which wants to be documented and argued
-> why it's ok to do so.
-> 
-> Aside of that, please line break the changelog lines around 78
-> characters.
-> 
-
-I use Thunderbird mail client, enable world wrap, is it OK ?
-
-
->> > Also can let code simpler and easier for readers: if checking parameter
->> > 'value', it will easily lead readers to think about why not return
->> > -EINVAL instead of -EFAULT, when checking parameter failed.
-> So you are seriously claiming, that the check for !value makes people
-> think that the return value should be -EINVAL?
-> 
-> That's hillarious.
-> 
-
-That seems not a quite polite word, is it ?  ;-)
-
-
-> Can you please start to think about, why YOU thought that returning
-> -EINVAL is the proper return value for that case?
-> 
-
-If you check the parameter, and find it invalid, and want to return with
-failure, every one can assume you want to return -EINVAL.
-
-Hmm... in some of embedded system which NOMMU, 'NULL' does not means
-"bad address" (at least can write).
-
-
-> Simply because in your rush to submit patches according to your self
-> defined contribution plan, you fail to sit down and carefully study
-> the code and the according documentation (man page). Instead of that
-> you see some random snippet of code which looks wrong to you and you
-> send out patches without care. After someone points out your failure
-> you claim that the code is misleading to readers.
-> 
-> The code is not misleading to careful readers, it's only misleading to
-> sloppy readers.
-> 
-
-Do you mean this patch can not make the code simpler and clearer ?
-
-I guess, that is not your meaning, so how about this improving:
-
-"after remove the code, also can let it simpler and clearer for readers"
-
-Is it OK ?
-
-> And I'm neither accepting sloppy patches nor am I accepting sloppy
-> changelogs which make false claims.
-> 
-
-That is one of the reason for why we need reviewer, the work flow need
-be "providing patch --> review --> apply".
-
-
-BTW: Can you guess how many my patches have been applied by upstream,
-since this year ?  That seems most of appliers are very polite, I wish
-that will include you. ;-)
-
-
-Thanks.
--- 
-Chen Gang
-
-Asianux Corporation
