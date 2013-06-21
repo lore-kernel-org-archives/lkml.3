@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423667Ab3FUS7y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 14:59:54 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:35718 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423424Ab3FUS7w (ORCPT
+	id S1423720Ab3FUTAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 15:00:48 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:59517 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423554Ab3FUTAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 14:59:52 -0400
-Message-ID: <51C4A2A1.8060801@suse.cz>
-Date: Fri, 21 Jun 2013 20:59:45 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Fri, 21 Jun 2013 15:00:44 -0400
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, akpm@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, Marcin Slusarz <marcin.slusarz@gmail.com>,
-        stable@vger.kernel.org, Frederic Crozat <fcrozat@suse.com>
-Subject: Re: [PATCH -resend] drm/nouveau: use vmalloc for pgt allocation
-References: <1371841034-24893-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1371841034-24893-1-git-send-email-jslaby@suse.cz>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130621184434.GC26001@kroah.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
+	<CAE9FiQVsNk0rjde8YQd_Bxvo8GFcpDoTeVRgvOMA8DVwhYO4kw@mail.gmail.com>
+	<20130621184434.GC26001@kroah.com>
+Date: Fri, 21 Jun 2013 12:00:44 -0700
+X-Google-Sender-Auth: ZLYzvAp2s4cC_s1Xacax9bsZkJA
+Message-ID: <CAE9FiQUfL9695iDY6zMwA5j6OGL8edotXwfSNBHsHC54qqEAGQ@mail.gmail.com>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
+        Mike Travis <travis@sgi.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scratch this one. It's missing CCs.
+On Fri, Jun 21, 2013 at 11:44 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Fri, Jun 21, 2013 at 11:36:21AM -0700, Yinghai Lu wrote:
+>> On Fri, Jun 21, 2013 at 9:25 AM, Nathan Zimmer <nzimmer@sgi.com> wrote:
+>> > This rfc patch set delays initializing large sections of memory until we have
+>> > started cpus.  This has the effect of reducing startup times on large memory
+>> > systems.  On 16TB it can take over an hour to boot and most of that time
+>> > is spent initializing memory.
+>>
+>> One hour on system with 16T ram? BIOS or OS?
+>>
+>> I use wall clock to check bootime on one system with 3T and 16 pcie cards,
+>> Linus only takes about 3m and 30 seconds from bootloader.
+>>
+>> wonder if you boot delay is with so many cpu get onlined in serialized mode.
+>>
+>> so can you try boot your system with "maxcpus=128" to get the boot time with
+>> wall clock ?
+>
+> Why use the "wall clock" when we have the wonderful bootchart tools and
+> scripts that do this all for you, and can tell you exactly what part of
+> the kernel is taking what time, to help with fixing issues like this?
 
-On 06/21/2013 08:57 PM, Jiri Slaby wrote:
-> From: Marcin Slusarz <marcin.slusarz@gmail.com>
-> 
-> Page tables on nv50 take 48kB, which can be hard to allocate in one piece.
-> Let's use vmalloc.
+bootchart is not completed.
 
+printk timestamp come after mem get initialized.
+....
+[    0.004000] tsc: Fast TSC calibration using PIT
 
--- 
-js
-suse labs
+before that stamp are all 0.
+
+Yinghai
