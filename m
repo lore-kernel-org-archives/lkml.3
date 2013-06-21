@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422974Ab3FUOUF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:20:05 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:34357 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422901Ab3FUOUC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:20:02 -0400
+	id S1422921Ab3FUOVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:21:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53048 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161356Ab3FUOVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 10:21:12 -0400
+Date: Fri, 21 Jun 2013 16:21:01 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130621142101.GG22006@pd.tnic>
+References: <20130620170124.GA19877@pd.tnic>
+ <20130620171210.GA26593@srcf.ucam.org>
+ <20130620180808.GB19877@pd.tnic>
+ <20130620181015.GA27833@srcf.ucam.org>
+ <20130620181445.GA791@pd.tnic>
+ <20130620181731.GA27960@srcf.ucam.org>
+ <20130620184736.GC19877@pd.tnic>
+ <51C383AC.4060706@zytor.com>
+ <20130621072356.GA22006@pd.tnic>
+ <ca8f8134-24d9-4f96-8876-e24892efc849@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <201306211600.04986.arnd@arndb.de>
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
-	<51C427E1.2000800@ti.com>
-	<CAD=GYpb54bitcg0gnfhzxbvig3etRPY6fs=FOQu5nYkio5NRZw@mail.gmail.com>
-	<201306211600.04986.arnd@arndb.de>
-Date: Fri, 21 Jun 2013 09:20:01 -0500
-Message-ID: <CAD=GYpZ_5Lp1La=f+2BQfmuj+sc3FgygZRD4gfj4JGGZ0Do=_Q@mail.gmail.com>
-Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
-From: Joel A Fernandes <agnel.joel@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Sekhar Nori <nsekhar@ti.com>, Joel A Fernandes <joelagnel@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <ca8f8134-24d9-4f96-8876-e24892efc849@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 9:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 21 June 2013, Joel A Fernandes wrote:
->> >> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> >> index b1c66a4..7d58cd9 100644
->> >> --- a/arch/arm/Kconfig
->> >> +++ b/arch/arm/Kconfig
->> >> @@ -841,6 +841,7 @@ config ARCH_DAVINCI
->> >>       select HAVE_IDE
->> >>       select NEED_MACH_GPIO_H
->> >>       select TI_PRIV_EDMA
->> >> +     select DMADEVICES
->> >
->> > It is generally a bad idea to force select on something that can be
->> > enabled using menuconfig. Unless used carefully, select causes "unmet
->> > direct dependency" warnings which folks are already fighting hard to
->> > fix. This leads to what Russell referred in the past as "select madness" [1]
->>
->> Are you concerned with bloat issues? I know your point of view but the idea
->> was to build these options by default for these platforms even though
->> in some cases
->> it might not be used. I have seen folks including myself select the wrong
->> option. Having the build system automatically select the correct option for the
->> most common cases can be very useful I feel and not require manual
->> configuration.
->
-> For defaults, you should use the defconfig, not 'select' in Kconfig.
->
-> A lot of the 'select' statements are actually wrong because they
-> do not take dependencies into account where A selects B but not C,
-> and B depends on C, which leads to broken builds when C is disabled
-> by a user (or randconfig).
+On Fri, Jun 21, 2013 at 03:05:30AM -0700, H. Peter Anvin wrote:
+> If you cap it you are basically imposing a constraint on the firmware
+> and may not run properly (or at least have to turn off EFI runtime
+> calls with all that implies.)
 
-I haven't come across this problem but- are you saying there is a
-shortcoming in Kbuild/Kconfig that selects an option even if its
-dependency is not met?
+I don't want to cap EFI just for the fun of it but rather set a limit
+so that the next one who wants a chunk of the virtual address space can
+have a reliable limit from where she/he can start. Otherwise we won't
+know where EFI reliably ends...
 
-The problem with defconfig is also too many options I feel for a common case.
-CONFIG_DMADEVICES=y
-CONFIG_TI_EDMA=y
+> It might be good to have a sanity check but it needs to be pretty
+> generous.
 
-Most if not all future OMAPs from will use EDMA. Why not we can be
-explicit about it and just built it in anyway. If ARCH_OMAP and
-DMADEVICES are selected, then we can just build EDMA in by default.
+64 Gb generous enough?
 
-I agree maybe the option can be dropped from Davinci but I suggest
-let's keep it for OMAP. Is that ok?
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks,
-Joel
+Sent from a fat crate under my desk. Formatting is fine.
+--
