@@ -1,239 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423220Ab3FUPPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 11:15:30 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59275 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423118Ab3FUPP2 (ORCPT
+	id S1423256Ab3FUPRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 11:17:42 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:47187 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423118Ab3FUPRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 11:15:28 -0400
-Date: Fri, 21 Jun 2013 16:15:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Steve Twiss <stwiss.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20130621151523.GA27646@sirena.org.uk>
-References: <201306201454.r5KEsAAS010978@swsrvapps-01.diasemi.com>
+	Fri, 21 Jun 2013 11:17:40 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91: fix at91_extern_irq usage for non-dt boards
+Date: Fri, 21 Jun 2013 17:17:36 +0200
+Message-ID: <1371827856-19898-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="apg+fY3UKMMABzWO"
-Content-Disposition: inline
-In-Reply-To: <201306201454.r5KEsAAS010978@swsrvapps-01.diasemi.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC V1] COMMIT 1: DA9210 driver files
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
---apg+fY3UKMMABzWO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Since 4b68520dc0ec96153bc0d87bca5ffba508edfcf
+ARM: at91: add AIC5 support
 
-On Thu, Jun 20, 2013 at 02:42:03PM +0100, Steve Twiss wrote:
+we allocate the at91_extern_irq.
 
-> @@ -293,6 +293,13 @@ config REGULATOR_LP8788
->  	help
->  	  This driver supports LP8788 voltage regulator chip.
-> =20
-> +config REGULATOR_DA9210
-> +	bool "Dialog Semiconductor DA9210 Regulator"
-> +	depends on I2C=3Dy
-> +	select REGMAP_I2C
-> +	help
-> +	  Support for the Dialog Semiconductor DA9210 chip.
-> +
->  config REGULATOR_PCF50633
+This patch makes it static and stores the non-dt extern irq in the soc
+structure. It is then possible to use a at91_get_extern_irq() function
+to get the value for outside of the irq driver. It is useful for passing
+its value to at91_aic_init().
 
-This file ought to be kept sorted though it seems that's not been
-happening, and I'm not seeing any reason why this can't be a tristate.
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+[nicolas.ferre@atmel.com: rework commit message]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/at91rm9200.c  | 8 ++++----
+ arch/arm/mach-at91/at91sam9260.c | 4 ++--
+ arch/arm/mach-at91/at91sam9261.c | 4 ++--
+ arch/arm/mach-at91/at91sam9263.c | 2 +-
+ arch/arm/mach-at91/at91sam9g45.c | 2 +-
+ arch/arm/mach-at91/at91sam9rl.c  | 2 +-
+ arch/arm/mach-at91/at91x40.c     | 7 +++----
+ arch/arm/mach-at91/generic.h     | 2 +-
+ arch/arm/mach-at91/irq.c         | 9 ++++++++-
+ arch/arm/mach-at91/pm.c          | 2 +-
+ arch/arm/mach-at91/setup.c       | 2 +-
+ arch/arm/mach-at91/soc.h         | 1 +
+ 12 files changed, 26 insertions(+), 19 deletions(-)
 
-> +#define DRIVER_NAME	"da9210"
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index d193a40..9eb5743 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -332,10 +332,6 @@ static void __init at91rm9200_initialize(void)
+ {
+ 	arm_pm_idle = at91rm9200_idle;
+ 	arm_pm_restart = at91rm9200_restart;
+-	at91_extern_irq = (1 << AT91RM9200_ID_IRQ0) | (1 << AT91RM9200_ID_IRQ1)
+-			| (1 << AT91RM9200_ID_IRQ2) | (1 << AT91RM9200_ID_IRQ3)
+-			| (1 << AT91RM9200_ID_IRQ4) | (1 << AT91RM9200_ID_IRQ5)
+-			| (1 << AT91RM9200_ID_IRQ6);
+ 
+ 	/* Initialize GPIO subsystem */
+ 	at91_gpio_init(at91rm9200_gpio,
+@@ -388,6 +384,10 @@ static unsigned int at91rm9200_default_irq_priority[NR_AIC_IRQS] __initdata = {
+ AT91_SOC_START(at91rm9200)
+ 	.map_io = at91rm9200_map_io,
+ 	.default_irq_priority = at91rm9200_default_irq_priority,
++	.extern_irq = (1 << AT91RM9200_ID_IRQ0) | (1 << AT91RM9200_ID_IRQ1)
++		    | (1 << AT91RM9200_ID_IRQ2) | (1 << AT91RM9200_ID_IRQ3)
++		    | (1 << AT91RM9200_ID_IRQ4) | (1 << AT91RM9200_ID_IRQ5)
++		    | (1 << AT91RM9200_ID_IRQ6),
+ 	.ioremap_registers = at91rm9200_ioremap_registers,
+ 	.register_clocks = at91rm9200_register_clocks,
+ 	.init = at91rm9200_initialize,
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index a8ce245..5de6074 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -348,8 +348,6 @@ static void __init at91sam9260_initialize(void)
+ {
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
+-	at91_extern_irq = (1 << AT91SAM9260_ID_IRQ0) | (1 << AT91SAM9260_ID_IRQ1)
+-			| (1 << AT91SAM9260_ID_IRQ2);
+ 
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9260_gpio, 3);
+@@ -400,6 +398,8 @@ static unsigned int at91sam9260_default_irq_priority[NR_AIC_IRQS] __initdata = {
+ AT91_SOC_START(at91sam9260)
+ 	.map_io = at91sam9260_map_io,
+ 	.default_irq_priority = at91sam9260_default_irq_priority,
++	.extern_irq = (1 << AT91SAM9260_ID_IRQ0) | (1 << AT91SAM9260_ID_IRQ1)
++		    | (1 << AT91SAM9260_ID_IRQ2),
+ 	.ioremap_registers = at91sam9260_ioremap_registers,
+ 	.register_clocks = at91sam9260_register_clocks,
+ 	.init = at91sam9260_initialize,
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 25efb5a..0e07932 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -290,8 +290,6 @@ static void __init at91sam9261_initialize(void)
+ {
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
+-	at91_extern_irq = (1 << AT91SAM9261_ID_IRQ0) | (1 << AT91SAM9261_ID_IRQ1)
+-			| (1 << AT91SAM9261_ID_IRQ2);
+ 
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9261_gpio, 3);
+@@ -342,6 +340,8 @@ static unsigned int at91sam9261_default_irq_priority[NR_AIC_IRQS] __initdata = {
+ AT91_SOC_START(at91sam9261)
+ 	.map_io = at91sam9261_map_io,
+ 	.default_irq_priority = at91sam9261_default_irq_priority,
++	.extern_irq = (1 << AT91SAM9261_ID_IRQ0) | (1 << AT91SAM9261_ID_IRQ1)
++		    | (1 << AT91SAM9261_ID_IRQ2),
+ 	.ioremap_registers = at91sam9261_ioremap_registers,
+ 	.register_clocks = at91sam9261_register_clocks,
+ 	.init = at91sam9261_initialize,
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index f44ffd2..6ce7d18 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -327,7 +327,6 @@ static void __init at91sam9263_initialize(void)
+ {
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
+-	at91_extern_irq = (1 << AT91SAM9263_ID_IRQ0) | (1 << AT91SAM9263_ID_IRQ1);
+ 
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9263_gpio, 5);
+@@ -378,6 +377,7 @@ static unsigned int at91sam9263_default_irq_priority[NR_AIC_IRQS] __initdata = {
+ AT91_SOC_START(at91sam9263)
+ 	.map_io = at91sam9263_map_io,
+ 	.default_irq_priority = at91sam9263_default_irq_priority,
++	.extern_irq = (1 << AT91SAM9263_ID_IRQ0) | (1 << AT91SAM9263_ID_IRQ1),
+ 	.ioremap_registers = at91sam9263_ioremap_registers,
+ 	.register_clocks = at91sam9263_register_clocks,
+ 	.init = at91sam9263_initialize,
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 8b7fce0..fda5026 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -374,7 +374,6 @@ static void __init at91sam9g45_initialize(void)
+ {
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9g45_restart;
+-	at91_extern_irq = (1 << AT91SAM9G45_ID_IRQ0);
+ 
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9g45_gpio, 5);
+@@ -425,6 +424,7 @@ static unsigned int at91sam9g45_default_irq_priority[NR_AIC_IRQS] __initdata = {
+ AT91_SOC_START(at91sam9g45)
+ 	.map_io = at91sam9g45_map_io,
+ 	.default_irq_priority = at91sam9g45_default_irq_priority,
++	.extern_irq = (1 << AT91SAM9G45_ID_IRQ0),
+ 	.ioremap_registers = at91sam9g45_ioremap_registers,
+ 	.register_clocks = at91sam9g45_register_clocks,
+ 	.init = at91sam9g45_initialize,
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index f77fae5..d4ec0d9 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -293,7 +293,6 @@ static void __init at91sam9rl_initialize(void)
+ {
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
+-	at91_extern_irq = (1 << AT91SAM9RL_ID_IRQ0);
+ 
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9rl_gpio, 4);
+@@ -344,6 +343,7 @@ static unsigned int at91sam9rl_default_irq_priority[NR_AIC_IRQS] __initdata = {
+ AT91_SOC_START(at91sam9rl)
+ 	.map_io = at91sam9rl_map_io,
+ 	.default_irq_priority = at91sam9rl_default_irq_priority,
++	.extern_irq = (1 << AT91SAM9RL_ID_IRQ0),
+ 	.ioremap_registers = at91sam9rl_ioremap_registers,
+ 	.register_clocks = at91sam9rl_register_clocks,
+ 	.init = at91sam9rl_initialize,
+diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
+index 19ca793..bad94b8 100644
+--- a/arch/arm/mach-at91/at91x40.c
++++ b/arch/arm/mach-at91/at91x40.c
+@@ -55,8 +55,6 @@ static void at91x40_idle(void)
+ void __init at91x40_initialize(unsigned long main_clock)
+ {
+ 	arm_pm_idle = at91x40_idle;
+-	at91_extern_irq = (1 << AT91X40_ID_IRQ0) | (1 << AT91X40_ID_IRQ1)
+-			| (1 << AT91X40_ID_IRQ2);
+ }
+ 
+ /*
+@@ -86,9 +84,10 @@ static unsigned int at91x40_default_irq_priority[NR_AIC_IRQS] __initdata = {
+ 
+ void __init at91x40_init_interrupts(unsigned int priority[NR_AIC_IRQS])
+ {
++	u32  extern_irq = (1 << AT91X40_ID_IRQ0) | (1 << AT91X40_ID_IRQ1)
++			| (1 << AT91X40_ID_IRQ2);
+ 	if (!priority)
+ 		priority = at91x40_default_irq_priority;
+ 
+-	at91_aic_init(priority, at91_extern_irq);
++	at91_aic_init(priority, extern_irq);
+ }
+-
+diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+index 78ab065..f6de36a 100644
+--- a/arch/arm/mach-at91/generic.h
++++ b/arch/arm/mach-at91/generic.h
+@@ -85,4 +85,4 @@ extern void __init at91_gpio_irq_setup(void);
+ extern int  __init at91_gpio_of_irq_setup(struct device_node *node,
+ 					  struct device_node *parent);
+ 
+-extern int at91_extern_irq;
++extern u32 at91_get_extern_irq(void);
+diff --git a/arch/arm/mach-at91/irq.c b/arch/arm/mach-at91/irq.c
+index e0ca591..3d192c5 100644
+--- a/arch/arm/mach-at91/irq.c
++++ b/arch/arm/mach-at91/irq.c
+@@ -232,7 +232,14 @@ static void __maybe_unused at91_aic5_eoi(struct irq_data *d)
+ 	at91_aic_write(AT91_AIC5_EOICR, 0);
+ }
+ 
+-unsigned long *at91_extern_irq;
++static unsigned long *at91_extern_irq;
++
++u32 at91_get_extern_irq(void)
++{
++	if (!at91_extern_irq)
++		return 0;
++	return *at91_extern_irq;
++}
+ 
+ #define is_extern_irq(hwirq) test_bit(hwirq, at91_extern_irq)
+ 
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 530db30..15afb5d 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -212,7 +212,7 @@ static int at91_pm_enter(suspend_state_t state)
+ 			(at91_pmc_read(AT91_PMC_PCSR)
+ 					| (1 << AT91_ID_FIQ)
+ 					| (1 << AT91_ID_SYS)
+-					| (at91_extern_irq))
++					| (at91_get_extern_irq()))
+ 				& at91_aic_read(AT91_AIC_IMR),
+ 			state);
+ 
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 942dc00..b17fbcf 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -48,7 +48,7 @@ void __init at91_init_irq_default(void)
+ void __init at91_init_interrupts(unsigned int *priority)
+ {
+ 	/* Initialize the AIC interrupt controller */
+-	at91_aic_init(priority, at91_extern_irq);
++	at91_aic_init(priority, at91_boot_soc.extern_irq);
+ 
+ 	/* Enable GPIO interrupts */
+ 	at91_gpio_irq_setup();
+diff --git a/arch/arm/mach-at91/soc.h b/arch/arm/mach-at91/soc.h
+index 43a225f..a1e1482 100644
+--- a/arch/arm/mach-at91/soc.h
++++ b/arch/arm/mach-at91/soc.h
+@@ -6,6 +6,7 @@
+ 
+ struct at91_init_soc {
+ 	int builtin;
++	u32 extern_irq;
+ 	unsigned int *default_irq_priority;
+ 	void (*map_io)(void);
+ 	void (*ioremap_registers)(void);
+-- 
+1.8.2.2
 
-Why?
-
-> +struct da9210 {
-> +	struct i2c_client *i2c;
-> +	struct device *dev;
-> +	struct mutex io_mutex;
-
-Why do you need an I/O lock?
-
-> +static int da9210_enable(struct regulator_dev *rdev);
-> +static int da9210_set_voltage(struct regulator_dev *rdev, int min_uV,
-> +			      int max_uV, unsigned *selector);
-> +static int da9210_get_voltage(struct regulator_dev *rdev);
-> +static int da9210_set_current_limit(struct regulator_dev *rdev, int min_=
-uA,
-> +				    int max_uA);
-> +static int da9210_get_current_limit(struct regulator_dev *rdev);
-> +
-> +static struct regulator_ops da9210_buck_ops =3D {
-> +	.enable =3D da9210_enable,
-> +	.disable =3D regulator_disable_regmap,
-> +	.is_enabled =3D regulator_is_enabled_regmap,
-> +	.set_voltage =3D da9210_set_voltage,
-> +	.get_voltage =3D da9210_get_voltage,
-> +	.list_voltage =3D regulator_list_voltage_linear,
-> +	.set_current_limit =3D da9210_set_current_limit,
-> +	.get_current_limit =3D da9210_get_current_limit,
-> +};
-
-Drivers are normally written to avoid forward declarations like this.
-
-> +static struct regulator_consumer_supply __initdata def_da9210_consumers[=
-] =3D {
-> +	REGULATOR_SUPPLY("DA9210", NULL),
-> +};
-> +
-> +static struct regulator_init_data __initdata default_da9210_constraints =
-=3D {
-> +	.constraints =3D {
-
-This is not at all sensible, there's a good solid reason why regulator
-drivers don't generally do this...  please review the machine interface
-and its purpose.
-
-> +static int da9210_set_voltage(struct regulator_dev *rdev, int min_uV,
-> +			      int max_uV, unsigned *selector)
-> +{
-> +	struct da9210 *chip =3D rdev_get_drvdata(rdev);
-> +	int val;
-> +	int ret;
-> +
-> +	val =3D regulator_map_voltage_linear(rdev, min_uV, max_uV);
-> +	if (val < 0)
-> +		return -EINVAL;
-> +
-> +	ret =3D regmap_update_bits(chip->regmap, DA9210_REG_VBUCK_A,
-> +				 DA9210_VBUCK_MASK, val);
-> +	return ret;
-> +}
-
-Why not just use set_voltage_sel()?
-
-> +static int da9210_get_voltage_sel(struct regulator_dev *rdev)
-> +{
-> +	struct da9210 *chip =3D rdev_get_drvdata(rdev);
-> +	unsigned int data;
-> +	int sel;
-> +	int ret;
-> +
-> +	ret =3D regmap_read(chip->regmap, DA9210_REG_VBUCK_A, &data);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	sel =3D (data & DA9210_VBUCK_MASK) >> DA9210_VBUCK_SHIFT;
-> +	sel -=3D DA9210_VBUCK_BIAS;
-> +	if (sel < 0)
-> +		sel =3D 0;
-> +	if (sel >=3D chip->info->n_steps)
-> +		sel =3D chip->info->n_steps - 1;
-
-This looks like poor error handling, if the value is out of range isn't
-there an error state?
-
-> +static int da9210_get_voltage(struct regulator_dev *rdev)
-> +{
-> +	struct da9210 *chip =3D rdev_get_drvdata(rdev);
-> +	int sel =3D da9210_get_voltage_sel(rdev);
-> +
-> +	if (sel < 0)
-> +		return sel;
-> +
-> +	return (chip->info->step_uV * sel) + chip->info->min_uV;
-> +}
-
-Why are you open coding core functionalit?
-
-> +static int da9210_enable(struct regulator_dev *rdev)
-> +{
-> +	return regulator_enable_regmap(rdev);
-> +}
-
-This is pointless, just use the generic function directly.
-
-> +
-> +	dev_info(chip->dev, "Device DA9210 detected.\n");
-
-This is just noise.
-
-> +static const struct i2c_device_id da9210_i2c_id[] =3D {
-> +	{DRIVER_NAME, 0},
-> +	{},
-
-Just use the string.
-
-> +static struct i2c_driver da9210_regulator_driver =3D {
-> +	.driver =3D {
-> +		.name =3D DRIVER_NAME,
-
-Similarly here.
-
-> +		.owner =3D THIS_MODULE,
-> +		},
-
-Indentation.
-
-> +static int __init da9210_regulator_init(void)
-> +{
-> +	int ret;
-> +
-> +	ret =3D i2c_add_driver(&da9210_regulator_driver);
-> +	if (0 !=3D ret)
-> +		pr_err("Failed to register da9210 I2C driver\n");
-> +
-> +	return ret;
-> +}
-> +
-> +subsys_initcall(da9210_regulator_init);
-
-Just use module_platform_driver() now we have probe deferral.
-
-> +/*
-> + * Registers bits
-> + */
-> +/* DA9210_REG_PAGE_CON (addr=3D0x00) */
-> +#define	DA9210_PEG_PAGE_SHIFT			0
-> +#define	DA9210_REG_PAGE_MASK			0x0F
-> +/* On I2C registers 0x00 - 0xFF */
-> +#define	DA9210_REG_PAGE0			0
-> +/* On I2C registers 0x100 - 0x1FF */
-> +#define	DA9210_REG_PAGE2			2
-> +#define	DA9210_PAGE_WRITE_MODE			0x00
-> +#define	DA9210_REPEAT_WRITE_MODE		0x40
-> +#define	DA9210_PAGE_REVERT			0x80
-
-This looks liike you should be using a regmap range.
-
---apg+fY3UKMMABzWO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRxG4IAAoJELSic+t+oim9plAP/jVKJZQ58eXc1Txt99zsWCFb
-JJKATx8NDrbcF8KJHojTtamHEYFwz+LEPTmKRAiKNXgUqBgYEiPNpv6SEWJTTIaf
-P+s0fJ6dRllySML3bYjsz8S8bNvwvfFJl3oqhhghXAS7Fof6nhheH8VyKoBDzkVE
-K3Xb8e384CHx1K9lUX8x8bOIY0fssv00DvPGLUVsf8T/76jH/4IqNvmQhv8P3pf9
-CiXO/bEKqAAa2V2rJZiAhU7euEo4fCgOX3JYgufwTejg0nvhgELb/0jZw35byO0f
-bIdeZVtThtt0VkZfWTzfw3u3Z9hOvvWYoqJQp1JnLUO/Q1Rys/I/GXsS3g34OH5x
-kla6uICrD7E4sNtKXAmJ1/RFmWqx1loJMKt7Cw+pvjAZXvLg80Obv3jqYi0tIdzG
-atd9+ZRgKvrD3kKAZTIF/mIKpH5+r58awnEQ0FQeOBNcX1sEVqaqX8Eox06ecWyo
-1XxCTX9WplQRP1hRyNbRbKIoQoZ0vkhKF2JpNJhwMDQbagpYc9OF8auMvgZK+cX2
-dtYiEIYEeq2Ysn38Yw8PTWC3EoEmNhPudBEnrp3q+ecHH2tfjc7At4QOPUuDdr+k
-h61HOm+fLSwSpuQeXn3OgMC5vwKJkAp5De5pWBoEEFeH7ZCaCXWxDnIiO0UdRRvj
-yTmjvKVgHaJTohA2Co5P
-=6dW1
------END PGP SIGNATURE-----
-
---apg+fY3UKMMABzWO--
