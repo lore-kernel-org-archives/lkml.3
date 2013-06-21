@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422736Ab3FUBqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:46:40 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60399 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422651Ab3FUBqj (ORCPT
+	id S1161319Ab3FUBsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 21:48:24 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:43543 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161164Ab3FUBsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:46:39 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 20 Jun 2013 18:46:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: Nightly stable builds [Was: fec: Fix build for MCF5272]
-Message-ID: <20130621014641.GA26818@roeck-us.net>
-References: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
- <CAOMZO5CU57Jqtzt2ZX=TYiemn5okASo4GU_zer+j736J8yj0OQ@mail.gmail.com>
- <20130619204348.GA7314@roeck-us.net>
- <20130619221519.GB9518@kroah.com>
- <20130619232415.GA27990@roeck-us.net>
- <1371777661.5490.2.camel@concordia>
+	Thu, 20 Jun 2013 21:48:22 -0400
+Date: Thu, 20 Jun 2013 18:48:28 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH] gpio: msm-v1: Remove errant __devinit to fix compile
+Message-ID: <20130621014828.GA859@quad.lixom.net>
+References: <1370373600-31921-1-git-send-email-sboyd@codeaurora.org>
+ <CACRpkdZ5x3q9tn3J5_mQj-nJ_wO3HWgX5DTMQdMzF3mUDrAieQ@mail.gmail.com>
+ <51BF43F4.9000007@codeaurora.org>
+ <CACRpkdZ=VbMUBfHt-GruTzc5_7vF508XFAW50YZb4ouG1TrjZg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371777661.5490.2.camel@concordia>
+In-Reply-To: <CACRpkdZ=VbMUBfHt-GruTzc5_7vF508XFAW50YZb4ouG1TrjZg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 11:21:01AM +1000, Michael Ellerman wrote:
+On Tue, Jun 18, 2013 at 11:16:17AM +0200, Linus Walleij wrote:
+> On Mon, Jun 17, 2013 at 7:14 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > On 06/16/13 22:54, Linus Walleij wrote:
+> >> On Tue, Jun 4, 2013 at 9:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> >>
+> >>> Commit 7bce696 (gpio: Make gpio-msm-v1 into a platform driver,
+> >>> 2013-03-04) was based on an older kernel where __devinit still
+> >>> existed. Remove the erroneous __devinit marking.
+> >>>
+> >>> Cc: David Brown <davidb@codeaurora.org>
+> >>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> >> Patch applied.
+> >
+> > Thanks. It looks like David picked this up and sent it off to arm-soc
+> > last week. Cc'ing Olof for awareness of a possible duplicate.
 > 
-> On Wed, 2013-06-19 at 16:24 -0700, Guenter Roeck wrote:
-> > On Wed, Jun 19, 2013 at 03:15:19PM -0700, Greg Kroah-Hartman wrote:
-> > > On Wed, Jun 19, 2013 at 01:43:48PM -0700, Guenter Roeck wrote:
-> > > > On Wed, Jun 19, 2013 at 10:42:36AM -0300, Fabio Estevam wrote:
-> > > > > Hi Guenter,
-> > > > > 
-> > > > > FYI
-> > > > > 
-> > > > > I asked Stephen to include m5272c3_defconfig as part of his daily
-> > > > > build and now it is available:
-> > > > > http://kisskb.ellerman.id.au/kisskb/buildresult/8991795/
-> > > > > 
-> > > > Nice front-end.
-> > > > 
-> > > > Greg, would it be useful to set up something similar for pending stable builds ?
-> > > > I have back-end code doing that running on one of my servers at home, but no
-> > > > web front-end.
-> > > > 
-> > > > Any idea whom to talk to to set this up ? Stephen ? Michael ?
-> > > 
-> > > I have no idea.  I publish the stable build patches all publically, so a
-> > > build-bot could easily be built using it, which would be great to have.
-> > > 
-> > The build-bot isn't the problem; as I mentioned above, I already have one
-> > running. I was referring to a web front-end for it.
+> Did that get ack by some GPIO maintainer?
 > 
-> Hi Guenter,
-> 
-> Actually I hate the web front end, but that's because I wrote it :)
-> 
-> It's pretty, but it doesn't scale very well, "one of these days" I'll
-> rewrite it. My plan is to actually just make it a frontend for buildbot
-> - but I never have time :)
-> 
-Time is my problem too ... but then it is more costly for me if a problem
-makes it into a release, so I have some interest in getting builds
-(and at some point run tests) automated as much as possible.
+> This needs to go through the GPIO tree, but I
+> guess GIT will survive if it ends up in two trees.
 
-> We already build the published stable branches, see:
->   http://kisskb.ellerman.id.au/kisskb/branch/
-> 
-> But I think you're talking about building the patch queues before they
-> go into git? If so the only hurdle would be someone publishing a git
+Nope, and it slipped through the cracks. More and more patches that we see lack
+proper acks, and it's becoming a problem. I have to go search for them on the
+lists and see if they came in without being tagged on the patch, etc.
 
-Yes, that is the idea.
+Time to get more strict on that, obviously. :(
 
-> tree of them - kisskb only knows how to build git trees.
-> 
-I "solved" that problem by creating a front-end to my own nightly build script,
-which also works on git repos. Essentially it takes the stable queue from Greg's
-repo on kernel.org, executes quiltimport on top of the respective stable
-branch, and then starts the actual build script.
+But yeah, one duplicate trivial patch like this shouldn't be an issue.
 
-Would it help if I manage to automate that and publish the resulting branches in
-a repository on kernel.org, say, on a nightly basis ?
 
-Another key advantage of having a git repository would be that it would trigger
-auto-builds as well as smatch runs by others, so test coverage would be much
-better than today.
-
-Greg, would it be ok with you if I create such a repository, or would you want
-to create and manage one yourself ? 
-
-Thanks,
-Guenter
+-Olof
