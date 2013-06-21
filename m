@@ -1,196 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423536Ab3FUR7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:59:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64974 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423077Ab3FUR7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:59:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,914,1363158000"; 
-   d="scan'208";a="353663523"
-Message-ID: <1371837575.6453.23.camel@empanada>
-Subject: Re: [PATCH 10/11] tracing: add and use generic set_trigger_filter()
- implementation
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Date: Fri, 21 Jun 2013 12:59:35 -0500
-In-Reply-To: <51C3D3FD.2070408@hitachi.com>
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-	 <8fe2c1ceb63a6375b56f046de835742f18b955ce.1371751701.git.tom.zanussi@linux.intel.com>
-	 <51C3D3FD.2070408@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1423548Ab3FUSDe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 14:03:34 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34280 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423388Ab3FUSDc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 14:03:32 -0400
+Date: Fri, 21 Jun 2013 14:00:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Cc: tpmdd-devel@lists.sourceforge.net, Daniel De Graaf <dgdegra@tycho.nsa.gov>,
+        linux-kernel@vger.kernel.org, leosilva@linux.vnet.ibm.com,
+        shpedoikal@gmail.com, xen-devel@lists.xen.org, mail@srajiv.net,
+        adlai@linux.vnet.ibm.com, tpmdd@sirrix.com, PeterHuewe@gmx.de
+Subject: Re: [tpmdd-devel] [PATCH v3] drivers/tpm: add xen tpmfront interface
+Message-ID: <20130621180040.GA15960@phenom.dumpdata.com>
+References: <1369755632-2753-1-git-send-email-dgdegra@tycho.nsa.gov>
+ <201306050014.29162.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <201306050014.29162.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
-
-On Fri, 2013-06-21 at 13:18 +0900, Masami Hiramatsu wrote:
-> (2013/06/21 3:31), Tom Zanussi wrote:
-> > diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> > index 88ac7da..7c5627f 100644
-> > --- a/include/trace/ftrace.h
-> > +++ b/include/trace/ftrace.h
-> > @@ -522,14 +522,6 @@ ftrace_raw_event_##call(void *__data, proto)				\
-> >  	int __data_size;						\
-> >  	int pc;								\
-> >  									\
-> > -	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,			\
-> > -		     &ftrace_file->flags))				\
-> > -		event_triggers_call(ftrace_file);			\
-> > -									\
-> > -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
-> > -		     &ftrace_file->flags))				\
-> > -		return;							\
-> > -									\
-> >  	local_save_flags(irq_flags);					\
-> >  	pc = preempt_count();						\
-> >  									\
-> > @@ -547,8 +539,22 @@ ftrace_raw_event_##call(void *__data, proto)				\
-> >  									\
-> >  	{ assign; }							\
-> >  									\
-> > +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
-> > +		     &ftrace_file->flags)) {				\
-> > +		ring_buffer_discard_commit(buffer, event);		\
-> > +									\
-> > +		if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,		\
-> > +			     &ftrace_file->flags))			\
-> > +			event_triggers_call(ftrace_file, entry);	\
-> > +		return;							\
-> > +	}								\
-> > +									\
-> >  	if (!filter_current_check_discard(buffer, event_call, entry, event)) \
-> >  		trace_buffer_unlock_commit(buffer, event, irq_flags, pc); \
-> > +									\
-> > +	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,			\
-> > +		     &ftrace_file->flags))				\
-> > +		event_triggers_call(ftrace_file, entry);		\
+On Tue, Jun 04, 2013 at 03:14:28PM -0700, Peter Hüwe wrote:
+> Hi Daniel,
 > 
-> Actually, since "entry" is a part of "event" which may be already discarded,
-> I think we should not access it here. It may not cause real problem because
-> even if it is discarded, that does NOT mean it is freed. However, it depends
-> on the ring-buffer implementation.
+> thanks for this v3.
+> It's really nice to see the progress and I really like that 
+> sparse/smatch/clang/coccicheck do not complain at all - nice job!
 > 
-> I recommend you to call event triggers before commit the event. It will also
-> make the code simpler :)
+> Konrad already did an excellent job at reviewing the driver (thanks for that), 
+> and all previously pointed out issues are fixed.
 > 
+> Unfortunately I haven't had the opportunity to test it yet, but 
+> the driver looks clean from the TPM perspective.
+> 
+> 
+> However I do have some minor comments from a general perspective - see below.
+> 
+> 
+> From the TPM point of view I'd say it is fine.
+> (I'm currently _not_ the (official) maintainer of the tpm subsystem but at least 
+> take care of the incoming stuff as an interim)
+> 
+> 
+> So if the comments are addressed you can add:
+> Acked-by: Peter Huewe <peterhuewe@gmx.de>
+> Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+> 
+> @Konrad: I can stage the driver and push it to James or you can take it.
+> As it lives in drivers/tpm maybe it should go through the tpm (interim ;) 
+> maintainer and james' tree.
 
-That's what I originally did, and is what I was referring to when I
-mentioned the bit of 'trickiness' here. ;-)
+Daniel??
 
-The problem is that the trace_recursive_lock() check in
-ring_buffer_lock_reserve() prevents a trigger that itself logs to the
-ring buffer from reserving a slot in the buffer, since it's being done
-from the same context as the triggering event.  For example, the
-stacktrace trigger, which calls trace_dump_stack().
-
-So the code is a bit more convoluted than I'd like because of that -
-since we can't really invoke the triggers before the current event is
-committed, it waits until the current event is either discarded (because
-we're soft disabled) or committed (logging a normally-enabled event).
-
-But you do point out a real problem with this - it means having to look
-at a discarded event in the soft-disabled case, and if for example some
-interrupt actually reserves and logs an event between the time we do the
-discard and invoke the filter, we could end up with a false filtering
-outcome.  I'm not sure how to prevent that though at this point - will
-have think about it some more...
-
-Tom
-
-> > diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> > index e287011..47fa712 100644
-> > --- a/kernel/trace/trace_syscalls.c
-> > +++ b/kernel/trace/trace_syscalls.c
-> > @@ -319,14 +319,6 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
-> >  	if (!sys_data)
-> >  		return;
-> >  
-> > -	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
-> > -		     &sys_data->enter_file->flags))
-> > -		event_triggers_call(sys_data->enter_file);
-> > -
-> > -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-> > -		     &sys_data->enter_file->flags))
-> > -		return;
-> > -
-> >  	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
-> >  
-> >  	buffer = tr->trace_buffer.buffer;
-> > @@ -339,9 +331,23 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
-> >  	entry->nr = syscall_nr;
-> >  	syscall_get_arguments(current, regs, 0, sys_data->nb_args, entry->args);
-> >  
-> > +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-> > +		     &sys_data->enter_file->flags)) {
-> > +		ring_buffer_discard_commit(buffer, event);
-> > +
-> > +		if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
-> > +			     &sys_data->enter_file->flags))
-> > +			event_triggers_call(sys_data->enter_file, entry);
-> > +		return;
-> > +	}
-> > +
-> >  	if (!filter_current_check_discard(buffer, sys_data->enter_event,
-> >  					  entry, event))
-> >  		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
-> > +
-> > +	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
-> > +		     &sys_data->enter_file->flags))
-> > +		event_triggers_call(sys_data->enter_file, entry);
-> >  }
-> >  
-> >  static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
-> > @@ -363,14 +369,6 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
-> >  	if (!sys_data)
-> >  		return;
-> >  
-> > -	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
-> > -		     &sys_data->exit_file->flags))
-> > -		event_triggers_call(sys_data->exit_file);
-> > -
-> > -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-> > -		     &sys_data->exit_file->flags))
-> > -		return;
-> > -
-> >  	buffer = tr->trace_buffer.buffer;
-> >  	event = trace_buffer_lock_reserve(buffer,
-> >  			sys_data->exit_event->event.type, sizeof(*entry), 0, 0);
-> > @@ -381,9 +379,23 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
-> >  	entry->nr = syscall_nr;
-> >  	entry->ret = syscall_get_return_value(current, regs);
-> >  
-> > +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-> > +		     &sys_data->exit_file->flags)) {
-> > +		ring_buffer_discard_commit(buffer, event);
-> > +
-> > +		if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
-> > +			     &sys_data->exit_file->flags))
-> > +			event_triggers_call(sys_data->exit_file, entry);
-> > +		return;
-> > +	}
-> > +
-> >  	if (!filter_current_check_discard(buffer, sys_data->exit_event,
-> >  					  entry, event))
-> >  		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
-> > +
-> > +	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
-> > +		     &sys_data->exit_file->flags))
-> > +		event_triggers_call(sys_data->exit_file, entry);
-> >  }
-> >  
-> >  static int reg_event_syscall_enter(struct ftrace_event_file *file,
+ping?
+> 
+> 
+> So here are my comments:
+> 
+> Am Dienstag, 28. Mai 2013, 17:40:32 schrieb Daniel De Graaf:
+> > This is a complete rewrite of the Xen TPM frontend driver, taking
+> > advantage of a simplified frontend/backend interface and adding support
+> > for cancellation and timeouts.  The backend for this driver is provided
+> > by a vTPM stub domain using the interface in Xen 4.3.
 > > 
+> > Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+> > Acked-by: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
 > 
-> Same changes are needed here.
+> > diff --git a/Documentation/xen-tpmfront.txt
+> > b/Documentation/xen-tpmfront.txt new file mode 100644
+> > index 0000000..8a61d6f
+> > --- /dev/null
+> > +++ b/Documentation/xen-tpmfront.txt
+> > @@ -0,0 +1,116 @@
+> > +Copyright (c) 2010-2012 United States Government, as represented by
+> > +the Secretary of Defense.  All rights reserved.
 > 
-> Thank you,
+> I'm not 100% sure if this can stay this way, as it doesn't permit any changes 
+> to the documentation itself.
 > 
-
-
+> 
+> > + * Linux DomU: The Linux based guest that wants to use a vTPM. There many
+> > be +	       more than one of these.
+> -* Linux DomU: The Linux based guest that wants to use a vTPM. There many
+> +* Linux DomU: The Linux based guest that wants to use a vTPM. There may
+> Just a minor typo
+> 
+> 
+> > diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+> > index dbfd564..205ed35 100644
+> > --- a/drivers/char/tpm/Kconfig
+> > +++ b/drivers/char/tpm/Kconfig
+> > @@ -91,4 +91,15 @@ config TCG_ST33_I2C
+> >          To compile this driver as a module, choose M here; the module will
+> > be called tpm_stm_st33_i2c.
+> > 
+> > +config TCG_XEN
+> Maybe TCG_XEN_TPM would be better, but TCG_XEN is okay for me.
+> 
+> 
+> > +static int vtpm_send(struct tpm_chip *chip, u8 *buf, size_t count)
+> > +{
+> > +	struct tpm_private *priv = TPM_VPRIV(chip);
+> > +	struct vtpm_shared_page *shr = priv->shr;
+> > +	unsigned int offset = shr_data_offset(shr);
+> > +
+> > +	u32 ordinal;
+> > +	unsigned long duration;
+> > +
+> > +	if (offset > PAGE_SIZE)
+> > +		return -EIO;
+> Maybe -EINVAL?
+> > +
+> > +	if (offset + count > PAGE_SIZE)
+> > +		return -EIO;
+> Maybe -EINVAL?
+> > +
+> 
+> 
+> > +/*************************************************************************
+> > ***** + * tpmif.h
+> > + *
+> > + * TPM I/O interface for Xen guest OSes, v2
+> > + *
+> > + * Permission is hereby granted, free of charge, to any person obtaining a
+> > copy + * of this software and associated documentation files (the
+> > "Software"), to + * deal in the Software without restriction, including
+> > without limitation the + * rights to use, copy, modify, merge, publish,
+> > distribute, sublicense, and/or + * sell copies of the Software, and to
+> > permit persons to whom the Software is + * furnished to do so, subject to
+> > the following conditions:
+> > + *
+> > + * The above copyright notice and this permission notice shall be included
+> > in + * all copies or substantial portions of the Software.
+> > + *
+> > + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+> > OR + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+> > MERCHANTABILITY, + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+> > IN NO EVENT SHALL THE + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+> > CLAIM, DAMAGES OR OTHER + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+> > TORT OR OTHERWISE, ARISING + * FROM, OUT OF OR IN CONNECTION WITH THE
+> > SOFTWARE OR THE USE OR OTHER + * DEALINGS IN THE SOFTWARE.
+> > + *
+> > + */
+> 
+> Also not sure if this license is correct/compliant with the kernel as it 
+> indicates no clear license to me.
+> 
+> Peter
