@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758281Ab3FUJEj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 05:04:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37746 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758232Ab3FUJEg (ORCPT
+	id S1758324Ab3FUJGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 05:06:33 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:49254 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758219Ab3FUJGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 05:04:36 -0400
-Message-ID: <51C4171C.9050908@linutronix.de>
-Date: Fri, 21 Jun 2013 11:04:28 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	Fri, 21 Jun 2013 05:06:25 -0400
+Message-ID: <51C41789.8070903@monstr.eu>
+Date: Fri, 21 Jun 2013 11:06:17 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: linux-kernel@vger.kernel.org, Vineet Gupta <vgupta@synopsys.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>,
-        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, x86@kernel.org, arm@kernel.org,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, robherring2@gmail.com,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-xtensa@linux-xtensa.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] of: Specify initrd location using 64-bit
-References: <1371775956-16453-1-git-send-email-santosh.shilimkar@ti.com>
-In-Reply-To: <1371775956-16453-1-git-send-email-santosh.shilimkar@ti.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] uio: Add two platform uio drivers to one
+References: <086bdaf83fe546bd3c7fe163e565a0887770770f.1369317710.git.michal.simek@xilinx.com> <71c482e15ee32fa304db73b984f6d5a63441cd92.1369317710.git.michal.simek@xilinx.com> <51A5E644.1040901@monstr.eu> <51AC8D43.100@monstr.eu> <20130603210513.GA22606@kroah.com> <20130620160126.GB22115@amd.pavel.ucw.cz> <51C337D7.1040404@monstr.eu> <20130620231346.GB1589@amd.pavel.ucw.cz>
+In-Reply-To: <20130620231346.GB1589@amd.pavel.ucw.cz>
 X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2PCIJVSQDUHONFXTUVCWT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 02:52 AM, Santosh Shilimkar wrote:
-> diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
-> index 0a2c68f..62e2e8f 100644
-> --- a/arch/microblaze/kernel/prom.c
-> +++ b/arch/microblaze/kernel/prom.c
-> @@ -136,8 +136,7 @@ void __init early_init_devtree(void *params)
->  }
->  
->  #ifdef CONFIG_BLK_DEV_INITRD
-> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
-> -		unsigned long end)
-> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
->  {
->  	initrd_start = (unsigned long)__va(start);
->  	initrd_end = (unsigned long)__va(end);
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2PCIJVSQDUHONFXTUVCWT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I think it would better to go here for phys_addr_t instead of u64. This
-would force you in of_flat_dt_match() to check if the value passed from
-DT specifies a memory address outside of 32bit address space and the
-kernel can't deal with this because its phys_addr_t is 32bit only due
-to a Kconfig switch.
+On 06/21/2013 01:13 AM, Pavel Machek wrote:
+> Hi!
+>=20
+>>>>> can you please comment this?
+>>>>
+>>>> I'll let Hans handle this, as he's the UIO maintainer now.
+>>>
+>>> Looks good to me.
+>>>
+>>> Anyway, Hans disappeared, so Greg takes patches, again. Take a look,
+>>> it seems I already did some changes you wanted, they are in char-misc=
 
-For x86, the initrd has to remain in the 32bit address space so passing
-the initrd in the upper range would violate the ABI. Not sure if this
-is true for other archs as well (ARM obviously not).
+>>> tree.
+>>
+>> Can you send me link to that repo?
+>=20
+> I googled a mirror...
+>=20
+> https://kernel.googlesource.com/pub/scm/linux/kernel/git/gregkh/char-mi=
+sc/+/char-misc-next/drivers/uio/uio_pdrv_genirq.c
 
-Sebastian
+Ok. I see.
+Yeah it can be done in that way too.
+
+I can rebase my patches on the top of that because they are still valid.
+1/2 is not there and it is nice way how to simplify the code.
+
+The purpose of 2/2 was to remove that uio_pdrv.c which is not needed
+when uio_pdrv_genirq.c also support no IRQ case.
+
+Will be good if you can look at my patches and test them.
+
+Also we should also simplify the driver by using devres groups,
+devm_kzalloc, etc.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2PCIJVSQDUHONFXTUVCWT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHEF44ACgkQykllyylKDCGyWgCfaLhs21M/1wJXD0YUjYc2mXIG
+6W4An369dnRgHwTSROmS6ywI7o5KMVmf
+=wzEw
+-----END PGP SIGNATURE-----
+
+------enig2PCIJVSQDUHONFXTUVCWT--
