@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423613Ab3FURmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:42:14 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:36796 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423307Ab3FURmN (ORCPT
+	id S1423616Ab3FURo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 13:44:58 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:46623 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423421Ab3FURo5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:42:13 -0400
-Message-ID: <51C49072.1060700@linaro.org>
-Date: Fri, 21 Jun 2013 10:42:10 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 21 Jun 2013 13:44:57 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        arm@kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv2 3/6] sched_clock: Make ARM's sched_clock generic for
- all architectures
-References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org> <1370155183-31421-4-git-send-email-sboyd@codeaurora.org> <201306211745.57528.arnd@arndb.de> <20130621170523.GA14575@codeaurora.org>
-In-Reply-To: <20130621170523.GA14575@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1371725238-25437-1-git-send-email-tushar.behera@linaro.org>
+Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, patches@linaro.org
+References: <1371725238-25437-1-git-send-email-tushar.behera@linaro.org>
+Message-ID: <20130621174453.20448.59791@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH v2 0/2] Clock update for EXYNOS4210-CPUFREQ driver
+Date: Fri, 21 Jun 2013 10:44:53 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 10:05 AM, Stephen Boyd wrote:
-> On 06/21, Arnd Bergmann wrote:
->> This causes build failures when doing a simple merge with the arm-soc
->> tree:
->>
->> ==> build/clps711x_defconfig/faillog <==
->> /git/arm-soc/arch/arm/mach-clps711x/common.c:37:29: fatal error: asm/sched_clock.h: No such file or directory
->>   #include <asm/sched_clock.h>
->>                               ^
->> ==> build/imx_v6_v7_defconfig/faillog <==
->> /git/arm-soc/drivers/clocksource/vf_pit_timer.c:15:29: fatal error: asm/sched_clock.h: No such file or directory
->>   #include <asm/sched_clock.h>
->>
->> How about adding back a temporary arch/arm/include/asm/sched_clock.h
->> that only contains "#include <linux/sched_clock.h>" so we can change
->> those two files after the merge and still get a bisectible history?
->>
-> Sounds fine. John can you add this patch on top?
+Quoting Tushar Behera (2013-06-20 03:47:16)
+> cpufreq driver for EXYNOS4 based SoCs are not platform drivers, hence
+> we cannot currently pass the clock names through a device tree node.
+> Instead, we need to make them available through global alias.
+> 
+> The patches are based on next-20130618.
+> 
+> Patch 1 has not been modified.
+> Patch 2 has been updated to include EXYNOS4X12 releated clocks.
 
-Thanks. I've queued this and will send it on to Thomas here shortly.
+Patch and changelogs look good to me now. Tomasz, any comments? I am
+happy to take these into clk-next with your review.
 
-thanks
--john
+Regards,
+Mike
+
+> 
+> Tushar Behera (2):
+>   clk: samsung: Add MUX_FA macro to pass flag and alias
+>   clk: exynos4: Fix clock aliases for cpufreq related clocks
+> 
+>  drivers/clk/samsung/clk-exynos4.c |   21 +++++++++++----------
+>  drivers/clk/samsung/clk.h         |    3 +++
+>  2 files changed, 14 insertions(+), 10 deletions(-)
+> 
+> -- 
+> 1.7.9.5
