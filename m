@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab3FUHGL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:06:11 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46601 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab3FUHGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:06:08 -0400
-Message-ID: <51C3FB5D.5080408@hitachi.com>
-Date: Fri, 21 Jun 2013 16:06:05 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@intel.com>
-Subject: Re: [PATCH 02/11] tracing: add missing syscall_metadata comment
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com> <f151e7e82a9a0723cdd50ae04ab30fd49b1e51ce.1371751701.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <f151e7e82a9a0723cdd50ae04ab30fd49b1e51ce.1371751701.git.tom.zanussi@linux.intel.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1758723Ab3FUHJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 03:09:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:53672 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753195Ab3FUHJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 03:09:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,911,1363158000"; 
+   d="scan'208";a="258139086"
+From: Chew Chiau Ee <chiaue.ee.chew@intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c-designware: Manually set RESTART bit between messages
+Date: Fri, 21 Jun 2013 15:05:28 +0800
+Message-Id: <1371798328-31931-1-git-send-email-chiaue.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/21 3:31), Tom Zanussi wrote:
-> From: Tom Zanussi <tom.zanussi@intel.com>
-> 
-> Add the missing syscall_metadata description for the enter_fields
-> struct member.
-> 
-> Signed-off-by: Tom Zanussi <tom.zanussi@intel.com>
+From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+If both IC_EMPTYFIFO_HOLD_MASTER_EN and IC_RESTART_EN are set to 1, the
+Designware I2C controller doesn't generate RESTART unless user specifically
+requests it by setting RESTART bit in IC_DATA_CMD register.
 
-Steven, I think the first two patches may better be merged separately
-as cleanups.
+Since IC_EMPTYFIFO_HOLD_MASTER_EN setting can't be detected from hardware
+register, we must always manually set the restart bit between messages.
 
-Thank you,
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-> ---
->  include/trace/syscall.h | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-> index 84bc419..fed853f 100644
-> --- a/include/trace/syscall.h
-> +++ b/include/trace/syscall.h
-> @@ -16,6 +16,7 @@
->   * @nb_args: number of parameters it takes
->   * @types: list of types as strings
->   * @args: list of args as strings (args[i] matches types[i])
-> + * @enter_fields: list of fields for syscall_enter trace event
->   * @enter_event: associated syscall_enter trace event
->   * @exit_event: associated syscall_exit trace event
->   */
-> 
-
-
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 3de5494..9348439 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -403,6 +403,7 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+ 	u32 addr = msgs[dev->msg_write_idx].addr;
+ 	u32 buf_len = dev->tx_buf_len;
+ 	u8 *buf = dev->tx_buf;
++	bool need_restart = false;
+ 
+ 	intr_mask = DW_IC_INTR_DEFAULT_MASK;
+ 
+@@ -430,6 +431,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+ 			/* new i2c_msg */
+ 			buf = msgs[dev->msg_write_idx].buf;
+ 			buf_len = msgs[dev->msg_write_idx].len;
++
++			/* If both IC_EMPTYFIFO_HOLD_MASTER_EN and
++			 * IC_RESTART_EN are set, we must manually
++			 * set restart bit between messages.
++			 */
++			if ((dev->master_cfg & DW_IC_CON_RESTART_EN) &&
++					(dev->msg_write_idx > 0))
++				need_restart = true;
+ 		}
+ 
+ 		tx_limit = dev->tx_fifo_depth - dw_readl(dev, DW_IC_TXFLR);
+@@ -448,6 +457,11 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+ 			    buf_len == 1)
+ 				cmd |= BIT(9);
+ 
++			if (need_restart) {
++				cmd |= BIT(10);
++				need_restart = false;
++			}
++
+ 			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
+ 
+ 				/* avoid rx buffer overrun */
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.4.4
 
