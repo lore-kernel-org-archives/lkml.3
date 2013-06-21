@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422714Ab3FUA3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 20:29:11 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:59468 "EHLO
+	id S1422741Ab3FUA3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 20:29:13 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:59473 "EHLO
 	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161243Ab3FUA3I (ORCPT
+	with ESMTP id S1161331Ab3FUA3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 20:29:08 -0400
+	Thu, 20 Jun 2013 20:29:10 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
@@ -16,67 +16,52 @@ Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
         Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
         Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v5 2/6] mm/writeback: Don't check force_wait to handle bdi->work_list
-Date: Fri, 21 Jun 2013 08:28:50 +0800
-Message-Id: <1371774534-4139-2-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v5 3/6] commit reason of WB_REASON_FORKER_THREAD mismatch name
+Date: Fri, 21 Jun 2013 08:28:51 +0800
+Message-Id: <1371774534-4139-3-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1371774534-4139-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1371774534-4139-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062100-2674-0000-0000-00000980AE5D
+x-cbid: 13062100-2674-0000-0000-00000980AE62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changelog:
+  v4 -> v5:
+   * indent the comment
+
 After commit 839a8e86("writeback: replace custom worker pool implementation
-with unbound workqueue"), bdi_writeback_workfn runs off bdi_writeback->dwork,
-on each execution, it processes bdi->work_list and reschedules if there are
-more things to do instead of flush any work that race with us existing. It is
-unecessary to check force_wait in wb_do_writeback since it is always 0 after
-the mentioned commit. This patch remove the force_wait in wb_do_writeback.
+with unbound workqueue"), there is no bdi forker thread any more. However,
+WB_REASON_FORKER_THREAD is still used due to it is TPs userland visible
+and we won't be exposing exactly the same information with just a different
+name.
 
 Reviewed-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- fs/fs-writeback.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
+ include/linux/writeback.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index f892dec..e15aa97 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -959,7 +959,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
- /*
-  * Retrieve work items and do the writeback they describe
-  */
--static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
-+static long wb_do_writeback(struct bdi_writeback *wb)
- {
- 	struct backing_dev_info *bdi = wb->bdi;
- 	struct wb_writeback_work *work;
-@@ -967,12 +967,6 @@ static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index 8b5cec4..703a48a 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -47,6 +47,12 @@ enum wb_reason {
+ 	WB_REASON_LAPTOP_TIMER,
+ 	WB_REASON_FREE_MORE_MEM,
+ 	WB_REASON_FS_FREE_SPACE,
++	/*
++	 * There is no bdi forker thread any more and works are done
++	 * by emergency worker, however, this is somewhat userland
++	 * visible and we'll be exposing exactly the same information,
++	 * so it has a mismatch name.
++	 */
+ 	WB_REASON_FORKER_THREAD,
  
- 	set_bit(BDI_writeback_running, &wb->bdi->state);
- 	while ((work = get_next_work_item(bdi)) != NULL) {
--		/*
--		 * Override sync mode, in case we must wait for completion
--		 * because this thread is exiting now.
--		 */
--		if (force_wait)
--			work->sync_mode = WB_SYNC_ALL;
- 
- 		trace_writeback_exec(bdi, work);
- 
-@@ -1021,7 +1015,7 @@ void bdi_writeback_workfn(struct work_struct *work)
- 		 * rescuer as work_list needs to be drained.
- 		 */
- 		do {
--			pages_written = wb_do_writeback(wb, 0);
-+			pages_written = wb_do_writeback(wb);
- 			trace_writeback_pages_written(pages_written);
- 		} while (!list_empty(&bdi->work_list));
- 	} else {
+ 	WB_REASON_MAX,
 -- 
 1.7.5.4
 
