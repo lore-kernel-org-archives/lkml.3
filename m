@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423673Ab3FUSoY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 14:44:24 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:58242 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423388Ab3FUSoX (ORCPT
+	id S1423695Ab3FUSok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 14:44:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:63874 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423388Ab3FUSoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 14:44:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <51C48745.9030304@zytor.com>
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
-	<20130621165142.GA32125@kroah.com>
-	<51C48745.9030304@zytor.com>
-Date: Fri, 21 Jun 2013 11:44:22 -0700
-X-Google-Sender-Auth: I1y_2-k25Y5ZFBq8QqC8NcrC59M
-Message-ID: <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com>
-Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Nathan Zimmer <nzimmer@sgi.com>,
-        Robin Holt <holt@sgi.com>, Mike Travis <travis@sgi.com>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
+	Fri, 21 Jun 2013 14:44:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Joel A Fernandes <agnel.joel@gmail.com>
+Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
+Date: Fri, 21 Jun 2013 20:44:26 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sekhar Nori <nsekhar@ti.com>, Joel A Fernandes <joelagnel@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <201306211632.12577.arnd@arndb.de> <CAD=GYpbhBAaSkMtcJaPtVpWar7AcW37QpAk3A0qgwX6G5PDoZg@mail.gmail.com>
+In-Reply-To: <CAD=GYpbhBAaSkMtcJaPtVpWar7AcW37QpAk3A0qgwX6G5PDoZg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306212044.26677.arnd@arndb.de>
+X-Provags-ID: V02:K0:jclk5W1ehbhhMyw2zvVTYx3aoPeO0KK7QQ3KXh/6N1s
+ XFfKve1sD9un60KWfeavw70c+Uzi6aqJSy7ttvJjFqsL/9YDoK
+ XAeAeZ37YdGRjVUCPJglwRlmlQ4EgVsXqWAhxHfdsPMHZ+ma0a
+ rIYM8SkKfYQ12aP4ubaDxWNM+YoEr7YSgxqcCsn2JuuKEu58WN
+ UHk6zSO5oovjN5YAU03pYzMEfbrzcH5cds8mwsAKI23cr8LpCB
+ vp1C6yFcBhuXVfJrqztm8/I/bD5hjpADQXflS1hIqTDWq8IsmC
+ nveYIhbNA7QGzAUIEEyGBn4R1OAYVLjSdDV9I0bUH5g7AqpWcu
+ nBbQmJ5UiTf2kWkTsNJ8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 10:03 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/21/2013 09:51 AM, Greg KH wrote:
->
-> I suspect the cutoff for this should be a lot lower than 8 TB even, more
-> like 128 GB or so.  The only concern is to not set the cutoff so low
-> that we can end up running out of memory or with suboptimal NUMA
-> placement just because of this.
+On Friday 21 June 2013, Joel A Fernandes wrote:
+> I think we are talking about different things, I agree the 'select
+> DMADEVICES' can be dropped but lets please keep the default y option
+> (not adding new select statements, just saying that if someone select
+> DMADEVICES in menuconfig and if they're ARCH_OMAP=1 , then default to
+> EDMA). This will simply allow people to have a default. Thanks.
 
-I would suggest another way:
-only boot the system with boot node (include cpu, ram and pci root buses).
-then after boot, could add other nodes.
+Yes, that's ok.
 
-or something like pxm_mask or node_mask to select boot nodes.
+Also, if the driver doesn't strictly depend on these platforms but
+can build on anything, I would write it as
 
-Thanks
+config TI_EDMA
+        tristate "TI EDMA support"
+        default m if 'ARCH_DAVINCI || ARCH_OMAP1 || ARCH_OMAP2
+        select DMA_ENGINE
+        select DMA_VIRTUAL_CHANNELS
 
-Yinghai
+	Arnd
