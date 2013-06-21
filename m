@@ -1,207 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965366Ab3FUJym (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 05:54:42 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:13587 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756049Ab3FUJyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 05:54:38 -0400
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [PATCH v9] i2c-designware: make SDA hold time configurable
-Date: Fri, 21 Jun 2013 11:53:42 +0200
-Message-Id: <1371808422-27742-1-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20130620203716.GF2961@katana>
-References: <20130620203716.GF2961@katana>
+	id S1030258Ab3FUJ4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 05:56:32 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39046 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752516Ab3FUJ4b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 05:56:31 -0400
+Date: Fri, 21 Jun 2013 10:56:28 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] EFI urgent fix
+Message-ID: <20130621095628.GD5386@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the SDA hold time configurable through device tree.
+The following changes since commit f8b8404337de4e2466e2e1139ea68b1f8295974f:
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
----
- .../devicetree/bindings/i2c/i2c-designware.txt     |   14 ++++++++++++++
- arch/arc/boot/dts/abilis_tb100_dvk.dts             |   10 +++++-----
- arch/arc/boot/dts/abilis_tb101_dvk.dts             |   10 +++++-----
- drivers/i2c/busses/i2c-designware-core.c           |   13 +++++++++++++
- drivers/i2c/busses/i2c-designware-core.h           |    1 +
- drivers/i2c/busses/i2c-designware-platdrv.c        |   10 ++++++++++
- 6 files changed, 48 insertions(+), 10 deletions(-)
+  Modify UEFI anti-bricking code (2013-06-10 21:59:37 +0100)
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-index e42a2ee..3266cc7 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-@@ -10,6 +10,9 @@ Recommended properties :
- 
-  - clock-frequency : desired I2C bus clock frequency in Hz.
- 
-+Optional properties :
-+ - i2c-sda-hold-time-ns : should contain the SDA hold time in nanoseconds.
-+
- Example :
- 
- 	i2c@f0000 {
-@@ -20,3 +23,14 @@ Example :
- 		interrupts = <11>;
- 		clock-frequency = <400000>;
- 	};
-+
-+	i2c@1120000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "snps,designware-i2c";
-+		reg = <0x1120000 0x1000>;
-+		interrupt-parent = <&ictl>;
-+		interrupts = <12 1>;
-+		clock-frequency = <400000>;
-+		i2c-sda-hold-time-ns = <300>;
-+	};
-diff --git a/arch/arc/boot/dts/abilis_tb100_dvk.dts b/arch/arc/boot/dts/abilis_tb100_dvk.dts
-index 0fa0d4a..ebc313a 100644
---- a/arch/arc/boot/dts/abilis_tb100_dvk.dts
-+++ b/arch/arc/boot/dts/abilis_tb100_dvk.dts
-@@ -45,19 +45,19 @@
- 		};
- 
- 		i2c0: i2c@FF120000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 		i2c1: i2c@FF121000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 		i2c2: i2c@FF122000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 		i2c3: i2c@FF123000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 		i2c4: i2c@FF124000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 
- 		leds {
-diff --git a/arch/arc/boot/dts/abilis_tb101_dvk.dts b/arch/arc/boot/dts/abilis_tb101_dvk.dts
-index a4d80ce..b204657 100644
---- a/arch/arc/boot/dts/abilis_tb101_dvk.dts
-+++ b/arch/arc/boot/dts/abilis_tb101_dvk.dts
-@@ -45,19 +45,19 @@
- 		};
- 
- 		i2c0: i2c@FF120000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 		i2c1: i2c@FF121000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 		i2c2: i2c@FF122000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 		i2c3: i2c@FF123000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 		i2c4: i2c@FF124000 {
--			sda-hold-time = <432>;
-+			i2c-sda-hold-time-ns = <432>;
- 		};
- 
- 		leds {
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index c41ca63..66119e2 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -67,9 +67,12 @@
- #define DW_IC_STATUS		0x70
- #define DW_IC_TXFLR		0x74
- #define DW_IC_RXFLR		0x78
-+#define DW_IC_SDA_HOLD		0x7c
- #define DW_IC_TX_ABRT_SOURCE	0x80
- #define DW_IC_ENABLE_STATUS	0x9c
- #define DW_IC_COMP_PARAM_1	0xf4
-+#define DW_IC_COMP_VERSION	0xf8
-+#define DW_IC_SDA_HOLD_MIN_VERS	0x3131312A
- #define DW_IC_COMP_TYPE		0xfc
- #define DW_IC_COMP_TYPE_VALUE	0x44570140
- 
-@@ -332,6 +335,16 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 	dw_writel(dev, lcnt, DW_IC_FS_SCL_LCNT);
- 	dev_dbg(dev->dev, "Fast-mode HCNT:LCNT = %d:%d\n", hcnt, lcnt);
- 
-+	/* Configure SDA Hold Time if required */
-+	reg = dw_readl(dev, DW_IC_COMP_VERSION);
-+	if (dev->sda_hold_time) {
-+		if (reg >= DW_IC_SDA_HOLD_MIN_VERS)
-+			dw_writel(dev, dev->sda_hold_time, DW_IC_SDA_HOLD);
-+		else
-+			dev_warn(dev->dev,
-+				"Hardware too old to adjust SDA hold time.");
-+	}
-+
- 	/* Configure Tx/Rx FIFO threshold levels */
- 	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
- 	dw_writel(dev, 0, DW_IC_RX_TL);
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index e761ad1..912aa22 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -90,6 +90,7 @@ struct dw_i2c_dev {
- 	unsigned int		tx_fifo_depth;
- 	unsigned int		rx_fifo_depth;
- 	int			rx_outstanding;
-+	u32			sda_hold_time;
- };
- 
- #define ACCESS_SWAP		0x00000001
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index 35b70a1..8b9d3f1 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -34,6 +34,7 @@
- #include <linux/sched.h>
- #include <linux/err.h>
- #include <linux/interrupt.h>
-+#include <linux/of.h>
- #include <linux/of_i2c.h>
- #include <linux/platform_device.h>
- #include <linux/pm.h>
-@@ -121,6 +122,15 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 		return PTR_ERR(dev->clk);
- 	clk_prepare_enable(dev->clk);
- 
-+	if (pdev->dev.of_node) {
-+		u32 ht = 0;
-+		u32 ic_clk = dev->get_clk_rate_khz(dev);
-+
-+		of_property_read_u32(pdev->dev.of_node,
-+					"i2c-sda-hold-time-ns", &ht);
-+		dev->sda_hold_time = ((u64)ic_clk * ht + 500000) / 1000000;
-+	}
-+
- 	dev->functionality =
- 		I2C_FUNC_I2C |
- 		I2C_FUNC_10BIT_ADDR |
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+
+for you to fetch changes up to b8cb62f82103083a6e8fa5470bfe634a2c06514d:
+
+  x86/efi: Fix dummy variable buffer allocation (2013-06-21 10:52:49 +0100)
+
+----------------------------------------------------------------
+ * Don't leak random kernel memory to EFI variable NVRAM when attempting
+   to initiate garbage collection. Also, free the kernel memory when
+   we're done with it instead of leaking - Ben Hutchings
+
+----------------------------------------------------------------
+Ben Hutchings (1):
+      x86/efi: Fix dummy variable buffer allocation
+
+ arch/x86/platform/efi/efi.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
 -- 
-1.7.1
-
+Matt Fleming, Intel Open Source Technology Center
