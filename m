@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966017Ab3FUBYv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:24:51 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34827 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965983Ab3FUBYh (ORCPT
+	id S966034Ab3FUBY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 21:24:58 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:55817 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965983Ab3FUBYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:24:37 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v7 6/6] mm/pgtable: Don't accumulate addr during pgd prepopulate pmd
-Date: Fri, 21 Jun 2013 09:24:19 +0800
-Message-Id: <1371777859-13459-6-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1371777859-13459-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1371777859-13459-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062101-7014-0000-0000-0000033543B0
+	Thu, 20 Jun 2013 21:24:55 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C3AB33.6000901@asianux.com>
+Date: Fri, 21 Jun 2013 09:24:03 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "'Jiri Kosina'" <trivial@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] kernel/itimer.c: beautify code, not need check 'value',
+ so save one instruction, simpler and easier for readers.
+References: <51C2E6F9.80107@asianux.com> <51C2EF71.4010308@asianux.com> <alpine.DEB.2.02.1306201455330.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306201455330.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old codes accumulate addr to get right pmd, however,
-currently pmds are preallocated and transfered as a parameter,
-there is unnecessary to accumulate addr variable any more, this
-patch remove it.
+On 06/20/2013 08:55 PM, Thomas Gleixner wrote:
+> On Thu, 20 Jun 2013, Chen Gang wrote:
+> 
+>> > 
+>> > Oh, sorry, maybe it is a trivial patch, also need send to
+>> > trivial@kernel.org.
+> No. This is not a trivial patch, it's changing the code flow.
+>  
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- arch/x86/mm/pgtable.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+OK, that is not a trivial patch, but a minor patch, is it correct ??
 
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index 17fda6a..dfa537a 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -240,7 +240,6 @@ static void pgd_mop_up_pmds(struct mm_struct *mm, pgd_t *pgdp)
- static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
- {
- 	pud_t *pud;
--	unsigned long addr;
- 	int i;
- 
- 	if (PREALLOCATED_PMDS == 0) /* Work around gcc-3.4.x bug */
-@@ -248,8 +247,7 @@ static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
- 
- 	pud = pud_offset(pgd, 0);
- 
-- 	for (addr = i = 0; i < PREALLOCATED_PMDS;
--	     i++, pud++, addr += PUD_SIZE) {
-+	for (i = 0; i < PREALLOCATED_PMDS; i++, pud++) {
- 		pmd_t *pmd = pmds[i];
- 
- 		if (i >= KERNEL_PGD_BOUNDARY)
+;-)
+
+
+Thanks.
 -- 
-1.7.5.4
+Chen Gang
 
+Asianux Corporation
