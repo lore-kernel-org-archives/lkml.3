@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422764Ab3FUGRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:17:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:14478 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758175Ab3FUGRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:17:31 -0400
-X-IronPort-AV: E=Sophos;i="4.87,910,1363104000"; 
-   d="scan'208";a="7624791"
-Message-ID: <51C3F0AC.5020006@cn.fujitsu.com>
-Date: Fri, 21 Jun 2013 14:20:28 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: tglx@linutronix.de, mingo@elte.hu, akpm@linux-foundation.org,
-        tj@kernel.org, trenn@suse.de, yinghai@kernel.org, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <51C3E276.8030804@zytor.com> <51C3ED76.3040900@cn.fujitsu.com> <51C3EE54.4060707@zytor.com>
-In-Reply-To: <51C3EE54.4060707@zytor.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/21 14:16:18,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/21 14:16:22,
-	Serialize complete at 2013/06/21 14:16:22
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1423033Ab3FUGSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:18:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57686 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422796Ab3FUGSG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 02:18:06 -0400
+Date: Fri, 21 Jun 2013 16:18:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: linux-next: manual merge of the arm-soc tree with the tip tree
+Message-Id: <20130621161801.34c4a75c217ca4c1b7d6529c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Jun_2013_16_18_01_+1000_.P16kGKRp9sIJek4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 02:10 PM, H. Peter Anvin wrote:
-> On 06/20/2013 11:06 PM, Tang Chen wrote:
->>
->> Hi hpa,
->>
->> The build problem has been fixed by Yinghai.
->>
->
-> Where?  I don't see anything that is obviously a fix in my inbox.
->
+--Signature=_Fri__21_Jun_2013_16_18_01_+1000_.P16kGKRp9sIJek4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yinghai resent a new version to fix the problem.
-https://lkml.org/lkml/2013/6/14/561
+Hi all,
 
-> What about Tejun's feedback?
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-u300/timer.c between commit 38ff87f77af0 ("sched_clock:
+Make ARM's sched_clock generic for all architectures") from the tip tree
+and commit 3c96d8ea8101 ("ARM: u300: enable delaytimer on the U300") from
+the arm-soc tree.
 
-tj's comments were after the latest version. So we need to
-restructure the patch-set.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
->
-> 	-hpa
->
->
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-u300/timer.c
+index af771b7,390ae5f..0000000
+--- a/arch/arm/mach-u300/timer.c
++++ b/arch/arm/mach-u300/timer.c
+@@@ -18,12 -18,12 +18,12 @@@
+  #include <linux/clk.h>
+  #include <linux/err.h>
+  #include <linux/irq.h>
+ +#include <linux/sched_clock.h>
+-=20
+- #include <mach/hardware.h>
+- #include <mach/irqs.h>
++ #include <linux/delay.h>
++ #include <linux/of_address.h>
++ #include <linux/of_irq.h>
+ =20
+  /* Generic stuff */
+ -#include <asm/sched_clock.h>
+  #include <asm/mach/map.h>
+  #include <asm/mach/time.h>
+ =20
+
+--Signature=_Fri__21_Jun_2013_16_18_01_+1000_.P16kGKRp9sIJek4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRw/AZAAoJEECxmPOUX5FEHucP/0YcpUvV90X3/ejnxetN1aYS
+IHAVTRvdA+4QgJQGOfQmeDRzZWSBHrZrpovCuKlMlmmY3ttyF4Fd0W3rJyMvibFe
++GCmZyUmHvgZMQ3gU4E0eB25YxFSWNS5quhWXaXoJxOOSDUOOh+vB4mq9yZsblAz
+R5ICIPvCnwpckH1lFOfNo8fRZo9APo4PWLQhkmfNTjXjS/FaUrhtLirnbJqUZvaP
+Nor4suqNP4MqjSAlZ0OUGDBdRW2DnCvAy0enbj8sPoCbzp0TOIgU8wrCvEsEuLvS
+30GvffWXelFxdkiNCV2q36lJx6q6HP6VOfquzCe8pSLbgV25VAtHV1TUday7EyeL
+H29g6wISLRp094q7R/eIJxupIdYfRMh4IHYUucfh9rMPykrRWcwI9qVQzk3jDoHd
+pwztE9bvXxsyFf3ggRWF8nskAXYN8Ab/xxgM9daG6Kj4CrnoNEHa28/n3SchOCfj
+4HpQ2jJIqY0UwqxP/mkjogqyEzMEoE4Z8BhEamsypLPjup+5UEq78qavx3Qcuhki
+XbhB9xNguU7gouD/Y3uzxYLSSsmsau5+uYMhLF0zHsGa6u1T7iJD3limI1sKD6FG
+6WOgEkP/PBUN/us7km/g73/jK0FWDT2HzTTuuOerlXaol14uoQTkOLKJujONKWUn
+5VaOJekbLMi8NKRaOB3C
+=qOKD
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_Jun_2013_16_18_01_+1000_.P16kGKRp9sIJek4--
