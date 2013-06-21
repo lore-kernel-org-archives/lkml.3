@@ -1,104 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422775Ab3FUB47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:56:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53164 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422651Ab3FUB46 (ORCPT
+	id S1422809Ab3FUCBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 22:01:49 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:47512 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422651Ab3FUCBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:56:58 -0400
-Date: Thu, 20 Jun 2013 18:57:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: Nightly stable builds [Was: fec: Fix build for MCF5272]
-Message-ID: <20130621015739.GA25649@kroah.com>
-References: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
- <CAOMZO5CU57Jqtzt2ZX=TYiemn5okASo4GU_zer+j736J8yj0OQ@mail.gmail.com>
- <20130619204348.GA7314@roeck-us.net>
- <20130619221519.GB9518@kroah.com>
- <20130619232415.GA27990@roeck-us.net>
- <1371777661.5490.2.camel@concordia>
- <20130621014641.GA26818@roeck-us.net>
+	Thu, 20 Jun 2013 22:01:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130621014641.GA26818@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C20CCC.3060502@ti.com>
+References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com>
+	<1371451599-31035-9-git-send-email-amit.daniel@samsung.com>
+	<51C20CCC.3060502@ti.com>
+Date: Fri, 21 Jun 2013 07:31:46 +0530
+X-Google-Sender-Auth: D-LUNezTNWFIPt3iaLX4EUJR9y4
+Message-ID: <CADGdYn6FHXd2YELP1z9zbqnf3Yd0PG0svaz7V6w9NYO3xSW8PQ@mail.gmail.com>
+Subject: Re: [PATCH V6 08/30] thermal: exynos: Add missing definations and
+ code cleanup
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, jonghwa3.lee@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 06:46:41PM -0700, Guenter Roeck wrote:
-> On Fri, Jun 21, 2013 at 11:21:01AM +1000, Michael Ellerman wrote:
-> > 
-> > On Wed, 2013-06-19 at 16:24 -0700, Guenter Roeck wrote:
-> > > On Wed, Jun 19, 2013 at 03:15:19PM -0700, Greg Kroah-Hartman wrote:
-> > > > On Wed, Jun 19, 2013 at 01:43:48PM -0700, Guenter Roeck wrote:
-> > > > > On Wed, Jun 19, 2013 at 10:42:36AM -0300, Fabio Estevam wrote:
-> > > > > > Hi Guenter,
-> > > > > > 
-> > > > > > FYI
-> > > > > > 
-> > > > > > I asked Stephen to include m5272c3_defconfig as part of his daily
-> > > > > > build and now it is available:
-> > > > > > http://kisskb.ellerman.id.au/kisskb/buildresult/8991795/
-> > > > > > 
-> > > > > Nice front-end.
-> > > > > 
-> > > > > Greg, would it be useful to set up something similar for pending stable builds ?
-> > > > > I have back-end code doing that running on one of my servers at home, but no
-> > > > > web front-end.
-> > > > > 
-> > > > > Any idea whom to talk to to set this up ? Stephen ? Michael ?
-> > > > 
-> > > > I have no idea.  I publish the stable build patches all publically, so a
-> > > > build-bot could easily be built using it, which would be great to have.
-> > > > 
-> > > The build-bot isn't the problem; as I mentioned above, I already have one
-> > > running. I was referring to a web front-end for it.
-> > 
-> > Hi Guenter,
-> > 
-> > Actually I hate the web front end, but that's because I wrote it :)
-> > 
-> > It's pretty, but it doesn't scale very well, "one of these days" I'll
-> > rewrite it. My plan is to actually just make it a frontend for buildbot
-> > - but I never have time :)
-> > 
-> Time is my problem too ... but then it is more costly for me if a problem
-> makes it into a release, so I have some interest in getting builds
-> (and at some point run tests) automated as much as possible.
-> 
-> > We already build the published stable branches, see:
-> >   http://kisskb.ellerman.id.au/kisskb/branch/
-> > 
-> > But I think you're talking about building the patch queues before they
-> > go into git? If so the only hurdle would be someone publishing a git
-> 
-> Yes, that is the idea.
-> 
-> > tree of them - kisskb only knows how to build git trees.
-> > 
-> I "solved" that problem by creating a front-end to my own nightly build script,
-> which also works on git repos. Essentially it takes the stable queue from Greg's
-> repo on kernel.org, executes quiltimport on top of the respective stable
-> branch, and then starts the actual build script.
-> 
-> Would it help if I manage to automate that and publish the resulting branches in
-> a repository on kernel.org, say, on a nightly basis ?
-> 
-> Another key advantage of having a git repository would be that it would trigger
-> auto-builds as well as smatch runs by others, so test coverage would be much
-> better than today.
-> 
-> Greg, would it be ok with you if I create such a repository, or would you want
-> to create and manage one yourself ? 
+Hi Eduardo,
 
-I don't want to create any such repo, so feel free to do it yourself :)
+On Thu, Jun 20, 2013 at 1:25 AM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
+>> This patch adds some extra register bitfield definations and cleans
+>> up the code to prepare for moving register macros and definations inside
+>> the TMU data section.
+>>
+>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> ---
+>>  drivers/thermal/samsung/exynos_tmu.c |   62 +++++++++++++++++++++++++---------
+>>  1 files changed, 46 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+>> index 5df04a1..fa33a48 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>> @@ -43,9 +43,12 @@
+>>
+>>  #define EXYNOS_TMU_TRIM_TEMP_MASK    0xff
+>>  #define EXYNOS_TMU_GAIN_SHIFT                8
+>> +#define EXYNOS_TMU_GAIN_MASK         0xf
+>>  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT 24
+>> -#define EXYNOS_TMU_CORE_ON           3
+>> -#define EXYNOS_TMU_CORE_OFF          2
+>> +#define EXYNOS_TMU_REF_VOLTAGE_MASK  0x1f
+>> +#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK        0xf
+>> +#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT       8
+>> +#define EXYNOS_TMU_CORE_EN_SHIFT     0
+>>  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET   50
+>>
+>>  /* Exynos4210 specific registers */
+>> @@ -63,6 +66,7 @@
+>>  #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK      0x10
+>>  #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK      0x100
+>>  #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK      0x1000
+>> +#define EXYNOS4210_TMU_TRIG_LEVEL_MASK       0x1111
+>>  #define EXYNOS4210_TMU_INTCLEAR_VAL  0x1111
+>>
+>>  /* Exynos5250 and Exynos4412 specific registers */
+>> @@ -72,17 +76,30 @@
+>>  #define EXYNOS_EMUL_CON              0x80
+>>
+>>  #define EXYNOS_TRIMINFO_RELOAD               0x1
+>> +#define EXYNOS_TRIMINFO_SHIFT                0x0
+>> +#define EXYNOS_TMU_RISE_INT_MASK     0x111
+>> +#define EXYNOS_TMU_RISE_INT_SHIFT    0
+>> +#define EXYNOS_TMU_FALL_INT_MASK     0x111
+>> +#define EXYNOS_TMU_FALL_INT_SHIFT    12
+>>  #define EXYNOS_TMU_CLEAR_RISE_INT    0x111
+>>  #define EXYNOS_TMU_CLEAR_FALL_INT    (0x111 << 12)
+>> -#define EXYNOS_MUX_ADDR_VALUE                6
+>> -#define EXYNOS_MUX_ADDR_SHIFT                20
+>>  #define EXYNOS_TMU_TRIP_MODE_SHIFT   13
+>> +#define EXYNOS_TMU_TRIP_MODE_MASK    0x7
+>> +
+>> +#define EXYNOS_TMU_INTEN_RISE0_SHIFT 0
+>> +#define EXYNOS_TMU_INTEN_RISE1_SHIFT 4
+>> +#define EXYNOS_TMU_INTEN_RISE2_SHIFT 8
+>> +#define EXYNOS_TMU_INTEN_RISE3_SHIFT 12
+>> +#define EXYNOS_TMU_INTEN_FALL0_SHIFT 16
+>> +#define EXYNOS_TMU_INTEN_FALL1_SHIFT 20
+>> +#define EXYNOS_TMU_INTEN_FALL2_SHIFT 24
+>>
+>>  #define EFUSE_MIN_VALUE 40
+>>  #define EFUSE_MAX_VALUE 100
+>>
+>>  #ifdef CONFIG_THERMAL_EMULATION
+>>  #define EXYNOS_EMUL_TIME     0x57F0
+>> +#define EXYNOS_EMUL_TIME_MASK        0xffff
+>>  #define EXYNOS_EMUL_TIME_SHIFT       16
+>>  #define EXYNOS_EMUL_DATA_SHIFT       8
+>>  #define EXYNOS_EMUL_DATA_MASK        0xFF
+>> @@ -261,24 +278,37 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+>>       mutex_lock(&data->lock);
+>>       clk_enable(data->clk);
+>>
+>> -     con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
+>> -             pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
+>> +     con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
+>>
+>> -     if (data->soc == SOC_ARCH_EXYNOS) {
+>> -             con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
+>> -             con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>> +     if (pdata->reference_voltage) {
+>> +             con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
+>> +                             EXYNOS_TMU_REF_VOLTAGE_SHIFT);
+>> +             con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
+>> +     }
+>> +
+>> +     if (pdata->gain) {
+>> +             con &= ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
+>> +             con |= (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
+>> +     }
+>> +
+>> +     if (pdata->noise_cancel_mode) {
+>> +             con &= ~(EXYNOS_TMU_TRIP_MODE_MASK <<
+>> +                                     EXYNOS_TMU_TRIP_MODE_SHIFT);
+>> +             con |= (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
+>>       }
+>>
+>>       if (on) {
+>> -             con |= EXYNOS_TMU_CORE_ON;
+>
+>
+>
+> Before, in order to turn core on you had:
+>         con = con | 3;
+>
+> now you do:
+>         con = con | (1 << 0);
+>
+> To me, before you would set bit 1 and 0, now you set bit 0.
+>
+>
+>> -             interrupt_en = pdata->trigger_level3_en << 12 |
+>> -                     pdata->trigger_level2_en << 8 |
+>> -                     pdata->trigger_level1_en << 4 |
+>> -                     pdata->trigger_level0_en;
+>> +             con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
+>> +             interrupt_en =
+>> +             pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
+>> +             pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
+>> +             pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
+>> +             pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
+>>               if (pdata->threshold_falling)
+>> -                     interrupt_en |= interrupt_en << 16;
+>> +                     interrupt_en |=
+>> +                             interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
+>>       } else {
+>> -             con |= EXYNOS_TMU_CORE_OFF;
+>> +             con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
+>
+>
+> Before, in order to turno core off you had:
+>         con = con | 2;
+>
+> now you do:
+>         con = con & ~(1 << 0);
+>
+> To me, before you would set bit 2, now you clear bit 0.
+>
+> Using the approach on this patch looks correct to me if you have 1 bit
+> core_en for instance.
+>
+> so, Is this a fix?
+>
+> Just to be clear, is this what you want ?
+Yes you are right. Bit 0 is the actual enable bit. Bit 1 is the
+reserve bit and its default value is 1. Earlier both bits are used to
+turn on/off the controller which was wrong so this patch rectifies it.
 
-thanks,
-
-greg k-h
+Thanks,
+Amit
+>
+>>               interrupt_en = 0; /* Disable all interrupts */
+>>       }
+>>       writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
+>>
+>
+>
+> --
+> You have got to be excited about what you are doing. (L. Lamport)
+>
+> Eduardo Valentin
+>
