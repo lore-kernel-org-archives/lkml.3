@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965707Ab3FULuD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 07:50:03 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:38976 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965568Ab3FULuB (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 21 Jun 2013 07:50:01 -0400
-Message-Id: <51C45A0602000078000DFA4C@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Fri, 21 Jun 2013 12:49:58 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Roger Pau Monne" <roger.pau@citrix.com>
-Cc: <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 4/4] xen-blkfront: increase the default
- number of indirect segments
-References: <1371812216-17093-1-git-send-email-roger.pau@citrix.com>
- <1371812216-17093-5-git-send-email-roger.pau@citrix.com>
-In-Reply-To: <1371812216-17093-5-git-send-email-roger.pau@citrix.com>
-Mime-Version: 1.0
+	id S965713Ab3FULyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 07:54:23 -0400
+Received: from mout.web.de ([212.227.15.4]:64554 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965513Ab3FULyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 07:54:21 -0400
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+To: bridge@lists.linux-foundation.org
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+Subject: [PATCH] bridge: prevent flooding IPv6 packets that do not have a listener
+Date: Fri, 21 Jun 2013 13:53:58 +0200
+Message-Id: <1371815638-5618-1-git-send-email-linus.luessing@web.de>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+X-Provags-ID: V03:K0:mSHJ+uDUYdac4Wqhe1DLmcIdR+1PgucTUUbelXDANBDPNs6b+pd
+ 5tGDPeR07T/oIq0qb/chEoWg344PyeddMmJ/DAfA7VE63qP8p4oFI6k8qKSDnjXnCOB+dBF
+ 6QL4JVLWik8Yw6NOyRMpfbwjsqaZ0bsVPzw2yXzo9tFjTuTOlfhSylDvmT3kTg5w0PdUcTn
+ kemzn78cN9rgfbk95i9FA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 21.06.13 at 12:56, Roger Pau Monne <roger.pau@citrix.com> wrote:
-> When using certain storage devices (like RAID) having a bigger number
-> of segments per request provides better performance.
+Currently if there is no listener for a certain group then IPv6 packets
+for that group are flooded on all ports, even though there might be no
+host and router interested in it on a port.
 
-And there's no drawback (higher memory foot print if nothing else)
-on "certain other storage devices"? Adjusting defaults just because
-it is beneficial for some devices, but may adversely affect others
-is not really a good thing - in such an event, you'd be better off
-determining the default dynamically per device.
+With this commit they are only forwarded to ports with a multicast
+router.
 
-Jan
+Just like commit bd4265fe36 ("bridge: Only flood unregistered groups
+to routers") did for IPv4, let's do the same for IPv6 with the same
+reasoning.
 
-> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-> Reported-by: Steven Haigh <netwiz@crc.id.au>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/block/xen-blkfront.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> index 2e1ee34..4e3ab34 100644
-> --- a/drivers/block/xen-blkfront.c
-> +++ b/drivers/block/xen-blkfront.c
-> @@ -94,9 +94,9 @@ static const struct block_device_operations xlvbd_block_fops;
->   * by the backend driver.
->   */
->  
-> -static unsigned int xen_blkif_max_segments = 32;
-> +static unsigned int xen_blkif_max_segments = 64;
->  module_param_named(max, xen_blkif_max_segments, int, S_IRUGO);
-> -MODULE_PARM_DESC(max, "Maximum amount of segments in indirect requests 
-> (default is 32)");
-> +MODULE_PARM_DESC(max, "Maximum amount of segments in indirect requests 
-> (default is 64)");
->  
->  #define BLK_RING_SIZE __CONST_RING_SIZE(blkif, PAGE_SIZE)
->  
-> -- 
-> 1.7.7.5 (Apple Git-26)
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org 
-> http://lists.xen.org/xen-devel 
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+---
+ net/bridge/br_multicast.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index 81f2389..8bdfaf5 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1465,8 +1465,14 @@ static int br_multicast_ipv6_rcv(struct net_bridge *br,
+ 	 *  - MLD has always Router Alert hop-by-hop option
+ 	 *  - But we do not support jumbrograms.
+ 	 */
+-	if (ip6h->version != 6 ||
+-	    ip6h->nexthdr != IPPROTO_HOPOPTS ||
++	if (ip6h->version != 6)
++		return 0;
++
++	/* Prevent flooding this packet if there is no listener present */
++	if (ipv6_is_transient_multicast(&ip6h->daddr))
++		BR_INPUT_SKB_CB(skb)->mrouters_only = 1;
++
++	if (ip6h->nexthdr != IPPROTO_HOPOPTS ||
+ 	    ip6h->payload_len == 0)
+ 		return 0;
+ 
+-- 
+1.7.10.4
 
