@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423261Ab3FUHZf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:25:35 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:28564 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422695Ab3FUHZc (ORCPT
+	id S1030417Ab3FUHZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 03:25:57 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20126 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030336Ab3FUHZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:25:32 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-dc-51c3ffeafbb9
+	Fri, 21 Jun 2013 03:25:54 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-5e-51c40000269c
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
         "'Bjorn Helgaas'" <bhelgaas@google.com>
@@ -26,44 +26,45 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
         "'Tomasz Figa'" <t.figa@samsung.com>,
         "'Pratyush Anand'" <pratyush.anand@st.com>,
         "'Mohit KUMAR'" <Mohit.KUMAR@st.com>, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH V10 2/4] ARM: EXYNOS: Enable PCIe support for Exynos5440
-Date: Fri, 21 Jun 2013 16:25:29 +0900
-Message-id: <003b01ce6e50$81fa0bd0$85ee2370$@samsung.com>
+Subject: [PATCH V10 3/4] ARM: dts: Add pcie controller node for Samsung
+ EXYNOS5440 SoC
+Date: Fri, 21 Jun 2013 16:25:51 +0900
+Message-id: <003c01ce6e50$8f55d890$ae0189b0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5uUID+PajCCy1jSDS0BXX2k62OmA==
+Thread-index: Ac5uUI3TybM2zsuMRXaVqkteDwsW/w==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA5WSW0iTYRjHe/cdNgfC5/LwZlhhZCQe8vyKGaII34Ud7C4jbK4PJ3kY24zw
-	xmGJZam5rVwrbOYoE0n97DAPydLaUDfUmUtLPJBGKgqV5SHSNmew2+7+7/P++P+ei4eHCVjC
-	n5eTL2ek+cLcQJKPD2x+iQhd2OpNPzr1IQhd3XpFoD9KExfpS8RovucIMt6fIdCCpZVEI3U2
-	Aq2OxaAK3SiJ2M92Ao10PCCRtdZMIs1gNwe13tkAqMx2EDWUvACofvgJhpo1izjqfKrHkUmj
-	B2huuoST5EM31TYB+veGEtCV6lGSnmWHAa1jC+kJexdJt+mL6UFNHaBXDRUO4HkjoNfnQ+i5
-	tdcY/YPdd9ozg3/sIpObc5mRhh+/wBc3sBZS0s+9Mv6yj1AALVkOPHiQioYa9Qzhyr5waLJ5
-	ey6gHgNY0UX9Y251TGDlgO+YPwJwXFO389gA8JNFhTspkgqCKyu9XGf2pk5B+2gp7oQw6joJ
-	2Vp2W7GbouHanHUbwqlDsEVXBZzZk4qHi0oj5specE01uV2KUcGwud3MceX9sK1pCXOtdAAa
-	rIvAJQuD1nfvCRfjDbu/LgOnGFKzPNiiVO/IKPhL1eMo5Tk+AiBr3OnZA980jOG3ga/WTa11
-	U2vd1Fo3hQ7gjcCHkYgksqxsaUyYTJgnK8zPDhMV5LHAdS/VBjBlTOgBIoe+GvP3ERU47ilf
-	nhkRFRuJYqJjoiLj4mP/bxzo53n4WkK6gMoWyplLDCNhpJnSwlxG1gM4PA9/BYi2p5hnR0sV
-	Z9L6cs8nzku9Qm6aVEm2e4m7ivofjtAZ1rsW9bS+L0vAh/aavmK8SB6ZlZp6MjQr9BxXrEm2
-	J7Z9XG1PSQuqLJtesp0Iv9ERcLZ73ey3bOssekbZwwbygr69Tdm7yfpPK2qGur+vdlbJEkD9
-	0M/kWcNGnEm2HIjLxMKIYEwqE/4FbkaVYUUDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAJsWRmVeSWpSXmKPExsVy+t9jAd1X/w8HGmyZo2DR/H87q8XfScfY
-	LZY0ZVi8PKRpcWD2Q1aLV2c2sllcXniJ1eL7DVOL3gVX2Sw2Pb7GanF51xw2i7PzjrNZzDi/
-	j8li49RfjBbtl5QtVjRtZbRYfHE5s8X6Ga9ZLHavXMJicWzGEkaLpw+amBxEPdbMW8Po8fvX
-	JEaPvilX2TyebLrI6LFgU6nHnWt72Dw2L6n3OD9jIaPH9x29QAVbVjF6/Hyp4/H0x15mj8+b
-	5AJ4oxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
-	3lVSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZqzYdIat4BR7xc1tJ1kb
-	GGexdTFyckgImEj07LrDDGGLSVy4tx4ozsUhJLCIUeLmjIXMEM4vRonbZyazgFSxCahJfPly
-	mB3EFhHwl7h2tZUFpIhZoINNYtO8TawgCWEBD4kfT8+CFbEIqEpsWNDPCGLzClhKvJ50gBnC
-	FpT4Mfke2FBmAS2J9TuPM0HY8hKb17yFOklBYsfZ14wQy/Qkzh69wgpRIyKx78U7xgmMArOQ
-	jJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4fT2T2sG4ssHiEKMA
-	B6MSD+8KlcOBQqyJZcWVuYcYJTiYlUR4g+8AhXhTEiurUovy44tKc1KLDzEmA306kVlKNDkf
-	mFrzSuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoGx7IhRbkLK
-	x+VNRUv651j5p5bc8md5pnnDeJffPfUgod2V1cX8yZFz9e/Yv7Y+YK4uFcCq2q/ip1x5xf+V
-	1613egv7GnVvHfU2Lznht/4FX7PQxlAHRqPz+9otxD5lNCZN8rVN/jWPof9u3pc5E8r/JpjI
-	e69ZJ1crIfyL0fHg/DXqvrL2TkosxRmJhlrMRcWJAONiW9KjAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t8zY10GhiOBBg+7DCya/29ntfg76Ri7
+	xZKmDIuXhzQtDsx+yGrx6sxGNovLCy+xWny/YWrRu+Aqm8Wmx9dYLS7vmsNmcXbecTaLGef3
+	MVlsnPqL0aL9krLFiqatjBaLLy5ntlg/4zWLxe6VS1gsjs1Ywmjx9EETk4Oox5p5axg9fv+a
+	xOjRN+Uqm8eTTRcZPRZsKvW4c20Pm8fmJfUe52csZPT4vqMXqGDLKkaPny91PJ7+2Mvs8XmT
+	XABvFJdNSmpOZllqkb5dAlfGzdN9LAX3+Ssedac3MO7h6WLk5JAQMJG48uAgC4QtJnHh3nq2
+	LkYuDiGBZYwSZ+b1MMMUNTWdY4JILGKU2HtmAlTVL0aJJ5e+sYNUsQmoSXz5chjMFhHwl7h2
+	tZUFpIhZoINNYtO8TawgCWGBCIkF+/qYQGwWAVWJZ6/XMnYxcnDwClhK/NmkAxLmFRCU+DH5
+	HthJzAJaEut3HmeCsOUlNq95C3WRgsSOs68ZIXbpSew7t4QZokZEYt+Ld4wgeyUE3nBIbHwP
+	UcQiICDxbfIhFpBdEgKyEpsOQM2RlDi44gbLBEaxWUhWz0KyehaS1bOQrFjAyLKKUTS1ILmg
+	OCm9yESvODG3uDQvXS85P3cTIyS5TNjBeO+A9SHGZKD1E5mlRJPzgckpryTe0NjMyMLUxNTY
+	yNzSjDRhJXFe9RbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2Mud0Ss0tEhCqmKZ1k6v5S
+	VjJtz97q/Mmn3n3UPuDwOcF38Z6v0/d9qn62yEaPca3ufMcyZc1lKesj4qo3X59+cM/67LYZ
+	RR/42q+ZzOHRTGtU7uHv1Oz0OBQj4Wjd2ij83lu5cLHBlPt39/x1thc5dzvy/wWvJH9d+7yk
+	W2s+xdnv6jcIW/hAiaU4I9FQi7moOBEA+rDaS0QDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjk+LIzCtJLcpLzFFi42I5/e+xgC4Dw5FAg3uzNC2a/29ntfg76Ri7
+	xZKmDIuXhzQtDsx+yGrx6sxGNovLCy+xWny/YWrRu+Aqm8Wmx9dYLS7vmsNmcXbecTaLGef3
+	MVlsnPqL0aL9krLFiqatjBaLLy5ntlg/4zWLxe6VS1gsjs1Ywmjx9EETk4Oox5p5axg9fv+a
+	xOjRN+Uqm8eTTRcZPRZsKvW4c20Pm8fmJfUe52csZPT4vqMXqGDLKkaPny91PJ7+2Mvs8XmT
+	XABvVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	u0oKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjJun+1gK7vNXPOpOb2Dc
+	w9PFyMkhIWAi0dR0jgnCFpO4cG89WxcjF4eQwCJGib1nJkA5vxglnlz6xg5SxSagJvHly2Ew
+	W0TAX+La1VYWkCJmgQ42iU3zNrGCJIQFIiQW7OsDG8sioCrx7PVaxi5GDg5eAUuJP5t0QMK8
+	AoISPybfYwGxmQW0JNbvPM4EYctLbF7zlhniIgWJHWdfM0Ls0pPYd24JM0SNiMS+F+8YJzAK
+	zEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjODU9Ux6B+OqBotD
+	jAIcjEo8vAFKhwOFWBPLiitzDzFKcDArifAG3wEK8aYkVlalFuXHF5XmpBYfYkwGenQis5Ro
+	cj4wreaVxBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUAyPX0fsL
+	NoqsfdS1O/jQMcYl5dvLp9dVLd4+35ovW2hNxcGOlQtnbE0xqWqcrexfvvf9G/t533ZuSw9/
+	c6RzgWtAVfPbi19v7pZckn49LO6e2OorzV0HmU9HrOPs/qaW9G9lTbOf658AQf4Ibft0r7yQ
+	+Zcu2UZVGvzUnJTw/Uyo4e68F0vnebEpsRRnJBpqMRcVJwIAhMjRIKEDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -71,39 +72,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable PCIe support for Exynos5440 which has two PCIe controllers.
+Exynos5440 has two PCIe controllers which can be used as root complex
+for PCIe interface.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/Kconfig             |    1 +
- arch/arm/mach-exynos/Kconfig |    2 ++
- 2 files changed, 3 insertions(+)
+ arch/arm/boot/dts/exynos5440.dtsi |   38 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ca30d75..421ce68 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1428,6 +1428,7 @@ config PCI_HOST_ITE8152
- 	select DMABOUNCE
- 
- source "drivers/pci/Kconfig"
-+source "drivers/pci/pcie/Kconfig"
- 
- source "drivers/pcmcia/Kconfig"
- 
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index 359af2c..f5f65b5 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -95,6 +95,8 @@ config SOC_EXYNOS5440
- 	select ARCH_HAS_OPP
- 	select HAVE_ARM_ARCH_TIMER
- 	select AUTO_ZRELADDR
-+	select MIGHT_HAVE_PCI
-+	select PCI_DOMAINS if PCI
- 	select PINCTRL_EXYNOS5440
- 	select PM_OPP
- 	help
+diff --git a/arch/arm/boot/dts/exynos5440.dtsi b/arch/arm/boot/dts/exynos5440.dtsi
+index 03d40c0..1ac4f5b 100644
+--- a/arch/arm/boot/dts/exynos5440.dtsi
++++ b/arch/arm/boot/dts/exynos5440.dtsi
+@@ -230,4 +230,42 @@
+ 		clocks = <&clock 24>;
+ 		clock-names = "usbhost";
+ 	};
++
++	pcie@290000 {
++		compatible = "samsung,exynos5440-pcie", "snps,dw-pcie";
++		reg = <0x290000 0x1000
++			0x270000 0x1000
++			0x271000 0x40>;
++		interrupts = <0 20 0>, <0 21 0>, <0 22 0>;
++		clocks = <&clock 28>, <&clock 27>;
++		clock-names = "pcie", "pcie_bus";
++		#address-cells = <3>;
++		#size-cells = <2>;
++		device_type = "pci";
++		ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00001000   /* configuration space */
++			  0x81000000 0 0	  0x40001000 0 0x00010000   /* downstream I/O */
++			  0x82000000 0 0x40011000 0x40011000 0 0x1ffef000>; /* non-prefetchable memory */
++		#interrupt-cells = <1>;
++		interrupt-map-mask = <0 0 0 0>;
++		interrupt-map = <0x0 0 &gic 53>;
++	};
++
++	pcie@2a0000 {
++		compatible = "samsung,exynos5440-pcie", "snps,dw-pcie";
++		reg = <0x2a0000 0x1000
++			0x272000 0x1000
++			0x271040 0x40>;
++		interrupts = <0 23 0>, <0 24 0>, <0 25 0>;
++		clocks = <&clock 29>, <&clock 27>;
++		clock-names = "pcie", "pcie_bus";
++		#address-cells = <3>;
++		#size-cells = <2>;
++		device_type = "pci";
++		ranges = <0x00000800 0 0x60000000 0x60000000 0 0x00001000   /* configuration space */
++			  0x81000000 0 0	  0x60001000 0 0x00010000   /* downstream I/O */
++			  0x82000000 0 0x60011000 0x60011000 0 0x1ffef000>; /* non-prefetchable memory */
++		#interrupt-cells = <1>;
++		interrupt-map-mask = <0 0 0 0>;
++		interrupt-map = <0x0 0 &gic 56>;
++	};
+ };
 -- 
 1.7.10.4
 
