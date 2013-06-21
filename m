@@ -1,57 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946111Ab3FUV0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:26:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22520 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946061Ab3FUV0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:26:08 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BUyC4VmaGVwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5V7bKCsQ6TsA:10 a=Mz_pZ2u7bsVrBlvtC6EA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371849967.18733.134.camel@gandalf.local.home>
-Subject: Re: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
- from apic.c to irq.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Fri, 21 Jun 2013 17:26:07 -0400
-In-Reply-To: <1371848976.18733.130.camel@gandalf.local.home>
-References: <1371835898.18733.122.camel@gandalf.local.home>
-	 <1371848976.18733.130.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1946148Ab3FUV0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:26:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54493 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946097Ab3FUV0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:26:32 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Mark Brown <broonie@kernel.org>, Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
+Subject: [RFC PATCH V2 4/8] ARM: dts: OMAP4: add voltage controller nodes
+Date: Fri, 21 Jun 2013 16:25:45 -0500
+Message-ID: <1371849949-12649-5-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371849949-12649-1-git-send-email-nm@ti.com>
+References: <1371849949-12649-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 17:09 -0400, Steven Rostedt wrote:
-> On Fri, 2013-06-21 at 13:31 -0400, Steven Rostedt wrote:
-> 
-> > My testing also triggered another bug, but I'm not sure it's related to
-> > these patches or something that already existed. I'm currently
-> > investigating it now.
-> 
-> 
-> I haven't been able to reproduce it.
+OMAP443x, OMAP446x SoC use same offsets for voltage controller,
+however their voltage characteristics differ a little.
 
-Correction, I am able to reproduce it. The trick is I need to kick off
-the test as soon as I get a login prompt, as the gui is still coming up
-(this time the crash happened on pulseaudio). The test suite runs the
-test when it detects the login. I was trying to reproduce it manually,
-which was well after login was set up.
+Introduce the voltage controller nodes for the same.
 
-I'll try to make sure I can reproduce it consistently, or at least in a
-short number of tries. And then remove all the patches and see if I can
-still trigger it.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/boot/dts/omap4.dtsi    |   26 ++++++++++++++++++++++++++
+ arch/arm/boot/dts/omap443x.dtsi |   15 +++++++++++++++
+ arch/arm/boot/dts/omap4460.dtsi |   16 ++++++++++++++++
+ 3 files changed, 57 insertions(+)
 
--- Steve
-
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 3b44546..a153e8d 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -104,6 +104,11 @@
+ 			ti,hwmods = "counter_32k";
+ 		};
+ 
++		sysclk_in: sys_clkin {
++			#clock-cells = <0>;
++			compatible = "ti,omap-clock";
++		};
++
+ 		dpll_mpu: dpll_mpu {
+ 			#clock-cells = <0>;
+ 			compatible = "ti,omap-clock";
+@@ -663,5 +668,26 @@
+ 			ram-bits = <12>;
+ 			ti,has-mailbox;
+ 		};
++
++		vc: vc@0x4A307B88 {
++			compatible = "ti,omap4-vc";
++			clocks = <&sysclk_in>;
++			reg = <0x4A307B88 0x40>;
++			reg-names = "base-address";
++
++			ti,i2c-high-speed; /* belongs to board file */
++			vc_mpu: vc_mpu {
++				compatible = "ti,omap4-vc-channel-mpu";
++				ti,master-channel;
++			};
++
++			vc_iva: vc_iva {
++				compatible = "ti,omap4-vc-channel-iva";
++			};
++
++			vc_core: vc_core {
++				compatible = "ti,omap4-vc-channel-core";
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
+index bcf455e..2b0deb5 100644
+--- a/arch/arm/boot/dts/omap443x.dtsi
++++ b/arch/arm/boot/dts/omap443x.dtsi
+@@ -31,3 +31,18 @@
+ 		compatible = "ti,omap4430-bandgap";
+ 	};
+ };
++
++&vc_mpu {
++	ti,retention-micro-volts = <750000>;
++	ti,off-micro-volts = <0>;
++};
++
++&vc_iva {
++	ti,retention-micro-volts = <750000>;
++	ti,off-micro-volts = <0>;
++};
++
++&vc_core {
++	ti,retention-micro-volts = <750000>;
++	ti,off-micro-volts = <0>;
++};
+diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
+index c2f0f39..16210a1 100644
+--- a/arch/arm/boot/dts/omap4460.dtsi
++++ b/arch/arm/boot/dts/omap4460.dtsi
+@@ -39,3 +39,19 @@
+ 		gpios = <&gpio3 22 0>; /* tshut */
+ 	};
+ };
++
++&vc_mpu {
++	ti,retention-micro-volts = <750000>;
++	/* Erratum i738: Reliability impact work around */
++	ti,off-micro-volts = <750000>;
++};
++
++&vc_iva {
++	ti,retention-micro-volts = <750000>;
++	ti,off-micro-volts = <0>;
++};
++
++&vc_core {
++	ti,retention-micro-volts = <750000>;
++	ti,off-micro-volts = <0>;
++};
+-- 
+1.7.9.5
 
