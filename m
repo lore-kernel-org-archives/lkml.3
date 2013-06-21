@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423296Ab3FUH5P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:57:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37396 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422804Ab3FUH5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:57:14 -0400
-Date: Fri, 21 Jun 2013 09:57:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Vrabel <david.vrabel@citrix.com>
-cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/4] time: add a notifier chain for when the system time
- is stepped
-In-Reply-To: <1371755792-25962-3-git-send-email-david.vrabel@citrix.com>
-Message-ID: <alpine.DEB.2.02.1306210953480.4013@ionos.tec.linutronix.de>
-References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-3-git-send-email-david.vrabel@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1161472Ab3FUIFL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 04:05:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42251 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161196Ab3FUIFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 04:05:03 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86/platform: Add kvmconfig to the phony targets
+Date: Fri, 21 Jun 2013 10:04:51 +0200
+Message-Id: <1371801891-23618-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <tip-46ff53874bd935ab9955dee56d60212857e89bf3@git.kernel.org>
+References: <tip-46ff53874bd935ab9955dee56d60212857e89bf3@git.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, David Vrabel wrote:
+From: Borislav Petkov <bp@suse.de>
 
-> From: David Vrabel <david.vrabel@citrix.com>
-> 
-> The high resolution timer code gets notified of step changes to the
-> system time with clock_was_set() or clock_was_set_delayed() calls.  If
-> other parts of the kernel require similar notification there is no
-> clear place to hook into.
+... so as not to disable it with a file of the same name in the toplevel
+build directory.
 
-You fail to explain why any other part of the kernel requires a
-notification.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 91ee171f1cff..07639c656fcd 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -220,6 +220,7 @@ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)
+ 	$(Q)$(MAKE) $(clean)=arch/x86/tools
  
-We went great length to confine timekeeping inside the core code and
-now you add random notifiers along with totally ugly tasklet
-constructs. What for?
++PHONY += kvmconfig
+ kvmconfig:
+ 	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
+ 	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config arch/x86/configs/kvm_guest.config
+-- 
+1.8.3
 
-Without a reasonable explanation of the problem you are trying to
-solve this is going nowhere near the tree.
-
-Thanks,
-
-	tglx
