@@ -1,46 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161615Ab3FUQre (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 12:47:34 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:64011 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161494Ab3FUQrc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 12:47:32 -0400
+	id S1423390Ab3FUQuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 12:50:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53790 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161494Ab3FUQuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 12:50:51 -0400
+Date: Fri, 21 Jun 2013 18:50:49 +0200
+From: Jan Kara <jack@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ext2: Reduce object size when !CONFIG_PRINTK
+Message-ID: <20130621165049.GP13932@quack.suse.cz>
+References: <2e70d518b9f6b8eea33c01a36983a1ccb1839282.1371575536.git.joe@perches.com>
 MIME-Version: 1.0
-In-Reply-To: <20130621083608.GE22006@pd.tnic>
-References: <20130619175438.2852.93449.stgit@localhost.localdomain>
-	<20130620073943.GE32694@pd.tnic>
-	<51C3531D.3000600@linux.vnet.ibm.com>
-	<20130620192928.GD19877@pd.tnic>
-	<51C36288.4050405@linux.vnet.ibm.com>
-	<20130620205726.GA20863@pd.tnic>
-	<51C37291.40303@linux.vnet.ibm.com>
-	<20130621073419.GC22006@pd.tnic>
-	<51C404EA.10906@linux.vnet.ibm.com>
-	<20130621083608.GE22006@pd.tnic>
-Date: Fri, 21 Jun 2013 09:47:31 -0700
-Message-ID: <CA+8MBbJkaiFhtmidBck6oiNXbzS=cUn-m2YkwWmNG+DjmtDiDQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
- banks listed in APEI HEST CMC
-From: Tony Luck <tony.luck@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, ananth@in.ibm.com,
-        masbock@linux.vnet.ibm.com, lcm@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2e70d518b9f6b8eea33c01a36983a1ccb1839282.1371575536.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 1:36 AM, Borislav Petkov <bp@alien8.de> wrote:
-> So ok, I'm persuaded, yet another bitfield it is ... :-\
+On Tue 18-06-13 10:14:39, Joe Perches wrote:
+> Reducing the object size ~5kb/15% could be useful for embedded
+> systems.
+> 
+> Add #ifdef CONFIG_PRINTK #else #endif blocks
+> to hold formats and arguments, passing " " to
+> functions when !CONFIG_PRINTK and still verifying
+> format and arguments with no_printk.
+> 
+>  $ size fs/ext2/built-in.o*
+>     text   data	    bss	    dec	    hex	filename
+>    31297     44	      4	  31345	   7a71	fs/ext2/built-in.o.ext2.new
+>    36288     44	      4	  36336	   8df0	fs/ext2/built-in.o.ext2.old
+> 
+>  $ grep -E "CONFIG_EXT2|CONFIG_PRINTK" .config
+>  # CONFIG_PRINTK is not set
+>  CONFIG_EXT2_FS=y
+>  # CONFIG_EXT2_FS_XATTR is not set
+>  # CONFIG_EXT2_FS_XIP is not set
+  I'm somewhat reluctant to merge this unless I know someone really
+cares. It looks a bit ugly to ifdef every function doing some printing just
+to reduce object size when CONFIG_PRINTK is disabled... And in future LTO
+might help us ;)
 
-Let's add some more comments on what each of these bitfields mean. Otherwise
-we will be going back over this next time we have a patch that touches one
-of them and we've all forgotten the subtle details explained in this
-e-mail thread.
+								Honza
 
--Tony
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  fs/ext2/ext2.h  | 22 ++++++++++++++++++++--
+>  fs/ext2/super.c |  6 +++---
+>  2 files changed, 23 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+> index d9a17d0..888ae31 100644
+> --- a/fs/ext2/ext2.h
+> +++ b/fs/ext2/ext2.h
+> @@ -767,12 +767,30 @@ struct dentry *ext2_get_parent(struct dentry *child);
+>  
+>  /* super.c */
+>  extern __printf(3, 4)
+> -void ext2_error(struct super_block *, const char *, const char *, ...);
+> +void __ext2_error(struct super_block *, const char *, const char *, ...);
+>  extern __printf(3, 4)
+> -void ext2_msg(struct super_block *, const char *, const char *, ...);
+> +void __ext2_msg(struct super_block *, const char *, const char *, ...);
+>  extern void ext2_update_dynamic_rev (struct super_block *sb);
+>  extern void ext2_write_super (struct super_block *);
+>  
+> +#ifdef CONFIG_PRINTK
+> +#define ext2_error(sb, func, fmt, ...)					\
+> +	__ext2_error(sb, func, fmt, ##__VA_ARGS__)
+> +#define ext2_msg(sb, prefix, fmt, ...)					\
+> +	__ext2_msg(sb, prefix, fmt, ##__VA_ARGS__)
+> +#else
+> +#define ext2_error(sb, func, fmt, ...)					\
+> +do {									\
+> +	no_printk(fmt, ##__VA_ARGS__);					\
+> +	__ext2_error(sb, func, " ");					\
+> +} while (0)
+> +#define ext2_msg(sb, prefix, fmt, ...)					\
+> +do {									\
+> +	no_printk(fmt, ##__VA_ARGS__);					\
+> +	__ext2_msg(sb, prefix, " ");					\
+> +} while (0)
+> +#endif
+> +
+>  /*
+>   * Inodes and files operations
+>   */
+> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+> index 2885349..61ffb3f 100644
+> --- a/fs/ext2/super.c
+> +++ b/fs/ext2/super.c
+> @@ -45,8 +45,8 @@ static int ext2_sync_fs(struct super_block *sb, int wait);
+>  static int ext2_freeze(struct super_block *sb);
+>  static int ext2_unfreeze(struct super_block *sb);
+>  
+> -void ext2_error(struct super_block *sb, const char *function,
+> -		const char *fmt, ...)
+> +void __ext2_error(struct super_block *sb, const char *function,
+> +		  const char *fmt, ...)
+>  {
+>  	struct va_format vaf;
+>  	va_list args;
+> @@ -80,7 +80,7 @@ void ext2_error(struct super_block *sb, const char *function,
+>  	}
+>  }
+>  
+> -void ext2_msg(struct super_block *sb, const char *prefix,
+> +void __ext2_msg(struct super_block *sb, const char *prefix,
+>  		const char *fmt, ...)
+>  {
+>  	struct va_format vaf;
+> -- 
+> 1.8.1.2.459.gbcd45b4.dirty
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
