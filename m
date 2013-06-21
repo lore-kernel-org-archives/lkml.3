@@ -1,95 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161572Ab3FUOam (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:30:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59685 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161512Ab3FUOaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:30:39 -0400
-Date: Fri, 21 Jun 2013 15:30:18 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, viresh.kumar@linaro.org,
-        cpufreq@vger.kernel.org
-Message-ID: <20130621143018.GT27646@sirena.org.uk>
-References: <1371669474-24473-1-git-send-email-nm@ti.com>
- <20130619223828.GK1403@sirena.org.uk>
- <20130620124542.GA28320@kahuna>
- <20130621095157.GK27646@sirena.org.uk>
- <20130621124355.GA16513@kahuna>
+	id S1423008Ab3FUOb3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:31:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38852 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161535Ab3FUOb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 10:31:27 -0400
+Message-ID: <51C463B4.9070506@ti.com>
+Date: Fri, 21 Jun 2013 10:31:16 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FT/vNgDLxVq4t/AU"
-Content-Disposition: inline
-In-Reply-To: <20130621124355.GA16513@kahuna>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH] regulator: core: allow consumers to request to
- closes step voltage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: amit daniel kachhap <amit.daniel@samsung.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        <jonghwa3.lee@samsung.com>
+Subject: Re: [PATCH V6 08/30] thermal: exynos: Add missing definations and
+ code cleanup
+References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com> <1371451599-31035-9-git-send-email-amit.daniel@samsung.com> <51C20CCC.3060502@ti.com> <CADGdYn6FHXd2YELP1z9zbqnf3Yd0PG0svaz7V6w9NYO3xSW8PQ@mail.gmail.com>
+In-Reply-To: <CADGdYn6FHXd2YELP1z9zbqnf3Yd0PG0svaz7V6w9NYO3xSW8PQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2ECWEFKCHGBFAKLBVBUXB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+------enig2ECWEFKCHGBFAKLBVBUXB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---FT/vNgDLxVq4t/AU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 20-06-2013 22:01, amit daniel kachhap wrote:
+> Hi Eduardo,
+>=20
+> On Thu, Jun 20, 2013 at 1:25 AM, Eduardo Valentin
+> <eduardo.valentin@ti.com> wrote:
+>> On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
+>>> This patch adds some extra register bitfield definations and cleans
+>>> up the code to prepare for moving register macros and definations ins=
+ide
+>>> the TMU data section.
+>>>
+>>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>>> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>>> ---
+>>>  drivers/thermal/samsung/exynos_tmu.c |   62 ++++++++++++++++++++++++=
++---------
+>>>  1 files changed, 46 insertions(+), 16 deletions(-)
+>>>
+>>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/s=
+amsung/exynos_tmu.c
+>>> index 5df04a1..fa33a48 100644
+>>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>>> @@ -43,9 +43,12 @@
+>>>
+>>>  #define EXYNOS_TMU_TRIM_TEMP_MASK    0xff
+>>>  #define EXYNOS_TMU_GAIN_SHIFT                8
+>>> +#define EXYNOS_TMU_GAIN_MASK         0xf
+>>>  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT 24
+>>> -#define EXYNOS_TMU_CORE_ON           3
+>>> -#define EXYNOS_TMU_CORE_OFF          2
+>>> +#define EXYNOS_TMU_REF_VOLTAGE_MASK  0x1f
+>>> +#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK        0xf
+>>> +#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT       8
+>>> +#define EXYNOS_TMU_CORE_EN_SHIFT     0
+>>>  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET   50
+>>>
+>>>  /* Exynos4210 specific registers */
+>>> @@ -63,6 +66,7 @@
+>>>  #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK      0x10
+>>>  #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK      0x100
+>>>  #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK      0x1000
+>>> +#define EXYNOS4210_TMU_TRIG_LEVEL_MASK       0x1111
+>>>  #define EXYNOS4210_TMU_INTCLEAR_VAL  0x1111
+>>>
+>>>  /* Exynos5250 and Exynos4412 specific registers */
+>>> @@ -72,17 +76,30 @@
+>>>  #define EXYNOS_EMUL_CON              0x80
+>>>
+>>>  #define EXYNOS_TRIMINFO_RELOAD               0x1
+>>> +#define EXYNOS_TRIMINFO_SHIFT                0x0
+>>> +#define EXYNOS_TMU_RISE_INT_MASK     0x111
+>>> +#define EXYNOS_TMU_RISE_INT_SHIFT    0
+>>> +#define EXYNOS_TMU_FALL_INT_MASK     0x111
+>>> +#define EXYNOS_TMU_FALL_INT_SHIFT    12
+>>>  #define EXYNOS_TMU_CLEAR_RISE_INT    0x111
+>>>  #define EXYNOS_TMU_CLEAR_FALL_INT    (0x111 << 12)
+>>> -#define EXYNOS_MUX_ADDR_VALUE                6
+>>> -#define EXYNOS_MUX_ADDR_SHIFT                20
+>>>  #define EXYNOS_TMU_TRIP_MODE_SHIFT   13
+>>> +#define EXYNOS_TMU_TRIP_MODE_MASK    0x7
+>>> +
+>>> +#define EXYNOS_TMU_INTEN_RISE0_SHIFT 0
+>>> +#define EXYNOS_TMU_INTEN_RISE1_SHIFT 4
+>>> +#define EXYNOS_TMU_INTEN_RISE2_SHIFT 8
+>>> +#define EXYNOS_TMU_INTEN_RISE3_SHIFT 12
+>>> +#define EXYNOS_TMU_INTEN_FALL0_SHIFT 16
+>>> +#define EXYNOS_TMU_INTEN_FALL1_SHIFT 20
+>>> +#define EXYNOS_TMU_INTEN_FALL2_SHIFT 24
+>>>
+>>>  #define EFUSE_MIN_VALUE 40
+>>>  #define EFUSE_MAX_VALUE 100
+>>>
+>>>  #ifdef CONFIG_THERMAL_EMULATION
+>>>  #define EXYNOS_EMUL_TIME     0x57F0
+>>> +#define EXYNOS_EMUL_TIME_MASK        0xffff
+>>>  #define EXYNOS_EMUL_TIME_SHIFT       16
+>>>  #define EXYNOS_EMUL_DATA_SHIFT       8
+>>>  #define EXYNOS_EMUL_DATA_MASK        0xFF
+>>> @@ -261,24 +278,37 @@ static void exynos_tmu_control(struct platform_=
+device *pdev, bool on)
+>>>       mutex_lock(&data->lock);
+>>>       clk_enable(data->clk);
+>>>
+>>> -     con =3D pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIF=
+T |
+>>> -             pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
+>>> +     con =3D readl(data->base + EXYNOS_TMU_REG_CONTROL);
+>>>
+>>> -     if (data->soc =3D=3D SOC_ARCH_EXYNOS) {
+>>> -             con |=3D pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MO=
+DE_SHIFT;
+>>> -             con |=3D (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIF=
+T);
+>>> +     if (pdata->reference_voltage) {
+>>> +             con &=3D ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
+>>> +                             EXYNOS_TMU_REF_VOLTAGE_SHIFT);
+>>> +             con |=3D pdata->reference_voltage << EXYNOS_TMU_REF_VOL=
+TAGE_SHIFT;
+>>> +     }
+>>> +
+>>> +     if (pdata->gain) {
+>>> +             con &=3D ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIF=
+T);
+>>> +             con |=3D (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
+>>> +     }
+>>> +
+>>> +     if (pdata->noise_cancel_mode) {
+>>> +             con &=3D ~(EXYNOS_TMU_TRIP_MODE_MASK <<
+>>> +                                     EXYNOS_TMU_TRIP_MODE_SHIFT);
+>>> +             con |=3D (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_M=
+ODE_SHIFT);
+>>>       }
+>>>
+>>>       if (on) {
+>>> -             con |=3D EXYNOS_TMU_CORE_ON;
+>>
+>>
+>>
+>> Before, in order to turn core on you had:
+>>         con =3D con | 3;
+>>
+>> now you do:
+>>         con =3D con | (1 << 0);
+>>
+>> To me, before you would set bit 1 and 0, now you set bit 0.
+>>
+>>
+>>> -             interrupt_en =3D pdata->trigger_level3_en << 12 |
+>>> -                     pdata->trigger_level2_en << 8 |
+>>> -                     pdata->trigger_level1_en << 4 |
+>>> -                     pdata->trigger_level0_en;
+>>> +             con |=3D (1 << EXYNOS_TMU_CORE_EN_SHIFT);
+>>> +             interrupt_en =3D
+>>> +             pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIF=
+T |
+>>> +             pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIF=
+T |
+>>> +             pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIF=
+T |
+>>> +             pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIF=
+T;
+>>>               if (pdata->threshold_falling)
+>>> -                     interrupt_en |=3D interrupt_en << 16;
+>>> +                     interrupt_en |=3D
+>>> +                             interrupt_en << EXYNOS_TMU_INTEN_FALL0_=
+SHIFT;
+>>>       } else {
+>>> -             con |=3D EXYNOS_TMU_CORE_OFF;
+>>> +             con &=3D ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
+>>
+>>
+>> Before, in order to turno core off you had:
+>>         con =3D con | 2;
+>>
+>> now you do:
+>>         con =3D con & ~(1 << 0);
+>>
+>> To me, before you would set bit 2, now you clear bit 0.
+>>
+>> Using the approach on this patch looks correct to me if you have 1 bit=
 
-On Fri, Jun 21, 2013 at 07:43:55AM -0500, Nishanth Menon wrote:
-> On 10:51-20130621, Mark Brown wrote:
+>> core_en for instance.
+>>
+>> so, Is this a fix?
+>>
+>> Just to be clear, is this what you want ?
+> Yes you are right. Bit 0 is the actual enable bit. Bit 1 is the
+> reserve bit and its default value is 1. Earlier both bits are used to
+> turn on/off the controller which was wrong so this patch rectifies it.
 
-> > No, the consumer really doesn't want to be aware of linear step
-> > regulators.  Why would it care that there even are linear steps?  If
-> > the consumer is doing this based on the properties of the regulator
-> > rather than on the properties of the consumer this indicates that the
-> > consumer has a problem  If the consumer is doing this based on the
-> > properties of the regulator rather than on the properties of the
-> > consumer this indicates that the consumer has a problem
+Care to mention this in your patch description? It is good for code histo=
+ry.
 
-> The specific case that I am trying to tackle is as follows:
-> cpufreq-cpu0 uses definitions of voltages that are SoC specific. For a
-> given frequency, the optimal voltage is X, max voltage(Y) is already
-> expected to be in constraints for device functionality. We however want
-> to find the closest voltage for a regulator in range X to Y best
-> achievable by regulator. I think the area where I am getting confused is
-> this: I am thinking the job belongs to the consumer/regulator core to
-> find the best match. However, looking at implementations in existing
-> regulators and based on your explanation, it seems to be the job of
-> the regulator driver rather than the consumer/ regulator core to provide
-> the best match.
+>=20
+> Thanks,
+> Amit
+>>
+>>>               interrupt_en =3D 0; /* Disable all interrupts */
+>>>       }
+>>>       writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
+>>>
+>>
+>>
+>> --
+>> You have got to be excited about what you are doing. (L. Lamport)
+>>
+>> Eduardo Valentin
+>>
+>=20
+>=20
 
-Right, though the consumer does have to provide a voltage range to the
-regulator to allow this to happen - if the consumer doesn't provide a
-range then there's only one option available.  The consumer provides a
-range and then the driver satistifes that as best it can (after it's
-been filtered through the constraints).
 
---FT/vNgDLxVq4t/AU
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+------enig2ECWEFKCHGBFAKLBVBUXB
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJRxGN3AAoJELSic+t+oim9ZQAP+wcN8g9WOJc6pMq3Sadxu08R
-hZM51wOKYIM4KSx9Rn5yL5KrsRoBtYxWZeYiNuLzezVMOheDQ5wC1k0Caa6OoYyl
-Xdwljq5iMr7bjhRGTnJgbwoeeUmcTTFkUXRw297GpRnkkl4/MAstRZo5Q8t1/lqv
-mwQe6pvW75dwxbOWmiSOVrbhx0cdWa3jS3/a4LL/VNJVmqr3NFZwRxtrs6/ZevVz
-FO2jql4/H5/LR1x0Dn3iZFSVHOCpYs8DDZdsbcBoS79DS/2+ME6QmlNKPcnsdSPQ
-pGw3+MaVtXd69kyFZTDZU2BG7bHleqQrSXGxzgwlyR/Uw/nzo+2G0g+3xdimdlRS
-Ek5yKv0e7tAvy31qdohBOTuPJILVavyAzAp2QuCEu4RanFXwLKix+T38ZTdKE1oU
-L21Xw/EKL7FotdK8/DcUjognQqsrCWMgHtvhl7XFLYrPqhJ+DrhsfDHIOlVd3Owg
-2G8CXGvClwUoQoRyIegAkUXCwL0M/korA/823XqNRfRPYVxhIO84vF2TtEEmNMFX
-nvgRP4JLQ279trvQLMEMfTWMTgqZcEfhy8LO8Nyl6nqpJdMS79bDzbrnHoMQ1Uaz
-N9A73vjmk4zJ9xjGENRXkmwj+amEj87azfVu4JcIPmfMlhQDzS/RHmyMlZO5UWP7
-NtVCGUdHGZGvPoydJZTc
-=K6xo
+iF4EAREIAAYFAlHEY7QACgkQCXcVR3XQvP3KrQD/e3cTK2gGyeVIJwzFlbmACY82
+aAPdd9SkIOCsyotCoEwA+QHD6BMhz+2DPpbRQsBsxFV/yq36kUrvPAsMyGH8IRJ4
+=EKt4
 -----END PGP SIGNATURE-----
 
---FT/vNgDLxVq4t/AU--
+------enig2ECWEFKCHGBFAKLBVBUXB--
