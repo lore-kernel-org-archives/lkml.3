@@ -1,114 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423231Ab3FUF6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 01:58:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47953 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161146Ab3FUF6s (ORCPT
+	id S1161401Ab3FUGAo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:00:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38250 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161146Ab3FUGAm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 01:58:48 -0400
-Date: Fri, 21 Jun 2013 15:58:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the arm-soc tree with the net-next tree
-Message-Id: <20130621155846.71c2d64923a1e505c08eca72@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Jun_2013_15_58_46_+1000_65_mf/mprHFJC7Ku"
+	Fri, 21 Jun 2013 02:00:42 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Pantelis Antoniou" <panto@antoniou-consulting.com>,
+        "Patil, Rachna" <rachna@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>,
+        Benoit Cousson <benoit.cousson@linaro.org>
+Subject: RE: linux-next: manual merge of the arm-soc tree with the mfd tree
+Thread-Topic: linux-next: manual merge of the arm-soc tree with the mfd tree
+Thread-Index: AQHObkPDO6rWPdrLIkm2IQ0cPIUAWpk/rA4g
+Date: Fri, 21 Jun 2013 05:59:50 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73E9DF042@DBDE04.ent.ti.com>
+References: <20130621155408.7e4a4c891ff4d74627b57a45@canb.auug.org.au>
+In-Reply-To: <20130621155408.7e4a4c891ff4d74627b57a45@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Jun_2013_15_58_46_+1000_65_mf/mprHFJC7Ku
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hi all,
+> 
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/boot/dts/am33xx.dtsi between commit a82279dd6d3e ("arm:
+> am33xx:
+> add TSC/ADC mfd device support") from the mfd tree and commit
+> 15e8246bd61b ("ARM: dts: AM33XX: Add ELM node") from the arm-soc tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/boot/dts/am33xx.dtsi
+> index 37ef320,0d4df90..0000000
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@@ -404,24 -494,14 +494,32 @@@
+>   			ti,hwmods = "wkup_m3";
+>   		};
+> 
+>  +		tscadc: tscadc@44e0d000 {
+>  +			compatible = "ti,am3359-tscadc";
+>  +			reg = <0x44e0d000 0x1000>;
+>  +			interrupt-parent = <&intc>;
+>  +			interrupts = <16>;
+>  +			ti,hwmods = "adc_tsc";
+>  +			status = "disabled";
+>  +
+>  +			tsc {
+>  +				compatible = "ti,am3359-tsc";
+>  +			};
+>  +			am335x_adc: adc {
+>  +				#io-channel-cells = <1>;
+>  +				compatible = "ti,am3359-adc";
+>  +			};
+>  +
+>  +		};
+>  +
+> + 		elm: elm@48080000 {
+> + 			compatible = "ti,am3352-elm";
+> + 			reg = <0x48080000 0x2000>;
+> + 			interrupts = <4>;
+> + 			ti,hwmods = "elm";
+> + 			status = "disabled";
+> + 		};
+> +
+[Pekon]: Thanks.. Yes this is ok based on commit "15e8246bd61b ("ARM: dts: AM33XX: Add ELM node")
 
-Hi all,
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/boot/dts/sun4i-a10.dtsi between commit b21da664120b ("ARM:
-sun4i: Add muxing options for the ethernet controller") from the net-next
-tree and commit 27cce4ff34ec ("ARM: sun4i: dt: Add i2c muxing options")
-from the arm-soc tree.
+>   		gpmc: gpmc@50000000 {
+>   			compatible = "ti,am3352-gpmc";
+>   			ti,hwmods = "gpmc";
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/boot/dts/sun4i-a10.dtsi
-index 983da33,82e03d2..0000000
---- a/arch/arm/boot/dts/sun4i-a10.dtsi
-+++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@@ -214,18 -204,28 +220,39 @@@
-  				allwinner,function =3D "uart1";
-  				allwinner,drive =3D <0>;
-  				allwinner,pull =3D <0>;
- +			};
- +
- +			emac_pins_a: emac0@0 {
- +				allwinner,pins =3D "PA0", "PA1", "PA2",
- +						"PA3", "PA4", "PA5", "PA6",
- +						"PA7", "PA8", "PA9", "PA10",
- +						"PA11", "PA12", "PA13", "PA14",
- +						"PA15", "PA16";
- +				allwinner,function =3D "emac";
- +				allwinner,drive =3D <0>;
- +				allwinner,pull =3D <0>;
-  			};
-+=20
-+ 			i2c0_pins_a: i2c0@0 {
-+ 				allwinner,pins =3D "PB0", "PB1";
-+ 				allwinner,function =3D "i2c0";
-+ 				allwinner,drive =3D <0>;
-+ 				allwinner,pull =3D <0>;
-+ 			};
-+=20
-+ 			i2c1_pins_a: i2c1@0 {
-+ 				allwinner,pins =3D "PB18", "PB19";
-+ 				allwinner,function =3D "i2c1";
-+ 				allwinner,drive =3D <0>;
-+ 				allwinner,pull =3D <0>;
-+ 			};
-+=20
-+ 			i2c2_pins_a: i2c2@0 {
-+ 				allwinner,pins =3D "PB20", "PB21";
-+ 				allwinner,function =3D "i2c2";
-+ 				allwinner,drive =3D <0>;
-+ 				allwinner,pull =3D <0>;
-+ 			};
-  		};
- =20
-  		timer@01c20c00 {
-
---Signature=_Fri__21_Jun_2013_15_58_46_+1000_65_mf/mprHFJC7Ku
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRw+uWAAoJEECxmPOUX5FEqcYP/irkP7oOLg8wONVfwBEwuH2D
-ZSxYvoKWgtG+VhtQTJOoYBVsJeTSPTtvhdebANRL5rF81728RXm3eE/bBon9cU4l
-epw5gEFfYDOpACGudp9zUuV6zCC9gzY/jNNpr2zvPLhsd5UBtU3mCLZM6kf8WNZ4
-nQYapo46oNqmoWAmNVP2R8fjugs3P5wwkUseBjm60bWE4Qp921g6S+CDyuKrgKjO
-cWF+Q7LR2f+yxe3nfPmFPZZqy2qVDJmArlKqhuYpaY6EnV5WV+rV0+J/K8P58I/L
-vge41V+h1p32S+WwQjTQdqb6HvhejSLRs1g4vyGgmYCZkjsp5MPwAKuaypAC4nSH
-NKDbdEMXjlZCvZ5RQ4V4BYVHlLv+rSzg3cm4R3D8V1LAm9xTTrX9k6pobRPUee5Y
-Kx1DbKyrvbD+kLEuwg/hH4/RrpB87s1+VZUPthbIcicr2TfMNBHnSwvH1hj6+tnp
-Ld51/wUkuXDJZsVf4/uXl8jDObPiCZ8qaSzn4cv0VOQ4xbpbuj9u1N+jJSPR6lwn
-vG8RIgeBnfkc5Eg9UIG1y3fHMeP9DBwemBLLHrvww8+5NTWcJs2tH91FzIIIRb0R
-EEEJ/eo+fJH+r8h/pCojc9YfHipZJgjXlvJfcNFNbVMtcMUAvsgdmJ68XrJV+b65
-5aj/b0jkiKenB+Z4MipK
-=eh/C
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_Jun_2013_15_58_46_+1000_65_mf/mprHFJC7Ku--
+with regards, pekon
