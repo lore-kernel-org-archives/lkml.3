@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945968Ab3FUT4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 15:56:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64303 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945935Ab3FUT4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 15:56:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: [PATCH] staging: line6: avoid __sync_fetch_and_{and,or}
-Date: Fri, 21 Jun 2013 21:55:35 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1945982Ab3FUT5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 15:57:50 -0400
+Received: from stator.leun.net ([85.214.203.199]:46034 "EHLO stator.leun.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945935Ab3FUT5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 15:57:49 -0400
+Date: Fri, 21 Jun 2013 21:57:17 +0200
+From: Michael Leun <lkml20130126@newton.leun.net>
+To: Netdev <netdev@vger.kernel.org>
+Cc: Rami Rosen <roszenrami@gmail.com>, Patrick McHardy <kaber@trash.net>,
+        shemminger@linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Missing iproute2 support for 802.1ad
+Message-ID: <20130621215717.528b3cbf@xenia.leun.net>
+In-Reply-To: <20130621173744.1c1ce920@xenia.leun.net>
+References: <20130620231713.4f6a3c1f@xenia.leun.net>
+	<CAKoUArm0w70TZvaZSMa1C9vAj+UXsMkza7XTBX0Vq-7B3xrFLA@mail.gmail.com>
+	<CAKoUArnyR+6bk9UU3GuyteznX-wWVQUfWuaiVuS0YOSKCKKF5w@mail.gmail.com>
+	<20130621173744.1c1ce920@xenia.leun.net>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306212155.36196.arnd@arndb.de>
-X-Provags-ID: V02:K0:uP0ff6iZq55/58U7kB2cPaHc/LT3ccOMCRxQjZB4kY5
- 3aFp+AQHGepYTD3KXaepHoTnMlIa8etA/3efhc68dkYrER7pxl
- zrax/3PLydmOUpJSrliiJUbNNcGEoeCie+wj6VhONRnHUsUMta
- lg9Zl1HhBIpsTVwAYEZmeRUsXQM3CFoEFsVlTXwIJv5KO3q/jv
- iedPs+qnBSRSfl2GSlRsTrz7DWvPEs8zoWVbyBTvqmzFNeQNBW
- BnIx4gb0ACQY6ihuoMWJXFP0l8Z5dcVHIEYuNNMqwM9je0yNfY
- zOojP6rxZxLFZ144McK47sHRo9FRkk5YrbgsOXbT9kZniXlZiI
- RKkKn8eAtsnSHKBDQFmA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__sync_fetch_and_and and __sync_fetch_and_or are functions that are provided
-by gcc and depending on the target architecture may be implemented in libgcc,
-which is not always available in the kernel. This leads to a build failure
-on ARMv5:
+On Fri, 21 Jun 2013 17:37:44 +0200
+Michael Leun <lkml20130126@newton.leun.net> wrote:
 
-drivers/built-in.o: In function `line6_pcm_release':
-:(.text+0x3bfe80): undefined reference to `__sync_fetch_and_and_4'
-drivers/built-in.o: In function `line6_pcm_acquire':
-:(.text+0x3bff30): undefined reference to `__sync_fetch_and_or_4'
+> On Fri, 21 Jun 2013 16:52:41 +0300
+> Rami Rosen <roszenrami@gmail.com> wrote:
+> 
+> > This patch by Patrick McHardy, titled:
+> > "add 802.1ad support", seems to do the job:
+> > http://www.spinics.net/lists/netdev/msg233587.html
 
-To work around this, we can use the kernel-provided cmpxchg macro.
+> OK, when applying that patch to iproute2 git the if_link.h hunk
+> expectedly fails, but the rest applies.
 
-Build-tested only.
+Meanwhile Stephen has grabbed that patch and committed it to iproute2
+git - thank you very much.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Markus Grabner <grabner@icg.tugraz.at>
+> But, unfortunately the result is not what I would expect:
+[...]
+> Both have ether type 0x8100, the first one should have 0x88a8, or did
+> I get something wrong?
 
-diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
-index 02f77d7..4795f12 100644
---- a/drivers/staging/line6/pcm.c
-+++ b/drivers/staging/line6/pcm.c
-@@ -107,11 +107,15 @@ static bool test_flags(unsigned long flags0, unsigned long flags1,
- 
- int line6_pcm_acquire(struct snd_line6_pcm *line6pcm, int channels)
- {
--	unsigned long flags_old =
--	    __sync_fetch_and_or(&line6pcm->flags, channels);
--	unsigned long flags_new = flags_old | channels;
--	unsigned long flags_final = flags_old;
--	int err = 0;
-+	unsigned long flags_old, flags_new, flags_final;
-+	int err;
-+
-+	do {
-+		flags_old = ACCESS_ONCE(line6pcm->flags);
-+		flags_new = flags_old | channels;
-+	} while (cmpxchg(&line6pcm->flags, flags_old, flags_new) != flags_old);
-+
-+	flags_final = flags_old;
- 
- 	line6pcm->prev_fbuf = NULL;
- 
-@@ -197,9 +201,12 @@ pcm_acquire_error:
- 
- int line6_pcm_release(struct snd_line6_pcm *line6pcm, int channels)
- {
--	unsigned long flags_old =
--	    __sync_fetch_and_and(&line6pcm->flags, ~channels);
--	unsigned long flags_new = flags_old & ~channels;
-+	unsigned long flags_old, flags_new;
-+
-+	do {
-+		flags_old = ACCESS_ONCE(line6pcm->flags);
-+		flags_new = flags_old & ~channels;
-+	} while (cmpxchg(&line6pcm->flags, flags_old, flags_new) != flags_old);
- 
- 	if (test_flags(flags_new, flags_old, LINE6_BITS_CAPTURE_STREAM))
- 		line6_unlink_audio_in_urbs(line6pcm);
+This either was an problem with veth or with namespace or with both of
+them.
+
+With real ethernet I get the same result Patrick has shown in his
+802.1aq commit message.
+
+-- 
+MfG,
+
+Michael Leun
+
