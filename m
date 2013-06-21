@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423697Ab3FUWO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 18:14:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59309 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423527Ab3FUWO0 (ORCPT
+	id S1946209Ab3FUWYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 18:24:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48780 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161469Ab3FUWYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 18:14:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Joel A Fernandes <agnel.joel@gmail.com>
-Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
-Date: Sat, 22 Jun 2013 00:14:16 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sekhar Nori <nsekhar@ti.com>, Joel A Fernandes <joelagnel@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <201306212044.26677.arnd@arndb.de> <CAD=GYpY4koXd9f6_ijQfDHsiULD4d53cdu=9X421WXSAit_YQg@mail.gmail.com>
-In-Reply-To: <CAD=GYpY4koXd9f6_ijQfDHsiULD4d53cdu=9X421WXSAit_YQg@mail.gmail.com>
+	Fri, 21 Jun 2013 18:24:49 -0400
+Message-ID: <51C4D294.5060909@infradead.org>
+Date: Fri, 21 Jun 2013 15:24:20 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Markus Grabner <grabner@icg.tugraz.at>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: line6: avoid __sync_fetch_and_{and,or}
+References: <201306212155.36196.arnd@arndb.de>
+In-Reply-To: <201306212155.36196.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306220014.16427.arnd@arndb.de>
-X-Provags-ID: V02:K0:F3FsD656AFCCB+Oc8yIrZIftyhUGeuhnceeQWZiFeqr
- 7MZ9dAULQSzgGXQ9n/cupELX3B0Mz03/2JbEhMcJr0J2nnkAbu
- aP/n4D6o81TdnE8QDuekunfzL+MpRHelX1MfiLUFPfeF07L6Jz
- o9/wTW0nTbQ20FOkI0Q1KTQ1Q+SHsqe7sHrfO4Sh8SHdthi4JF
- SQj9nK+t3PamHiCGlIIwQDMkPUPHU7DC8U7MQsdXeWvjlC0zk6
- ykOavdRvUij3B8MOg+jf/Hcbi/KOUoK9GwDqrP4VXyFLo0I9VD
- 9Al55ojHJJ+2JeMcGygHCLgB7X++lI/x+eUrTFts07IW8UGvi9
- w+/pWiXCDaEgKZuY4NFI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 June 2013, Joel A Fernandes wrote:
-> Hi Arnd,
-> 
-> On Fri, Jun 21, 2013 at 1:44 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Friday 21 June 2013, Joel A Fernandes wrote:
-> >> I think we are talking about different things, I agree the 'select
-> >> DMADEVICES' can be dropped but lets please keep the default y option
-> >> (not adding new select statements, just saying that if someone select
-> >> DMADEVICES in menuconfig and if they're ARCH_OMAP=1 , then default to
-> >> EDMA). This will simply allow people to have a default. Thanks.
-> >
-> > Yes, that's ok.
-> 
-> Ok, thanks. I will follow up with a patch in my next submissions that builds it.
-> 
-> Perhaps a:
-> default y if 'ARCH_OMAP2PLUS'
-> 
-> and leave the existing as it is...
-> default n if  'ARCH_DAVINCI || ARCH_OMAP1 || ARCH_OMAP2'
-> 
-> would make most sense to me. Basically EDMA is seen on current and all
-> new OMAP2PLUS.
+On 06/21/13 12:55, Arnd Bergmann wrote:
+> __sync_fetch_and_and and __sync_fetch_and_or are functions that are provided
+> by gcc and depending on the target architecture may be implemented in libgcc,
+> which is not always available in the kernel. This leads to a build failure
+> on ARMv5:
 
-Ok
+and on x86_64.
 
-> > config TI_EDMA
-> >         tristate "TI EDMA support"
-> >         default m if 'ARCH_DAVINCI || ARCH_OMAP1 || ARCH_OMAP2
-> >         select DMA_ENGINE
-> >         select DMA_VIRTUAL_CHANNELS
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
+
+Thanks.
+
 > 
+> drivers/built-in.o: In function `line6_pcm_release':
+> :(.text+0x3bfe80): undefined reference to `__sync_fetch_and_and_4'
+> drivers/built-in.o: In function `line6_pcm_acquire':
+> :(.text+0x3bff30): undefined reference to `__sync_fetch_and_or_4'
 > 
-> MMC depends on EDMA specially on AM33xx there's no PIO mode AFAIK. The
-> 'm' option will require some initramfs to load the module when needing
-> to MMC boot, I suggest lets leave it as y.
+> To work around this, we can use the kernel-provided cmpxchg macro.
 > 
+> Build-tested only.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Markus Grabner <grabner@icg.tugraz.at>
+> 
+> diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
+> index 02f77d7..4795f12 100644
+> --- a/drivers/staging/line6/pcm.c
+> +++ b/drivers/staging/line6/pcm.c
+> @@ -107,11 +107,15 @@ static bool test_flags(unsigned long flags0, unsigned long flags1,
+>  
+>  int line6_pcm_acquire(struct snd_line6_pcm *line6pcm, int channels)
+>  {
+> -	unsigned long flags_old =
+> -	    __sync_fetch_and_or(&line6pcm->flags, channels);
+> -	unsigned long flags_new = flags_old | channels;
+> -	unsigned long flags_final = flags_old;
+> -	int err = 0;
+> +	unsigned long flags_old, flags_new, flags_final;
+> +	int err;
+> +
+> +	do {
+> +		flags_old = ACCESS_ONCE(line6pcm->flags);
+> +		flags_new = flags_old | channels;
+> +	} while (cmpxchg(&line6pcm->flags, flags_old, flags_new) != flags_old);
+> +
+> +	flags_final = flags_old;
+>  
+>  	line6pcm->prev_fbuf = NULL;
+>  
+> @@ -197,9 +201,12 @@ pcm_acquire_error:
+>  
+>  int line6_pcm_release(struct snd_line6_pcm *line6pcm, int channels)
+>  {
+> -	unsigned long flags_old =
+> -	    __sync_fetch_and_and(&line6pcm->flags, ~channels);
+> -	unsigned long flags_new = flags_old & ~channels;
+> +	unsigned long flags_old, flags_new;
+> +
+> +	do {
+> +		flags_old = ACCESS_ONCE(line6pcm->flags);
+> +		flags_new = flags_old & ~channels;
+> +	} while (cmpxchg(&line6pcm->flags, flags_old, flags_new) != flags_old);
+>  
+>  	if (test_flags(flags_new, flags_old, LINE6_BITS_CAPTURE_STREAM))
+>  		line6_unlink_audio_in_urbs(line6pcm);
+> --
 
-Ah, right: you still export a filter function from the edma driver
-and use it in slave drivers:
 
-drivers/mmc/host/davinci_mmc.c:         dma_request_slave_channel_compat(mask, edma_filter_fn,
-drivers/mmc/host/davinci_mmc.c:         dma_request_slave_channel_compat(mask, edma_filter_fn,
-drivers/spi/spi-davinci.c:      dspi->dma_rx = dma_request_channel(mask, edma_filter_fn,
-drivers/spi/spi-davinci.c:      dspi->dma_tx = dma_request_channel(mask, edma_filter_fn,
-
-As long as this is the case, you have to be careful with the dependencies
-to make sure that davinci_mmc and spi-davinci either depend on TI_EDMA, or
-edma_filter_fn gets defined to NULL when you are building for a DT-only platform.
-
-	Arnd
+-- 
+~Randy
