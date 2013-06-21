@@ -1,259 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161514Ab3FUORQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:17:16 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:39369 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161447Ab3FUORP (ORCPT
+	id S1422954Ab3FUOTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:19:11 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:44713 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422708Ab3FUOTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:17:15 -0400
-Date: Fri, 21 Jun 2013 16:17:03 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v5 1/5] vmcore: Introduce ELF header in new memory
- feature
-Message-ID: <20130621161703.751b5f23@holzheu>
-In-Reply-To: <20130614185401.GL12023@redhat.com>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1370624161-2298-2-git-send-email-holzheu@linux.vnet.ibm.com>
-	<20130614185401.GL12023@redhat.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062114-4966-0000-0000-00000616AD5C
+	Fri, 21 Jun 2013 10:19:09 -0400
+Date: Fri, 21 Jun 2013 16:19:06 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Dirk Schmidt <derschmied@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Amd Phenom 2 X6 Cool&Quiet Issue.
+Message-ID: <20130621141906.GA526@x4>
+References: <51C4600E.6030005@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C4600E.6030005@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Jun 2013 14:54:02 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
-
-> On Fri, Jun 07, 2013 at 06:55:57PM +0200, Michael Holzheu wrote:
+On 2013.06.21 at 16:15 +0200, Dirk Schmidt wrote:
+> Amd Phenom 2 X6 Cool&Quiet Issue.
 > 
-> [..]
-> > @@ -935,10 +967,17 @@ static int __init vmcore_init(void)
-> >  {
-> >  	int rc = 0;
-> >  
-> > -	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
-> > -	if (!(is_vmcore_usable()))
-> > -		return rc;
-> > +	/*
-> > +	 * If elfcorehdr= has not been passed in cmdline, try to get the
-> > +	 * header from 2nd kernel, then capture the dump.
-> > +	 */
-> > +	if (!(is_vmcore_usable())) {
-> > +		rc = elfcorehdr_alloc();
-> > +		if (rc)
-> > +			return rc;
-> > +	}
+> Problem:
 > 
-> Hi Michael,
+> dmesg | grep power
+> [   10.622426] powernow-k8: This CPU is not supported anymore, using 
+> acpi-cpufreq instead.
 > 
-> Patch description says that elfcorehdr_alloc() returns the addr and 
-> size of elf headers. But that does not seem to be the case here. Has
-> it been modified in later patches.
+> modprobe acpi_cpufreq
+> ERROR: could not insert 'acpi_cpufreq': No such device
 
-Sorry, that is a relict of one of my previous experiments where I tried
-to implement elfcorehdr_addr() similar to the way as you suggest it now.
-Because elfcorehdr_addr is a global variable, I decided to not pass
-it in the functions. But of course I can change that again if you prefer
-that.
- 
-> Also will it be better if we call elfcorehdr_alloc() always and then
-> check for is_vmcore_usable().
-> 
-> Something like.
-> 
-> elfcorehdr_addr = elfcorehdr_alloc()
-> if (elfcorehdr_addr < )
-> 	return elfcorehdr_addr
-> 
-> if (!(is_vmcore_usable()))
-> 	return error
+Please post your kernel .config.
 
-Ok, but then I think elfcorehdr_alloc() should also return
-the elfcorehdr_size.
-
-So what about the following patch:
----
- fs/proc/vmcore.c           |   65 +++++++++++++++++++++++++++++++++++++--------
- include/linux/crash_dump.h |    6 ++++
- 2 files changed, 60 insertions(+), 11 deletions(-)
-
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -123,6 +123,36 @@ static ssize_t read_from_oldmem(char *bu
- 	return read;
- }
- 
-+/*
-+ * Architectures may override this function to allocate ELF header in 2nd kernel
-+ */
-+int __weak elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size)
-+{
-+	return 0;
-+}
-+
-+/*
-+ * Architectures may override this function to free header
-+ */
-+void __weak elfcorehdr_free(unsigned long long addr)
-+{}
-+
-+/*
-+ * Architectures may override this function to read from ELF header
-+ */
-+ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos)
-+{
-+	return read_from_oldmem(buf, count, ppos, 0);
-+}
-+
-+/*
-+ * Architectures may override this function to read from notes sections
-+ */
-+ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
-+{
-+	return read_from_oldmem(buf, count, ppos, 0);
-+}
-+
- /* Read from the ELF header and then the crash dump. On error, negative value is
-  * returned otherwise number of bytes read are returned.
-  */
-@@ -322,7 +352,7 @@ static int __init update_note_header_siz
- 		notes_section = kmalloc(max_sz, GFP_KERNEL);
- 		if (!notes_section)
- 			return -ENOMEM;
--		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
- 		if (rc < 0) {
- 			kfree(notes_section);
- 			return rc;
-@@ -409,7 +439,8 @@ static int __init copy_notes_elf64(const
- 		if (phdr_ptr->p_type != PT_NOTE)
- 			continue;
- 		offset = phdr_ptr->p_offset;
--		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-+					   &offset);
- 		if (rc < 0)
- 			return rc;
- 		notes_buf += phdr_ptr->p_memsz;
-@@ -510,7 +541,7 @@ static int __init update_note_header_siz
- 		notes_section = kmalloc(max_sz, GFP_KERNEL);
- 		if (!notes_section)
- 			return -ENOMEM;
--		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
- 		if (rc < 0) {
- 			kfree(notes_section);
- 			return rc;
-@@ -597,7 +628,8 @@ static int __init copy_notes_elf32(const
- 		if (phdr_ptr->p_type != PT_NOTE)
- 			continue;
- 		offset = phdr_ptr->p_offset;
--		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-+					   &offset);
- 		if (rc < 0)
- 			return rc;
- 		notes_buf += phdr_ptr->p_memsz;
-@@ -793,7 +825,7 @@ static int __init parse_crash_elf64_head
- 	addr = elfcorehdr_addr;
- 
- 	/* Read Elf header */
--	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf64_Ehdr), &addr, 0);
-+	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf64_Ehdr), &addr);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -820,7 +852,7 @@ static int __init parse_crash_elf64_head
- 	if (!elfcorebuf)
- 		return -ENOMEM;
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-+	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
- 	if (rc < 0)
- 		goto fail;
- 
-@@ -849,7 +881,7 @@ static int __init parse_crash_elf32_head
- 	addr = elfcorehdr_addr;
- 
- 	/* Read Elf header */
--	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf32_Ehdr), &addr, 0);
-+	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf32_Ehdr), &addr);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -875,7 +907,7 @@ static int __init parse_crash_elf32_head
- 	if (!elfcorebuf)
- 		return -ENOMEM;
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-+	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
- 	if (rc < 0)
- 		goto fail;
- 
-@@ -902,7 +934,7 @@ static int __init parse_crash_elf_header
- 	int rc=0;
- 
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(e_ident, EI_NIDENT, &addr, 0);
-+	rc = elfcorehdr_read(e_ident, EI_NIDENT, &addr);
- 	if (rc < 0)
- 		return rc;
- 	if (memcmp(e_ident, ELFMAG, SELFMAG) != 0) {
-@@ -935,7 +967,14 @@ static int __init vmcore_init(void)
- {
- 	int rc = 0;
- 
--	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
-+	/* Allow architectures to allocate ELF header in 2nd kernel */
-+	rc = elfcorehdr_alloc(&elfcorehdr_addr, &elfcorehdr_size);
-+	if (rc)
-+		return rc;
-+	/*
-+	 * If elfcorehdr= has been passed in cmdline or created in 2nd kernel,
-+	 * then capture the dump.
-+	 */
- 	if (!(is_vmcore_usable()))
- 		return rc;
- 	rc = parse_crash_elf_headers();
-@@ -943,7 +982,11 @@ static int __init vmcore_init(void)
- 		pr_warn("Kdump: vmcore not initialized\n");
- 		return rc;
- 	}
--
-+	elfcorehdr_free(elfcorehdr_addr);
-+	/*
-+	 * elfcorehdr_addr must not be set to NULL here to keep
-+	 * is_kdump_kernel() working.
-+	 */
- 	proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &proc_vmcore_operations);
- 	if (proc_vmcore)
- 		proc_vmcore->size = vmcore_size;
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -12,6 +12,12 @@
- extern unsigned long long elfcorehdr_addr;
- extern unsigned long long elfcorehdr_size;
- 
-+extern int __weak elfcorehdr_alloc(unsigned long long *addr,
-+				   unsigned long long *size);
-+extern void __weak elfcorehdr_free(unsigned long long addr);
-+extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
-+extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
-+
- extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
- 						unsigned long, int);
- 
-
+-- 
+Markus
