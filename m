@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161290Ab3FUMXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 08:23:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59220 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161045Ab3FUMXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 08:23:39 -0400
-Message-ID: <51C4458D.4060202@ti.com>
-Date: Fri, 21 Jun 2013 17:52:37 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Sekhar Nori <nsekhar@ti.com>, Joel A Fernandes <joelagnel@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
+	id S1161310Ab3FUMZz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 08:25:55 -0400
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:62885 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161113Ab3FUMZx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 08:25:53 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: Joe Perches <joe@perches.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "Vineet Gupta" <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v12 09/11] spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <1371762407-24544-10-git-send-email-joelagnel@ti.com> <51C42A71.1090403@ti.com> <51C42CFF.10002@ti.com> <20130621112832.GS27646@sirena.org.uk>
-In-Reply-To: <20130621112832.GS27646@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: Re: [PATCH v7] ethernet/arc/arc_emac - Add new driver
+Thread-Topic: [PATCH v7] ethernet/arc/arc_emac - Add new driver
+Thread-Index: AQHObk/a50aBiA7m/Ems63A7bGu5oQ==
+Date: Fri, 21 Jun 2013 12:25:48 +0000
+Message-ID: <4881796E12491D4BB15146FE0209CE643F5F5DBB@DE02WEMBXB.internal.synopsys.com>
+References: <1371799241-27771-1-git-send-email-abrodkin@synopsys.com>
+	<1371810775.19215.30.camel@joe-AO722>
+	<4881796E12491D4BB15146FE0209CE643F5F587E@DE02WEMBXB.internal.synopsys.com>
+ <CAHp75Vf8A7YZGBtna7JAaacnJWq5+q_+m44eO13bChxKj6XZgQ@mail.gmail.com>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.121.8.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-On Friday 21 June 2013 04:58 PM, Mark Brown wrote:
-> On Fri, Jun 21, 2013 at 04:07:51PM +0530, Sekhar Nori wrote:
+On 06/21/2013 04:15 PM, Andy Shevchenko wrote:
+> On Fri, Jun 21, 2013 at 1:53 PM, Alexey Brodkin
+> <Alexey.Brodkin@synopsys.com> wrote:
 >
->> We can resend the patch if you don't have it from the mailing list.
-> I'll probably have it assuming it's been sent to some mailing list I
-> read (the CC list here looks absurldy large...) but if you don't send me
-> the patch and/or ignore bounces then it's going to take longer.
-I have send you this patch seperately.
+> []
+>
+>> But during compilation on x86 one needs to enable OF. Which will lead to
+>> compilation errors in other things.
+>
+> JFYI, x86 has at least one platform with official OF dependency.
+> Once I actually tried to build kernel for Intel MID with OF enabled
+> (it required a hack in the arch Kconfig, of course), compiled fine.
 
-Thanks ,
-Sourav
+Ok, good to know it.
+
+Any other comments on patch itself?
+
+-Alexey
