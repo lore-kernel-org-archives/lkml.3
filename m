@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab3FUK2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:28:08 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43530 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234Ab3FUK2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:28:05 -0400
-Message-ID: <51C42A85.8090705@ti.com>
-Date: Fri, 21 Jun 2013 15:57:17 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S965400Ab3FUKcN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 06:32:13 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:17825 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab3FUKcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 06:32:12 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C42B75.7040204@asianux.com>
+Date: Fri, 21 Jun 2013 18:31:17 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Joel A Fernandes <joelagnel@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v12 00/11] DMA Engine support for AM33XX
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
-In-Reply-To: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] kernel/itimer.c: remove the checking 'value' statement
+References: <51C2E6F9.80107@asianux.com> <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de> <51C3B4B4.90603@asianux.com>
+In-Reply-To: <51C3B4B4.90603@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joel,
 
-On 6/21/2013 2:36 AM, Joel A Fernandes wrote:
-> From: Joel A Fernandes <agnel.joel@gmail.com>
-> 
-> This series is remaining of Matt Porter's EDMA patches for AM33XX EDMA support
-> with changes for few pending review comments on v11 series.
+Since copy_to_user() will process "bad address" internally, we need not
+check 'value' again, then can save one comparing instruction at least.
 
-I have posted a branch with fixes for patches accepted by me in this
-series (also posted inline as replies to specific patches).
+For some embedded system with NOMMU, 'NULL' may not mean "bad address"
+(EFAULT), so recommend to let copy_to_user() to check 'EFAULT' in this
+case, completely.
 
-https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.11/soc-2
+Removing the checking code, also can let it simpler and clearer to
+readers.
 
-Can you please give it a good test - especially on AM335x? I will send a
-pull request after you confirm. If you find bugs please send incremental
-patches so I can merge into the original patch.
 
-Thanks,
-Sekhar
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/itimer.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/itimer.c b/kernel/itimer.c
+index 8d262b4..3b12271 100644
+--- a/kernel/itimer.c
++++ b/kernel/itimer.c
+@@ -102,15 +102,14 @@ int do_getitimer(int which, struct itimerval *value)
+ 
+ SYSCALL_DEFINE2(getitimer, int, which, struct itimerval __user *, value)
+ {
+-	int error = -EFAULT;
++	int error;
+ 	struct itimerval get_buffer;
+ 
+-	if (value) {
+-		error = do_getitimer(which, &get_buffer);
+-		if (!error &&
+-		    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
+-			error = -EFAULT;
+-	}
++	error = do_getitimer(which, &get_buffer);
++	if (!error &&
++	    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
++		error = -EFAULT;
++
+ 	return error;
+ }
+ 
+-- 
+1.7.7.6
+
