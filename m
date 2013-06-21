@@ -1,38 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423640Ab3FUSYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 14:24:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34794 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423383Ab3FUSYG (ORCPT
+	id S1945919Ab3FUSZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 14:25:17 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:52395 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423508Ab3FUSZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 14:24:06 -0400
-Date: Fri, 21 Jun 2013 11:27:29 -0700 (PDT)
-Message-Id: <20130621.112729.1807883476742785070.davem@davemloft.net>
-To: joe@perches.com
-Cc: Alexey.Brodkin@synopsys.com, netdev@vger.kernel.org,
-        andy.shevchenko@gmail.com, romieu@fr.zoreil.com,
-        Vineet.Gupta1@synopsys.com, Mischa.Jonker@synopsys.com, arnd@arndb.de,
-        grant.likely@linaro.org, rob.herring@calxeda.com,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, florian@openwrt.org
-Subject: Re: [PATCH v7] ethernet/arc/arc_emac - Add new driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371825813.19215.34.camel@joe-AO722>
-References: <1371810775.19215.30.camel@joe-AO722>
-	<4881796E12491D4BB15146FE0209CE643F5F587E@DE02WEMBXB.internal.synopsys.com>
-	<1371825813.19215.34.camel@joe-AO722>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jun 2013 14:25:15 -0400
+Date: Fri, 21 Jun 2013 11:25:11 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+Message-ID: <20130621182511.GA1763@htj.dyndns.org>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20130618020357.GZ32663@mtj.dyndns.org>
+ <51BFF464.809@cn.fujitsu.com>
+ <20130618172129.GH2767@htj.dyndns.org>
+ <51C298B2.9060900@cn.fujitsu.com>
+ <20130620061719.GA16114@mtj.dyndns.org>
+ <51C41AB4.9070500@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C41AB4.9070500@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Fri, 21 Jun 2013 07:43:33 -0700
+Hey,
 
-> Maybe add a Kconfig "depends on !64BIT".
+On Fri, Jun 21, 2013 at 05:19:48PM +0800, Tang Chen wrote:
+> >* As memblock allocator can relocate itself.  There's no point in
+> >   avoiding setting NUMA node while parsing and registering NUMA
+> >   topology.  Just parse and register NUMA info and later tell it to
+> >   relocate itself out of hot-pluggable node.  A number of patches in
+> >   the series is doing this dancing - carefully reordering NUMA
+> >   probing.  No need to do that.  It's really fragile thing to do.
+> >
+> >* Once you get the above out of the way, I don't think there are a lot
+> >   of permanent allocations in the way before NUMA is initialized.
+> >   Re-order the remaining ones if that's cleaner to do.  If that gets
+> >   overly messy / fragile, copying them around or freeing and reloading
+> >   afterwards could be an option too.
+> 
+> memblock allocator can relocate itself, but it cannot relocate the memory
 
-Please, no.
+Hmmm... maybe I wasn't clear but that's the first bullet point above.
+
+> it allocated for users. There could be some pointers pointing to these
+> memory ranges. If we do the relocation, how to update these pointers ?
+
+And the second.  Can you please list what persistent areas are
+allocated before numa info is configured into memblock?  There
+shouldn't be whole lot.  And, again, this type of information should
+have been available in the head message so that high-level discussion
+could take place right away.
+
+Thanks.
+
+-- 
+tejun
