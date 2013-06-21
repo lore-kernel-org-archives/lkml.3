@@ -1,77 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946063Ab3FUVJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:09:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20470 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945954Ab3FUVJi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:09:38 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BUyC4VmaGVwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5V7bKCsQ6TsA:10 a=rL20t8O_S21H0ge4yh4A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371848976.18733.130.camel@gandalf.local.home>
-Subject: Re: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
- from apic.c to irq.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Fri, 21 Jun 2013 17:09:36 -0400
-In-Reply-To: <1371835898.18733.122.camel@gandalf.local.home>
-References: <1371835898.18733.122.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	id S1946070Ab3FUVL3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:11:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35584 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945954Ab3FUVL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:11:27 -0400
+Subject: [PATCH] vfio/type1: Fix missed frees and zero sized removes
+To: alex.williamson@redhat.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Fri, 21 Jun 2013 15:11:26 -0600
+Message-ID: <20130621211025.8188.99576.stgit@bling.home>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 13:31 -0400, Steven Rostedt wrote:
+With hugepage support we can only properly aligned and sized ranges.
+We only guarantee that we can unmap the same ranges mapped and not
+arbitrary sub-ranges.  This means we might not free anything or might
+free more than requested.  The vfio unmap interface started storing
+the unmapped size to return to userspace to handle this.  This patch
+fixes a few places where we don't properly handle those cases, moves
+a memory allocation to a place where failure is an option and checks
+our loops to make sure we don't get into an infinite loop trying to
+remove an overlap.
 
-> My testing also triggered another bug, but I'm not sure it's related to
-> these patches or something that already existed. I'm currently
-> investigating it now.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/vfio/vfio_iommu_type1.c |   77 +++++++++++++++++++++------------------
+ 1 file changed, 42 insertions(+), 35 deletions(-)
 
-
-I haven't been able to reproduce it.
-
-Here's the bug I hit while running function tracer on hackbench:
-
-------------[ cut here ]------------
-WARNING: at /work/autotest/nobackup/linux-test.git/kernel/fork.c:1196 copy_process+0x2c3/0x1398()
-DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled)^M
-Modules linked in:
-CPU: 1 PID: 4570 Comm: gdm-simple-gree Not tainted 3.10.0-rc3-test+ #5
-Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
- ffffffff81d2a7a5 ffff88006ed13d50 ffffffff8192822b ffff88006ed13d90
- ffffffff81035f25 ffff8800721c6000 ffff88006ed13da0 0000000001200011
- 0000000000000000 ffff88006ed5e000 ffff8800721c6000 ffff88006ed13df0
-Call Trace:
- [<ffffffff8192822b>] dump_stack+0x19/0x1b
- [<ffffffff81035f25>] warn_slowpath_common+0x67/0x80
- [<ffffffff81035fe1>] warn_slowpath_fmt+0x46/0x48
- [<ffffffff812bfc5d>] ? __raw_spin_lock_init+0x31/0x52
- [<ffffffff810341f7>] copy_process+0x2c3/0x1398^M
- [<ffffffff8103539d>] do_fork+0xa8/0x260
- [<ffffffff810ca7b1>] ? trace_preempt_on+0x2a/0x2f
- [<ffffffff812afb3e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff81937fe7>] ? sysret_check+0x1b/0x56
- [<ffffffff81937fe7>] ? sysret_check+0x1b/0x56
- [<ffffffff810355cf>] SyS_clone+0x16/0x18
- [<ffffffff81938369>] stub_clone+0x69/0x90
- [<ffffffff81937fc2>] ? system_call_fastpath+0x16/0x1b
----[ end trace 8b157a9d20ca1aa2 ]---
-
-
-Does that look familiar?
-
-I can send the .config if needed.
-
--- Steve
-
+diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+index 8a2be4e..98231d1 100644
+--- a/drivers/vfio/vfio_iommu_type1.c
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -370,6 +370,9 @@ static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
+ 	struct vfio_dma *split;
+ 	int ret;
+ 
++	if (!*size)
++		return 0;
++
+ 	/*
+ 	 * Existing dma region is completely covered, unmap all.  This is
+ 	 * the likely case since userspace tends to map and unmap buffers
+@@ -411,7 +414,9 @@ static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
+ 			dma->vaddr += overlap;
+ 			dma->size -= overlap;
+ 			vfio_insert_dma(iommu, dma);
+-		}
++		} else
++			kfree(dma);
++
+ 		*size = overlap;
+ 		return 0;
+ 	}
+@@ -425,48 +430,41 @@ static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
+ 		if (ret)
+ 			return ret;
+ 
+-		/*
+-		 * We may have unmapped the entire vfio_dma if the user is
+-		 * trying to unmap a sub-region of what was originally
+-		 * mapped.  If anything left, we can resize in place since
+-		 * iova is unchanged.
+-		 */
+-		if (overlap < dma->size)
+-			dma->size -= overlap;
+-		else
+-			vfio_remove_dma(iommu, dma);
+-
++		dma->size -= overlap;
+ 		*size = overlap;
+ 		return 0;
+ 	}
+ 
+ 	/* Split existing */
++	split = kzalloc(sizeof(*split), GFP_KERNEL);
++	if (!split)
++		return -ENOMEM;
++
+ 	offset = start - dma->iova;
+ 
+ 	ret = vfio_unmap_unpin(iommu, dma, start, size);
+ 	if (ret)
+ 		return ret;
+ 
+-	WARN_ON(!*size);
++	if (!*size) {
++		kfree(split);
++		return -EINVAL;
++	}
++
+ 	tmp = dma->size;
+ 
+-	/*
+-	 * Resize the lower vfio_dma in place, insert new for remaining
+-	 * upper segment.
+-	 */
++	/* Resize the lower vfio_dma in place, before the below insert */
+ 	dma->size = offset;
+ 
+-	if (offset + *size < tmp) {
+-		split = kzalloc(sizeof(*split), GFP_KERNEL);
+-		if (!split)
+-			return -ENOMEM;
+-
++	/* Insert new for remainder, assuming it didn't all get unmapped */
++	if (likely(offset + *size < tmp)) {
+ 		split->size = tmp - offset - *size;
+ 		split->iova = dma->iova + offset + *size;
+ 		split->vaddr = dma->vaddr + offset + *size;
+ 		split->prot = dma->prot;
+ 		vfio_insert_dma(iommu, split);
+-	}
++	} else
++		kfree(split);
+ 
+ 	return 0;
+ }
+@@ -483,7 +481,7 @@ static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
+ 
+ 	if (unmap->iova & mask)
+ 		return -EINVAL;
+-	if (unmap->size & mask)
++	if (!unmap->size || unmap->size & mask)
+ 		return -EINVAL;
+ 
+ 	WARN_ON(mask & PAGE_MASK);
+@@ -493,7 +491,7 @@ static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
+ 	while ((dma = vfio_find_dma(iommu, unmap->iova, unmap->size))) {
+ 		size = unmap->size;
+ 		ret = vfio_remove_dma_overlap(iommu, unmap->iova, &size, dma);
+-		if (ret)
++		if (ret || !size)
+ 			break;
+ 		unmapped += size;
+ 	}
+@@ -635,7 +633,6 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+ 			if (tmp && tmp->prot == prot &&
+ 			    tmp->vaddr + tmp->size == vaddr) {
+ 				tmp->size += size;
+-
+ 				iova = tmp->iova;
+ 				size = tmp->size;
+ 				vaddr = tmp->vaddr;
+@@ -643,19 +640,28 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+ 			}
+ 		}
+ 
+-		/* Check if we abut a region above - nothing above ~0 + 1 */
++		/*
++		 * Check if we abut a region above - nothing above ~0 + 1.
++		 * If we abut above and below, remove and free.  If only
++		 * abut above, remove, modify, reinsert.
++		 */
+ 		if (likely(iova + size)) {
+ 			struct vfio_dma *tmp;
+-
+ 			tmp = vfio_find_dma(iommu, iova + size, 1);
+ 			if (tmp && tmp->prot == prot &&
+ 			    tmp->vaddr == vaddr + size) {
+ 				vfio_remove_dma(iommu, tmp);
+-				if (dma)
++				if (dma) {
+ 					dma->size += tmp->size;
+-				else
++					kfree(tmp);
++				} else {
+ 					size += tmp->size;
+-				kfree(tmp);
++					tmp->size = size;
++					tmp->iova = iova;
++					tmp->vaddr = vaddr;
++					vfio_insert_dma(iommu, tmp);
++					dma = tmp;
++				}
+ 			}
+ 		}
+ 
+@@ -681,11 +687,10 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+ 		iova = map->iova;
+ 		size = map->size;
+ 		while ((tmp = vfio_find_dma(iommu, iova, size))) {
+-			if (vfio_remove_dma_overlap(iommu, iova, &size, tmp)) {
+-				pr_warn("%s: Error rolling back failed map\n",
+-					__func__);
++			int r = vfio_remove_dma_overlap(iommu, iova,
++							&size, tmp);
++			if (WARN_ON(r || !size))
+ 				break;
+-			}
+ 		}
+ 	}
+ 
+@@ -813,6 +818,8 @@ static void vfio_iommu_type1_release(void *iommu_data)
+ 		struct vfio_dma *dma = rb_entry(node, struct vfio_dma, node);
+ 		size_t size = dma->size;
+ 		vfio_remove_dma_overlap(iommu, dma->iova, &size, dma);
++		if (WARN_ON(!size))
++			break;
+ 	}
+ 
+ 	iommu_domain_free(iommu->domain);
 
