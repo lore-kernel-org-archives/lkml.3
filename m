@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423019Ab3FUBVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:21:08 -0400
-Received: from ozlabs.org ([203.10.76.45]:60889 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161101Ab3FUBVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:21:06 -0400
-Message-ID: <1371777661.5490.2.camel@concordia>
-Subject: Re: Nightly stable builds [Was: fec: Fix build for MCF5272]
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 21 Jun 2013 11:21:01 +1000
-In-Reply-To: <20130619232415.GA27990@roeck-us.net>
-References: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
-	 <CAOMZO5CU57Jqtzt2ZX=TYiemn5okASo4GU_zer+j736J8yj0OQ@mail.gmail.com>
-	 <20130619204348.GA7314@roeck-us.net> <20130619221519.GB9518@kroah.com>
-	 <20130619232415.GA27990@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S965935Ab3FUBYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 21:24:31 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:47397 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965258Ab3FUBYa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 21:24:30 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v7 2/6] mm/writeback: Don't check force_wait to handle bdi->work_list
+Date: Fri, 21 Jun 2013 09:24:15 +0800
+Message-Id: <1371777859-13459-2-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1371777859-13459-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1371777859-13459-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062101-8256-0000-0000-00000804B032
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Note: this patch must be ordered _after_ "fs/fs-writeback.c: make
+wb_do_writeback() as static" to avoid build errors.
 
-On Wed, 2013-06-19 at 16:24 -0700, Guenter Roeck wrote:
-> On Wed, Jun 19, 2013 at 03:15:19PM -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Jun 19, 2013 at 01:43:48PM -0700, Guenter Roeck wrote:
-> > > On Wed, Jun 19, 2013 at 10:42:36AM -0300, Fabio Estevam wrote:
-> > > > Hi Guenter,
-> > > > 
-> > > > FYI
-> > > > 
-> > > > I asked Stephen to include m5272c3_defconfig as part of his daily
-> > > > build and now it is available:
-> > > > http://kisskb.ellerman.id.au/kisskb/buildresult/8991795/
-> > > > 
-> > > Nice front-end.
-> > > 
-> > > Greg, would it be useful to set up something similar for pending stable builds ?
-> > > I have back-end code doing that running on one of my servers at home, but no
-> > > web front-end.
-> > > 
-> > > Any idea whom to talk to to set this up ? Stephen ? Michael ?
-> > 
-> > I have no idea.  I publish the stable build patches all publically, so a
-> > build-bot could easily be built using it, which would be great to have.
-> > 
-> The build-bot isn't the problem; as I mentioned above, I already have one
-> running. I was referring to a web front-end for it.
+After commit 839a8e86("writeback: replace custom worker pool implementation
+with unbound workqueue"), bdi_writeback_workfn runs off bdi_writeback->dwork,
+on each execution, it processes bdi->work_list and reschedules if there are
+more things to do instead of flush any work that race with us existing. It is
+unecessary to check force_wait in wb_do_writeback since it is always 0 after
+the mentioned commit. This patch remove the force_wait in wb_do_writeback.
 
-Hi Guenter,
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ fs/fs-writeback.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-Actually I hate the web front end, but that's because I wrote it :)
-
-It's pretty, but it doesn't scale very well, "one of these days" I'll
-rewrite it. My plan is to actually just make it a frontend for buildbot
-- but I never have time :)
-
-We already build the published stable branches, see:
-  http://kisskb.ellerman.id.au/kisskb/branch/
-
-But I think you're talking about building the patch queues before they
-go into git? If so the only hurdle would be someone publishing a git
-tree of them - kisskb only knows how to build git trees.
-
-cheers
-
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index f892dec..e15aa97 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -959,7 +959,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
+ /*
+  * Retrieve work items and do the writeback they describe
+  */
+-static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
++static long wb_do_writeback(struct bdi_writeback *wb)
+ {
+ 	struct backing_dev_info *bdi = wb->bdi;
+ 	struct wb_writeback_work *work;
+@@ -967,12 +967,6 @@ static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
+ 
+ 	set_bit(BDI_writeback_running, &wb->bdi->state);
+ 	while ((work = get_next_work_item(bdi)) != NULL) {
+-		/*
+-		 * Override sync mode, in case we must wait for completion
+-		 * because this thread is exiting now.
+-		 */
+-		if (force_wait)
+-			work->sync_mode = WB_SYNC_ALL;
+ 
+ 		trace_writeback_exec(bdi, work);
+ 
+@@ -1021,7 +1015,7 @@ void bdi_writeback_workfn(struct work_struct *work)
+ 		 * rescuer as work_list needs to be drained.
+ 		 */
+ 		do {
+-			pages_written = wb_do_writeback(wb, 0);
++			pages_written = wb_do_writeback(wb);
+ 			trace_writeback_pages_written(pages_written);
+ 		} while (!list_empty(&bdi->work_list));
+ 	} else {
+-- 
+1.7.5.4
 
