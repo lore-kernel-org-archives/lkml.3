@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946074Ab3FUUrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 16:47:55 -0400
-Received: from [207.46.163.236] ([207.46.163.236]:12243 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1945963Ab3FUUry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 16:47:54 -0400
-Message-ID: <51C4BB86.1020004@caviumnetworks.com>
-Date: Fri, 21 Jun 2013 13:45:58 -0700
-From: David Daney <ddaney@caviumnetworks.com>
+	id S1423595Ab3FUUsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 16:48:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47919 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423350Ab3FUUsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 16:48:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,915,1363158000"; 
+   d="scan'208";a="320749277"
+Message-ID: <51C4BC09.3000708@linux.intel.com>
+Date: Fri, 21 Jun 2013 13:48:09 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: David Daney <ddaney.cavm@gmail.com>, James Hogan <james.hogan@imgtec.com>,
-        <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Kees Cook" <keescook@chromium.org>,
-        David Daney <david.daney@cavium.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        <linux-mips@linux-mips.org>
-Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
-References: <1371821962-9151-1-git-send-email-james.hogan@imgtec.com> <51C47864.9030200@gmail.com> <20130621202244.GA16610@redhat.com>
-In-Reply-To: <20130621202244.GA16610@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Subject: Re: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
+ from apic.c to irq.c
+References: <1371835898.18733.122.camel@gandalf.local.home>
+In-Reply-To: <1371835898.18733.122.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-Forefront-Antispam-Report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:0;SRVR:SN2PR07MB016;H:BN1PRD0712HT002.namprd07.prod.outlook.com;LANG:en;
-X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 01:22 PM, Oleg Nesterov wrote:
-> On 06/21, David Daney wrote:
->>
->> On 06/21/2013 06:39 AM, James Hogan wrote:
->>> Therefore add sig_to_exitcode() and exitcode_to_sig() functions which
->>> map signal numbers > 126 to exit code 126 and puts the remainder (i.e.
->>> sig - 126) in higher bits. This allows WIFSIGNALED() to return true for
->>> both SIG127 and SIG128, and allows WTERMSIG to be later updated to read
->>> the correct signal number for SIG127 and SIG128.
->>
->> I really hate this approach.
->>
->> Can we just change the ABI to reduce the number of signals so that all
->> the standard C library wait related macros don't have to be changed?
->>
->> Think about it, any user space program using signal numbers 127 and 128
->> doesn't work correctly as things exist today, so removing those two will
->> be no great loss.
->
-> Oh, I agree.
->
-> Besides, this changes ABI anyway. And if we change it we can do this in
-> a more clean way, afaics. MIPS should simply use 2 bytes in exit_code for
-> signal number.
+On 06/21/2013 10:31 AM, Steven Rostedt wrote:
+> 
+> Peter,
+> 
+> I noticed that you pulled in Seiji's patches into tip. Last night I was
+> running my test suite on them, and this morning they showed the
+> following compile bug. I found the fix and attached it below. I pushed
+> it into my tree that's based on your x86/trace branch, for your
+> convenience.
+> 
+> My testing also triggered another bug, but I'm not sure it's related to
+> these patches or something that already existed. I'm currently
+> investigating it now.
+> 
+> -- Steve
+> 
+> 
+> Please pull the latest tip/x86/trace tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/x86/trace
+> 
+> Head SHA1: 83ab85140bc1492f92de263a1c30ea04a0f465f7
+> 
 
-Wouldn't that break *all* existing programs that use signals?  Perhaps I 
-misunderstand what you are suggesting.
+Thanks, pulled!
 
-I am proposing that we just reduce the number of usable signals such 
-that existing libc status checking macros/functions don't change in any way.
+	-hpa
 
-  Yes, this means we need replace 0x80/0x7f in exit.c by
-> ifdef'ed numbers. And yes, this means that WIFSIGNALED/etc should be
-> updated too, but this is also true with this patch.
->
-> Oleg.
->
->
 
