@@ -1,156 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423664Ab3FUSgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 14:36:40 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36704 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423388Ab3FUSgi (ORCPT
+	id S1945931Ab3FUSkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 14:40:51 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:43822 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423388Ab3FUSkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 14:36:38 -0400
-Date: Fri, 21 Jun 2013 14:33:25 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Bob Liu <lliubbo@gmail.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv13 3/4] zswap: add to mm/
-Message-ID: <20130621183325.GI15809@phenom.dumpdata.com>
-References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1370291585-26102-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <CAA_GA1eWFYDxp3gEdWzajVP4jMpmJbt=oWBZYqZEQjndU=s_Qg@mail.gmail.com>
- <20130620023750.GA1194@cerebellum>
- <CAA_GA1c8cH1fu9jHk8evKZvK-gpQ+c8NEp5=_jDLKPcMbG_ufA@mail.gmail.com>
- <20130620142328.GA9461@cerebellum>
- <CAA_GA1eoD6Q6uYjQyJUhSuusNZn7TvekF1-EQLATSywatCHk3g@mail.gmail.com>
- <253b3e7e-e65e-407a-adfe-f3fdd9a1909e@default>
+	Fri, 21 Jun 2013 14:40:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <253b3e7e-e65e-407a-adfe-f3fdd9a1909e@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <201306211632.12577.arnd@arndb.de>
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
+	<201306211600.04986.arnd@arndb.de>
+	<CAD=GYpZ_5Lp1La=f+2BQfmuj+sc3FgygZRD4gfj4JGGZ0Do=_Q@mail.gmail.com>
+	<201306211632.12577.arnd@arndb.de>
+Date: Fri, 21 Jun 2013 13:40:48 -0500
+Message-ID: <CAD=GYpbhBAaSkMtcJaPtVpWar7AcW37QpAk3A0qgwX6G5PDoZg@mail.gmail.com>
+Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
+From: Joel A Fernandes <agnel.joel@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Sekhar Nori <nsekhar@ti.com>, Joel A Fernandes <joelagnel@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 08:20:34AM -0700, Dan Magenheimer wrote:
-> > From: Bob Liu [mailto:lliubbo@gmail.com]
->  Subject: Re: [PATCHv13 3/4] zswap: add to mm/
-> > 
-> > On Thu, Jun 20, 2013 at 10:23 PM, Seth Jennings
-> > <sjenning@linux.vnet.ibm.com> wrote:
-> > > On Thu, Jun 20, 2013 at 05:42:04PM +0800, Bob Liu wrote:
-> > >> > Just made a mmtests run of my own and got very different results:
-> > >> >
-> > >>
-> > >> It's strange, I'll update to rc6 and try again.
-> > >> By the way, are you using 824 hardware compressor instead of lzo?
-> > >
-> > > My results where using lzo software compression.
-> > >
-> > 
-> > Thanks, and today I used another machine to test zswap.
-> > The total ram size of that machine is around 4G.
-> > This time the result is better:
-> >                                                rc6                         rc6
-> >                                              zswap                        base
-> > Ops memcachetest-0M             14619.00 (  0.00%)          15602.00 (  6.72%)
-> > Ops memcachetest-435M           14727.00 (  0.00%)          15860.00 (  7.69%)
-> > Ops memcachetest-944M           12452.00 (  0.00%)          11812.00 ( -5.14%)
-> > Ops memcachetest-1452M          12183.00 (  0.00%)           9829.00 (-19.32%)
-> > Ops memcachetest-1961M          11953.00 (  0.00%)           9337.00 (-21.89%)
-> > Ops memcachetest-2469M          11201.00 (  0.00%)           7509.00 (-32.96%)
-> > Ops memcachetest-2978M           9738.00 (  0.00%)           5981.00 (-38.58%)
-> > Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
-> > Ops io-duration-435M               10.00 (  0.00%)              6.00 ( 40.00%)
-> > Ops io-duration-944M               19.00 (  0.00%)             19.00 (  0.00%)
-> > Ops io-duration-1452M              31.00 (  0.00%)             26.00 ( 16.13%)
-> > Ops io-duration-1961M              40.00 (  0.00%)             35.00 ( 12.50%)
-> > Ops io-duration-2469M              45.00 (  0.00%)             43.00 (  4.44%)
-> > Ops io-duration-2978M              58.00 (  0.00%)             53.00 (  8.62%)
-> > Ops swaptotal-0M                56711.00 (  0.00%)              8.00 ( 99.99%)
-> > Ops swaptotal-435M              19218.00 (  0.00%)           2101.00 ( 89.07%)
-> > Ops swaptotal-944M              53233.00 (  0.00%)          98055.00 (-84.20%)
-> > Ops swaptotal-1452M             52064.00 (  0.00%)         145624.00 (-179.70%)
-> > Ops swaptotal-1961M             54960.00 (  0.00%)         153907.00 (-180.03%)
-> > Ops swaptotal-2469M             57485.00 (  0.00%)         176340.00 (-206.76%)
-> > Ops swaptotal-2978M             77704.00 (  0.00%)         182996.00 (-135.50%)
-> > Ops swapin-0M                   24834.00 (  0.00%)              8.00 ( 99.97%)
-> > Ops swapin-435M                  9038.00 (  0.00%)              0.00 (  0.00%)
-> > Ops swapin-944M                 26230.00 (  0.00%)          42953.00 (-63.76%)
-> > Ops swapin-1452M                25766.00 (  0.00%)          68440.00 (-165.62%)
-> > Ops swapin-1961M                27258.00 (  0.00%)          68129.00 (-149.94%)
-> > Ops swapin-2469M                28508.00 (  0.00%)          82234.00 (-188.46%)
-> > Ops swapin-2978M                37970.00 (  0.00%)          89280.00 (-135.13%)
-> > Ops minorfaults-0M            1460163.00 (  0.00%)         927966.00 ( 36.45%)
-> > Ops minorfaults-435M           954058.00 (  0.00%)         936182.00 (  1.87%)
-> > Ops minorfaults-944M           972818.00 (  0.00%)        1005956.00 ( -3.41%)
-> > Ops minorfaults-1452M          966597.00 (  0.00%)        1035465.00 ( -7.12%)
-> > Ops minorfaults-1961M          976158.00 (  0.00%)        1049441.00 ( -7.51%)
-> > Ops minorfaults-2469M          967815.00 (  0.00%)        1051752.00 ( -8.67%)
-> > Ops minorfaults-2978M          988712.00 (  0.00%)        1034615.00 ( -4.64%)
-> > Ops majorfaults-0M               5899.00 (  0.00%)              9.00 ( 99.85%)
-> > Ops majorfaults-435M             2684.00 (  0.00%)             67.00 ( 97.50%)
-> > Ops majorfaults-944M             4380.00 (  0.00%)           5790.00 (-32.19%)
-> > Ops majorfaults-1452M            4161.00 (  0.00%)           9222.00 (-121.63%)
-> > Ops majorfaults-1961M            4435.00 (  0.00%)           8800.00 (-98.42%)
-> > Ops majorfaults-2469M            4555.00 (  0.00%)          10541.00 (-131.42%)
-> > Ops majorfaults-2978M            6182.00 (  0.00%)          11618.00 (-87.93%)
-> > 
-> > 
-> > But the performance of the first machine I used whose total ram size
-> > is 2G is still bad.
-> > I need more time to summarize those testing results.
-> > 
-> > Maybe you can also have a try with lower total ram size.
-> > 
-> > --
-> > Regards,
-> > --Bob
-> 
-> 
-> A very important factor that you are not considering and
-> that might account for your different results is the
-> "initial conditions".  For example, I always ran my benchmarks
-> after a default-configured EL6 boot, which launches many services
-> at boot time, each of which creates many anonymous pages,
-> and these "service anonymous pages" are often the pages
-> that are selected by LRU for swapping, and compressed by zcache/zswap.
-> Someone else may run the benchmarks on a minimally-configured
-> embedded system, and someone else on a single-user system
-> with no services running at all.  A single-user system with
-> no services is often best for reproducing benchmark results but
-> may not be at all representative of the real world.
+On Fri, Jun 21, 2013 at 9:32 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 21 June 2013, Joel A Fernandes wrote:
+>> I haven't come across this problem but- are you saying there is a
+>> shortcoming in Kbuild/Kconfig that selects an option even if its
+>> dependency is not met?
+>
+> Well, the shortcoming is that it lets you specify impossible
+> contraints. You get a warning from Kconfig when building
+> such a configuration, but then it continues.
+>
+>> The problem with defconfig is also too many options I feel for a common case.
+>> CONFIG_DMADEVICES=y
+>> CONFIG_TI_EDMA=y
+>>
+>> Most if not all future OMAPs from will use EDMA. Why not we can be
+>> explicit about it and just built it in anyway. If ARCH_OMAP and
+>> DMADEVICES are selected, then we can just build EDMA in by default.
+>
+> It's just not how we do things. Kconfig is a mess because we are
+> not consistent in the way this is done.
+>
+>> I agree maybe the option can be dropped from Davinci but I suggest
+>> let's keep it for OMAP. Is that ok?
+>
+> No, I would still like you to not add it to either one. I'm spending
+> a lot of my time tracking down incorrect 'select' statements and I'd
+> rather spend it in a different way. I've had to a number of 'select'
+> statements from OMAP in the past, please don't add any new ones
+> unless there is a strict build dependency (which normally should not
+> exist).
 
+I think we are talking about different things, I agree the 'select
+DMADEVICES' can be dropped but lets please keep the default y option
+(not adding new select statements, just saying that if someone select
+DMADEVICES in menuconfig and if they're ARCH_OMAP=1 , then default to
+EDMA). This will simply allow people to have a default. Thanks.
 
-Right. And interestingly enough the kernbench recommends
-that model so that it is easier to reproduce.
-
-> 
-> At a minimum, it would be good to always record "Active(anon)"
-> and "Inactive(anon)" in addition to the amount of physical
-> RAM in the system.  (Note, in /proc/meminfo on my system,
-> the sum of these don't add up to "AnonPages"... I'm not sure
-> why.)
-> 
-> And of course, even if the number of anonymous pages is
-> the same, the _contents_ of those pages may be very different,
-> which will affect zcache/zswap density which may have
-> a large impact on benchmark results.
-> 
-> Thanks,
-> Dan (T-minus two weeks and counting)
-> 
+Thanks
+Joel
