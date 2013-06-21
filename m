@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965400Ab3FUKcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:32:13 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:17825 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab3FUKcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:32:12 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C42B75.7040204@asianux.com>
-Date: Fri, 21 Jun 2013 18:31:17 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] kernel/itimer.c: remove the checking 'value' statement
-References: <51C2E6F9.80107@asianux.com> <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de> <51C3B4B4.90603@asianux.com>
-In-Reply-To: <51C3B4B4.90603@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1757771Ab3FUKc5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 06:32:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39826 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751185Ab3FUKc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 06:32:56 -0400
+Message-ID: <1371810775.19215.30.camel@joe-AO722>
+Subject: Re: [PATCH v7] ethernet/arc/arc_emac - Add new driver
+From: Joe Perches <joe@perches.com>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: netdev@vger.kernel.org, Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Florian Fainelli <florian@openwrt.org>
+Date: Fri, 21 Jun 2013 03:32:55 -0700
+In-Reply-To: <1371799241-27771-1-git-send-email-abrodkin@synopsys.com>
+References: <1371799241-27771-1-git-send-email-abrodkin@synopsys.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-06-21 at 11:20 +0400, Alexey Brodkin wrote:
+> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
+> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
+> ARCAngel4/ML50x.
 
-Since copy_to_user() will process "bad address" internally, we need not
-check 'value' again, then can save one comparing instruction at least.
+Looks fine to me.
 
-For some embedded system with NOMMU, 'NULL' may not mean "bad address"
-(EFAULT), so recommend to let copy_to_user() to check 'EFAULT' in this
-case, completely.
+One nit you could fix later and a question.
 
-Removing the checking code, also can let it simpler and clearer to
-readers.
+> diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+[]
+> +static int arc_emac_rx(struct net_device *ndev, int budget)
+> +{
+[]
+> +			if (net_ratelimit())
+> +				netdev_err(ndev, "incomplete packed received\n");
 
+s/packed/packet/
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/itimer.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+> +		rxbd->data = (unsigned char *)cpu_to_le32(rx_buff->skb->data);
 
-diff --git a/kernel/itimer.c b/kernel/itimer.c
-index 8d262b4..3b12271 100644
---- a/kernel/itimer.c
-+++ b/kernel/itimer.c
-@@ -102,15 +102,14 @@ int do_getitimer(int which, struct itimerval *value)
- 
- SYSCALL_DEFINE2(getitimer, int, which, struct itimerval __user *, value)
- {
--	int error = -EFAULT;
-+	int error;
- 	struct itimerval get_buffer;
- 
--	if (value) {
--		error = do_getitimer(which, &get_buffer);
--		if (!error &&
--		    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
--			error = -EFAULT;
--	}
-+	error = do_getitimer(which, &get_buffer);
-+	if (!error &&
-+	    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
-+		error = -EFAULT;
-+
- 	return error;
- }
- 
--- 
-1.7.7.6
+32 bit only.  Should the Kconfig block have some arch_arc dependency
+so it can't get compiled for 64 bit systems?
 
