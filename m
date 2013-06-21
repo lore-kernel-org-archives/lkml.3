@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758288Ab3FUGOi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:14:38 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:36024 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757862Ab3FUGOe (ORCPT
+	id S1758501Ab3FUGPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:15:20 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:62330 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758210Ab3FUGOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:14:34 -0400
+	Fri, 21 Jun 2013 02:14:38 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
         Matt Sealey <neko@bakuhatsu.net>, Stephen Boyd <sboyd@codeaurora.org>,
         Haojian Zhuang <haojian.zhuang@linaro.org>,
         Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v3 3/5] clk: dt: binding for basic multiplexer clock
-Date: Thu, 20 Jun 2013 23:14:14 -0700
-Message-Id: <1371795256-16703-4-git-send-email-mturquette@linaro.org>
+Subject: [PATCH v3 4/5] clk: dt: binding for basic divider clock
+Date: Thu, 20 Jun 2013 23:14:15 -0700
+Message-Id: <1371795256-16703-5-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
 References: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
@@ -24,13 +24,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device Tree binding for the basic clock multiplexer, plus the setup
-function to register the clock.  Based on the existing fixed-clock
-binding.
-
-Includes minor beautification of clk-provider.h where some whitespace is
-added and of_fixed_factor_clock_setup is relocated to maintain a
-consistent style.
+Devicetree binding for the basic clock divider, plus the setup function
+to register the clock.  Based on the existing fixed-clock binding.
 
 Tero Kristo contributed helpful bug fixes to this patch.
 
@@ -39,112 +34,123 @@ Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Changes since v2:
 * added hiword-mask property to the binding
 * changed bit-shift property from u8 to u32 in the dt binding
+* correctly parses divider table (thanks Tero!)
 
 Changes since v1:
-* pass shift value into clk_register_mux_table
-* s/multiplexor/multiplexer/
-* removed debug prints
 * mask is u32, shift is u8
-* DT property names use dashes instead of underscores
-* DT property names are more verbose
+* use bit mask instead of bitfield width DT property names use dashes
+* instead of underscores
+* DT property names are more verbose added minimum/maximum divider
+* values to binding
 * shift property is optional in binding and can be auto-generated from a
   full 32-bit mask
 
- .../devicetree/bindings/clock/mux-clock.txt        | 79 ++++++++++++++++++++++
- drivers/clk/clk-mux.c                              | 65 +++++++++++++++++-
- include/linux/clk-provider.h                       |  5 +-
- 3 files changed, 147 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/mux-clock.txt
+ .../devicetree/bindings/clock/divider-clock.txt    | 90 ++++++++++++++++++++
+ drivers/clk/clk-divider.c                          | 96 +++++++++++++++++++++-
+ include/linux/clk-provider.h                       |  2 +
+ 3 files changed, 187 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/divider-clock.txt
 
-diff --git a/Documentation/devicetree/bindings/clock/mux-clock.txt b/Documentation/devicetree/bindings/clock/mux-clock.txt
+diff --git a/Documentation/devicetree/bindings/clock/divider-clock.txt b/Documentation/devicetree/bindings/clock/divider-clock.txt
 new file mode 100644
-index 0000000..54cb8d1
+index 0000000..ac80724
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/mux-clock.txt
-@@ -0,0 +1,79 @@
-+Binding for simple mux clock.
++++ b/Documentation/devicetree/bindings/clock/divider-clock.txt
+@@ -0,0 +1,90 @@
++Binding for simple divider clock.
 +
 +This binding uses the common clock binding[1].  It assumes a
-+register-mapped multiplexer with multiple input clock signals or
-+parents, one of which can be selected as output.  This clock does not
-+gate or adjust the parent rate via a divider or multiplier.
++register-mapped adjustable clock rate divider that does not gate and has
++only one input clock or parent.  By default the value programmed into
++the register is one less than the actual divisor value.  E.g:
 +
-+By default the "clocks" property lists the parents in the same order
-+as they are programmed into the regster.  E.g:
++register value		actual divisor value
++0			1
++1			2
++2			3
 +
-+	clocks = <&foo_clock>, <&bar_clock>, <&baz_clock>;
++This assumption may be modified by the following optional properties:
 +
-+results in programming the register as follows:
++index-starts-at-one - valid divisor values start at 1, not the default
++of 0.  E.g:
++register value		actual divisor value
++1			1
++2			2
++3			3
 +
-+register value		selected parent clock
-+0			foo_clock
-+1			bar_clock
-+2			baz_clock
++index-power-of-two - valid divisor values are powers of two.  E.g:
++register value		actual divisor value
++0			1
++1			2
++2			4
 +
-+Some clock controller IPs do not allow a value of zero to be programmed
-+into the register, instead indexing begins at 1.  The optional property
-+"index_one" modified the scheme as follows:
++index-allow-zero - same as index_one, but zero is divide-by-1.  E.g:
++register value		actual divisor value
++0			1
++1			1
++2			2
 +
-+register value		selected clock parent
-+1			foo_clock
-+2			bar_clock
-+3			baz_clock
++Additionally a table of valid dividers may be supplied like so:
 +
-+Additionally an optional table of bit and parent pairs may be supplied
-+like so:
++	table = <4 0>, <8, 1>;
 +
-+	table = <&foo_clock 0x0>, <&bar_clock, 0x2>, <&baz_clock, 0x4>;
++where the first value in the pair is the divider and the second value is
++the programmed register bitfield.
 +
-+where the first value in the pair is the parent clock and the second
-+value is the bitfield to be programmed into the register.
-+
-+The binding must provide the register to control the mux and the mask
-+for the corresponding control bits.  Optionally the number of bits to
-+shift that mask if necessary.  If the shift value is missing it is the
-+same as supplying a zero shift.
++The binding must also provide the register to control the divider and
++the mask for the corresponding control bits.  Optionally the number of
++bits to shift that mask, if necessary.  If the shift value is missing it
++is the same as supplying a zero shift.
 +
 +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
 +
 +Required properties:
-+- compatible : shall be "mux-clock".
++- compatible : shall be "divider-clock".
 +- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : link phandles of parent clocks
-+- reg : base address for register controlling adjustable mux
-+- bit-mask : arbitrary bitmask for programming the adjustable mux
++- clocks : link to phandle of parent clock
++- reg : base address for register controlling adjustable divider
++- bit-mask : arbitrary bitmask for programming the adjustable divider
 +
 +Optional properties:
-+- clock-output-names : From common clock binding.
-+- table : array of integer pairs defining parents & bitfield values
++- clock-output-names : from common clock binding.
++- table : array of integer pairs defining divisors & bitfield values
 +- bit-shift : number of bits to shift the bit-mask, defaults to
 +  (ffs(mask) - 1) if not present
-+- index-starts-at-one : valid input select programming starts at 1, not
-+  zero
-+- hiword-mask : lower half of the register programs the mux, upper half
-+  of the register indicates bits that were updated in the lower half
++- minimum-divider : min divisor for dividing the input clock rate, only
++  needed if the first divisor is offset from the default value
++- maximum-divider : max divisor for dividing the input clock rate, only
++  needed if the max divisor is less than (mask + 1).
++- index-starts-at-one : valid divisor programming starts at 1, not zero
++- index-power-of-two : valid divisor programming must be a power of two
++- index-allow-zero : implies index-one, and programming zero results in
++  divide-by-one
++- hiword-mask : lower half of the register programs the divider, upper
++  half of the register indicates bits that were updated in the lower
++  half
 +
 +Examples:
-+	clock: clock@4a008100 {
-+		compatible = "mux-clock";
++	clock_foo: clock_foo@4a008100 {
++		compatible = "divider-clock";
 +		#clock-cells = <0>;
-+		clocks = <&clock_foo>, <&clock_bar>, <&clock_baz>;
++		clocks = <&clock_baz>;
 +		reg = <0x4a008100 0x4>
-+		mask = <0x3>;
-+		index_one;
++		mask = <0x3>
++		maximum-divider = <3>
 +	};
 +
-+	clock: clock@4a008100 {
++	clock_bar: clock_bar@4a008108 {
 +		#clock-cells = <0>;
-+		compatible = "mux-clock";
-+		clocks = <&clock_foo>, <&clock_bar>, <&clock_baz>;
-+		reg = <0x4a008100 0x4>;
-+		mask = <0x3>;
++		compatible = "divider-clock";
++		clocks = <&clock_foo>;
++		reg = <0x4a008108 0x4>;
++		mask = <0x1>;
 +		shift = <0>;
-+		table = <&clock_foo 1>, <&clock_bar 2>, <&clock_baz 3>;
++		table = < 4 0 >, < 8 1 >;
 +	};
-diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
-index 614444c..4751bce 100644
---- a/drivers/clk/clk-mux.c
-+++ b/drivers/clk/clk-mux.c
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index ac9cb7f..ff24ec2 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
 @@ -1,7 +1,7 @@
  /*
   * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
@@ -154,50 +160,69 @@ index 614444c..4751bce 100644
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License version 2 as
-@@ -16,6 +16,8 @@
- #include <linux/slab.h>
- #include <linux/io.h>
+@@ -17,6 +17,8 @@
  #include <linux/err.h>
+ #include <linux/string.h>
+ #include <linux/log2.h>
 +#include <linux/of.h>
 +#include <linux/of_address.h>
  
  /*
-  * DOC: basic adjustable multiplexer clock that cannot gate
-@@ -166,3 +168,64 @@ struct clk *clk_register_mux(struct device *dev, const char *name,
- 				      flags, reg, shift, mask, clk_mux_flags,
- 				      NULL, lock);
+  * DOC: basic adjustable divider clock that cannot gate
+@@ -340,3 +342,95 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
+ 	return _register_divider(dev, name, parent_name, flags, reg, shift,
+ 			((1 << width) - 1), clk_divider_flags, table, lock);
  }
 +
 +#ifdef CONFIG_OF
++struct clk_div_table *of_clk_get_div_table(struct device_node *node)
++{
++	int i;
++	u32 table_size;
++	struct clk_div_table *table;
++	const __be32 *tablespec;
++	u32 val;
++
++	tablespec = of_get_property(node, "table", &table_size);
++
++	if (!tablespec)
++		return NULL;
++
++	table_size /= sizeof(struct clk_div_table);
++
++	table = kzalloc(sizeof(struct clk_div_table) * table_size, GFP_KERNEL);
++	if (!table) {
++		pr_err("%s: unable to allocate memory for %s table\n", __func__, node->name);
++		return NULL;
++	}
++
++	for (i = 0; i < table_size; i++) {
++		of_property_read_u32_index(node, "table", i * 2, &val);
++		table[i].div = val;
++		of_property_read_u32_index(node, "table", i * 2 + 1, &val);
++		table[i].val = val;
++	}
++
++	return table;
++}
++
 +/**
-+ * of_mux_clk_setup() - Setup function for simple mux rate clock
++ * of_divider_clk_setup() - Setup function for simple div rate clock
 + */
-+void of_mux_clk_setup(struct device_node *node)
++void of_divider_clk_setup(struct device_node *node)
 +{
 +	struct clk *clk;
 +	const char *clk_name = node->name;
 +	void __iomem *reg;
-+	int num_parents;
-+	const char **parent_names;
-+	int i;
-+	u8 clk_mux_flags = 0;
++	const char *parent_name;
++	u8 clk_divider_flags = 0;
 +	u32 mask = 0;
 +	u32 shift = 0;
++	struct clk_div_table *table;
 +
 +	of_property_read_string(node, "clock-output-names", &clk_name);
 +
-+	num_parents = of_clk_get_parent_count(node);
-+	if (num_parents < 1) {
-+		pr_err("%s: mux-clock %s must have parent(s)\n",
-+				__func__, node->name);
-+		return;
-+	}
-+
-+	parent_names = kzalloc((sizeof(char*) * num_parents),
-+			GFP_KERNEL);
-+
-+	for (i = 0; i < num_parents; i++)
-+		parent_names[i] = of_clk_get_parent_name(node, i);
++	parent_name = of_clk_get_parent_name(node, 0);
 +
 +	reg = of_iomap(node, 0);
 +
@@ -213,47 +238,45 @@ index 614444c..4751bce 100644
 +	}
 +
 +	if (of_property_read_bool(node, "index-starts-at-one"))
-+		clk_mux_flags |= CLK_MUX_INDEX_ONE;
++		clk_divider_flags |= CLK_DIVIDER_ONE_BASED;
++
++	if (of_property_read_bool(node, "index-power-of-two"))
++		clk_divider_flags |= CLK_DIVIDER_POWER_OF_TWO;
++
++	if (of_property_read_bool(node, "index-allow-zero"))
++		clk_divider_flags |= CLK_DIVIDER_ALLOW_ZERO;
 +
 +	if (of_property_read_bool(node, "hiword-mask"))
-+		clk_mux_flags |= CLK_MUX_HIWORD_MASK;
++		clk_divider_flags |= CLK_DIVIDER_HIWORD_MASK;
 +
-+	clk = clk_register_mux_table(NULL, clk_name, parent_names, num_parents,
-+			0, reg, (u8) shift, mask, clk_mux_flags,
-+			NULL, NULL);
++	table = of_clk_get_div_table(node);
++	if (IS_ERR(table))
++		return;
++
++	clk = _register_divider(NULL, clk_name,
++			parent_name, 0,
++			reg, (u8) shift, mask,
++			clk_divider_flags, table,
++			NULL);
 +
 +	if (!IS_ERR(clk))
 +		of_clk_add_provider(node, of_clk_src_simple_get, clk);
 +}
-+EXPORT_SYMBOL_GPL(of_mux_clk_setup);
-+CLK_OF_DECLARE(mux_clk, "mux-clock", of_mux_clk_setup);
++EXPORT_SYMBOL_GPL(of_divider_clk_setup);
++CLK_OF_DECLARE(divider_clk, "divider-clock", of_divider_clk_setup);
 +#endif
 diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 8730cb9..24a04b8 100644
+index 24a04b8..723ce69 100644
 --- a/include/linux/clk-provider.h
 +++ b/include/linux/clk-provider.h
-@@ -340,7 +340,7 @@ struct clk *clk_register_mux_table(struct device *dev, const char *name,
- 		void __iomem *reg, u8 shift, u32 mask,
- 		u8 clk_mux_flags, u32 *table, spinlock_t *lock);
+@@ -293,6 +293,8 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
+ 		u8 clk_divider_flags, const struct clk_div_table *table,
+ 		spinlock_t *lock);
  
--void of_fixed_factor_clk_setup(struct device_node *node);
-+void of_mux_clk_setup(struct device_node *node);
- 
++void of_divider_clk_setup(struct device_node *node);
++
  /**
-  * struct clk_fixed_factor - fixed multiplier and divider clock
-@@ -361,10 +361,13 @@ struct clk_fixed_factor {
- };
- 
- extern struct clk_ops clk_fixed_factor_ops;
-+
- struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		unsigned int mult, unsigned int div);
- 
-+void of_fixed_factor_clk_setup(struct device_node *node);
-+
- /***
-  * struct clk_composite - aggregate clock of mux, divider and gate clocks
+  * struct clk_mux - multiplexer clock
   *
 -- 
 1.8.1.2
