@@ -1,141 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946086Ab3FUV0e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:26:34 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54491 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946061Ab3FUV0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:26:32 -0400
-From: Nishanth Menon <nm@ti.com>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Mark Brown <broonie@kernel.org>, Tony Lindgren <tony@atomide.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
-Subject: [RFC PATCH V2 5/8] ARM: dts: OMAP4: add voltage processor nodes
-Date: Fri, 21 Jun 2013 16:25:46 -0500
-Message-ID: <1371849949-12649-6-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371849949-12649-1-git-send-email-nm@ti.com>
-References: <1371849949-12649-1-git-send-email-nm@ti.com>
+	id S1946134Ab3FUVaa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:30:30 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:36172 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1946079Ab3FUVa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:30:29 -0400
+Message-ID: <51C4C5F3.3050800@sgi.com>
+Date: Fri, 21 Jun 2013 14:30:27 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com> <20130621185056.GA23473@kroah.com>
+In-Reply-To: <20130621185056.GA23473@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP443x, OMAP446x SoC use same offsets for voltage processor,
-however their voltage characteristics differ a little.
 
-Introduce the voltage processor nodes for the same.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- arch/arm/boot/dts/omap4.dtsi    |   43 +++++++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/omap443x.dtsi |   15 ++++++++++++++
- arch/arm/boot/dts/omap4460.dtsi |   15 ++++++++++++++
- 3 files changed, 73 insertions(+)
+On 6/21/2013 11:50 AM, Greg KH wrote:
+> On Fri, Jun 21, 2013 at 11:44:22AM -0700, Yinghai Lu wrote:
+>> On Fri, Jun 21, 2013 at 10:03 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 06/21/2013 09:51 AM, Greg KH wrote:
+>>>
+>>> I suspect the cutoff for this should be a lot lower than 8 TB even, more
+>>> like 128 GB or so.  The only concern is to not set the cutoff so low
+>>> that we can end up running out of memory or with suboptimal NUMA
+>>> placement just because of this.
+>>
+>> I would suggest another way:
+>> only boot the system with boot node (include cpu, ram and pci root buses).
+>> then after boot, could add other nodes.
+> 
+> What exactly do you mean by "after boot"?  Often, the boot process of
+> userspace needs those additional cpus and ram in order to initialize
+> everything (like the pci devices) properly.
 
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index a153e8d..3c75b23 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -689,5 +689,48 @@
- 				compatible = "ti,omap4-vc-channel-core";
- 			};
- 		};
-+
-+		vp_mpu: vp@0x4A307B58 {
-+			compatible = "ti,omap4-vp";
-+
-+			reg = <0x4A307b58 0x18>, <0x4A306014 0x4>;
-+			reg-names = "base-address", "int-address";
-+			ti,tranxdone-status-mask=<0x20>;
-+
-+			clocks = <&sysclk_in>;
-+
-+			ti,vc-channel = <&vc_mpu>;
-+			ti,min-step-micro-volts = <10000>;
-+			ti,max-step-micro-volts = <50000>;
-+		};
-+
-+		vp_iva: vp@0x4A307B70 {
-+			compatible = "ti,omap4-vp";
-+
-+			reg = <0x4A307B70 0x18>, <0x4A306010 0x4>;
-+			reg-names = "base-address", "int-address";
-+			ti,tranxdone-status-mask=<0x20000000>;
-+
-+			clocks = <&sysclk_in>;
-+
-+			ti,vc-channel = <&vc_iva>;
-+			ti,min-step-micro-volts = <10000>;
-+			ti,max-step-micro-volts = <50000>;
-+		};
-+
-+		vp_core: vp@0x4A307B40 {
-+			compatible = "ti,omap4-vp";
-+
-+			reg = <0x4A307b40 0x18>, <0x4A306010 0x4>;
-+			reg-names = "base-address", "int-address";
-+			ti,tranxdone-status-mask=<0x200000>;
-+
-+			clocks = <&sysclk_in>;
-+
-+			regulator_name = "vdd_core";
-+			ti,vc-channel = <&vc_core>;
-+			ti,min-step-micro-volts = <10000>;
-+			ti,max-step-micro-volts = <50000>;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
-index 2b0deb5..e759937 100644
---- a/arch/arm/boot/dts/omap443x.dtsi
-+++ b/arch/arm/boot/dts/omap443x.dtsi
-@@ -46,3 +46,18 @@
- 	ti,retention-micro-volts = <750000>;
- 	ti,off-micro-volts = <0>;
- };
-+
-+&vp_mpu {
-+	ti,min-micro-volts = <750000>;
-+	ti,max-micro-volts = <1388000>;
-+};
-+
-+&vp_iva {
-+	ti,min-micro-volts = <750000>;
-+	ti,max-micro-volts = <1291000>;
-+};
-+
-+&vp_core {
-+	ti,min-micro-volts = <750000>;
-+	ti,max-micro-volts = <1127000>;
-+};
-diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
-index 16210a1..8320865 100644
---- a/arch/arm/boot/dts/omap4460.dtsi
-+++ b/arch/arm/boot/dts/omap4460.dtsi
-@@ -55,3 +55,18 @@
- 	ti,retention-micro-volts = <750000>;
- 	ti,off-micro-volts = <0>;
- };
-+
-+&vp_mpu {
-+	ti,min-micro-volts = <750000>;
-+	ti,max-micro-volts = <1380000>;
-+};
-+
-+&vp_iva {
-+	ti,min-micro-volts = <750000>;
-+	ti,max-micro-volts = <1375000>;
-+};
-+
-+&vp_core {
-+	ti,min-micro-volts = <750000>;
-+	ti,max-micro-volts = <1250000>;
-+};
--- 
-1.7.9.5
+Exactly.  That's why I left both low and high memory on each node.
 
+> 
+> thanks,
+> 
+> greg k-h
+> 
