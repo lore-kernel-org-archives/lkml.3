@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423656Ab3FUSYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 14:24:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43996 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423641Ab3FUSYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1423640Ab3FUSYI (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 21 Jun 2013 14:24:08 -0400
-Date: Fri, 21 Jun 2013 14:23:41 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] deprecate usage of pci_scan_bus_parented()
-Message-ID: <20130621182341.GG15809@phenom.dumpdata.com>
-References: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Received: from shards.monkeyblade.net ([149.20.54.216]:34794 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423383Ab3FUSYG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 14:24:06 -0400
+Date: Fri, 21 Jun 2013 11:27:29 -0700 (PDT)
+Message-Id: <20130621.112729.1807883476742785070.davem@davemloft.net>
+To: joe@perches.com
+Cc: Alexey.Brodkin@synopsys.com, netdev@vger.kernel.org,
+        andy.shevchenko@gmail.com, romieu@fr.zoreil.com,
+        Vineet.Gupta1@synopsys.com, Mischa.Jonker@synopsys.com, arnd@arndb.de,
+        grant.likely@linaro.org, rob.herring@calxeda.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, florian@openwrt.org
+Subject: Re: [PATCH v7] ethernet/arc/arc_emac - Add new driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1371825813.19215.34.camel@joe-AO722>
+References: <1371810775.19215.30.camel@joe-AO722>
+	<4881796E12491D4BB15146FE0209CE643F5F587E@DE02WEMBXB.internal.synopsys.com>
+	<1371825813.19215.34.camel@joe-AO722>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 01:01:02AM +0800, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
-> 
-> This patch tries to deprecate usage of pci_scan_bus_parented().
-> It applies to
-> https://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next
+From: Joe Perches <joe@perches.com>
+Date: Fri, 21 Jun 2013 07:43:33 -0700
 
-They look OK to me, but let me double-test them in case some last
-minute regression has reared its head.
+> Maybe add a Kconfig "depends on !64BIT".
 
-> 
-> Jiang Liu (3):
->   PCI: export three functions to support modular host bridge driver
->   PCI, xen-pcifront: use new PCI interfaces to simplify implementation
->   PCI: mark pci_scan_bus_parented() as __deprecated
-> 
->  arch/tile/kernel/pci.c     |  3 --
->  drivers/pci/host-bridge.c  |  1 +
->  drivers/pci/probe.c        |  1 +
->  drivers/pci/remove.c       |  7 +++++
->  drivers/pci/xen-pcifront.c | 70 ++++++++++++++++++++--------------------------
->  include/linux/pci.h        |  5 ++--
->  6 files changed, 42 insertions(+), 45 deletions(-)
-> 
-> -- 
-> 1.8.1.2
-> 
+Please, no.
