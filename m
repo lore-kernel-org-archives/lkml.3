@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946100Ab3FUVS2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:18:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41551 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945954Ab3FUVS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:18:27 -0400
-Date: Fri, 21 Jun 2013 23:18:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <john.stultz@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCHv3/RESEND 4/4] clocksource: arch_timer: Add support for
- memory mapped timers
-In-Reply-To: <1371836361-20574-5-git-send-email-sboyd@codeaurora.org>
-Message-ID: <alpine.DEB.2.02.1306212304480.4013@ionos.tec.linutronix.de>
-References: <1371836361-20574-1-git-send-email-sboyd@codeaurora.org> <1371836361-20574-5-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1946106Ab3FUVTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:19:21 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:37228 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1946062Ab3FUVTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:19:19 -0400
+Message-ID: <51C4C356.3040602@sgi.com>
+Date: Fri, 21 Jun 2013 14:19:18 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <CAE9FiQVsNk0rjde8YQd_Bxvo8GFcpDoTeVRgvOMA8DVwhYO4kw@mail.gmail.com>
+In-Reply-To: <CAE9FiQVsNk0rjde8YQd_Bxvo8GFcpDoTeVRgvOMA8DVwhYO4kw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jun 2013, Stephen Boyd wrote:
->  /*
->   * Architected system timer support.
-> @@ -46,13 +73,69 @@ static bool arch_timer_use_virtual = true;
->  static inline void arch_timer_reg_write(int access, int reg, u32 val,
->  					struct clock_event_device *clk)
->  {
-> -	arch_timer_reg_write_cp15(access, reg, val);
-> +	if (access == ARCH_TIMER_MEM_PHYS_ACCESS) {
-> +		struct arch_timer *timer = to_arch_timer(clk);
-> +		switch (reg) {
-> +		case ARCH_TIMER_REG_CTRL:
-> +			writel_relaxed(val, timer->base + CNTP_CTL);
-> +			break;
-> +		case ARCH_TIMER_REG_TVAL:
-> +			writel_relaxed(val, timer->base + CNTP_TVAL);
-> +			break;
-> +		default:
-> +			BUILD_BUG();
 
-So you are relying on the compiler cleverness to identify a caller
-which calls that inline with a not supported reg value.
 
-How does that work, when the compiler decides not to inline that?
+On 6/21/2013 11:36 AM, Yinghai Lu wrote:
+> On Fri, Jun 21, 2013 at 9:25 AM, Nathan Zimmer <nzimmer@sgi.com> wrote:
+>> This rfc patch set delays initializing large sections of memory until we have
+>> started cpus.  This has the effect of reducing startup times on large memory
+>> systems.  On 16TB it can take over an hour to boot and most of that time
+>> is spent initializing memory.
+> 
+> One hour on system with 16T ram? BIOS or OS?
 
-enum without a default case emits at least a reliable warning.
+The BIOS is about 20 minutes *before* the 1+ hour.  (When we started this
+UV project way back when, 8TB took over 4 hours before we threw in the towel.)
+> 
+> I use wall clock to check bootime on one system with 3T and 16 pcie cards,
+> Linus only takes about 3m and 30 seconds from bootloader.
 
-> +		}
-> +	} else if (access == ARCH_TIMER_MEM_VIRT_ACCESS) {
-> +		struct arch_timer *timer = to_arch_timer(clk);
-> +		switch (reg) {
-> +		case ARCH_TIMER_REG_CTRL:
-> +			writel_relaxed(val, timer->base + CNTV_CTL);
-> +			break;
-> +		case ARCH_TIMER_REG_TVAL:
-> +			writel_relaxed(val, timer->base + CNTV_TVAL);
-> +			break;
-> +		default:
-> +			BUILD_BUG();
-> +		}
-> +	} else {
-> +		arch_timer_reg_write_cp15(access, reg, val);
-> +	}
->  }
+I can send some stats on where various delays are but most of it was in
+memory initialization.  On average UV nodes carry 128 or 256G per node,
+so 12 nodes would take about 3 or 4 minutes, perhaps more.
+> 
+> wonder if you boot delay is with so many cpu get onlined in serialized mode.
 
-Something in my little brain yells: function pointer
+Nope.  If that was the case, delaying memory but initializing all the
+cpus would not affect the time.
+> 
+> so can you try boot your system with "maxcpus=128" to get the boot time with
+> wall clock ?
 
-You can't be serious about hacking nested if/else/switch constructs
-into a hot path.
-
-Why not making your cpu data:
-
-struct arch_timer {
-       struct clock_event_device evt;
-       ....
-       void (*write_ctrl)(val, timer);
-       void (*write_tval)(val, timer);
-       ....
-}
-
-and get rid of all that conditionals?
-
-Thanks,
-
-	tglx
+We could try if you really think it will provide any useful info.  Not sure
+exactly how having memory on nodes with no active cpus will react.
+> 
+> Thanks
+> 
+> Yinghai
+> 
