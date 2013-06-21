@@ -1,105 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750925Ab3FUEBi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 00:01:38 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:57345 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3FUEBg (ORCPT
+	id S1751584Ab3FUEDO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 00:03:14 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:36684 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3FUEDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 00:01:36 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-1d-51c3d01ebc10
-Message-id: <51C3D01F.7040907@samsung.com>
-Date: Fri, 21 Jun 2013 13:01:35 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show
- accumulated data of CPUs
-References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com>
- <CAKohponD5s6-g0X9rgsVt0U4RutfyXSQJRZP3vT7EuczgMMQ2Q@mail.gmail.com>
- <51C2DD3D.5040601@samsung.com>
- <CAKohpomx54Y3WVToYP0nOw-hsxKzGjp2nyfzWf5bo1s530Yg1w@mail.gmail.com>
- <51C2E0AD.8060208@samsung.com> <51C2E509.2030800@samsung.com>
- <CAKohpo=0m8+WegUmMR2BOKeY2mJZw=X5-nEAp26M5L3PH9Bz2A@mail.gmail.com>
-In-reply-to: <CAKohpo=0m8+WegUmMR2BOKeY2mJZw=X5-nEAp26M5L3PH9Bz2A@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsWyRsSkUFfuwuFAg1fntSzONr1ht7i8aw6b
-	xe3GFWwW/Qt7mSw2fvVwYPW4c20Pm0ffllWMHo8WtzB6fN4kF8ASxWWTkpqTWZZapG+XwJVx
-	vX0tc8FrropFPz8zNzC+5uhi5OSQEDCRaJk1jx3CFpO4cG89WxcjF4eQwFJGiY5Jm9hgiib0
-	9kAlpjNKvF6+nxHCecEo8aBzIytIFa+AlsSl/7uYQWwWAVWJrlmHwcayAcX3v7gBNklUIExi
-	5fQrLBD1ghI/Jt8Dsjk4RIBqXt5MBQkzC7QySlw46AkSFhbIkJjwtgpi1W8midubbjGB1HAK
-	BEtcOz+bCaJeR2J/6zQ2CFteYvOat8wgDRIC29glFn77BnWPgMS3yYfAdkkIyEpsOsAM8Zik
-	xMEVN1gmMIrNQnLRLCRjZyEZu4CReRWjaGpBckFxUnqRqV5xYm5xaV66XnJ+7iZGYFyd/vds
-	4g7G+wesDzEmA62cyCwlmpwPjMu8knhDYzMjC1MTU2Mjc0sz0oSVxHnVW6wDhQTSE0tSs1NT
-	C1KL4otKc1KLDzEycXBKNTDy50YbfZ3/IyJly/zde2sW/JNeEX9c/0jBhfqsSefU+Bs32CUV
-	d/J4pZiz77z2o2ZnR8LEW+fnaFsE1T96vtW+z2G/1fUSz4RplmWMJgrNa7e18x5fILkze/mU
-	vSFvV8mdthVJr74v93j+90kpLgy/GY8v2F91RMTl/At9hSnK36xZg+aIRuYrsRRnJBpqMRcV
-	JwIAmrfzAMECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoK7chcOBBp92KFucbXrDbnF51xw2
-	i9uNK9gs+hf2Mlls/OrhwOpx59oeNo++LasYPR4tbmH0+LxJLoAlqoHRJiM1MSW1SCE1Lzk/
-	JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdor5JCWWJOKVAoILG4WEnfDtOE
-	0BA3XQuYxghd35AguB4jAzSQsIYx43r7WuaC11wVi35+Zm5gfM3RxcjJISFgIjGht4cNwhaT
-	uHBvPZDNxSEkMJ1R4vXy/YwQzgtGiQedG1lBqngFtCQu/d/FDGKzCKhKdM06zA5iswHF97+4
-	ATZJVCBMYuX0KywQ9YISPybfA7I5OESAal7eTAUJMwu0MkpcOOgJEhYWyJCY8LYKYtVvJonb
-	m24xgdRwCgRLXDs/mwmiXkdif+s0NghbXmLzmrfMExgFZiHZMAtJ2SwkZQsYmVcxiqYWJBcU
-	J6XnGukVJ+YWl+al6yXn525iBEftM+kdjKsaLA4xCnAwKvHwBigdDhRiTSwrrsw9xCjBwawk
-	wis2ESjEm5JYWZValB9fVJqTWnyIMRkYABOZpUST84EJJa8k3tDYxMzI0sjc0MLI2Jw0YSVx
-	3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGFkmdMS23FhsdSX/Z4nkt1WfdKxbFMQi3jMVlqzd
-	G3LnbPyZM+0SNpe//zWKnBK8/lvT6gvT/K3PHv9zqLxf/snzpa/NOPYXeKe+5Qj9OSG7dOKZ
-	Kxnr9vY9m7EqtO6Xz1H1ENG/iiZfTEwlH3Y8aNtRHv6XQ82iwp1dtfOXy/GVN1b8mnDLJFuJ
-	pTgj0VCLuag4EQDqjhYmHgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 21 Jun 2013 00:03:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <51C20E8D.8040005@ti.com>
+References: <1367489937-30725-1-git-send-email-amit.daniel@samsung.com>
+	<51C20E8D.8040005@ti.com>
+Date: Fri, 21 Jun 2013 09:33:11 +0530
+X-Google-Sender-Auth: Q0jTG2loZdZG60GAWg5whqoiBsc
+Message-ID: <CADGdYn5MCRwK8cE9jUG73afaLQ7gp4+1BbiswY+vptVcXuPcvA@mail.gmail.com>
+Subject: Re: [PATCH V2] thermal: exynos: Support for TMU regulator defined at
+ device tree
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 12:42 AM, Viresh Kumar wrote:
-> On 20 June 2013 16:48, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> But,
->> To show old frequency/new frequency on load_table debugfs file,
->> governor function(dbs_check_cpu()) pass calculated CPUs load to specific governor(e.g., ondemand)
->> as below function flow.
+On Thu, Jun 20, 2013 at 1:33 AM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> On 02-05-2013 06:18, Amit Daniel Kachhap wrote:
+>> TMU probe function now checks for a device tree defined regulator.
+>> For compatibility reasons it is allowed to probe driver even without
+>> this regulator defined.
 >>
->> dbs_check_cpu() (in cpufreq.c)
->> -> od_check_cpu() (in cpufreq_ondemand.c)
->> -> __cpufreq_driver_target() (in cpufreq.c)
->> -> cpufreq_driver->target(policy)
+>> Signed-off-by: Luk asz Majewski <l.majewski@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>
+> I assume this one got superseeded by the same patch on your 30 patch
+> series, right?
+> https://patchwork.kernel.org/patch/2731031/
+Yes right. In my re-structuring patch series this one is included.
+>
+>
+>> ---
 >>
->> Also, The __cpufreq_driver_target() is external function which can be called on other file
->> so I must consider exception case.
+>> Changes in V2:
+>> * Added log message in regulator_get failure as suggested by Sylwester.
+>> * Used IS_ERR for checking regulator pointer as suggested by Sylwester.
 >>
->> If send CPUFREQ_LOADCHECK noti after changed cpu frequency,
->> I think it is complicated and has quite a little difficulty.
+>> This patch is repost of the patch posted by Lukasz Majewski
+>> (https://patchwork.kernel.org/patch/2488211/). I have rebased this
+>> patch on top of my TMU re-structured patch series
+>> (http://lwn.net/Articles/548634/). Although I thought of handling
+>> regulator as one type of feature (newly added) but could not do
+>> so as regulator is a board/platform property and not SOC property so
+>> leaving the device tree to define and handle it.
 >>
->> What is your opinion?
-> 
-> What you can do is:
-> - create another routine: cpufreq_governor_driver_target()
-> - replace all __cpufreq_driver_target() from ondemand/conservative governors
-> with this one
-> - In cpufreq_governor_driver_target() call __cpufreq_driver_target() and
-> take a note of new freq.
-> 
-> Maybe you don't need to check the actual freq that is set (even
-> that would be simple to implement), but what is requested.
-> 
-
-OK, I understand and will try to implement it.
-Thanks.
-
-@Rafael?
-If possible, I want to know the your opinion about this.
-
-Best Regards,
-Chanwoo Choi
-
-
-
+>>  .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
+>>  drivers/thermal/samsung/exynos_tmu.c               |   19 +++++++++++++++++++
+>>  2 files changed, 23 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>> index 970eeba..ff62f7a 100644
+>> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>> @@ -14,6 +14,9 @@
+>>  - interrupts : Should contain interrupt for thermal system
+>>  - clocks : The main clock for TMU device
+>>  - clock-names : Thermal system clock name
+>> +- vtmu-supply: This entry is optional and provides the regulator node supplying
+>> +             voltage to TMU. If needed this entry can be placed inside
+>> +             board/platform specific dts file.
+>>
+>>  Example 1):
+>>
+>> @@ -25,6 +28,7 @@ Example 1):
+>>               clocks = <&clock 383>;
+>>               clock-names = "tmu_apbif";
+>>               status = "disabled";
+>> +             vtmu-supply = <&tmu_regulator_node>;
+>>       };
+>>
+>>  Example 2):
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+>> index 72446c9..b7c609a 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>> @@ -32,6 +32,7 @@
+>>  #include <linux/of_address.h>
+>>  #include <linux/of_irq.h>
+>>  #include <linux/platform_device.h>
+>> +#include <linux/regulator/consumer.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/workqueue.h>
+>>  #include "exynos_thermal_common.h"
+>> @@ -52,6 +53,7 @@
+>>   * @clk: pointer to the clock structure.
+>>   * @temp_error1: fused value of the first point trim.
+>>   * @temp_error2: fused value of the second point trim.
+>> + * @regulator: pointer to the TMU regulator structure.
+>>   * @reg_conf: pointer to structure to register with core thermal.
+>>   */
+>>  struct exynos_tmu_data {
+>> @@ -65,6 +67,7 @@ struct exynos_tmu_data {
+>>       struct mutex lock;
+>>       struct clk *clk;
+>>       u8 temp_error1, temp_error2;
+>> +     struct regulator *regulator;
+>>       struct thermal_sensor_conf *reg_conf;
+>>  };
+>>
+>> @@ -501,10 +504,23 @@ static int exynos_map_dt_data(struct platform_device *pdev)
+>>       struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+>>       struct exynos_tmu_platform_data *pdata = data->pdata;
+>>       struct resource res;
+>> +     int ret;
+>>
+>>       if (!data)
+>>               return -ENODEV;
+>>
+>> +     /* Try enabling the regulator if found */
+>> +     data->regulator = devm_regulator_get(&pdev->dev, "vtmu");
+>> +     if (!IS_ERR(data->regulator)) {
+>> +             ret = regulator_enable(data->regulator);
+>> +             if (ret) {
+>> +                     dev_err(&pdev->dev, "failed to enable vtmu\n");
+>> +                     return ret;
+>> +             }
+>> +     } else {
+>> +             dev_info(&pdev->dev, "Regulator node (vtmu) not found\n");
+>> +     }
+>> +
+>>       data->id = of_alias_get_id(pdev->dev.of_node, "tmuctrl");
+>>       if (data->id < 0)
+>>               data->id = 0;
+>> @@ -669,6 +685,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+>>
+>>       clk_unprepare(data->clk);
+>>
+>> +     if (!IS_ERR(data->regulator))
+>> +             regulator_disable(data->regulator);
+>> +
+>>       platform_set_drvdata(pdev, NULL);
+>>
+>>       return 0;
+>>
+>
+>
+> --
+> You have got to be excited about what you are doing. (L. Lamport)
+>
+> Eduardo Valentin
+>
