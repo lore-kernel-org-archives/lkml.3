@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423517Ab3FURG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:06:57 -0400
-Received: from vegas.theobroma-systems.com ([88.198.52.168]:50949 "EHLO
-	mail.theobroma-systems.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423415Ab3FURG4 (ORCPT
+	id S1423523Ab3FURH6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 13:07:58 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49834 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423404Ab3FURH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:06:56 -0400
-X-Greylist: delayed 1556 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Jun 2013 13:06:55 EDT
-Message-ID: <61455.62.178.124.14.1371832855.squirrel@mail.theobroma-systems.com>
-Date: Fri, 21 Jun 2013 18:40:55 +0200 (CEST)
-Subject: [PATCH] net: fec: Fix multicast list setup in fec_restart().
-From: Christoph =?iso-8859-1?Q?M=FCllner?= 
-	<christoph.muellner@theobroma-systems.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Grant Likely" <grant.likely@linaro.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Fabio Estevam" <fabio.estevam@freescale.com>, netdev@vger.kernel.org
-User-Agent: SquirrelMail/1.4.9a
+	Fri, 21 Jun 2013 13:07:56 -0400
+Date: Fri, 21 Jun 2013 10:07:55 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, arm@kernel.org,
+        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>
+Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over
+ global devices
+Message-ID: <20130621170755.GB14575@codeaurora.org>
+References: <51B0A6E8.20909@linaro.org>
+ <20130606180425.GQ599@codeaurora.org>
+ <51B10D85.1060507@linaro.org>
+ <20130606223848.GR599@codeaurora.org>
+ <20130612214435.GE10823@codeaurora.org>
+ <51B991EF.70800@linaro.org>
+ <alpine.LFD.2.02.1306131331430.22970@ionos>
+ <20130613183950.GA32061@codeaurora.org>
+ <20130618102257.GH6809@e106331-lin.cambridge.arm.com>
+ <20130619163043.GA6300@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619163043.GA6300@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setup the multicast list of the net_device instead of
-clearing it blindly. This restores the multicast groups
-in case of a link down/up event.
+On 06/19, Stephen Boyd wrote:
+> 
+> Can you pick up the first two patches in this series please? And
+> preferably make a stable branch that can be pulled into arm-soc?
+> Then I can send the rest through the arm-soc tree.
+> 
 
-Signed-off-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
----
- drivers/net/ethernet/freescale/fec_main.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ping?
 
-diff --git a/drivers/net/ethernet/freescale/fec_main.c
-b/drivers/net/ethernet/freescale/fec_main.c
-index a667015..8e8e743 100644
---- a/drivers/net/ethernet/freescale/fec_main.c
-+++ b/drivers/net/ethernet/freescale/fec_main.c
-@@ -60,6 +60,8 @@
-
- #include "fec.h"
-
-+static void set_multicast_list(struct net_device *ndev);
-+
- #if defined(CONFIG_ARM)
- #define FEC_ALIGNMENT  0xf
- #else
-@@ -472,8 +474,7 @@ fec_restart(struct net_device *ndev, int duplex)
-        writel(0xffc00000, fep->hwp + FEC_IEVENT);
-
-        /* Reset all multicast. */
--       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_HIGH);
--       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_LOW);
-+       set_multicast_list(ndev);
- #ifndef CONFIG_M5272
-        writel(0, fep->hwp + FEC_HASH_TABLE_HIGH);
-        writel(0, fep->hwp + FEC_HASH_TABLE_LOW);
 -- 
-1.7.4.1
-
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
