@@ -1,125 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422696Ab3FUNwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 09:52:16 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:48032 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161356Ab3FUNwN (ORCPT
+	id S1161475Ab3FUNwo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 09:52:44 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:35310 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161346Ab3FUNwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 09:52:13 -0400
+	Fri, 21 Jun 2013 09:52:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <51C427E1.2000800@ti.com>
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
-	<1371762407-24544-6-git-send-email-joelagnel@ti.com>
-	<51C427E1.2000800@ti.com>
-Date: Fri, 21 Jun 2013 08:52:12 -0500
-Message-ID: <CAD=GYpb54bitcg0gnfhzxbvig3etRPY6fs=FOQu5nYkio5NRZw@mail.gmail.com>
-Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
-From: Joel A Fernandes <agnel.joel@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Joel A Fernandes <joelagnel@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <CAKoUArm0w70TZvaZSMa1C9vAj+UXsMkza7XTBX0Vq-7B3xrFLA@mail.gmail.com>
+References: <20130620231713.4f6a3c1f@xenia.leun.net>
+	<CAKoUArm0w70TZvaZSMa1C9vAj+UXsMkza7XTBX0Vq-7B3xrFLA@mail.gmail.com>
+Date: Fri, 21 Jun 2013 16:52:41 +0300
+Message-ID: <CAKoUArnyR+6bk9UU3GuyteznX-wWVQUfWuaiVuS0YOSKCKKF5w@mail.gmail.com>
+Subject: Re: Missing iproute2 support for 802.1ad
+From: Rami Rosen <roszenrami@gmail.com>
+To: Michael Leun <lkml20130126@newton.leun.net>
+Cc: Patrick McHardy <kaber@trash.net>, shemminger@linux-foundation.org,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 5:16 AM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On 6/21/2013 2:36 AM, Joel A Fernandes wrote:
->> From: Joel A Fernandes <agnel.joel@gmail.com>
+Hello,Michael,
+
+You are right.
+
+It is probably a matter of synchronization between iproute2 git version
+and kernel version.
+
+This patch by Patrick McHardy, titled:
+"add 802.1ad support", seems to do the job:
+http://www.spinics.net/lists/netdev/msg233587.html
+
+But it was not integrated to iproute2 git tree.
+
+But don't be wrong: if you look into this patch, you will see that the
+first addition of it was integrated but as a part of a different
+patch:
+commit 79e9a1db11db494eade7bd6917a34f383c0774e3
+Author: Stephen Hemminger <stephen@networkplumber.org>
+    titled "Update headers to 3.10".
+
+But you should look at the rest of the patch  of Patrick McHardy ("add
+802.1ad support"), it does not appear in the latest git tree of
+iproute2.
+
+Please look for example in ip/iplink_vlan.c b/ip/iplink_vlan.c
+in the explain() method and compare to the above mentioned patch.
+
+
+Regards,
+Rami Rosen
+http://ramirose.wix.com/ramirosen
+
+On Fri, Jun 21, 2013 at 4:49 PM, Rami Rosen <roszenrami@gmail.com> wrote:
+> Hello,Michael,
+>
+> You are right.
+>
+> It is probably a matter of synchronization between iproute2 git version
+> and kernel version.
+>
+> This patch by Patrick McHardy, titled:
+> "add 802.1ad support", seems to do the job:
+> http://www.spinics.net/lists/netdev/msg233587.html
+>
+> But it was not integrated to iproute2 git tree.
+>
+> But don't be wrong: if you look into this patch, you will see that the first
+> addition of it was integrated but as a part of a different patch:
+> commit 79e9a1db11db494eade7bd6917a34f383c0774e3
+> Author: Stephen Hemminger <stephen@networkplumber.org>
+>     titled "Update headers to 3.10".
+>
+> But you should look at the rest of the patch  of Patrick McHardy ("add
+> 802.1ad support"), it does not appear in the latest git tree of iproute2.
+>
+> Please look for example in ip/iplink_vlan.c b/ip/iplink_vlan.c
+> in the explain() method and compare to the above mentioned patch.
+>
+>
+> Regards,
+> Rami Rosen
+> http://ramirose.wix.com/ramirosen
+>
+>
+>
+> On Fri, Jun 21, 2013 at 12:17 AM, Michael Leun
+> <lkml20130126@newton.leun.net> wrote:
 >>
->> Build TI_EDMA by default for ARCH_DAVINCI and ARCH_OMAP2PLUS
 >>
->> Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
->
-> You should sign-off with author e-mail address.
->
->> ---
->>  arch/arm/Kconfig            |    1 +
->>  arch/arm/mach-omap2/Kconfig |    1 +
->>  drivers/dma/Kconfig         |    2 +-
->>  3 files changed, 3 insertions(+), 1 deletion(-)
 >>
->> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> index b1c66a4..7d58cd9 100644
->> --- a/arch/arm/Kconfig
->> +++ b/arch/arm/Kconfig
->> @@ -841,6 +841,7 @@ config ARCH_DAVINCI
->>       select HAVE_IDE
->>       select NEED_MACH_GPIO_H
->>       select TI_PRIV_EDMA
->> +     select DMADEVICES
+>> 2013-04-19 12:04:31 GMT kaber@trash.net wrote:
+>>
+>> > Add support for 802.1ad VLAN devices. This mainly consists of checking
+>> > for
+>> > ETH_P_8021AD in addition to ETH_P_8021Q in a couple of places and check
+>> > offloading capabilities based on the used protocol.
+>>
+>> > Configuration is done using "ip link":
+>>
+>> > # ip link add link eth0 eth0.1000 \
+>> >       type vlan proto 802.1ad id 1000
+>> > # ip link add link eth0.1000 eth0.1000.1000 \
+>> >       type vlan proto 802.1q id 1000
+>>
+>> I fear, that does not work:
+>>
+>> lara:/home/ml # ip link add link eth0 eth0.1000 type vlan proto 802.1ad id
+>> 1000
+>> vlan: what is "proto"?
+>> Usage: ... vlan id VLANID [ FLAG-LIST ]
+>>                           [ ingress-qos-map QOS-MAP ] [ egress-qos-map
+>> QOS-MAP ]
+>> [...]
+>>
+>> ip does not seem to know about proto. This does not  have changed in
+>> git either.
+>>
+>> I've seen there was an patch to add this around somewhen in 2011, but
+>> it does not seem to have made it.
+>>
+>> Or did I miss something?
+>>
+>> --
+>> MfG,
+>>
+>> Michael Leun
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
-> It is generally a bad idea to force select on something that can be
-> enabled using menuconfig. Unless used carefully, select causes "unmet
-> direct dependency" warnings which folks are already fighting hard to
-> fix. This leads to what Russell referred in the past as "select madness" [1]
-
-Are you concerned with bloat issues? I know your point of view but the idea
-was to build these options by default for these platforms even though
-in some cases
-it might not be used. I have seen folks including myself select the wrong
-option. Having the build system automatically select the correct option for the
-most common cases can be very useful I feel and not require manual
-configuration.
-
-> In this particular case, it is perfectly okay to have a DaVinci platform
-> without DMA engine support. Drivers figure out they don't have DMA
-> support and switch to PIO mode.
-
-Drivers can still use PIO mode if they wish even though DMA is built into the
-kernel right.
-
->>       select USE_OF
->>       select ZONE_DMA
->>       help
->> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
->> index f91b07f..c02f083 100644
->> --- a/arch/arm/mach-omap2/Kconfig
->> +++ b/arch/arm/mach-omap2/Kconfig
->> @@ -17,6 +17,7 @@ config ARCH_OMAP2PLUS
->>       select PROC_DEVICETREE if PROC_FS
->>       select SOC_BUS
->>       select SPARSE_IRQ
->> +     select DMADEVICES
->>       select TI_PRIV_EDMA
->>       select USE_OF
->>       help
->> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
->> index 3215a3c..b2d6f15 100644
->> --- a/drivers/dma/Kconfig
->> +++ b/drivers/dma/Kconfig
->> @@ -216,7 +216,7 @@ config TI_EDMA
->>       depends on ARCH_DAVINCI || ARCH_OMAP
->>       select DMA_ENGINE
->>       select DMA_VIRTUAL_CHANNELS
->> -     default n
->> +     default y
 >
-> Can't see why DMA support should default to y.
->
-
-For same reason as above.
-
-Thanks,
-Joel
