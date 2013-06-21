@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab3FUKc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:32:57 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39826 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751185Ab3FUKc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:32:56 -0400
-Message-ID: <1371810775.19215.30.camel@joe-AO722>
-Subject: Re: [PATCH v7] ethernet/arc/arc_emac - Add new driver
-From: Joe Perches <joe@perches.com>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: netdev@vger.kernel.org, Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+	id S1757980Ab3FUKgj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 06:36:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53710 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751644Ab3FUKgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 06:36:37 -0400
+Message-ID: <51C42C77.90909@ti.com>
+Date: Fri, 21 Jun 2013 16:05:35 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Benoit Cousson <b-cousson@ti.com>
+CC: Joel A Fernandes <joelagnel@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Sekhar Nori <nsekhar@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Florian Fainelli <florian@openwrt.org>
-Date: Fri, 21 Jun 2013 03:32:55 -0700
-In-Reply-To: <1371799241-27771-1-git-send-email-abrodkin@synopsys.com>
-References: <1371799241-27771-1-git-send-email-abrodkin@synopsys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v12 08/11] spi: omap2-mcspi: add generic DMA request support
+ to the DT binding
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <1371762407-24544-9-git-send-email-joelagnel@ti.com>
+In-Reply-To: <1371762407-24544-9-git-send-email-joelagnel@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 11:20 +0400, Alexey Brodkin wrote:
-> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
-> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
-> ARCAngel4/ML50x.
+Hi Benoit,
+On Friday 21 June 2013 02:36 AM, Joel A Fernandes wrote:
+> From: Matt Porter<mporter@ti.com>
+>
+> The binding definition is based on the generic DMA request binding
+>
+> Signed-off-by: Matt Porter<mporter@ti.com>
+> Signed-off-by: Joel A Fernandes<joelagnel@ti.com>
+> ---
+>   Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +++++++++++++++++++-
+>   1 file changed, 26 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/devicetree/bindings/spi/omap-spi.txt b/Documentation/devicetree/bindings/spi/omap-spi.txt
+> index 938809c..4c85c4c 100644
+> --- a/Documentation/devicetree/bindings/spi/omap-spi.txt
+> +++ b/Documentation/devicetree/bindings/spi/omap-spi.txt
+> @@ -10,7 +10,18 @@ Required properties:
+>   			  input. The default is D0 as input and
+>   			  D1 as output.
+>
+> -Example:
+> +Optional properties:
+> +- dmas: List of DMA specifiers with the controller specific format
+> +	as described in the generic DMA client binding. A tx and rx
+> +	specifier is required for each chip select.
+> +- dma-names: List of DMA request names. These strings correspond
+> +	1:1 with the DMA specifiers listed in dmas. The string naming
+> +	is to be "rxN" and "txN" for RX and TX requests,
+> +	respectively, where N equals the chip select number.
+> +
+> +Examples:
+> +
+> +[hwmod populated DMA resources]
+>
+>   mcspi1: mcspi@1 {
+>       #address-cells =<1>;
+> @@ -20,3 +31,17 @@ mcspi1: mcspi@1 {
+>       ti,spi-num-cs =<4>;
+>   };
+>
+> +[generic DMA request binding]
+> +
+> +mcspi1: mcspi@1 {
+> +    #address-cells =<1>;
+> +    #size-cells =<0>;
+> +    compatible = "ti,omap4-mcspi";
+> +    ti,hwmods = "mcspi1";
+> +    ti,spi-num-cs =<2>;
+> +    dmas =<&edma 42
+> +	&edma 43
+> +	&edma 44
+> +	&edma 45>;
+> +    dma-names = "tx0", "rx0", "tx1", "rx1";
+> +};
+If the patch looks good to you, these can go independently in your
+tree.
 
-Looks fine to me.
+Reviewed-by: Sourav Poddar <sourav.poddar@ti.com>
 
-One nit you could fix later and a question.
-
-> diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-[]
-> +static int arc_emac_rx(struct net_device *ndev, int budget)
-> +{
-[]
-> +			if (net_ratelimit())
-> +				netdev_err(ndev, "incomplete packed received\n");
-
-s/packed/packet/
-
-> +		rxbd->data = (unsigned char *)cpu_to_le32(rx_buff->skb->data);
-
-32 bit only.  Should the Kconfig block have some arch_arc dependency
-so it can't get compiled for 64 bit systems?
+~Sourav
 
