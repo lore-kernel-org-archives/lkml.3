@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100Ab3FUK7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 06:59:16 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:9405 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757818Ab3FUK6v (ORCPT
+	id S1758142Ab3FULJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 07:09:28 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:48865 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab3FULJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 06:58:51 -0400
-X-IronPort-AV: E=Sophos;i="4.87,912,1363132800"; 
-   d="scan'208";a="5916357"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/4] xen-blkback: check the number of iovecs before allocating a bios
-Date: Fri, 21 Jun 2013 12:56:55 +0200
-Message-ID: <1371812216-17093-4-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
-In-Reply-To: <1371812216-17093-1-git-send-email-roger.pau@citrix.com>
-References: <1371812216-17093-1-git-send-email-roger.pau@citrix.com>
+	Fri, 21 Jun 2013 07:09:27 -0400
+Message-ID: <51C4345E.1010604@gmail.com>
+Date: Fri, 21 Jun 2013 19:09:18 +0800
+From: Alex Shi <seakeel@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+To: Lei Wen <adrian.wenl@gmail.com>
+CC: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue
+ entity
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-5-git-send-email-alex.shi@intel.com> <CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com> <51BF2E37.5040400@intel.com> <CALZhoSSweOzTgjykRMxv_kha9TH-8EAKvuhinf8ADFyFDzDTuQ@mail.gmail.com> <CALZhoSSFr_HN9ccxNLK7HA-7O9soAU7VZ3njtKf=Ndw=_AbQRw@mail.gmail.com> <51C318D6.4090601@gmail.com> <CALZhoSQgO-V-vkOy+urL_H4cjcCE8YY3w+K=mS8hptWteKGcFw@mail.gmail.com> <51C3BCE1.1080405@gmail.com> <CALZhoSR8pLfqO+XfEfHB3-UuV5_xu=AV2mCf2BQgaaQoWd-tbw@mail.gmail.com> <51C4152E.60906@gmail.com> <CALZhoST001rHENqP8RncHL1zyN=D91D8-HzzFyiy+iqkY5KRCw@mail.gmail.com>
+In-Reply-To: <CALZhoST001rHENqP8RncHL1zyN=D91D8-HzzFyiy+iqkY5KRCw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the introduction of indirect segments we can receive requests
-with a number of segments bigger than the maximum number of allowed
-iovecs in a bios, so make sure that blkback doesn't try to allocate a
-bios with more iovecs than BIO_MAX_PAGES
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>> index c61a614..9640c66 100644
+>>> --- a/kernel/sched/fair.c
+>>> +++ b/kernel/sched/fair.c
+>>> @@ -5856,7 +5856,8 @@ static void switched_from_fair(struct rq *rq,
+>>> struct task_struct *p)
+>>>         */
+>>>         if (p->se.avg.decay_count) {
+>>>                 struct cfs_rq *cfs_rq = cfs_rq_of(&p->se);
+>>> -               __synchronize_entity_decay(&p->se);
+>>> +               p->se.avg.last_runnable_update +=
+>>> +                               __synchronize_entity_decay(&p->se);
+>>
+>> it is not needed, since the last_runnable_update will be reset if it
+>> will be switched to fair.
+> 
+> When it is backed to fair class, the only thing scheduler would do
+> is to check whether it could preempt current running task, so
+> where to reset the last_runnable_update?
+
+here, when the task enqueue to cfs_rq.
+avg.decay_count == 0, so the last line will reset last_runnable_update.
+
+Anyway, you may consider to add a comment in the function, since it is bit hard
+to understand for you.
+
 ---
- drivers/block/xen-blkback/blkback.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+/* Add the load generated by se into cfs_rq's child load-average */
+static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+                                                  struct sched_entity *se,
+                                                  int wakeup)
+{
+        /*
+         * We track migrations using entity decay_count <= 0, on a wake-up
+         * migration we use a negative decay count to track the remote decays
+         * accumulated while sleeping.
+         */
+        if (unlikely(se->avg.decay_count <= 0)) {
+                se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index d622d86..876116b 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -1236,7 +1236,8 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 				     seg[i].nsec << 9,
- 				     seg[i].offset) == 0)) {
- 
--			bio = bio_alloc(GFP_KERNEL, nseg-i);
-+			int nr_iovecs = (nseg-i) > BIO_MAX_PAGES ? BIO_MAX_PAGES : (nseg-i);
-+			bio = bio_alloc(GFP_KERNEL, nr_iovecs);
- 			if (unlikely(bio == NULL))
- 				goto fail_put_bio;
- 
+> 
+> Thanks,
+> Lei
+> 
+>>
+>> --
+>> Thanks
+>>     Alex
+
+
 -- 
-1.7.7.5 (Apple Git-26)
-
+Thanks
+    Alex
