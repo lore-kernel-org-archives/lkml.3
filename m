@@ -1,100 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161574Ab3FUQFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 12:05:19 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49002 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1161419Ab3FUQFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 12:05:18 -0400
-Message-ID: <1371830716.19215.37.camel@joe-AO722>
-Subject: Re: [PATCH v7] ethernet/arc/arc_emac - Add new driver
-From: Joe Perches <joe@perches.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Florian Fainelli <florian@openwrt.org>
-Date: Fri, 21 Jun 2013 09:05:16 -0700
-In-Reply-To: <201306211758.26094.arnd@arndb.de>
-References: <1371799241-27771-1-git-send-email-abrodkin@synopsys.com>
-	 <4881796E12491D4BB15146FE0209CE643F5F587E@DE02WEMBXB.internal.synopsys.com>
-	 <1371825813.19215.34.camel@joe-AO722> <201306211758.26094.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1423266Ab3FUQNI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 12:13:08 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:33228 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161564Ab3FUQNG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 12:13:06 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/3] PCI: export three functions to support modular host bridge driver
+Date: Sat, 22 Jun 2013 00:12:46 +0800
+Message-Id: <1371831169-17291-2-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371831169-17291-1-git-send-email-liuj97@gmail.com>
+References: <1371831169-17291-1-git-send-email-liuj97@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 17:58 +0200, Arnd Bergmann wrote:
-> On Friday 21 June 2013, Joe Perches wrote:
-> > On Fri, 2013-06-21 at 10:53 +0000, Alexey Brodkin wrote:
-> > > On 06/21/2013 02:32 PM, Joe Perches wrote:
-> > > > On Fri, 2013-06-21 at 11:20 +0400, Alexey Brodkin wrote:
-> > > >> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
-> > > >> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
-> > > >> ARCAngel4/ML50x.
-> > []
-> > > >> +          rxbd->data = (unsigned char *)cpu_to_le32(rx_buff->skb->data);
-> > > >
-> > > > 32 bit only.  Should the Kconfig block have some arch_arc dependency
-> > > > so it can't get compiled for 64 bit systems?
-> > []
-> > > So for now I may easily add dependency on ARC if it makes acceptance of 
-> > > driver easier.
-> > 
-> > I don't think it's a big problem.
-> > 
-> > Maybe add a Kconfig "depends on !64BIT".
-> > 
-> > Another thing to do would be to run it through sparse
-> > with make C=1
-> 
-> No, I think the driver should just be made 64-bit clean. Not because
-> anyone is going to need that of course, but to avoid having
-> to add silly dependencies.
-> 
-> The problem is that rxbd->data is the wrong type. It is declared
-> as a void*, but it is not a kernel pointer at all, it is a DMA
-> pointer. Look at this code in context:
+From: Jiang Liu <jiang.liu@huawei.com>
 
-So it should be declared dma_addr_t then,
+The xen-pcifront host bridge driver could be built as a module,
+so export pci_create_root_bus(), pci_stop_and_remove_root_bus() and
+pci_set_host_bridge_release() to support modular host bridge driver.
+It's a preparation for coming xen-pcifront refinement.
 
-> +               addr = dma_map_single(&ndev->dev, (void *)rx_buff->skb->data,
-> +                                     buflen, DMA_FROM_DEVICE);
-> +               if (dma_mapping_error(&ndev->dev, addr)) {
-> +                       if (net_ratelimit())
-> +                               netdev_err(ndev, "cannot dma map\n");
-> +                       dev_kfree_skb(rx_buff->skb);
-> +                       stats->rx_errors++;
-> +                       continue;
-> +               }
-> +               dma_unmap_addr_set(&rx_buff, mapping, addr);
-> +               dma_unmap_len_set(&rx_buff, len, buflen);
-> +
-> +               rxbd->data = (unsigned char *)cpu_to_le32(rx_buff->skb->data);
-> 
-> the 'addr' returned by dma_map_single is what the device really
-> needs, although it is the same as rx_buff->skb->data with the
-> trivial definition of dma_map_single.
-> 
-> The last line here needs to be
->                 rxbd->data = cpu_to_le32(addr);
-> 
-> which fixes the bug, and has no dependency on a 32 bit CPU.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com
+Cc: virtualization@lists.linux-foundation.org
+Cc: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/pci/host-bridge.c | 1 +
+ drivers/pci/probe.c       | 1 +
+ drivers/pci/remove.c      | 7 +++++++
+ include/linux/pci.h       | 1 +
+ 4 files changed, 10 insertions(+)
 
-It still has a dependency on dma_addr_t size being 32 bit
-
-
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index a68dc61..6e390a6 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -34,6 +34,7 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+ 	bridge->release_fn = release_fn;
+ 	bridge->release_data = release_data;
+ }
++EXPORT_SYMBOL(pci_set_host_bridge_release);
+ 
+ static bool resource_contains(struct resource *res1, struct resource *res2)
+ {
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 46ada5c..ed768d8 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1801,6 +1801,7 @@ err_out:
+ 	kfree(b);
+ 	return NULL;
+ }
++EXPORT_SYMBOL(pci_create_root_bus);
+ 
+ int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
+ {
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 8fc54b7..f328668 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -147,3 +147,10 @@ void pci_remove_root_bus(struct pci_bus *bus)
+ 	/* remove the host bridge */
+ 	put_device(&host_bridge->dev);
+ }
++
++void pci_stop_and_remove_root_bus(struct pci_bus *bus)
++{
++	pci_stop_root_bus(bus);
++	pci_remove_root_bus(bus);
++}
++EXPORT_SYMBOL(pci_stop_and_remove_root_bus);
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 0fd1f15..f1229c7 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -757,6 +757,7 @@ void pci_remove_bus(struct pci_bus *b);
+ void pci_stop_and_remove_bus_device(struct pci_dev *dev);
+ void pci_stop_root_bus(struct pci_bus *bus);
+ void pci_remove_root_bus(struct pci_bus *bus);
++void pci_stop_and_remove_root_bus(struct pci_bus *bus);
+ void pci_setup_cardbus(struct pci_bus *bus);
+ void pci_sort_breadthfirst(void);
+ #define dev_is_pci(d) ((d)->bus == &pci_bus_type)
+-- 
+1.8.1.2
 
