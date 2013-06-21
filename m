@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422711Ab3FUB1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:27:47 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:43395 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422667Ab3FUB1q (ORCPT
+	id S1757974Ab3FUB3y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 21:29:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55502 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755914Ab3FUB3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:27:46 -0400
+	Thu, 20 Jun 2013 21:29:53 -0400
+Date: Thu, 20 Jun 2013 18:29:52 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>, Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH/RESEND 00/12] Convert MSM to common clock framework
+Message-ID: <20130621012952.GE6300@codeaurora.org>
+References: <1371490999-15501-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <CADApbejTBAv0+XxkGLXuMVrLatbNurR0XBkK2gt6eQnXr+5yEA@mail.gmail.com>
-References: <20130620121749.GF9817@arwen.pp.htv.fi>
-	<Pine.LNX.4.44L0.1306201319580.2063-100000@iolanthe.rowland.org>
-	<CADApbejTBAv0+XxkGLXuMVrLatbNurR0XBkK2gt6eQnXr+5yEA@mail.gmail.com>
-Date: Fri, 21 Jun 2013 09:27:45 +0800
-Message-ID: <CADApbehD7tvOEAt2Dj+54on4kg7Ut553ADx74EUzjAPV19kt0g@mail.gmail.com>
-Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
- host controller
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
-        Chao Xie <chao.xie@marvell.com>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371490999-15501-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-correct for irq. irq number is get by gludriver, while irq is
-requested by EHCO HCD.
+On 06/17, Stephen Boyd wrote:
+> Resending to collect higher level maintainer acks per Olof's request. 
+> The plan is to push this patchset through MSM to the arm-soc tree.
+> 
+> This patchset moves the existing MSM clock code and affected drivers to the
+> common clock framework. A prerequisite of moving to the common clock
+> framework is to use clk_prepare() and clk_enable() so the first
+> few patches migrate drivers to that call (clk_prepare() is a no-op on MSM
+> right now). It also removes some custom clock APIs that MSM provides
+> and finally moves the proc_comm clock code to the common struct clk.
+> 
+> This patch series will be used as the foundation of the MSM 8660/8960
+> clock code that I plan to send out after this series.
+> 
 
-On Fri, Jun 21, 2013 at 9:07 AM, Chao Xie <xiechao.mail@gmail.com> wrote:
-> On Fri, Jun 21, 2013 at 1:25 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> On Thu, 20 Jun 2013, Felipe Balbi wrote:
->>
->>> > In fact, the PHY setting and handling is related to platform or SOC,
->>> > and for different SOC they can
->>> > have same EHCI HCD but they PHY handling can be different.
->>> > Omap'a case is the example, and i think some other vendors may have
->>> > silimar cases.
->>> > From above point, It is better to leave the PHY initialization and
->>> > shutdown to be done by each echi-xxx driver.
->>> >
->>> > So Alan and Felipe
->>> > What are your ideas about it?
->>>
->>> If we have so many exceptions, then sure. But eventually, the common
->>> case should be added generically with a flag so that non-generic cases
->>> (like OMAP) can request to handle the PHY by themselves.
->>>
->>> Alan ?
->>
->> I don't have very strong feelings about this; Felipe has much more
->> experience with these things.
->>
->> However, when the common case is added into the core, the simplest way
->> to indicate that the HCD wants to handle the PHY(s) by itself will be
->> to leave hcd->phy set to NULL or an ERR_PTR value.
->>
->> One important thing that hasn't been pointed out yet: When we move
->> these calls into the core, the same patch must also remove those calls
->> from the glue drivers that currently do set hcd->phy.  And it must make
->> sure that the glue drivers which handle the PHY by themselves do not
->> set hcd->phy.
->>
->
-> From device point of view, EHCI is a standlone component. It has the
-> standard sepcification, so each
-> SOC vendor has EHCI HCD need to follow the standards. Then we have
-> common EHCI HCD driver.
-> The PHY is outside of EHCI component, each SOC vendor may have
-> different PHY implementation. Then
-> we have PHY driver.
-> The EHCI glue driver ehci-xxx works like a SOC depended driver. It is
-> its duty to handle the'
-> relationship between the EHCI HCD driver and PHY driver.
-> It is same as clk, irq requested by ehci-xxx driver.
->
-> So i think add a flag and use usb_get_phy() is not very good.
-> It is bette to make ehci-xxx to do the phy getting and EHCI HCD
-> initialize it and shut down as the patch did, or let ehci-xxx to
-> handle the PHY as Roger said.
->
-> Based on the generic work is not too much, and does not look so
-> meaningful. I suggest that let to echi-xxx
-> do it.
->
->> Alan Stern
->>
+David, can you pick this up and send it off to arm-soc now?
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
