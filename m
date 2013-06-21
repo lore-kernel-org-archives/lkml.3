@@ -1,96 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3FUEKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 00:10:51 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:62536 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3FUEKt (ORCPT
+	id S1753430Ab3FUESK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 00:18:10 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:52586 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3FUESI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 00:10:49 -0400
+	Fri, 21 Jun 2013 00:18:08 -0400
+Message-ID: <51C3D3FD.2070408@hitachi.com>
+Date: Fri, 21 Jun 2013 13:18:05 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <002001ce6e2e$623d7970$26b86c50$@samsung.com>
-References: <002001ce6e2e$623d7970$26b86c50$@samsung.com>
-Date: Fri, 21 Jun 2013 09:40:48 +0530
-Message-ID: <CAK9yfHxCy0JcvsFHo8gERefdiZhxi1J8MNALe5-g6ooTGR-QjA@mail.gmail.com>
-Subject: Re: [PATCH V9 1/4] pci: Add PCIe driver for Samsung Exynos
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Surendranath Gurivireddy Balla <suren.reddy@samsung.com>,
-        Siva Reddy Kallam <siva.kallam@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Mohit KUMAR <Mohit.KUMAR@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/11] tracing: add and use generic set_trigger_filter()
+ implementation
+References: <cover.1371751701.git.tom.zanussi@linux.intel.com> <8fe2c1ceb63a6375b56f046de835742f18b955ce.1371751701.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <8fe2c1ceb63a6375b56f046de835742f18b955ce.1371751701.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingoo,
+(2013/06/21 3:31), Tom Zanussi wrote:
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index 88ac7da..7c5627f 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -522,14 +522,6 @@ ftrace_raw_event_##call(void *__data, proto)				\
+>  	int __data_size;						\
+>  	int pc;								\
+>  									\
+> -	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,			\
+> -		     &ftrace_file->flags))				\
+> -		event_triggers_call(ftrace_file);			\
+> -									\
+> -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
+> -		     &ftrace_file->flags))				\
+> -		return;							\
+> -									\
+>  	local_save_flags(irq_flags);					\
+>  	pc = preempt_count();						\
+>  									\
+> @@ -547,8 +539,22 @@ ftrace_raw_event_##call(void *__data, proto)				\
+>  									\
+>  	{ assign; }							\
+>  									\
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
+> +		     &ftrace_file->flags)) {				\
+> +		ring_buffer_discard_commit(buffer, event);		\
+> +									\
+> +		if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,		\
+> +			     &ftrace_file->flags))			\
+> +			event_triggers_call(ftrace_file, entry);	\
+> +		return;							\
+> +	}								\
+> +									\
+>  	if (!filter_current_check_discard(buffer, event_call, entry, event)) \
+>  		trace_buffer_unlock_commit(buffer, event, irq_flags, pc); \
+> +									\
+> +	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,			\
+> +		     &ftrace_file->flags))				\
+> +		event_triggers_call(ftrace_file, entry);		\
 
-Some small corrections inline.
+Actually, since "entry" is a part of "event" which may be already discarded,
+I think we should not access it here. It may not cause real problem because
+even if it is discarded, that does NOT mean it is freed. However, it depends
+on the ring-buffer implementation.
 
-On 21 June 2013 08:51, Jingoo Han <jg1.han@samsung.com> wrote:
-> Exynos5440 has a PCIe controller which can be used as Root Complex.
-> This driver supports a PCIe controller as Root Complex mode.
->
-> Signed-off-by: Surendranath Gurivireddy Balla <suren.reddy@samsung.com>
-> Signed-off-by: Siva Reddy Kallam <siva.kallam@samsung.com>
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  .../devicetree/bindings/pci/designware-pcie.txt    |   73 ++
->  drivers/pci/host/Kconfig                           |    9 +
->  drivers/pci/host/Makefile                          |    1 +
->  drivers/pci/host/pci-designware.c                  | 1057 ++++++++++++++++++++
->  4 files changed, 1140 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pci/designware-pcie.txt
->  create mode 100644 drivers/pci/host/pci-designware.c
->
-> diff --git a/Documentation/devicetree/bindings/pci/designware-pcie.txt b/Documentation/devicetree/bindings/pci/designware-pcie.txt
-> new file mode 100644
-> index 0000000..e4681e6
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pci/designware-pcie.txt
-> @@ -0,0 +1,73 @@
-> +* Synopsis Designware PCIe interface
+I recommend you to call event triggers before commit the event. It will also
+make the code simpler :)
+
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index e287011..47fa712 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -319,14 +319,6 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+>  	if (!sys_data)
+>  		return;
+>  
+> -	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
+> -		     &sys_data->enter_file->flags))
+> -		event_triggers_call(sys_data->enter_file);
+> -
+> -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
+> -		     &sys_data->enter_file->flags))
+> -		return;
+> -
+>  	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
+>  
+>  	buffer = tr->trace_buffer.buffer;
+> @@ -339,9 +331,23 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+>  	entry->nr = syscall_nr;
+>  	syscall_get_arguments(current, regs, 0, sys_data->nb_args, entry->args);
+>  
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
+> +		     &sys_data->enter_file->flags)) {
+> +		ring_buffer_discard_commit(buffer, event);
 > +
-> +Required properties:
-> +-compatible: should contain "snps,dw-pcie" to identify the
-> +       core, plus an identifier for the specific instance, such
-> +       as "samsung,exynos5440-pcie".
-> +-reg: base addresses and lengths of the pcie conteroller,
-
-s/conteroller/controller
-
-> +       the phy controller, additional register for the phy controller.
-> +- interrupts: interrupt values for level interrupt,
-> +       pulse interrupt, special interrupt.
-> +- clocks: from common clock binding: handle to pci clock.
-> +- clock-names: from common clock binding: Shall be "pcie", "pcie_bus".
-
-s/Shall be .../should be "pcie" and "pcie_bus".
-
-[snip]
-
+> +		if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
+> +			     &sys_data->enter_file->flags))
+> +			event_triggers_call(sys_data->enter_file, entry);
+> +		return;
+> +	}
 > +
-> +MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
-> +MODULE_DESCRIPTION("Samsung PCIe host controller driver");
-> +MODULE_LICENSE("GPLv2");
+>  	if (!filter_current_check_discard(buffer, sys_data->enter_event,
+>  					  entry, event))
+>  		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
+> +
+> +	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
+> +		     &sys_data->enter_file->flags))
+> +		event_triggers_call(sys_data->enter_file, entry);
+>  }
+>  
+>  static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+> @@ -363,14 +369,6 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+>  	if (!sys_data)
+>  		return;
+>  
+> -	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
+> -		     &sys_data->exit_file->flags))
+> -		event_triggers_call(sys_data->exit_file);
+> -
+> -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
+> -		     &sys_data->exit_file->flags))
+> -		return;
+> -
+>  	buffer = tr->trace_buffer.buffer;
+>  	event = trace_buffer_lock_reserve(buffer,
+>  			sys_data->exit_event->event.type, sizeof(*entry), 0, 0);
+> @@ -381,9 +379,23 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+>  	entry->nr = syscall_nr;
+>  	entry->ret = syscall_get_return_value(current, regs);
+>  
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
+> +		     &sys_data->exit_file->flags)) {
+> +		ring_buffer_discard_commit(buffer, event);
+> +
+> +		if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
+> +			     &sys_data->exit_file->flags))
+> +			event_triggers_call(sys_data->exit_file, entry);
+> +		return;
+> +	}
+> +
+>  	if (!filter_current_check_discard(buffer, sys_data->exit_event,
+>  					  entry, event))
+>  		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
+> +
+> +	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
+> +		     &sys_data->exit_file->flags))
+> +		event_triggers_call(sys_data->exit_file, entry);
+>  }
+>  
+>  static int reg_event_syscall_enter(struct ftrace_event_file *file,
+> 
 
-I think this should be "GPL v2"  (with a space between GPL and v2).
+Same changes are needed here.
 
+Thank you,
 
 -- 
-With warm regards,
-Sachin
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
