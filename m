@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946150Ab3FUV2m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:28:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51728 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946138Ab3FUV0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:26:36 -0400
-From: Nishanth Menon <nm@ti.com>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Mark Brown <broonie@kernel.org>, Tony Lindgren <tony@atomide.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
-Subject: [RFC PATCH V2 7/8] ARM: dts: omap4-panda-es: add TPS62361 supply for vdd_mpu
-Date: Fri, 21 Jun 2013 16:25:48 -0500
-Message-ID: <1371849949-12649-8-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371849949-12649-1-git-send-email-nm@ti.com>
-References: <1371849949-12649-1-git-send-email-nm@ti.com>
+	id S1946178Ab3FUV2q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:28:46 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:36117 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1946138Ab3FUV2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:28:44 -0400
+Message-ID: <51C4C58A.1010307@sgi.com>
+Date: Fri, 21 Jun 2013 14:28:42 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <CAE9FiQVsNk0rjde8YQd_Bxvo8GFcpDoTeVRgvOMA8DVwhYO4kw@mail.gmail.com> <20130621184434.GC26001@kroah.com> <CAE9FiQUfL9695iDY6zMwA5j6OGL8edotXwfSNBHsHC54qqEAGQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQUfL9695iDY6zMwA5j6OGL8edotXwfSNBHsHC54qqEAGQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike other OMAP4 platforms including the the "vanilla" PandaBoard,
-PandaBoard-ES uses TPS62361 to supply vdd_mpu.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- arch/arm/boot/dts/omap4-panda-es.dts |   18 ++++++++++++++++++
- arch/arm/boot/dts/tps62361_omap.dtsi |   18 ++++++++++++++++++
- 2 files changed, 36 insertions(+)
- create mode 100644 arch/arm/boot/dts/tps62361_omap.dtsi
 
-diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-index 49017c5..325816c 100644
---- a/arch/arm/boot/dts/omap4-panda-es.dts
-+++ b/arch/arm/boot/dts/omap4-panda-es.dts
-@@ -75,3 +75,21 @@
- 	/* We use TPS62361 on this platform instead */
- 	status = "disabled";
- };
-+
-+#include "tps62361_omap.dtsi"
-+
-+&omap4_pmx_wkup {
-+	tps62361_wkgpio_pins: pinmux_tps62361_wkpins {
-+		pinctrl-single,pins = <
-+			0x1a (PIN_OUTPUT | MUX_MODE3 | OFF_EN | OFFOUT_VAL) /* gpio_wk7 */
-+		>;
-+	};
-+};
-+
-+&omap_tps62361 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+		&tps62361_wkgpio_pins
-+	>;
-+	gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
-+};
-diff --git a/arch/arm/boot/dts/tps62361_omap.dtsi b/arch/arm/boot/dts/tps62361_omap.dtsi
-new file mode 100644
-index 0000000..ee261ec
---- /dev/null
-+++ b/arch/arm/boot/dts/tps62361_omap.dtsi
-@@ -0,0 +1,18 @@
-+/*
-+ * TPS62361 entries specific for OMAP
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ *	Nishanth Menon
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/ {
-+	omap_tps62361: tps62361 {
-+		compatible = "ti,omap-tps62361";
-+		ti,boot-voltage-micro-volts = <1203000>;
-+		ti,vp = <&vp_mpu>;
-+	};
-+};
--- 
-1.7.9.5
+On 6/21/2013 12:00 PM, Yinghai Lu wrote:
+> On Fri, Jun 21, 2013 at 11:44 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> On Fri, Jun 21, 2013 at 11:36:21AM -0700, Yinghai Lu wrote:
+>>> On Fri, Jun 21, 2013 at 9:25 AM, Nathan Zimmer <nzimmer@sgi.com> wrote:
+>>>> This rfc patch set delays initializing large sections of memory until we have
+>>>> started cpus.  This has the effect of reducing startup times on large memory
+>>>> systems.  On 16TB it can take over an hour to boot and most of that time
+>>>> is spent initializing memory.
+>>>
+>>> One hour on system with 16T ram? BIOS or OS?
+>>>
+>>> I use wall clock to check bootime on one system with 3T and 16 pcie cards,
+>>> Linus only takes about 3m and 30 seconds from bootloader.
+>>>
+>>> wonder if you boot delay is with so many cpu get onlined in serialized mode.
+>>>
+>>> so can you try boot your system with "maxcpus=128" to get the boot time with
+>>> wall clock ?
+>>
+>> Why use the "wall clock" when we have the wonderful bootchart tools and
+>> scripts that do this all for you, and can tell you exactly what part of
+>> the kernel is taking what time, to help with fixing issues like this?
+> 
+> bootchart is not completed.
+> 
+> printk timestamp come after mem get initialized.
+> ....
+> [    0.004000] tsc: Fast TSC calibration using PIT
+> 
+> before that stamp are all 0.
+> 
+> Yinghai
+> 
 
+On UV the system console function has an option to include
+timestamps, both sequential in HH:MM:SS and deltas to 100ms.
+So we get both the BIOS and system times before printk time
+is active.  We also have a custom "script" command that adds
+timing info.
