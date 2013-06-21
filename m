@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161486Ab3FUOBe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:01:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58353 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161346Ab3FUOBa (ORCPT
+	id S1161470Ab3FUOCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:02:41 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:47174 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161356Ab3FUOCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:01:30 -0400
-Date: Fri, 21 Jun 2013 07:02:11 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        kernel@stlinux.com, linux-doc@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Rob Landley <rob@landley.net>,
-        linux-serial@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 01/10] serial:st-asc: Add ST ASC driver.
-Message-ID: <20130621140211.GA995@kroah.com>
-References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
- <1371737103-8871-1-git-send-email-srinivas.kandagatla@st.com>
- <201306202101.11261.arnd@arndb.de>
- <51C45A3F.7000009@st.com>
+	Fri, 21 Jun 2013 10:02:40 -0400
+Date: Fri, 21 Jun 2013 16:02:33 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix output directory of Documentation/
+Message-ID: <20130621140233.GD11635@rric.localhost>
+References: <1367865614-30876-1-git-send-email-rric@kernel.org>
+ <20130620134154.GC1083@krava.brq.redhat.com>
+ <20130620152603.GC4767@ghostprotocols.net>
+ <20130621124939.GB11635@rric.localhost>
+ <20130621133437.GA2837@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51C45A3F.7000009@st.com>
+In-Reply-To: <20130621133437.GA2837@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 02:50:55PM +0100, Srinivas KANDAGATLA wrote:
-> Hi Greg,
-> If its not too late can this patch be considered for 3.11 via tty tree?
-> Arnd preferred to take the SOC patches in this series via arm-soc tree.
-> Also, there is no build dependency for this patch.
+On 21.06.13 10:34:37, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jun 21, 2013 at 02:50:20PM +0200, Robert Richter escreveu:
+> > Jiri and Arnaldo,
+> > 
+> > On 20.06.13 12:26:03, Arnaldo Carvalho de Melo wrote:
+> > > Robert, so this one is with:
+> > > 
+> > > 	cd tools/perf
+> > > 	make install-doc
+> > > 
+> > > I tested with:
+> > > 
+> > > 	make -C tools/perf O=/tmp/build/perf install-doc
+> > > 
+> > > and it works, so it is just the in tree build that fails.
+> > 
+> > The patch below fixes this. Thanks for reporting.
+> 
+> Ok, I'll fold that with the previous one before pushing to Ingo,
 
-Can you please resend it, I no longer seem to have it in my queue
-anywhere.
+Yes, fine with me.
 
-thanks,
-
-greg k-h
+-Robert
