@@ -1,94 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423712Ab3FUTGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 15:06:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34413 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423612Ab3FUTGv (ORCPT
+	id S1423729Ab3FUTKs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 15:10:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58833 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423604Ab3FUTKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 15:06:51 -0400
-Message-ID: <51C4A447.3090807@wwwdotorg.org>
-Date: Fri, 21 Jun 2013 13:06:47 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        =?UTF-8?B?77+9?= <heiko@sntech.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
-References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com> <51C22A95.4050703@wwwdotorg.org> <51C2F7BE.2060805@imgtec.com>
-In-Reply-To: <51C2F7BE.2060805@imgtec.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 21 Jun 2013 15:10:47 -0400
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH 1/2] ARM: msm: Add support for MSM8974
+Date: Fri, 21 Jun 2013 12:10:34 -0700
+Message-Id: <1371841835-29514-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 06:38 AM, James Hogan wrote:
-> On 19/06/13 23:03, Stephen Warren wrote:
->> On 06/16/2013 04:45 AM, Linus Walleij wrote:
->>> From: Linus Walleij <linus.walleij@linaro.org>
->>>
->>> It is counter-intuitive to have "0" mean disable in a boolean
->>> manner for electronic properties of pins such as pull-up and
->>> pull-down. Therefore, define that a pull-up/pull-down argument
->>> of 0 to such a generic option means that the pin is
->>> short-circuited to VDD or GROUND. Pull disablement shall be
->>> done using PIN_CONFIG_BIAS_DISABLE.
->>>
->>> Cc: Heiko St�bner <heiko@sntech.de>
->>> Cc: James Hogan <james.hogan@imgtec.com>
->>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->>> ---
->>>  include/linux/pinctrl/pinconf-generic.h | 13 +++++++------
->>>  1 file changed, 7 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
->>> index d414a77..67780f5 100644
->>> --- a/include/linux/pinctrl/pinconf-generic.h
->>> +++ b/include/linux/pinctrl/pinconf-generic.h
->>> @@ -36,14 +36,15 @@
->>>   *	tristate. The argument is ignored.
->>>   * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
->>>   *	impedance to VDD). If the argument is != 0 pull-up is enabled,
->>> - *	if it is 0, pull-up is disabled.
->>> + *	if it is 0, pull-up it total, i.e. the pin is connected to VDD.
->>>   * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with high
->>>   *	impedance to GROUND). If the argument is != 0 pull-down is enabled,
->>> - *	if it is 0, pull-down is disabled.
->>> + *	if it is 0, pull-down is total, i.e. the pin is connected to GROUND.
->>>   * @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down based
->>>   *	on embedded knowledge of the controller, like current mux function.
->>> - *	If the argument is != 0 pull up/down is enabled, if it is 0,
->>> - *	the pull is disabled.
->>> + *	If the argument is != 0 pull up/down is enabled, if it is 0, the
->>> + *	configuration is ignored. The proper way to disable it is to use
->>> + *	@PIN_CONFIG_BIAS_DISABLE.
->>
->> Why treat PULL_UP/PULL_DOWN differently from PULL_PIN_DEFAULT?
->> PULL_PIN_DEFAULT is logically simply a macro that selects PULL_UP/DOWN
->> based on what's "normal" for the pin's expected usage, so surely the
->> value associated with that option should behave identically?
-> 
-> I'm not familiar with hardware that does this so I could be way wrong
-> here, but presumably if there's a default up/down, there's probably a
-> default resistance too. Does it really make sense to say
-> "pull up or down depending on whatever the pin is intended for... but
-> whichever it is must be XXX Ohm"?
-> If you know the resistance you want, you surely already know whether you
-> want it pull up or down with that resistence.
+This patch adds basic board support for MSM8974.
 
-IIRC the idea of the PULL_PIN_DEFAULT was to avoid having to specify
-UP/DOWN for each pin/group, but could just say "default", which would
-then reduce the number of pinctrl mapping table entries or pinctrl DT
-property entries. I don't think this would have any interaction with
-setting the resistance; it's entirely plausible that you'd want the same
-explicit, or same default, resistance, for all pins, irrespective of
-pull-up vs. down.
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+---
+ arch/arm/boot/dts/Makefile        |    3 ++-
+ arch/arm/boot/dts/msm8974.dts     |   23 +++++++++++++++++++++++
+ arch/arm/mach-msm/Kconfig         |   31 +++++++++++++++++++++++++++----
+ arch/arm/mach-msm/Makefile        |    1 +
+ arch/arm/mach-msm/board-dt-8974.c |   25 +++++++++++++++++++++++++
+ 5 files changed, 78 insertions(+), 5 deletions(-)
+ create mode 100644 arch/arm/boot/dts/msm8974.dts
+ create mode 100644 arch/arm/mach-msm/board-dt-8974.c
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index b9f7121..7728cfe 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -90,7 +90,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
+ 	kirkwood-openblocks_a6.dtb
+ dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
+ dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+-	msm8960-cdp.dtb
++	msm8960-cdp.dtb \
++	msm8974.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+ 	armada-370-mirabox.dtb \
+ 	armada-370-rd.dtb \
+diff --git a/arch/arm/boot/dts/msm8974.dts b/arch/arm/boot/dts/msm8974.dts
+new file mode 100644
+index 0000000..d9c10d4
+--- /dev/null
++++ b/arch/arm/boot/dts/msm8974.dts
+@@ -0,0 +1,23 @@
++/dts-v1/;
++
++/include/ "skeleton.dtsi"
++
++/ {
++	model = "Qualcomm MSM8974";
++	compatible = "qcom,msm8974";
++	interrupt-parent = <&intc>;
++
++	intc: interrupt-controller@f9000000 {
++		compatible = "qcom,msm-qgic2";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		reg = < 0xf9000000 0x1000 >,
++		      < 0xf9002000 0x1000 >;
++	};
++
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts = <1 2 0 1 3 0>;
++		clock-frequency = <19200000>;
++	};
++};
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index 614e41e..580e89b 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -1,12 +1,12 @@
+ if ARCH_MSM
+ 
+ comment "Qualcomm MSM SoC Type"
+-	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on ARCH_MSM_DT
+ 
+ choice
+ 	prompt "Qualcomm MSM SoC Type"
+ 	default ARCH_MSM7X00A
+-	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on !ARCH_MSM_DT
+ 
+ config ARCH_MSM7X00A
+ 	bool "MSM7x00A / MSM7x01A"
+@@ -46,7 +46,6 @@ config ARCH_MSM8X60
+ 	bool "MSM8X60"
+ 	select ARM_GIC
+ 	select CPU_V7
+-	select GPIO_MSM_V2
+ 	select HAVE_SMP
+ 	select MSM_SCM if SMP
+ 	select USE_OF
+@@ -60,14 +59,37 @@ config ARCH_MSM8960
+ 	select MSM_SCM if SMP
+ 	select USE_OF
+ 
++config ARCH_MSM8974
++	bool "MSM8974"
++	select ARCH_MSM_KRAITMP
++	select ARM_GIC
++	select CPU_V7
++	select HAVE_ARM_ARCH_TIMER
++	select USE_OF
++	select MSM_SCM if SMP
++
++config ARCH_MSM_DT
++	def_bool y
++	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
++
+ config MSM_HAS_DEBUG_UART_HS
+ 	bool
+ 
+ config MSM_SOC_REV_A
+ 	bool
+ 
++config ARCH_MSM_KRAIT
++	bool
++	select ARM_L1_CACHE_SHIFT_6
++
++config ARCH_MSM_KRAITMP
++	select ARCH_MSM_KRAIT
++	select HAVE_SMP
++	bool
++
+ config  ARCH_MSM_ARM11
+ 	bool
++
+ config  ARCH_MSM_SCORPION
+ 	bool
+ 
+@@ -75,6 +97,7 @@ config  MSM_VIC
+ 	bool
+ 
+ menu "Qualcomm MSM Board Type"
++	depends on !ARCH_MSM_DT
+ 
+ config MACH_HALIBUT
+ 	depends on ARCH_MSM
+@@ -121,7 +144,7 @@ config MSM_SMD
+ 	bool
+ 
+ config MSM_GPIOMUX
+-	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on !ARCH_MSM_DT
+ 	bool "MSM V1 TLMM GPIOMUX architecture"
+ 	help
+ 	  Support for MSM V1 TLMM GPIOMUX architecture.
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index d257ff4..80e3b15 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -29,5 +29,6 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+ obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
+ obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
++obj-$(CONFIG_ARCH_MSM8974) += board-dt-8974.o
+ obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
+ obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
+diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
+new file mode 100644
+index 0000000..a35dff5
+--- /dev/null
++++ b/arch/arm/mach-msm/board-dt-8974.c
+@@ -0,0 +1,25 @@
++/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/init.h>
++#include <linux/irqchip.h>
++#include <linux/of_platform.h>
++#include <asm/mach/arch.h>
++
++static const char * const msm8974_dt_match[] __initconst = {
++	"qcom,msm8974",
++	NULL
++};
++
++DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
++	.dt_compat = msm8974_dt_match,
++MACHINE_END
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
