@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946106Ab3FUVTV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:19:21 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:37228 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1946062Ab3FUVTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:19:19 -0400
-Message-ID: <51C4C356.3040602@sgi.com>
-Date: Fri, 21 Jun 2013 14:19:18 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1946108Ab3FUVXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:23:47 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:47417 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946078Ab3FUVXp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 17:23:45 -0400
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+In-Reply-To: <51C47377.2000208@linux.intel.com>
+References: <20130530134718.GB32728@e103034-lin> <20130531105204.GE30394@gmail.com>
+ <20130614160522.GG32728@e103034-lin> <51C07ABC.2080704@linux.intel.com>
+ <alpine.DEB.2.02.1306181039340.9258@nftneq.ynat.uz> <51C1D0BB.3040705@linux.intel.com>
+ <20130619170042.GH5460@e103034-lin> <51C1E58D.9000408@linux.intel.com>
+ <20130621085002.GJ5460@e103034-lin> <51C47377.2000208@linux.intel.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Fri, 21 Jun 2013 22:23:25 +0100
+X-Google-Sender-Auth: PoP5tbovHIjgTN95m8DnfXm-saU
+Message-ID: <CAHkRjk5G7XJxzjcWa4BqRxz0AtAAh_-Eomzk4+dQRaFk1=HQqA@mail.gmail.com>
+Subject: Re: power-efficient scheduling design
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>, David Lang <david@lang.hm>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <CAE9FiQVsNk0rjde8YQd_Bxvo8GFcpDoTeVRgvOMA8DVwhYO4kw@mail.gmail.com>
-In-Reply-To: <CAE9FiQVsNk0rjde8YQd_Bxvo8GFcpDoTeVRgvOMA8DVwhYO4kw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "pjt@google.com" <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21 June 2013 16:38, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> On 6/21/2013 1:50 AM, Morten Rasmussen wrote:
+>> A hint when a task is moved to a new cpu is too late if the migration
+>> shouldn't have happened at all. If the scheduler knows that the cpu is
+>> able to switch to a higher p-state it can decide to wait for the p-state
+>> change instead of migrating the task and waking up another cpu.
+>
+> oops sorry I misread your mail (lack of early coffee I suppose)
+>
+> I can see your point of having a thing for "did we ask for all the performance
+> we could ask for" prior to doing a load balance (although, for power efficiency,
+> if you have two tasks that could run in parallel, it's usually better to
+> run them in parallel... so likely we should balance anyway)
 
+Not necessarily, especially if parallel running implies powering up a
+full cluster just for one CPU (it depends on the hardware but for
+example a cluster may not be able to go in deeper sleep states unless
+all the CPUs in that cluster are idle).
 
-On 6/21/2013 11:36 AM, Yinghai Lu wrote:
-> On Fri, Jun 21, 2013 at 9:25 AM, Nathan Zimmer <nzimmer@sgi.com> wrote:
->> This rfc patch set delays initializing large sections of memory until we have
->> started cpus.  This has the effect of reducing startup times on large memory
->> systems.  On 16TB it can take over an hour to boot and most of that time
->> is spent initializing memory.
-> 
-> One hour on system with 16T ram? BIOS or OS?
-
-The BIOS is about 20 minutes *before* the 1+ hour.  (When we started this
-UV project way back when, 8TB took over 4 hours before we threw in the towel.)
-> 
-> I use wall clock to check bootime on one system with 3T and 16 pcie cards,
-> Linus only takes about 3m and 30 seconds from bootloader.
-
-I can send some stats on where various delays are but most of it was in
-memory initialization.  On average UV nodes carry 128 or 256G per node,
-so 12 nodes would take about 3 or 4 minutes, perhaps more.
-> 
-> wonder if you boot delay is with so many cpu get onlined in serialized mode.
-
-Nope.  If that was the case, delaying memory but initializing all the
-cpus would not affect the time.
-> 
-> so can you try boot your system with "maxcpus=128" to get the boot time with
-> wall clock ?
-
-We could try if you really think it will provide any useful info.  Not sure
-exactly how having memory on nodes with no active cpus will react.
-> 
-> Thanks
-> 
-> Yinghai
-> 
+--
+Catalin
