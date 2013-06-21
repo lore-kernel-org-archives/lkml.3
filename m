@@ -1,498 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422832Ab3FUHVg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 03:21:36 -0400
-Received: from 5.mo3.mail-out.ovh.net ([87.98.178.36]:39704 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1030336Ab3FUHVe (ORCPT
+	id S935685Ab3FUHWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 03:22:05 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:41750 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932206Ab3FUHWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 03:21:34 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Yang Wenyou <Wenyou.Yang@atmel.com>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: [PATCH v2 1/4] watchdog: at91sam9_wdt: better watchdog support
-Date: Fri, 21 Jun 2013 09:21:28 +0200
-Message-Id: <1371799288-3548-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371799176-3408-1-git-send-email-b.brezillon@overkiz.com>
-References: <1371799176-3408-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 18384819580685547704
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 21 Jun 2013 03:22:00 -0400
+X-AuditID: cbfee68e-b7f276d000002279-ee-51c3ff164c9d
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH V10 0/4] PCIe support for Samsung Exynos5440 SoC
+Date: Fri, 21 Jun 2013 16:21:57 +0900
+Message-id: <003901ce6e50$03d039a0$0b70ace0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5uT90LHqWwUhcTQLCaT7R8bNm9Xw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t8zY12x/4cDDRbfU7Jo/r+d1eLvpGPs
+	FkuaMixeHtK0ODD7IavFqzMb2SwuL7zEavH9hqlF74KrbBabHl9jtbi8aw6bxdl5x9ksZpzf
+	x2SxceovRov2S8oWK5q2Mlosvric2WL9jNcsFrtXLmGxODZjCaPF0wdNTA6iHmvmrWH0+P1r
+	EqNH35SrbB5PNl1k9FiwqdTjzrU9bB6bl9R7nJ+xkNHj+45eoIItqxg9fr7U8Xj6Yy+zx+dN
+	cgG8UVw2Kak5mWWpRfp2CVwZxz49YyxY0MdYcfbVVeYGxjcpXYwcHBICJhJP+7O7GDmBTDGJ
+	C/fWs3UxcnEICSxjlNgzbzYbRMJE4kfvLnaIxCJGiR1nN7FAOL8YJU51nmEHqWITUJP48uUw
+	mC0i4C9x7WorWBGzQBubxPpnH8ESwgIOEruO9zCD2CwCqhLTJx9mAbF5BSwlNs/4yQRhC0r8
+	mHwPLM4soCWxfudxJghbXmLzmrfMECcpAF3xmhFimZ7E/v97mCFqRCT2vXjHCLJYQuAJh8Sf
+	G3tYIJYJSHybfIgF4mdZiU0HoOZIShxccYNlAqPYLCSrZyFZPQvJ6llIVixgZFnFKJpakFxQ
+	nJReZKRXnJhbXJqXrpecn7uJEZJg+nYw3jxgfYgxGWj9RGYp0eR8YILKK4k3NDYzsjA1MTU2
+	Mrc0I01YSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj1fLlS04/5bh+M3T/X93T
+	n85s2BzlfuiSjofY8y0zf+r6H3pgGx+x848lX+HX5T90e5ZfaJSozDJe0XPCyCtjU++RH4F+
+	J675vdo5UWftTpXUx3d0r749tPvcEf399212WvZlu7FoCcd/VJxpvfHbf/7jkebLJyhfqpZs
+	uGEdFmzTO+VY77S7vUosxRmJhlrMRcWJAMZmMj5GAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIJsWRmVeSWpSXmKPExsVy+t9jAV2x/4cDDX5dlLRo/r+d1eLvpGPs
+	FkuaMixeHtK0ODD7IavFqzMb2SwuL7zEavH9hqlF74KrbBabHl9jtbi8aw6bxdl5x9ksZpzf
+	x2SxceovRov2S8oWK5q2Mlosvric2WL9jNcsFrtXLmGxODZjCaPF0wdNTA6iHmvmrWH0+P1r
+	EqNH35SrbB5PNl1k9FiwqdTjzrU9bB6bl9R7nJ+xkNHj+45eoIItqxg9fr7U8Xj6Yy+zx+dN
+	cgG8UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	7yoplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM459esZYsKCPseLsq6vM
+	DYxvUroYOTkkBEwkfvTuYoewxSQu3FvP1sXIxSEksIhRYsfZTSwQzi9GiVOdZ8Cq2ATUJL58
+	OQxmiwj4S1y72gpWxCzQxiax/tlHsISwgIPEruM9zCA2i4CqxPTJh1lAbF4BS4nNM34yQdiC
+	Ej8m3wOLMwtoSazfeZwJwpaX2LzmLTPESQpAV7xmhFimJ7H//x5miBoRiX0v3jFOYBSYhWTU
+	LCSjZiEZNQtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwQnsmfQOxlUNFocYBTgY
+	lXh4A5QOBwqxJpYVV+YeYpTgYFYS4Q2+AxTiTUmsrEotyo8vKs1JLT7EmAz06URmKdHkfGBy
+	zSuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxrpM1eMPfjt4
+	X13HUm/w2VJMNaAtK3bR8+D/Xzz09004mlYg8sCD53XdT6XSV6tO6Ynv6g248F521tppfj+M
+	6+5tn3ZHoKrtpr2TLs+itRYLdxWlH7FRcfjG2Ga2aWV29eWruvKBW80k2peqvE+rWG7auY2p
+	WmOdhrRHgebLR+JTvxUYX17go8RSnJFoqMVcVJwIAHdx/e+kAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The at91sam9 watchdog timer can only be configured once, and the current
-implementation tries to configure it in a static way:
-- 2 seconds timeout
-- wdt restart every 500ms
+Hi,
 
-If the timer has already been configured with different values, it returns an
-error and do not create any watchdog device.
+This series of patches introduces PCIe support for Samsung Exynos5440,
+and is based on the latest 'linux-next' tree (20130620).
+These patches was tested with Intel e1000e LAN card on Exynos5440.
 
-This is not critical if the watchdog is disabled, but if it has been enabled with
-different timeout values it will lead to a SoC reset.
+This PATCH v10 follows:
+ * PATCH v9, sent on June, 21st 2013
+ * PATCH v8, sent on June, 20th 2013
+ * PATCH v7, sent on June, 20th 2013
+ * PATCH v6, sent on June, 20th 2013
+ * PATCH v5, sent on June, 13th 2013
+ * PATCH v4, sent on June, 12th 2013
+ * PATCH v3, sent on June, 6th 2013
+ * PATCH v2, sent on March, 23rd 2013
+ * PATCH v1, sent on March, 4th 2013
 
-This patch series tries to address this issue by adapting the heartbeat value
-according the WDT timer config:
-- it first tries to configure the timer as requested.
-- if it fails it fallbacks to the current config, adapting its heartbeat timer
-to the needs
+Changes between v9 and v10:
+  * Changed the file name from 'pci-designware.c' to 'pcie-designware.c'
+    guided by Pratyush Anand, because synopsis pcie and pci controllers
+    are different.
+  * Fixed the typos of document, reported by Sachin Kamat.
 
-This patch series also move to a dynamically allocated at91wdt device instead
-of the static instance.
+Changes between v8 and v9:
+  * Changed the file name from 'exynos-pcie.txt' to 'designware-pcie.txt'.
+  * Added 'snps,dw-pcie' string to compatible property.
 
-It adds a new at91 wdt type: software. This new type make use of the at91 wdt
-interrupt to trigger a software reboot.
+Changes between v7 and v8:
+  * Changed the file name from 'pci-exynos.c' to 'pci-designware.c',
+    and added a generic string for compatible property to exynos-pcie.txt
+  * Moved pci_add_resource_offset() for I/O space to the 'if' clause
+  * Added Arnd's Acked-by
 
-Finally it adds several properties to the device tree bindings.
+Changes between v6 and v7:
+  * Split ARM DT patch to two patches
+  * Fixed node naming
+  * Added Arnd's Acked-by
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/watchdog/at91sam9_wdt.c |  319 +++++++++++++++++++++++++++++----------
- 1 file changed, 236 insertions(+), 83 deletions(-)
+Changes between v5 and v6:
+  * Replaced phys_addr_t with u64 for physical addresses of regions
+  * Removed unnecessary inbound functions
+  * Added handling of io_offset, mem_offset as Arnd Bergmann guided
+  * Fixed calculating 'io' resource
+  * Removed module_exit() in order not to allow module unload
 
-diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
-index be37dde..fb47ec5 100644
---- a/drivers/watchdog/at91sam9_wdt.c
-+++ b/drivers/watchdog/at91sam9_wdt.c
-@@ -19,11 +19,13 @@
- 
- #include <linux/errno.h>
- #include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/platform_device.h>
-+#include <linux/reboot.h>
- #include <linux/types.h>
- #include <linux/watchdog.h>
- #include <linux/jiffies.h>
-@@ -31,23 +33,32 @@
- #include <linux/bitops.h>
- #include <linux/uaccess.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
- 
- #include "at91sam9_wdt.h"
- 
- #define DRV_NAME "AT91SAM9 Watchdog"
- 
--#define wdt_read(field) \
--	__raw_readl(at91wdt_private.base + field)
--#define wdt_write(field, val) \
--	__raw_writel((val), at91wdt_private.base + field)
-+#define wdt_read(wdt, field) \
-+	__raw_readl((wdt)->base + field)
-+#define wdt_write(wtd, field, val) \
-+	__raw_writel((val), (wdt)->base + field)
- 
- /* AT91SAM9 watchdog runs a 12bit counter @ 256Hz,
-  * use this to convert a watchdog
-  * value from/to milliseconds.
-  */
-+#define hz_to_ticks(h)  (((h << 8) / HZ) - 1)
-+#define ticks_to_hz(t)	(((t + 1) * HZ) >> 8)
- #define ms_to_ticks(t)	(((t << 8) / 1000) - 1)
- #define ticks_to_ms(t)	(((t + 1) * 1000) >> 8)
- 
-+#define WDT_MR_RESET	0x3FFF2FFF
-+
-+#define WDT_WDD_MAX	0xFFF
-+#define WDT_WDV_MAX	0xFFF
-+
- /* Hardware timeout in seconds */
- #define WDT_HW_TIMEOUT 2
- 
-@@ -66,23 +77,41 @@ module_param(nowayout, bool, 0);
- MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
- 	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
- 
--static struct watchdog_device at91_wdt_dev;
--static void at91_ping(unsigned long data);
--
--static struct {
-+#define to_wdt(wdd) container_of(wdd, struct at91wdt, wdd)
-+struct at91wdt {
-+	struct watchdog_device wdd;
- 	void __iomem *base;
- 	unsigned long next_heartbeat;	/* the next_heartbeat for the timer */
- 	struct timer_list timer;	/* The timer that pings the watchdog */
--} at91wdt_private;
-+	u32 mr;
-+	u32 mr_mask;
-+	unsigned long heartbeat;	/* WDT heartbeat in jiffies */
-+	bool nowayout;
-+	unsigned int irq;
-+};
- 
- /* ......................................................................... */
- 
-+static irqreturn_t wdt_interrupt(int irq, void *dev_id)
-+{
-+	struct at91wdt *wdt = (struct at91wdt *)dev_id;
-+
-+	if (wdt_read(wdt, AT91_WDT_SR)) {
-+		/* Reboot */
-+		pr_crit("at91sam9 WDT software reset\n");
-+		emergency_restart();
-+		pr_crit("Reboot didn't ?????\n");
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
- /*
-  * Reload the watchdog timer.  (ie, pat the watchdog)
-  */
--static inline void at91_wdt_reset(void)
-+static inline void at91_wdt_reset(struct at91wdt *wdt)
- {
--	wdt_write(AT91_WDT_CR, AT91_WDT_KEY | AT91_WDT_WDRSTT);
-+	wdt_write(wdt, AT91_WDT_CR, AT91_WDT_KEY | AT91_WDT_WDRSTT);
- }
- 
- /*
-@@ -90,26 +119,20 @@ static inline void at91_wdt_reset(void)
-  */
- static void at91_ping(unsigned long data)
- {
--	if (time_before(jiffies, at91wdt_private.next_heartbeat) ||
--	    (!watchdog_active(&at91_wdt_dev))) {
--		at91_wdt_reset();
--		mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
-+	struct at91wdt *wdt = (struct at91wdt *)data;
-+	if (time_before(jiffies, wdt->next_heartbeat) ||
-+	    (!watchdog_active(&wdt->wdd))) {
-+		at91_wdt_reset(wdt);
-+		mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
- 	} else
- 		pr_crit("I will reset your machine !\n");
- }
- 
- static int at91_wdt_ping(struct watchdog_device *wdd)
- {
-+	struct at91wdt *wdt = to_wdt(wdd);
- 	/* calculate when the next userspace timeout will be */
--	at91wdt_private.next_heartbeat = jiffies + wdd->timeout * HZ;
--	return 0;
--}
--
--static int at91_wdt_start(struct watchdog_device *wdd)
--{
--	/* calculate the next userspace timeout and modify the timer */
--	at91_wdt_ping(wdd);
--	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
-+	wdt->next_heartbeat = jiffies + wdd->timeout * HZ;
- 	return 0;
- }
- 
-@@ -125,36 +148,82 @@ static int at91_wdt_set_timeout(struct watchdog_device *wdd, unsigned int new_ti
- 	return 0;
- }
- 
--/*
-- * Set the watchdog time interval in 1/256Hz (write-once)
-- * Counter is 12 bit.
-- */
--static int at91_wdt_settimeout(unsigned int timeout)
-+static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
- {
--	unsigned int reg;
--	unsigned int mr;
--
--	/* Check if disabled */
--	mr = wdt_read(AT91_WDT_MR);
--	if (mr & AT91_WDT_WDDIS) {
--		pr_err("sorry, watchdog is disabled\n");
--		return -EIO;
-+	u32 tmp;
-+	u32 delta;
-+	u32 value;
-+	int err;
-+	u32 mask = wdt->mr_mask;
-+
-+	tmp = wdt_read(wdt, AT91_WDT_MR);
-+	if ((tmp & mask) != (wdt->mr & mask)) {
-+		if (tmp == WDT_MR_RESET) {
-+			wdt_write(wdt, AT91_WDT_MR, wdt->mr);
-+			tmp = wdt_read(wdt, AT91_WDT_MR);
-+		}
-+	}
-+
-+	if (tmp & AT91_WDT_WDDIS) {
-+		if (wdt->mr & AT91_WDT_WDDIS)
-+			return 0;
-+		dev_err(wdt->wdd.parent,
-+			": sorry, watchdog is disabled\n");
-+		return -EINVAL;
-+	}
-+
-+	value = tmp & AT91_WDT_WDV;
-+	delta = (tmp & AT91_WDT_WDD) >> 16;
-+
-+	if (delta < value) {
-+		if ((value / (value - delta)) < 4) {
-+			dev_err(wdt->wdd.parent,
-+				": sorry, max-heartbeat should be at least 4 times min-heartbeat (max-heartbeat = %d x min-heartbeat)\n",
-+				(value / (value - delta)));
-+			return -EINVAL;
-+		}
-+	}
-+
-+	wdt->heartbeat = ticks_to_hz(value / 4);
-+
-+	if (!wdt->heartbeat) {
-+		dev_err(wdt->wdd.parent,
-+			": sorry, linux timer (%i Hz) cannot handle watchdog timeout (%i ms)\n",
-+			HZ, ticks_to_ms(value));
-+		return -EINVAL;
-+	}
-+
-+	if ((tmp & AT91_WDT_WDFIEN) && wdt->irq) {
-+		err = request_irq(wdt->irq, wdt_interrupt,
-+				  IRQF_SHARED | IRQF_IRQPOLL,
-+				  pdev->name, wdt);
-+		if (err)
-+			return err;
- 	}
- 
--	/*
--	 * All counting occurs at SLOW_CLOCK / 128 = 256 Hz
--	 *
--	 * Since WDV is a 12-bit counter, the maximum period is
--	 * 4096 / 256 = 16 seconds.
--	 */
--	reg = AT91_WDT_WDRSTEN	/* causes watchdog reset */
--		/* | AT91_WDT_WDRPROC	causes processor reset only */
--		| AT91_WDT_WDDBGHLT	/* disabled in debug mode */
--		| AT91_WDT_WDD		/* restart at any time */
--		| (timeout & AT91_WDT_WDV);  /* timer value */
--	wdt_write(AT91_WDT_MR, reg);
-+	if ((tmp & wdt->mr_mask) != (wdt->mr & wdt->mr_mask))
-+		dev_warn(wdt->wdd.parent,
-+			 ": watchdog already configured differently (mr = %x expecting %x)\n",
-+			 tmp & wdt->mr_mask, wdt->mr & wdt->mr_mask);
-+
-+	setup_timer(&wdt->timer, at91_ping, (unsigned long)wdt);
-+	mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
-+
-+	/* Try to set timeout from device tree first */
-+	if (watchdog_init_timeout(&wdt->wdd, 0, &pdev->dev))
-+		watchdog_init_timeout(&wdt->wdd, heartbeat, &pdev->dev);
-+	watchdog_set_nowayout(&wdt->wdd, wdt->nowayout);
-+	err = watchdog_register_device(&wdt->wdd);
-+	if (err)
-+		goto out_stop_timer;
-+
-+	wdt->next_heartbeat = jiffies + wdt->wdd.timeout * HZ;
- 
- 	return 0;
-+
-+out_stop_timer:
-+	del_timer(&wdt->timer);
-+	return err;
- }
- 
- /* ......................................................................... */
-@@ -167,63 +236,147 @@ static const struct watchdog_info at91_wdt_info = {
- 
- static const struct watchdog_ops at91_wdt_ops = {
- 	.owner =	THIS_MODULE,
--	.start =	at91_wdt_start,
-+	.start =	at91_wdt_ping,
- 	.stop =		at91_wdt_stop,
- 	.ping =		at91_wdt_ping,
- 	.set_timeout =	at91_wdt_set_timeout,
- };
- 
--static struct watchdog_device at91_wdt_dev = {
--	.info =		&at91_wdt_info,
--	.ops =		&at91_wdt_ops,
--	.timeout =	WDT_HEARTBEAT,
--	.min_timeout =	1,
--	.max_timeout =	0xFFFF,
--};
-+#if defined(CONFIG_OF)
-+static int of_at91wdt_init(struct device_node *np, struct at91wdt *wdt)
-+{
-+	u32 min = 0;
-+	u32 max = 0xFFF;
-+	const char *tmp;
-+
-+	wdt->base = of_iomap(np, 0);
-+	if (!wdt->base) {
-+		dev_err(wdt->wdd.parent, "failed to map registers, aborting.\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Get the interrupts property */
-+	wdt->irq = irq_of_parse_and_map(np, 0);
-+	if (!wdt->irq)
-+		dev_warn(wdt->wdd.parent, "failed to get IRQ from DT.\n");
-+
-+	if (!of_property_read_u32_index(np, "atmel,max-heartbeat-sec", 0,
-+					&max)) {
-+		max *= 256;
-+		if (max > WDT_WDV_MAX)
-+			max = WDT_WDV_MAX;
-+
-+		if (!of_property_read_u32_index(np, "atmel,min-heartbeat-sec",
-+						0, &min)) {
-+			min *= 256;
-+			if (4 * min > max)
-+				min = max / 4;
-+		}
-+	}
-+
-+	wdt->mr_mask = 0x3FFFFFFF;
-+	wdt->mr = 0;
-+	if (!of_property_read_string(np, "atmel,watchdog-type", &tmp) &&
-+	    !strcmp(tmp, "software")) {
-+		wdt->mr |= AT91_WDT_WDFIEN;
-+		wdt->mr_mask &= ~AT91_WDT_WDRPROC;
-+	} else
-+		wdt->mr |= AT91_WDT_WDRSTEN;
-+
-+	if (!of_property_read_string(np, "atmel,reset-type", &tmp) &&
-+	    !strcmp(tmp, "proc"))
-+		wdt->mr |= AT91_WDT_WDRPROC;
-+
-+	if (of_property_read_bool(np, "atmel,disable")) {
-+		wdt->mr |= AT91_WDT_WDDIS;
-+		wdt->mr_mask &= AT91_WDT_WDDIS;
-+	}
-+
-+	if (of_property_read_bool(np, "atmel,idle-halt"))
-+		wdt->mr |= AT91_WDT_WDIDLEHLT;
-+
-+	if (of_property_read_bool(np, "atmel,dbg-halt"))
-+		wdt->mr |= AT91_WDT_WDDBGHLT;
-+
-+	wdt->mr |= max | ((max - min) << 16);
-+
-+	return 0;
-+}
-+#else
-+static inline int of_at91wdt_init(struct device_node *np, struct at91wdt *wdt)
-+{
-+	return 0;
-+}
-+#endif
- 
- static int __init at91wdt_probe(struct platform_device *pdev)
- {
- 	struct resource	*r;
--	int res;
--
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r)
--		return -ENODEV;
--	at91wdt_private.base = ioremap(r->start, resource_size(r));
--	if (!at91wdt_private.base) {
--		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
--		return -ENOMEM;
--	}
-+	int err;
-+	struct at91wdt *wdt;
- 
--	at91_wdt_dev.parent = &pdev->dev;
--	watchdog_init_timeout(&at91_wdt_dev, heartbeat, &pdev->dev);
--	watchdog_set_nowayout(&at91_wdt_dev, nowayout);
-+	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
-+	if (!wdt)
-+		return -ENOMEM;
- 
--	/* Set watchdog */
--	res = at91_wdt_settimeout(ms_to_ticks(WDT_HW_TIMEOUT * 1000));
--	if (res)
--		return res;
-+	wdt->mr = (WDT_HW_TIMEOUT * 256) | AT91_WDT_WDRSTEN | AT91_WDT_WDD |
-+		  AT91_WDT_WDDBGHLT | AT91_WDT_WDIDLEHLT;
-+	wdt->mr_mask = 0x3FFFFFFF;
-+	wdt->nowayout = nowayout;
-+	wdt->wdd.parent = &pdev->dev;
-+	wdt->wdd.info = &at91_wdt_info;
-+	wdt->wdd.ops = &at91_wdt_ops;
-+	wdt->wdd.timeout = WDT_HEARTBEAT;
-+	wdt->wdd.min_timeout = 1;
-+	wdt->wdd.max_timeout = 0xFFFF;
-+
-+	if (pdev->dev.of_node) {
-+		err = of_at91wdt_init(pdev->dev.of_node, wdt);
-+		if (err)
-+			goto out_free_watchdog;
-+	} else {
-+		r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+		if (!r) {
-+			err = -ENODEV;
-+			goto out_free_watchdog;
-+		}
-+
-+		wdt->base = ioremap(r->start, resource_size(r));
-+		if (!wdt->base) {
-+			dev_err(&pdev->dev, "failed to map registers, aborting.\n");
-+			err = -ENOMEM;
-+			goto out_free_watchdog;
-+		}
-+	}
- 
--	res = watchdog_register_device(&at91_wdt_dev);
--	if (res)
--		return res;
-+	err = at91_wdt_init(pdev, wdt);
-+	if (err)
-+		goto out_iounmap;
- 
--	at91wdt_private.next_heartbeat = jiffies + at91_wdt_dev.timeout * HZ;
--	setup_timer(&at91wdt_private.timer, at91_ping, 0);
--	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
-+	platform_set_drvdata(pdev, wdt);
- 
- 	pr_info("enabled (heartbeat=%d sec, nowayout=%d)\n",
--		at91_wdt_dev.timeout, nowayout);
-+		wdt->wdd.timeout, wdt->nowayout);
- 
- 	return 0;
-+
-+out_iounmap:
-+	iounmap(wdt->base);
-+out_free_watchdog:
-+	devm_kfree(&pdev->dev, wdt);
-+	return err;
- }
- 
- static int __exit at91wdt_remove(struct platform_device *pdev)
- {
--	watchdog_unregister_device(&at91_wdt_dev);
-+	struct at91wdt *wdt = platform_get_drvdata(pdev);
-+	watchdog_unregister_device(&wdt->wdd);
- 
- 	pr_warn("I quit now, hardware will probably reboot!\n");
--	del_timer(&at91wdt_private.timer);
-+	del_timer(&wdt->timer);
-+
-+	iounmap(wdt->base);
-+	devm_kfree(&pdev->dev, wdt);
- 
- 	return 0;
- }
+Changes between v4 and v5:
+  * Used gpio binding in DT
+  * Increased the size of MEM region to 512 MB including CFG and IO regions in DT
+  * Reduced the size of CFG region to 4096 byte in DT
+  * Used the size of MEM region instead of hard-coded in_mem_size
+  * Fixed exynos_pcie_prog_viewport_{mem/io}_{outbound/inbound} functions
+    to use both translated addresses and untranslated addresses
+  * Replaced pci_add_resource_offset() with pci_add_resource()
+  * Added values from the DT individually to io_base, mem_base
+
+Changes between v3 and v4:
+  * Added support for multi domains as reviewed by Jason Gunthorpe,
+    and Arnd Bergmann.
+  * Fixed both MEM space and I/O space in DT.
+  * Removed redundant physical addresses from struct pcie_port,
+    added devm_ioremap_resource() to make add_pcie_port() simpler.
+  * Added clock names and clock enable/disable.
+
+Changes between v2 and v3:
+  * Rebased on the top of 3.10-rc4
+  * Updated names of PCIe PHY registers
+
+Changes between v1 and v2:
+  * Moved Exynos PCIe driver from arch/arm to drivers/pci/host.
+  * Added DT properties of PCI DT standard.
+
+
+Here is the lspci -vv output.
+
+0000:00:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Bus: primary=00, secondary=01, subordinate=01, sec-latency=0
+        I/O behind bridge: 00001000-00001fff
+        Memory behind bridge: 40100000-401fffff
+        Prefetchable memory behind bridge: 40200000-402fffff
+        Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
+        BridgeCtl: Parity+ SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+        Capabilities: [40] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2- AuxCurrent=375mA PME(D0+,D1+,D2-,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [70] Express (v2) Root Port (Slot-), MSI 00
+                DevCap: MaxPayload 512 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
+                        ExtTag+ RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag+ PhantFunc- AuxPwr- NoSnoop-
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 5GT/s, Width x4, ASPM L0s L1, Latency L0 <64ns, L1 <2us
+                        ClockPM- Surprise- LLActRep+ BwNot+
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk- DLActive+ BWMgmt+ ABWMgmt-
+                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
+                RootCap: CRSVisible-
+                RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+                DevCap2: Completion Timeout: Range ABCD, TimeoutDis+ ARIFwd-
+                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
+                LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
+                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-, EqualizationPhase1-
+                         EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+        Capabilities: [100 v2] Advanced Error Reporting
+                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UESvrt: DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+                CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                AERCap: First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+        Capabilities: [148 v1] Virtual Channel
+                Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
+                Arb:    Fixed- WRR32- WRR64- WRR128-
+                Ctrl:   ArbSelect=Fixed
+                Status: InProgress-
+                VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+                        Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+                        Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+                        Status: NegoPending- InProgress-
+        Kernel driver in use: pcieport
+
+0000:01:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+        Subsystem: Intel Corporation Gigabit CT Desktop Adapter
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 53
+        Region 0: Memory at 40180000 (32-bit, non-prefetchable) [size=128K]
+        Region 1: Memory at 40100000 (32-bit, non-prefetchable) [size=512K]
+        Region 2: I/O ports at 1000 [size=32]
+        Region 3: Memory at 401a0000 (32-bit, non-prefetchable) [size=16K]
+        [virtual] Expansion ROM at 40200000 [disabled] [size=256K]
+        Capabilities: [c8] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
+        Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [e0] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+                LnkCap: Port #4, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <128ns, L1 <64us
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Capabilities: [a0] MSI-X: Enable- Count=5 Masked-
+                Vector table: BAR=3 offset=00000000
+                PBA: BAR=3 offset=00002000
+        Capabilities: [100 v1] Advanced Error Reporting
+                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+                CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+        Capabilities: [140 v1] Device Serial Number 68-05-ca-ff-ff-11-5e-75
+        Kernel driver in use: e1000e
+
+0001:00:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Bus: primary=00, secondary=01, subordinate=01, sec-latency=0
+        I/O behind bridge: 00000000-00000fff
+        Memory behind bridge: 60100000-601fffff
+        Prefetchable memory behind bridge: 60200000-602fffff
+        Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
+        BridgeCtl: Parity+ SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+        Capabilities: [40] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2- AuxCurrent=375mA PME(D0+,D1+,D2-,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [70] Express (v2) Root Port (Slot-), MSI 00
+                DevCap: MaxPayload 512 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
+                        ExtTag+ RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag+ PhantFunc- AuxPwr- NoSnoop-
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 5GT/s, Width x4, ASPM L0s L1, Latency L0 <64ns, L1 <2us
+                        ClockPM- Surprise- LLActRep+ BwNot+
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk- DLActive+ BWMgmt+ ABWMgmt-
+                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
+                RootCap: CRSVisible-
+                RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+                DevCap2: Completion Timeout: Range ABCD, TimeoutDis+ ARIFwd-
+                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
+                LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
+                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-, EqualizationPhase1-
+                         EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+        Capabilities: [100 v2] Advanced Error Reporting
+                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UESvrt: DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+                CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                AERCap: First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+        Capabilities: [148 v1] Virtual Channel
+                Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
+                Arb:    Fixed- WRR32- WRR64- WRR128-
+                Ctrl:   ArbSelect=Fixed
+                Status: InProgress-
+                VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+                        Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+                        Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+                        Status: NegoPending- InProgress-
+        Kernel driver in use: pcieport
+
+0001:01:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+        Subsystem: Intel Corporation Gigabit CT Desktop Adapter
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 56
+        Region 0: Memory at 60180000 (32-bit, non-prefetchable) [size=128K]
+        Region 1: Memory at 60100000 (32-bit, non-prefetchable) [size=512K]
+        Region 2: I/O ports at 10000 [size=32]
+        Region 3: Memory at 601a0000 (32-bit, non-prefetchable) [size=16K]
+        [virtual] Expansion ROM at 60200000 [disabled] [size=256K]
+        Capabilities: [c8] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
+        Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [e0] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+                LnkCap: Port #4, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <128ns, L1 <64us
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Capabilities: [a0] MSI-X: Enable- Count=5 Masked-
+                Vector table: BAR=3 offset=00000000
+                PBA: BAR=3 offset=00002000
+        Capabilities: [100 v1] Advanced Error Reporting
+                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+                CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+        Capabilities: [140 v1] Device Serial Number 68-05-ca-ff-ff-18-44-c5
+        Kernel driver in use: e1000e
+
+
+Thank you.
+
+Best regards,
+Jingoo Han
+
+
+Jingoo Han (4):
+  pci: Add PCIe driver for Samsung Exynos
+  ARM: EXYNOS: Enable PCIe support for Exynos5440
+  ARM: dts: Add pcie controller node for Samsung EXYNOS5440 SoC
+  ARM: dts: Add pcie controller node for exynos5440-ssdk5440
+
+ arch/arm/boot/dts/exynos5440-ssdk5440.dts          |    8 ++++++
+ arch/arm/boot/dts/exynos5440.dtsi                  |   40 ++++++++++++++++++++++++++++-
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/mach-exynos/Kconfig                       |    2 ++
+ .../devicetree/bindings/pci/designware-pcie.txt    |   73 ++
+ drivers/pci/host/Kconfig                           |    9 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/pcie-designware.c                 | 1057 ++++++++++++++++++++
+ 8 files changed, 1190 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/pci/designware-pcie.txt
+ create mode 100644 drivers/pci/host/pcie-designware.c
 -- 
-1.7.9.5
+1.7.10.4
+
 
