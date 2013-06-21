@@ -1,203 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161320Ab3FUMa3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 08:30:29 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39622 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161083Ab3FUMa1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 08:30:27 -0400
+	id S1161334Ab3FUMcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 08:32:39 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:4157 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161083Ab3FUMci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 08:32:38 -0400
+X-IronPort-AV: E=Sophos;i="4.87,912,1363132800"; 
+   d="scan'208";a="31076386"
+Message-ID: <51C447E3.9030009@citrix.com>
+Date: Fri, 21 Jun 2013 13:32:35 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <51C238BA.9070200@ti.com>
-References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com>
-	<1371451599-31035-17-git-send-email-amit.daniel@samsung.com>
-	<51C238BA.9070200@ti.com>
-Date: Fri, 21 Jun 2013 18:00:27 +0530
-X-Google-Sender-Auth: DJ2oIopbfC8y0XqrremiIn9Z8fI
-Message-ID: <CADGdYn66wqkJcce=4nThkQtZtgt_SdUz1pzuoWz2qHc0cnmXTQ@mail.gmail.com>
-Subject: Re: [PATCH V6 16/30] thermal: exynos: Make the zone handling use trip information
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, jonghwa3.lee@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: <xen-devel@lists.xen.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/4] hrtimers: provide a hrtimers_late_resume() call
+References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-2-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306210947410.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306210947410.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Thu, Jun 20, 2013 at 4:33 AM, Eduardo Valentin
-<eduardo.valentin@ti.com> wrote:
-> On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
->> This code simplifies the zone handling to use the trip information passed
->> by the TMU driver and not the hardcoded macros. This also helps in adding
->> more zone support.
+On 21/06/13 08:53, Thomas Gleixner wrote:
+> On Thu, 20 Jun 2013, David Vrabel wrote:
+>> From: David Vrabel <david.vrabel@citrix.com>
 >>
->> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
->> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> Xen suspends (and resumes) without disabling non-boot CPUs as doing so
+>> adds considerable delay to live migrations.  A 4 VCPU guest had more
+>> than 200 ms of additional downtime if disable_nonboot_cpus() was
+>> called prior to suspending.
+>>
+>> As a consequence, only high resolution timers on the current CPU are
+>> retriggered when resuming.  The Xen resume path worked around this
+>> with a call to clock_was_set() to retrigger timers on all the CPUs.
+>>
+>> A subsequent change will make clock_was_set() internal to hrtimers so
+>> add an new call (hrtimers_late_resume()) to do the same job.
+>>
+>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
 >> ---
->>  drivers/thermal/samsung/exynos_thermal_common.c |   61 +++++++++++++----------
->>  drivers/thermal/samsung/exynos_thermal_common.h |    3 +-
->>  drivers/thermal/samsung/exynos_tmu.c            |    5 ++-
->>  3 files changed, 40 insertions(+), 29 deletions(-)
+>>  drivers/xen/manage.c    |    8 ++++++--
+>>  include/linux/hrtimer.h |    1 +
+>>  kernel/hrtimer.c        |    9 +++++++++
+>>  3 files changed, 16 insertions(+), 2 deletions(-)
 >>
->> diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
->> index 86d39aa..2873ca3 100644
->> --- a/drivers/thermal/samsung/exynos_thermal_common.c
->> +++ b/drivers/thermal/samsung/exynos_thermal_common.c
->> @@ -78,17 +78,22 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
->>  static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
->>                                enum thermal_trip_type *type)
->>  {
->> -     switch (GET_ZONE(trip)) {
->> -     case MONITOR_ZONE:
->> -     case WARN_ZONE:
->> -             *type = THERMAL_TRIP_ACTIVE;
->> -             break;
->> -     case PANIC_ZONE:
->> -             *type = THERMAL_TRIP_CRITICAL;
->> -             break;
->> -     default:
->> +     struct exynos_thermal_zone *th_zone = thermal->devdata;
->> +     int max_trip = th_zone->sensor_conf->trip_data.trip_count;
->> +     int trip_type;
->> +
->> +     if (trip < 0 || trip >= max_trip)
->>               return -EINVAL;
->> -     }
->> +
->> +     trip_type = th_zone->sensor_conf->trip_data.trip_type[trip];
->> +
->> +     if (trip_type == SW_TRIP)
->> +             *type = THERMAL_TRIP_CRITICAL;
->> +     else if (trip_type == THROTTLE_ACTIVE)
->> +             *type = THERMAL_TRIP_ACTIVE;
->> +     else if (trip_type == THROTTLE_PASSIVE)
->> +             *type = THERMAL_TRIP_PASSIVE;
->> +
->>       return 0;
->>  }
->>
->> @@ -97,8 +102,9 @@ static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
->>                               unsigned long *temp)
->>  {
->>       struct exynos_thermal_zone *th_zone = thermal->devdata;
->> +     int max_trip = th_zone->sensor_conf->trip_data.trip_count;
->>
->> -     if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
->> +     if (trip < 0 || trip >= max_trip)
->>               return -EINVAL;
->>
->>       *temp = th_zone->sensor_conf->trip_data.trip_val[trip];
->> @@ -112,10 +118,10 @@ static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
->>  static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
->>                               unsigned long *temp)
->>  {
->> -     int ret;
->> -     /* Panic zone */
->> -     ret = exynos_get_trip_temp(thermal, GET_TRIP(PANIC_ZONE), temp);
->> -     return ret;
->> +     struct exynos_thermal_zone *th_zone = thermal->devdata;
->> +     int max_trip = th_zone->sensor_conf->trip_data.trip_count;
->> +     /* Get the temp of highest trip*/
->> +     return exynos_get_trip_temp(thermal, max_trip - 1, temp);
->>  }
->>
->>  /* Bind callback functions for thermal zone */
->> @@ -340,19 +346,22 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
->>               return -ENOMEM;
->>
->>       th_zone->sensor_conf = sensor_conf;
->> -     cpumask_set_cpu(0, &mask_val);
->> -     th_zone->cool_dev[0] = cpufreq_cooling_register(&mask_val);
->> -     if (IS_ERR(th_zone->cool_dev[0])) {
->> -             pr_err("Failed to register cpufreq cooling device\n");
->> -             ret = -EINVAL;
->> -             goto err_unregister;
->> +     if (sensor_conf->cooling_data.freq_clip_count > 0) {
->> +             cpumask_set_cpu(0, &mask_val);
->> +             th_zone->cool_dev[0] = cpufreq_cooling_register(&mask_val);
->
-> Did you mean th_zone->cool_dev[th_zone->cool_dev_size] ?
-Yes.
->
-> I think the logic behind the allocation of these cpufreq cooling devices
-> needs to be revisited. You always assigned to cool_dev[0], but you
-> always iterate the array until cool_dev_size. Remember that
-> cool_dev_size now is per th_zone, not global.
-I have kept an array of cooling devices to add other type of cooling
-devices in the same thermal zone in future. For current use case
-although it does not make sense and only one cpufreq cooling device is
-present
->
->> +             if (IS_ERR(th_zone->cool_dev[0])) {
->> +                     pr_err("Failed to register cpufreq cooling device\n");
->> +                     ret = -EINVAL;
->> +                     goto err_unregister;
->> +             }
->> +             th_zone->cool_dev_size++;
->>       }
->> -     th_zone->cool_dev_size++;
->>
->> -     th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
->> -                     EXYNOS_ZONE_COUNT, 0, th_zone, &exynos_dev_ops, NULL, 0,
->> -                     sensor_conf->trip_data.trigger_falling ?
->> -                     0 : IDLE_INTERVAL);
->> +     th_zone->therm_dev = thermal_zone_device_register(
->> +                     sensor_conf->name, sensor_conf->trip_data.trip_count,
->> +                     0, th_zone, &exynos_dev_ops, NULL, 0,
->> +                     sensor_conf->trip_data.trigger_falling ? 0 :
->> +                     IDLE_INTERVAL);
->>
->>       if (IS_ERR(th_zone->therm_dev)) {
->>               pr_err("Failed to register thermal zone device\n");
->> diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
->> index 1e9a326..dd0077e 100644
->> --- a/drivers/thermal/samsung/exynos_thermal_common.h
->> +++ b/drivers/thermal/samsung/exynos_thermal_common.h
->> @@ -42,8 +42,6 @@
->>  #define GET_ZONE(trip) (trip + 2)
->>  #define GET_TRIP(zone) (zone - 2)
->>
->> -#define EXYNOS_ZONE_COUNT    3
->> -
->>  enum trigger_type {
->>       THROTTLE_ACTIVE = 1,
->>       THROTTLE_PASSIVE,
->> @@ -68,6 +66,7 @@ struct freq_clip_table {
->>  };
->>  struct       thermal_trip_point_conf {
->>       int trip_val[MAX_TRIP_COUNT];
->> +     int trip_type[MAX_TRIP_COUNT];
->>       int trip_count;
->>       unsigned char trigger_falling;
->>  };
->> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->> index 40e0cfd..acbd295 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.c
->> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> @@ -509,9 +509,12 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->>                       pdata->trigger_enable[1] + pdata->trigger_enable[2]+
->>                       pdata->trigger_enable[3];
->>
->> -     for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++)
->> +     for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++) {
->>               exynos_sensor_conf.trip_data.trip_val[i] =
->>                       pdata->threshold + pdata->trigger_levels[i];
->> +             exynos_sensor_conf.trip_data.trip_type[i] =
->> +                                     pdata->trigger_type[i];
->> +     }
->>
->>       exynos_sensor_conf.trip_data.trigger_falling = pdata->threshold_falling;
->>
->>
->
->
-> --
-> You have got to be excited about what you are doing. (L. Lamport)
->
-> Eduardo Valentin
->
+>> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+>> index 412b96c..75bc2d5 100644
+>> --- a/drivers/xen/manage.c
+>> +++ b/drivers/xen/manage.c
+>> @@ -166,8 +166,12 @@ out_resume:
+>>  
+>>  	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
+>>  
+>> -	/* Make sure timer events get retriggered on all CPUs */
+>> -	clock_was_set();
+>> +	/*
+>> +	 * syscore_resume() ends up calling hrtimer_resume() but this
+>> +	 * only retriggers timer events on the current CPU.  We need
+>> +	 * to retrigger the events on all the other CPUS.
+>> +	 */
+>> +	hrtimers_late_resume();
+> 
+> This is the completely wrong approach. If an architecture does not
+> shut down the non boot cpus on suspend, then this wants to be handled
+> in the core code and not in some random arch specific driver.
+
+Agreed.  Does the following meet your requirements?
+
+David
+
+8<-------------------------------------------------------
+hrtimers: support resuming with two or more CPUs online (but stopped)
+
+hrtimers_resume() only reprograms the timers for the current CPU as it
+assumes that all other CPUs are offline at this point in the resume
+process.  If other CPUs are online then their timers will not be
+corrected and they may fire at the wrong time.
+
+When running as a Xen guest, this assumption is not true.  Non-boot
+CPUs are only stopped with IRQs disabled instead of offlining them.
+This is a performance optimization as disabling the CPUs would add an
+unacceptable amount of additional downtime during a live migration (>
+200 ms for a 4 VCPU guest).
+
+hrtimers_resume() cannot call on_each_cpu(retrigger_next_event,...)
+as the other CPUs will be stopped with IRQs disabled.  Instead, defer
+the call to the next softirq.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/xen/manage.c |    3 ---
+ kernel/hrtimer.c     |   10 +++++++---
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index 412b96c..421da85 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -166,9 +166,6 @@ out_resume:
+ 
+ 	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
+ 
+-	/* Make sure timer events get retriggered on all CPUs */
+-	clock_was_set();
+-
+ out_thaw:
+ #ifdef CONFIG_PREEMPT
+ 	thaw_processes();
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index fd4b13b..74aa7c5 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -773,15 +773,19 @@ void clock_was_set(void)
+ 
+ /*
+  * During resume we might have to reprogram the high resolution timer
+- * interrupt (on the local CPU):
++ * interrupt on all online CPUs.  However, all other CPUs will be
++ * stopped with IRQs interrupts disabled at this point so defer this
++ * to the softirq.
+  */
+ void hrtimers_resume(void)
+ {
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
+ 	WARN_ONCE(!irqs_disabled(),
+ 		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
+ 
+-	retrigger_next_event(NULL);
+-	timerfd_clock_was_set();
++	cpu_base->clock_was_set = 1;
++	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+ }
+ 
+ static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
+-- 
+1.7.2.5
