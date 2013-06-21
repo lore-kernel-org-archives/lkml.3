@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965771Ab3FUABb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 20:01:31 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:22658
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965573Ab3FUABa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 20:01:30 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zzc89bh4015I14ffIzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh906i1155h192ch)
-Date: Thu, 20 Jun 2013 17:01:22 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: clocksource with changing frequency?
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <f5e5d3d7-699d-4f89-80c8-849e432e8b26@VA3EHSMHS017.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+	id S1161302Ab3FUAJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 20:09:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58443 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161284Ab3FUAJi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 20:09:38 -0400
+Date: Fri, 21 Jun 2013 10:09:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: just chaeking correctness of the infiniband tree
+Message-Id: <20130621100928.36a0ccf45e310f02a4dff53a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Jun_2013_10_09_28_+1000_=zBCq/iQoRxiHrq8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Fri__21_Jun_2013_10_09_28_+1000_=zBCq/iQoRxiHrq8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi all,
 
-I have a question/problem with a clocksource whose input frequency can
-change.
-On Zynq we use the cadece_ttc timer as clocksource. Its input clock is
-tightly coupled to the CPU clock. I.e. it changes when cpufreq scales
-the CPU clocks.
-To compensate this, I added a clock notifier doing this on a frequency
-change:
-	clocksource_unregister(&ttccs->cs);                              
-	clocksource_register_hz(&ttccs->cs, ndata->new_rate / PRESCALE);
+I noticed that the infiniband tree is now based on the net-next tree.  I
+assume that is deliberate?  I do have to question how much testing that
+tree has had since it is now based on a tree that Dave only released in
+the last 24 hours ...
 
-This just seems not to be the most elegant way, a heavy weight operation
-and results in a couple of locking errors in combination with
-suspend/hotplug.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Is there a sane solution for such a case? E.g. for clockevent devices
-there is a 'clockevents_update_freq()' to adjust to changing
-frequencies.
+--Signature=_Fri__21_Jun_2013_10_09_28_+1000_=zBCq/iQoRxiHrq8
+Content-Type: application/pgp-signature
 
-I assume the sanest solution is an external oscillator as clock input,
-but I think our platforms don't provide that :(
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-	Thanks,
-	Sören
+iQIcBAEBCAAGBQJRw5m8AAoJEECxmPOUX5FE8kQQAKVdpztXG+0cUurzFcDmV3Aw
+yZGkP22IurHYaKLsp/aIFJqmS4H8AmZP0wff/5w+EKj7fLVdjJyhCLuJCXZkOnGy
+GF2aHd+L29XDUugs8bOlw7Xgr0jN33/mZ9mVUaLk88zqCrePcFZiKXJ4qYud6Tjg
+MY/tO/yIQEzCwbAL+WBMliQFZlQOAzLmx9mZIwwvN8GiR4SUydFs0eFNpQTPRw69
+wHQHBaLbymqkH0vkWF4hUq5kpJJ3J1Sp676a0Y56BMAx667hAncsdhsXBC8jKyM2
+IlusUX/GXbW7QCCv7pdO+Ve9KX8b2OcMIlnF95gCnMRd+bgqy1Xwr/ejzBqEZtts
+OUSf+KZrmTfb1uXYH65u8BYkBtN5SJWzvdZ7qW1o8eSK41v2AaHi7GqMjDi+zYLX
+eI99k2MsuKMLb94zJeCAU2M4mHVWgxZuYkz0QaewMlldVi6ZnKxQwv8+HutI334Y
+nBRoOWDFzyIuYAx09auaxAzaS2VrO1j1xKKzhqIvGbpXCiTLY0kLieNJl4eT1nUl
+ZCOpKC2PXS6q3SviK3EeWUlbbtlSWhYyEzXb2LaaHcm2Oq3dwWmcLYEobqqH7YB1
+VeubJh61HvmoIQDygFFFBvOLAaQApUnSd4VJj24p1Tez55w7HVusvZKGv77f/lqS
+rPHYVp7oOXR+/A3MLOxS
+=T063
+-----END PGP SIGNATURE-----
 
-
+--Signature=_Fri__21_Jun_2013_10_09_28_+1000_=zBCq/iQoRxiHrq8--
