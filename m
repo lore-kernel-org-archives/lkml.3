@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab3FUGPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:15:53 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:45045 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758123Ab3FUGOc (ORCPT
+	id S1758576Ab3FUGQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:16:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40429 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758544Ab3FUGQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:14:32 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
-        Matt Sealey <neko@bakuhatsu.net>, Stephen Boyd <sboyd@codeaurora.org>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v3 2/5] clk: of: helper for determining number of parent clocks
-Date: Thu, 20 Jun 2013 23:14:13 -0700
-Message-Id: <1371795256-16703-3-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
-References: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
+	Fri, 21 Jun 2013 02:16:52 -0400
+Message-ID: <51C3EFD2.7090803@wwwdotorg.org>
+Date: Fri, 21 Jun 2013 00:16:50 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Jay Agarwal <jagarwal@nvidia.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Juha Tukkinen <jtukkinen@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>
+Subject: Re: [PATCH V1] ARM: dts: tegra: Modify pcie memory space size
+References: <1371712491-31070-1-git-send-email-jagarwal@nvidia.com> <51C32CC7.5010109@wwwdotorg.org> <C79B248886DD134989C8FF6B096A91AB91CF1615EC@BGMAIL01.nvidia.com>
+In-Reply-To: <C79B248886DD134989C8FF6B096A91AB91CF1615EC@BGMAIL01.nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Walks the "clocks" array of parent clock phandles and returns the
-number.
+On 06/20/2013 11:30 PM, Jay Agarwal wrote:
+>> On 06/20/2013 01:14 AM, Jay Agarwal wrote:
+>>> - decrease non-prefetch memory size to 128 MB
+>>> - increase prefetch memory size to 384 MB
+>>> - above change is done because most pcie devices
+>>>   prefetch memory size requirement is quite higher
+>>>   compared to non-prefetch memory space.
+>>
+>> It's possible this change won't be suitable for all applications. People may
+>> simply need to adjust their DT based on what they want to connect.
+>> Still, this patch probably biases things in the correct way for now.
+>> Longer term, we might want to investigate dynamically sizing the windows
+>> in order to support arbitrary attached devices, in much the same way as the
+>> Marvell code does/will in order to conserve physical/bus address space for
+>> their multiple controllers.
+>>
+>> However, this change allows me to correctly enumerate a particular GPU I
+>> have plugged into my Harmony board, and assign all the BARs, so:
+>>
+>> Tested-by: Stephen Warren <swarren@nvidia.com>
+>
+> Thierry,
+> Could you please integrate this change also to your branch if review is done. Please let me know once it is done.
 
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
----
-No change since v2
-
- drivers/clk/clk.c            | 6 ++++++
- include/linux/clk-provider.h | 1 +
- 2 files changed, 7 insertions(+)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index edf3fe1..a9feab6 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2081,6 +2081,12 @@ struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec)
- 	return clk;
- }
- 
-+int of_clk_get_parent_count(struct device_node *np)
-+{
-+	return of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+}
-+EXPORT_SYMBOL_GPL(of_clk_get_parent_count);
-+
- const char *of_clk_get_parent_name(struct device_node *np, int index)
- {
- 	struct of_phandle_args clkspec;
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 4920fd1..8730cb9 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -457,6 +457,7 @@ void of_clk_del_provider(struct device_node *np);
- struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
- 				  void *data);
- struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
-+int of_clk_get_parent_count(struct device_node *np);
- const char *of_clk_get_parent_name(struct device_node *np, int index);
- 
- void of_clk_init(const struct of_device_id *matches);
--- 
-1.8.1.2
-
+I'm sure he will, but pinging after less than 24 hours is a little quick.
