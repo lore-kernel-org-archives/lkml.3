@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758304Ab3FUBcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:32:11 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54859 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758018Ab3FUBcI (ORCPT
+	id S1758379Ab3FUBh7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 21:37:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55952 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758313Ab3FUBh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:32:08 -0400
-X-Sasl-enc: m2waCFSx5l//qhePyO2xWdiu178dGrRZvilh73xawceJ 1371778327
-Date: Thu, 20 Jun 2013 18:32:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: Status of __cpuinit removal
-Message-ID: <20130621013206.GB21375@kroah.com>
-References: <519AA53F.1020107@zytor.com>
- <20130520231203.GA21682@kroah.com>
- <20130528092038.GC32068@gmail.com>
- <CAP=VYLo047g+U3GJhkObJtNPubFNpHuGUJAF7oOh_7dPtSFd9A@mail.gmail.com>
- <20130612005605.GA7469@kroah.com>
- <20130620174659.GA17945@windriver.com>
+	Thu, 20 Jun 2013 21:37:57 -0400
+Date: Thu, 20 Jun 2013 18:37:56 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Rohit Vaswani <rvaswani@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Joerg Roedel <joro@8bytes.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: Re: [PATCH 00/11] MSM DT based multi-platform support
+Message-ID: <20130621013756.GF6300@codeaurora.org>
+References: <1371600281-6118-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130620174659.GA17945@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1371600281-6118-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 01:46:59PM -0400, Paul Gortmaker wrote:
+On 06/18, Stephen Boyd wrote:
+> This patchset allows me to compile and run the DT based MSM
+> platforms in the multi-platform ARM kernel. This is built on
+> top of a couple patches I've sent out already (specifically
+> the debug_ll patch series and the clocksource_of conversion)
+> as well a patch from Rohit that didn't seem to make it into 
+> MSM's for-next branch.
 > 
-> The below pseudo-pull-request will show the scope of changes against
-> the linux-next tree from today.  It is a real branch that people
-> can pull and build/test against if they are interested in doing so.
-> Or, just pull the patch queue and apply them yourself, if you prefer.
+> There is one problem though, the last two patches cause compile
+> failures if you turn on MSM's sdcc or USB_OTG driver. It seems
+> that the sdcc driver depends on the clk_reset() API and the custom
+> DMA interface provided by mach layers. And the USB_OTG driver depends
+> on clk_reset.
 > 
-> Thanks for reading this far and thanks for any feedback.
+> The simplest solution is to make these two drivers depend on the
+> non-dt based MSM support so that they can't be compiled in the
+> multi-platform config. Otherwise, we'll need to replace the clk_reset()
+> calls with the new reset controller API, but doing that would
+> require us to convert all MSM platforms over to devicetree or
+> we'll need to add support to the reset controller API for non-DT based
+> controllers. Even with that, the sdcc driver uses custom DMA things
+> so we may need to put that all behind some #ifdef.
+> 
+> Patches are based on David Brown's for-next tree:
 
-That all sounds like a great plan, thanks for doing this work.  At a
-quick glance, it looks sane to me.
+David, can you pick up all the patches in this series not marked
+RFC and send them off to arm-soc? Most of them have been on the
+list already.
 
-greg k-h
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
