@@ -1,145 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946248Ab3FUW66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 18:58:58 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40960 "EHLO
+	id S1946258Ab3FUXB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 19:01:27 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41046 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946172Ab3FUW65 (ORCPT
+	with ESMTP id S1946172Ab3FUXBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 18:58:57 -0400
-Date: Fri, 21 Jun 2013 15:58:55 -0700
+	Fri, 21 Jun 2013 19:01:25 -0400
+Message-ID: <51C4DB44.7030909@codeaurora.org>
+Date: Fri, 21 Jun 2013 16:01:24 -0700
 From: Stephen Boyd <sboyd@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: msm: Add support for MSM8974
-Message-ID: <20130621225855.GC14575@codeaurora.org>
-References: <1371841835-29514-1-git-send-email-rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371841835-29514-1-git-send-email-rvaswani@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <john.stultz@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCHv3/RESEND 4/4] clocksource: arch_timer: Add support for
+ memory mapped timers
+References: <1371836361-20574-1-git-send-email-sboyd@codeaurora.org> <1371836361-20574-5-git-send-email-sboyd@codeaurora.org> <alpine.DEB.2.02.1306212304480.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306212304480.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21, Rohit Vaswani wrote:
-> diff --git a/arch/arm/boot/dts/msm8974.dts b/arch/arm/boot/dts/msm8974.dts
-> new file mode 100644
-> index 0000000..d9c10d4
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/msm8974.dts
-> @@ -0,0 +1,23 @@
-> +/dts-v1/;
-> +
-> +/include/ "skeleton.dtsi"
-> +
-> +/ {
-> +	model = "Qualcomm MSM8974";
-> +	compatible = "qcom,msm8974";
-> +	interrupt-parent = <&intc>;
-> +
-> +	intc: interrupt-controller@f9000000 {
-> +		compatible = "qcom,msm-qgic2";
-> +		interrupt-controller;
-> +		#interrupt-cells = <3>;
-> +		reg = < 0xf9000000 0x1000 >,
-> +		      < 0xf9002000 0x1000 >;
-> +	};
-> +
-> +	timer {
-> +		compatible = "arm,armv7-timer";
-> +		interrupts = <1 2 0 1 3 0>;
-> +		clock-frequency = <19200000>;
-> +	};
+On 06/21/13 14:18, Thomas Gleixner wrote:
+> On Fri, 21 Jun 2013, Stephen Boyd wrote:
+>>  /*
+>>   * Architected system timer support.
+>> @@ -46,13 +73,69 @@ static bool arch_timer_use_virtual = true;
+>>  static inline void arch_timer_reg_write(int access, int reg, u32 val,
+>>  					struct clock_event_device *clk)
+>>  {
+>> -	arch_timer_reg_write_cp15(access, reg, val);
+>> +	if (access == ARCH_TIMER_MEM_PHYS_ACCESS) {
+>> +		struct arch_timer *timer = to_arch_timer(clk);
+>> +		switch (reg) {
+>> +		case ARCH_TIMER_REG_CTRL:
+>> +			writel_relaxed(val, timer->base + CNTP_CTL);
+>> +			break;
+>> +		case ARCH_TIMER_REG_TVAL:
+>> +			writel_relaxed(val, timer->base + CNTP_TVAL);
+>> +			break;
+>> +		default:
+>> +			BUILD_BUG();
+> So you are relying on the compiler cleverness to identify a caller
+> which calls that inline with a not supported reg value.
+>
+> How does that work, when the compiler decides not to inline that?
+>
+> enum without a default case emits at least a reliable warning.
 
-Please specify all the interrupts similar to how the binding
-says to.
+Right now arm and arm64 don't allow inline to be anything besides
+always_inline so the compiler is forced to inline. But point taken, I'll
+remove the BUILD_BUG and make the register argument into an enum (which
+it isn't right now).
 
-	<1 2 0>,
-	<1 3 0>,
-	<1 4 0>,
-	<1 5 0>;
+>
+>> +		}
+>> +	} else if (access == ARCH_TIMER_MEM_VIRT_ACCESS) {
+>> +		struct arch_timer *timer = to_arch_timer(clk);
+>> +		switch (reg) {
+>> +		case ARCH_TIMER_REG_CTRL:
+>> +			writel_relaxed(val, timer->base + CNTV_CTL);
+>> +			break;
+>> +		case ARCH_TIMER_REG_TVAL:
+>> +			writel_relaxed(val, timer->base + CNTV_TVAL);
+>> +			break;
+>> +		default:
+>> +			BUILD_BUG();
+>> +		}
+>> +	} else {
+>> +		arch_timer_reg_write_cp15(access, reg, val);
+>> +	}
+>>  }
+> Something in my little brain yells: function pointer
+>
+> You can't be serious about hacking nested if/else/switch constructs
+> into a hot path.
+>
+> Why not making your cpu data:
+>
+> struct arch_timer {
+>        struct clock_event_device evt;
+>        ....
+>        void (*write_ctrl)(val, timer);
+>        void (*write_tval)(val, timer);
+>        ....
+> }
+>
+> and get rid of all that conditionals?
 
-Also, add irq flags?
-
-> +};
-> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-> index 614e41e..580e89b 100644
-> --- a/arch/arm/mach-msm/Kconfig
-> +++ b/arch/arm/mach-msm/Kconfig
-> @@ -46,7 +46,6 @@ config ARCH_MSM8X60
->  	bool "MSM8X60"
->  	select ARM_GIC
->  	select CPU_V7
-> -	select GPIO_MSM_V2
->  	select HAVE_SMP
->  	select MSM_SCM if SMP
->  	select USE_OF
-
-Looks unrelated. Can you drop this?
-
-> @@ -60,14 +59,37 @@ config ARCH_MSM8960
->  	select MSM_SCM if SMP
->  	select USE_OF
->  
-> +config ARCH_MSM8974
-> +	bool "MSM8974"
-> +	select ARCH_MSM_KRAITMP
-> +	select ARM_GIC
-> +	select CPU_V7
-> +	select HAVE_ARM_ARCH_TIMER
-> +	select USE_OF
-> +	select MSM_SCM if SMP
-
-Please sort these selects alphabetically.
-
-> +
-> +config ARCH_MSM_DT
-> +	def_bool y
-> +	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
-> +
->  config MSM_HAS_DEBUG_UART_HS
->  	bool
->  
->  config MSM_SOC_REV_A
->  	bool
->  
-> +config ARCH_MSM_KRAIT
-> +	bool
-> +	select ARM_L1_CACHE_SHIFT_6
-
-This is the default for CPU_V7 and so is unnnecessary.
-
-> +
-> +config ARCH_MSM_KRAITMP
-> +	select ARCH_MSM_KRAIT
-> +	select HAVE_SMP
-> +	bool
-
-And this is not doing much besides enabling SMP. So I would just
-drop this for now or merge it with the 8974 kconfig.
-
-> diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
-> +#include <linux/irqchip.h>
-> +#include <linux/of_platform.h>
-
-These two aren't needed?
-
-> +#include <asm/mach/arch.h>
-> +
-> +static const char * const msm8974_dt_match[] __initconst = {
-> +	"qcom,msm8974",
-> +	NULL
-> +};
-> +
-> +DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
-> +	.dt_compat = msm8974_dt_match,
-> +MACHINE_END
+It sounds like that's undesirable according to the comment above
+arch_timer_reg_write(). It seems that all this code was written under
+the assumption that the compiler is good enough to optimize all the code
+paths and only generate the code that is necessary. So far this seems to
+be working and the hotpath is optimized for each type of access.
 
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
+
