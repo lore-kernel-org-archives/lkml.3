@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423338Ab3FUQNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 12:13:19 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55232 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423279Ab3FUQNP (ORCPT
+	id S1423361Ab3FUQNZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 12:13:25 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36280 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423328Ab3FUQNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 12:13:15 -0400
+	Fri, 21 Jun 2013 12:13:19 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
@@ -17,9 +17,9 @@ Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Thierry Reding <thierry.reding@avionic-design.de>
-Subject: [PATCH v2 3/3] PCI: kill pci_scan_bus_parented()
-Date: Sat, 22 Jun 2013 00:12:48 +0800
-Message-Id: <1371831169-17291-4-git-send-email-liuj97@gmail.com>
+Subject: [PATCH v2 3/3] PCI: mark pci_scan_bus_parented() as __deprecated
+Date: Sat, 22 Jun 2013 00:12:49 +0800
+Message-Id: <1371831169-17291-5-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371831169-17291-1-git-send-email-liuj97@gmail.com>
 References: <1371831169-17291-1-git-send-email-liuj97@gmail.com>
@@ -29,7 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Now there's no caller of pci_scan_bus_parented(), so kill it.
+Mark pci_scan_bus_parented() as __deprecated and clean up outdated
+comments.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Chris Metcalf <cmetcalf@tilera.com>
