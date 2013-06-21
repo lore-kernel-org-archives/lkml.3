@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946108Ab3FUVXr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 17:23:47 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:47417 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946078Ab3FUVXp (ORCPT
+	id S1946119Ab3FUVYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 17:24:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41592 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946078Ab3FUVYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 17:23:45 -0400
+	Fri, 21 Jun 2013 17:24:06 -0400
+Date: Fri, 21 Jun 2013 23:24:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Vrabel <david.vrabel@citrix.com>
+cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/4] hrtimers: provide a hrtimers_late_resume() call
+In-Reply-To: <51C48DA3.4010307@citrix.com>
+Message-ID: <alpine.DEB.2.02.1306212321440.4013@ionos.tec.linutronix.de>
+References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-2-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306210947410.4013@ionos.tec.linutronix.de> <51C447E3.9030009@citrix.com> <alpine.DEB.2.02.1306211610100.4013@ionos.tec.linutronix.de>
+ <51C48DA3.4010307@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <51C47377.2000208@linux.intel.com>
-References: <20130530134718.GB32728@e103034-lin> <20130531105204.GE30394@gmail.com>
- <20130614160522.GG32728@e103034-lin> <51C07ABC.2080704@linux.intel.com>
- <alpine.DEB.2.02.1306181039340.9258@nftneq.ynat.uz> <51C1D0BB.3040705@linux.intel.com>
- <20130619170042.GH5460@e103034-lin> <51C1E58D.9000408@linux.intel.com>
- <20130621085002.GJ5460@e103034-lin> <51C47377.2000208@linux.intel.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Fri, 21 Jun 2013 22:23:25 +0100
-X-Google-Sender-Auth: PoP5tbovHIjgTN95m8DnfXm-saU
-Message-ID: <CAHkRjk5G7XJxzjcWa4BqRxz0AtAAh_-Eomzk4+dQRaFk1=HQqA@mail.gmail.com>
-Subject: Re: power-efficient scheduling design
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>, David Lang <david@lang.hm>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "pjt@google.com" <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 June 2013 16:38, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> On 6/21/2013 1:50 AM, Morten Rasmussen wrote:
->> A hint when a task is moved to a new cpu is too late if the migration
->> shouldn't have happened at all. If the scheduler knows that the cpu is
->> able to switch to a higher p-state it can decide to wait for the p-state
->> change instead of migrating the task and waking up another cpu.
->
-> oops sorry I misread your mail (lack of early coffee I suppose)
->
-> I can see your point of having a thing for "did we ask for all the performance
-> we could ask for" prior to doing a load balance (although, for power efficiency,
-> if you have two tasks that could run in parallel, it's usually better to
-> run them in parallel... so likely we should balance anyway)
+On Fri, 21 Jun 2013, David Vrabel wrote:
+> On 21/06/13 15:32, Thomas Gleixner wrote:
+> However, since hrtimers require the use of a one-shot ticker and when
+> one-shot timers are resumed they are armed to fire immediately (see
+> tick_resume_oneshot()) this interrupt is sufficient to kick the require
+> softirq.
+> 
+> So, as proposed before:
+> 
+> hrtimers_resume()
+> {
+>    /* This CPU's tick is armed to fire immediately by
+>       tick_oneshot_resume(). Just need raise a softirq to program
+>       the timers on all CPUs. */
+>    cpu_base->clock_was_set = 1;
+>    __raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+> }
+> 
+> Do you agree or disagree?
 
-Not necessarily, especially if parallel running implies powering up a
-full cluster just for one CPU (it depends on the hardware but for
-example a cluster may not be able to go in deeper sleep states unless
-all the CPUs in that cluster are idle).
+Fair enough. I did not think about that. With the comment in place it
+is clear. It might be a bit more elaborate for the casual reader.
 
---
-Catalin
+Thanks,
+
+	tglx
+
