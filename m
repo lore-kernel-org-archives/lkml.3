@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758635Ab3FUGyR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:54:17 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:42673 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab3FUGyQ (ORCPT
+	id S1758659Ab3FUG4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:56:22 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:48278 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758638Ab3FUG4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:54:16 -0400
-Message-ID: <51C3F866.4080705@huawei.com>
-Date: Fri, 21 Jun 2013 14:53:26 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 21 Jun 2013 02:56:21 -0400
+Message-ID: <51C3F7CB.70703@st.com>
+Date: Fri, 21 Jun 2013 07:50:51 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-CC: <rostedt@goodmis.org>, <masami.hiramatsu.pt@hitachi.com>,
-        <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 03/11] tracing: add soft disable for syscall events
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com> <dd9d5f3d3781d1074bf554a473d49648dc79b359.1371751701.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <dd9d5f3d3781d1074bf554a473d49648dc79b359.1371751701.git.tom.zanussi@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        kernel@stlinux.com, linux-serial@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        Stephen Gallimore <stephen.gallimore@st.com>
+Subject: Re: [PATCH v3 06/10] ARM:stixxxx: Add DEBUG_LL console support
+References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com> <1371737176-9473-1-git-send-email-srinivas.kandagatla@st.com> <201306202055.43189.arnd@arndb.de>
+In-Reply-To: <201306202055.43189.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/6/21 2:31, Tom Zanussi wrote:
-> Add support for SOFT_DISABLE to syscall events.
+On 20/06/13 19:55, Arnd Bergmann wrote:
+> On Thursday 20 June 2013, Srinivas KANDAGATLA wrote:
+>> --- a/arch/arm/mach-stixxxx/board-dt.c
+>> +++ b/arch/arm/mach-stixxxx/board-dt.c
+>> @@ -11,6 +11,7 @@
+>>  #include <linux/clocksource.h>
+>>  #include <linux/irq.h>
+>>  #include <asm/hardware/cache-l2x0.h>
+>> +#include <asm/mach/map.h>
+>>  #include <asm/mach/arch.h>
+>>  
+>>  #include "smp.h"
+>> @@ -42,6 +43,7 @@ static const char *stih41x_dt_match[] __initdata = {
+>>  };
+>>  
+>>  DT_MACHINE_START(STM, "STiH415/416 SoC with Flattened Device Tree")
+>> +       .map_io         = debug_ll_io_init,
+>>         .init_time      = stih41x_timer_init,
+>>         .smp            = smp_ops(stixxxx_smp_ops),
+>>         .dt_compat      = stih41x_dt_match,
 > 
-> The original SOFT_DISABLE patches didn't add support for soft disable
-> of syscall events; this adds it and paves the way for future patches
-> allowing triggers to be added to syscall events, since triggers are
-> built on top of SOFT_DISABLE.
+> This part of the patch is no longer needed, we do the same when .map_io
+> is not set.
+
+I can see the commit bc37324e "ARM: mmu: Call debug_ll_io_init if no
+map_io function is specified" in arm-soc.git:for-next branch.
+
+That makes sense to take care of this before this patch gets merged. I
+will remove this line in next spin hopefully very soon.
+
+Thanks,
+srini
+
+
 > 
-> Because the trigger and SOFT_DISABLE bits are attached to the
-> ftrace_event_file associated with the event, pointers to the
-> ftrace_event_files associated with the event are added to the syscall
-> metadata entry for the event.
+> 	Arnd
 > 
-> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
-> ---
->  include/linux/syscalls.h      |  2 ++
->  include/trace/syscall.h       |  5 +++++
->  kernel/trace/trace_syscalls.c | 28 ++++++++++++++++++++++++----
->  3 files changed, 31 insertions(+), 4 deletions(-)
 > 
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index 4147d70..b4c2afa 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -158,6 +158,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
->  		.args		= nb ? args_##sname : NULL,	\
->  		.enter_event	= &event_enter_##sname,		\
->  		.exit_event	= &event_exit_##sname,		\
-> +		.enter_file	= NULL,	/* Filled in at boot */	\
-> +		.exit_file	= NULL,	/* Filled in at boot */	\
->  		.enter_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.enter_fields), \
->  	};							\
->  	static struct syscall_metadata __used			\
-> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-> index fed853f..ba24d3a 100644
-> --- a/include/trace/syscall.h
-> +++ b/include/trace/syscall.h
-> @@ -19,6 +19,8 @@
->   * @enter_fields: list of fields for syscall_enter trace event
->   * @enter_event: associated syscall_enter trace event
->   * @exit_event: associated syscall_exit trace event
-> + * @enter_file: associated syscall_enter ftrace event file
-> + * @exit_file: associated syscall_exit ftrace event file
->   */
->  struct syscall_metadata {
->  	const char	*name;
-> @@ -30,6 +32,9 @@ struct syscall_metadata {
->  
->  	struct ftrace_event_call *enter_event;
->  	struct ftrace_event_call *exit_event;
-> +
-> +	struct ftrace_event_file *enter_file;
-> +	struct ftrace_event_file *exit_file;
->  };
-
-I doubt this could work correctly.
-struct ftrace_event_file is allocated dynamically, there could
-have many ftrace_event_file in there, associated with different trace_array,
-it means there may have many ftrace_event_file linked with same syscall_metadata.
-
-The enter_file/exit_file pointer of syscall_metadata will be override if another
-ftrace_event_file registered in some other trace_array.
-
-Perhaps we could use simple list_head in here, which link with all registered ftrace_event_file.
-
-Oleg use "struct event_file_link" for trace_kprobe, the structure could be reuse in here.
-
-
-struct event_file_link {
-	struct ftrace_event_file	*file;
-	struct list_head		list;
-};
-
-struct syscall_metadata {
-        const char      *name;
-        int             syscall_nr;
-        int             nb_args;
-        const char      **types;
-        const char      **args;
-        struct list_head enter_fields;
-
-        struct ftrace_event_call *enter_event;
-        struct ftrace_event_call *exit_event;
-
-	struct list_head	enter_files;
-	struct list_head	exit_files;
-};
-
-
-.jovi
-
 
