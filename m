@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030500Ab3FUGZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:25:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965335Ab3FUGZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:25:27 -0400
-Message-ID: <51C3F1BD.9050703@redhat.com>
-Date: Fri, 21 Jun 2013 14:25:01 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1423026Ab3FUGZy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:25:54 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:59151 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030278Ab3FUGZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 02:25:52 -0400
 MIME-Version: 1.0
-To: Andrey Vagin <avagin@openvz.org>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] virtio-pci: fix leaks of msix_affinity_masks
-References: <20130619182809.GC15017@redhat.com> <1371706610-12028-1-git-send-email-avagin@openvz.org>
-In-Reply-To: <1371706610-12028-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <0000013f620f4699-f484f28e-3d12-4560-adfe-3b00af995fd9-000000@email.amazonses.com>
+References: <20130606124351.GZ27176@twins.programming.kicks-ass.net>
+ <0000013f1ad00ec0-9574a936-3a75-4ccc-a84c-4a12a7ea106e-000000@email.amazonses.com>
+ <20130607110344.GA27176@twins.programming.kicks-ass.net> <0000013f1f1f79d1-2cf8cb8c-7e63-4e83-9f2b-7acc0e0638a1-000000@email.amazonses.com>
+ <20130617110832.GP3204@twins.programming.kicks-ass.net> <0000013f536c60ee-9a1ca9da-b798-416a-a32e-c896813d3bac-000000@email.amazonses.com>
+ <20130620114943.GB12125@gmail.com> <0000013f620f4699-f484f28e-3d12-4560-adfe-3b00af995fd9-000000@email.amazonses.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Thu, 20 Jun 2013 23:25:31 -0700
+X-Google-Sender-Auth: 374OuyKwrpt2LUw7XeHvR3D5asE
+Message-ID: <CAG4TOxNp8hrsC-1hbxGaR+xoUJYqUNv+sen4baukNCtASCwXOw@mail.gmail.com>
+Subject: Re: [PATCH] mm: Revert pinned_vm braindamage
+To: Christoph Lameter <cl@linux.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Motohiro KOSAKI <kosaki.motohiro@gmail.com>, penberg@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 01:36 PM, Andrey Vagin wrote:
-> From: Andrew Vagin <avagin@openvz.org>
->
-> vp_dev->msix_vectors should be initialized before allocating
-> msix_affinity_masks, otherwise vp_free_vectors will not free these
-> objects.
->
-> unreferenced object 0xffff88010f969d88 (size 512):
->   comm "systemd-udevd", pid 158, jiffies 4294673645 (age 80.545s)
->   hex dump (first 32 bytes):
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->   backtrace:
->     [<ffffffff816e455e>] kmemleak_alloc+0x5e/0xc0
->     [<ffffffff811aa7f1>] kmem_cache_alloc_node_trace+0x141/0x2c0
->     [<ffffffff8133ba23>] alloc_cpumask_var_node+0x23/0x80
->     [<ffffffff8133ba8e>] alloc_cpumask_var+0xe/0x10
->     [<ffffffff813fdb3d>] vp_try_to_find_vqs+0x25d/0x810
->     [<ffffffff813fe171>] vp_find_vqs+0x81/0xb0
->     [<ffffffffa00d2a05>] init_vqs+0x85/0x120 [virtio_balloon]
->     [<ffffffffa00d2c29>] virtballoon_probe+0xf9/0x1a0 [virtio_balloon]
->     [<ffffffff813fb61e>] virtio_dev_probe+0xde/0x140
->     [<ffffffff814452b8>] driver_probe_device+0x98/0x3a0
->     [<ffffffff8144566b>] __driver_attach+0xab/0xb0
->     [<ffffffff814432f4>] bus_for_each_dev+0x94/0xb0
->     [<ffffffff81444f4e>] driver_attach+0x1e/0x20
->     [<ffffffff81444910>] bus_add_driver+0x200/0x280
->     [<ffffffff81445c14>] driver_register+0x74/0x160
->     [<ffffffff813fb7d0>] register_virtio_driver+0x20/0x40
->
-> v2: change msix_vectors uncoditionaly in vp_free_vectors
->
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: Jason Wang <jasowang@redhat.com>
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  drivers/virtio/virtio_pci.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index a7ce730..1aba255 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -289,9 +289,9 @@ static void vp_free_vectors(struct virtio_device *vdev)
->  
->  		pci_disable_msix(vp_dev->pci_dev);
->  		vp_dev->msix_enabled = 0;
-> -		vp_dev->msix_vectors = 0;
->  	}
->  
-> +	vp_dev->msix_vectors = 0;
->  	vp_dev->msix_used_vectors = 0;
->  	kfree(vp_dev->msix_names);
->  	vp_dev->msix_names = NULL;
-> @@ -309,6 +309,8 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->  	unsigned i, v;
->  	int err = -ENOMEM;
->  
-> +	vp_dev->msix_vectors = nvectors;
-> +
->  	vp_dev->msix_entries = kmalloc(nvectors * sizeof *vp_dev->msix_entries,
->  				       GFP_KERNEL);
->  	if (!vp_dev->msix_entries)
-> @@ -336,7 +338,6 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->  		err = -ENOSPC;
->  	if (err)
->  		goto error;
-> -	vp_dev->msix_vectors = nvectors;
->  	vp_dev->msix_enabled = 1;
->  
->  	/* Set the vector used for configuration */
-Acked-by: Jason Wang <jasowang@redhat.com>
+On Thu, Jun 20, 2013 at 7:48 AM, Christoph Lameter <cl@linux.com> wrote:
+> There is no way that user space can initiate a page pin right now. Perf is
+> pinning the page from the kernel. Similarly the IB subsystem pins memory
+> meeded for device I/O.
+
+Christoph, your argument would be a lot more convincing if you stopped
+repeating this nonsense.  Sure, in a strict sense, it might be true
+that the IB subsystem in the kernel is the code that actually pins
+memory, but given that unprivileged userspace can tell the kernel to
+pin arbitrary parts of its memory for any amount of time, is that
+relevant?  And in fact taking your "initiate" word choice above, I
+don't even think your statement is true -- userspace initiates the
+pinning by, for example, doing an IB memory registration (libibverbs
+ibv_reg_mr() call), which turns into a system call, which leads to the
+kernel trying to pin pages.  The pages aren't unpinned until userspace
+unregisters the memory (or causes a cleanup by closing the context
+fd).
+
+Here's an argument by analogy.  Would it make any sense for me to say
+userspace can't mlock memory, because only the kernel can set
+VM_LOCKED on a vma?  Of course not.  Userspace has the mlock() system
+call, and although the actual work happens in the kernel, we clearly
+want to be able to limit the amount of memory locked by the kernel ON
+BEHALF OF USERSPACE.
+
+ - R.
