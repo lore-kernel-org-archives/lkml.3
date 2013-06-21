@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030471Ab3FUJSX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 05:18:23 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:39765 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030451Ab3FUJSV (ORCPT
+	id S1422931Ab3FUJWW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 05:22:22 -0400
+Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:55406 "EHLO
+	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751810Ab3FUJWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 05:18:21 -0400
+	Fri, 21 Jun 2013 05:22:20 -0400
+Message-ID: <51C41A25.20508@st.com>
+Date: Fri, 21 Jun 2013 10:17:25 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <51C4152E.60906@gmail.com>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-	<1370589652-24549-5-git-send-email-alex.shi@intel.com>
-	<CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
-	<51BF2E37.5040400@intel.com>
-	<CALZhoSSweOzTgjykRMxv_kha9TH-8EAKvuhinf8ADFyFDzDTuQ@mail.gmail.com>
-	<CALZhoSSFr_HN9ccxNLK7HA-7O9soAU7VZ3njtKf=Ndw=_AbQRw@mail.gmail.com>
-	<51C318D6.4090601@gmail.com>
-	<CALZhoSQgO-V-vkOy+urL_H4cjcCE8YY3w+K=mS8hptWteKGcFw@mail.gmail.com>
-	<51C3BCE1.1080405@gmail.com>
-	<CALZhoSR8pLfqO+XfEfHB3-UuV5_xu=AV2mCf2BQgaaQoWd-tbw@mail.gmail.com>
-	<51C4152E.60906@gmail.com>
-Date: Fri, 21 Jun 2013 17:18:19 +0800
-Message-ID: <CALZhoST001rHENqP8RncHL1zyN=D91D8-HzzFyiy+iqkY5KRCw@mail.gmail.com>
-Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue entity
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Alex Shi <seakeel@gmail.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
+        linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Rob Landley <rob@landley.net>,
+        linux-serial@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 01/10] serial:st-asc: Add ST ASC driver.
+References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com> <1371737103-8871-1-git-send-email-srinivas.kandagatla@st.com> <201306202101.11261.arnd@arndb.de>
+In-Reply-To: <201306202101.11261.arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex,
+On 20/06/13 20:01, Arnd Bergmann wrote:
+> On Thursday 20 June 2013, Srinivas KANDAGATLA wrote:
+>> This patch adds support to ASC (asynchronous serial controller)
+>> driver, which is basically a standard serial driver. This IP is common
+>> across all the ST parts for settop box platforms.
+>>
+>> ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
+>> It support all industry standard baud rates.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>> CC: Stephen Gallimore <stephen.gallimore@st.com>
+>> CC: Stuart Menefy <stuart.menefy@st.com>
+>> CC: Arnd Bergmann <arnd@arndb.de>
+>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+>>From my point of view the series is ready for merging in 3.11,
+> I only had a few final comments. I would prefer the first three
+> patches to go through the respective serial/clocksource/pinctrl
+> trees, since there are no direct build dependencies to the
+> platform parts.
+> 
+Thankyou Arnd,
 
-On Fri, Jun 21, 2013 at 4:56 PM, Alex Shi <seakeel@gmail.com> wrote:
-> On 06/21/2013 10:50 AM, Lei Wen wrote:
->> I see your point... I made the mistake that update the wrong patch...
->> Please help check this one.
->>
->> commit 5fc3d5c74f8359ef382d9a20ffe657ffc237c109
->> Author: Lei Wen <leiwen@marvell.com>
->> Date:   Thu Jun 20 10:43:59 2013 +0800
->>
->>     sched: fix potential twice decay issue
->>
->>     Signed-off-by: Lei Wen <leiwen@marvell.com>
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index c61a614..9640c66 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5856,7 +5856,8 @@ static void switched_from_fair(struct rq *rq,
->> struct task_struct *p)
->>         */
->>         if (p->se.avg.decay_count) {
->>                 struct cfs_rq *cfs_rq = cfs_rq_of(&p->se);
->> -               __synchronize_entity_decay(&p->se);
->> +               p->se.avg.last_runnable_update +=
->> +                               __synchronize_entity_decay(&p->se);
->
-> it is not needed, since the last_runnable_update will be reset if it
-> will be switched to fair.
+There are no build dependencies on serial/clocksource/pinctrl.
 
-When it is backed to fair class, the only thing scheduler would do
-is to check whether it could preempt current running task, so
-where to reset the last_runnable_update?
+I will re-spin SOC support patches 4-10 for arm-soc inclusion and wait
+for comments on serial/clocksource/pinctrl driver v3 patches.
+
 
 Thanks,
-Lei
+srini
 
->
-> --
-> Thanks
->     Alex
+> If there is a reason to take those through arm-soc, I would
+> insist on getting Acked-by's from the subsystem maintainers.
+> 
+> 	Arnd
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+> 
+
