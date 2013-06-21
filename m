@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422891Ab3FUAgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 20:36:22 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:62188 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965851Ab3FUAgC (ORCPT
+	id S1422850Ab3FUAf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 20:35:58 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:48981 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965830Ab3FUAfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 20:36:02 -0400
+	Thu, 20 Jun 2013 20:35:52 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
@@ -21,9 +21,9 @@ Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Will Deacon <will.deacon@arm.com>, Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH v6 8/8] ARM: dts: Add dts file for S3C6410-based SMDK6410 board
-Date: Fri, 21 Jun 2013 02:35:24 +0200
-Message-Id: <1371774924-9224-9-git-send-email-tomasz.figa@gmail.com>
+Subject: [PATCH v6 3/8] gpio: samsung: Skip legacy GPIO registration if pinctrl-s3c64xx is present
+Date: Fri, 21 Jun 2013 02:35:19 +0200
+Message-Id: <1371774924-9224-4-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371774924-9224-1-git-send-email-tomasz.figa@gmail.com>
 References: <1371774924-9224-1-git-send-email-tomasz.figa@gmail.com>
@@ -31,132 +31,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic device tree sources for SAMSUNG SMDK6410 board
-based on SAMSUNG S3C6410 SoC.
-
-Currently only UARTs, SD channel 0 and 100Mbps ethernet (SMSC911x) are
-supported.
+The new driver handles GPIO on DT-enabled platforms.
 
 Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- arch/arm/boot/dts/Makefile             |  3 +-
- arch/arm/boot/dts/s3c6410-smdk6410.dts | 93 ++++++++++++++++++++++++++++++++++
- 2 files changed, 95 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/s3c6410-smdk6410.dts
+ drivers/gpio/gpio-samsung.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index acf41d7..0382554 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -161,7 +161,8 @@ dtb-$(CONFIG_ARCH_U8500) += snowball.dtb \
- 	hrefv60plus.dtb \
- 	ccu9540.dtb
- dtb-$(CONFIG_ARCH_S3C24XX) += s3c2416-smdk2416.dtb
--dtb-$(CONFIG_ARCH_S3C64XX) += s3c6410-mini6410.dtb
-+dtb-$(CONFIG_ARCH_S3C64XX) += s3c6410-mini6410.dtb \
-+	s3c6410-smdk6410.dtb
- dtb-$(CONFIG_ARCH_SHMOBILE) += emev2-kzm9d.dtb \
- 	r8a7740-armadillo800eva.dtb \
- 	r8a7778-bockw.dtb \
-diff --git a/arch/arm/boot/dts/s3c6410-smdk6410.dts b/arch/arm/boot/dts/s3c6410-smdk6410.dts
-new file mode 100644
-index 0000000..91341a5
---- /dev/null
-+++ b/arch/arm/boot/dts/s3c6410-smdk6410.dts
-@@ -0,0 +1,93 @@
-+/*
-+ * Samsung S3C6410 based SMDK6410 board device tree source.
-+ *
-+ * Copyright (c) 2013 Tomasz Figa <tomasz.figa@gmail.com>
-+ *
-+ * Device tree source file for SAMSUNG SMDK6410 board which is based on
-+ * Samsung's S3C6410 SoC.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+/dts-v1/;
-+
-+#include <dt-bindings/gpio/gpio.h>
-+#include <dt-bindings/interrupt-controller/irq.h>
-+
-+#include "s3c6410.dtsi"
-+
-+/ {
-+	model = "SAMSUNG SMDK6410 board based on S3C6410";
-+	compatible = "samsung,mini6410", "samsung,s3c6410";
-+
-+	memory {
-+		reg = <0x50000000 0x8000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttySAC0,115200n8 earlyprintk rootwait root=/dev/mmcblk0p1";
-+	};
-+
-+	fixed-rate-clocks {
-+		xxti {
-+			compatible = "samsung,clock-fin-pll";
-+			clock-frequency = <12000000>;
-+		};
-+
-+		xusbxti {
-+			compatible = "samsung,clock-xusbxti";
-+			clock-frequency = <48000000>;
-+		};
-+	};
-+
-+	srom-cs1@18000000 {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		reg = <0x18000000 0x8000000>;
-+		ranges;
-+
-+		ethernet@18000000 {
-+			compatible = "smsc,lan9115";
-+			reg = <0x18000000 0x10000>;
-+			interrupt-parent = <&gpn>;
-+			interrupts = <10 IRQ_TYPE_LEVEL_LOW>;
-+			phy-mode = "mii";
-+			reg-io-width = <4>;
-+			smsc,force-internal-phy;
-+		};
-+	};
-+};
-+
-+&sdhci0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&sd0_clk>, <&sd0_cmd>, <&sd0_cd>, <&sd0_bus4>;
-+	bus-width = <4>;
-+	status = "okay";
-+};
-+
-+&uart0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart0_data>, <&uart0_fctl>;
-+	status = "okay";
-+};
-+
-+&uart1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart1_data>;
-+	status = "okay";
-+};
-+
-+&uart2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart2_data>;
-+	status = "okay";
-+};
-+
-+&uart3 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart3_data>;
-+	status = "okay";
-+};
+diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+index a1392f4..8d512b1 100644
+--- a/drivers/gpio/gpio-samsung.c
++++ b/drivers/gpio/gpio-samsung.c
+@@ -2949,7 +2949,7 @@ static __init int samsung_gpiolib_init(void)
+ 	int i, nr_chips;
+ 	int group = 0;
+ 
+-#if defined(CONFIG_PINCTRL_EXYNOS) || defined(CONFIG_PINCTRL_EXYNOS5440)
++#if defined(CONFIG_PINCTRL_SAMSUNG) || defined(CONFIG_PINCTRL_EXYNOS5440)
+ 	/*
+ 	* This gpio driver includes support for device tree support and there
+ 	* are platforms using it. In order to maintain compatibility with those
+@@ -2967,6 +2967,7 @@ static __init int samsung_gpiolib_init(void)
+ 		{ .compatible = "samsung,s3c2416-pinctrl", },
+ 		{ .compatible = "samsung,s3c2440-pinctrl", },
+ 		{ .compatible = "samsung,s3c2450-pinctrl", },
++		{ .compatible = "samsung,s3c64xx-pinctrl", },
+ 		{ .compatible = "samsung,exynos4210-pinctrl", },
+ 		{ .compatible = "samsung,exynos4x12-pinctrl", },
+ 		{ .compatible = "samsung,exynos5250-pinctrl", },
 -- 
 1.8.2.1
 
