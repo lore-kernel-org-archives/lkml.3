@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713Ab3FUIg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 04:36:59 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:56278 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab3FUIg6 (ORCPT
+	id S1758018Ab3FUIkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 04:40:49 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37943 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757862Ab3FUIkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 04:36:58 -0400
-Subject: [PATCH] powerpc/pseries: Enable PSTORE in pseries_defconfig
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: mahesh@linux.vnet.ibm.com, ananth@in.ibm.com
-Date: Fri, 21 Jun 2013 14:06:47 +0530
-Message-ID: <20130621083639.4039.27789.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
+	Fri, 21 Jun 2013 04:40:47 -0400
+Date: Fri, 21 Jun 2013 09:40:19 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Nicolas Pitre <nico@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cov@codeaurora.org" <cov@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: Re: [PATCH v2 0/2] ARM: Remove any correlation between IPC and
+ BogoMips value
+Message-ID: <20130621084018.GB6983@mudshark.cambridge.arm.com>
+References: <1371746612-23950-1-git-send-email-will.deacon@arm.com>
+ <alpine.LFD.2.03.1306201452330.18597@syhkavp.arg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062108-5140-0000-0000-000003691EEC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.03.1306201452330.18597@syhkavp.arg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable PSTORE in pseries_defconfig
+On Thu, Jun 20, 2013 at 07:54:21PM +0100, Nicolas Pitre wrote:
+> On Thu, 20 Jun 2013, Will Deacon wrote:
+> 
+> > Hi all,
+> > 
+> > This is version two of the patches I originally posted here:
+> > 
+> >   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-May/166728.html
+> > 
+> > Comments received there largely confirmed that it's not possible to choose
+> > an `obviously bogus' value for BogoMIPs, so instead I've bitten the bullet
+> > and removed the line altogether.
+> > 
+> > In the meantime, I've only had one complaint this month about BogoMIPs
+> > being wrong, so perhaps the initial posting served some purpose without
+> > even being merged!
+> > 
+> > Comments welcome,
+> 
+> Enthusiastic ACK for both patches.
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
----
- arch/powerpc/configs/pseries_defconfig |    1 +
- 1 file changed, 1 insertion(+)
+Thanks Nicolas!
 
-diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
-index c4dfbaf..9630a50 100644
---- a/arch/powerpc/configs/pseries_defconfig
-+++ b/arch/powerpc/configs/pseries_defconfig
-@@ -347,3 +347,4 @@ CONFIG_VIRTUALIZATION=y
- CONFIG_KVM_BOOK3S_64=m
- CONFIG_KVM_BOOK3S_64_HV=y
- CONFIG_VHOST_NET=m
-+CONFIG_PSTORE=y
-
+Will
