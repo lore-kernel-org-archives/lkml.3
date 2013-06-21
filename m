@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161401Ab3FUGAo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 02:00:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38250 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161146Ab3FUGAm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 02:00:42 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Pantelis Antoniou" <panto@antoniou-consulting.com>,
-        "Patil, Rachna" <rachna@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>,
-        Benoit Cousson <benoit.cousson@linaro.org>
-Subject: RE: linux-next: manual merge of the arm-soc tree with the mfd tree
-Thread-Topic: linux-next: manual merge of the arm-soc tree with the mfd tree
-Thread-Index: AQHObkPDO6rWPdrLIkm2IQ0cPIUAWpk/rA4g
-Date: Fri, 21 Jun 2013 05:59:50 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73E9DF042@DBDE04.ent.ti.com>
-References: <20130621155408.7e4a4c891ff4d74627b57a45@canb.auug.org.au>
-In-Reply-To: <20130621155408.7e4a4c891ff4d74627b57a45@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1423099Ab3FUGDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 02:03:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:10537 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1161146Ab3FUGDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 02:03:51 -0400
+X-IronPort-AV: E=Sophos;i="4.87,910,1363104000"; 
+   d="scan'208";a="7624635"
+Message-ID: <51C3ED76.3040900@cn.fujitsu.com>
+Date: Fri, 21 Jun 2013 14:06:46 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: tglx@linutronix.de, mingo@elte.hu, akpm@linux-foundation.org,
+        tj@kernel.org, trenn@suse.de, yinghai@kernel.org, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <51C3E276.8030804@zytor.com>
+In-Reply-To: <51C3E276.8030804@zytor.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/21 14:02:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/21 14:02:42,
+	Serialize complete at 2013/06/21 14:02:42
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi all,
-> 
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/boot/dts/am33xx.dtsi between commit a82279dd6d3e ("arm:
-> am33xx:
-> add TSC/ADC mfd device support") from the mfd tree and commit
-> 15e8246bd61b ("ARM: dts: AM33XX: Add ELM node") from the arm-soc tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-> 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/boot/dts/am33xx.dtsi
-> index 37ef320,0d4df90..0000000
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@@ -404,24 -494,14 +494,32 @@@
->   			ti,hwmods = "wkup_m3";
->   		};
-> 
->  +		tscadc: tscadc@44e0d000 {
->  +			compatible = "ti,am3359-tscadc";
->  +			reg = <0x44e0d000 0x1000>;
->  +			interrupt-parent = <&intc>;
->  +			interrupts = <16>;
->  +			ti,hwmods = "adc_tsc";
->  +			status = "disabled";
->  +
->  +			tsc {
->  +				compatible = "ti,am3359-tsc";
->  +			};
->  +			am335x_adc: adc {
->  +				#io-channel-cells = <1>;
->  +				compatible = "ti,am3359-adc";
->  +			};
->  +
->  +		};
->  +
-> + 		elm: elm@48080000 {
-> + 			compatible = "ti,am3352-elm";
-> + 			reg = <0x48080000 0x2000>;
-> + 			interrupts = <4>;
-> + 			ti,hwmods = "elm";
-> + 			status = "disabled";
-> + 		};
-> +
-[Pekon]: Thanks.. Yes this is ok based on commit "15e8246bd61b ("ARM: dts: AM33XX: Add ELM node")
+On 06/21/2013 01:19 PM, H. Peter Anvin wrote:
+> On 06/13/2013 06:02 AM, Tang Chen wrote:
+>> From: Yinghai Lu<yinghai@kernel.org>
+>>
+>> No offence, just rebase and resend the patches from Yinghai to help
+>> to push this functionality faster.
+>> Also improve the comments in the patches' log.
+>>
+>
+> So we need a new version of this which addresses the build problems and
+> the feedback from Tejun... and it would be good to get that soon, or
+> we'll be looking at 3.12.
+
+Hi hpa,
+
+The build problem has been fixed by Yinghai.
+
+>
+> Since the merge window is approaching quickly, is there a meaningful
+> subset that is ready now?
+
+I think memory hotplug needs at least part1 and part2 patches. But
+local node pagetable (patch 21 and 22 in part1) will break memory
+hot-remove path. My part3 intends to fix it, but it seems we need
+local device pagetable to enable single device hotplug, but not just
+local node pagetable.
+
+So, my plan is
+
+1. Implement arranging hotpluggable memory with SRAT first, within tj's
+    comments, without local node pagetable.
+    (The main work in part2. And of course, need some patches in part1.)
+2. Do the local device pagetable work, not local node.
+3. Improve memory hotplug to support local device pagetable.
+
+I'll send a new version patch-set of step1, wishing we can catch up with
+the merge window. And I think step2 and 3 should be done later.
 
 
->   		gpmc: gpmc@50000000 {
->   			compatible = "ti,am3352-gpmc";
->   			ti,hwmods = "gpmc";
+Thanks. :)
 
-with regards, pekon
+
