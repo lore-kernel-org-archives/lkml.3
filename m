@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161545Ab3FUIba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 04:31:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55294 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161250Ab3FUIb0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 04:31:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH V10 0/4] PCIe support for Samsung Exynos5440 SoC
-Date: Fri, 21 Jun 2013 10:30:47 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jingoo Han <jg1.han@samsung.com>, "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
-        Jason Cooper <jason@lakedaemon.net>
-References: <003901ce6e50$03d039a0$0b70ace0$@samsung.com> <201306210931.58428.arnd@arndb.de> <20130621094723.312bc331@skate>
-In-Reply-To: <20130621094723.312bc331@skate>
+	id S1423385Ab3FUIgW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 04:36:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46533 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161032Ab3FUIgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 04:36:20 -0400
+Date: Fri, 21 Jun 2013 10:36:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
+        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, ying.huang@intel.com
+Subject: Re: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
+ banks listed in APEI HEST CMC
+Message-ID: <20130621083608.GE22006@pd.tnic>
+References: <20130619175438.2852.93449.stgit@localhost.localdomain>
+ <20130620073943.GE32694@pd.tnic>
+ <51C3531D.3000600@linux.vnet.ibm.com>
+ <20130620192928.GD19877@pd.tnic>
+ <51C36288.4050405@linux.vnet.ibm.com>
+ <20130620205726.GA20863@pd.tnic>
+ <51C37291.40303@linux.vnet.ibm.com>
+ <20130621073419.GC22006@pd.tnic>
+ <51C404EA.10906@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306211030.47440.arnd@arndb.de>
-X-Provags-ID: V02:K0:394N+vBsFkdCgFiVhnY8bbgAsHnEerRzpc5MNUKyJrh
- w6W0gO4A28HhEGF2S+Krgs0eVD/cSSuIXNBQ6vX8RLPtGeoKBK
- xxGYao2fPO/u8Kd1HrdzV7xU2mYHiLX1KvLB2g0t1Jy4wFZE8t
- AapYDZ323FFgrmctKvFb8rD8qlbe7Jhwia6ga89l5flHYZvmt4
- /sfW/EuL0X+ZXAlj0ToN13cRu/3GMRDqUMIDn5cTwu9Rfy74vi
- S3oEaaMKNfSxRbvAHo9dko6QmTNwENPp2XeNAHQepG4LHbE8Fs
- goVUqMLEylxnTaBZ7IjgDEYVud7n916yNKhCRT6S9F9IzosFh9
- UaB9cmKrBZEbCrVLwRKE=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51C404EA.10906@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 June 2013, Thomas Petazzoni wrote:
-> I am by far not an expert on how to solve merge strategies and so on,
-> but to avoid conflicts at Linus's level while merging the arm-soc and
-> pci trees, it would be better if this Samsung PCIe driver could go
-> through arm-soc (with Bjorn ACK, of course), so that Arnd/Olof can
-> make sure the ordering is correct with regard to the of/pci changes and
-> the mvebu/pci driver.
+On Fri, Jun 21, 2013 at 01:16:50PM +0530, Naveen N. Rao wrote:
+> Yes, but I'm afraid this won't work either - mce_banks_owned is
+> cleared during cpu offline. This is necessary since a cmci
+> rediscover is triggered on cpu offline, so that if this bank is
+> shared across cores, a different cpu can claim ownership of this
+> bank.
 
-Yes, good point.
+What for? Sounds strange to me.
 
-The alternative would be that Bjorn also takes the PCI branch dependencies
-that are already in arm-soc into his tree. Either way works, but I agree
-that what you suggest would be simpler.
+Anyway, the reason for which mce_banks_owned won't work is because it
+is in mce_intel and we need a mce.c global bitfield for banks which are
+excluded from CE handling.
 
-	Arnd
+So ok, I'm persuaded, yet another bitfield it is ... :-\
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
