@@ -1,55 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422754Ab3FUOIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:08:17 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56668 "EHLO mail.skyhub.de"
+	id S1422841Ab3FUOIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:08:24 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25927 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161446Ab3FUOIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:08:15 -0400
-Date: Fri, 21 Jun 2013 16:08:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
-        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ying.huang@intel.com
-Subject: Re: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
- banks listed in APEI HEST CMC
-Message-ID: <20130621140804.GF22006@pd.tnic>
-References: <20130620073943.GE32694@pd.tnic>
- <51C3531D.3000600@linux.vnet.ibm.com>
- <20130620192928.GD19877@pd.tnic>
- <51C36288.4050405@linux.vnet.ibm.com>
- <20130620205726.GA20863@pd.tnic>
- <51C37291.40303@linux.vnet.ibm.com>
- <20130621073419.GC22006@pd.tnic>
- <51C404EA.10906@linux.vnet.ibm.com>
- <20130621083608.GE22006@pd.tnic>
- <51C41D94.1030201@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51C41D94.1030201@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1422767Ab3FUOIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 10:08:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,913,1363158000"; 
+   d="scan'208";a="320568632"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/3] mei: move mei_cl_irq_write_complete to client.c
+Date: Fri, 21 Jun 2013 17:05:31 +0300
+Message-Id: <1371823533-20366-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 03:02:04PM +0530, Naveen N. Rao wrote:
-> As an example, consider a hypothetical single-core Intel processor
-> with Hyperthreading. On init, let's say the first cpu ends up owning
-> banks 1, 2, 3 and 4; and the second cpu ends up owning banks 1 and
-> 2. This would mean that MC banks 1 and 2 are "hyperthread"-specific,
-> while banks 3 and 4 are shared. Now, if we offline the first cpu, it
-> disables CMCI on all 4 banks.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mei_cl_irq_write_complete operates on a client so move it
+to client.c
 
-This is what I find strange - having to disable CMCI, especially on a
-shared bank, just to reenable it right back on the next core. But I
-guess this is a constraint dictated by the hardware...
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/client.c    | 60 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/mei/client.h    |  3 +++
+ drivers/misc/mei/interrupt.c | 59 -------------------------------------------
+ 3 files changed, 63 insertions(+), 59 deletions(-)
 
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index c2534ca..788f647 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -682,6 +682,66 @@ err:
+ }
+ 
+ /**
++ * mei_cl_irq_write_complete - write a message to device
++ *	from the interrupt thread context
++ *
++ * @cl: client
++ * @cb: callback block.
++ * @slots: free slots.
++ * @cmpl_list: complete list.
++ *
++ * returns 0, OK; otherwise error.
++ */
++int mei_cl_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
++				     s32 *slots, struct mei_cl_cb *cmpl_list)
++{
++	struct mei_device *dev = cl->dev;
++	struct mei_msg_hdr mei_hdr;
++	size_t len = cb->request_buffer.size - cb->buf_idx;
++	u32 msg_slots = mei_data2slots(len);
++
++	mei_hdr.host_addr = cl->host_client_id;
++	mei_hdr.me_addr = cl->me_client_id;
++	mei_hdr.reserved = 0;
++
++	if (*slots >= msg_slots) {
++		mei_hdr.length = len;
++		mei_hdr.msg_complete = 1;
++	/* Split the message only if we can write the whole host buffer */
++	} else if (*slots == dev->hbuf_depth) {
++		msg_slots = *slots;
++		len = (*slots * sizeof(u32)) - sizeof(struct mei_msg_hdr);
++		mei_hdr.length = len;
++		mei_hdr.msg_complete = 0;
++	} else {
++		/* wait for next time the host buffer is empty */
++		return 0;
++	}
++
++	dev_dbg(&dev->pdev->dev, "buf: size = %d idx = %lu\n",
++			cb->request_buffer.size, cb->buf_idx);
++	dev_dbg(&dev->pdev->dev, MEI_HDR_FMT, MEI_HDR_PRM(&mei_hdr));
++
++	*slots -=  msg_slots;
++	if (mei_write_message(dev, &mei_hdr,
++			cb->request_buffer.data + cb->buf_idx)) {
++		cl->status = -ENODEV;
++		list_move_tail(&cb->list, &cmpl_list->list);
++		return -ENODEV;
++	}
++
++	cl->status = 0;
++	cb->buf_idx += mei_hdr.length;
++	if (mei_hdr.msg_complete) {
++		if (mei_cl_flow_ctrl_reduce(cl))
++			return -ENODEV;
++		list_move_tail(&cb->list, &dev->write_waiting_list.list);
++	}
++
++	return 0;
++}
++
++/**
+  * mei_cl_write - submit a write cb to mei device
+ 	assumes device_lock is locked
+  *
+diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+index 7dc2af7..26b157d 100644
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -89,6 +89,9 @@ int mei_cl_disconnect(struct mei_cl *cl);
+ int mei_cl_connect(struct mei_cl *cl, struct file *file);
+ int mei_cl_read_start(struct mei_cl *cl, size_t length);
+ int mei_cl_write(struct mei_cl *cl, struct mei_cl_cb *cb, bool blocking);
++int mei_cl_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
++				s32 *slots, struct mei_cl_cb *cmpl_list);
++
+ void mei_cl_complete(struct mei_cl *cl, struct mei_cl_cb *cb);
+ 
+ void mei_host_client_init(struct work_struct *work);
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 7d9509a..4b59cb7 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -282,65 +282,6 @@ static int mei_cl_irq_ioctl(struct mei_cl *cl, struct mei_cl_cb *cb,
+ 	return 0;
+ }
+ 
+-/**
+- * mei_cl_irq_write_complete - write messages to device.
+- *
+- * @cl: client
+- * @cb: callback block.
+- * @slots: free slots.
+- * @cmpl_list: complete list.
+- *
+- * returns 0, OK; otherwise, error.
+- */
+-static int mei_cl_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+-				     s32 *slots, struct mei_cl_cb *cmpl_list)
+-{
+-	struct mei_device *dev = cl->dev;
+-	struct mei_msg_hdr mei_hdr;
+-	size_t len = cb->request_buffer.size - cb->buf_idx;
+-	u32 msg_slots = mei_data2slots(len);
+-
+-	mei_hdr.host_addr = cl->host_client_id;
+-	mei_hdr.me_addr = cl->me_client_id;
+-	mei_hdr.reserved = 0;
+-
+-	if (*slots >= msg_slots) {
+-		mei_hdr.length = len;
+-		mei_hdr.msg_complete = 1;
+-	/* Split the message only if we can write the whole host buffer */
+-	} else if (*slots == dev->hbuf_depth) {
+-		msg_slots = *slots;
+-		len = (*slots * sizeof(u32)) - sizeof(struct mei_msg_hdr);
+-		mei_hdr.length = len;
+-		mei_hdr.msg_complete = 0;
+-	} else {
+-		/* wait for next time the host buffer is empty */
+-		return 0;
+-	}
+-
+-	dev_dbg(&dev->pdev->dev, "buf: size = %d idx = %lu\n",
+-			cb->request_buffer.size, cb->buf_idx);
+-	dev_dbg(&dev->pdev->dev, MEI_HDR_FMT, MEI_HDR_PRM(&mei_hdr));
+-
+-	*slots -=  msg_slots;
+-	if (mei_write_message(dev, &mei_hdr,
+-			cb->request_buffer.data + cb->buf_idx)) {
+-		cl->status = -ENODEV;
+-		list_move_tail(&cb->list, &cmpl_list->list);
+-		return -ENODEV;
+-	}
+-
+-
+-	cl->status = 0;
+-	cb->buf_idx += mei_hdr.length;
+-	if (mei_hdr.msg_complete) {
+-		if (mei_cl_flow_ctrl_reduce(cl))
+-			return -ENODEV;
+-		list_move_tail(&cb->list, &dev->write_waiting_list.list);
+-	}
+-
+-	return 0;
+-}
+ 
+ /**
+  * mei_irq_read_handler - bottom half read routine after ISR to
 -- 
-Regards/Gruss,
-    Boris.
+1.8.1.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
