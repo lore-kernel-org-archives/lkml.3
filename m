@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422921Ab3FUOVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 10:21:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53048 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161356Ab3FUOVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 10:21:12 -0400
-Date: Fri, 21 Jun 2013 16:21:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-Message-ID: <20130621142101.GG22006@pd.tnic>
-References: <20130620170124.GA19877@pd.tnic>
- <20130620171210.GA26593@srcf.ucam.org>
- <20130620180808.GB19877@pd.tnic>
- <20130620181015.GA27833@srcf.ucam.org>
- <20130620181445.GA791@pd.tnic>
- <20130620181731.GA27960@srcf.ucam.org>
- <20130620184736.GC19877@pd.tnic>
- <51C383AC.4060706@zytor.com>
- <20130621072356.GA22006@pd.tnic>
- <ca8f8134-24d9-4f96-8876-e24892efc849@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <ca8f8134-24d9-4f96-8876-e24892efc849@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1422992Ab3FUOVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 10:21:45 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:38404 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161356Ab3FUOVn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 10:21:43 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH 0/8] perf: add ability to sample physical data addresses
+Date: Fri, 21 Jun 2013 16:20:40 +0200
+Message-Id: <1371824448-7306-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 03:05:30AM -0700, H. Peter Anvin wrote:
-> If you cap it you are basically imposing a constraint on the firmware
-> and may not run properly (or at least have to turn off EFI runtime
-> calls with all that implies.)
+This patch series extends perf_events with the ability to sample
+physical data addresses. This is useful with the memory access
+sampling mode added just recently. In particular, it helps
+disambiguate data addresses between two processes, such as
+in the case of a shared memory segment mapped at different
+addresses in different processes.
 
-I don't want to cap EFI just for the fun of it but rather set a limit
-so that the next one who wants a chunk of the virtual address space can
-have a reliable limit from where she/he can start. Otherwise we won't
-know where EFI reliably ends...
+The patch adds the PERF_SAMPLE_PHYS_ADDR sample_type.
+A 64-bit address is added to the sample record for
+the corresponding event.
 
-> It might be good to have a sanity check but it needs to be pretty
-> generous.
+On Intel X86, it is used with the PEBS Load Latency
+support. On other architectures, zero is returned.
 
-64 Gb generous enough?
+The patch series also demonstrates the use of this
+new feature by extending perf report, mem, record
+with a --phys-addr option. When enable, it will 
+capture physical data address and display it.
+This is implemented as a new sort_order (symbol_paddr).
+
+$ perf mem --phys-addr -t load rec ...
+$ perf mem --phys-addr -t load rep ...
+
+Note that for now on X86, only user addresses are converted
+to physical whenever possible. Kernel addresses will show
+as -1.
+
+Thanks to Hugh Dickins for the uvirt_to_phys_nmi() code.
+
+The series contains a couple of patches related to
+PEBS in general:
+ - Patch 1 contains a small bug fix to clear the PEBS-LL
+   bits in pebs_enable in intel_pmu_pebs_disable().
+
+ - Patch 2 removes event->flags because it is not used
+   anymore. The code now uses event->hw.constraints->flags.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+Stephane Eranian (8):
+  perf,x86: disable PEBS-LL in intel_pmu_pebs_disable()
+  perf,x86: drop event->flags and use hw.constraint->flags
+  perf,x86: add uvirt_to_phys_nmi helper function
+  perf: add PERF_SAMPLE_PHYS_ADDR sample type
+  perf,x86: add support for PERF_SAMPLE_PHYS_ADDR for PEBS-LL
+  perf tools: add infrastructure to handle PERF_SAMPLE_PHYS_ADDR
+  perf record: add option to sample physical load/store addresses
+  perf mem: add physical addr sampling support
+
+ arch/x86/include/asm/uaccess.h            |   1 +
+ arch/x86/kernel/cpu/perf_event_intel.c    |   6 +-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |  28 +++++---
+ arch/x86/lib/usercopy.c                   |  43 +++++++++++
+ include/linux/perf_event.h                |   3 +-
+ include/uapi/linux/perf_event.h           |   3 +-
+ kernel/events/core.c                      |   6 ++
+ tools/perf/Documentation/perf-record.txt  |   4 ++
+ tools/perf/builtin-mem.c                  | 116 +++++++++++++++++++++++-------
+ tools/perf/builtin-record.c               |   2 +
+ tools/perf/builtin-report.c               |   2 +-
+ tools/perf/perf.h                         |   1 +
+ tools/perf/util/event.h                   |   1 +
+ tools/perf/util/evsel.c                   |  16 ++++-
+ tools/perf/util/hist.c                    |   4 +-
+ tools/perf/util/hist.h                    |   1 +
+ tools/perf/util/machine.c                 |   1 +
+ tools/perf/util/session.c                 |   6 ++
+ tools/perf/util/sort.c                    |  42 +++++++++++
+ tools/perf/util/sort.h                    |   1 +
+ tools/perf/util/symbol.h                  |   1 +
+ 21 files changed, 243 insertions(+), 45 deletions(-)
 
 -- 
-Regards/Gruss,
-    Boris.
+1.8.1.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
