@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161278Ab3FUBFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 21:05:08 -0400
-Received: from out04.mta.xmission.com ([166.70.13.234]:44974 "EHLO
-	out04.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965925Ab3FUBFE (ORCPT
+	id S1422955Ab3FUBID (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 21:08:03 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:39727 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965602Ab3FUBIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 21:05:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrey Wagin <avagin@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
-References: <1371457498-27241-1-git-send-email-avagin@openvz.org>
-	<878v284iif.fsf@xmission.com>
-	<CANaxB-zvPMZe932nAeyOCbdHmmXa76f12BRv0X0W7F0ULZMkTA@mail.gmail.com>
-	<20130619213532.GA31165@gmail.com>
-Date: Thu, 20 Jun 2013 18:04:28 -0700
-In-Reply-To: <20130619213532.GA31165@gmail.com> (Andrey Wagin's message of
-	"Thu, 20 Jun 2013 01:35:32 +0400")
-Message-ID: <87y5a4l1er.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 20 Jun 2013 21:08:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19PP0JY+kLvP2o7D/kEuvQlQrxynR6W5sw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0001]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa08 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa08 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andrey Wagin <avagin@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] [RFC] mnt: restrict a number of "struct mnt"
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <Pine.LNX.4.44L0.1306201319580.2063-100000@iolanthe.rowland.org>
+References: <20130620121749.GF9817@arwen.pp.htv.fi>
+	<Pine.LNX.4.44L0.1306201319580.2063-100000@iolanthe.rowland.org>
+Date: Fri, 21 Jun 2013 09:07:59 +0800
+Message-ID: <CADApbejTBAv0+XxkGLXuMVrLatbNurR0XBkK2gt6eQnXr+5yEA@mail.gmail.com>
+Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
+ host controller
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
+        Chao Xie <chao.xie@marvell.com>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey Wagin <avagin@gmail.com> writes:
-
-> On Tue, Jun 18, 2013 at 02:56:51AM +0400, Andrey Wagin wrote:
->> 2013/6/17 Eric W. Biederman <ebiederm@xmission.com>:
->> > So for anyone seriously worried about this kind of thing in general we
->> > already have the memory control group, which is quite capable of
->> > limiting this kind of thing,
->> 
->> > and it limits all memory allocations not just mount.
->> 
->> And that is problem, we can't to limit a particular slab. Let's
->> imagine a real container with 4Gb of RAM. What is a kernel memory
->> limit resonable for it? I setup 64 Mb (it may be not enough for real
->> CT, but it's enough to make host inaccessible for some minutes).
->> 
->> $ mkdir /sys/fs/cgroup/memory/test
->> $ echo $((64 << 20)) > /sys/fs/cgroup/memory/test/memory.kmem.limit_in_bytes
->> $ unshare -m
->> $ echo $$ > /sys/fs/cgroup/memory/test/tasks
->> $ mount --make-rprivate /
->> $ mount -t tmpfs xxx /mnt
->> $ mount --make-shared /mnt
->> $ time bash -c 'set -m; for i in `seq 30`; do mount --bind /mnt
->> `mktemp -d /mnt/test.XXXXXX` & done;  for i in `seq 30`; do wait;
->> done'
->> real 0m23.141s
->> user 0m0.016s
->> sys 0m22.881s
->> 
->> While the last script is working, nobody can't to read /proc/mounts or
->> mount something. I don't think that users from other containers will
->> be glad. This problem is not so significant in compared with umounting
->> of this tree.
->> 
->> $ strace -T umount -l /mnt
->> umount("/mnt", MNT_DETACH)              = 0 <548.898244>
->> The host is inaccessible, it writes messages about soft lockup in
->> kernel log and eats 100% cpu.
+On Fri, Jun 21, 2013 at 1:25 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Thu, 20 Jun 2013, Felipe Balbi wrote:
 >
-> Eric, do you agree that
-> * It is a problem
-> * Currently we don't have a mechanism to prevent this problem
-> * We need to find a way to prevent this problem
+>> > In fact, the PHY setting and handling is related to platform or SOC,
+>> > and for different SOC they can
+>> > have same EHCI HCD but they PHY handling can be different.
+>> > Omap'a case is the example, and i think some other vendors may have
+>> > silimar cases.
+>> > From above point, It is better to leave the PHY initialization and
+>> > shutdown to be done by each echi-xxx driver.
+>> >
+>> > So Alan and Felipe
+>> > What are your ideas about it?
+>>
+>> If we have so many exceptions, then sure. But eventually, the common
+>> case should be added generically with a flag so that non-generic cases
+>> (like OMAP) can request to handle the PHY by themselves.
+>>
+>> Alan ?
+>
+> I don't have very strong feelings about this; Felipe has much more
+> experience with these things.
+>
+> However, when the common case is added into the core, the simplest way
+> to indicate that the HCD wants to handle the PHY(s) by itself will be
+> to leave hcd->phy set to NULL or an ERR_PTR value.
+>
+> One important thing that hasn't been pointed out yet: When we move
+> these calls into the core, the same patch must also remove those calls
+> from the glue drivers that currently do set hcd->phy.  And it must make
+> sure that the glue drivers which handle the PHY by themselves do not
+> set hcd->phy.
+>
 
-Ugh.  I knew mount propagation was annoying semantically but I had not
-realized the implementation was quite so bad.
+>From device point of view, EHCI is a standlone component. It has the
+standard sepcification, so each
+SOC vendor has EHCI HCD need to follow the standards. Then we have
+common EHCI HCD driver.
+The PHY is outside of EHCI component, each SOC vendor may have
+different PHY implementation. Then
+we have PHY driver.
+The EHCI glue driver ehci-xxx works like a SOC depended driver. It is
+its duty to handle the'
+relationship between the EHCI HCD driver and PHY driver.
+It is same as clk, irq requested by ehci-xxx driver.
 
-This doesn't happen in normal operation to normal folks.  So I don't
-think this is something we need to rush in a fix at the last moment to
-prevent the entire world from melting down.  Even people using mount
-namespaces in containers.
+So i think add a flag and use usb_get_phy() is not very good.
+It is bette to make ehci-xxx to do the phy getting and EHCI HCD
+initialize it and shut down as the patch did, or let ehci-xxx to
+handle the PHY as Roger said.
 
-I do think it is worth looking at.  Which kernel were you testing?.  I
-haven't gotten as far as looking too closely but I just noticed that Al
-Viro has been busy rewriting the lock of this.  So if you aren't testing
-at least 2.10-rcX you probably need to retest.
+Based on the generic work is not too much, and does not look so
+meaningful. I suggest that let to echi-xxx
+do it.
 
-My thoughts would be.  Improve the locking as much as possible,
-and if that is not enough keep a measure of how many mounts will be
-affected at least for the umount.  Possibly for the umount -l case.
-Then just don't allow the complexity to exceed some limit so we know
-things will happen in a timely manner.
-
-Eric
+> Alan Stern
+>
