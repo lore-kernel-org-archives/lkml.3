@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422979Ab3FUJQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 05:16:59 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:19709 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1422931Ab3FUJQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 05:16:57 -0400
-X-IronPort-AV: E=Sophos;i="4.87,911,1363104000"; 
-   d="scan'208";a="7627349"
-Message-ID: <51C41AB4.9070500@cn.fujitsu.com>
-Date: Fri, 21 Jun 2013 17:19:48 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1030471Ab3FUJSX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 05:18:23 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:39765 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030451Ab3FUJSV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 05:18:21 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618020357.GZ32663@mtj.dyndns.org> <51BFF464.809@cn.fujitsu.com> <20130618172129.GH2767@htj.dyndns.org> <51C298B2.9060900@cn.fujitsu.com> <20130620061719.GA16114@mtj.dyndns.org>
-In-Reply-To: <20130620061719.GA16114@mtj.dyndns.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/21 17:15:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/21 17:15:47,
-	Serialize complete at 2013/06/21 17:15:47
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <51C4152E.60906@gmail.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+	<1370589652-24549-5-git-send-email-alex.shi@intel.com>
+	<CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
+	<51BF2E37.5040400@intel.com>
+	<CALZhoSSweOzTgjykRMxv_kha9TH-8EAKvuhinf8ADFyFDzDTuQ@mail.gmail.com>
+	<CALZhoSSFr_HN9ccxNLK7HA-7O9soAU7VZ3njtKf=Ndw=_AbQRw@mail.gmail.com>
+	<51C318D6.4090601@gmail.com>
+	<CALZhoSQgO-V-vkOy+urL_H4cjcCE8YY3w+K=mS8hptWteKGcFw@mail.gmail.com>
+	<51C3BCE1.1080405@gmail.com>
+	<CALZhoSR8pLfqO+XfEfHB3-UuV5_xu=AV2mCf2BQgaaQoWd-tbw@mail.gmail.com>
+	<51C4152E.60906@gmail.com>
+Date: Fri, 21 Jun 2013 17:18:19 +0800
+Message-ID: <CALZhoST001rHENqP8RncHL1zyN=D91D8-HzzFyiy+iqkY5KRCw@mail.gmail.com>
+Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue entity
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Alex Shi <seakeel@gmail.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi tj,
+Alex,
 
-On 06/20/2013 02:17 PM, Tejun Heo wrote:
-......
+On Fri, Jun 21, 2013 at 4:56 PM, Alex Shi <seakeel@gmail.com> wrote:
+> On 06/21/2013 10:50 AM, Lei Wen wrote:
+>> I see your point... I made the mistake that update the wrong patch...
+>> Please help check this one.
+>>
+>> commit 5fc3d5c74f8359ef382d9a20ffe657ffc237c109
+>> Author: Lei Wen <leiwen@marvell.com>
+>> Date:   Thu Jun 20 10:43:59 2013 +0800
+>>
+>>     sched: fix potential twice decay issue
+>>
+>>     Signed-off-by: Lei Wen <leiwen@marvell.com>
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index c61a614..9640c66 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5856,7 +5856,8 @@ static void switched_from_fair(struct rq *rq,
+>> struct task_struct *p)
+>>         */
+>>         if (p->se.avg.decay_count) {
+>>                 struct cfs_rq *cfs_rq = cfs_rq_of(&p->se);
+>> -               __synchronize_entity_decay(&p->se);
+>> +               p->se.avg.last_runnable_update +=
+>> +                               __synchronize_entity_decay(&p->se);
 >
-> I was suggesting two separate things.
+> it is not needed, since the last_runnable_update will be reset if it
+> will be switched to fair.
+
+When it is backed to fair class, the only thing scheduler would do
+is to check whether it could preempt current running task, so
+where to reset the last_runnable_update?
+
+Thanks,
+Lei
+
 >
-> * As memblock allocator can relocate itself.  There's no point in
->    avoiding setting NUMA node while parsing and registering NUMA
->    topology.  Just parse and register NUMA info and later tell it to
->    relocate itself out of hot-pluggable node.  A number of patches in
->    the series is doing this dancing - carefully reordering NUMA
->    probing.  No need to do that.  It's really fragile thing to do.
->
-> * Once you get the above out of the way, I don't think there are a lot
->    of permanent allocations in the way before NUMA is initialized.
->    Re-order the remaining ones if that's cleaner to do.  If that gets
->    overly messy / fragile, copying them around or freeing and reloading
->    afterwards could be an option too.
-
-memblock allocator can relocate itself, but it cannot relocate the memory
-it allocated for users. There could be some pointers pointing to these
-memory ranges. If we do the relocation, how to update these pointers ?
-
-Or, do you mean modify the pagetable ?  I don't think so.
-
-So would you please tell me more about how to do the relocation ?
-
-Thanks. :)
-
-
+> --
+> Thanks
+>     Alex
