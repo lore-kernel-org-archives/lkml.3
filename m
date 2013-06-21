@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946025Ab3FUUd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 16:33:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60901 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945951Ab3FUUdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 16:33:24 -0400
-Subject: [PATCH] iommu/amd: Only unmap large pages from the first pte
-To: joro@8bytes.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Fri, 21 Jun 2013 14:33:19 -0600
-Message-ID: <20130621203242.7475.19737.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1946052Ab3FUUdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 16:33:41 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:51934 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1945951Ab3FUUdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 16:33:39 -0400
+Date: Fri, 21 Jun 2013 15:33:37 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
+        holt@sgi.com, travis@sgi.com, rob@landley.net, tglx@linutronix.de,
+        mingo@redhat.com, yinghai@kernel.org, akpm@linux-foundation.org,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+Message-ID: <20130621203337.GA20545@gulag1.americas.sgi.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <51C48ADD.207@sgi.com> <51C48D5A.4010602@zytor.com> <51C4B20B.20201@sgi.com> <4b9c45ed-15bd-49a9-b562-de01240d1649@email.android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4b9c45ed-15bd-49a9-b562-de01240d1649@email.android.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we use a large mapping, the expectation is that only unmaps from
-the first pte in the superpage are supported.  Unmaps from offsets
-into the superpage should fail (ie. return zero sized unmap).  In the
-current code, unmapping from an offset clears the size of the full
-mapping starting from an offset.  For instance, if we map a 16k
-physically contiguous range at IOVA 0x0 with a large page, then
-attempt to unmap 4k at offset 12k, 4 ptes are cleared (12k - 28k) and
-the unmap returns 16k unmapped.  This potentially incorrectly clears
-valid mappings and confuses drivers like VFIO that use the unmap size
-to release pinned pages.
+On Fri, Jun 21, 2013 at 01:08:06PM -0700, H. Peter Anvin wrote:
+> Is this init code?  32K of unconditional runtime addition isn't completely trivial.
 
-Fix by refusing to unmap from offsets into the page.
+Some of it is init code but not all.
+I am guessing 24k of that is actually runtime.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: stable@vger.kernel.org
----
- drivers/iommu/amd_iommu.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 21d02b0..a3c3389 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -1484,6 +1484,10 @@ static unsigned long iommu_unmap_page(struct protection_domain *dom,
- 
- 			/* Large PTE found which maps this address */
- 			unmap_size = PTE_PAGE_SIZE(*pte);
-+
-+			/* Only unmap from the first pte in the page */
-+			if ((unmap_size - 1) & bus_addr)
-+				break;
- 			count      = PAGE_SIZE_PTE_COUNT(unmap_size);
- 			for (i = 0; i < count; i++)
- 				pte[i] = 0ULL;
-@@ -1493,7 +1497,7 @@ static unsigned long iommu_unmap_page(struct protection_domain *dom,
- 		unmapped += unmap_size;
- 	}
- 
--	BUG_ON(!is_power_of_2(unmapped));
-+	BUG_ON(unmapped && !is_power_of_2(unmapped));
- 
- 	return unmapped;
- }
-
+> 
+> Nathan Zimmer <nzimmer@sgi.com> wrote:
+> 
+> >On 06/21/2013 12:28 PM, H. Peter Anvin wrote:
+> >> On 06/21/2013 10:18 AM, Nathan Zimmer wrote:
+> >>>> Since you made it a compile time option, it would be good to know
+> >how
+> >>>> much code it adds, but otherwise I agree with Greg here... this
+> >really
+> >>>> shouldn't need to be an option.  It *especially* shouldn't need to
+> >be a
+> >>>> hand-set runtime option (which looks quite complex, to boot.)
+> >>> The patchset as a whole is just over 400 lines so it doesn't add
+> >alot.
+> >>> If I were to pull the .config option it would probably remove 30
+> >lines.
+> >> I'm more concerned about bytes of code.
+> >Oh, The difference is just under 32k.
+> >371843425 Jun 21 14:08 vmlinux.o /* DELAY_MEM_INIT is not set  */
+> >371875600 Jun 21 14:36 vmlinux.o /* DELAY_MEM_INIT=y */
+> >
+> >>
+> >>> The command line option is too complex but some of the data I
+> >haven't
+> >>> found a way to get at runtime yet.
+> >> I think that is probably key.
+> >>
+> >>>> I suspect the cutoff for this should be a lot lower than 8 TB even,
+> >more
+> >>>> like 128 GB or so.  The only concern is to not set the cutoff so
+> >low
+> >>>> that we can end up running out of memory or with suboptimal NUMA
+> >>>> placement just because of this.
+> >>> Even at lower amounts of ram there is an positive impact.I it knocks
+> >>> time off
+> >>> boot even at as small as a 1TB of ram.
+> >> I am not surprised.
+> >>
+> >> 	-hpa
+> >>
+> 
+> -- 
+> Sent from my mobile phone. Please excuse brevity and lack of formatting.
