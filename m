@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423476Ab3FURZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:25:11 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38870 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1423122Ab3FURZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:25:09 -0400
-Message-ID: <1371835508.19215.50.camel@joe-AO722>
-Subject: Re: [PATCH] net: fec: Fix multicast list setup in fec_restart().
-From: Joe Perches <joe@perches.com>
-To: Christoph =?ISO-8859-1?Q?M=FCllner?= 
-	<christoph.muellner@theobroma-systems.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>, netdev@vger.kernel.org
-Date: Fri, 21 Jun 2013 10:25:08 -0700
-In-Reply-To: <61455.62.178.124.14.1371832855.squirrel@mail.theobroma-systems.com>
-References: <61455.62.178.124.14.1371832855.squirrel@mail.theobroma-systems.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1423510Ab3FUR3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 13:29:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58393 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423122Ab3FUR3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 13:29:11 -0400
+Message-ID: <51C48D5A.4010602@zytor.com>
+Date: Fri, 21 Jun 2013 10:28:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Nathan Zimmer <nzimmer@sgi.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, holt@sgi.com, travis@sgi.com,
+        rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
+        yinghai@kernel.org, akpm@linux-foundation.org, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <51C48ADD.207@sgi.com>
+In-Reply-To: <51C48ADD.207@sgi.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 18:40 +0200, Christoph Müllner wrote:
-> Setup the multicast list of the net_device instead of
-> clearing it blindly. This restores the multicast groups
-> in case of a link down/up event.
-> 
-> Signed-off-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
+On 06/21/2013 10:18 AM, Nathan Zimmer wrote:
+>>>
+>> Since you made it a compile time option, it would be good to know how
+>> much code it adds, but otherwise I agree with Greg here... this really
+>> shouldn't need to be an option.  It *especially* shouldn't need to be a
+>> hand-set runtime option (which looks quite complex, to boot.)
+> The patchset as a whole is just over 400 lines so it doesn't add alot.
+> If I were to pull the .config option it would probably remove 30 lines.
 
-Theobroma?
-food of the gods or does your company just like chocolate?
+I'm more concerned about bytes of code.
 
-> diff --git a/drivers/net/ethernet/freescale/fec_main.c
-[]
-> +static void set_multicast_list(struct net_device *ndev);
-[]
-> @@ -472,8 +474,7 @@ fec_restart(struct net_device *ndev, int duplex)
->         writel(0xffc00000, fep->hwp + FEC_IEVENT);
-> 
->         /* Reset all multicast. */
-> -       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_HIGH);
-> -       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_LOW);
-> +       set_multicast_list(ndev);
+> The command line option is too complex but some of the data I haven't
+> found a way to get at runtime yet.
 
-maybe dev_set_rx_mode(ndev) ?
+I think that is probably key.
 
+>> I suspect the cutoff for this should be a lot lower than 8 TB even, more
+>> like 128 GB or so.  The only concern is to not set the cutoff so low
+>> that we can end up running out of memory or with suboptimal NUMA
+>> placement just because of this.
+> Even at lower amounts of ram there is an positive impact.I it knocks
+> time off
+> boot even at as small as a 1TB of ram.
+
+I am not surprised.
+
+	-hpa
 
