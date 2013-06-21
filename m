@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423404Ab3FURWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 13:22:04 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53564 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423122Ab3FURWC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 13:22:02 -0400
-Message-ID: <51C48B5A.2040404@ti.com>
-Date: Fri, 21 Jun 2013 13:20:26 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, <robherring2@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Vineet Gupta <vgupta@synopsys.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>,
-        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <x86@kernel.org>, <arm@kernel.org>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
+	id S1423476Ab3FURZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 13:25:11 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38870 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1423122Ab3FURZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 13:25:09 -0400
+Message-ID: <1371835508.19215.50.camel@joe-AO722>
+Subject: Re: [PATCH] net: fec: Fix multicast list setup in fec_restart().
+From: Joe Perches <joe@perches.com>
+To: Christoph =?ISO-8859-1?Q?M=FCllner?= 
+	<christoph.muellner@theobroma-systems.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-c6x-dev@linux-c6x.org>,
-        <linux-mips@linux-mips.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-xtensa@linux-xtensa.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH] of: Specify initrd location using 64-bit
-References: <1371775956-16453-1-git-send-email-santosh.shilimkar@ti.com> <51C4171C.9050908@linutronix.de>
-In-Reply-To: <51C4171C.9050908@linutronix.de>
+        "David S. Miller" <davem@davemloft.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>, netdev@vger.kernel.org
+Date: Fri, 21 Jun 2013 10:25:08 -0700
+In-Reply-To: <61455.62.178.124.14.1371832855.squirrel@mail.theobroma-systems.com>
+References: <61455.62.178.124.14.1371832855.squirrel@mail.theobroma-systems.com>
 Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 June 2013 05:04 AM, Sebastian Andrzej Siewior wrote:
-> On 06/21/2013 02:52 AM, Santosh Shilimkar wrote:
->> diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
->> index 0a2c68f..62e2e8f 100644
->> --- a/arch/microblaze/kernel/prom.c
->> +++ b/arch/microblaze/kernel/prom.c
->> @@ -136,8 +136,7 @@ void __init early_init_devtree(void *params)
->>  }
->>  
->>  #ifdef CONFIG_BLK_DEV_INITRD
->> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
->> -		unsigned long end)
->> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
->>  {
->>  	initrd_start = (unsigned long)__va(start);
->>  	initrd_end = (unsigned long)__va(end);
+On Fri, 2013-06-21 at 18:40 +0200, Christoph Müllner wrote:
+> Setup the multicast list of the net_device instead of
+> clearing it blindly. This restores the multicast groups
+> in case of a link down/up event.
 > 
-> I think it would better to go here for phys_addr_t instead of u64. This
-> would force you in of_flat_dt_match() to check if the value passed from
-> DT specifies a memory address outside of 32bit address space and the
-> kernel can't deal with this because its phys_addr_t is 32bit only due
-> to a Kconfig switch.
-> 
-> For x86, the initrd has to remain in the 32bit address space so passing
-> the initrd in the upper range would violate the ABI. Not sure if this
-> is true for other archs as well (ARM obviously not).
-> 
-That pretty much means phys_addr_t. It will work for me as well but
-in last thread from consistency with memory and reserved node, Rob
-insisted to keep it as u64. So before I re-spin another version,
-would like to here what Rob has to say considering the x86 requirement.
+> Signed-off-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
 
-Rob,
-Are you ok with phys_addr_t since your concern was about rest
-of the memory specific bits of the device-tree code use u64 ?
+Theobroma?
+food of the gods or does your company just like chocolate?
 
-Regards,
-Santosh
+> diff --git a/drivers/net/ethernet/freescale/fec_main.c
+[]
+> +static void set_multicast_list(struct net_device *ndev);
+[]
+> @@ -472,8 +474,7 @@ fec_restart(struct net_device *ndev, int duplex)
+>         writel(0xffc00000, fep->hwp + FEC_IEVENT);
+> 
+>         /* Reset all multicast. */
+> -       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_HIGH);
+> -       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_LOW);
+> +       set_multicast_list(ndev);
+
+maybe dev_set_rx_mode(ndev) ?
+
 
