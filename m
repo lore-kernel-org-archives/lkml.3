@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161472Ab3FUIFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 04:05:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42251 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161196Ab3FUIFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 04:05:03 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86/platform: Add kvmconfig to the phony targets
-Date: Fri, 21 Jun 2013 10:04:51 +0200
-Message-Id: <1371801891-23618-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <tip-46ff53874bd935ab9955dee56d60212857e89bf3@git.kernel.org>
-References: <tip-46ff53874bd935ab9955dee56d60212857e89bf3@git.kernel.org>
+	id S1423300Ab3FUIMm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 04:12:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37449 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161189Ab3FUIMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 04:12:37 -0400
+Date: Fri, 21 Jun 2013 10:12:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: =?ISO-8859-15?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: clocksource with changing frequency?
+In-Reply-To: <51C39B1A.5070902@linaro.org>
+Message-ID: <alpine.DEB.2.02.1306211010000.4013@ionos.tec.linutronix.de>
+References: <f5e5d3d7-699d-4f89-80c8-849e432e8b26@VA3EHSMHS017.ehs.local> <51C39B1A.5070902@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1027165253-1371802358=:4013"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-... so as not to disable it with a file of the same name in the toplevel
-build directory.
+--8323329-1027165253-1371802358=:4013
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/Makefile | 1 +
- 1 file changed, 1 insertion(+)
+On Thu, 20 Jun 2013, John Stultz wrote:
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 91ee171f1cff..07639c656fcd 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -220,6 +220,7 @@ archclean:
- 	$(Q)$(MAKE) $(clean)=$(boot)
- 	$(Q)$(MAKE) $(clean)=arch/x86/tools
- 
-+PHONY += kvmconfig
- kvmconfig:
- 	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
- 	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config arch/x86/configs/kvm_guest.config
--- 
-1.8.3
+> On 06/20/2013 05:01 PM, Sören Brinkmann wrote:
+> > Hi all,
+> > 
+> > I have a question/problem with a clocksource whose input frequency can
+> > change.
+> 
+> That behavior isn't supported by the clocksource core. We expect frequency
+> changing clocksources to be detected and disqualified (as we do w/ freq
+> changing TSCs on older laptops).
+> 
+> 
+> > On Zynq we use the cadece_ttc timer as clocksource. Its input clock is
+> > tightly coupled to the CPU clock. I.e. it changes when cpufreq scales
+> > the CPU clocks.
+> > To compensate this, I added a clock notifier doing this on a frequency
+> > change:
+> > 	clocksource_unregister(&ttccs->cs);
+> > 	clocksource_register_hz(&ttccs->cs, ndata->new_rate / PRESCALE);
+> 
+> This will definitely have problems if this is the only high-res capable
+> clocksource.
 
+And starting with 3.11 it will be not longer possible to unregister
+the only high-res capable clocksource exactly to prevent the wreckage
+you are talking about :)
+
+Thanks,
+
+	tglx
+
+--8323329-1027165253-1371802358=:4013--
