@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742Ab3FVUEN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 16:04:13 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54276 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab3FVUEK (ORCPT
+	id S1750924Ab3FVUL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 16:11:28 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:58708 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750746Ab3FVULZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 16:04:10 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sat, 22 Jun 2013 13:04:09 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>
-Subject: Re: 'Timed out waiting for forcewake old ack to clear' and hangup on
- IvyBridge system
-Message-ID: <20130622200409.GA24545@roeck-us.net>
-References: <20130622065808.GA20980@roeck-us.net>
- <20130622121646.0afcc207@jbarnes-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130622121646.0afcc207@jbarnes-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 22 Jun 2013 16:11:25 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, gregkh@linuxfoundation.org,
+        airlied@linux.ie
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        shuahkhan@gmail.com
+Subject: [PATCH 1/2] power: add new interface to return pm_transition state
+Date: Sat, 22 Jun 2013 14:11:14 -0600
+Message-Id: <1371931874-3220-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 12:16:46PM -0700, Jesse Barnes wrote:
-> On Fri, 21 Jun 2013 23:58:08 -0700
-> Guenter Roeck <linux@roeck-us.net> wrote:
-> 
-> > Hi all,
-> > 
-> > after upgrading one of my servers to 3.8, then 3.9.7 and 3.10-rc6, I started to
-> > see lots of "Timed out waiting for forcewake old ack to clear" error messages,
-> > including hang-ups especially if the system was highly loaded. With 3.5.24
-> > everything was fine.
-> > 
-> > After backing out commit 36ec8f877 (drm/i915: unconditionally use mt forcewake
-> > on hsw/ivb), everything is back to normal. The log message is still there, but
-> > only once during boot, and the system runs stable.
-> > 
-> > CPU is "Intel(R) Core(TM) i7-3770K CPU @ 3.50GHz", mainboard is Supermicro
-> > C7H61, BIOS version 2.00 dated 11/02/2012. Configuration file is whatever
-> > comes with Ubuntu; I'll be happy to provide a copy if anyone thinks it might
-> > help.
-> > 
-> > Any idea what else I can do besides using a special kernel with the backed out
-> > commit ? Is it possible that others have the same problem ?
-> 
-> Ouch, so a BIOS that uses the other forcewake mechanism seems to have
-> escaped.  Is there a newer one available for your system?  I'm hoping
-> it'll fix the issue, otherwise we may have to introduce both methods
-> for IVB again...
-> 
-I installed the latest BIOS version (2.00b), but it did not fix the problem.
+Add a new interface get_pm_transition() to return pm_transition state.
+This interface is intended to be used from dev_pm_ops class and type
+suspend interfaces that call legacy pm ops driver suspend interfaces.
+Legacy suspend pm_ops take pm_message_t as a parameter.
 
-Is there some info (such as an Intel document describing what needs to be done)
-which I could pass on to Supermicro ?
+e.g: drm_class_suspend() calls into driver suspend routines
+via drm_dev->driver->suspend(drm_dev, state).
 
-I think it would be helpful if the condition was detected and reported, if that
-is possible. I spent two days so far tracking this down. It would be nice
-if others would not have to go through the same experience.
+Once drm_class_suspend() is converted to dev_pm_ops, it will no longer
+have access to pm_transition which it has to pass into driver legacy
+suspend calls. get_pm_transition() interface addresses this need.
 
-Thanks,
-Guenter
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/base/power/main.c |   17 +++++++++++++++++
+ include/linux/pm.h        |    3 +++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index c2132b8..3e2e09d 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -57,6 +57,23 @@ static pm_message_t pm_transition;
+ static int async_error;
+ 
+ /**
++ * get_pm_transition - return pm_transition state.
++ * This interface is intended to be used from dev_pm_ops class and type
++ * suspend interfaces that call legacy pm ops driver suspend interfaces.
++ * Legacy suspend pm_ops take pm_message_t as a parameter.
++ * e.g: drm_class_suspend() calls into driver suspend routines
++ * via drm_dev->driver->suspend(drm_dev, state).
++ * Once drm_class_suspend() is converted to dev_pm_ops, it will no longer
++ * have access to pm_transition which it has to pass into driver legacy
++ * suspend calls. get_pm_transition() interface addresses this need.
++*/
++pm_message_t get_pm_transition()
++{
++	return pm_transition;
++}
++EXPORT_SYMBOL_GPL(get_pm_transition);
++
++/**
+  * device_pm_sleep_init - Initialize system suspend-related device fields.
+  * @dev: Device object being initialized.
+  */
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index a224c7f..46f3252 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -63,6 +63,9 @@ typedef struct pm_message {
+ 	int event;
+ } pm_message_t;
+ 
++/* drivers/base/power/main.c */
++extern pm_message_t get_pm_transition(void);
++
+ /**
+  * struct dev_pm_ops - device PM callbacks
+  *
+-- 
+1.7.10.4
+
