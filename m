@@ -1,68 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab3FVNqo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 09:46:44 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:58338 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671Ab3FVNqn (ORCPT
+	id S1756036Ab3FVORH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 10:17:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30289 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab3FVORF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 09:46:43 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>, Nicolas Pitre <nico@fluxnic.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+	Sat, 22 Jun 2013 10:17:05 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BUyC4VmaGVwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5V7bKCsQ6TsA:10 a=WOpjIBOU2AokXzUOCpsA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1371910622.18733.154.camel@gandalf.local.home>
+Subject: Re: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
+ from apic.c to irq.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v6 4/8] ARM: Add .init_platform() callback to machine descriptor
-Date: Sat, 22 Jun 2013 15:46:41 +0200
-Message-ID: <2503927.uZIubvXWLh@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.6-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <1371774924-9224-5-git-send-email-tomasz.figa@gmail.com>
-References: <1371774924-9224-1-git-send-email-tomasz.figa@gmail.com> <1371774924-9224-5-git-send-email-tomasz.figa@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+        Andrew Morton <akpm@linux-foundation.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Date: Sat, 22 Jun 2013 10:17:02 -0400
+In-Reply-To: <1371849967.18733.134.camel@gandalf.local.home>
+References: <1371835898.18733.122.camel@gandalf.local.home>
+	 <1371848976.18733.130.camel@gandalf.local.home>
+	 <1371849967.18733.134.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
+On Fri, 2013-06-21 at 17:26 -0400, Steven Rostedt wrote:
+> On Fri, 2013-06-21 at 17:09 -0400, Steven Rostedt wrote:
+> > On Fri, 2013-06-21 at 13:31 -0400, Steven Rostedt wrote:
+> > 
+> > > My testing also triggered another bug, but I'm not sure it's related to
+> > > these patches or something that already existed. I'm currently
+> > > investigating it now.
+> > 
+> > 
+> > I haven't been able to reproduce it.
+> 
+> Correction, I am able to reproduce it. The trick is I need to kick off
+> the test as soon as I+
++/*
++ * the load_current_idt() is called with interrupt disabled by
+local_irq_save()
++ * to avoid races. That way the IDT will always be set back to the
+expected
++ * descriptor.
++ */
++static inline void load_current_idt(void)
++{
++       unsigned long flags;
++
++       local_irq_save(flags);
++       if (is_debug_idt_enabled())
++               load_debug_idt();
++       else
++               load_idt((const struct desc_ptr *)&idt_descr);
++       local_irq_restore(flags);
++}
 
-On Friday 21 of June 2013 02:35:20 Tomasz Figa wrote:
-> Most ARM platforms have parts that should be initialized as early as
-> possible, which usually means as soon as memory management (kmalloc,
-> ioremap) starts to work,
+>  get a login prompt, as the gui is still coming up
+> (this time the crash happened on pulseaudio). The test suite runs the
+> test when it detects the login. I was trying to reproduce it manually,
+> which was well after login was set up.
 > 
-> However, currently there is no appropriate callback in machine_desc
-> struct to use for such initialization and platforms tend to stuff things
-> up .init_irq() and .init_time() callbacks.
-> 
-> Since all the DT-based platforms are going towards generic IRQ and time
-> initialization (using irqchip_init and clocksource_of_init) and current
-> code assumes that if custom callbacks are not provided in machine_desc
-> then generic ones should be used, this problem has become a bit more
-> inconvenient.
-> 
-> This patch tries to solve this issue by introducing new callback called
-> .init_platform(), where any custom low level initialization of platform
-> can be done safely.
-> 
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-> ---
->  arch/arm/include/asm/mach/arch.h | 1 +
->  arch/arm/kernel/irq.c            | 3 +++
->  2 files changed, 4 insertions(+)
+> I'll try to make sure I can reproduce it consistently, or at least in a
+> short number of tries. And then remove all the patches and see if I can
+> still trigger it.
 
-Please disregard this patch when applying the series (if that happens).
+OK, I can easily reproduce it when applying this commit:
 
-Best regards,
-Tomasz
+629f4f9d59a27d8e58aa612e886e6a9a63ea7aeb
+"x86: Rename variables for debugging"
+
+Which doesn't just rename a variable but changes the way we update the
+IDT for debugging.
+
+After removing this commit, I can not reproduce the dump. I'm thinking
+that the IDT switch did something that caused this to happen. Could be,
+as lockdep (which is what is having issues here) is where things are
+going wrong.
+
+Oh, I think the issue is with this...
+
++
++/*
++ * the load_current_idt() is called with interrupt disabled by local_irq_save()
++ * to avoid races. That way the IDT will always be set back to the expected
++ * descriptor.
++ */
++static inline void load_current_idt(void)
++{
++       unsigned long flags;
++
++       local_irq_save(flags);
++       if (is_debug_idt_enabled())
++               load_debug_idt();
++       else
++               load_idt((const struct desc_ptr *)&idt_descr);
++       local_irq_restore(flags);
++}
+
+It's not safe to call local_irq_save() here. From entry_64.S:
+
+.macro TRACE_IRQS_OFF_DEBUG
+	call debug_stack_set_zero
+	TRACE_IRQS_OFF
+	call debug_stack_reset
+.endm
+
+We must change the idt before we can trace irqs being disabled. The
+local_irq_save() here is going to be traced by lockdep. Why do we need
+to disable interrupts? It's pretty pointless since this same code can be
+called by NMIs.
+
+-- Steve
+
 
