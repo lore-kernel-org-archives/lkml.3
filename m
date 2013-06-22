@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab3FVUn5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 16:43:57 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:50315 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab3FVUnY (ORCPT
+	id S1751975Ab3FVUnx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 16:43:53 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:64063 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab3FVUnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 16:43:24 -0400
+	Sat, 22 Jun 2013 16:43:13 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -27,9 +27,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Alban Bedel <alban.bedel@avionic-design.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [RFC PATCH v2 05/12] dmaengine: PL08x: Add support for different maximum transfer size
-Date: Sat, 22 Jun 2013 22:42:37 +0200
-Message-Id: <1371933764-24875-6-git-send-email-tomasz.figa@gmail.com>
+Subject: [RFC PATCH v2 01/12] dmaengine: PL08x: Refactor pl08x_getbytes_chan() to lower indentation
+Date: Sat, 22 Jun 2013 22:42:33 +0200
+Message-Id: <1371933764-24875-2-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371933764-24875-1-git-send-email-tomasz.figa@gmail.com>
 References: <1371933764-24875-1-git-send-email-tomasz.figa@gmail.com>
@@ -37,78 +37,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PL080S has separate register to store transfer size in, allowing single
-transfer to be much larger than in standard PL080.
+Further patch will introduce support for PL080S, which requires some
+things to be done conditionally, thus increasing indentation level of
+some functions even more.
 
-This patch makes the amba-pl08x driver aware of this and removes writing
-transfer size to reserved bits of CH_CONTROL register on PL080S, which
-was not a problem witn transfer sizes fitting the original bitfield
-of PL080, but now would overwrite other fields.
+This patch reduces indentation level of pl08x_getbytes_chan() function
+by inverting several conditions and returning from function wherever
+possible.
 
 Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- drivers/dma/amba-pl08x.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/dma/amba-pl08x.c | 53 ++++++++++++++++++++++++++----------------------
+ 1 file changed, 29 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 103bc1a..89b8120 100644
+index 06fe45c..6a12392 100644
 --- a/drivers/dma/amba-pl08x.c
 +++ b/drivers/dma/amba-pl08x.c
-@@ -122,6 +122,7 @@ struct vendor_data {
- 	bool dualmaster;
- 	bool nomadik;
- 	bool pl080s;
-+	u32 max_transfer_size;
- };
+@@ -469,47 +469,52 @@ static inline u32 get_bytes_in_cctl(u32 cctl)
+ /* The channel should be paused when calling this */
+ static u32 pl08x_getbytes_chan(struct pl08x_dma_chan *plchan)
+ {
++	struct pl08x_lli *llis_va;
+ 	struct pl08x_phy_chan *ch;
++	dma_addr_t llis_bus;
+ 	struct pl08x_txd *txd;
+-	size_t bytes = 0;
++	size_t bytes;
++	int index;
++	u32 clli;
  
- 	u32 cctl1;
-@@ -772,6 +773,7 @@ static inline u32 pl08x_cctl_bits(u32 cctl, u8 srcwidth, u8 dstwidth,
- 		break;
+ 	ch = plchan->phychan;
+ 	txd = plchan->at;
+ 
++	if (!ch || !txd)
++		return 0;
++
+ 	/*
+ 	 * Follow the LLIs to get the number of remaining
+ 	 * bytes in the currently active transaction.
+ 	 */
+-	if (ch && txd) {
+-		u32 clli = readl(ch->base + PL080_CH_LLI) & ~PL080_LLI_LM_AHB2;
++	clli = readl(ch->base + PL080_CH_LLI) & ~PL080_LLI_LM_AHB2;
+ 
+-		/* First get the remaining bytes in the active transfer */
+-		bytes = get_bytes_in_cctl(readl(ch->base + PL080_CH_CONTROL));
++	/* First get the remaining bytes in the active transfer */
++	bytes = get_bytes_in_cctl(readl(ch->base + PL080_CH_CONTROL));
+ 
+-		if (clli) {
+-			struct pl08x_lli *llis_va = txd->llis_va;
+-			dma_addr_t llis_bus = txd->llis_bus;
+-			int index;
++	if (!clli)
++		return bytes;
+ 
+-			BUG_ON(clli < llis_bus || clli >= llis_bus +
++	llis_va = txd->llis_va;
++	llis_bus = txd->llis_bus;
++
++	BUG_ON(clli < llis_bus || clli >= llis_bus +
+ 				sizeof(struct pl08x_lli) * MAX_NUM_TSFR_LLIS);
+ 
+-			/*
+-			 * Locate the next LLI - as this is an array,
+-			 * it's simple maths to find.
+-			 */
+-			index = (clli - llis_bus) / sizeof(struct pl08x_lli);
++	/*
++	 * Locate the next LLI - as this is an array,
++	 * it's simple maths to find.
++	 */
++	index = (clli - llis_bus) / sizeof(struct pl08x_lli);
+ 
+-			for (; index < MAX_NUM_TSFR_LLIS; index++) {
+-				bytes += get_bytes_in_cctl(llis_va[index].cctl);
++	for (; index < MAX_NUM_TSFR_LLIS; index++) {
++		bytes += get_bytes_in_cctl(llis_va[index].cctl);
+ 
+-				/*
+-				 * A LLI pointer of 0 terminates the LLI list
+-				 */
+-				if (!llis_va[index].lli)
+-					break;
+-			}
+-		}
++		/*
++		 * A LLI pointer of 0 terminates the LLI list
++		 */
++		if (!llis_va[index].lli)
++			break;
  	}
  
-+	tsize &= PL080_CONTROL_TRANSFER_SIZE_MASK;
- 	retbits |= tsize << PL080_CONTROL_TRANSFER_SIZE_SHIFT;
- 	return retbits;
- }
-@@ -1001,7 +1003,7 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 			 * MIN(buswidths)
- 			 */
- 			max_bytes_per_lli = bd.srcbus.buswidth *
--				PL080_CONTROL_TRANSFER_SIZE_MASK;
-+						pl08x->vd->max_transfer_size;
- 			dev_vdbg(&pl08x->adev->dev,
- 				"%s max bytes per lli = %zu\n",
- 				__func__, max_bytes_per_lli);
-@@ -2111,6 +2113,7 @@ static struct vendor_data vendor_pl080 = {
- 	.config_offset = PL080_CH_CONFIG,
- 	.channels = 8,
- 	.dualmaster = true,
-+	.max_transfer_size = PL080_CONTROL_TRANSFER_SIZE_MASK,
- };
- 
- static struct vendor_data vendor_nomadik = {
-@@ -2118,18 +2121,21 @@ static struct vendor_data vendor_nomadik = {
- 	.channels = 8,
- 	.dualmaster = true,
- 	.nomadik = true,
-+	.max_transfer_size = PL080_CONTROL_TRANSFER_SIZE_MASK,
- };
- 
- static struct vendor_data vendor_pl080s = {
- 	.config_offset = PL080S_CH_CONFIG,
- 	.channels = 8,
- 	.pl080s = true,
-+	.max_transfer_size = PL080S_CONTROL_TRANSFER_SIZE_MASK,
- };
- 
- static struct vendor_data vendor_pl081 = {
- 	.config_offset = PL080_CH_CONFIG,
- 	.channels = 2,
- 	.dualmaster = false,
-+	.max_transfer_size = PL080_CONTROL_TRANSFER_SIZE_MASK,
- };
- 
- static struct amba_id pl08x_ids[] = {
+ 	return bytes;
 -- 
 1.8.2.1
 
