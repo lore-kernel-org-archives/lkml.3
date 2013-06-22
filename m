@@ -1,131 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab3FVCor (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 22:44:47 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:56945 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab3FVCoq (ORCPT
+	id S1423604Ab3FVCrh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 22:47:37 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:59102 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754756Ab3FVCrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 22:44:46 -0400
-Message-ID: <51C50F98.9020301@ozlabs.ru>
-Date: Sat, 22 Jun 2013 12:44:40 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Fri, 21 Jun 2013 22:47:35 -0400
+Message-ID: <51C5103C.4030802@gmail.com>
+Date: Sat, 22 Jun 2013 10:47:24 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] vfio: Limit group opens
-References: <20130621211144.8237.7370.stgit@bling.home>  <51C4FAF4.5090509@ozlabs.ru> <1371864389.30572.142.camel@ul30vt.home>
-In-Reply-To: <1371864389.30572.142.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "Alexander E. Patrakov" <patrakov@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <1436701.V8egnZxOqz@vostro.rjw.lan> <51C4853D.7040705@gmail.com> <2686036.58bcYhGNts@vostro.rjw.lan>
+In-Reply-To: <2686036.58bcYhGNts@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2013 11:26 AM, Alex Williamson wrote:
-> On Sat, 2013-06-22 at 11:16 +1000, Alexey Kardashevskiy wrote:
->> Cool, thanks!
->>
->> So we will need only this (to be called from KVM), and that will be it, right?
-> 
-> For what?  This is not the external lock you're looking for.  As I've
-> mentioned, the file can only hold the group, but that doesn't give you
-> any guarantee that the group is protected by the IOMMU.  Thanks,
-
-
-I am confused, sorry :) With this patch, a group fd cannot be reopened if
-already opened, and this is the only way for user space to take control
-over a group. If it is not an external lock, then what is it? And all I
-have to do now is to verify that the group fd passed to KVM is correct and
-I am happy. Who and how can break anything (group? KVM?) now?
-
-
-
-> 
-> Alex
-> 
->> int vfio_group_iommu_id_from_file(struct file *filep)
->> ...
->>
->>
->>
->> On 06/22/2013 07:12 AM, Alex Williamson wrote:
->>> vfio_group_fops_open attempts to limit concurrent sessions by
->>> disallowing opens once group->container is set.  This really doesn't
->>> do what we want and allow for inconsistent behavior, for instance a
->>> group can be opened twice, then a container set giving the user two
->>> file descriptors to the group.  But then it won't allow more to be
->>> opened.  There's not much reason to have the group opened multiple
->>> times since most access is through devices or the container, so
->>> complete what the original code intended and only allow a single
->>> instance.
+On 06/22/2013 08:13 AM, Rafael J. Wysocki wrote:
+> On Saturday, June 22, 2013 12:54:21 AM Jiang Liu wrote:
+>> On 06/21/2013 03:06 AM, Rafael J. Wysocki wrote:
+>>> On Wednesday, June 19, 2013 11:18:41 AM Alexander E. Patrakov wrote:
+>>>> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
+>>>>> OK, let's try to untangle this a bit.
+>>>>>
+>>>>> If you applyt patches [1/4] and [4/4] from the $subject series only, what
+>>>>> does remain unfixed?
+>>>>
+>>>> [not tested, can do so in 12 hours if needed]
+>>>>
+>>>> I think there will be problems on undocking and/or on the second
+>>>> docking, as described in comments #6 - #8 of
+>>>> https://bugzilla.kernel.org/show_bug.cgi?id=59501
 >>>
->>> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+>>> OK, I think I have something that might work.  It may not solve all problems,
+>>> but maybe it helps a bit.  Unfortunately, I can't really test it, so please do
+>>> if you can.
+>>>
+>>> Please apply [1/4] and [4/4] and the one below and see what happens.
+>>>
+>>> Thanks,
+>>> Rafael
+>>>
+>>>
 >>> ---
->>>  drivers/vfio/vfio.c |   14 ++++++++++++++
->>>  1 file changed, 14 insertions(+)
+>>> Rationale:
+>>> 	acpiphp_glue.c:disable_device() trims the underlying ACPI device objects
+>>> 	after removing the companion PCI devices, so the dock station code
+>>> 	doesn't need to trim them separately for the dependent devices handled
+>>> 	by acpiphp.
 >>>
->>> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
->>> index 6d78736..d30f44d 100644
->>> --- a/drivers/vfio/vfio.c
->>> +++ b/drivers/vfio/vfio.c
->>> @@ -76,6 +76,7 @@ struct vfio_group {
->>>  	struct notifier_block		nb;
->>>  	struct list_head		vfio_next;
->>>  	struct list_head		container_next;
->>> +	atomic_t			opened;
->>>  };
->>>  
->>>  struct vfio_device {
->>> @@ -206,6 +207,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
->>>  	INIT_LIST_HEAD(&group->device_list);
->>>  	mutex_init(&group->device_lock);
->>>  	atomic_set(&group->container_users, 0);
->>> +	atomic_set(&group->opened, 0);
->>>  	group->iommu_group = iommu_group;
->>>  
->>>  	group->nb.notifier_call = vfio_iommu_group_notifier;
->>> @@ -1236,12 +1238,22 @@ static long vfio_group_fops_compat_ioctl(struct file *filep,
->>>  static int vfio_group_fops_open(struct inode *inode, struct file *filep)
->>>  {
->>>  	struct vfio_group *group;
->>> +	int opened;
->>>  
->>>  	group = vfio_group_get_from_minor(iminor(inode));
->>>  	if (!group)
->>>  		return -ENODEV;
->>>  
->>> +	/* Do we need multiple instances of the group open?  Seems not. */
->>> +	opened = atomic_cmpxchg(&group->opened, 0, 1);
->>> +	if (opened) {
->>> +		vfio_group_put(group);
->>> +		return -EBUSY;
->>> +	}
->>> +
->>> +	/* Is something still in use from a previous open? */
->>>  	if (group->container) {
->>> +		atomic_dec(&group->opened);
->>>  		vfio_group_put(group);
->>>  		return -EBUSY;
->>>  	}
->>> @@ -1259,6 +1271,8 @@ static int vfio_group_fops_release(struct inode *inode, struct file *filep)
->>>  
->>>  	vfio_group_try_dissolve_container(group);
->>>  
->>> +	atomic_dec(&group->opened);
->>> +
->>>  	vfio_group_put(group);
->>>  
->>>  	return 0;
->>>
+>>> 	Moreover, acpiphp_glue.c is the only user of
+>>> 	[un]register_hotplug_dock_device(), so *all* devices on the
+>>> 	ds->hotplug_devices list are handled by acpiphp and ops is set for all
+>>> 	of them.
+>> Hi Rafael,
+>>     There's an ongoing patch to fix a disk bay hotplug regression, which
+>> may add a second caller of register_hotplug_device(). Please refer to
+>> bug 59871, and the proposed patch is at:
+>> https://bugzilla.kernel.org/attachment.cgi?id=105581
+Hi Rafael,
+    You can find the proposed patch for ATA Bay hotplug at
+https://bugzilla.kernel.org/attachment.cgi?id=105581
+Regards!
+Gerry
+
 >>
->>
+>> The proposed patch for bug 59871 may not be safe with above changes
+>> because the ACPI ATA hotplug handler may not remove ACPI devices as
+>> acpiphp driver does.
 > 
+> Well, since there's not ATA hotplug handler in 3.10-rc6, as far as I can say,
+> I suppose that you're talking about a new patch scheduled for 3.11.  If so,u
+> can you please give me a pointer to that patch, possibly the tree it is
+> queued on etc.?
+[...]
+> 
+> Thanks,
+> Rafael
 > 
 > 
 
-
--- 
-Alexey
