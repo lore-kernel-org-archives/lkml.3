@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751046Ab3FVF1J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 01:27:09 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:5755 "EHLO
+	id S1751178Ab3FVFzM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 01:55:12 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:36771 "EHLO
 	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3FVF1F (ORCPT
+	with ESMTP id S1750775Ab3FVFzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 01:27:05 -0400
+	Sat, 22 Jun 2013 01:55:10 -0400
 X-Spam-Score: -100.8
-Message-ID: <51C53571.9070403@asianux.com>
-Date: Sat, 22 Jun 2013 13:26:09 +0800
+Message-ID: <51C53C06.7050205@asianux.com>
+Date: Sat, 22 Jun 2013 13:54:14 +0800
 From: Chen Gang <gang.chen@asianux.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>, zhaohongjiang@huawei.com
-CC: David Miller <davem@davemloft.net>, Greg KH <gregkh@linuxfoundation.org>,
-        sparclinux@vger.kernel.org,
+To: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+CC: Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH] arch: sparc: kernel: check the memory length before use strcpy().
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] arch: arm64: kernel: add '#ifdef CONFIG_COMPAT' for aarch32_break_handler()
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-For the related next strcpy(), the destination length is less than 512,
-but the source maximize length may be 'OPROMMAXPARAM' (4096) which is
-more than 512.
+If 'COMPAT' not defined, aarch32_break_handler() cannot pass compiling,
+so need add '#ifdef' for it just like the header file has done.
 
-One work flow may:
-  openprom_sunos_ioctl() ->  if (cmd == OPROMSETOPT)
-    getstrings() ->  will alloc buffer with size 'OPROMMAXPARAM'.
-    opromsetopt() ->  devide the buffer into 'var' and 'value'
-      of_set_property() -> pass
-        prom_setprop() -> pass
-          ldom_set_var()
+The related make:
 
-And do not mind the additional 4 alignment buffer increasing, since
-'sizeof(pkt) - sizeof(pkt.header)' is 4 alignment at least.
+  make ARCH=arm64 randconfig
+  make ARCH=arm64 menuconfig
+  make ARCH=arm64 V=1 EXTRA_CFLAGS=-W
+
+The related error:
+
+  arch/arm64/kernel/debug-monitors.c:249:5: error: redefinition of ‘aarch32_break_handler’
+  In file included from arch/arm64/kernel/debug-monitors.c:29:0:
+  /root/linux-next/arch/arm64/include/asm/debug-monitors.h:89:12: note: previous definition of ‘aarch32_break_handler’ was here
 
 
 Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- arch/sparc/kernel/ds.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm64/kernel/debug-monitors.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/sparc/kernel/ds.c b/arch/sparc/kernel/ds.c
-index 5ef48da..11d460f 100644
---- a/arch/sparc/kernel/ds.c
-+++ b/arch/sparc/kernel/ds.c
-@@ -783,6 +783,16 @@ void ldom_set_var(const char *var, const char *value)
- 		char  *base, *p;
- 		int msg_len, loops;
+diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
+index 08018e3..ceedcd7 100644
+--- a/arch/arm64/kernel/debug-monitors.c
++++ b/arch/arm64/kernel/debug-monitors.c
+@@ -246,6 +246,7 @@ static int brk_handler(unsigned long addr, unsigned int esr,
+ 	return 0;
+ }
  
-+		if (strlen(var) + strlen(value) + 2 >
-+		    sizeof(pkt) - sizeof(pkt.header)) {
-+			printk(KERN_ERR PFX
-+				"contents length: %zu, which more than max: %lu,"
-+				"so could not set (%s) variable to (%s).\n",
-+				strlen(var) + strlen(value) + 2,
-+				sizeof(pkt) - sizeof(pkt.header), var, value);
-+			return;
-+		}
-+
- 		memset(&pkt, 0, sizeof(pkt));
- 		pkt.header.data.tag.type = DS_DATA;
- 		pkt.header.data.handle = cp->handle;
++#ifdef CONFIG_COMPAT
+ int aarch32_break_handler(struct pt_regs *regs)
+ {
+ 	siginfo_t info;
+@@ -285,6 +286,7 @@ int aarch32_break_handler(struct pt_regs *regs)
+ 	force_sig_info(SIGTRAP, &info, current);
+ 	return 0;
+ }
++#endif
+ 
+ static int __init debug_traps_init(void)
+ {
 -- 
-1.7.11.7
+1.7.7.6
