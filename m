@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423506Ab3FVAfU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 20:35:20 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:46351 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161521Ab3FVAfS (ORCPT
+	id S1161597Ab3FVAna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 20:43:30 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:9083 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161521Ab3FVAn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 20:35:18 -0400
-Date: Fri, 21 Jun 2013 17:35:11 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] power/reset: Make the vexpress driver optional on arm
- and arm64
-Message-ID: <20130622003510.GA32416@lizard.mcd26095.sjc.wayport.net>
-References: <1370877121-26211-1-git-send-email-pawel.moll@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1370877121-26211-1-git-send-email-pawel.moll@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 21 Jun 2013 20:43:29 -0400
+Message-ID: <1371861805.13136.23.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/2] rwsem: performance enhancements for systems with
+ many cores
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Date: Fri, 21 Jun 2013 17:43:25 -0700
+In-Reply-To: <CANN689G1hyV_+2DxOiLqHDLGGuCjAqn9GhV-g4A0Jfd6YRQupQ@mail.gmail.com>
+References: <1371858691.22432.3.camel@schen9-DESK>
+	 <1371859222.13136.11.camel@buesod1.americas.hpqcorp.net>
+	 <CANN689G1hyV_+2DxOiLqHDLGGuCjAqn9GhV-g4A0Jfd6YRQupQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 04:12:01PM +0100, Pawel Moll wrote:
-> The driver can be used on either arm or arm64 platforms, but
-> the latter doesn't have any platform-specific configuration
-> options, so it must be possible to manually enable the driver.
+On Fri, 2013-06-21 at 17:25 -0700, Michel Lespinasse wrote:
+> On Fri, Jun 21, 2013 at 5:00 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+> > On Fri, 2013-06-21 at 16:51 -0700, Tim Chen wrote:
+> >> In this patchset, we introduce two optimizations to read write semaphore.
+> >> The first one reduces cache bouncing of the sem->count field
+> >> by doing a pre-read of the sem->count and avoid cmpxchg if possible.
+> >> The second patch introduces similar optimistic spining logic in
+> >> the mutex code for the writer lock acquisition of rw-sem.
+> >>
+> >> Combining the two patches, in testing by Davidlohr Bueso on aim7 workloads
+> >> on 8 socket 80 cores system, he saw improvements of
+> >> alltests (+14.5%), custom (+17%), disk (+11%), high_systime
+> >> (+5%), shared (+15%) and short (+4%), most of them after around 500
+> >> users when i_mmap was implemented as rwsem.
+> >>
+> >> Feedbacks on the effectiveness of these tweaks on other workloads
+> >> will be appreciated.
+> >
+> > Tim, I was really hoping to send all this in one big bundle. I was doing
+> > some further testing (enabling hyperthreading and some Oracle runs),
+> > fortunately everything looks ok and we are getting actual improvements
+> > on large boxes.
+> >
+> > That said, how about I send you my i_mmap rwsem patchset for a v2 of
+> > this patchset?
 > 
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> ---
+> I'm a bit confused about the state of these patchsets - it looks like
+> I'm only copied into half of the conversations. Should I wait for a v2
+> here, or should I hunt down for Alex's version of things, or... ?
 
-Applied. Thanks a lot, Pawel!
+Except for some internal patch logistics, you haven't been left out on
+any conversations :)
 
-> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> index 349e9ae..ee039dc 100644
-> --- a/drivers/power/reset/Kconfig
-> +++ b/drivers/power/reset/Kconfig
-> @@ -32,7 +32,8 @@ config POWER_RESET_RESTART
->  	  user presses a key. u-boot then boots into Linux.
->  
->  config POWER_RESET_VEXPRESS
-> -	bool
-> +	bool "ARM Versatile Express power-off and reset driver"
-> +	depends on ARM || ARM64
->  	depends on POWER_RESET
->  	help
->  	  Power off and reset support for the ARM Ltd. Versatile
-> -- 
-> 1.8.1.2
+My original plan was to send out, in one patchset: 
+
+- rwsem optimizations from Alex (patch 1/2 here, which should be
+actually 4 patches) +
+- rwsem optimistic spinning (patch 2/2 here) +
+- i_mmap_mutex to rwsem conversion (5 more patches)
+
+Now, I realize that the i_mmap stuff might not be welcomed in a
+rwsem-specific optimizations patchset like this one, but I think it's
+relevant to include everything in a single bundle as it really shows the
+performance boosts and it's what I have been using and measuring the
+original negative rwsem performance when compared to a mutex. 
+
+If folks don't agree, I can always send it as a separate patchset.
+
+Thanks,
+Davidlohr
+
+
+the rwsem spin on owner functionality (2/2) + 4 from Alex )which is
+really patch 1/2 here + I haven't sent out any
+
