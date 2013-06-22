@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab3FVTpc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 15:45:32 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55115 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab3FVTp3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 15:45:29 -0400
-Date: Sat, 22 Jun 2013 21:45:27 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: =?iso-8859-1?Q?Ga=EBl?= PORTAY <g.portay@overkiz.com>,
-        Rob Landley <rob@landley.net>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
-Subject: Re: [RFC PATCH] led: add Cycle LED trigger.
-Message-ID: <20130622194526.GA18809@amd.pavel.ucw.cz>
-References: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
- <20130622112619.GA8075@amd.pavel.ucw.cz>
- <20130622164300.GB19420@earth.universe>
+	id S1751777Ab3FVTuK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 15:50:10 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47094 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751366Ab3FVTuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 15:50:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: "Alexander E. Patrakov" <patrakov@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
+Date: Sat, 22 Jun 2013 21:59:33 +0200
+Message-ID: <4437606.laqX8rCptb@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51C5103C.4030802@gmail.com>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <2686036.58bcYhGNts@vostro.rjw.lan> <51C5103C.4030802@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130622164300.GB19420@earth.universe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2013-06-22 18:43:01, Sebastian Reichel wrote:
-> On Sat, Jun 22, 2013 at 01:26:20PM +0200, Pavel Machek wrote:
-> > On Tue 2013-06-18 18:24:23, Gaël PORTAY wrote:
-> > > Currently, none of available triggers supports playing with the LED brightness
-> > > level.  The cycle trigger provides a way to define custom brightness cycle.
-> > > For example, it is easy to customize the cycle to mock up the rhythm of human
-> > > breathing which is a nice cycle to tell the user the system is doing something.
-> > > 
-> > > This trigger is meant to be usable for waiting an event to happen, for example
-> > > when the system gets ready.  Those cycles may be used to reflect well known
-> > > system status (e.g. idle mode, startup...).
-> > > 
-> > > This implementation provides several interfaces:
-> > >  - to define the cycle itself:
-> > >    * plot: definition of plot points using plot or rawplot files,
-> > >            each points defines the brightness level
-> > >    * interval: constant time interval between each plot point
-> > >  - to control the cycle:
-> > >    * repeat: the number of repetition of the whole plot cycle
-> > >              0 for an infinite loop
-> > >    * control: used to control the cycle trigger
-> > >      + "start"/"stop": to start/stop the cycle
-> > >      + "reset" to clear the cycle counter and the internal plot point index
-> > >      + "pause"/"resume" to pause/resume the cycle
-> > > 
-> > > Signed-off-by: Gaël PORTAY <g.portay@overkiz.com>
-> > 
-> > I'd say this should go to userspace.... and maybe should handle RGB
-> > leds. ... like the one on n900/HTC dream/....
-> > 
-> > Actually, there's probably some daemon in maemo that already does
-> > this.
-> 
-> Actually the n900 has hardware support for this. There's a
-> programmable LED driver on the board, which is called LP5523.
-> 
-> So... I don't think there's a daemon in maemo ;)
+On Saturday, June 22, 2013 10:47:24 AM Jiang Liu wrote:
+> On 06/22/2013 08:13 AM, Rafael J. Wysocki wrote:
+> > On Saturday, June 22, 2013 12:54:21 AM Jiang Liu wrote:
+> >> On 06/21/2013 03:06 AM, Rafael J. Wysocki wrote:
+> >>> On Wednesday, June 19, 2013 11:18:41 AM Alexander E. Patrakov wrote:
+> >>>> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
+> >>>>> OK, let's try to untangle this a bit.
+> >>>>>
+> >>>>> If you applyt patches [1/4] and [4/4] from the $subject series only, what
+> >>>>> does remain unfixed?
+> >>>>
+> >>>> [not tested, can do so in 12 hours if needed]
+> >>>>
+> >>>> I think there will be problems on undocking and/or on the second
+> >>>> docking, as described in comments #6 - #8 of
+> >>>> https://bugzilla.kernel.org/show_bug.cgi?id=59501
+> >>>
+> >>> OK, I think I have something that might work.  It may not solve all problems,
+> >>> but maybe it helps a bit.  Unfortunately, I can't really test it, so please do
+> >>> if you can.
+> >>>
+> >>> Please apply [1/4] and [4/4] and the one below and see what happens.
+> >>>
+> >>> Thanks,
+> >>> Rafael
+> >>>
+> >>>
+> >>> ---
+> >>> Rationale:
+> >>> 	acpiphp_glue.c:disable_device() trims the underlying ACPI device objects
+> >>> 	after removing the companion PCI devices, so the dock station code
+> >>> 	doesn't need to trim them separately for the dependent devices handled
+> >>> 	by acpiphp.
+> >>>
+> >>> 	Moreover, acpiphp_glue.c is the only user of
+> >>> 	[un]register_hotplug_dock_device(), so *all* devices on the
+> >>> 	ds->hotplug_devices list are handled by acpiphp and ops is set for all
+> >>> 	of them.
+> >> Hi Rafael,
+> >>     There's an ongoing patch to fix a disk bay hotplug regression, which
+> >> may add a second caller of register_hotplug_device(). Please refer to
+> >> bug 59871, and the proposed patch is at:
+> >> https://bugzilla.kernel.org/attachment.cgi?id=105581
+> Hi Rafael,
+>     You can find the proposed patch for ATA Bay hotplug at
+> https://bugzilla.kernel.org/attachment.cgi?id=105581
 
-You are right. LP5523 seems to do such effects on its own.
+Well, maybe it'll have to be reworked slightly.
 
-But that means that there's good reason to include effects in the
-kernel, and that we should make sure same it has same interface as on
-n900.
+Which BZ entry is that?
 
-(Or invent suitable interface that can work on n900).
-									Pavel
+Rafael
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
