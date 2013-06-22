@@ -1,163 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab3FVVjn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 17:39:43 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:50513 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab3FVVji (ORCPT
+	id S1751695Ab3FVVnb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 17:43:31 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:32783 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab3FVVn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 17:39:38 -0400
+	Sat, 22 Jun 2013 17:43:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409252.T5jEfLdPAg@vostro.rjw.lan>
+X-Originating-IP: [178.150.189.253]
+In-Reply-To: <2737587.I0nULev1kj@vostro.rjw.lan>
 References: <2737587.I0nULev1kj@vostro.rjw.lan>
-	<1409252.T5jEfLdPAg@vostro.rjw.lan>
-Date: Sat, 22 Jun 2013 14:39:37 -0700
-X-Google-Sender-Auth: 0XDrAzcEvaOZrT8Og3m2WaBZ4oY
-Message-ID: <CAE9FiQUCovi1mMJrkbFBfr0em1B_gQKxYQSYha0d6-CpvMTAng@mail.gmail.com>
-Subject: Re: [PATCH 1/3] ACPI / dock: Initialize ACPI dock subsystem upfront
-From: Yinghai Lu <yinghai@kernel.org>
+From: Illya Klymov <xanf@xanf.me>
+Date: Sun, 23 Jun 2013 00:43:08 +0300
+Message-ID: <CALSWrKhdDAEPJE7xXcWx4ZqqJe-B+okyJfAwx=viR+saR0ZYkw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] ACPI / dock / PCI: Fix problems with dock and PCI hotplug
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+Cc: linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
         "Alexander E . Patrakov" <patrakov@gmail.com>,
         Jiang Liu <jiang.liu@huawei.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+        linux-pci <linux-pci@vger.kernel.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 2:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
->
-> Commit 3b63aaa70e1 (PCI: acpiphp: Do not use ACPI PCI subdriver
-> mechanism) introduced an ACPI dock support regression, because it
-> changed the relative initialization order of the ACPI dock subsystem
-> and the ACPI-based PCI hotplug (acpiphp).
->
-> Namely, the ACPI dock subsystem has to be initialized before
-> acpiphp_enumerate_slots() is first run, which after commit
-> 3b63aaa70e1 happens during the initial enumeration of the PCI
-> hierarchy triggered by the initial ACPI namespace scan in
-> acpi_scan_init().  For this reason, the dock subsystem has to be
-> initialized before the initial ACPI namespace scan in
-> acpi_scan_init().
->
-> To make that happen, modify the ACPI dock subsystem to be
-> non-modular and add the invocation of its initialization routine,
-> acpi_dock_init(), to acpi_scan_init() directly before the initial
-> namespace scan.
->
-> [rjw: Changelog, removal of dock_exit().]
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=59501
-> Reported-and-tested-by: Alexander E. Patrakov <patrakov@gmail.com>
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: 3.9+ <stable@vger.kernel.org>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/dock.c     |   42 +-----------------------------------------
->  drivers/acpi/internal.h |    5 +++++
->  drivers/acpi/scan.c     |    1 +
->  3 files changed, 7 insertions(+), 41 deletions(-)
->
-> Index: linux-pm/drivers/acpi/dock.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/dock.c
-> +++ linux-pm/drivers/acpi/dock.c
-> @@ -994,30 +994,6 @@ err_unregister:
->  }
->
->  /**
-> - * dock_remove - free up resources related to the dock station
-> - */
-> -static int dock_remove(struct dock_station *ds)
-> -{
-> -       struct dock_dependent_device *dd, *tmp;
-> -       struct platform_device *dock_device = ds->dock_device;
-> -
-> -       if (!dock_station_count)
-> -               return 0;
-> -
-> -       /* remove dependent devices */
-> -       list_for_each_entry_safe(dd, tmp, &ds->dependent_devices, list)
-> -               kfree(dd);
-> -
-> -       list_del(&ds->sibling);
-> -
-> -       /* cleanup sysfs */
-> -       sysfs_remove_group(&dock_device->dev.kobj, &dock_attribute_group);
-> -       platform_device_unregister(dock_device);
-> -
-> -       return 0;
-> -}
-> -
-> -/**
->   * find_dock_and_bay - look for dock stations and bays
->   * @handle: acpi handle of a device
->   * @lvl: unused
-> @@ -1035,7 +1011,7 @@ find_dock_and_bay(acpi_handle handle, u3
->         return AE_OK;
->  }
->
-> -static int __init dock_init(void)
-> +int __init acpi_dock_init(void)
->  {
->         if (acpi_disabled)
->                 return 0;
-> @@ -1054,19 +1030,3 @@ static int __init dock_init(void)
->                 ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
->         return 0;
->  }
-> -
-> -static void __exit dock_exit(void)
-> -{
-> -       struct dock_station *tmp, *dock_station;
-> -
-> -       unregister_acpi_bus_notifier(&dock_acpi_notifier);
-> -       list_for_each_entry_safe(dock_station, tmp, &dock_stations, sibling)
-> -               dock_remove(dock_station);
-> -}
-> -
-> -/*
-> - * Must be called before drivers of devices in dock, otherwise we can't know
-> - * which devices are in a dock
-> - */
-> -subsys_initcall(dock_init);
-> -module_exit(dock_exit);
+Hi, guys. Sorry for entering your talk
+I have a Sony Vaio SVZ1311Z9RXI and just tested your patched against
+3.10-rc7 and they work like a charm
+scenarios tested:
+- boot with dock
+- boot without dock, hotplug dock
+- dock / undock / redock
 
-Finally that weird pair is gone.
+All devices tested to be working in all 3 cases:
+- video card
+- ethernet controller
+- blue ray drive
+- USB controller
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Thank you a lot!
 
-> Index: linux-pm/drivers/acpi/internal.h
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/internal.h
-> +++ linux-pm/drivers/acpi/internal.h
-> @@ -41,6 +41,11 @@ void acpi_container_init(void);
->  #else
->  static inline void acpi_container_init(void) {}
->  #endif
-> +#ifdef CONFIG_ACPI_DOCK
-> +void acpi_dock_init(void);
-> +#else
-> +static inline void acpi_dock_init(void) {}
-> +#endif
->  #ifdef CONFIG_ACPI_HOTPLUG_MEMORY
->  void acpi_memory_hotplug_init(void);
->  #else
-> Index: linux-pm/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/scan.c
-> +++ linux-pm/drivers/acpi/scan.c
-> @@ -2134,6 +2134,7 @@ int __init acpi_scan_init(void)
->         acpi_cmos_rtc_init();
->         acpi_container_init();
->         acpi_memory_hotplug_init();
-> +       acpi_dock_init();
+On Sun, Jun 23, 2013 at 12:19 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Hi All,
 >
->         mutex_lock(&acpi_scan_lock);
->         /*
+> Unfortunately, the Alexander's docking station for Sony VAIO VPCZ23A4R is
+> basically unusable with v3.10-rc6 and, as it turns out, there are multiple
+> problems with it.
 >
+> First, the acpiphp initialization ordering has changed recently,
+> acpiphp_enumerate_slots() is now always run for the first time during the
+> initial ACPI namespace scan in acpi_scan_init() which has broken support
+> for PCI devices on ACPI-based docking stations, because the ACPI dock
+> subsystem has to be initialized *before* acpiphp_enumerate_slots() is first
+> run.
+>
+> Fix that, and it turns out that undocking actually doesn't work correctly
+> because of some synchronization problems between the dock driver, acpiphp
+> and the PCI core.  [That part was actually the most difficult to fix.]
+>
+> Fix that, and you'll find that PCI resources are not allocated correctly
+> after undocking and re-docking (when initially docked).
+>
+> The three patches in this series make the Alexander's docking station kind
+> of usable, so if no one has objections, I'd like to put them on a fast track
+> to Linus.
+>
+> [1/3] Initialize ACPI dock subsystem before enumerating the PCI hierarchy
+>       (that also makes the dock driver non-modular).
+>
+> [2/3] Make acpiphp use the same rules for allocating PCI resources that are
+>       used at boot time.
+>
+> [3/3] Make acpiphp handle dock events synchronously (instead of spawning
+>       separate work items to handle them).  [The changelog of this patch
+>       is likely one of the longest I've ever written and it sort of looks
+>       like a crime story.]
+>
+> This series is mostly based on the work of Jiang Liu (thanks Gerry!) and
+> the Alexander's testing that we wouldn't have done much progress without
+> (thanks Alexander!).
+>
+> Alexander, I've modified patch [3/3] a bit since you have tested it.
+> The modifications shouldn't affect the behavior, but if you could re-test it,
+> that would be great.
+>
+> Thanks,
+> Rafael
+>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
