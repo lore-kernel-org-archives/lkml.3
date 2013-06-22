@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab3FVTvg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 15:51:36 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:58455 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab3FVTvc convert rfc822-to-8bit (ORCPT
+	id S1751742Ab3FVUEN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 16:04:13 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54276 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab3FVUEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 15:51:32 -0400
+	Sat, 22 Jun 2013 16:04:10 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sat, 22 Jun 2013 13:04:09 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: 'Timed out waiting for forcewake old ack to clear' and hangup on
+ IvyBridge system
+Message-ID: <20130622200409.GA24545@roeck-us.net>
+References: <20130622065808.GA20980@roeck-us.net>
+ <20130622121646.0afcc207@jbarnes-desktop>
 MIME-Version: 1.0
-In-Reply-To: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
-References: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
-Date: Sat, 22 Jun 2013 21:51:31 +0200
-X-Google-Sender-Auth: 2FESIEMwqDET46RjLyAVhl9uXOk
-Message-ID: <CAMuHMdUGbP3yAAhadN-itDBHFZ+=R7RCeMdMGFvDSEgJgXGSNg@mail.gmail.com>
-Subject: Re: [RFC PATCH] led: add Cycle LED trigger.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: =?UTF-8?B?R2HDq2wgUE9SVEFZ?= <g.portay@overkiz.com>
-Cc: Rob Landley <rob@landley.net>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-leds@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130622121646.0afcc207@jbarnes-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 6:24 PM, Gaël PORTAY <g.portay@overkiz.com> wrote:
-> For example, it is easy to customize the cycle to mock up the rhythm of human
-> breathing which is a nice cycle to tell the user the system is doing something.
+On Sat, Jun 22, 2013 at 12:16:46PM -0700, Jesse Barnes wrote:
+> On Fri, 21 Jun 2013 23:58:08 -0700
+> Guenter Roeck <linux@roeck-us.net> wrote:
+> 
+> > Hi all,
+> > 
+> > after upgrading one of my servers to 3.8, then 3.9.7 and 3.10-rc6, I started to
+> > see lots of "Timed out waiting for forcewake old ack to clear" error messages,
+> > including hang-ups especially if the system was highly loaded. With 3.5.24
+> > everything was fine.
+> > 
+> > After backing out commit 36ec8f877 (drm/i915: unconditionally use mt forcewake
+> > on hsw/ivb), everything is back to normal. The log message is still there, but
+> > only once during boot, and the system runs stable.
+> > 
+> > CPU is "Intel(R) Core(TM) i7-3770K CPU @ 3.50GHz", mainboard is Supermicro
+> > C7H61, BIOS version 2.00 dated 11/02/2012. Configuration file is whatever
+> > comes with Ubuntu; I'll be happy to provide a copy if anyone thinks it might
+> > help.
+> > 
+> > Any idea what else I can do besides using a special kernel with the backed out
+> > commit ? Is it possible that others have the same problem ?
+> 
+> Ouch, so a BIOS that uses the other forcewake mechanism seems to have
+> escaped.  Is there a newer one available for your system?  I'm hoping
+> it'll fix the issue, otherwise we may have to introduce both methods
+> for IVB again...
+> 
+I installed the latest BIOS version (2.00b), but it did not fix the problem.
 
-Like, ledtrig-heartbeat?
+Is there some info (such as an Intel document describing what needs to be done)
+which I could pass on to Supermicro ?
 
-Gr{oetje,eeting}s,
+I think it would be helpful if the condition was detected and reported, if that
+is possible. I spent two days so far tracking this down. It would be nice
+if others would not have to go through the same experience.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Guenter
