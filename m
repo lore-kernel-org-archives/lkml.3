@@ -1,131 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178Ab3FVLru (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 07:47:50 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43751 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756024Ab3FVLrs (ORCPT
+	id S932356Ab3FVLxr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 07:53:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2233 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756024Ab3FVLxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 07:47:48 -0400
-Date: Sat, 22 Jun 2013 13:47:46 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>
-Cc: linux-bcache@vger.kernel.org, koverstreet@google.com
-Subject: bcache: order 7 allocation
-Message-ID: <20130622114745.GB8075@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 22 Jun 2013 07:53:45 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=KwlVUcAnNHUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=H8hNLXAl5-4A:10 a=sNq4P7cdcACIvtj_JKUA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1371902024.18733.146.camel@gandalf.local.home>
+Subject: Re: [PATCH 10/11] tracing: add and use generic set_trigger_filter()
+ implementation
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 22 Jun 2013 07:53:44 -0400
+In-Reply-To: <1371837575.6453.23.camel@empanada>
+References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+	 <8fe2c1ceb63a6375b56f046de835742f18b955ce.1371751701.git.tom.zanussi@linux.intel.com>
+	 <51C3D3FD.2070408@hitachi.com> <1371837575.6453.23.camel@empanada>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, 2013-06-21 at 12:59 -0500, Tom Zanussi wrote:
+> Hi Masami,
+> 
+> On Fri, 2013-06-21 at 13:18 +0900, Masami Hiramatsu wrote:
+> > (2013/06/21 3:31), Tom Zanussi wrote:
+> > > diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> > > index 88ac7da..7c5627f 100644
+> > > --- a/include/trace/ftrace.h
+> > > +++ b/include/trace/ftrace.h
+> > > @@ -522,14 +522,6 @@ ftrace_raw_event_##call(void *__data, proto)				\
+> > >  	int __data_size;						\
+> > >  	int pc;								\
+> > >  									\
+> > > -	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,			\
+> > > -		     &ftrace_file->flags))				\
+> > > -		event_triggers_call(ftrace_file);			\
+> > > -									\
+> > > -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
+> > > -		     &ftrace_file->flags))				\
+> > > -		return;							\
 
-I'm trying to play with bcache, but first surprise was oom in syslog:
+I'd like to still exit early on soft disable if needed. Perhaps have a:
 
-Order 7 alocation is pretty big, no?
+	if (ftrace_file->flags & (FTRACE_EVENT_FL_TRIGGER_MODE_BIT | \
+	     FTRACE_EVENT_FL_SOFT_DISABLED_BIT) == \
+	     FTRACE_EVENT_FL_SOFT_DISABLED_BIT) \
+		return; \
 
-								Pavel
+> > > -									\
+> > >  	local_save_flags(irq_flags);					\
+> > >  	pc = preempt_count();						\
+> > >  									\
+> > > @@ -547,8 +539,22 @@ ftrace_raw_event_##call(void *__data, proto)				\
+> > >  									\
+> > >  	{ assign; }							\
+> > >  									\
+> > > +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
+> > > +		     &ftrace_file->flags)) {				\
+> > > +		ring_buffer_discard_commit(buffer, event);		\
+> > > +									\
+> > > +		if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,		\
+> > > +			     &ftrace_file->flags))			\
+> > > +			event_triggers_call(ftrace_file, entry);	\
+> > > +		return;							\
+> > > +	}								\
+> > > +									\
+> > >  	if (!filter_current_check_discard(buffer, event_call, entry, event)) \
+> > >  		trace_buffer_unlock_commit(buffer, event, irq_flags, pc); \
+> > > +									\
+> > > +	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,			\
+> > > +		     &ftrace_file->flags))				\
+> > > +		event_triggers_call(ftrace_file, entry);		\
+> > 
+> > Actually, since "entry" is a part of "event" which may be already discarded,
+> > I think we should not access it here. It may not cause real problem because
+> > even if it is discarded, that does NOT mean it is freed. However, it depends
+> > on the ring-buffer implementation.
+> > 
+> > I recommend you to call event triggers before commit the event. It will also
+> > make the code simpler :)
+> >
+> 
+> That's what I originally did, and is what I was referring to when I
+> mentioned the bit of 'trickiness' here. ;-)
+> 
+> The problem is that the trace_recursive_lock() check in
+> ring_buffer_lock_reserve() prevents a trigger that itself logs to the
+> ring buffer from reserving a slot in the buffer, since it's being done
+> from the same context as the triggering event.  For example, the
+> stacktrace trigger, which calls trace_dump_stack().
 
-bcache: register_bdev() registered backing device sda4
-bcache: register_bcache() error opening /dev/sdb1: Not a bcache
-superblock
-bash: page allocation failure: order:7, mode:0x80d0
-CPU: 0 PID: 4091 Comm: bash Tainted: G        W    3.10.0-rc6+ #266
-Hardware name: LENOVO 17097HU/17097HU, BIOS 7BETD3WW (2.14 )
-10/04/2007
- 00000000 ebaabd5c c09597dc ebaabd8c c02a8550 c0b2b094 f4588950
- 00000007
- 000080d0 00000000 01000000 c0c7c580 00000001 00000001 00000000
- ebaabe24
- c02a9d36 000080d0 00000007 00000000 c0c7bbc0 00000000 00000001
- ebaabe16
-Call Trace:
- [<c09597dc>] dump_stack+0x16/0x18
- [<c02a8550>] warn_alloc_failed+0xc0/0x100
- [<c02a9d36>] __alloc_pages_nodemask+0x4d6/0x6f0
- [<c02a9fc7>] __get_free_pages+0x17/0x30
- [<c06e91c4>] register_cache+0x3e4/0x5d0
- [<c02cff58>] ? cache_alloc_debugcheck_after+0x68/0x220
- [<c02d18aa>] ? kmem_cache_alloc+0xfa/0x100
- [<c06e985f>] ? register_bcache+0x4af/0xc10
- [<c06e987b>] register_bcache+0x4cb/0xc10
- [<c027c086>] ? __lock_acquire+0x386/0xcf0
- [<c0329f63>] ? sysfs_write_file+0x83/0xf0
- [<c06e93b0>] ? register_cache+0x5d0/0x5d0
- [<c0445a10>] kobj_attr_store+0x20/0x30
- [<c0329f79>] sysfs_write_file+0x99/0xf0
- [<c02d6080>] vfs_write+0xb0/0x190
- [<c0329ee0>] ? sysfs_open_file+0x1e0/0x1e0
- [<c02d6251>] SyS_write+0x51/0x90
- [<c095d7f8>] sysenter_do_call+0x12/0x31
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-Normal per-cpu:
-CPU    0: hi:  186, btch:  31 usd:   0
-CPU    1: hi:  186, btch:  31 usd:   0
-HighMem per-cpu:
-CPU    0: hi:  186, btch:  31 usd:   0
-CPU    1: hi:  186, btch:  31 usd:  20
-active_anon:91768 inactive_anon:47794 isolated_anon:0
- active_file:48599 inactive_file:14374 isolated_file:0
- unevictable:4 dirty:111 writeback:0 unstable:0
- free:127541 slab_reclaimable:155598 slab_unreclaimable:22989
- mapped:23527 shmem:24489 pagetables:1391 bounce:0
- free_cma:0
-DMA free:1580kB min:4kB low:4kB high:4kB active_anon:0kB
-inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB
-isolated(anon):0kB isolated(file):0kB present:15992kB managed:1580kB
-mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB
-slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
-pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB
-pages_scanned:0 all_unreclaimable? yes
-lowmem_reserve[]: 0 850 2000 2000
-Normal free:55600kB min:3724kB low:4652kB high:5584kB
-active_anon:14408kB inactive_anon:14416kB active_file:28384kB
-inactive_file:28344kB unevictable:0kB isolated(anon):0kB
-isolated(file):0kB present:892920kB managed:870564kB mlocked:0kB
-dirty:408kB writeback:0kB mapped:64kB shmem:17620kB
-slab_reclaimable:622392kB slab_unreclaimable:91956kB
-kernel_stack:2736kB pagetables:5564kB unstable:0kB bounce:0kB
-free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 9206 9206
-HighMem free:452984kB min:512kB low:1772kB high:3032kB
-active_anon:352664kB inactive_anon:176844kB active_file:166012kB
-inactive_file:29152kB unevictable:16kB isolated(anon):0kB
-isolated(file):0kB present:1178440kB managed:1178440kB mlocked:16kB
-dirty:36kB writeback:0kB mapped:94044kB shmem:80336kB
-slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
-pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB
-pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-DMA: 1*4kB (U) 1*8kB (U) 0*16kB 1*32kB (U) 2*64kB (U) 1*128kB (U)
-1*256kB (U) 0*512kB 1*1024kB (U) 0*2048kB 0*4096kB = 1580kB
-Normal: 12737*4kB (EM) 464*8kB (UEMR) 7*16kB (UMR) 1*32kB (R) 1*64kB
-(R) 2*128kB (R) 0*256kB 1*512kB (R) 0*1024kB 0*2048kB 0*4096kB =
-55636kB
-HighMem: 20470*4kB (UEMR) 17082*8kB (UEMR) 8461*16kB (UEMR) 2331*32kB
-(UEMR) 325*64kB (UEMR) 22*128kB (UEMR) 3*256kB (UE) 0*512kB 0*1024kB
-0*2048kB 0*4096kB = 452888kB
-87500 total pagecache pages
-20 pages in swap cache
-Swap cache stats: add 863, delete 843, find 13/17
-Free swap  = 775840kB
-Total swap = 779148kB
-521935 pages RAM
-294610 pages HighMem
-9299 pages reserved
-747603 pages shared
-322744 pages non-shared
-bcache: register_cache() error opening sdb1: cannot allocate memory
-bashged:1580kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB
-shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
-pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB
-pages_scanned:0 all_
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Ah, yeah that would happen.
+
+> 
+> So the code is a bit more convoluted than I'd like because of that -
+> since we can't really invoke the triggers before the current event is
+> committed, it waits until the current event is either discarded (because
+> we're soft disabled) or committed (logging a normally-enabled event).
+> 
+> But you do point out a real problem with this - it means having to look
+> at a discarded event in the soft-disabled case, and if for example some
+> interrupt actually reserves and logs an event between the time we do the
+> discard and invoke the filter, we could end up with a false filtering
+> outcome.  I'm not sure how to prevent that though at this point - will
+> have think about it some more...
+> 
+
+Perhaps add a trigger mode here:
+
+enum trigger_mode {
+	TM_NONE,
+	TM_STACK,
+};
+
+
+Then do:
+
+	trigger_mode = event_triggers_call(ftrace_file, entry);
+
+	(finish event)
+
+
+	if (unlikely(trigger_mode))
+		event_triggers_post_call(ftrace_file, trigger_mode);
+
+Something like that.
+
+-- Steve
+
+
