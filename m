@@ -1,73 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423516Ab3FVAHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 20:07:10 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:65190 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161521Ab3FVAHH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 20:07:07 -0400
+	id S1423473Ab3FVAKe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 20:10:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:52031 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161521Ab3FVAKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 20:10:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,916,1363158000"; 
+   d="scan'208";a="258499049"
+Message-ID: <51C4EB63.2000104@intel.com>
+Date: Sat, 22 Jun 2013 08:10:11 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <51C42A85.8090705@ti.com>
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
-	<51C42A85.8090705@ti.com>
-Date: Fri, 21 Jun 2013 19:07:07 -0500
-Message-ID: <CAD=GYpbjZJeebxaJ=zNc9R=pkSoVsu_3D9deaOr7enuONNc0wQ@mail.gmail.com>
-Subject: Re: [PATCH v12 00/11] DMA Engine support for AM33XX
-From: Joel A Fernandes <agnel.joel@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Joel A Fernandes <joelagnel@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, broonie@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] rwsem: check the lock before cpmxchg in down_write_trylock
+ and rwsem_do_wake
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com> <1371858695.22432.4.camel@schen9-DESK>
+In-Reply-To: <1371858695.22432.4.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+On 06/22/2013 07:51 AM, Tim Chen wrote:
+> Doing cmpxchg will cause cache bouncing when checking
+> sem->count. This could cause scalability issue
+> in a large machine (e.g. a 80 cores box).
+> 
+> A pre-read of sem->count can mitigate this.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
-On Fri, Jun 21, 2013 at 5:27 AM, Sekhar Nori <nsekhar@ti.com> wrote:
-> Joel,
->
-> On 6/21/2013 2:36 AM, Joel A Fernandes wrote:
->> From: Joel A Fernandes <agnel.joel@gmail.com>
->>
->> This series is remaining of Matt Porter's EDMA patches for AM33XX EDMA support
->> with changes for few pending review comments on v11 series.
->
-> I have posted a branch with fixes for patches accepted by me in this
-> series (also posted inline as replies to specific patches).
->
-> https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.11/soc-2
->
-> Can you please give it a good test - especially on AM335x? I will send a
-> pull request after you confirm. If you find bugs please send incremental
-> patches so I can merge into the original patch.
+Hi Tim,
+there is a technical error in this patch.
+the "From: " line should be 'Alex Shi', since he made the most input of
+this patch.
 
-This breaks on AM33XX due to dangling pointer, I sent a follow up
-patch addressing it.
+And I still think split this patch to 4 smaller will make it more simple
+to review, that I had sent you and Davidlohr.
 
-However, with this branch I still get..
-mmc: unable to obtain RX DMA engine channel 25
+could you like to re-send with my 4 patch version? :)
 
-Is there anything obvious you might have changed that is causing this?
+> ---
+>  include/asm-generic/rwsem.h |    8 ++++----
+>  lib/rwsem.c                 |   21 +++++++++++++--------
+>  2 files changed, 17 insertions(+), 12 deletions(-)
+> 
+> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> index bb1e2cd..052d973 100644
+> --- a/include/asm-generic/rwsem.h
+> +++ b/include/asm-generic/rwsem.h
+> @@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
+>  
+>  static inline int __down_write_trylock(struct rw_semaphore *sem)
+>  {
+> -	long tmp;
+> +	if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
+> +		return 0;
+>  
+> -	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+> -		      RWSEM_ACTIVE_WRITE_BIAS);
+> -	return tmp == RWSEM_UNLOCKED_VALUE;
+> +	return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+> +		RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+>  }
+>  
+>  /*
+> diff --git a/lib/rwsem.c b/lib/rwsem.c
+> index 19c5fa9..2072af5 100644
+> --- a/lib/rwsem.c
+> +++ b/lib/rwsem.c
+> @@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+>  			 * will block as they will notice the queued writer.
+>  			 */
+>  			wake_up_process(waiter->task);
+> -		goto out;
+> +		return sem;
+>  	}
+>  
+>  	/* Writers might steal the lock before we grant it to the next reader.
+> @@ -85,15 +85,21 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+>  	adjustment = 0;
+>  	if (wake_type != RWSEM_WAKE_READ_OWNED) {
+>  		adjustment = RWSEM_ACTIVE_READ_BIAS;
+> - try_reader_grant:
+> -		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+> -		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
+> -			/* A writer stole the lock. Undo our reader grant. */
+> +		while (1) {
+> +			/* A writer stole the lock. */
+> +			if (sem->count < RWSEM_WAITING_BIAS)
+> +				return sem;
+> +
+> +			oldcount = rwsem_atomic_update(adjustment, sem)
+> +								- adjustment;
+> +			if (likely(oldcount >= RWSEM_WAITING_BIAS))
+> +				break;
+> +
+> +			 /* A writer stole the lock.  Undo our reader grant. */
+>  			if (rwsem_atomic_update(-adjustment, sem) &
+>  						RWSEM_ACTIVE_MASK)
+> -				goto out;
+> +				return sem;
+>  			/* Last active locker left. Retry waking readers. */
+> -			goto try_reader_grant;
+>  		}
+>  	}
+>  
+> @@ -136,7 +142,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+>  	sem->wait_list.next = next;
+>  	next->prev = &sem->wait_list;
+>  
+> - out:
+>  	return sem;
+>  }
+>  
+> 
 
-Thanks,
-Joel
+
+-- 
+Thanks
+    Alex
