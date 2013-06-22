@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab3FVO0T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 10:26:19 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56916 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab3FVO0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 10:26:17 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Jim Davis <jim.epost@gmail.com>, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pawel@osciak.com, m.szyprowski@samsung.com, kyungmin.park@samsung.com,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: randconfig build errors with next-20130620, in several drivers/media
-Date: Sat, 22 Jun 2013 16:26:36 +0200
-Message-ID: <2349088.sJtDCiEhsm@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <51C50101.1000300@infradead.org>
-References: <20130620185244.GA14176@krebstar.arl.arizona.edu> <5790855.fto4zA3B21@avalon> <51C50101.1000300@infradead.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1756204Ab3FVO2d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 10:28:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14437 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754917Ab3FVO2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 10:28:31 -0400
+Message-ID: <1371911286.30572.155.camel@ul30vt.home>
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Graf <agraf@suse.de>, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>,
+        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
+Date: Sat, 22 Jun 2013 08:28:06 -0600
+In-Reply-To: <20130622120304.GB25265@voom.fritz.box>
+References: <87txkun568.fsf@rustcorp.com.au>
+	 <1371617970.21896.232.camel@pasglop>
+	 <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>
+	 <1371653443.21896.291.camel@pasglop>
+	 <1371656989.22659.98.camel@ul30vt.home> <51C28BEA.8050501@ozlabs.ru>
+	 <20130620052822.GB3140@voom.redhat.com> <1371714449.3944.14.camel@pasglop>
+	 <51C2C1CC.9000003@ozlabs.ru> <1371740113.32709.22.camel@ul30vt.home>
+	 <20130622120304.GB25265@voom.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
-
-On Friday 21 June 2013 18:42:25 Randy Dunlap wrote:
-> On 06/21/13 17:27, Laurent Pinchart wrote:
-> > On Thursday 20 June 2013 11:52:44 Jim Davis wrote:
-> >> Building with the attached random configuration file generates errors in
-> >> both
+On Sat, 2013-06-22 at 22:03 +1000, David Gibson wrote:
+> On Thu, Jun 20, 2013 at 08:55:13AM -0600, Alex Williamson wrote:
+> > On Thu, 2013-06-20 at 18:48 +1000, Alexey Kardashevskiy wrote:
+> > > On 06/20/2013 05:47 PM, Benjamin Herrenschmidt wrote:
+> > > > On Thu, 2013-06-20 at 15:28 +1000, David Gibson wrote:
+> > > >>> Just out of curiosity - would not get_file() and fput_atomic() on a
+> > > >> group's
+> > > >>> file* do the right job instead of vfio_group_add_external_user() and
+> > > >>> vfio_group_del_external_user()?
+> > > >>
+> > > >> I was thinking that too.  Grabbing a file reference would certainly be
+> > > >> the usual way of handling this sort of thing.
+> > > > 
+> > > > But that wouldn't prevent the group ownership to be returned to
+> > > > the kernel or another user would it ?
+> > > 
+> > > 
+> > > Holding the file pointer does not let the group->container_users counter go
+> > > to zero
 > > 
-> > [snip]
-> > 
-> > The issue seem to be caused by USB_VIDEO_CLASS=y and VIDEO_V4L2=m &&
-> > USB=m.
-> > I'm not sure what made that combination possible, but I haven't been able
-> > to reproduce it locally on next-20130620. Running make with the attached
-> > config turns USB_VIDEO_CLASS=y into USB_VIDEO_CLASS=m.
+> > How so?  Holding the file pointer means the file won't go away, which
+> > means the group release function won't be called.  That means the group
+> > won't go away, but that doesn't mean it's attached to an IOMMU.  A user
+> > could call UNSET_CONTAINER.
 > 
-> Yes, same for me:  USB_VIDEO_CLASS=m instead of =y.
+> Uhh... *thinks*.  Ah, I see.
 > 
-> However, please check the attached config file (as reported on June 17).
+> I think the interface should not take the group fd, but the container
+> fd.  Holding a reference to *that* would keep the necessary things
+> around.  But more to the point, it's the right thing semantically:
 > 
-> On linux-next of 20130621 it still produces:
-> 
-> CONFIG_USB_VIDEO_CLASS=y
-> CONFIG_VIDEO_V4L2=m
-> CONFIG_USB=m
+> The container is essentially the handle on a host iommu address space,
+> and so that's what should be bound by the KVM call to a particular
+> guest iommu address space.  e.g. it would make no sense to bind two
+> different groups to different guest iommu address spaces, if they were
+> in the same container - the guest thinks they are different spaces,
+> but if they're in the same container they must be the same space.
 
-I've just sent a patch to linux-media (you've been CC'ed) to fix this.
+While the container is the gateway to the iommu, what empowers the
+container to maintain an iommu is the group.  What happens to a
+container when all the groups are disconnected or closed?  Groups are
+the unit that indicates hardware access, not containers.  Thanks,
 
--- 
-Regards,
+Alex
 
-Laurent Pinchart
