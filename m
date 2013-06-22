@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab3FVPoW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 11:44:22 -0400
-Received: from smtp.newsguy.com ([74.209.136.69]:57279 "EHLO smtp.newsguy.com"
+	id S1751960Ab3FVREu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 13:04:50 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:58837 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab3FVPoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 11:44:02 -0400
-X-Greylist: delayed 1158 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Jun 2013 11:44:01 EDT
-Message-ID: <51C5C23E.8070408@newsguy.com>
-Date: Sat, 22 Jun 2013 08:26:54 -0700
-From: Mike Dunn <mikedunn@newsguy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20130111 Thunderbird/10.0.11
+	id S1751765Ab3FVREt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 13:04:49 -0400
+From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
+To: Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v3 0/5] clk: dt: bindings for mux, divider & gate clocks
+Date: Sat, 22 Jun 2013 19:04:41 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Matt Sealey <neko@bakuhatsu.net>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Tero Kristo <t-kristo@ti.com>
+References: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
-To: Chao Xie <chao.xie@marvell.com>
-CC: dmitry.torokhov@gmail.com, arnd@arndb.de, eric.y.miao@gmail.com,
-        haojian.zhuang@gmail.com, drwyrm@gmail.com, stefan@openezx.org,
-        laforge@openezx.org, robert.jarzmik@free.fr, marek.vasut@gmail.com,
-        sleep_walker@suse.cz, slapin@ossfans.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, xiechao.mail@gmail.com
-Subject: Re: [PATCH V3 3/5] arm: pxa: use matrix_keymap for all boards
-References: <1371527778-5236-1-git-send-email-chao.xie@marvell.com> <1371527778-5236-4-git-send-email-chao.xie@marvell.com>
-In-Reply-To: <1371527778-5236-4-git-send-email-chao.xie@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306221904.41833.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 08:56 PM, Chao Xie wrote:
-> Compile passed for configurations
+Am Freitag, 21. Juni 2013, 08:14:11 schrieb Mike Turquette:
+> This series introduces binding definitions for common register-mapped
+> clock multiplexer, divider and gate IP blocks along with the
+> corresponding setup functions for matching DT data.  The bindings are
+> similar to the struct definitions but please don't hold that against the
+> binding: the struct definitions closely model the hardware register
+> layout.
 > 
-> em_x270_defconfig
->   em_x270x.c(MACH_EM_X270, MACH_EXEDA)
+> This version fixes bugs and incorporates support for the hiword-mask
+> property needed on Hisilicon and Rockchip platforms.
 > 
-> ezx_defconfig
->   ezx.c(MACH_EZX_A780, MACH_EZX_E680, MACH_EZX_A1200,
->         MACH_EZX_A910, MACH_EZX_E6, MACH_EZX_E2)
-> 
-> palmz72_defconfig
->   palmld.c(MACH_PALMLD), palmtreo.c(PALM_TREO),
->   palmtx.c(MACH_PALMTX), palmz72.c(MACH_PALMZ72),
->   palmt5.c(MACH_PALMT5)
-> 
-> pxa3xx_defconfig
->   littleton.c(MACH_LITTLETON), tarvorevb.c(MACH_TAVOREVB),
->   zylonite.c(MACH_ZYLONITE320), mioa701.c(MACH_MIOA701),
->   z2.c(MACH_ZIPIT2)
-> 
-> mainstone_defconfig
->   maintone.c(MACH_MAINSTONE)
-> 
-> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> Tested on OMAP4460 Panda ES.
+
+Now it works like a charm :-), so on a rk3066a based board
+
+Tested-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
 
 
-Tested-by: Mike Dunn <mikedunn@newsguy.com>
-
-On a palm treo 680
+> Mike Turquette (5):
+>   clk: divider: replace bitfield width with mask
+>   clk: of: helper for determining number of parent clocks
+>   clk: dt: binding for basic multiplexer clock
+>   clk: dt: binding for basic divider clock
+>   clk: dt: binding for basic gate clock
+> 
+>  .../devicetree/bindings/clock/divider-clock.txt    |  90 +++++++++++++++
+>  .../devicetree/bindings/clock/gate-clock.txt       |  36 ++++++
+>  .../devicetree/bindings/clock/mux-clock.txt        |  79 +++++++++++++
+>  arch/arm/mach-imx/clk-busy.c                       |   2 +-
+>  drivers/clk/clk-divider.c                          | 127
+> ++++++++++++++++++--- drivers/clk/clk-gate.c                             |
+>  43 +++++++
+>  drivers/clk/clk-mux.c                              |  65 ++++++++++-
+>  drivers/clk/clk.c                                  |   6 +
+>  drivers/clk/mxs/clk-div.c                          |   2 +-
+>  include/linux/clk-private.h                        |   2 +-
+>  include/linux/clk-provider.h                       |  12 +-
+>  11 files changed, 441 insertions(+), 23 deletions(-)
+>  create mode 100644
+> Documentation/devicetree/bindings/clock/divider-clock.txt create mode
+> 100644 Documentation/devicetree/bindings/clock/gate-clock.txt create mode
+> 100644 Documentation/devicetree/bindings/clock/mux-clock.txt
 
