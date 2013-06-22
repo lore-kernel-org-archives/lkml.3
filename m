@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab3FVLao (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 07:30:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58354 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab3FVLam (ORCPT
+	id S932334Ab3FVLeK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 07:34:10 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:56083 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab3FVLeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 07:30:42 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: Re: [PATCH v2 0/2] Clock update for EXYNOS4210-CPUFREQ driver
-Date: Sat, 22 Jun 2013 13:30:41 +0200
-Message-ID: <2659166.6PZqLSy6sR@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.6-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <20130621174453.20448.59791@quantum>
-References: <1371725238-25437-1-git-send-email-tushar.behera@linaro.org> <20130621174453.20448.59791@quantum>
+	Sat, 22 Jun 2013 07:34:08 -0400
+Message-ID: <51C58B8A.2080808@hds.com>
+Date: Sat, 22 Jun 2013 07:33:30 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: x86@kernel.org, linux-kernel@vger.kernel.org, hpa@zytor.com
+CC: mingo@elte.hu, tglx@linutronix.de, rostedt@goodmis.org
+Subject: [PATCH -tip] trace,x86: Add config option checking to definitions
+ of mce handlers
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-22_04:2013-06-21,2013-06-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.997215366458519 urlsuspect_oldscore=0.997215366458519
+ suspectscore=8 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=0 rbsscore=0.997215366458519
+ spamscore=0 recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9
+ adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1305240000 definitions=main-1306220075
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 of June 2013 10:44:53 Mike Turquette wrote:
-> Quoting Tushar Behera (2013-06-20 03:47:16)
-> 
-> > cpufreq driver for EXYNOS4 based SoCs are not platform drivers, hence
-> > we cannot currently pass the clock names through a device tree node.
-> > Instead, we need to make them available through global alias.
-> > 
-> > The patches are based on next-20130618.
-> > 
-> > Patch 1 has not been modified.
-> > Patch 2 has been updated to include EXYNOS4X12 releated clocks.
+In case CONFIG_X86_MCE_THRESHOLD and CONFIG_X86_THERMAL_VECTOR are disabled,
+kernel build fails as follows.
 
-Looks fine to me.
+   arch/x86/built-in.o: In function `trace_threshold_interrupt':
+   (.entry.text+0x122b): undefined reference to `smp_trace_threshold_interrupt'
+   arch/x86/built-in.o: In function `trace_thermal_interrupt':
+   (.entry.text+0x132b): undefined reference to `smp_trace_thermal_interrupt'
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+In this case, trace_threshold_interrupt/trace_thermal_interrupt are not needed
+to define.
+So, add config option checking to their definitions in entry_64.S.
 
-> Patch and changelogs look good to me now. Tomasz, any comments? I am
-> happy to take these into clk-next with your review.
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/kernel/entry_64.S |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Good, thanks.
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 11eef43..53d6398 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1188,10 +1188,15 @@ apicinterrupt3 POSTED_INTR_VECTOR \
+ 	kvm_posted_intr_ipi smp_kvm_posted_intr_ipi
+ #endif
+ 
++#ifdef CONFIG_X86_MCE_THRESHOLD
+ apicinterrupt THRESHOLD_APIC_VECTOR \
+ 	threshold_interrupt smp_threshold_interrupt
++#endif
++
++#ifdef CONFIG_X86_THERMAL_VECTOR
+ apicinterrupt THERMAL_APIC_VECTOR \
+ 	thermal_interrupt smp_thermal_interrupt
++#endif
+ 
+ #ifdef CONFIG_SMP
+ apicinterrupt CALL_FUNCTION_SINGLE_VECTOR \
+-- 
+1.7.1
 
-As a side note, I'm currently working on redesigning Exynos cpufreq 
-drivers, but this probably won't make it for 3.11, so these two patches 
-are a good workaround for now to have the cpufreq working.
-
-Best regards,
-Tomasz
-
-> Regards,
-> Mike
-> 
-> > Tushar Behera (2):
-> >   clk: samsung: Add MUX_FA macro to pass flag and alias
-> >   clk: exynos4: Fix clock aliases for cpufreq related clocks
-> >  
-> >  drivers/clk/samsung/clk-exynos4.c |   21 +++++++++++----------
-> >  drivers/clk/samsung/clk.h         |    3 +++
-> >  2 files changed, 14 insertions(+), 10 deletions(-)
