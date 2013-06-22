@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3FVS5J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 14:57:09 -0400
-Received: from 100.204.216.81.static.g-hkn.siw.siwnet.net ([81.216.204.100]:48366
-	"EHLO iko.pp.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751255Ab3FVS5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 14:57:06 -0400
-From: Anders Hammarquist <iko@iko.pp.se>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Anders Hammarquist <iko@iko.pp.se>
-Subject: [PATCH 1/2] * Remove unused and overly generic ABBOTT_PRODUCT_ID * Fix sizes of statically sized usb_debvice_id tables
-Date: Sat, 22 Jun 2013 20:55:58 +0200
-Message-Id: <1371927359-13977-1-git-send-email-iko@iko.pp.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130621235603.GA1603@kroah.com>
-References: <20130621235603.GA1603@kroah.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (iko.pp.se [127.0.0.1]); Sat, 22 Jun 2013 20:56:29 +0200 (MEST)
+	id S1751606Ab3FVTOg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 15:14:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751086Ab3FVTOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 15:14:34 -0400
+Date: Sat, 22 Jun 2013 21:09:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, James Hogan <james.hogan@imgtec.com>,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        David Daney <david.daney@cavium.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
+Message-ID: <20130622190940.GA14150@redhat.com>
+References: <1371821962-9151-1-git-send-email-james.hogan@imgtec.com> <51C47864.9030200@gmail.com> <20130621202244.GA16610@redhat.com> <51C4BB86.1020004@caviumnetworks.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C4BB86.1020004@caviumnetworks.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/21, David Daney wrote:
+>
+> On 06/21/2013 01:22 PM, Oleg Nesterov wrote:
+>> On 06/21, David Daney wrote:
+>>>
+>>> On 06/21/2013 06:39 AM, James Hogan wrote:
+>>>> Therefore add sig_to_exitcode() and exitcode_to_sig() functions which
+>>>> map signal numbers > 126 to exit code 126 and puts the remainder (i.e.
+>>>> sig - 126) in higher bits. This allows WIFSIGNALED() to return true for
+>>>> both SIG127 and SIG128, and allows WTERMSIG to be later updated to read
+>>>> the correct signal number for SIG127 and SIG128.
+>>>
+>>> I really hate this approach.
+>>>
+>>> Can we just change the ABI to reduce the number of signals so that all
+>>> the standard C library wait related macros don't have to be changed?
+>>>
+>>> Think about it, any user space program using signal numbers 127 and 128
+>>> doesn't work correctly as things exist today, so removing those two will
+>>> be no great loss.
+>>
+>> Oh, I agree.
+>>
+>> Besides, this changes ABI anyway. And if we change it we can do this in
+>> a more clean way, afaics. MIPS should simply use 2 bytes in exit_code for
+>> signal number.
+>
+> Wouldn't that break *all* existing programs that use signals?  Perhaps I
+> misunderstand what you are suggesting.
 
-Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
----
- drivers/usb/serial/ti_usb_3410_5052.c |   11 ++++++-----
- drivers/usb/serial/ti_usb_3410_5052.h |    5 ++---
- 2 files changed, 8 insertions(+), 8 deletions(-)
+Of course this will break the userspace more than the original patch,
+that is why I said "And yes, this means that WIFSIGNALED/etc should
+be updated".
 
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
-index e581c25..26c1161 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -158,7 +158,7 @@ static unsigned int product_5052_count;
- /* the array dimension is the number of default entries plus */
- /* TI_EXTRA_VID_PID_COUNT user defined entries plus 1 terminating */
- /* null entry */
--static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
-+static struct usb_device_id ti_id_table_3410[16+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
- 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
-@@ -172,8 +172,8 @@ static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- };
- 
-@@ -184,7 +184,7 @@ static struct usb_device_id ti_id_table_5052[5+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_5052_FIRMWARE_PRODUCT_ID) },
- };
- 
--static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1] = {
-+static struct usb_device_id ti_id_table_combined[20+2*TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
- 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
-@@ -202,7 +202,8 @@ static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1]
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- 	{ }
- };
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.h b/drivers/usb/serial/ti_usb_3410_5052.h
-index 4a2423e..d3ff470 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.h
-+++ b/drivers/usb/serial/ti_usb_3410_5052.h
-@@ -52,9 +52,8 @@
- 
- /* Abbott Diabetics vendor and product ids */
- #define ABBOTT_VENDOR_ID		0x1a61
--#define ABBOTT_STEREO_PLUG_ID		0x3410
--#define ABBOTT_PRODUCT_ID		ABBOTT_STEREO_PLUG_ID
--#define ABBOTT_STRIP_PORT_ID		0x3420
-+#define ABBOTT_STEREO_PLUG_PRODUCT_ID	0x3410
-+#define ABBOTT_STRIP_PORT_PRODUCT_ID	0x3420
- 
- /* Commands */
- #define TI_GET_VERSION			0x01
--- 
-1.7.10.4
+> I am proposing that we just reduce the number of usable signals such
+> that existing libc status checking macros/functions don't change in any
+> way.
+
+And I fully agree! Absolutely, sorry for confusion.
+
+
+What I tried to say, _if_ we change the ABI instead, lets make this
+change sane.
+
+To me this hack is not sane. And btw, the patch doesn't look complete.
+Say, wait_task_zombie() should do exitcode_to_sig() for ->si_status.
+
+Oleg.
 
