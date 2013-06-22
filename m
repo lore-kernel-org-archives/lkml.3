@@ -1,90 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333Ab3FVIZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 04:25:56 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:49547 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3FVIZv (ORCPT
+	id S1753100Ab3FVJ33 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 05:29:29 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:60635 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab3FVJ30 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 04:25:51 -0400
-Message-ID: <51C55F87.8080702@ozlabs.ru>
-Date: Sat, 22 Jun 2013 18:25:43 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Sat, 22 Jun 2013 05:29:26 -0400
+Message-ID: <51C56E73.2020802@zankel.net>
+Date: Sat, 22 Jun 2013 02:29:23 -0700
+From: Chris Zankel <chris@zankel.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>,
-        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-References: <1371422343.21896.143.camel@pasglop>   <1371438800.22681.38.camel@ul30vt.home>   <1371441361.21896.152.camel@pasglop>   <1371522772.22681.140.camel@ul30vt.home> <87txkun568.fsf@rustcorp.com.au>   <1371617970.21896.232.camel@pasglop>   <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>   <1371653443.21896.291.camel@pasglop>   <1371656989.22659.98.camel@ul30vt.home> <51C28BEA.8050501@ozlabs.ru>   <20130620052822.GB3140@voom.redhat.com> <1371714449.3944.14.camel@pasglop>  <51C2C1CC.9000003@ozlabs.ru> <1371740113.32709.22.camel@ul30vt.home>
-In-Reply-To: <1371740113.32709.22.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+To: Chen Gang <gang.chen@asianux.com>
+CC: Max Filippov <jcmvbkbc@gmail.com>, linux-xtensa@linux-xtensa.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: xtensa: include: asm: define '_PAGE_CHG_MASK' when
+ 'NOMMU'
+References: <51C554F4.8060704@asianux.com> <51C5564D.70106@asianux.com>
+In-Reply-To: <51C5564D.70106@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 12:55 AM, Alex Williamson wrote:
-> On Thu, 2013-06-20 at 18:48 +1000, Alexey Kardashevskiy wrote:
->> On 06/20/2013 05:47 PM, Benjamin Herrenschmidt wrote:
->>> On Thu, 2013-06-20 at 15:28 +1000, David Gibson wrote:
->>>>> Just out of curiosity - would not get_file() and fput_atomic() on a
->>>> group's
->>>>> file* do the right job instead of vfio_group_add_external_user() and
->>>>> vfio_group_del_external_user()?
->>>>
->>>> I was thinking that too.  Grabbing a file reference would certainly be
->>>> the usual way of handling this sort of thing.
->>>
->>> But that wouldn't prevent the group ownership to be returned to
->>> the kernel or another user would it ?
+Hi Chen,
+
+On 06/22/2013 12:46 AM, Chen Gang wrote:
+> After define it, with the same .config file, also report another errors
+> below, Did I use the incorrect cross-compiler tools ?
+
+It almost seems that you are not using the cross compiler. There are two
+ways to specify the cross compiler.
+1. As part of the config: make ARCH=xtensa menuconfig and set General
+setup ---> (xtensa-linux-gnu-) Cross-compiler tool prefix
+2. Provide with make: make ARCH=xtensa CROSS_COMPILE=xtensa-linux-gnu-
+
+Since you are not specifying CROSS_COMPILE, did you configure it in .config?
+
+-Chris
+
+>
+> (the attachment is the related .config file)
+>
+> Thanks.
+>
+>
+> The related environments:
+>
+> [root@dhcp122 ~]# rpm -qf /usr/bin/xtensa-linux-gnu-gcc
+> gcc-xtensa-linux-gnu-4.7.1-0.1.20120606.fc17.x86_64
+> [root@dhcp122 ~]# /usr/bin/xtensa-linux-gnu-gcc -v
+> Using built-in specs.
+> COLLECT_GCC=/usr/bin/xtensa-linux-gnu-gcc
+> COLLECT_LTO_WRAPPER=/usr/libexec/gcc/xtensa-linux-gnu/4.7.1/lto-wrapper
+> Target: xtensa-linux-gnu
+> Configured with: ../gcc-4.7.1-RC-20120606/configure --disable-dependency-tracking --disable-silent-rules --prefix=/usr --exec-prefix=/usr --bindir=/usr/bin --sbindir=/usr/sbin --sysconfdir=/etc --datadir=/usr/share --includedir=/usr/include --libexecdir=/usr/libexec --localstatedir=/var --sharedstatedir=/var/lib --mandir=/usr/share/man --infodir=/usr/share/info --build=x86_64-redhat-linux-gnu --host=x86_64-redhat-linux-gnu --target=xtensa-linux-gnu --enable-targets=all --program-prefix=xtensa-linux-gnu- --enable-languages=c --without-headers --enable-sjlj-exceptions --with-system-libunwind --disable-nls --disable-threads --disable-shared --disable-libmudflap --disable-libssp --disable-libgomp --disable-libquadmath --disable-gold --disable-decimal-float --enable-checking= --enable-gnu-unique-object --enable-linker-build-id --disable-plugin --enable-nls --with-system-zlib --with-bugurl=http://bugzilla.redhat.com/bugzilla/ --enable-obsolete
+> Thread model: single
+> gcc version 4.7.1 20120606 (Red Hat 4.7.1-0.1.20120606) (GCC)
+>
+> When type the command "make ARCH=xtensa allmodconfig", it always reports:
+>   "gcc: error: unrecognized command line option ‘-mlongcalls’"
+>
+> The related error:
+>
+>   AS      arch/xtensa/kernel/coprocessor.o
+> arch/xtensa/kernel/coprocessor.S: Assembler messages:
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (0) for 'rur0'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (1) for 'rur1'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (2) for 'rur2'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (3) for 'rur3'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (8) for 'rur8'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (9) for 'rur9'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (10) for 'rur10'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (11) for 'rur11'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (12) for 'rur12'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (13) for 'rur13'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (24) for 'rur24'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (25) for 'rur25'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (26) for 'rur26'
+> arch/xtensa/kernel/coprocessor.S:98: Error: invalid register number (27) for 'rur27'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wras128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:98: Error: unknown opcode or format name 'wrbs128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (0) for 'wur0'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (1) for 'wur1'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (2) for 'wur2'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (3) for 'wur3'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (8) for 'wur8'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (9) for 'wur9'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (10) for 'wur10'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (11) for 'wur11'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (12) for 'wur12'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (13) for 'wur13'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (24) for 'wur24'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (25) for 'wur25'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (26) for 'wur26'
+> arch/xtensa/kernel/coprocessor.S:107: Error: invalid register number (27) for 'wur27'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wrbl128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> arch/xtensa/kernel/coprocessor.S:107: Error: unknown opcode or format name 'wral128i'
+> make[1]: *** [arch/xtensa/kernel/coprocessor.o] Error 1
+> make: *** [arch/xtensa/kernel] Error 2
+>
+>
+> On 06/22/2013 03:40 PM, Chen Gang wrote:
+>> Define '_PAGE_CHG_MASK' when 'NOMMU' to pass compiling.
+>>
+>> The related make:
+>>
+>>   make ARCH=xtensa allmodconfig
+>>   make ARCH=xtensa menuconfig
+>>     set "xtensa-linux-gnu-" for "Cross compilier tool prefix"
+>>     select "s6000" for "Processor type and features" -> "Xtensa Processor"
+>>   make ARCH=xtensa EXTRA_CFLAGS=-W
+>>
+>> The related error:
+>>
+>>   arch/xtensa/include/asm/pgtable.h: In function ‘pte_modify’:
+>>   arch/xtensa/include/asm/pgtable.h:289:9: error: ‘_PAGE_CHG_MASK’ undeclared (first use in this function)
 >>
 >>
->> Holding the file pointer does not let the group->container_users counter go
->> to zero
-> 
-> How so?  Holding the file pointer means the file won't go away, which
-> means the group release function won't be called.  That means the group
-> won't go away, but that doesn't mean it's attached to an IOMMU.  A user
-> could call UNSET_CONTAINER.
-> 
->>  and this is exactly what vfio_group_add_external_user() and
->> vfio_group_del_external_user() do. The difference is only in absolute value
->> - 2 vs. 3.
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>  arch/xtensa/include/asm/pgtable.h |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
 >>
->> No change in behaviour whether I use new vfio API or simply hold file* till
->> KVM closes fd created when IOMMU was connected to LIOBN.
-> 
-> By that notion you could open(/dev/vfio/$GROUP) and you're safe, right?
-> But what about SET_CONTAINER & SET_IOMMU?  All that you guarantee
-> holding the file pointer is that the vfio_group exists.
-> 
->> And while this counter is not zero, QEMU cannot take ownership over the group.
+>> diff --git a/arch/xtensa/include/asm/pgtable.h b/arch/xtensa/include/asm/pgtable.h
+>> index 7e09f70..a28c49b 100644
+>> --- a/arch/xtensa/include/asm/pgtable.h
+>> +++ b/arch/xtensa/include/asm/pgtable.h
+>> @@ -149,9 +149,10 @@
+>>  #define _PAGE_DIRTY		(1<<7)	/* software: page dirty */
+>>  #define _PAGE_ACCESSED		(1<<8)	/* software: page accessed (read) */
+>>  
+>> +#define _PAGE_CHG_MASK	   (PAGE_MASK | _PAGE_ACCESSED | _PAGE_DIRTY)
+>> +
+>>  #ifdef CONFIG_MMU
+>>  
+>> -#define _PAGE_CHG_MASK	   (PAGE_MASK | _PAGE_ACCESSED | _PAGE_DIRTY)
+>>  #define _PAGE_PRESENT	   (_PAGE_HW_VALID | _PAGE_CA_WB | _PAGE_ACCESSED)
+>>  
+>>  #define PAGE_NONE	   __pgprot(_PAGE_NONE | _PAGE_USER)
 >>
->> I am definitely still missing the bigger picture...
-> 
-> The bigger picture is that the group needs to exist AND it needs to be
-> setup and maintained to have IOMMU protection.  Actually, my first stab
-> at add_external_user doesn't look sufficient, it needs to look more like
-> vfio_group_get_device_fd, checking group->container->iommu and
-> group_viable().
+>
 
 
-This makes sense. If you did this, that would be great. Without it, I
-really cannot see how the proposed inc/dec of container_users is better
-than simple holding file*. Thanks.
-
-
-> As written it would allow an external user after
-> SET_CONTAINER without SET_IOMMU.  It should also be part of the API that
-> the external user must hold the file reference between add_external_use
-> and del_external_user and do cleanup on any exit paths.  Thanks,
-
-
--- 
-Alexey
