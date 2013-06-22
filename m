@@ -1,77 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab3FVN2w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 09:28:52 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:59122 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756178Ab3FVN2u (ORCPT
+	id S1758231Ab3FVNoM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 09:44:12 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:41922 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab3FVNoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 09:28:50 -0400
-Message-ID: <51C5A68F.3000300@free-electrons.com>
-Date: Sat, 22 Jun 2013 15:28:47 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, jimwall@q.com,
-        brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Sat, 22 Jun 2013 09:44:10 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
         devicetree-discuss@lists.ozlabs.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCHv2 1/3] iio: Add Nuvoton NAU7802 ADC driver
-References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com> <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com> <51C590B5.2060308@kernel.org> <51C5923D.6030609@metafoo.de> <51C5A1AF.3070404@free-electrons.com> <51C5A499.5050509@metafoo.de>
-In-Reply-To: <51C5A499.5050509@metafoo.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>, Nicolas Pitre <nico@fluxnic.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v7 5/8] ARM: s3c64xx: Add board file for boot using Device Tree
+Date: Sat, 22 Jun 2013 15:44:07 +0200
+Message-ID: <2302304.NyG5fka8vK@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.6-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <1371774924-9224-6-git-send-email-tomasz.figa@gmail.com>
+References: <1371774924-9224-1-git-send-email-tomasz.figa@gmail.com> <1371774924-9224-6-git-send-email-tomasz.figa@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/06/2013 15:20, Lars-Peter Clausen wrote:
-> On 06/22/2013 03:07 PM, Alexandre Belloni wrote:
->> On 22/06/2013 14:02, Lars-Peter Clausen wrote:
->>> On 06/22/2013 01:55 PM, Jonathan Cameron wrote:
->>>> On 06/20/2013 07:57 PM, Alexandre Belloni wrote:
->>>>> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
->>>>> gain and sampling rates.
->>>>>
->>>> Sorry, somewhat low on time today so only a quick review.
->>>>
->>>> 1) Missing userspace ABI documentation.  Also, perhaps min_conversions is
->>>>    a little vague?  Not that I have a better idea!
->>> I really don't like the name min_conversions either. Isn't this effectively
->>> a decimation filter?
->> Yeah, it could be seen like that but it is only relevant and only
->> happens when switching between channels. I'm open to any ideas.
->>
-> I see. Is there anything about this in the datasheet on how many conversions
-> you usually need? Is this really something you need to change at runtime or
-> does moving this to platform data work?
->
->
+This patch adds board file that will be used to boot S3C64xx-based boards
+using Device Tree.
 
-There is actually nothing in the datasheet. The default value (6
-conversions) was found experimentally. What I did was saturating the ADC
-with the higher value on one channel and the lower value on the other
-one and I tried to find when reading both channel sequentially was
-resulting in a correct value.
+Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+---
+ arch/arm/mach-s3c64xx/Kconfig           | 16 +++++++
+ arch/arm/mach-s3c64xx/Makefile          |  1 +
+ arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c | 85 +++++++++++++++++++++++++++++++++
+ 3 files changed, 102 insertions(+)
+ create mode 100644 arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
 
-You may not need to change it at runtime. And that value mainly depend
-on the precision versus speed balance you want to achieve. If you know
-that the values on both channels will not be to far apart, then you may
-not need to wait at all.
+Changes since v6:
+ - Dropped the concept of .init_platform() callback and returned back
+   to the old good abuse of .init_irq().
 
-Would you think that is something I should hide in the DT ? Or maybe I
-can drop that knob for now and see if it is needed in the future.
-
+diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
+index f78a6a0..fb4258c 100644
+--- a/arch/arm/mach-s3c64xx/Kconfig
++++ b/arch/arm/mach-s3c64xx/Kconfig
+@@ -308,3 +308,19 @@ config MACH_WLF_CRAGG_6410
+ 	select SAMSUNG_GPIO_EXTRA128
+ 	help
+ 	  Machine support for the Wolfson Cragganmore S3C6410 variant.
++
++config MACH_S3C64XX_DT
++	bool "Samsung S3C6400/S3C6410 machine using Device Tree"
++	select CLKSRC_OF
++	select CPU_S3C6400
++	select CPU_S3C6410
++	select PINCTRL
++	select PINCTRL_S3C64XX
++	select USE_OF
++	help
++	  Machine support for Samsung S3C6400/S3C6410 machines with Device Tree
++	  enabled.
++	  Select this if a fdt blob is available for your S3C64XX SoC based
++	  board.
++	  Note: This is under development and not all peripherals can be
++	  supported with this machine file.
+diff --git a/arch/arm/mach-s3c64xx/Makefile b/arch/arm/mach-s3c64xx/Makefile
+index 645a8fe..6faedcf 100644
+--- a/arch/arm/mach-s3c64xx/Makefile
++++ b/arch/arm/mach-s3c64xx/Makefile
+@@ -57,3 +57,4 @@ obj-$(CONFIG_MACH_SMARTQ7)		+= mach-smartq7.o
+ obj-$(CONFIG_MACH_SMDK6400)		+= mach-smdk6400.o
+ obj-$(CONFIG_MACH_SMDK6410)		+= mach-smdk6410.o
+ obj-$(CONFIG_MACH_WLF_CRAGG_6410)	+= mach-crag6410.o mach-crag6410-module.o
++obj-$(CONFIG_MACH_S3C64XX_DT)		+= mach-s3c64xx-dt.o
+diff --git a/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c b/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
+new file mode 100644
+index 0000000..3384cb0
+--- /dev/null
++++ b/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
+@@ -0,0 +1,85 @@
++/*
++ * Samsung's S3C64XX flattened device tree enabled machine
++ *
++ * Copyright (c) 2013 Tomasz Figa <tomasz.figa@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++
++#include <linux/clk-provider.h>
++#include <linux/irqchip.h>
++#include <linux/of_platform.h>
++
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++#include <asm/system_misc.h>
++
++#include <plat/cpu.h>
++#include <plat/watchdog-reset.h>
++
++#include <mach/map.h>
++
++#include "common.h"
++
++/*
++ * IO mapping for shared system controller IP.
++ *
++ * FIXME: Make remaining drivers use dynamic mapping.
++ */
++static struct map_desc s3c64xx_dt_iodesc[] __initdata = {
++	{
++		.virtual	= (unsigned long)S3C_VA_SYS,
++		.pfn		= __phys_to_pfn(S3C64XX_PA_SYSCON),
++		.length		= SZ_4K,
++		.type		= MT_DEVICE,
++	},
++};
++
++static void __init s3c64xx_dt_map_io(void)
++{
++	debug_ll_io_init();
++	iotable_init(s3c64xx_dt_iodesc, ARRAY_SIZE(s3c64xx_dt_iodesc));
++
++	s3c64xx_init_cpu();
++
++	if (!soc_is_s3c64xx())
++		panic("SoC is not S3C64xx!");
++}
++
++static void __init s3c64xx_dt_init_irq(void)
++{
++	of_clk_init(NULL);
++	samsung_wdt_reset_of_init();
++	irqchip_init();
++};
++
++static void __init s3c64xx_dt_init_machine(void)
++{
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++}
++
++static void s3c64xx_dt_restart(char mode, const char *cmd)
++{
++	if (mode != 's')
++		samsung_wdt_reset();
++
++	/* if all else fails, or mode was for soft, jump to 0 */
++	soft_restart(0);
++}
++
++static char const *s3c64xx_dt_compat[] __initdata = {
++	"samsung,s3c6400",
++	"samsung,s3c6410",
++	NULL
++};
++
++DT_MACHINE_START(S3C6400_DT, "Samsung S3C64xx (Flattened Device Tree)")
++	/* Maintainer: Tomasz Figa <tomasz.figa@gmail.com> */
++	.dt_compat	= s3c64xx_dt_compat,
++	.map_io		= s3c64xx_dt_map_io,
++	.init_irq	= s3c64xx_dt_init_irq,
++	.init_machine	= s3c64xx_dt_init_machine,
++	.restart        = s3c64xx_dt_restart,
++MACHINE_END
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.8.2.1
+
 
