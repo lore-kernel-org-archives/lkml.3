@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3FVRfz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 13:35:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37043 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab3FVRfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 13:35:53 -0400
-Date: Sat, 22 Jun 2013 19:31:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130622173129.GA29375@redhat.com>
-References: <20130619164540.GB22483@redhat.com> <20130619175356.GA23673@redhat.com> <20130619181302.GE5146@linux.vnet.ibm.com> <20130620001212.GB12151@redhat.com> <20130620161652.GA4462@linux.vnet.ibm.com> <20130621151119.GA1596@redhat.com> <20130621195949.GA15519@redhat.com> <20130622013731.GA22918@redhat.com>
+	id S1752122Ab3FVRnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 13:43:09 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:34823 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab3FVRnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 13:43:07 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: RE: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
+ from apic.c to irq.c
+Thread-Topic: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
+ from apic.c to irq.c
+Thread-Index: AQHObqUzA/RFHOSk7kKPCkjH3eaeTplA7QgAgAAEnYCAARpyAP//8/Ew
+Date: Sat, 22 Jun 2013 17:42:43 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443E06842@USINDEM103.corp.hds.com>
+References: <1371835898.18733.122.camel@gandalf.local.home>
+	 <1371848976.18733.130.camel@gandalf.local.home>
+	 <1371849967.18733.134.camel@gandalf.local.home>
+ <1371910622.18733.154.camel@gandalf.local.home>
+In-Reply-To: <1371910622.18733.154.camel@gandalf.local.home>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130622013731.GA22918@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-22_06:2013-06-21,2013-06-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0
+ kscore.is_bulkscore=1.47996059851607e-11 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.997215366458519
+ urlsuspect_oldscore=0.997215366458519 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=0 rbsscore=0.997215366458519
+ spamscore=0 recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9
+ adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1305240000 definitions=main-1306220188
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5MHhKeS013710
 
-On 06/21, Dave Jones wrote:
->
-> On Fri, Jun 21, 2013 at 09:59:49PM +0200, Oleg Nesterov wrote:
->
->  > I am puzzled. And I do not really understand
->  >
->  > 	hardirqs last  enabled at (2380318): [<ffffffff816ed220>] restore_args+0x0/0x30
->  > 	hardirqs last disabled at (2380319): [<ffffffff816f5d2a>] apic_timer_interrupt+0x6a/0x80
->  > 	softirqs last  enabled at (196990): [<ffffffff810542d4>] __do_softirq+0x194/0x440 [19886.471395]
->  > 	softirqs last disabled at (197479): [<ffffffff8105473d>] irq_exit+0xcd/0xe0
->  >
->  > below. how can they differ that much...
+> +static inline void load_current_idt(void)
+> +{
+> +       unsigned long flags;
+> +
+> +       local_irq_save(flags);
+> +       if (is_debug_idt_enabled())
+> +               load_debug_idt();
+> +       else
+> +               load_idt((const struct desc_ptr *)&idt_descr);
+> +       local_irq_restore(flags);
+> +}
+> 
+> It's not safe to call local_irq_save() here. From entry_64.S:
+> 
+> .macro TRACE_IRQS_OFF_DEBUG
+> 	call debug_stack_set_zero
+> 	TRACE_IRQS_OFF
+> 	call debug_stack_reset
+> .endm
+> 
+> We must change the idt before we can trace irqs being disabled. The
+> local_irq_save() here is going to be traced by lockdep. Why do we need
+> to disable interrupts? It's pretty pointless since this same code can be
+> called by NMIs.
 
-And I misread the original trace. Now that I read it again I am even
-more puzzled.
+OK, I agree to remove the local_irq_save().
 
-So it actually blames __do_softirq(), I didn't notice "RIP:" part.
-And "softirqs last disabled" refers to irq_exit() because __do_softirq()
-does __local_bh_disable(__builtin_return_address(0)). Just to add more
-confusion I guess ;)
+I thought it is safe to disable interrupt to avoid potential races, 
+because the load_current_id() is a common function and someone else may use it near future.
 
-This explains "differ that much" above, __do_softirq() does cli/sti in
-a loop without return return.
+Per Intel's Software Developer's manual, there is a case which we should disable interrupts
+to switch IDT in IA-32e Mode.
+But I think it is corner case.
 
-And how the poor 8aac6270 can trigger this ???
+<snip>
+9.8.5.2 IA-32e Mode Interrupts and Exceptions
+Software must not allow exceptions or interrupts to occur between the time IA-32e mode is activated and the
+update of the interrupt-descriptor-table register (IDTR) that establishes references to a 64-bit interrupt-descriptor
+table (IDT). This is because the IDT remains in legacy form immediately after IA-32e mode is activated.
+If an interrupt or exception occurs prior to updating the IDTR, a legacy 32-bit interrupt gate will be referenced and
+interpreted as a 64-bit interrupt gate with unpredictable results. External interrupts can be disabled by using the
+CLI instruction.
+Non-maskable interrupts (NMI) must be disabled using external hardware.
+<snip>
 
->  > Dave, any chance you can reproduce the hang with the debugging patch at
->  > the end? Just in case, the warnings themself do not mean a problem, just
->  > to have a bit more info.
->
-> [ 7485.261299] WARNING: at include/linux/nsproxy.h:63 get_proc_task_net+0x1c8/0x1d0()
-> [ 7485.262021] Modules linked in: 8021q garp stp tun fuse rfcomm bnep hidp snd_seq_dummy nfnetlink scsi_transport_iscsi can_bcm ipt_ULOG can_raw rds af_802154 nfc can rose caif_socket caif llc2 af_rxrpc phonet ipx p8023 p8022 pppoe pppox ppp_generic netrom slhc ax25 x25 af_key appletalk atm psnap llc irda crc_ccitt bluetooth rfkill coretemp hwmon kvm_intel snd_hda_codec_realtek kvm snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel microcode snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device pcspkr snd_pcm snd_page_alloc e1000e snd_timer ptp snd pps_core soundcore xfs libcrc32c
-> [ 7485.265434] CPU: 2 PID: 5623 Comm: trinity-child3 Not tainted 3.10.0-rc6+ #28 
-> [ 7485.267158]  ffffffff81a1529c ffff8801c8eafd30 ffffffff816e432d ffff8801c8eafd68
-> [ 7485.268045]  ffffffff8104a0c1 0000000000000000 ffff880225e9bd18 ffff8801bc6e4de0
-> [ 7485.268932]  0000000000000000 00000000000000dd ffff8801c8eafd78 ffffffff8104a19a
-> [ 7485.270463] Call Trace:
-> [ 7485.271338]  [<ffffffff816e432d>] dump_stack+0x19/0x1b
-> [ 7485.272207]  [<ffffffff8104a0c1>] warn_slowpath_common+0x61/0x80
-> [ 7485.273092]  [<ffffffff8104a19a>] warn_slowpath_null+0x1a/0x20
-> [ 7485.273942]  [<ffffffff81229f58>] get_proc_task_net+0x1c8/0x1d0
-> [ 7485.274793]  [<ffffffff81229d95>] ? get_proc_task_net+0x5/0x1d0
-> [ 7485.275659]  [<ffffffff8122a0bd>] proc_tgid_net_lookup+0x1d/0x80
-> [ 7485.276531]  [<ffffffff811b778d>] lookup_real+0x1d/0x50
-> [ 7485.277646]  [<ffffffff811b7d83>] __lookup_hash+0x33/0x40
-> [ 7485.278477]  [<ffffffff811bb143>] kern_path_create+0xb3/0x190
-> [ 7485.279345]  [<ffffffff811b93d5>] ? getname_flags+0xb5/0x190
-> [ 7485.280292]  [<ffffffff811bb261>] user_path_create+0x41/0x60
-> [ 7485.281233]  [<ffffffff811be6bb>] SyS_symlinkat+0x4b/0xd0
-> [ 7485.282072]  [<ffffffff816f5a54>] tracesys+0xdd/0xe2
-> [ 7485.282973] ---[ end trace 2204b7c65d6c5519 ]---
-
-Hmm. The test case tries to create the symlink in /proc/*/net/ ?
-
->  > +		pr_info("YESTHISHAPPENS new=%p\n", new);
->
-> This didn't trigger. (yet?)
-
-This should only trigger if the test-case plays with the namespaces...
-But once again, the warnings are fine. I hoped that they can provide
-more info when/if you reproduce the lockup.
-
-But it seems you can't ?
-
-
-Dave, I am sorry but all I can do is to ask you to do more testing.
-Could you please reproduce the lockup again on the clean Linus's
-current ? (and _without_ reverting 8aac6270, of course).
-
-If watchdog will blame __do_softirq() again I can try to make a
-better debugging patch.
-
-Perhaps it makes sense to decrease /proc/sys/kernel/watchdog_thresh
-to detect the possible lockups earlier. 2 * 10 is probably too much.
+Seiji
 
 
 
-And who knows, perhaps you pulled some fix (say 34376a50fb1 looks
-promising) after you finished bisecting and then pulled Linus
-current.
-
-Thanks,
-
-Oleg.
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
