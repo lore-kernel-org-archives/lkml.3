@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab3FVSiN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 14:38:13 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:54337 "EHLO smtp.outflux.net"
+	id S1752898Ab3FVSiQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 14:38:16 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42900 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377Ab3FVShg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 14:37:36 -0400
+	id S1752268Ab3FVShh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 14:37:37 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Arnd Bergmann <arnd@arndb.de>, Ankita Garg <ankita@in.ibm.com>,
         Simon Kagstrom <simon.kagstrom@netinsight.net>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 2/4] lkdtm: add "WARNING" trigger
-Date: Sat, 22 Jun 2013 11:37:05 -0700
-Message-Id: <1371926227-2609-3-git-send-email-keescook@chromium.org>
+Subject: [PATCH 1/4] lkdtm: fix stack protector trigger
+Date: Sat, 22 Jun 2013 11:37:04 -0700
+Message-Id: <1371926227-2609-2-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371926227-2609-1-git-send-email-keescook@chromium.org>
 References: <1371926227-2609-1-git-send-email-keescook@chromium.org>
@@ -23,43 +23,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For additional testing, add "WARNING" as a trigger that calls WARN_ON(1).
+The -fstack-protector compiler flag will only build stack protections if
+a character array is seen. Additionally, the offset to the saved
+instruction pointer changes based on architecture, so stomp much harder
+(64 bytes) when corrupting the stack.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/misc/lkdtm.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/misc/lkdtm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
-index adb6bde..b1323fc 100644
+index 08aad69..adb6bde 100644
 --- a/drivers/misc/lkdtm.c
 +++ b/drivers/misc/lkdtm.c
-@@ -68,6 +68,7 @@ enum ctype {
- 	CT_NONE,
- 	CT_PANIC,
- 	CT_BUG,
-+	CT_WARNING,
- 	CT_EXCEPTION,
- 	CT_LOOP,
- 	CT_OVERFLOW,
-@@ -95,6 +96,7 @@ static char* cp_name[] = {
- static char* cp_type[] = {
- 	"PANIC",
- 	"BUG",
-+	"WARNING",
- 	"EXCEPTION",
- 	"LOOP",
- 	"OVERFLOW",
-@@ -284,6 +286,9 @@ static void lkdtm_do_action(enum ctype which)
- 	case CT_BUG:
- 		BUG();
+@@ -295,10 +295,10 @@ static void lkdtm_do_action(enum ctype which)
+ 		(void) recursive_loop(0);
  		break;
-+	case CT_WARNING:
-+		WARN_ON(1);
-+		break;
- 	case CT_EXCEPTION:
- 		*((int *) 0) = 0;
+ 	case CT_CORRUPT_STACK: {
+-		volatile u32 data[8];
+-		volatile u32 *p = data;
++		/* Make sure the compiler creates and uses an 8 char array. */
++		volatile char data[8];
+ 
+-		p[12] = 0x12345678;
++		memset((void *)data, 0, 64);
  		break;
+ 	}
+ 	case CT_UNALIGNED_LOAD_STORE_WRITE: {
 -- 
 1.7.9.5
 
