@@ -1,153 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423599Ab3FVB5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 21:57:18 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:41658 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422978Ab3FVB5R (ORCPT
+	id S1423625Ab3FVCYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 22:24:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47413 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394Ab3FVCYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 21:57:17 -0400
-From: "Raphael S. Carvalho" <raphael.scarv@gmail.com>
-To: William Hubbs <w.d.hubbs@gmail.com>,
-        Chris Brannon <chris@the-brannons.com>,
-        Kirk Reiser <kirk@braille.uwo.ca>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lijo Antony <lijo.kernel@gmail.com>
-Cc: speakup@braille.uwo.ca, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        "Raphael S. Carvalho" <raphael.scarv@gmail.com>
-Subject: [PATCH 1/1] staging/speakup/kobjects.c: Code improvement.
-Date: Fri, 21 Jun 2013 22:54:40 -0300
-Message-Id: <1371866080-13752-1-git-send-email-raphael.scarv@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 21 Jun 2013 22:24:50 -0400
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCHv2 1/2] ARM: msm: Add support for MSM8974
+Date: Fri, 21 Jun 2013 19:24:31 -0700
+Message-Id: <1371867872-19385-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, there is no need to use strcmp since we can make a test of similar semantic by using the var_id field of param.
-I moved the test into the VAR_NUM:VAR_TIME case since VAR_STRING will never be "voice".
+This patch adds basic board support for MSM8974 which
+belongs to the Snapdragon 800 family.
+For now, just support a basic machine with device tree.
 
-spk_xlate isn't used anymore (in line 608), then there is no difference between using cp and buf in VAR_STRING case.
-Besides, buf is a const char and those changes remove one uneeded line.
-
-I created the function spk_reset_default_value because it clarifies the code and allows code reusing.
-
-Signed-off-by: Raphael S. Carvalho <raphael.scarv@gmail.com>
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 ---
- drivers/staging/speakup/kobjects.c |   73 +++++++++++++++++++----------------
- 1 files changed, 40 insertions(+), 33 deletions(-)
+ arch/arm/boot/dts/Makefile        |    3 ++-
+ arch/arm/boot/dts/msm8974.dts     |   24 ++++++++++++++++++++++++
+ arch/arm/mach-msm/Kconfig         |   21 ++++++++++++++++++---
+ arch/arm/mach-msm/Makefile        |    1 +
+ arch/arm/mach-msm/board-dt-8974.c |   23 +++++++++++++++++++++++
+ 5 files changed, 68 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/boot/dts/msm8974.dts
+ create mode 100644 arch/arm/mach-msm/board-dt-8974.c
 
-diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
-index 943b6c1..4660ce3 100644
---- a/drivers/staging/speakup/kobjects.c
-+++ b/drivers/staging/speakup/kobjects.c
-@@ -585,6 +585,25 @@ ssize_t spk_var_show(struct kobject *kobj, struct kobj_attribute *attr,
- }
- EXPORT_SYMBOL_GPL(spk_var_show);
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index b9f7121..7728cfe 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -90,7 +90,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
+ 	kirkwood-openblocks_a6.dtb
+ dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
+ dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+-	msm8960-cdp.dtb
++	msm8960-cdp.dtb \
++	msm8974.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+ 	armada-370-mirabox.dtb \
+ 	armada-370-rd.dtb \
+diff --git a/arch/arm/boot/dts/msm8974.dts b/arch/arm/boot/dts/msm8974.dts
+new file mode 100644
+index 0000000..8ed71ef
+--- /dev/null
++++ b/arch/arm/boot/dts/msm8974.dts
+@@ -0,0 +1,24 @@
++/dts-v1/;
++
++/include/ "skeleton.dtsi"
++
++/ {
++	model = "Qualcomm MSM8974";
++	compatible = "qcom,msm8974";
++	interrupt-parent = <&intc>;
++
++	intc: interrupt-controller@f9000000 {
++		compatible = "qcom,msm-qgic2";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		reg = < 0xf9000000 0x1000 >,
++		      < 0xf9002000 0x1000 >;
++	};
++
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts = <1 2 0xf08>,
++			     <1 3 0xf08>;
++		clock-frequency = <19200000>;
++	};
++};
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index 614e41e..343675b 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -1,12 +1,12 @@
+ if ARCH_MSM
  
-+/*
-+ * Used to reset either default_pitch or default_vol.
+ comment "Qualcomm MSM SoC Type"
+-	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on ARCH_MSM_DT
+ 
+ choice
+ 	prompt "Qualcomm MSM SoC Type"
+ 	default ARCH_MSM7X00A
+-	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on !ARCH_MSM_DT
+ 
+ config ARCH_MSM7X00A
+ 	bool "MSM7x00A / MSM7x01A"
+@@ -60,6 +60,19 @@ config ARCH_MSM8960
+ 	select MSM_SCM if SMP
+ 	select USE_OF
+ 
++config ARCH_MSM8974
++	bool "MSM8974"
++	select ARM_GIC
++	select CPU_V7
++	select HAVE_ARM_ARCH_TIMER
++	select HAVE_SMP
++	select MSM_SCM if SMP
++	select USE_OF
++
++config ARCH_MSM_DT
++	def_bool y
++	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
++
+ config MSM_HAS_DEBUG_UART_HS
+ 	bool
+ 
+@@ -68,6 +81,7 @@ config MSM_SOC_REV_A
+ 
+ config  ARCH_MSM_ARM11
+ 	bool
++
+ config  ARCH_MSM_SCORPION
+ 	bool
+ 
+@@ -75,6 +89,7 @@ config  MSM_VIC
+ 	bool
+ 
+ menu "Qualcomm MSM Board Type"
++	depends on !ARCH_MSM_DT
+ 
+ config MACH_HALIBUT
+ 	depends on ARCH_MSM
+@@ -121,7 +136,7 @@ config MSM_SMD
+ 	bool
+ 
+ config MSM_GPIOMUX
+-	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on !ARCH_MSM_DT
+ 	bool "MSM V1 TLMM GPIOMUX architecture"
+ 	help
+ 	  Support for MSM V1 TLMM GPIOMUX architecture.
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index d257ff4..80e3b15 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -29,5 +29,6 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+ obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
+ obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
++obj-$(CONFIG_ARCH_MSM8974) += board-dt-8974.o
+ obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
+ obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
+diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
+new file mode 100644
+index 0000000..d7f84f2
+--- /dev/null
++++ b/arch/arm/mach-msm/board-dt-8974.c
+@@ -0,0 +1,23 @@
++/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + */
-+static inline void spk_reset_default_value(char *header_name,
-+					int *synth_default_value, int idx)
-+{
-+	struct st_var_header *param;
 +
-+	if (synth && synth_default_value) {
-+		param = spk_var_header_by_name(header_name);
-+		if (param)  {
-+			spk_set_num_var(synth_default_value[idx],
-+					param, E_NEW_DEFAULT);
-+			spk_set_num_var(0, param, E_DEFAULT);
-+			pr_info("%s reset to default value\n", param->name);
-+		}
-+	}
-+}
++#include <linux/of_platform.h>
++#include <asm/mach/arch.h>
 +
- /*
-  * This function is called when a user echos a value to one of the
-  * variable parameters.
-@@ -624,56 +643,44 @@ ssize_t spk_var_store(struct kobject *kobj, struct kobj_attribute *attr,
- 		if (ret == -ERANGE) {
- 			var_data = param->data;
- 			pr_warn("value for %s out of range, expect %d to %d\n",
--				attr->attr.name,
-+				param->name,
- 				var_data->u.n.low, var_data->u.n.high);
- 		}
++static const char * const msm8974_dt_match[] __initconst = {
++	"qcom,msm8974",
++	NULL
++};
 +
-+	       /*
-+		* If voice was just changed, we might need to reset our default
-+		* pitch and volume.
-+		*/
-+		if (param->var_id == VOICE) {
-+			spk_reset_default_value("pitch", synth->default_pitch,
-+				value);
-+			spk_reset_default_value("vol", synth->default_vol,
-+				value);
-+		}
- 		break;
- 	case VAR_STRING:
--		len = strlen(buf);
--		if ((len >= 1) && (buf[len - 1] == '\n'))
-+		len = strlen(cp);
-+		if ((len >= 1) && (cp[len - 1] == '\n'))
- 			--len;
--		if ((len >= 2) && (buf[0] == '"') && (buf[len - 1] == '"')) {
--			++buf;
-+		if ((len >= 2) && (cp[0] == '"') && (cp[len - 1] == '"')) {
-+			++cp;
- 			len -= 2;
- 		}
--		cp = (char *) buf;
- 		cp[len] = '\0';
--		ret = spk_set_string_var(buf, param, len);
-+		ret = spk_set_string_var(cp, param, len);
- 		if (ret == -E2BIG)
- 			pr_warn("value too long for %s\n",
--					attr->attr.name);
-+					param->name);
- 		break;
- 	default:
- 		pr_warn("%s unknown type %d\n",
- 			param->name, (int)param->var_type);
--	break;
--	}
--	/*
--	 * If voice was just changed, we might need to reset our default
--	 * pitch and volume.
--	 */
--	if (strcmp(attr->attr.name, "voice") == 0) {
--		if (synth && synth->default_pitch) {
--			param = spk_var_header_by_name("pitch");
--			if (param)  {
--				spk_set_num_var(synth->default_pitch[value],
--						param, E_NEW_DEFAULT);
--				spk_set_num_var(0, param, E_DEFAULT);
--			}
--		}
--		if (synth && synth->default_vol) {
--			param = spk_var_header_by_name("vol");
--			if (param)  {
--				spk_set_num_var(synth->default_vol[value],
--						param, E_NEW_DEFAULT);
--				spk_set_num_var(0, param, E_DEFAULT);
--			}
--		}
--	}
-+		break;
-+	}
- 	spk_unlock(flags);
- 
- 	if (ret == -ERESTART)
--		pr_info("%s reset to default value\n", attr->attr.name);
-+		pr_info("%s reset to default value\n", param->name);
- 	return count;
- }
- EXPORT_SYMBOL_GPL(spk_var_store);
++DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
++	.dt_compat = msm8974_dt_match,
++MACHINE_END
 -- 
-1.7.2.5
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
