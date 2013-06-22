@@ -1,30 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3FVShg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 14:37:36 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46204 "EHLO smtp.outflux.net"
+	id S1752600Ab3FVShw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 14:37:52 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37087 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab3FVShf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 14:37:35 -0400
+	id S1751066Ab3FVShg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 14:37:36 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Arnd Bergmann <arnd@arndb.de>, Ankita Garg <ankita@in.ibm.com>,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>
-Subject: [PATCH 0/4] lkdtm: various improvements
-Date: Sat, 22 Jun 2013 11:37:03 -0700
-Message-Id: <1371926227-2609-1-git-send-email-keescook@chromium.org>
+        Simon Kagstrom <simon.kagstrom@netinsight.net>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 3/4] lkdtm: add "SPINLOCKUP" trigger
+Date: Sat, 22 Jun 2013 11:37:06 -0700
+Message-Id: <1371926227-2609-4-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371926227-2609-1-git-send-email-keescook@chromium.org>
+References: <1371926227-2609-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds several new test targets that have been useful when
-testing various kernel crash conditions while working on Chrome OS,
-and corrects the CORRUPT_STACK trigger as well.
+For additional lockup testing, add "SPINLOCKUP" to trigger a spinlock
+deadlock when triggered twice.
 
-Thanks,
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/misc/lkdtm.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
--Kees
+diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+index b1323fc..8bc7f0b 100644
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -78,6 +78,7 @@ enum ctype {
+ 	CT_WRITE_AFTER_FREE,
+ 	CT_SOFTLOCKUP,
+ 	CT_HARDLOCKUP,
++	CT_SPINLOCKUP,
+ 	CT_HUNG_TASK,
+ };
+ 
+@@ -106,6 +107,7 @@ static char* cp_type[] = {
+ 	"WRITE_AFTER_FREE",
+ 	"SOFTLOCKUP",
+ 	"HARDLOCKUP",
++	"SPINLOCKUP",
+ 	"HUNG_TASK",
+ };
+ 
+@@ -123,6 +125,7 @@ static enum cname cpoint = CN_INVALID;
+ static enum ctype cptype = CT_NONE;
+ static int count = DEFAULT_COUNT;
+ static DEFINE_SPINLOCK(count_lock);
++static DEFINE_SPINLOCK(lock_me_up);
+ 
+ module_param(recur_count, int, 0644);
+ MODULE_PARM_DESC(recur_count, " Recursion level for the stack overflow test, "\
+@@ -345,6 +348,10 @@ static void lkdtm_do_action(enum ctype which)
+ 		for (;;)
+ 			cpu_relax();
+ 		break;
++	case CT_SPINLOCKUP:
++		/* Must be called twice to trigger. */
++		spin_lock(&lock_me_up);
++		break;
+ 	case CT_HUNG_TASK:
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+ 		schedule();
+-- 
+1.7.9.5
 
