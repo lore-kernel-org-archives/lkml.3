@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423464Ab3FVA1E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 20:27:04 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52945 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161521Ab3FVA1C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 20:27:02 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pawel@osciak.com,
-        m.szyprowski@samsung.com, kyungmin.park@samsung.com
-Subject: Re: randconfig build errors with next-20130620, in several drivers/media
-Date: Sat, 22 Jun 2013 02:27:20 +0200
-Message-ID: <5790855.fto4zA3B21@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <20130620185244.GA14176@krebstar.arl.arizona.edu>
-References: <20130620185244.GA14176@krebstar.arl.arizona.edu>
+	id S1423530Ab3FVA1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 20:27:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:43912 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161521Ab3FVA1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 20:27:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,916,1363158000"; 
+   d="scan'208";a="333628003"
+Message-ID: <51C4EF85.7010607@linux.intel.com>
+Date: Fri, 21 Jun 2013 17:27:49 -0700
+From: Bin Gao <bin_gao@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Bin Gao <bin.gao@linux.intel.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
+References: <20130606183346.GA13259@bingao-desk1.fm.intel.com> <CAHp75VcYgpUVpOnKOzkYoZXbEPO_0QG7=WUXza55wpOyRwcKCA@mail.gmail.com> <20130606212620.GA13620@bingao-desk1.fm.intel.com> <CAHp75VcGUtWyPHrvYDW59-4g8F2m58-Us3CrbJ2bnYJdxnd1Sg@mail.gmail.com> <20130611171119.GA35135@bingao-desk1.fm.intel.com> <CAHp75VdZA_gouZohD1J+o9ybpXVLLQH=D7QDo9OznW93iBDZpQ@mail.gmail.com> <20130614190003.GA19617@bingao-desk1.fm.intel.com> <20130619101348.GE2950@katana>
+In-Reply-To: <20130619101348.GE2950@katana>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 6/19/2013 3:13 AM, Wolfram Sang wrote:
+>
+>> Even you prefer to extend v4l2, you still need this helper.
+>> The idea is just to move the unregister/register from a specific ISP driver
+>> to v4l2.
+>>
+>> I think you misunderstood my pionts somehow. Let me clarfiy a little bit:
+>>
+>> Current solution:
+>> 1. Platform codes(on top of DT/ACPI5/SFI) don't call i2c_register_board_info(),
+>> instead, prepare a table(kind of platform data) that has all camera i2c device information.
+>> 2. ISP driver registers devices listed in the table to i2c core - this makes sure
+>> v4l2 takes over these devices.
+>> The problem with this solution is that when a camera device runs on both ACPI5 and
+>> SFI, the platform codes will get a bit complicated and it's difficult to ensure one
+>> binary kernel runs on both platforms(ACPI5 and SFI).
+>> (To extend v4l2 with this solution doen't resolve my problem)
+>>
+>> Solution I'm suggesting:
+>> 1. Let the platform codes call i2c_register_board_info() anyway.
+>> 2. Since ISP driver knows which camera devices it supports, so it simply unregisters
+>> those devices (get the client by the introduced helper), then register it within v4l2.
+>> This solution ensure one binary kernel can run on both platforms.
+>> (To extend v4l2 with this solution could not be feasible, the device table is
+>> ISP driver specific, not v4l2 specific)
+>
+> I also wonder about the need to unregister. I have to admit I don't know
+> much about I2C handling in v4l2. But if it requires unregistering from
+> i2c core and registering to v4l2 core, then it sounds to me like we
+> could check if there is a more fundamential cleanup needed? Deferring
+> for now, looks like an issue worth looking at, yet there are other
+> things in the queue first.
+>
 
-On Thursday 20 June 2013 11:52:44 Jim Davis wrote:
-> Building with the attached random configuration file generates errors in
-> both
-> 
-> drivers/media/v4l2-core
-> drivers/media/usb/uvc
-> 
->   LD      init/built-in.o
-> /home/jim/linux-next/linux/drivers/media/v4l2-core/videobuf2-core.c:2577:
-> undefi ned reference to `video_devdata'
-
-[snip]
-
-> /home/jim/linux-next/linux/drivers/media/v4l2-core/videobuf2-core.c:2591:
-> undefi ned reference to `v4l2_fh_release'
-
-[snip]
-
-> /home/jim/linux-next/linux/drivers/media/v4l2-core/videobuf2-core.c:1980:
-> undefi ned reference to `v4l2_event_pending'
-
-[snip]
-
-> drivers/built-in.o: In function `uvc_delete':
-> /home/jim/linux-next/linux/drivers/media/usb/uvc/uvc_driver.c:1606:
-> undefined re ference to `usb_put_intf'
-
-[snip]
-
-The issue seem to be caused by USB_VIDEO_CLASS=y and VIDEO_V4L2=m && USB=m. 
-I'm not sure what made that combination possible, but I haven't been able to 
-reproduce it locally on next-20130620. Running make with the attached config 
-turns USB_VIDEO_CLASS=y into USB_VIDEO_CLASS=m.
-
--- 
-Regards,
-
-Laurent Pinchart
+Platform codes are supposed to call i2c_register_board_info() or 
+i2c_new_device() to register devices, we don't want to change this.
+Not sure v4l2 can still take over the devices without 
+unregistering/registering. Need look deeply into the v4l2 code...
 
