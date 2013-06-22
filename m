@@ -1,94 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab3FVKya (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 06:54:30 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:56396 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab3FVKy3 (ORCPT
+	id S1756137Ab3FVLDc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 07:03:32 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:46018 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab3FVLDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 06:54:29 -0400
-Date: Sat, 22 Jun 2013 12:54:25 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Ben Gamari <bgamari@gmail.com>
-Subject: Re: [PATCH] drm: always provide debugfs function prototypes
-Message-ID: <20130622105424.GA16861@manwe>
-References: <201306220038.17115.arnd@arndb.de>
+	Sat, 22 Jun 2013 07:03:30 -0400
+Message-ID: <51C5847C.7030100@kernel.org>
+Date: Sat, 22 Jun 2013 12:03:24 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
-Content-Disposition: inline
-In-Reply-To: <201306220038.17115.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Otavio Salvador <otavio@ossystems.com.br>
+CC: linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: mxs-lradc oops when unloading module
+References: <CAP9ODKof+yv27-zHSO9MTLC9Wv6F6Ya-Ot-vW7OK7kwadYK8Xg@mail.gmail.com> <CAP9ODKq92LW-xQyiHkVe6AkwaaYV11nt92DxCEzUioEVARTZXw@mail.gmail.com>
+In-Reply-To: <CAP9ODKq92LW-xQyiHkVe6AkwaaYV11nt92DxCEzUioEVARTZXw@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/16/2013 10:09 PM, Otavio Salvador wrote:
+> [ I am resending as it didn't make iio mailing list as the message
+> wasn't plain text ]
+> 
+> Hello,
+> 
+> When using mxs-lradc, as module, in a MX23 and unloading the driver,
+> it sometimes oops as:
+> 
+> [   46.340000] Unable to handle kernel NULL pointer dereference at
+> virtual address 00000005
+> [   46.340000] pgd = c7744000
+> [   46.350000] [00000005] *pgd=46f4d831, *pte=00000000, *ppte=00000000
+> [   46.360000] Internal error: Oops: 1 [#1] ARM
+> [   46.360000] Modules linked in: mxs_lradc(C-) industrialio_triggered_buffer
+> [   46.360000] CPU: 0 PID: 359 Comm: rmmod Tainted: G         C
+> 3.10.0-rc5+ #24
+> [   46.360000] task: c6f6a200 ti: c680e000 task.ti: c680e000
+> [   46.360000] PC is at module_put+0x18/0x80
+> [   46.360000] LR is at iio_device_unregister_trigger_consumer+0x1c/0x28
+> [   46.360000] pc : [<c0063334>]    lr : [<c0373808>]    psr: a0000013
+> [   46.360000] sp : c680feb0  ip : 60000013  fp : 01324008
+> [   46.360000] r10: 00000013  r9 : c680e000  r8 : 00000000
+> [   46.360000] r7 : c6ee9418  r6 : c0373808  r5 : c6ee8800  r4 : c6ee9810
+> [   46.360000] r3 : 00000001  r2 : c067a428  r1 : 000002e0  r0 : c6ee8800
+> [   46.360000] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> [   46.360000] Control: 0005317f  Table: 47744000  DAC: 00000015
+> [   46.360000] Process rmmod (pid: 359, stack limit = 0xc680e1b8)
+> [   46.360000] Stack: (0xc680feb0 to 0xc6810000)
+> [   46.360000] fea0:                                     c6ee9810
+> c6ee9400 c76cff80 c0373808
+> [   46.360000] fec0: c6ee9410 c036f9bc c036f990 c6ee9418 c6ee9410
+> c02a9610 c6ee9434 c065fbe0
+> [   46.360000] fee0: c77ccbe0 c024bc40 00000000 c6ee9400 00000000
+> c74c0644 c680e000 bf0049c4
+> [   46.360000] ff00: bf004940 c74c0610 bf00589c c02ae058 c02ae044
+> c02ac8f0 bf00589c c74c0610
+> [   46.360000] ff20: bf00589c c02ad0dc bf0058dc bf00589c c065fe60
+> c02ac730 bf0058dc 00000000
+> [   46.360000] ff40: 00000800 c0064010 ffffffff 5f73786d 6461726c
+> 00000063 c6f6a200 c680e000
+> [   46.360000] ff60: c6f6a200 c000edcc 00000001 00000000 c680e000
+> bec16e48 01324008 c005c754
+> [   46.360000] ff80: 01324088 00000800 01324088 01324088 00000800
+> 01324088 00000081 c000ef08
+> [   46.360000] ffa0: 00000000 c000ed40 01324088 00000800 013240b8
+> 00000800 bec16c08 ffffeffc
+> [   46.360000] ffc0: 01324088 00000800 01324088 00000081 00000001
+> bec16c38 bec16e48 01324008
+> [   46.360000] ffe0: 4d819ef0 bec16bf4 4d808768 4d721e6c 20000010
+> 013240b8 15401540 51110540
+> [   46.360000] [<c0063334>] (module_put+0x18/0x80) from [<c0373808>]
+> (iio_device_unregister_trigger_consumer+0x1c/0x28)
+> [   46.360000] [<c0373808>]
+> (iio_device_unregister_trigger_consumer+0x1c/0x28) from [<c036f9bc>]
+> (iio_dev_release+0x2c/0x6c)
+> [   46.360000] [<c036f9bc>] (iio_dev_release+0x2c/0x6c) from
+> [<c02a9610>] (device_release+0x2c/0x90)
+> [   46.360000] [<c02a9610>] (device_release+0x2c/0x90) from
+> [<c024bc40>] (kobject_release+0x48/0x7c)
+> [   46.360000] [<c024bc40>] (kobject_release+0x48/0x7c) from
+> [<bf0049c4>] (mxs_lradc_remove+0x84/0x90 [mxs_lradc])
+> [   46.360000] [<bf0049c4>] (mxs_lradc_remove+0x84/0x90 [mxs_lradc])
+> from [<c02ae058>] (platform_drv_remove+0x14/0x18)
+> [   46.360000] [<c02ae058>] (platform_drv_remove+0x14/0x18) from
+> [<c02ac8f0>] (__device_release_driver+0x58/0xb4)
+> [   46.360000] [<c02ac8f0>] (__device_release_driver+0x58/0xb4) from
+> [<c02ad0dc>] (driver_detach+0xb4/0xb8)
+> [   46.360000] [<c02ad0dc>] (driver_detach+0xb4/0xb8) from
+> [<c02ac730>] (bus_remove_driver+0x7c/0xc0)
+> [   46.360000] [<c02ac730>] (bus_remove_driver+0x7c/0xc0) from
+> [<c0064010>] (SyS_delete_module+0x150/0x26c)
+> [   46.360000] [<c0064010>] (SyS_delete_module+0x150/0x26c) from
+> [<c000ed40>] (ret_fast_syscall+0x0/0x44)
+> [   46.360000] Code: e1a0600e 08bd8070 e5953174 e59f2060 (e5931004)
+> [   46.650000] ---[ end trace 7379015df3468e61 ]---
+> 
+> From what I could grasp, it might be related to the IIO subsystem but
+> I couldn't find the culprit.
+> 
+> It seems "iio_device_unregister_trigger_consumer", as:
+> 
+> void iio_device_unregister_trigger_consumer(struct iio_dev *indio_dev)
+> {
+> /* Clean up an associated but not attached trigger reference */
+> if (indio_dev->trig)
+> iio_trigger_put(indio_dev->trig);
+> }
+> 
+> and , as:
+> 
+> static inline void iio_trigger_put(struct iio_trigger *trig)
+> {
+> module_put(trig->ops->owner);
+> put_device(&trig->dev);
+> }
+> 
+> so, somehow the trig->ops is NULL here.
+> 
+> Do someone has a clue?
+> 
+I think the issue is more core to iio trigger handling than that, you
+have just been unlucky enough to hit a bug that has been there a while.
 
---WIyZ46R2i8wDzkSu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In iio_trigger_unregister we call
+iio_device_unregister which in turn calls device_del (as intended) and
+device_put (as not!).  Then we get an additional device_put from
+iio_trigger_free giving us one more than we should have an resulting
+in a double attempt to free the device.
 
-On Sat, Jun 22, 2013 at 12:38:16AM +0200, Arnd Bergmann wrote:
-> It is generally considered bad style to enclose function prototypes
-> in header files in #ifdef. This case illustrates why that is:
-> The tegra host1x driver calls into the debugfs functions if
-> CONFIG_DEBUG_FS is enabled, but that code is otherwise already
-> discarded by the compiler, so leaving the prototype in place
-> actually makes everything work.
->=20
-> drivers/gpu/host1x/drm/dc.c: In function 'tegra_dc_debugfs_init':
-> drivers/gpu/host1x/drm/dc.c:1004:2: error: implicit declaration of functi=
-on 'drm_debugfs_create_files' [-Werror=3Dimplicit-function-declaration]
-> drivers/gpu/host1x/drm/dc.c: In function 'tegra_dc_debugfs_exit': drivers=
-/gpu/host1x/drm/dc.c:1026:2: error: implicit declaration of function 'drm_d=
-ebugfs_remove_files' [-Werror=3Dimplicit-function-declaration]
->=20
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Ben Gamari <bgamari@gmail.com>
-> Cc: Dave Airlie <airlied@redhat.com>
->=20
-> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-> index 63d17ee..8bc105e 100644
-> --- a/include/drm/drmP.h
-> +++ b/include/drm/drmP.h
-> @@ -1551,7 +1551,7 @@ extern int drm_proc_init(struct drm_minor *minor, s=
-truct proc_dir_entry *root);
->  extern int drm_proc_cleanup(struct drm_minor *minor, struct proc_dir_ent=
-ry *root);
-> =20
->  				/* Debugfs support */
-> -#if defined(CONFIG_DEBUG_FS)
-> +
+Could you try the following change and see if it solves the problem?
+(the comment abov is 'interesting' and stupid given I've long ago
+forgotten what it refers to, but it could be related to this issue...)
 
-I don't know what good the blank line does here, but apart from that
-this patch looks good to me:
+>From 238faf76acaa9214b0eb607742dd14b134469328 Mon Sep 17 00:00:00 2001
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Sat, 22 Jun 2013 12:00:04 +0100
+Subject: [PATCH] iio:trigger: device_unregister->device_del to avoid double
+ free
 
-Reviewed-by: Thierry Reding <thierry.reding@gmail.com>
+iio_trigger unregistration and freeing has been separated in this
+code for some time, but it looks like the calls to the device
+handling were not appropriately updated.
 
---WIyZ46R2i8wDzkSu
-Content-Type: application/pgp-signature
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+---
+ drivers/iio/industrialio-trigger.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+diff --git a/drivers/iio/industrialio-trigger.c b/drivers/iio/industrialio-trigger.c
+index 4d6c7d8..ea8a414 100644
+--- a/drivers/iio/industrialio-trigger.c
++++ b/drivers/iio/industrialio-trigger.c
+@@ -104,7 +104,7 @@ void iio_trigger_unregister(struct iio_trigger *trig_info)
 
-iQIcBAEBAgAGBQJRxYJgAAoJEN0jrNd/PrOhojgP/iMFxewCKkKzJ4Q5T43JZv6Q
-h/6kCVdQJNB+PNE1tntThdRYgXTnJ+7cmsdf2vIy07wzxrY6QSvbsuXIx1aFJKkx
-be/n1tiy6ycKPuKbqFT80tY4i3JUqzRMIl8RMVn8EJwaqkEiF3pLhxBbHnFZo1al
-0CSAocJDno7Jj7M937oPttvex87GTglPYvtIMv36oJOXK+a81TBoqXo50n/lIWbs
-F4bhhSle20OH2fS2RkoBslxCRHOW43Gnrrohu42nydJnVo4aRMukZgqFpH2d0kr7
-0HQeTHAuYXSMHMGynRCxELjvMmQEXxRJmCQZDEWY/w/GMJ1WzinwL+hHkPPrad6F
-5RIv5DXOHuL5ARShn/hqtkw9B7Q8LmbEtisI/d0D+q5UoT1Y8mNdfPN4b7QQC30L
-3jQ5gve+VU4KgUEEfwAd7sq1DPtPU1oOsqswrbcO/XcrJgZTs1m3mIzyapVZH+TT
-JV+iwSE9Nvzyq32KYUWd36eSw0bHgYAzLcXFlPBRBDtuEivg546fl9WPodRtWrKL
-n89n+gMspW1Vg4OD0fjDGqqKVD5DEp8ku9I3l4qwsmBFafRcK/IKQcdn9m7q+Fek
-PtWxC1w2LKQmHnvCrN+qZWIHmXDKkBnhgd6yHmVHCAchHyb1WEdvVMaA2VSGODoY
-6DVCLyrCnkDLM/rXmW21
-=1osy
------END PGP SIGNATURE-----
+ 	ida_simple_remove(&iio_trigger_ida, trig_info->id);
+ 	/* Possible issue in here */
+-	device_unregister(&trig_info->dev);
++	device_del(&trig_info->dev);
+ }
+ EXPORT_SYMBOL(iio_trigger_unregister);
 
---WIyZ46R2i8wDzkSu--
+-- 
+1.8.3
