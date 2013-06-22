@@ -1,59 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab3FVTPC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 15:15:02 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:34315 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751710Ab3FVTOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 15:14:49 -0400
-Date: Sat, 22 Jun 2013 12:16:46 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>
-Subject: Re: 'Timed out waiting for forcewake old ack to clear' and hangup
- on IvyBridge system
-Message-ID: <20130622121646.0afcc207@jbarnes-desktop>
-In-Reply-To: <20130622065808.GA20980@roeck-us.net>
-References: <20130622065808.GA20980@roeck-us.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1751710Ab3FVTnd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 15:43:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47083 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751366Ab3FVTnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 15:43:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Joe Perches <joe@perches.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>, pavel@ucw.cz, len.brown@intel.com,
+        gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCHv v3] power: Include additional information in pm_print_times
+Date: Sat, 22 Jun 2013 21:52:52 +0200
+Message-ID: <2732229.sfB5fHUFTc@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1371868042.2086.0.camel@joe-AO722>
+References: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com> <2534796.mOHH0DCD2A@vostro.rjw.lan> <1371868042.2086.0.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jun 2013 23:58:08 -0700
-Guenter Roeck <linux@roeck-us.net> wrote:
+On Friday, June 21, 2013 07:27:22 PM Joe Perches wrote:
+> On Sat, 2013-06-22 at 02:24 +0200, Rafael J. Wysocki wrote:
+> > Namely, there are tools that use these messages to create suspend/resume time
+> > charts and they will stop working after the proposed changes.
+> 
+> dmesg output isn't guaranteed to be stable.
 
-> Hi all,
-> 
-> after upgrading one of my servers to 3.8, then 3.9.7 and 3.10-rc6, I started to
-> see lots of "Timed out waiting for forcewake old ack to clear" error messages,
-> including hang-ups especially if the system was highly loaded. With 3.5.24
-> everything was fine.
-> 
-> After backing out commit 36ec8f877 (drm/i915: unconditionally use mt forcewake
-> on hsw/ivb), everything is back to normal. The log message is still there, but
-> only once during boot, and the system runs stable.
-> 
-> CPU is "Intel(R) Core(TM) i7-3770K CPU @ 3.50GHz", mainboard is Supermicro
-> C7H61, BIOS version 2.00 dated 11/02/2012. Configuration file is whatever
-> comes with Ubuntu; I'll be happy to provide a copy if anyone thinks it might
-> help.
-> 
-> Any idea what else I can do besides using a special kernel with the backed out
-> commit ? Is it possible that others have the same problem ?
+So?
 
-Ouch, so a BIOS that uses the other forcewake mechanism seems to have
-escaped.  Is there a newer one available for your system?  I'm hoping
-it'll fix the issue, otherwise we may have to introduce both methods
-for IVB again...
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
