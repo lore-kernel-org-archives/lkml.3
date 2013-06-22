@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3FVL0Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 07:26:25 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43377 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab3FVL0W (ORCPT
+	id S1756156Ab3FVLao (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 07:30:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58354 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab3FVLam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 07:26:22 -0400
-Date: Sat, 22 Jun 2013 13:26:20 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: =?iso-8859-1?Q?Ga=EBl?= PORTAY <g.portay@overkiz.com>
-Cc: Rob Landley <rob@landley.net>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
-Subject: Re: [RFC PATCH] led: add Cycle LED trigger.
-Message-ID: <20130622112619.GA8075@amd.pavel.ucw.cz>
-References: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
+	Sat, 22 Jun 2013 07:30:42 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
+Subject: Re: [PATCH v2 0/2] Clock update for EXYNOS4210-CPUFREQ driver
+Date: Sat, 22 Jun 2013 13:30:41 +0200
+Message-ID: <2659166.6PZqLSy6sR@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.6-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <20130621174453.20448.59791@quantum>
+References: <1371725238-25437-1-git-send-email-tushar.behera@linaro.org> <20130621174453.20448.59791@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-06-18 18:24:23, Gaël PORTAY wrote:
-> Currently, none of available triggers supports playing with the LED brightness
-> level.  The cycle trigger provides a way to define custom brightness cycle.
-> For example, it is easy to customize the cycle to mock up the rhythm of human
-> breathing which is a nice cycle to tell the user the system is doing something.
+On Friday 21 of June 2013 10:44:53 Mike Turquette wrote:
+> Quoting Tushar Behera (2013-06-20 03:47:16)
 > 
-> This trigger is meant to be usable for waiting an event to happen, for example
-> when the system gets ready.  Those cycles may be used to reflect well known
-> system status (e.g. idle mode, startup...).
-> 
-> This implementation provides several interfaces:
->  - to define the cycle itself:
->    * plot: definition of plot points using plot or rawplot files,
->            each points defines the brightness level
->    * interval: constant time interval between each plot point
->  - to control the cycle:
->    * repeat: the number of repetition of the whole plot cycle
->              0 for an infinite loop
->    * control: used to control the cycle trigger
->      + "start"/"stop": to start/stop the cycle
->      + "reset" to clear the cycle counter and the internal plot point index
->      + "pause"/"resume" to pause/resume the cycle
-> 
-> Signed-off-by: Gaël PORTAY <g.portay@overkiz.com>
+> > cpufreq driver for EXYNOS4 based SoCs are not platform drivers, hence
+> > we cannot currently pass the clock names through a device tree node.
+> > Instead, we need to make them available through global alias.
+> > 
+> > The patches are based on next-20130618.
+> > 
+> > Patch 1 has not been modified.
+> > Patch 2 has been updated to include EXYNOS4X12 releated clocks.
 
-I'd say this should go to userspace.... and maybe should handle RGB
-leds. ... like the one on n900/HTC dream/....
+Looks fine to me.
 
-Actually, there's probably some daemon in maemo that already does
-this.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+
+> Patch and changelogs look good to me now. Tomasz, any comments? I am
+> happy to take these into clk-next with your review.
+
+Good, thanks.
+
+As a side note, I'm currently working on redesigning Exynos cpufreq 
+drivers, but this probably won't make it for 3.11, so these two patches 
+are a good workaround for now to have the cpufreq working.
+
+Best regards,
+Tomasz
+
+> Regards,
+> Mike
+> 
+> > Tushar Behera (2):
+> >   clk: samsung: Add MUX_FA macro to pass flag and alias
+> >   clk: exynos4: Fix clock aliases for cpufreq related clocks
+> >  
+> >  drivers/clk/samsung/clk-exynos4.c |   21 +++++++++++----------
+> >  drivers/clk/samsung/clk.h         |    3 +++
+> >  2 files changed, 14 insertions(+), 10 deletions(-)
