@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423572Ab3FVB0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 21:26:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55316 "EHLO mx1.redhat.com"
+	id S1423596Ab3FVBht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 21:37:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21376 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161553Ab3FVB0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 21:26:34 -0400
-Message-ID: <1371864389.30572.142.camel@ul30vt.home>
-Subject: Re: [PATCH] vfio: Limit group opens
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Fri, 21 Jun 2013 19:26:29 -0600
-In-Reply-To: <51C4FAF4.5090509@ozlabs.ru>
-References: <20130621211144.8237.7370.stgit@bling.home>
-	 <51C4FAF4.5090509@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1423252Ab3FVBhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 21:37:48 -0400
+Date: Fri, 21 Jun 2013 21:37:31 -0400
+From: Dave Jones <davej@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130622013731.GA22918@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Oleg Nesterov <oleg@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrey Vagin <avagin@openvz.org>
+References: <20130619164540.GB22483@redhat.com>
+ <20130619175356.GA23673@redhat.com>
+ <20130619181302.GE5146@linux.vnet.ibm.com>
+ <20130620001212.GB12151@redhat.com>
+ <20130620161652.GA4462@linux.vnet.ibm.com>
+ <20130621151119.GA1596@redhat.com>
+ <20130621195949.GA15519@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130621195949.GA15519@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-22 at 11:16 +1000, Alexey Kardashevskiy wrote:
-> Cool, thanks!
-> 
-> So we will need only this (to be called from KVM), and that will be it, right?
+On Fri, Jun 21, 2013 at 09:59:49PM +0200, Oleg Nesterov wrote:
 
-For what?  This is not the external lock you're looking for.  As I've
-mentioned, the file can only hold the group, but that doesn't give you
-any guarantee that the group is protected by the IOMMU.  Thanks,
-
-Alex
-
-> int vfio_group_iommu_id_from_file(struct file *filep)
-> ...
-> 
-> 
-> 
-> On 06/22/2013 07:12 AM, Alex Williamson wrote:
-> > vfio_group_fops_open attempts to limit concurrent sessions by
-> > disallowing opens once group->container is set.  This really doesn't
-> > do what we want and allow for inconsistent behavior, for instance a
-> > group can be opened twice, then a container set giving the user two
-> > file descriptors to the group.  But then it won't allow more to be
-> > opened.  There's not much reason to have the group opened multiple
-> > times since most access is through devices or the container, so
-> > complete what the original code intended and only allow a single
-> > instance.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> >  drivers/vfio/vfio.c |   14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
-> > 
-> > diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-> > index 6d78736..d30f44d 100644
-> > --- a/drivers/vfio/vfio.c
-> > +++ b/drivers/vfio/vfio.c
-> > @@ -76,6 +76,7 @@ struct vfio_group {
-> >  	struct notifier_block		nb;
-> >  	struct list_head		vfio_next;
-> >  	struct list_head		container_next;
-> > +	atomic_t			opened;
-> >  };
-> >  
-> >  struct vfio_device {
-> > @@ -206,6 +207,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
-> >  	INIT_LIST_HEAD(&group->device_list);
-> >  	mutex_init(&group->device_lock);
-> >  	atomic_set(&group->container_users, 0);
-> > +	atomic_set(&group->opened, 0);
-> >  	group->iommu_group = iommu_group;
-> >  
-> >  	group->nb.notifier_call = vfio_iommu_group_notifier;
-> > @@ -1236,12 +1238,22 @@ static long vfio_group_fops_compat_ioctl(struct file *filep,
-> >  static int vfio_group_fops_open(struct inode *inode, struct file *filep)
-> >  {
-> >  	struct vfio_group *group;
-> > +	int opened;
-> >  
-> >  	group = vfio_group_get_from_minor(iminor(inode));
-> >  	if (!group)
-> >  		return -ENODEV;
-> >  
-> > +	/* Do we need multiple instances of the group open?  Seems not. */
-> > +	opened = atomic_cmpxchg(&group->opened, 0, 1);
-> > +	if (opened) {
-> > +		vfio_group_put(group);
-> > +		return -EBUSY;
-> > +	}
-> > +
-> > +	/* Is something still in use from a previous open? */
-> >  	if (group->container) {
-> > +		atomic_dec(&group->opened);
-> >  		vfio_group_put(group);
-> >  		return -EBUSY;
-> >  	}
-> > @@ -1259,6 +1271,8 @@ static int vfio_group_fops_release(struct inode *inode, struct file *filep)
-> >  
-> >  	vfio_group_try_dissolve_container(group);
-> >  
-> > +	atomic_dec(&group->opened);
-> > +
-> >  	vfio_group_put(group);
-> >  
-> >  	return 0;
-> > 
-> 
-> 
+ > I am puzzled. And I do not really understand
+ > 
+ > 	hardirqs last  enabled at (2380318): [<ffffffff816ed220>] restore_args+0x0/0x30
+ > 	hardirqs last disabled at (2380319): [<ffffffff816f5d2a>] apic_timer_interrupt+0x6a/0x80
+ > 	softirqs last  enabled at (196990): [<ffffffff810542d4>] __do_softirq+0x194/0x440 [19886.471395]
+ > 	softirqs last disabled at (197479): [<ffffffff8105473d>] irq_exit+0xcd/0xe0
+ > 
+ > below. how can they differ that much...
+ > 
+ > Dave, any chance you can reproduce the hang with the debugging patch at
+ > the end? Just in case, the warnings themself do not mean a problem, just
+ > to have a bit more info.
+ 
+[ 7485.261299] WARNING: at include/linux/nsproxy.h:63 get_proc_task_net+0x1c8/0x1d0()
+[ 7485.262021] Modules linked in: 8021q garp stp tun fuse rfcomm bnep hidp snd_seq_dummy nfnetlink scsi_transport_iscsi can_bcm ipt_ULOG can_raw rds af_802154 nfc can rose caif_socket caif llc2 af_rxrpc phonet ipx p8023 p8022 pppoe pppox ppp_generic netrom slhc ax25 x25 af_key appletalk atm psnap llc irda crc_ccitt bluetooth rfkill coretemp hwmon kvm_intel snd_hda_codec_realtek kvm snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel microcode snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device pcspkr snd_pcm snd_page_alloc e1000e snd_timer ptp snd pps_core soundcore xfs libcrc32c
+[ 7485.265434] CPU: 2 PID: 5623 Comm: trinity-child3 Not tainted 3.10.0-rc6+ #28 
+[ 7485.267158]  ffffffff81a1529c ffff8801c8eafd30 ffffffff816e432d ffff8801c8eafd68
+[ 7485.268045]  ffffffff8104a0c1 0000000000000000 ffff880225e9bd18 ffff8801bc6e4de0
+[ 7485.268932]  0000000000000000 00000000000000dd ffff8801c8eafd78 ffffffff8104a19a
+[ 7485.270463] Call Trace:
+[ 7485.271338]  [<ffffffff816e432d>] dump_stack+0x19/0x1b
+[ 7485.272207]  [<ffffffff8104a0c1>] warn_slowpath_common+0x61/0x80
+[ 7485.273092]  [<ffffffff8104a19a>] warn_slowpath_null+0x1a/0x20
+[ 7485.273942]  [<ffffffff81229f58>] get_proc_task_net+0x1c8/0x1d0
+[ 7485.274793]  [<ffffffff81229d95>] ? get_proc_task_net+0x5/0x1d0
+[ 7485.275659]  [<ffffffff8122a0bd>] proc_tgid_net_lookup+0x1d/0x80
+[ 7485.276531]  [<ffffffff811b778d>] lookup_real+0x1d/0x50
+[ 7485.277646]  [<ffffffff811b7d83>] __lookup_hash+0x33/0x40
+[ 7485.278477]  [<ffffffff811bb143>] kern_path_create+0xb3/0x190
+[ 7485.279345]  [<ffffffff811b93d5>] ? getname_flags+0xb5/0x190
+[ 7485.280292]  [<ffffffff811bb261>] user_path_create+0x41/0x60
+[ 7485.281233]  [<ffffffff811be6bb>] SyS_symlinkat+0x4b/0xd0
+[ 7485.282072]  [<ffffffff816f5a54>] tracesys+0xdd/0xe2
+[ 7485.282973] ---[ end trace 2204b7c65d6c5519 ]---
 
 
-
+ > +		pr_info("YESTHISHAPPENS new=%p\n", new);
+ 
+This didn't trigger. (yet?)
+ 
+	Dave
