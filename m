@@ -1,137 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423473Ab3FVAKe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 20:10:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52031 "EHLO mga14.intel.com"
+	id S1945930Ab3FVAP2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 20:15:28 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:46082 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161521Ab3FVAKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 20:10:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,916,1363158000"; 
-   d="scan'208";a="258499049"
-Message-ID: <51C4EB63.2000104@intel.com>
-Date: Sat, 22 Jun 2013 08:10:11 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1423420Ab3FVAP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 20:15:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: pavel@ucw.cz, len.brown@intel.com, gregkh@linuxfoundation.org,
+        joe@perches.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCHv v3] power: Include additional information in pm_print_times
+Date: Sat, 22 Jun 2013 02:24:48 +0200
+Message-ID: <2534796.mOHH0DCD2A@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com>
+References: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com>
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] rwsem: check the lock before cpmxchg in down_write_trylock
- and rwsem_do_wake
-References: <cover.1371855277.git.tim.c.chen@linux.intel.com> <1371858695.22432.4.camel@schen9-DESK>
-In-Reply-To: <1371858695.22432.4.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2013 07:51 AM, Tim Chen wrote:
-> Doing cmpxchg will cause cache bouncing when checking
-> sem->count. This could cause scalability issue
-> in a large machine (e.g. a 80 cores box).
+On Monday, June 17, 2013 01:36:35 PM Shuah Khan wrote:
+> Change __device_suspend() path to include driver name and the ops that
+> get run for a device. This additional information helps associate the
+> driver and the type of pm_ops the device uses in the suspend path very
+> quickly, which will aid in debugging problems in suspend and resume paths.
+> Changed both start and end debug messages to include pm_ops information
+> and use dev_info() instead of pr_info(). Changed the end message to include
+> parent device information and have the same format as the start message.
 > 
-> A pre-read of sem->count can mitigate this.
+> dmesg output before the change:
 > 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> [  164.390032] calling  1-1+ @ 69, parent: usb1
+> [  164.390035] call 1-1+ returned 0 after 0 usecs
+> 
+> [  164.390352] calling  00:0a+ @ 2457, parent: pnp0
+> [  164.390357] call 00:0a+ returned 0 after 3 usecs
+> 
+> [  164.390361] calling  00:09+ @ 2457, parent: pnp0
+> [  164.496458] call 00:09+ returned 0 after 103500 usecs
+> 
+> [  164.496494] calling  00:05+ @ 2457, parent: pnp0
+> [  164.496511] call 00:05+ returned 0 after 14 usecs
+> 
+> dmesg output after the change:
+> 
+> [  545.985394] usb 1-1: Start: type pm ops @ 68, parent: usb1
+> [  545.987650] usb 1-1: End  : type pm ops @ 68, parent: usb1 time(2184 usecs) err(0)
+> 
+> [  545.982544] system 00:0a: Start: legacy bus pm ops @ 2391, parent: pnp0
+> [  545.982554] system 00:0a: End  : legacy bus pm ops @ 2391, parent: pnp0 time(4 usecs) err(0)
+> 
+> [  545.982569] tpm_tis 00:09: Start: legacy bus pm ops @ 2391, parent: pnp0
+> [  546.087017] tpm_tis 00:09: End  : legacy bus pm ops @ 2391, parent: pnp0 time(101936 usecs) err(0)
+> 
+> [  546.087069] rtc_cmos 00:05: Start: legacy bus pm ops @ 2391, parent: pnp0
+> [  546.087084] rtc_cmos 00:05: End  : legacy bus pm ops @ 2391, parent: pnp0 time(11 usecs) err(0)
+> 
 
-Hi Tim,
-there is a technical error in this patch.
-the "From: " line should be 'Alex Shi', since he made the most input of
-this patch.
+I was about to apply your patch, but then I noticed something that might cause
+problems to happen.
 
-And I still think split this patch to 4 smaller will make it more simple
-to review, that I had sent you and Davidlohr.
+Namely, there are tools that use these messages to create suspend/resume time
+charts and they will stop working after the proposed changes.
 
-could you like to re-send with my 4 patch version? :)
+Please keep the existing formatting the way it is and only append the additional
+information at the end of each line.
 
+Thanks,
+Rafael
+
+
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 > ---
->  include/asm-generic/rwsem.h |    8 ++++----
->  lib/rwsem.c                 |   21 +++++++++++++--------
->  2 files changed, 17 insertions(+), 12 deletions(-)
 > 
-> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
-> index bb1e2cd..052d973 100644
-> --- a/include/asm-generic/rwsem.h
-> +++ b/include/asm-generic/rwsem.h
-> @@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
->  
->  static inline int __down_write_trylock(struct rw_semaphore *sem)
->  {
-> -	long tmp;
-> +	if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
-> +		return 0;
->  
-> -	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
-> -		      RWSEM_ACTIVE_WRITE_BIAS);
-> -	return tmp == RWSEM_UNLOCKED_VALUE;
-> +	return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
-> +		RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+> v2: Change to use dev_info() instead of pr_info()
+> v3: Change to add parent info to debug_report and make start and end messages
+>     look similar have a tighter association.
+> 
+>  drivers/base/power/main.c |   49 +++++++++++++++++++++++++++------------------
+>  1 file changed, 29 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index 5a9b656..c2132b8 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -157,13 +157,14 @@ void device_pm_move_last(struct device *dev)
+>  	list_move_tail(&dev->power.entry, &dpm_list);
 >  }
 >  
->  /*
-> diff --git a/lib/rwsem.c b/lib/rwsem.c
-> index 19c5fa9..2072af5 100644
-> --- a/lib/rwsem.c
-> +++ b/lib/rwsem.c
-> @@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
->  			 * will block as they will notice the queued writer.
->  			 */
->  			wake_up_process(waiter->task);
-> -		goto out;
-> +		return sem;
+> -static ktime_t initcall_debug_start(struct device *dev)
+> +static ktime_t initcall_debug_start(struct device *dev, char *info)
+>  {
+>  	ktime_t calltime = ktime_set(0, 0);
+>  
+>  	if (pm_print_times_enabled) {
+> -		pr_info("calling  %s+ @ %i, parent: %s\n",
+> -			dev_name(dev), task_pid_nr(current),
+> +		/* string in info has an extra space at the end */
+> +		dev_info(dev, "Start: %s@ %i, parent: %s\n",
+> +			info, task_pid_nr(current),
+>  			dev->parent ? dev_name(dev->parent) : "none");
+>  		calltime = ktime_get();
+>  	}
+> @@ -172,15 +173,19 @@ static ktime_t initcall_debug_start(struct device *dev)
+>  }
+>  
+>  static void initcall_debug_report(struct device *dev, ktime_t calltime,
+> -				  int error)
+> +				  int error, char *info)
+>  {
+>  	ktime_t delta, rettime;
+>  
+>  	if (pm_print_times_enabled) {
+>  		rettime = ktime_get();
+>  		delta = ktime_sub(rettime, calltime);
+> -		pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
+> -			error, (unsigned long long)ktime_to_ns(delta) >> 10);
+> +		/* string in info has an extra space at the end */
+> +		dev_info(dev,
+> +			"End  : %s@ %i, parent: %s time(%llu usecs) err(%d)\n",
+> +			info, task_pid_nr(current),
+> +			dev->parent ? dev_name(dev->parent) : "none",
+> +			(unsigned long long)ktime_to_ns(delta) >> 10, error);
+>  	}
+>  }
+>  
+> @@ -373,13 +378,13 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
+>  	if (!cb)
+>  		return 0;
+>  
+> -	calltime = initcall_debug_start(dev);
+> +	calltime = initcall_debug_start(dev, info);
+>  
+>  	pm_dev_dbg(dev, state, info);
+>  	error = cb(dev);
+>  	suspend_report_result(cb, error);
+>  
+> -	initcall_debug_report(dev, calltime, error);
+> +	initcall_debug_report(dev, calltime, error, info);
+>  
+>  	return error;
+>  }
+> @@ -1027,17 +1032,19 @@ EXPORT_SYMBOL_GPL(dpm_suspend_end);
+>   * @cb: Suspend callback to execute.
+>   */
+>  static int legacy_suspend(struct device *dev, pm_message_t state,
+> -			  int (*cb)(struct device *dev, pm_message_t state))
+> +			  int (*cb)(struct device *dev, pm_message_t state),
+> +			  char *info)
+>  {
+>  	int error;
+>  	ktime_t calltime;
+>  
+> -	calltime = initcall_debug_start(dev);
+> +	calltime = initcall_debug_start(dev, info);
+>  
+> +	pm_dev_dbg(dev, state, info);
+>  	error = cb(dev, state);
+>  	suspend_report_result(cb, error);
+>  
+> -	initcall_debug_report(dev, calltime, error);
+> +	initcall_debug_report(dev, calltime, error, info);
+>  
+>  	return error;
+>  }
+> @@ -1079,43 +1086,45 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	device_lock(dev);
+>  
+>  	if (dev->pm_domain) {
+> -		info = "power domain ";
+> +		info = "power domain pm ops ";
+>  		callback = pm_op(&dev->pm_domain->ops, state);
+>  		goto Run;
 >  	}
 >  
->  	/* Writers might steal the lock before we grant it to the next reader.
-> @@ -85,15 +85,21 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
->  	adjustment = 0;
->  	if (wake_type != RWSEM_WAKE_READ_OWNED) {
->  		adjustment = RWSEM_ACTIVE_READ_BIAS;
-> - try_reader_grant:
-> -		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
-> -		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
-> -			/* A writer stole the lock. Undo our reader grant. */
-> +		while (1) {
-> +			/* A writer stole the lock. */
-> +			if (sem->count < RWSEM_WAITING_BIAS)
-> +				return sem;
-> +
-> +			oldcount = rwsem_atomic_update(adjustment, sem)
-> +								- adjustment;
-> +			if (likely(oldcount >= RWSEM_WAITING_BIAS))
-> +				break;
-> +
-> +			 /* A writer stole the lock.  Undo our reader grant. */
->  			if (rwsem_atomic_update(-adjustment, sem) &
->  						RWSEM_ACTIVE_MASK)
-> -				goto out;
-> +				return sem;
->  			/* Last active locker left. Retry waking readers. */
-> -			goto try_reader_grant;
+>  	if (dev->type && dev->type->pm) {
+> -		info = "type ";
+> +		info = "type pm ops ";
+>  		callback = pm_op(dev->type->pm, state);
+>  		goto Run;
+>  	}
+>  
+>  	if (dev->class) {
+>  		if (dev->class->pm) {
+> -			info = "class ";
+> +			info = "class pm ops ";
+>  			callback = pm_op(dev->class->pm, state);
+>  			goto Run;
+>  		} else if (dev->class->suspend) {
+> -			pm_dev_dbg(dev, state, "legacy class ");
+> -			error = legacy_suspend(dev, state, dev->class->suspend);
+> +			info = "legacy class pm ops ";
+> +			error = legacy_suspend(dev, state, dev->class->suspend,
+> +				info);
+>  			goto End;
 >  		}
 >  	}
 >  
-> @@ -136,7 +142,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
->  	sem->wait_list.next = next;
->  	next->prev = &sem->wait_list;
+>  	if (dev->bus) {
+>  		if (dev->bus->pm) {
+> -			info = "bus ";
+> +			info = "bus pm ops ";
+>  			callback = pm_op(dev->bus->pm, state);
+>  		} else if (dev->bus->suspend) {
+> -			pm_dev_dbg(dev, state, "legacy bus ");
+> -			error = legacy_suspend(dev, state, dev->bus->suspend);
+> +			info = "legacy bus pm ops ";
+> +			error = legacy_suspend(dev, state, dev->bus->suspend,
+> +				info);
+>  			goto End;
+>  		}
+>  	}
 >  
-> - out:
->  	return sem;
->  }
+>   Run:
+>  	if (!callback && dev->driver && dev->driver->pm) {
+> -		info = "driver ";
+> +		info = "driver pm ops ";
+>  		callback = pm_op(dev->driver->pm, state);
+>  	}
 >  
 > 
-
-
 -- 
-Thanks
-    Alex
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
