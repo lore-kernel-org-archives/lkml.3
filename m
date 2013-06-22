@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab3FVNoM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 09:44:12 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:41922 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671Ab3FVNoK (ORCPT
+	id S932411Ab3FVNqo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 09:46:44 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:58338 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab3FVNqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 09:44:10 -0400
+	Sat, 22 Jun 2013 09:46:43 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
@@ -21,12 +21,12 @@ Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v7 5/8] ARM: s3c64xx: Add board file for boot using Device Tree
-Date: Sat, 22 Jun 2013 15:44:07 +0200
-Message-ID: <2302304.NyG5fka8vK@flatron>
+Subject: Re: [PATCH v6 4/8] ARM: Add .init_platform() callback to machine descriptor
+Date: Sat, 22 Jun 2013 15:46:41 +0200
+Message-ID: <2503927.uZIubvXWLh@flatron>
 User-Agent: KMail/4.10.4 (Linux/3.9.6-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <1371774924-9224-6-git-send-email-tomasz.figa@gmail.com>
-References: <1371774924-9224-1-git-send-email-tomasz.figa@gmail.com> <1371774924-9224-6-git-send-email-tomasz.figa@gmail.com>
+In-Reply-To: <1371774924-9224-5-git-send-email-tomasz.figa@gmail.com>
+References: <1371774924-9224-1-git-send-email-tomasz.figa@gmail.com> <1371774924-9224-5-git-send-email-tomasz.figa@gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -34,146 +34,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds board file that will be used to boot S3C64xx-based boards
-using Device Tree.
+Hi Kukjin,
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
----
- arch/arm/mach-s3c64xx/Kconfig           | 16 +++++++
- arch/arm/mach-s3c64xx/Makefile          |  1 +
- arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c | 85 +++++++++++++++++++++++++++++++++
- 3 files changed, 102 insertions(+)
- create mode 100644 arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
+On Friday 21 of June 2013 02:35:20 Tomasz Figa wrote:
+> Most ARM platforms have parts that should be initialized as early as
+> possible, which usually means as soon as memory management (kmalloc,
+> ioremap) starts to work,
+> 
+> However, currently there is no appropriate callback in machine_desc
+> struct to use for such initialization and platforms tend to stuff things
+> up .init_irq() and .init_time() callbacks.
+> 
+> Since all the DT-based platforms are going towards generic IRQ and time
+> initialization (using irqchip_init and clocksource_of_init) and current
+> code assumes that if custom callbacks are not provided in machine_desc
+> then generic ones should be used, this problem has become a bit more
+> inconvenient.
+> 
+> This patch tries to solve this issue by introducing new callback called
+> .init_platform(), where any custom low level initialization of platform
+> can be done safely.
+> 
+> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+> ---
+>  arch/arm/include/asm/mach/arch.h | 1 +
+>  arch/arm/kernel/irq.c            | 3 +++
+>  2 files changed, 4 insertions(+)
 
-Changes since v6:
- - Dropped the concept of .init_platform() callback and returned back
-   to the old good abuse of .init_irq().
+Please disregard this patch when applying the series (if that happens).
 
-diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
-index f78a6a0..fb4258c 100644
---- a/arch/arm/mach-s3c64xx/Kconfig
-+++ b/arch/arm/mach-s3c64xx/Kconfig
-@@ -308,3 +308,19 @@ config MACH_WLF_CRAGG_6410
- 	select SAMSUNG_GPIO_EXTRA128
- 	help
- 	  Machine support for the Wolfson Cragganmore S3C6410 variant.
-+
-+config MACH_S3C64XX_DT
-+	bool "Samsung S3C6400/S3C6410 machine using Device Tree"
-+	select CLKSRC_OF
-+	select CPU_S3C6400
-+	select CPU_S3C6410
-+	select PINCTRL
-+	select PINCTRL_S3C64XX
-+	select USE_OF
-+	help
-+	  Machine support for Samsung S3C6400/S3C6410 machines with Device Tree
-+	  enabled.
-+	  Select this if a fdt blob is available for your S3C64XX SoC based
-+	  board.
-+	  Note: This is under development and not all peripherals can be
-+	  supported with this machine file.
-diff --git a/arch/arm/mach-s3c64xx/Makefile b/arch/arm/mach-s3c64xx/Makefile
-index 645a8fe..6faedcf 100644
---- a/arch/arm/mach-s3c64xx/Makefile
-+++ b/arch/arm/mach-s3c64xx/Makefile
-@@ -57,3 +57,4 @@ obj-$(CONFIG_MACH_SMARTQ7)		+= mach-smartq7.o
- obj-$(CONFIG_MACH_SMDK6400)		+= mach-smdk6400.o
- obj-$(CONFIG_MACH_SMDK6410)		+= mach-smdk6410.o
- obj-$(CONFIG_MACH_WLF_CRAGG_6410)	+= mach-crag6410.o mach-crag6410-module.o
-+obj-$(CONFIG_MACH_S3C64XX_DT)		+= mach-s3c64xx-dt.o
-diff --git a/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c b/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
-new file mode 100644
-index 0000000..3384cb0
---- /dev/null
-+++ b/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
-@@ -0,0 +1,85 @@
-+/*
-+ * Samsung's S3C64XX flattened device tree enabled machine
-+ *
-+ * Copyright (c) 2013 Tomasz Figa <tomasz.figa@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+#include <linux/clk-provider.h>
-+#include <linux/irqchip.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+#include <asm/system_misc.h>
-+
-+#include <plat/cpu.h>
-+#include <plat/watchdog-reset.h>
-+
-+#include <mach/map.h>
-+
-+#include "common.h"
-+
-+/*
-+ * IO mapping for shared system controller IP.
-+ *
-+ * FIXME: Make remaining drivers use dynamic mapping.
-+ */
-+static struct map_desc s3c64xx_dt_iodesc[] __initdata = {
-+	{
-+		.virtual	= (unsigned long)S3C_VA_SYS,
-+		.pfn		= __phys_to_pfn(S3C64XX_PA_SYSCON),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	},
-+};
-+
-+static void __init s3c64xx_dt_map_io(void)
-+{
-+	debug_ll_io_init();
-+	iotable_init(s3c64xx_dt_iodesc, ARRAY_SIZE(s3c64xx_dt_iodesc));
-+
-+	s3c64xx_init_cpu();
-+
-+	if (!soc_is_s3c64xx())
-+		panic("SoC is not S3C64xx!");
-+}
-+
-+static void __init s3c64xx_dt_init_irq(void)
-+{
-+	of_clk_init(NULL);
-+	samsung_wdt_reset_of_init();
-+	irqchip_init();
-+};
-+
-+static void __init s3c64xx_dt_init_machine(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static void s3c64xx_dt_restart(char mode, const char *cmd)
-+{
-+	if (mode != 's')
-+		samsung_wdt_reset();
-+
-+	/* if all else fails, or mode was for soft, jump to 0 */
-+	soft_restart(0);
-+}
-+
-+static char const *s3c64xx_dt_compat[] __initdata = {
-+	"samsung,s3c6400",
-+	"samsung,s3c6410",
-+	NULL
-+};
-+
-+DT_MACHINE_START(S3C6400_DT, "Samsung S3C64xx (Flattened Device Tree)")
-+	/* Maintainer: Tomasz Figa <tomasz.figa@gmail.com> */
-+	.dt_compat	= s3c64xx_dt_compat,
-+	.map_io		= s3c64xx_dt_map_io,
-+	.init_irq	= s3c64xx_dt_init_irq,
-+	.init_machine	= s3c64xx_dt_init_machine,
-+	.restart        = s3c64xx_dt_restart,
-+MACHINE_END
--- 
-1.8.2.1
-
+Best regards,
+Tomasz
 
