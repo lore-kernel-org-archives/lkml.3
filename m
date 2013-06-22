@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423694Ab3FVDg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jun 2013 23:36:59 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:41030 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423471Ab3FVDg5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jun 2013 23:36:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAD=GYpbjZJeebxaJ=zNc9R=pkSoVsu_3D9deaOr7enuONNc0wQ@mail.gmail.com>
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
-	<51C42A85.8090705@ti.com>
-	<CAD=GYpbjZJeebxaJ=zNc9R=pkSoVsu_3D9deaOr7enuONNc0wQ@mail.gmail.com>
-Date: Fri, 21 Jun 2013 22:36:56 -0500
-Message-ID: <CAD=GYpYpHt8GBeMsHo5nhJy5UCc-R7rbtJX8mJjtoXoti+9Zuw@mail.gmail.com>
-Subject: Re: [PATCH v12 00/11] DMA Engine support for AM33XX
-From: Joel A Fernandes <agnel.joel@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Joel A Fernandes <joelagnel@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, broonie@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1423707Ab3FVDp5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jun 2013 23:45:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423471Ab3FVDp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jun 2013 23:45:56 -0400
+Message-ID: <1371872746.30572.152.camel@ul30vt.home>
+Subject: Re: [PATCH] vfio: Limit group opens
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Fri, 21 Jun 2013 21:45:46 -0600
+In-Reply-To: <51C5171F.70001@ozlabs.ru>
+References: <20130621211144.8237.7370.stgit@bling.home>
+	   <51C4FAF4.5090509@ozlabs.ru> <1371864389.30572.142.camel@ul30vt.home>
+	  <51C50F98.9020301@ozlabs.ru> <1371869848.30572.148.camel@ul30vt.home>
+	 <51C5171F.70001@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 7:07 PM, Joel A Fernandes <agnel.joel@gmail.com> wrote:
-> Hi Sekhar,
->
-> On Fri, Jun 21, 2013 at 5:27 AM, Sekhar Nori <nsekhar@ti.com> wrote:
->> Joel,
->>
->> On 6/21/2013 2:36 AM, Joel A Fernandes wrote:
->>> From: Joel A Fernandes <agnel.joel@gmail.com>
->>>
->>> This series is remaining of Matt Porter's EDMA patches for AM33XX EDMA support
->>> with changes for few pending review comments on v11 series.
->>
->> I have posted a branch with fixes for patches accepted by me in this
->> series (also posted inline as replies to specific patches).
->>
->> https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.11/soc-2
->>
->> Can you please give it a good test - especially on AM335x? I will send a
->> pull request after you confirm. If you find bugs please send incremental
->> patches so I can merge into the original patch.
->
-> [Joel]
-> This breaks on AM33XX due to dangling pointer, I sent a follow up
-> patch addressing it.
->
-> However, with this branch I still get..
-> mmc: unable to obtain RX DMA engine channel 25
+On Sat, 2013-06-22 at 13:16 +1000, Alexey Kardashevskiy wrote:
+> On 06/22/2013 12:57 PM, Alex Williamson wrote:
+> > On Sat, 2013-06-22 at 12:44 +1000, Alexey Kardashevskiy wrote:
+> >> On 06/22/2013 11:26 AM, Alex Williamson wrote:
+> >>> On Sat, 2013-06-22 at 11:16 +1000, Alexey Kardashevskiy wrote:
+> >>>> Cool, thanks!
+> >>>>
+> >>>> So we will need only this (to be called from KVM), and that will be it, right?
+> >>>
+> >>> For what?  This is not the external lock you're looking for.  As I've
+> >>> mentioned, the file can only hold the group, but that doesn't give you
+> >>> any guarantee that the group is protected by the IOMMU.  Thanks,
+> >>
+> >>
+> >> I am confused, sorry :) With this patch, a group fd cannot be reopened if
+> >> already opened, and this is the only way for user space to take control
+> >> over a group. If it is not an external lock, then what is it? And all I
+> >> have to do now is to verify that the group fd passed to KVM is correct and
+> >> I am happy. Who and how can break anything (group? KVM?) now?
+> > 
+> > By that logic all a user needs to do is open() a group and they they're
+> > free to pass the fd to KVM, right?  But the IOMMU protection isn't
+> > enabled until the user calls SET_CONTAINER and SET_IOMMU, so you'd be
+> > giving KVM access to the IOMMU that the user hasn't enabled.  The group
+> > may still have devices attached to host drivers.  Likewise, a user need
+> > only call UNSET_CONTAINER to teardown the IOMMU protection.  At that
+> > point a device could be re-bound to host drivers, thus making it unsafe
+> > for KVM to be directly poking the IOMMU.
+> > 
+> > This patch is just a bug fix for inconsistent behavior.  Thanks,
+> 
+> Oh. Thanks for the detailed explanation, I was missing this one.
+> 
+> Yeah. Looks like we need some other brand new lock now... Something like a
+> notifier from VFIO to KVM to inform KVM that it can or cannot use the group
+> now (on VFIO_IOMMU_ENABLE/VFIO_IOMMU_DISABLE or some new ioctls) so KVM
+> would not touch the group in not allowed.
+> 
+> typedef int notifier_fn(bool enable);
+> int vfio_group_iommu_id_from_file(struct file *filep, notifier_fn fn);
+> 
+> ?
 
-[Joel]
-Fixed. I posted a v2 patch. With this, on v3.11/soc-2 branch - AM33xx
-MMC is working (root fs mount).
+I don't think we need either a new lock or a notifier.  If we do as Ben
+suggested and allow KVM to keep the group active then the requirements
+are pretty much identical to having an open vfio device file descriptor.
+This is why I suggested container_users.  I think the code I proposed
+will work, it just needs a few more conditions tested when the external
+user is added to make sure the group is iommu protected.  Thanks,
 
-Tested-by: Joel A Fernandes <joelagnel@ti.com>
+Alex
 
-Thanks,
-Joel
