@@ -1,101 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab3FVVnb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 17:43:31 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:32783 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab3FVVn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 17:43:29 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.150.189.253]
-In-Reply-To: <2737587.I0nULev1kj@vostro.rjw.lan>
-References: <2737587.I0nULev1kj@vostro.rjw.lan>
-From: Illya Klymov <xanf@xanf.me>
-Date: Sun, 23 Jun 2013 00:43:08 +0300
-Message-ID: <CALSWrKhdDAEPJE7xXcWx4ZqqJe-B+okyJfAwx=viR+saR0ZYkw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] ACPI / dock / PCI: Fix problems with dock and PCI hotplug
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci <linux-pci@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751775Ab3FVVsS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 17:48:18 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:56324 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750924Ab3FVVsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 17:48:14 -0400
+Message-ID: <1371937599.17761.19.camel@scapa>
+Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+From: Yves-Alexis Perez <corsac@debian.org>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
+        Henrique de Moraes Holschuh <hmh@debian.org>
+Date: Sat, 22 Jun 2013 23:46:39 +0200
+In-Reply-To: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-AgAW02ounmx25Kp58XH6"
+X-Mailer: Evolution 3.8.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, guys. Sorry for entering your talk
-I have a Sony Vaio SVZ1311Z9RXI and just tested your patched against
-3.10-rc7 and they work like a charm
-scenarios tested:
-- boot with dock
-- boot without dock, hotplug dock
-- dock / undock / redock
 
-All devices tested to be working in all 3 cases:
-- video card
-- ethernet controller
-- blue ray drive
-- USB controller
+--=-AgAW02ounmx25Kp58XH6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thank you a lot!
+On dim., 2013-06-09 at 19:01 -0400, Matthew Garrett wrote:
+> The first two patches in this series are picked from other patchesets aim=
+ed at
+> solving similar problems. The last simply unregisters ACPI backlight cont=
+rol
+> on Windows 8 systems when using an Intel GPU. Similar code could be added=
+ to
+> other drivers, but I'm reluctant to do so without further investigation a=
+s
+> to the behaviour of the vendor drivers under Windows.
 
-On Sun, Jun 23, 2013 at 12:19 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Hi All,
->
-> Unfortunately, the Alexander's docking station for Sony VAIO VPCZ23A4R is
-> basically unusable with v3.10-rc6 and, as it turns out, there are multiple
-> problems with it.
->
-> First, the acpiphp initialization ordering has changed recently,
-> acpiphp_enumerate_slots() is now always run for the first time during the
-> initial ACPI namespace scan in acpi_scan_init() which has broken support
-> for PCI devices on ACPI-based docking stations, because the ACPI dock
-> subsystem has to be initialized *before* acpiphp_enumerate_slots() is first
-> run.
->
-> Fix that, and it turns out that undocking actually doesn't work correctly
-> because of some synchronization problems between the dock driver, acpiphp
-> and the PCI core.  [That part was actually the most difficult to fix.]
->
-> Fix that, and you'll find that PCI resources are not allocated correctly
-> after undocking and re-docking (when initially docked).
->
-> The three patches in this series make the Alexander's docking station kind
-> of usable, so if no one has objections, I'd like to put them on a fast track
-> to Linus.
->
-> [1/3] Initialize ACPI dock subsystem before enumerating the PCI hierarchy
->       (that also makes the dock driver non-modular).
->
-> [2/3] Make acpiphp use the same rules for allocating PCI resources that are
->       used at boot time.
->
-> [3/3] Make acpiphp handle dock events synchronously (instead of spawning
->       separate work items to handle them).  [The changelog of this patch
->       is likely one of the longest I've ever written and it sort of looks
->       like a crime story.]
->
-> This series is mostly based on the work of Jiang Liu (thanks Gerry!) and
-> the Alexander's testing that we wouldn't have done much progress without
-> (thanks Alexander!).
->
-> Alexander, I've modified patch [3/3] a bit since you have tested it.
-> The modifications shouldn't affect the behavior, but if you could re-test it,
-> that would be great.
->
-> Thanks,
-> Rafael
->
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hi,
+
+I've read this thread coming from
+https://bugzilla.kernel.org/show_bug.cgi?id=3D51231 and tried the patches
+on a Lenovo ThinkPad X230 with intel graphics.
+
+The problem with thoses fixes is that they still introduce a regression
+in how the brightness is handled, at least for me.
+
+Before Linux support for acpi_osi("Windows 2012") (and when booting with
+acpi_osi=3D"!Windows 2012"), brightness keys were handled by the kernel
+just fine, whether in console, in the display manager or in my desktop
+environment (Xfce). xfce4-power-manager just needs to be told that the
+brightness keys are already handled and it doesn't need to do anything.
+
+After Linux started responding to Win8 ACPI checks, it somehow broke,
+but not completely. Brightness keys are not handled by the kernel
+anymore (so no brightness adjustment in console or without a hotkey
+daemon running). If I run xfce4-power-manager and tell it to handle the
+brightness keys, it does work (although the number of brightness levels
+is not completely right). That means both acpi_video0 and
+intel_backlight backlight interfaces work, they just don't have the same
+precision and max_brightness (more details on the bug).
+
+When adding those three patches, well, acpi_video0 is removed (as
+intended), but I still don't have brightness handling in the kernel and
+need to have something handling it in userspace.
+
+I really think this is a bad idea. In some cases it might be the only
+solution, but having a place where this is set consistently would be
+really best, imho. Every userspace daemon might do things differently,
+and not everyone even has it. And I'm really not sure brightness keys
+should be handled by a desktop environment anyway.
+
+So can the previous behavior be actually restored? Maybe it was easier
+to pass the brightness keys information from thinkpad_acpi.ko to
+video.ko than it is to i915.ko but since it goes to the input layer
+anyway I guess it could be fed to module handling that in a way or
+another?
+
+Please keep me on CC: on replies, I'm not subscribed to the various
+lists.
+
+Regards,
+--=20
+Yves-Alexis
+
+--=-AgAW02ounmx25Kp58XH6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQEcBAABCAAGBQJRxhs/AAoJEG3bU/KmdcClfigIAJo9VVCD8QHluU5qX4JOb+aM
+sA0t+wX6RIWfgPFC9CrhYQbLIk3ceyGA17SH2+PQPQM5HVsfmM1nqg4Pk9saXUt3
+OgTiaBzsNtQ9iSpMkOo7qX0lg+8I/mRPctVcSqx8q8oxksvhuMso5f5ISGkv7K1w
+qk1k40dWnCNVVmtR7VIw+dwLrZUNprGbZQrWtBBxyxDUYcw8zELEqNPYlzOQUNj8
+sTCJNeUfl3FpNFAj1yIRGP6T7+jsUP+4ZDjG3QKajfTRuRxC+bDl+F0lTXJAliJL
+xZDgM014rIwYrbOS65oQj1Je8IYr1PkPUvlGjeNK8mdovkPxNxP0YxtwpPvXJQk=
+=mMWA
+-----END PGP SIGNATURE-----
+
+--=-AgAW02ounmx25Kp58XH6--
