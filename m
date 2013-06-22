@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab3FVTuK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 15:50:10 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47094 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab3FVTuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 15:50:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: "Alexander E. Patrakov" <patrakov@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
-Date: Sat, 22 Jun 2013 21:59:33 +0200
-Message-ID: <4437606.laqX8rCptb@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51C5103C.4030802@gmail.com>
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <2686036.58bcYhGNts@vostro.rjw.lan> <51C5103C.4030802@gmail.com>
+	id S1751903Ab3FVTvg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 15:51:36 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:58455 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab3FVTvc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 15:51:32 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
+References: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
+Date: Sat, 22 Jun 2013 21:51:31 +0200
+X-Google-Sender-Auth: 2FESIEMwqDET46RjLyAVhl9uXOk
+Message-ID: <CAMuHMdUGbP3yAAhadN-itDBHFZ+=R7RCeMdMGFvDSEgJgXGSNg@mail.gmail.com>
+Subject: Re: [RFC PATCH] led: add Cycle LED trigger.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: =?UTF-8?B?R2HDq2wgUE9SVEFZ?= <g.portay@overkiz.com>
+Cc: Rob Landley <rob@landley.net>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-leds@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 22, 2013 10:47:24 AM Jiang Liu wrote:
-> On 06/22/2013 08:13 AM, Rafael J. Wysocki wrote:
-> > On Saturday, June 22, 2013 12:54:21 AM Jiang Liu wrote:
-> >> On 06/21/2013 03:06 AM, Rafael J. Wysocki wrote:
-> >>> On Wednesday, June 19, 2013 11:18:41 AM Alexander E. Patrakov wrote:
-> >>>> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
-> >>>>> OK, let's try to untangle this a bit.
-> >>>>>
-> >>>>> If you applyt patches [1/4] and [4/4] from the $subject series only, what
-> >>>>> does remain unfixed?
-> >>>>
-> >>>> [not tested, can do so in 12 hours if needed]
-> >>>>
-> >>>> I think there will be problems on undocking and/or on the second
-> >>>> docking, as described in comments #6 - #8 of
-> >>>> https://bugzilla.kernel.org/show_bug.cgi?id=59501
-> >>>
-> >>> OK, I think I have something that might work.  It may not solve all problems,
-> >>> but maybe it helps a bit.  Unfortunately, I can't really test it, so please do
-> >>> if you can.
-> >>>
-> >>> Please apply [1/4] and [4/4] and the one below and see what happens.
-> >>>
-> >>> Thanks,
-> >>> Rafael
-> >>>
-> >>>
-> >>> ---
-> >>> Rationale:
-> >>> 	acpiphp_glue.c:disable_device() trims the underlying ACPI device objects
-> >>> 	after removing the companion PCI devices, so the dock station code
-> >>> 	doesn't need to trim them separately for the dependent devices handled
-> >>> 	by acpiphp.
-> >>>
-> >>> 	Moreover, acpiphp_glue.c is the only user of
-> >>> 	[un]register_hotplug_dock_device(), so *all* devices on the
-> >>> 	ds->hotplug_devices list are handled by acpiphp and ops is set for all
-> >>> 	of them.
-> >> Hi Rafael,
-> >>     There's an ongoing patch to fix a disk bay hotplug regression, which
-> >> may add a second caller of register_hotplug_device(). Please refer to
-> >> bug 59871, and the proposed patch is at:
-> >> https://bugzilla.kernel.org/attachment.cgi?id=105581
-> Hi Rafael,
->     You can find the proposed patch for ATA Bay hotplug at
-> https://bugzilla.kernel.org/attachment.cgi?id=105581
+On Tue, Jun 18, 2013 at 6:24 PM, Gaël PORTAY <g.portay@overkiz.com> wrote:
+> For example, it is easy to customize the cycle to mock up the rhythm of human
+> breathing which is a nice cycle to tell the user the system is doing something.
 
-Well, maybe it'll have to be reworked slightly.
+Like, ledtrig-heartbeat?
 
-Which BZ entry is that?
+Gr{oetje,eeting}s,
 
-Rafael
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
