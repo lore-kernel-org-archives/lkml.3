@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795Ab3FWVnJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 17:43:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48352 "EHLO hydra.sisk.pl"
+	id S1751778Ab3FWVtj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 17:49:39 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48358 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426Ab3FWVnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 17:43:07 -0400
+	id S1751416Ab3FWVti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 17:49:38 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: "Alexander E. Patrakov" <patrakov@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
-Date: Sun, 23 Jun 2013 23:52:32 +0200
-Message-ID: <1397053.iSJsVQ5uPZ@vostro.rjw.lan>
+To: Joe Perches <joe@perches.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCHv v3] power: Include additional information in pm_print_times
+Date: Sun, 23 Jun 2013 23:59:03 +0200
+Message-ID: <7303551.DgZO2t6GUO@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51C71AFA.4090102@gmail.com>
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <4437606.laqX8rCptb@vostro.rjw.lan> <51C71AFA.4090102@gmail.com>
+In-Reply-To: <1371987257.3137.44.camel@joe-AO722>
+References: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com> <3043483.hQyzHovghE@vostro.rjw.lan> <1371987257.3137.44.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -28,66 +27,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, June 23, 2013 11:57:46 PM Jiang Liu wrote:
-> On 06/23/2013 03:59 AM, Rafael J. Wysocki wrote:
-> > On Saturday, June 22, 2013 10:47:24 AM Jiang Liu wrote:
-> >> On 06/22/2013 08:13 AM, Rafael J. Wysocki wrote:
-> >>> On Saturday, June 22, 2013 12:54:21 AM Jiang Liu wrote:
-> >>>> On 06/21/2013 03:06 AM, Rafael J. Wysocki wrote:
-> >>>>> On Wednesday, June 19, 2013 11:18:41 AM Alexander E. Patrakov wrote:
-> >>>>>> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
-> >>>>>>> OK, let's try to untangle this a bit.
-> >>>>>>>
-> >>>>>>> If you applyt patches [1/4] and [4/4] from the $subject series only, what
-> >>>>>>> does remain unfixed?
-> >>>>>>
-> >>>>>> [not tested, can do so in 12 hours if needed]
-> >>>>>>
-> >>>>>> I think there will be problems on undocking and/or on the second
-> >>>>>> docking, as described in comments #6 - #8 of
-> >>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=59501
-> >>>>>
-> >>>>> OK, I think I have something that might work.  It may not solve all problems,
-> >>>>> but maybe it helps a bit.  Unfortunately, I can't really test it, so please do
-> >>>>> if you can.
-> >>>>>
-> >>>>> Please apply [1/4] and [4/4] and the one below and see what happens.
-> >>>>>
-> >>>>> Thanks,
-> >>>>> Rafael
-> >>>>>
-> >>>>>
-> >>>>> ---
-> >>>>> Rationale:
-> >>>>> 	acpiphp_glue.c:disable_device() trims the underlying ACPI device objects
-> >>>>> 	after removing the companion PCI devices, so the dock station code
-> >>>>> 	doesn't need to trim them separately for the dependent devices handled
-> >>>>> 	by acpiphp.
-> >>>>>
-> >>>>> 	Moreover, acpiphp_glue.c is the only user of
-> >>>>> 	[un]register_hotplug_dock_device(), so *all* devices on the
-> >>>>> 	ds->hotplug_devices list are handled by acpiphp and ops is set for all
-> >>>>> 	of them.
-> >>>> Hi Rafael,
-> >>>>     There's an ongoing patch to fix a disk bay hotplug regression, which
-> >>>> may add a second caller of register_hotplug_device(). Please refer to
-> >>>> bug 59871, and the proposed patch is at:
-> >>>> https://bugzilla.kernel.org/attachment.cgi?id=105581
-> >> Hi Rafael,
-> >>     You can find the proposed patch for ATA Bay hotplug at
-> >> https://bugzilla.kernel.org/attachment.cgi?id=105581
-> > 
-> > Well, maybe it'll have to be reworked slightly.
-> > 
-> > Which BZ entry is that?
-> Hi Rafael,
-> 	It's bug 59871, please refer to:
-> https://bugzilla.kernel.org/show_bug.cgi?id=59871
+On Sunday, June 23, 2013 04:34:17 AM Joe Perches wrote:
+> On Sun, 2013-06-23 at 13:36 +0200, Rafael J. Wysocki wrote:
+> > Please keep the existing format as is literally and append any
+> > new information to the end of the line.
+> 
+> Hi Shuah.
+> 
+> Perhaps the better long-term approach would be to add
+> a new tracepoint too.
 
-OK, thanks!
-
-I suppose it would be most convenient to simply add that patch to this
-patchset.
+In fact, I would even prefer it if new tracepoints were added so that we
+could deprecate the dmesg messages at one point in the future.
 
 Thanks,
 Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
