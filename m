@@ -1,49 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab3FWMAa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 08:00:30 -0400
-Received: from 8bytes.org ([85.214.48.195]:38257 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab3FWMA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 08:00:29 -0400
-Date: Sun, 23 Jun 2013 14:00:25 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu/amd: Only unmap large pages from the first pte
-Message-ID: <20130623120020.GB2557@8bytes.org>
-References: <20130621203242.7475.19737.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130621203242.7475.19737.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sun Jun 23 14:00:27 2013
-X-DSPAM-Confidence: 0.9981
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51c6e35b20868239215697
+	id S1752026Ab3FWMi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 08:38:59 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:62280 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab3FWMi1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 08:38:27 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH v3 4/4] scsi_debug: fix do_device_access() with wrap around range
+Date: Sun, 23 Jun 2013 21:37:41 +0900
+Message-Id: <1371991061-19437-5-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1371991061-19437-1-git-send-email-akinobu.mita@gmail.com>
+References: <1371991061-19437-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 02:33:19PM -0600, Alex Williamson wrote:
-> If we use a large mapping, the expectation is that only unmaps from
-> the first pte in the superpage are supported.  Unmaps from offsets
-> into the superpage should fail (ie. return zero sized unmap).  In the
-> current code, unmapping from an offset clears the size of the full
-> mapping starting from an offset.  For instance, if we map a 16k
-> physically contiguous range at IOVA 0x0 with a large page, then
-> attempt to unmap 4k at offset 12k, 4 ptes are cleared (12k - 28k) and
-> the unmap returns 16k unmapped.  This potentially incorrectly clears
-> valid mappings and confuses drivers like VFIO that use the unmap size
-> to release pinned pages.
-> 
-> Fix by refusing to unmap from offsets into the page.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: stable@vger.kernel.org
+do_device_access() is a function that abstracts copying SG list from/to
+ramdisk storage (fake_storep).
 
-Applied, thanks for fixing this.
+It must deal with the ranges exceeding actual fake_storep size, because
+such ranges are valid if virtual_gb is set greater than zero, and they
+should be treated as fake_storep is repeatedly mirrored up to virtual size.
 
+Unfortunately, it can't deal with the range which wraps around the end of
+fake_storep. A wrap around range is copied by two sg_copy_{from,to}_buffer()
+calls, but sg_copy_{from,to}_buffer() can't copy from/to in the middle of
+SG list, therefore the second call can't copy correctly.
+
+This fixes it by using sg_pcopy_{from,to}_buffer() that can copy from/to
+the middle of SG list.
+
+This also simplifies the assignment of sdb->resid in fill_from_dev_buffer().
+Because fill_from_dev_buffer() is now only called once per command
+execution cycle.  So it is not necessary to take care to decrease
+sdb->resid if fill_from_dev_buffer() is called more than once.
+
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Douglas Gilbert <dgilbert@interlog.com>
+Cc: linux-scsi@vger.kernel.org
+---
+
+* No change from v2
+
+ drivers/scsi/scsi_debug.c | 48 ++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 37 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 21239b3..1b15f98 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -417,10 +417,7 @@ static int fill_from_dev_buffer(struct scsi_cmnd *scp, unsigned char *arr,
+ 
+ 	act_len = sg_copy_from_buffer(sdb->table.sgl, sdb->table.nents,
+ 				      arr, arr_len);
+-	if (sdb->resid)
+-		sdb->resid -= act_len;
+-	else
+-		sdb->resid = scsi_bufflen(scp) - act_len;
++	sdb->resid = scsi_bufflen(scp) - act_len;
+ 
+ 	return 0;
+ }
+@@ -1614,24 +1611,48 @@ static int check_device_access_params(struct sdebug_dev_info *devi,
+ 	return 0;
+ }
+ 
++/* Returns number of bytes copied or -1 if error. */
+ static int do_device_access(struct scsi_cmnd *scmd,
+ 			    struct sdebug_dev_info *devi,
+ 			    unsigned long long lba, unsigned int num, int write)
+ {
+ 	int ret;
+ 	unsigned long long block, rest = 0;
+-	int (*func)(struct scsi_cmnd *, unsigned char *, int);
++	struct scsi_data_buffer *sdb;
++	enum dma_data_direction dir;
++	size_t (*func)(struct scatterlist *, unsigned int, void *, size_t,
++		       off_t);
++
++	if (write) {
++		sdb = scsi_out(scmd);
++		dir = DMA_TO_DEVICE;
++		func = sg_pcopy_to_buffer;
++	} else {
++		sdb = scsi_in(scmd);
++		dir = DMA_FROM_DEVICE;
++		func = sg_pcopy_from_buffer;
++	}
+ 
+-	func = write ? fetch_to_dev_buffer : fill_from_dev_buffer;
++	if (!sdb->length)
++		return 0;
++	if (!(scsi_bidi_cmnd(scmd) || scmd->sc_data_direction == dir))
++		return -1;
+ 
+ 	block = do_div(lba, sdebug_store_sectors);
+ 	if (block + num > sdebug_store_sectors)
+ 		rest = block + num - sdebug_store_sectors;
+ 
+-	ret = func(scmd, fake_storep + (block * scsi_debug_sector_size),
+-		   (num - rest) * scsi_debug_sector_size);
+-	if (!ret && rest)
+-		ret = func(scmd, fake_storep, rest * scsi_debug_sector_size);
++	ret = func(sdb->table.sgl, sdb->table.nents,
++		   fake_storep + (block * scsi_debug_sector_size),
++		   (num - rest) * scsi_debug_sector_size, 0);
++	if (ret != (num - rest) * scsi_debug_sector_size)
++		return ret;
++
++	if (rest) {
++		ret += func(sdb->table.sgl, sdb->table.nents,
++			    fake_storep, rest * scsi_debug_sector_size,
++			    (num - rest) * scsi_debug_sector_size);
++	}
+ 
+ 	return ret;
+ }
+@@ -1888,7 +1909,12 @@ static int resp_read(struct scsi_cmnd *SCpnt, unsigned long long lba,
+ 	read_lock_irqsave(&atomic_rw, iflags);
+ 	ret = do_device_access(SCpnt, devip, lba, num, 0);
+ 	read_unlock_irqrestore(&atomic_rw, iflags);
+-	return ret;
++	if (ret == -1)
++		return DID_ERROR << 16;
++
++	scsi_in(SCpnt)->resid = scsi_bufflen(SCpnt) - ret;
++
++	return 0;
+ }
+ 
+ static void dump_sector(unsigned char *buf, int len)
+-- 
+1.8.1.4
 
