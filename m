@@ -1,114 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888Ab3FWPsw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 11:48:52 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35126 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab3FWPst (ORCPT
+	id S1751912Ab3FWPyg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 11:54:36 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:52149 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab3FWPye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 11:48:49 -0400
+	Sun, 23 Jun 2013 11:54:34 -0400
+Message-ID: <51C71A27.1040600@gmail.com>
+Date: Sun, 23 Jun 2013 23:54:15 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1306231716050.13783@axis700.grange>
-References: <1371896189-5475-1-git-send-email-prabhakar.csengg@gmail.com> <Pine.LNX.4.64.1306231716050.13783@axis700.grange>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Sun, 23 Jun 2013 21:18:20 +0530
-Message-ID: <CA+V-a8sFzDndeCBc=bgcvpqtvzQWVLngNc_mtXCebQcarM+w+Q@mail.gmail.com>
-Subject: Re: [PATCH] media: i2c: tvp514x: add support for asynchronous probing
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>, Hans Verkuil <hverkuil@xs4all.nl>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ACPI / dock / PCI: Synchronous handling of dock events
+ for PCI devices
+References: <2737587.I0nULev1kj@vostro.rjw.lan> <15269989.ojxutYs2L1@vostro.rjw.lan>
+In-Reply-To: <15269989.ojxutYs2L1@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
+On 06/23/2013 05:25 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> The interactions between the ACPI dock driver and the ACPI-based PCI
+> hotplug (acpiphp) are currently problematic because of ordering
+> issues during hot-remove operations.
+> 
+> First of all, the current ACPI glue code expects that physical
+> devices will always be deleted before deleting the companion ACPI
+> device objects.  Otherwise, acpi_unbind_one() will fail with a
+> warning message printed to the kernel log, for example:
+> 
+> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
+> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
+> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
+> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
+> 
+[...]
+> @@ -597,15 +654,11 @@ register_hotplug_dock_device(acpi_handle
+>  		 * ops
+>  		 */
+>  		dd = find_dock_dependent_device(dock_station, handle);
+> -		if (dd) {
+> -			dd->ops = ops;
+> -			dd->context = context;
+> -			dock_add_hotplug_device(dock_station, dd);
+> -			ret = 0;
+> -		}
+> +		if (dd)
+> +			return dock_init_hotplug(dd, ops, context,
+> +						 init, release);
+Hi Rafael,
+	Seems not an equivalent change.	According to the comment just above the
+code, we shouldn't return but continue here.
+/*
+ * An ATA bay can be in a dock and itself can be ejected
+ * separately, so there are two 'dock stations' which need the
+ * ops
+ */
 
-Thanks for the review.
+Regards!
+Gerry
 
-On Sun, Jun 23, 2013 at 8:49 PM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> On Sat, 22 Jun 2013, Prabhakar Lad wrote:
->
->> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>
->> Both synchronous and asynchronous tvp514x subdevice probing is supported by
->> this patch.
->>
->> Signed-off-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
->> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
->> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> Cc: Hans Verkuil <hverkuil@xs4all.nl>
->> Cc: Sakari Ailus <sakari.ailus@iki.fi>
->> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
->> ---
->>  drivers/media/i2c/tvp514x.c |   22 +++++++++++++++-------
->>  1 file changed, 15 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
->> index 864eb14..d090caf 100644
->> --- a/drivers/media/i2c/tvp514x.c
->> +++ b/drivers/media/i2c/tvp514x.c
->> @@ -36,6 +36,7 @@
->>  #include <linux/module.h>
->>  #include <linux/v4l2-mediabus.h>
->>
->> +#include <media/v4l2-async.h>
->>  #include <media/v4l2-device.h>
->>  #include <media/v4l2-common.h>
->>  #include <media/v4l2-mediabus.h>
->
-> Ok, but this one really does too many things in one patch:
->
->> @@ -1148,9 +1149,9 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
->>       /* Register with V4L2 layer as slave device */
->>       sd = &decoder->sd;
->>       v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
->> -     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
->>
->>  #if defined(CONFIG_MEDIA_CONTROLLER)
->> +     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
->
-> This is unrelated
->
-OK I'll split the patch or may be a line in a commit message can do ?
+>  
+> -
+> -	return ret;
+> +	return -EINVAL;
+>  }
+>  EXPORT_SYMBOL_GPL(register_hotplug_dock_device);
+>  
+> @@ -623,8 +676,10 @@ void unregister_hotplug_dock_device(acpi
+>  
+>  	list_for_each_entry(dock_station, &dock_stations, sibling) {
+>  		dd = find_dock_dependent_device(dock_station, handle);
+> -		if (dd)
+> -			dock_del_hotplug_device(dock_station, dd);
+> +		if (dd) {
+> +			dock_release_hotplug(dd);
+> +			return;
+> +		}
+>  	}
+>  }
+>  EXPORT_SYMBOL_GPL(unregister_hotplug_dock_device);
+> @@ -953,7 +1008,6 @@ static int __init dock_add(acpi_handle h
+>  	mutex_init(&dock_station->hp_lock);
+>  	spin_lock_init(&dock_station->dd_lock);
+>  	INIT_LIST_HEAD(&dock_station->sibling);
+> -	INIT_LIST_HEAD(&dock_station->hotplug_devices);
+>  	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
+>  	INIT_LIST_HEAD(&dock_station->dependent_devices);
+>  
+> Index: linux-pm/include/acpi/acpi_drivers.h
+> ===================================================================
+> --- linux-pm.orig/include/acpi/acpi_drivers.h
+> +++ linux-pm/include/acpi/acpi_drivers.h
+> @@ -123,7 +123,9 @@ extern int register_dock_notifier(struct
+>  extern void unregister_dock_notifier(struct notifier_block *nb);
+>  extern int register_hotplug_dock_device(acpi_handle handle,
+>  					const struct acpi_dock_ops *ops,
+> -					void *context);
+> +					void *context,
+> +					void (*init)(void *),
+> +					void (*release)(void *));
+>  extern void unregister_hotplug_dock_device(acpi_handle handle);
+>  #else
+>  static inline int is_dock_device(acpi_handle handle)
+> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -61,6 +61,7 @@ static DEFINE_MUTEX(bridge_mutex);
+>  static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
+>  static void acpiphp_sanitize_bus(struct pci_bus *bus);
+>  static void acpiphp_set_hpp_values(struct pci_bus *bus);
+> +static void hotplug_event_func(acpi_handle handle, u32 type, void *context);
+>  static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
+>  static void free_bridge(struct kref *kref);
+>  
+> @@ -147,7 +148,7 @@ static int post_dock_fixups(struct notif
+>  
+>  
+>  static const struct acpi_dock_ops acpiphp_dock_ops = {
+> -	.handler = handle_hotplug_event_func,
+> +	.handler = hotplug_event_func,
+>  };
+>  
+>  /* Check whether the PCI device is managed by native PCIe hotplug driver */
+> @@ -179,6 +180,20 @@ static bool device_is_managed_by_native_
+>  	return true;
+>  }
+>  
+> +static void acpiphp_dock_init(void *data)
+> +{
+> +	struct acpiphp_func *func = data;
+> +
+> +	get_bridge(func->slot->bridge);
+> +}
+> +
+> +static void acpiphp_dock_release(void *data)
+> +{
+> +	struct acpiphp_func *func = data;
+> +
+> +	put_bridge(func->slot->bridge);
+> +}
+> +
+>  /* callback routine to register each ACPI PCI slot object */
+>  static acpi_status
+>  register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+> @@ -298,7 +313,8 @@ register_slot(acpi_handle handle, u32 lv
+>  		 */
+>  		newfunc->flags &= ~FUNC_HAS_EJ0;
+>  		if (register_hotplug_dock_device(handle,
+> -			&acpiphp_dock_ops, newfunc))
+> +			&acpiphp_dock_ops, newfunc,
+> +			acpiphp_dock_init, acpiphp_dock_release))
+>  			dbg("failed to register dock device\n");
+>  
+>  		/* we need to be notified when dock events happen
+> @@ -1068,22 +1084,12 @@ static void handle_hotplug_event_bridge(
+>  	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
+>  }
+>  
+> -static void _handle_hotplug_event_func(struct work_struct *work)
+> +static void hotplug_event_func(acpi_handle handle, u32 type, void *context)
+>  {
+> -	struct acpiphp_func *func;
+> +	struct acpiphp_func *func = context;
+>  	char objname[64];
+>  	struct acpi_buffer buffer = { .length = sizeof(objname),
+>  				      .pointer = objname };
+> -	struct acpi_hp_work *hp_work;
+> -	acpi_handle handle;
+> -	u32 type;
+> -
+> -	hp_work = container_of(work, struct acpi_hp_work, work);
+> -	handle = hp_work->handle;
+> -	type = hp_work->type;
+> -	func = (struct acpiphp_func *)hp_work->context;
+> -
+> -	acpi_scan_lock_acquire();
+>  
+>  	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+>  
+> @@ -1116,6 +1122,18 @@ static void _handle_hotplug_event_func(s
+>  		warn("notify_handler: unknown event type 0x%x for %s\n", type, objname);
+>  		break;
+>  	}
+> +}
+> +
+> +static void _handle_hotplug_event_func(struct work_struct *work)
+> +{
+> +	struct acpi_hp_work *hp_work;
+> +	struct acpiphp_func *func;
+> +
+> +	hp_work = container_of(work, struct acpi_hp_work, work);
+> +	func = hp_work->context;
+> +	acpi_scan_lock_acquire();
+> +
+> +	hotplug_event_func(hp_work->handle, hp_work->type, func);
+>  
+>  	acpi_scan_lock_release();
+>  	kfree(hp_work); /* allocated in handle_hotplug_event_func */
+> 
 
->>       decoder->pad.flags = MEDIA_PAD_FL_SOURCE;
->>       decoder->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
->>       decoder->sd.entity.flags |= MEDIA_ENT_T_V4L2_SUBDEV_DECODER;
->> @@ -1176,16 +1177,22 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
->>       sd->ctrl_handler = &decoder->hdl;
->>       if (decoder->hdl.error) {
->>               ret = decoder->hdl.error;
->> -
->> -             v4l2_ctrl_handler_free(&decoder->hdl);
->> -             return ret;
->> +             goto done;
->>       }
->>       v4l2_ctrl_handler_setup(&decoder->hdl);
->>
->> -     v4l2_info(sd, "%s decoder driver registered !!\n", sd->name);
->> -
->> -     return 0;
->> +     ret = v4l2_async_register_subdev(&decoder->sd);
->> +     if (!ret)
->> +             v4l2_info(sd, "%s decoder driver registered !!\n", sd->name);
->>
->> +done:
->> +     if (ret < 0) {
->> +             v4l2_ctrl_handler_free(&decoder->hdl);
->> +#if defined(CONFIG_MEDIA_CONTROLLER)
->> +             media_entity_cleanup(&decoder->sd.entity);
->
-> So is this - it wasn't called before in the "if (decoder->hdl.error)" case
-> above.
->
-Yes so fixed it up here.
-
-Regards,
---Prabhakar Lad
