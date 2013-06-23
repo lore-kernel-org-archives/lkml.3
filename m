@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab3FWJxL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 05:53:11 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49159 "EHLO
+	id S1751426Ab3FWJy3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 05:54:29 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49193 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab3FWJxJ (ORCPT
+	with ESMTP id S1750883Ab3FWJy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 05:53:09 -0400
-Date: Sun, 23 Jun 2013 11:53:07 +0200
+	Sun, 23 Jun 2013 05:54:27 -0400
+Date: Sun, 23 Jun 2013 11:54:25 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: =?iso-8859-1?Q?Ga=EBl?= PORTAY <g.portay@overkiz.com>,
-        Rob Landley <rob@landley.net>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
-Subject: Re: [RFC PATCH] led: add Cycle LED trigger.
-Message-ID: <20130623095305.GA3669@amd.pavel.ucw.cz>
-References: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
- <20130622112619.GA8075@amd.pavel.ucw.cz>
- <20130622164300.GB19420@earth.universe>
+To: Joe Perches <joe@perches.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Shuah Khan <shuah.kh@samsung.com>,
+        len.brown@intel.com, gregkh@linuxfoundation.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: Re: [PATCHv v3] power: Include additional information in
+ pm_print_times
+Message-ID: <20130623095425.GB3669@amd.pavel.ucw.cz>
+References: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com>
+ <2534796.mOHH0DCD2A@vostro.rjw.lan>
+ <1371868042.2086.0.camel@joe-AO722>
+ <2732229.sfB5fHUFTc@vostro.rjw.lan>
+ <1371949550.3137.16.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130622164300.GB19420@earth.universe>
+In-Reply-To: <1371949550.3137.16.camel@joe-AO722>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2013-06-22 18:43:01, Sebastian Reichel wrote:
-> On Sat, Jun 22, 2013 at 01:26:20PM +0200, Pavel Machek wrote:
-> > On Tue 2013-06-18 18:24:23, Gaël PORTAY wrote:
-> > > Currently, none of available triggers supports playing with the LED brightness
-> > > level.  The cycle trigger provides a way to define custom brightness cycle.
-> > > For example, it is easy to customize the cycle to mock up the rhythm of human
-> > > breathing which is a nice cycle to tell the user the system is doing something.
+On Sat 2013-06-22 18:05:50, Joe Perches wrote:
+> On Sat, 2013-06-22 at 21:52 +0200, Rafael J. Wysocki wrote:
+> > On Friday, June 21, 2013 07:27:22 PM Joe Perches wrote:
+> > > On Sat, 2013-06-22 at 02:24 +0200, Rafael J. Wysocki wrote:
+> > > > Namely, there are tools that use these messages to create suspend/resume time
+> > > > charts and they will stop working after the proposed changes.
 > > > 
-> > > This trigger is meant to be usable for waiting an event to happen, for example
-> > > when the system gets ready.  Those cycles may be used to reflect well known
-> > > system status (e.g. idle mode, startup...).
-> > > 
-> > > This implementation provides several interfaces:
-> > >  - to define the cycle itself:
-> > >    * plot: definition of plot points using plot or rawplot files,
-> > >            each points defines the brightness level
-> > >    * interval: constant time interval between each plot point
-> > >  - to control the cycle:
-> > >    * repeat: the number of repetition of the whole plot cycle
-> > >              0 for an infinite loop
-> > >    * control: used to control the cycle trigger
-> > >      + "start"/"stop": to start/stop the cycle
-> > >      + "reset" to clear the cycle counter and the internal plot point index
-> > >      + "pause"/"resume" to pause/resume the cycle
-> > > 
-> > > Signed-off-by: Gaël PORTAY <g.portay@overkiz.com>
+> > > dmesg output isn't guaranteed to be stable.
 > > 
-> > I'd say this should go to userspace.... and maybe should handle RGB
-> > leds. ... like the one on n900/HTC dream/....
-> > 
-> > Actually, there's probably some daemon in maemo that already does
-> > this.
+> > So?
 > 
-> Actually the n900 has hardware support for this. There's a
-> programmable LED driver on the board, which is called LP5523.
+> So even if new information was only appended to
+> the existing line, the script could break.
 > 
-> So... I don't think there's a daemon in maemo ;)
+> If any script needs something stable it should
+> depend on information available through other
+> sources like trace or proc or sysfs.
 
-Uh. It seems that LP5523 should get gcc support, not kernel
-support. It has limited memory, but 3 cores, and seems turing
-complete.
+Yeah, people try to add it to debugfs, and the results were not nice.
 
-Not sure what is reasonable interface for that, but I guess subset
-that "makes sense" is enough.
+dmesg output is not stable, but we should not break it unneccessarily;
+appending at the end should be fine.
 									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
