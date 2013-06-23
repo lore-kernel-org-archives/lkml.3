@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab3FWU3W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 16:29:22 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:33165 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab3FWU3U (ORCPT
+	id S1752400Ab3FWUaK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 16:30:10 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:55783 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab3FWUaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 16:29:20 -0400
+	Sun, 23 Jun 2013 16:30:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVGz-BOq4LeZ-iNCAKqPF=Tzuq6uTZ=AAnO=8yMa22jYw@mail.gmail.com>
-References: <2737587.I0nULev1kj@vostro.rjw.lan>
-	<15269989.ojxutYs2L1@vostro.rjw.lan>
-	<51C71A27.1040600@gmail.com>
-	<CAE9FiQVGz-BOq4LeZ-iNCAKqPF=Tzuq6uTZ=AAnO=8yMa22jYw@mail.gmail.com>
-Date: Sun, 23 Jun 2013 13:29:19 -0700
-X-Google-Sender-Auth: c5Ioc8D3VfK2P2W2Gq7mfA9foJw
-Message-ID: <CAE9FiQWf7_v0Mc2rdhg9ssk9NCFNqtv8LiCfayw00OqzbozvSw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ACPI / dock / PCI: Synchronous handling of dock
- events for PCI devices
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <51C75465.9060007@zytor.com>
+References: <51C3DDFA.7050204@zytor.com>
+	<51C69732.1010906@gmail.com>
+	<b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com>
+	<20130623192936.GA28655@khazad-dum.debian.net>
+	<51C75465.9060007@zytor.com>
+Date: Mon, 24 Jun 2013 06:30:05 +1000
+Message-ID: <CAPM=9tzkJTf4d=HfBUs3VwmNG1+Zo5J-JURYd4mYcJ82yXZOKg@mail.gmail.com>
+Subject: Re: MTRR use in drivers
+From: Dave Airlie <airlied@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Brice Goglin <brice.goglin@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Andy Lutomirski <luto@amacapital.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23, 2013 at 12:57 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Sun, Jun 23, 2013 at 8:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> On 06/23/2013 05:25 AM, Rafael J. Wysocki wrote:
->>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>
->>> The interactions between the ACPI dock driver and the ACPI-based PCI
->>> hotplug (acpiphp) are currently problematic because of ordering
->>> issues during hot-remove operations.
->>>
->>> First of all, the current ACPI glue code expects that physical
->>> devices will always be deleted before deleting the companion ACPI
->>> device objects.  Otherwise, acpi_unbind_one() will fail with a
->>> warning message printed to the kernel log, for example:
->>>
->>> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
->>> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
->>> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
->>> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
->>>
->> [...]
->>> @@ -597,15 +654,11 @@ register_hotplug_dock_device(acpi_handle
->>>                * ops
->>>                */
->>>               dd = find_dock_dependent_device(dock_station, handle);
->>> -             if (dd) {
->>> -                     dd->ops = ops;
->>> -                     dd->context = context;
->>> -                     dock_add_hotplug_device(dock_station, dd);
->>> -                     ret = 0;
->>> -             }
->>> +             if (dd)
->>> +                     return dock_init_hotplug(dd, ops, context,
->>> +                                              init, release);
->> Hi Rafael,
->>         Seems not an equivalent change. According to the comment just above the
->> code, we shouldn't return but continue here.
->> /*
->>  * An ATA bay can be in a dock and itself can be ejected
->>  * separately, so there are two 'dock stations' which need the
->>  * ops
->>  */
+>>> Why do you care about performance when PAT is disabled?
+
+breaking old boxes just because, is just going to get reverted when I
+get the first regression report that you broke old boxes.
+
+Andy Lutomirski just submitted a bunch of patches to clean up the DRM
+usage of mtrrs, they are in drm-next, afaik we no longer add them on
+PAT systems.
+
+Dave.
+
+>>
+>> It will regress already slow boxes.  We blacklist a LOT of P4s, PMs, etc and
+>> nobody ever took the pain to track down which ones of those actually have
+>> PAT+MTRR aliasing bugs.
+>>
+>> These boxes have boards like the Radeon X300, which needs either PAT or MTRR
+>> to not become unusable...
+>>
 >
-> two dock stations:
-> Do you mean two dock station has same handle?
+> We're talking hardware which is now many years old, but this is causing
+> very serious problems on real, modern hardware.  As far as I understand
+> it, too, the blacklisting was precautionary (the only bug that I
+> personally know about is a performance bug, where WC would be
+> incorrectly converted to UC.)
 >
-> dock_add should add correctly flags for IS_DOCK and IS_ATA.
-> if one handle has _DCK and _GTF etc.
+> We need a way forward here.  If it is the only way I think we would have
+> to sacrifice the old machines, but perhaps something can be worked out
+> (e.g. if PAT is disabled, fall back to MTRRs if available for ioremap_wc()).
 >
-> or do you mean there are two dependent devices with same handle?
-> like one is for acpiphp slot and one is for ATA?
-
-related commit:
-commit 61b836958371c717d1e6d4fea1d2c512969ad20b
-Author: Shaohua Li <shaohua.li@intel.com>
-Date:   Thu Aug 28 10:07:14 2008 +0800
-
-    dock: fix for ATA bay in a dock station
-
-    an ATA bay can be in a dock and itself can be ejected separately.
-    This patch handles such eject bay. Found by Holger.
-
-    Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-@@ -618,16 +619,21 @@ register_hotplug_dock_device(acpi_handle handle, struct ac
-pi_dock_ops *ops,
-         * this would include the dock station itself
-         */
-        list_for_each_entry(dock_station, &dock_stations, sibiling) {
-+               /*
-+                * An ATA bay can be in a dock and itself can be ejected
-+                * seperately, so there are two 'dock stations' which need the
-+                * ops
-+                */
-                dd = find_dock_dependent_device(dock_station, handle);
-                if (dd) {
-                        dd->ops = ops;
-                        dd->context = context;
-                        dock_add_hotplug_device(dock_station, dd);
--                       return 0;
-+                       ret = 0;
-                }
-        }
-
--       return -EINVAL;
-+       return ret;
- }
-
-so two doc station with different handle.
-
-and dependent devices in both...
-
-looks like Rafael's change can not handle this case anymore.
-
-Yinghai
+>         -hpa
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
