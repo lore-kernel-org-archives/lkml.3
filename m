@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab3FWOIA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 10:08:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40484 "EHLO mail.zytor.com"
+	id S1751846Ab3FWOS3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 10:18:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109Ab3FWOH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 10:07:59 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <51C69732.1010906@gmail.com>
-References: <51C3DDFA.7050204@zytor.com> <51C69732.1010906@gmail.com>
+	id S1751509Ab3FWOSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 10:18:23 -0400
+Date: Sun, 23 Jun 2013 17:19:03 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>, netdev@vger.kernel.org,
+        Brad Hubbard <bhubbard@redhat.com>
+Subject: [PATCH net] tun: fix recovery from gup errors
+Message-ID: <20130623141903.GA21029@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: MTRR use in drivers
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 23 Jun 2013 07:07:46 -0700
-To: Brice Goglin <brice.goglin@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Message-ID: <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why do you care about performance when PAT is disabled?
+get user pages might fail partially in tun zero copy
+mode. To recover we need to put all pages that we got,
+but code used a wrong index resulting in double-free
+errors.
 
-Brice Goglin <brice.goglin@gmail.com> wrote:
+Reported-by: Brad Hubbard <bhubbard@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
->Le 21/06/2013 07:00, H. Peter Anvin a écrit :
->> An awful lot of drivers, mostly DRI drivers, are still mucking with
->> MTRRs directly as opposed to using ioremap_wc() or similar
->interfaces.
->> In addition to the architecture dependency, this is really
->undesirable
->> because MTRRs are a limited resource, whereas page table attributes
->are not.
->>
->> Furthermore, this perpetuates the need for the horrific hack known as
->> "MTRR cleanup".
->>
->> What, if anything, can we do to clean up this mess?
->>
->> 	-hpa
->>
->
->The first network driver that used ioremap_wc() back in 2008 (myri10ge)
->had to keep using MTRR because ioremap_wc() silently falls back to
->ioremap_nocache() when PAT is disabled.
->
->I asked about this in https://lkml.org/lkml/2008/5/31/42 and there was
->some talk about putting the MTRR addition in the nocache fallback path
->but I guess nobody implemented the idea.
->
->Brice
+I haven't figured out why do we get failures,
+but recovery is clearly wrong.
 
+This is also -stable material.
+
+ drivers/net/tun.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index bfa9bb4..c098b1e 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1010,8 +1010,9 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 			return -EMSGSIZE;
+ 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
+ 		if (num_pages != size) {
+-			for (i = 0; i < num_pages; i++)
+-				put_page(page[i]);
++			int j;
++			for (j = 0; j < num_pages; j++)
++				put_page(page[i + j]);
+ 			return -EFAULT;
+ 		}
+ 		truesize = size * PAGE_SIZE;
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+MST
