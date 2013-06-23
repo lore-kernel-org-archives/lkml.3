@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3FWLeX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 07:34:23 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57413 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750953Ab3FWLeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 07:34:19 -0400
-Message-ID: <1371987257.3137.44.camel@joe-AO722>
-Subject: Re: [PATCHv v3] power: Include additional information in
- pm_print_times
-From: Joe Perches <joe@perches.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Shuah Khan <shuah.kh@samsung.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Date: Sun, 23 Jun 2013 04:34:17 -0700
-In-Reply-To: <3043483.hQyzHovghE@vostro.rjw.lan>
-References: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com>
-	 <2534796.mOHH0DCD2A@vostro.rjw.lan>
-	 <B8EFE96D1287C24090BAD9D858E15E6172EFEE@sisaex02sj>
-	 <3043483.hQyzHovghE@vostro.rjw.lan>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751741Ab3FWLti (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 07:49:38 -0400
+Received: from 8bytes.org ([85.214.48.195]:38241 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751351Ab3FWLtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 07:49:36 -0400
+Date: Sun, 23 Jun 2013 13:49:31 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iommu: Fix compiler warning on pr_debug
+Message-ID: <20130623114930.GA2557@8bytes.org>
+References: <20130621153331.2881.35589.stgit@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130621153331.2881.35589.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Sun Jun 23 13:49:34 2013
+X-DSPAM-Confidence: 0.9991
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51c6e0ce20861749710308
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-06-23 at 13:36 +0200, Rafael J. Wysocki wrote:
-> Please keep the existing format as is literally and append any
-> new information to the end of the line.
+On Fri, Jun 21, 2013 at 09:33:50AM -0600, Alex Williamson wrote:
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/iommu/iommu.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+> index 4b0b56b..ab1fa19 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -820,7 +820,7 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+>  		size_t pgsize = iommu_pgsize(domain, iova | paddr, size);
+>  
+>  		pr_debug("mapping: iova 0x%lx pa 0x%lx pgsize %lu\n", iova,
+> -					(unsigned long)paddr, pgsize);
+> +			 (unsigned long)paddr, (unsigned long)pgsize);
+>  
+>  		ret = domain->ops->map(domain, iova, paddr, pgsize, prot);
+>  		if (ret)
 
-Hi Shuah.
-
-Perhaps the better long-term approach would be to add
-a new tracepoint too.
+Applied to core branch, thanks.
 
 
