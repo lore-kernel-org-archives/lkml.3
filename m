@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751148Ab3FWLBz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 07:01:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39548 "EHLO
+	id S1751625Ab3FWLCZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 07:02:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39573 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab3FWLBv (ORCPT
+	with ESMTP id S1751034Ab3FWLCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 07:01:51 -0400
-Date: Sun, 23 Jun 2013 04:01:25 -0700
-From: tip-bot for Seiji Aguchi <tipbot@zytor.com>
-Message-ID: <tip-33e5ff634f07dec26b7ed1fd7f9e32978fe1f2b2@git.kernel.org>
+	Sun, 23 Jun 2013 07:02:22 -0400
+Date: Sun, 23 Jun 2013 04:02:05 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-fc58be7596b832ee9635b2f7090a589ac5cdb807@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        seiji.aguchi@hds.com, tglx@linutronix.de
+        tglx@linutronix.de, bp@suse.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        seiji.aguchi@hds.com, tglx@linutronix.de
-In-Reply-To: <51C58B8A.2080808@hds.com>
-References: <51C58B8A.2080808@hds.com>
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1371801891-23618-1-git-send-email-bp@alien8.de>
+References: <1371801891-23618-1-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/trace] x86/tracing:
-  Add config option checking to the definitions of mce handlers
-Git-Commit-ID: 33e5ff634f07dec26b7ed1fd7f9e32978fe1f2b2
+Subject: [tip:x86/platform] x86/platform:
+  Add kvmconfig to the phony targets
+Git-Commit-ID: fc58be7596b832ee9635b2f7090a589ac5cdb807
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,58 +28,39 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 23 Jun 2013 04:01:32 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 23 Jun 2013 04:02:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  33e5ff634f07dec26b7ed1fd7f9e32978fe1f2b2
-Gitweb:     http://git.kernel.org/tip/33e5ff634f07dec26b7ed1fd7f9e32978fe1f2b2
-Author:     Seiji Aguchi <seiji.aguchi@hds.com>
-AuthorDate: Sat, 22 Jun 2013 07:33:30 -0400
+Commit-ID:  fc58be7596b832ee9635b2f7090a589ac5cdb807
+Gitweb:     http://git.kernel.org/tip/fc58be7596b832ee9635b2f7090a589ac5cdb807
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Fri, 21 Jun 2013 10:04:51 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 23 Jun 2013 11:41:36 +0200
+CommitDate: Sun, 23 Jun 2013 12:17:35 +0200
 
-x86/tracing: Add config option checking to the definitions of mce handlers
+x86/platform: Add kvmconfig to the phony targets
 
-In case CONFIG_X86_MCE_THRESHOLD and CONFIG_X86_THERMAL_VECTOR
-are disabled, kernel build fails as follows.
+... so as not to disable it with a file of the same name in the
+toplevel build directory.
 
-   arch/x86/built-in.o: In function `trace_threshold_interrupt':
-   (.entry.text+0x122b): undefined reference to `smp_trace_threshold_interrupt'
-   arch/x86/built-in.o: In function `trace_thermal_interrupt':
-   (.entry.text+0x132b): undefined reference to `smp_trace_thermal_interrupt'
-
-In this case, trace_threshold_interrupt/trace_thermal_interrupt
-are not needed to define.
-
-So, add config option checking to their definitions in entry_64.S.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: rostedt@goodmis.org
-Link: http://lkml.kernel.org/r/51C58B8A.2080808@hds.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1371801891-23618-1-git-send-email-bp@alien8.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/entry_64.S | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 11eef43..53d6398 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1188,10 +1188,15 @@ apicinterrupt3 POSTED_INTR_VECTOR \
- 	kvm_posted_intr_ipi smp_kvm_posted_intr_ipi
- #endif
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 91ee171..07639c6 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -220,6 +220,7 @@ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)
+ 	$(Q)$(MAKE) $(clean)=arch/x86/tools
  
-+#ifdef CONFIG_X86_MCE_THRESHOLD
- apicinterrupt THRESHOLD_APIC_VECTOR \
- 	threshold_interrupt smp_threshold_interrupt
-+#endif
-+
-+#ifdef CONFIG_X86_THERMAL_VECTOR
- apicinterrupt THERMAL_APIC_VECTOR \
- 	thermal_interrupt smp_thermal_interrupt
-+#endif
- 
- #ifdef CONFIG_SMP
- apicinterrupt CALL_FUNCTION_SINGLE_VECTOR \
++PHONY += kvmconfig
+ kvmconfig:
+ 	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
+ 	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config arch/x86/configs/kvm_guest.config
