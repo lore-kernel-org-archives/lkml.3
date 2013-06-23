@@ -1,80 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab3FWNxz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 09:53:55 -0400
-Received: from smtp-out-217.synserver.de ([212.40.185.217]:1408 "EHLO
-	smtp-out-216.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752309Ab3FWNxw (ORCPT
+	id S1751737Ab3FWNlu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 09:41:50 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:42254 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab3FWNlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 09:53:52 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 5434
-Message-ID: <51C6FE00.8010900@metafoo.de>
-Date: Sun, 23 Jun 2013 15:54:08 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Sun, 23 Jun 2013 09:41:25 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 01/45] CPU hotplug: Provide APIs to prevent CPU offline from
+ atomic context
+To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com
+Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
+        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Date: Sun, 23 Jun 2013 19:08:01 +0530
+Message-ID: <20130623133756.19094.41723.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, jimwall@q.com,
-        brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCHv2 1/3] iio: Add Nuvoton NAU7802 ADC driver
-References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com> <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com> <51C590B5.2060308@kernel.org> <51C5923D.6030609@metafoo.de> <51C5A1AF.3070404@free-electrons.com> <51C5A499.5050509@metafoo.de> <51C5A68F.3000300@free-electrons.com>
-In-Reply-To: <51C5A68F.3000300@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062313-3864-0000-0000-000008C2B7E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2013 03:28 PM, Alexandre Belloni wrote:
-> On 22/06/2013 15:20, Lars-Peter Clausen wrote:
->> On 06/22/2013 03:07 PM, Alexandre Belloni wrote:
->>> On 22/06/2013 14:02, Lars-Peter Clausen wrote:
->>>> On 06/22/2013 01:55 PM, Jonathan Cameron wrote:
->>>>> On 06/20/2013 07:57 PM, Alexandre Belloni wrote:
->>>>>> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
->>>>>> gain and sampling rates.
->>>>>>
->>>>> Sorry, somewhat low on time today so only a quick review.
->>>>>
->>>>> 1) Missing userspace ABI documentation.  Also, perhaps min_conversions is
->>>>>    a little vague?  Not that I have a better idea!
->>>> I really don't like the name min_conversions either. Isn't this effectively
->>>> a decimation filter?
->>> Yeah, it could be seen like that but it is only relevant and only
->>> happens when switching between channels. I'm open to any ideas.
->>>
->> I see. Is there anything about this in the datasheet on how many conversions
->> you usually need? Is this really something you need to change at runtime or
->> does moving this to platform data work?
->>
->>
-> 
-> There is actually nothing in the datasheet. The default value (6
-> conversions) was found experimentally. What I did was saturating the ADC
-> with the higher value on one channel and the lower value on the other
-> one and I tried to find when reading both channel sequentially was
-> resulting in a correct value.
-> 
-> You may not need to change it at runtime. And that value mainly depend
-> on the precision versus speed balance you want to achieve. If you know
-> that the values on both channels will not be to far apart, then you may
-> not need to wait at all.
-> 
-> Would you think that is something I should hide in the DT ? Or maybe I
-> can drop that knob for now and see if it is needed in the future.
-> 
+The current CPU offline code uses stop_machine() internally. And disabling
+preemption prevents stop_machine() from taking effect, thus also preventing
+CPUs from going offline, as a side effect.
 
-It is always a good idea to be conservative when introducing new ABI, so if
-you think we can get away with hardcoding this in the driver I think that's
-a good idea.
+There are places where this side-effect of preempt_disable() (or equivalent)
+is used to synchronize with CPU hotplug. Typically these are in atomic
+sections of code, where they can't make use of get/put_online_cpus(), because
+the latter set of APIs can sleep.
 
-- Lars
+Going forward, we want to get rid of stop_machine() from the CPU hotplug
+offline path. And then, with stop_machine() gone, disabling preemption will
+no longer prevent CPUs from going offline.
+
+So provide a set of APIs for such atomic hotplug readers, to prevent (any)
+CPUs from going offline. For now, they will default to preempt_disable()
+and preempt_enable() itself, but this will help us do the tree-wide conversion,
+as a preparatory step to remove stop_machine() from CPU hotplug.
+
+(Besides, it is good documentation as well, since it clearly marks places
+where we synchronize with CPU hotplug, instead of combining it subtly with
+disabling preemption).
+
+In future, when actually removing stop_machine(), we will alter the
+implementation of these APIs to a suitable synchronization scheme.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ include/linux/cpu.h |   18 ++++++++++++++++++
+ kernel/cpu.c        |   38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+)
+
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 9f3c7e8..e06c3ad 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -175,6 +175,8 @@ extern struct bus_type cpu_subsys;
+ 
+ extern void get_online_cpus(void);
+ extern void put_online_cpus(void);
++extern unsigned int get_online_cpus_atomic(void);
++extern void put_online_cpus_atomic(void);
+ extern void cpu_hotplug_disable(void);
+ extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+@@ -202,6 +204,22 @@ static inline void cpu_hotplug_driver_unlock(void)
+ #define put_online_cpus()	do { } while (0)
+ #define cpu_hotplug_disable()	do { } while (0)
+ #define cpu_hotplug_enable()	do { } while (0)
++
++static inline unsigned int get_online_cpus_atomic(void)
++{
++	/*
++	 * Disable preemption to avoid getting complaints from the
++	 * debug_smp_processor_id() code.
++	 */
++	preempt_disable();
++	return smp_processor_id();
++}
++
++static inline void put_online_cpus_atomic(void)
++{
++	preempt_enable();
++}
++
+ #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ /* These aren't inline functions due to a GCC bug. */
+ #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 198a388..2d03398 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -154,6 +154,44 @@ void cpu_hotplug_enable(void)
+ 	cpu_maps_update_done();
+ }
+ 
++/*
++ * get_online_cpus_atomic - Prevent any CPU from going offline
++ *
++ * Atomic hotplug readers (tasks which wish to prevent CPUs from going
++ * offline during their critical section, but can't afford to sleep)
++ * can invoke this function to synchronize with CPU offline. This function
++ * can be called recursively, provided it is matched with an equal number
++ * of calls to put_online_cpus_atomic().
++ *
++ * Note: This does NOT prevent CPUs from coming online! It only prevents
++ * CPUs from going offline.
++ *
++ * Lock ordering rule: Strictly speaking, there is no lock ordering
++ * requirement here, but it is advisable to keep the locking consistent.
++ * As a simple rule-of-thumb, use these functions in the outer-most blocks
++ * of your critical sections, outside of other locks.
++ *
++ * Returns the current CPU number, with preemption disabled.
++ */
++unsigned int get_online_cpus_atomic(void)
++{
++	/*
++	 * The current CPU hotplug implementation uses stop_machine() in
++	 * the CPU offline path. And disabling preemption prevents
++	 * stop_machine() from taking effect. Thus, this prevents any CPU
++	 * from going offline.
++	 */
++	preempt_disable();
++	return smp_processor_id();
++}
++EXPORT_SYMBOL_GPL(get_online_cpus_atomic);
++
++void put_online_cpus_atomic(void)
++{
++	preempt_enable();
++}
++EXPORT_SYMBOL_GPL(put_online_cpus_atomic);
++
+ #else /* #if CONFIG_HOTPLUG_CPU */
+ static void cpu_hotplug_begin(void) {}
+ static void cpu_hotplug_done(void) {}
+
