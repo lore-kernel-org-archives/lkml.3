@@ -1,204 +1,430 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751064Ab3FWJ3l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 05:29:41 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:36165 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab3FWJ3j (ORCPT
+	id S1751271Ab3FWJae (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 05:30:34 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:33459 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab3FWJa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 05:29:39 -0400
+	Sun, 23 Jun 2013 05:30:29 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Namjae Jeon <linkinjeon@gmail.com>, tytso@mit.edu,
+        adilger.kernel@dilger.ca
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, a.sangwan@samsung.com,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 1/3] ext4: Add EXT4_IOC_TRUNCATE_BLOCK_RANGE ioctl
+In-Reply-To: <1371967656-3150-1-git-send-email-linkinjeon@gmail.com>
+References: <1371967656-3150-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Sun, 23 Jun 2013 13:30:22 +0400
+Message-ID: <878v219ntd.fsf@openvz.org>
 MIME-Version: 1.0
-In-Reply-To: <51BEB05C.7040802@linux.vnet.ibm.com>
-References: <1371435692-18831-1-git-send-email-leiwen@marvell.com>
-	<51BE8213.4000701@linux.vnet.ibm.com>
-	<CALZhoSR7pB8qJjT_9_naxp2cgtuz=UR0DzLk_J-_CVNaO55jyA@mail.gmail.com>
-	<51BEB05C.7040802@linux.vnet.ibm.com>
-Date: Sun, 23 Jun 2013 17:29:38 +0800
-Message-ID: <CALZhoSTne47rndKYw_tv_fBPpNvtk_R0fWMXaMqZEGU+tkykLQ@mail.gmail.com>
-Subject: Re: [PATCH] sched: add heuristic logic to pick idle peers
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Lei Wen <leiwen@marvell.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
-
-On Mon, Jun 17, 2013 at 2:44 PM, Michael Wang
-<wangyun@linux.vnet.ibm.com> wrote:
-> On 06/17/2013 01:08 PM, Lei Wen wrote:
->> Hi Michael,
->>
->> On Mon, Jun 17, 2013 at 11:27 AM, Michael Wang
->> <wangyun@linux.vnet.ibm.com> wrote:
->>> Hi, Lei
->>>
->>> On 06/17/2013 10:21 AM, Lei Wen wrote:
->>>> nr_busy_cpus in sched_group_power structure cannot present the purpose
->>>> for judging below statement:
->>>> "this cpu's scheduler group has multiple busy cpu's exceeding
->>>>  the group's power."
->>>>
->>>> But only could tell how many cpus is doing their jobs for currently.
->>>
->>> AFAIK, this nr_busy_cpus presents how many cpus in local group are not
->>> idle, the logical here in nohz_kick_needed() is:
->>>
->>>         if domain cpus share resources and at least 2 cpus in
->>>         local group are not idle, prefer to do balance.
->>>
->>
->> Seems reasonable for me. But this comment is conflicted with current documented
->> one. Do we need to modify the comment anyway, as previous says nr_busy>1 is
->> "scheduler group has multiple busy cpu;s exceeding the group's power"?
->
-> I agree it doesn't make sense (to me), the logical here only make sure
-> there are at least 2 non-idle cpus in local group, we may need some more
-> powerful folks to confirm that point.
->
->>
->>> And the idea behind is, we catch the timing when there are idle-cpu and
->>> busy-group and task-moving may cost low.
->>
->> Since there is only one task over runqueue now, then why we could need the
->> load balance any way?...
->
-> IMHO, this is just shot in the darkness... like 'I think in such cases
-> the chances of requiring a balance will be high', but the problem is,
-> the logical is already in mainline for some reasons, if we want to say
-> that is wrong, then we need to collect enough proof...
->
->>
->>>
->>> Your change will remove this timing for balance, I think you may need
->>> some test to prove that this patch will make things better.
->>
->> I see. Yes, test data is always good. :)
->> Do you have any suggestion like using what kind of test program to
->> collect this data?
->
-> Any workload which require a good balance to check whether the patch
-> cause damage, any workload which is latency-sensitive to check whether
-> the patch bring benefit, what about kernbench with enough threads firstly?
->
-> Actually all the popular benchmark worth a try, until some improvement
-> was found, if after all the test, still no benefit located, then the
-> idea may have to be dropped...
-
-I try several benchmark, like cyclictest, sysbench...
-But seems the score it report shows get benefit little.
-
-However, since this change is applying towards idle path, the benchmark maybe
-wrong direction to illustrate its correctness.
-
-Suppose we are having two cpu socket/cluster, and two cpus in each
-socket/cluster.
-And socket 0's two cpus are idle, socket 1's  one cpu has two pined
-task, another is also idle.
-
-In such case, scheduler would keep wake the cpu0 in socket 0, and let
-it do the nohz balance.
-But for two tasks in socket1/cpu0 is pined, so it cannot be moved.
-So result is socket 0 would be waken up at least every scheduler tick.
-
-If in such scenario, scheduler choose socket1/cpu1 with the patch
-applied, the whole system's power
-could be reduced, since waking up cpu0 over socket0 would increase
-addition socket/cluster power.
-
-Could it be one proof to support this patch?
-
-Thanks,
-Lei
-
->
-> Regards,
-> Michael Wang
->
->>
->> Thanks,
->> Lei
->>
->>>
->>> Regards,
->>> Michael Wang
->>>
->>>>
->>>> However, the original purpose to add this logic still looks good.
->>>> So we move this kind of logic to find_new_ilb, so that we could pick
->>>> out peer from our sharing resource domain whenever possible.
->>>>
->>>> Signed-off-by: Lei Wen <leiwen@marvell.com>
->>>> ---
->>>>  kernel/sched/fair.c |   28 ++++++++++++++++++++++------
->>>>  1 file changed, 22 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>>> index c61a614..64f9120 100644
->>>> --- a/kernel/sched/fair.c
->>>> +++ b/kernel/sched/fair.c
->>>> @@ -5368,10 +5368,31 @@ static struct {
->>>>       unsigned long next_balance;     /* in jiffy units */
->>>>  } nohz ____cacheline_aligned;
->>>>
->>>> +/*
->>>> + * Add the heuristic logic to try waking up idle cpu from
->>>> + * those peers who share resources with us, so that the
->>>> + * cost would be brought to minimum.
->>>> + */
->>>>  static inline int find_new_ilb(int call_cpu)
->>>>  {
->>>> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
->>>> +     int ilb = nr_cpu_ids;
->>>> +     struct sched_domain *sd;
->>>> +
->>>> +     rcu_read_lock();
->>>> +     for_each_domain(call_cpu, sd) {
->>>> +             /* We loop till sched_domain no longer share resource */
->>>> +             if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
->>>> +                     ilb = cpumask_first(nohz.idle_cpus_mask);
->>>> +                     break;
->>>> +             }
->>>>
->>>> +             /* else, we would try to pick the idle cpu from peers first */
->>>> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
->>>> +                             sched_domain_span(sd));
->>>> +             if (ilb < nr_cpu_ids)
->>>> +                     break;
->>>> +     }
->>>> +     rcu_read_unlock();
->>>>       if (ilb < nr_cpu_ids && idle_cpu(ilb))
->>>>               return ilb;
->>>>
->>>> @@ -5620,8 +5641,6 @@ end:
->>>>   * Current heuristic for kicking the idle load balancer in the presence
->>>>   * of an idle cpu is the system.
->>>>   *   - This rq has more than one task.
->>>> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
->>>> - *     busy cpu's exceeding the group's power.
->>>>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
->>>>   *     domain span are idle.
->>>>   */
->>>> @@ -5659,9 +5678,6 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
->>>>               struct sched_group_power *sgp = sg->sgp;
->>>>               int nr_busy = atomic_read(&sgp->nr_busy_cpus);
->>>>
->>>> -             if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
->>>> -                     goto need_kick_unlock;
->>>> -
->>>>               if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
->>>>                   && (cpumask_first_and(nohz.idle_cpus_mask,
->>>>                                         sched_domain_span(sd)) < cpu))
->>>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
+On Sun, 23 Jun 2013 15:07:36 +0900, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+What is the difference between this ioctl and generic punch_hole?
+> 
+> The EXT4_IOC_TRUNCATE_BLOCK_RANGE removes the data blocks lying
+> between [start, "start + length") and updates the logical block numbers
+> of data blocks starting from "start + length" block to last block of file.
+> This will maintain contiguous nature of logical block numbers
+> after block removal.
+> Both the inode's disksize and logical size are updated after block
+> removal
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> ---
+>  fs/ext4/ext4.h         |    8 ++
+>  fs/ext4/ext4_extents.h |    3 +
+>  fs/ext4/extents.c      |  245 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/ext4/ioctl.c        |   62 ++++++++++++
+>  4 files changed, 318 insertions(+)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 6ed348d..df2c411 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -590,6 +590,7 @@ enum {
+>  #define EXT4_IOC_MOVE_EXT		_IOWR('f', 15, struct move_extent)
+>  #define EXT4_IOC_RESIZE_FS		_IOW('f', 16, __u64)
+>  #define EXT4_IOC_SWAP_BOOT		_IO('f', 17)
+> +#define EXT4_IOC_TRUNCATE_BLOCK_RANGE	_IOW('f', 18, struct truncate_range)
+>  
+>  #if defined(__KERNEL__) && defined(CONFIG_COMPAT)
+>  /*
+> @@ -682,6 +683,11 @@ struct move_extent {
+>  	__u64 moved_len;	/* moved block length */
+>  };
+>  
+> +struct truncate_range {
+> +	__u32 start_block;
+> +	__u32 length;
+> +};
+> +
+>  #define EXT4_EPOCH_BITS 2
+>  #define EXT4_EPOCH_MASK ((1 << EXT4_EPOCH_BITS) - 1)
+>  #define EXT4_NSEC_MASK  (~0UL << EXT4_EPOCH_BITS)
+> @@ -2692,6 +2698,8 @@ extern int ext4_find_delalloc_range(struct inode *inode,
+>  extern int ext4_find_delalloc_cluster(struct inode *inode, ext4_lblk_t lblk);
+>  extern int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  			__u64 start, __u64 len);
+> +extern int ext4_ext_truncate_range(struct inode *inode, ext4_lblk_t start,
+> +				   ext4_lblk_t end, ext4_lblk_t last_block);
+>  
+>  
+>  /* move_extent.c */
+> diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
+> index 51bc821..cc113cc 100644
+> --- a/fs/ext4/ext4_extents.h
+> +++ b/fs/ext4/ext4_extents.h
+> @@ -178,6 +178,9 @@ struct ext4_ext_path {
+>  #define EXT_MAX_INDEX(__hdr__) \
+>  	(EXT_FIRST_INDEX((__hdr__)) + le16_to_cpu((__hdr__)->eh_max) - 1)
+>  
+> +#define EXTENT_START_FLAG	0x1
+> +#define INDEX_START_FLAG	0x2
+> +
+>  static inline struct ext4_extent_header *ext_inode_hdr(struct inode *inode)
+>  {
+>  	return (struct ext4_extent_header *) EXT4_I(inode)->i_data;
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index 937593e..ed85e34 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -4757,3 +4757,248 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  
+>  	return error;
+>  }
+> +
+> +/*
+> + * ext4_trange_dirty_path: Function to mark the path buffer dirty.
+> + * It also checks if there are sufficient credits left in the
+> + * journal to update metadata. If the number of credits are less
+> + * restart the handle with additional credits.
+> + *
+> + * @handle: journal handle
+> + * @inode: file inode
+> + * @path: pointer to path
+> + * @num: number of inodes to be updated
+> + *
+> + * Returns: 0 on success or negative value on error
+> + */
+> +int ext4_trange_dirty_path(handle_t *handle, struct inode *inode,
+> +			   struct ext4_ext_path *path,
+> +			   int num, ...)
+> +{
+> +	int credits, err, i;
+> +	struct inode *iptr;
+> +	va_list args;
+> +
+> +	/*
+> +	 * Check if need to extend journal credits
+> +	 * 3 for leaf, sb, and inode plus 2 (bmap and group
+> +	 * descriptor) for each block group; assume two block
+> +	 * groups
+> +	 */
+> +	if (handle->h_buffer_credits < 7*(num + 1)) {
+> +		credits = ext4_writepage_trans_blocks(inode);
+> +		va_start(args, num);
+> +		for (i = 1; i <= num; i++) {
+> +			iptr = va_arg(args, struct inode *);
+> +			credits += ext4_writepage_trans_blocks(iptr);
+> +		}
+> +		va_end(args);
+> +		err = ext4_ext_truncate_extend_restart(handle, inode, credits);
+> +		/* EAGAIN is success */
+> +		if (err && err != -EAGAIN)
+> +			return err;
+> +	}
+> +	err = ext4_ext_get_access(handle, inode, path);
+> +	return err;
+> +}
+> +
+> +/*
+> + * ext4_ext_update_path: update the extents of a path structure
+> + * lying between path[depth].p_ext and EXT_LAST_EXTENT(path[depth].p_hdr)
+> + * subtracting shift from starting block for each extent.
+> + *
+> + * @path: path for which extents are updated
+> + * @shift: Number of blocks to be subtracted from first logical block
+> + * that extent covers for each extent.
+> + * @inode: file inode
+> + * @handle: journal handle
+> + * @start_block: Points to the starting block of next extent which is
+> + * to be updated.
+> + *
+> + * Returns: 0 on success or negative on error.
+> + */
+> +int ext4_ext_update_path(struct ext4_ext_path *path, ext4_lblk_t shift,
+> +			 struct inode *inode, handle_t *handle,
+> +			 ext4_lblk_t *start_block)
+> +{
+> +	int depth, err = 0, flag = 0;
+> +	struct ext4_extent *ex_start, *ex_last;
+> +
+> +	depth = path->p_depth;
+> +	while (depth >= 0) {
+> +		if (depth == path->p_depth) {
+> +			ex_start = path[depth].p_ext;
+> +			if (!ex_start)
+> +				return -EIO;
+> +
+> +			err = ext4_trange_dirty_path(handle, inode,
+> +						     path + depth, 0);
+> +			if (err)
+> +				goto out;
+> +
+> +			if (path[depth].p_ext ==
+> +				EXT_FIRST_EXTENT(path[depth].p_hdr))
+> +				flag |= EXTENT_START_FLAG;
+> +
+> +			ex_last = EXT_LAST_EXTENT(path[depth].p_hdr);
+> +			while (ex_start <= ex_last) {
+> +				*start_block = ex_start->ee_block +
+> +					ext4_ext_get_actual_len(ex_start);
+> +				ex_start->ee_block -= shift;
+> +				ex_start++;
+> +			}
+> +			err = ext4_ext_dirty(handle, inode, path + depth);
+> +			if (err)
+> +				goto out;
+> +		} else {
+> +			/* If encountered starting extent, update index too */
+> +			if (path->p_depth - depth == 1) {
+> +				if (flag & EXTENT_START_FLAG) {
+> +					/* Update index too */
+> +					err = ext4_trange_dirty_path(handle,
+> +						    inode, path + depth, 0);
+> +					if (err)
+> +						goto out;
+> +					path[depth].p_idx->ei_block -= shift;
+> +					err = ext4_ext_dirty(handle, inode,
+> +							     path + depth);
+> +					if (err)
+> +						goto out;
+> +					flag &= ~EXTENT_START_FLAG;
+> +				} else
+> +					/* No need to update any extent index */
+> +					break;
+> +			}
+> +			/* Check, if earlier encountered starting index */
+> +			if (flag & INDEX_START_FLAG) {
+> +				err = ext4_trange_dirty_path(handle, inode,
+> +							path + (depth), 0);
+> +				if (err)
+> +					goto out;
+> +				path[depth].p_idx->ei_block -= shift;
+> +				err = ext4_ext_dirty(handle, inode,
+> +						     path + depth);
+> +				if (err)
+> +					goto out;
+> +				flag &= ~INDEX_START_FLAG;
+> +			}
+> +			/* Check if this is a starting index */
+> +			if (path[depth].p_idx ==
+> +			    EXT_FIRST_INDEX(path[depth].p_hdr)) {
+> +				/* starting of a block */
+> +				flag |= INDEX_START_FLAG;
+> +			} else
+> +				break;
+> +		}
+> +		depth--;
+> +	}
+> +out:
+> +	return err;
+> +}
+> +
+> +/*
+> + * ext4_ext_update_logical: update logical blocks ranging from start
+> + * to the end block for inode by moving them shift blocks to the left
+> + *
+> + * @inode: file inode
+> + * @handle: journal handle
+> + * @start_block : starting block for block updation
+> + * @shift: number of blocks to be shifted
+> + * @end_block: last block to be updated
+> + *
+> + * Returns: 0 on success or negative on failure
+> + */
+> +static int ext4_ext_update_logical(struct inode *inode, handle_t *handle,
+> +				   ext4_lblk_t start_block, ext4_lblk_t shift,
+> +				   ext4_lblk_t end_block)
+> +{
+> +	struct ext4_ext_path *path;
+> +	int err = 0;
+> +
+> +	while (start_block < end_block) {
+> +		path = ext4_ext_find_extent(inode, start_block, NULL);
+> +		if (IS_ERR(path)) {
+> +			err = PTR_ERR(path);
+> +			break;
+> +		}
+> +		err = ext4_ext_update_path(path, shift, inode,
+> +					   handle, &start_block);
+> +		ext4_ext_drop_refs(path);
+> +		kfree(path);
+> +		if (err)
+> +			break;
+> +	}
+> +	return err;
+> +}
+> +
+> +/*
+> + * ext4_ext_truncate_range: truncate the block range from start
+> + * block to end block including the end block from inode.
+> + *
+> + * @inode: file inode
+> + * @start: start block
+> + * @end: end block
+> + * last_block: last_block number of the inode
+> + *
+> + * Returns: 0 on success or negative on error
+> + */
+> +int ext4_ext_truncate_range(struct inode *inode, ext4_lblk_t start,
+> +			    ext4_lblk_t end, ext4_lblk_t last_block)
+> +{
+> +	int ret, credits;
+> +	ext4_lblk_t shift = end - start + 1;
+> +	handle_t *handle;
+> +	loff_t isize_reduced;
+> +	int blkbits = inode->i_blkbits;
+> +	struct address_space *mapping = inode->i_mapping;
+> +
+> +	/* sync dirty pages for transfer */
+> +	if (mapping->nrpages && mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+> +		ret = filemap_write_and_wait_range(mapping,
+> +				(loff_t)start << blkbits,
+> +				((loff_t)(last_block + 1) << blkbits) - 1);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +	truncate_inode_pages_range(inode->i_mapping,
+> +				   start << inode->i_blkbits, -1);
+> +	ext4_inode_block_unlocked_dio(inode);
+> +	inode_dio_wait(inode);
+> +	down_write(&EXT4_I(inode)->i_data_sem);
+> +	ext4_discard_preallocations(inode);
+> +	ret = ext4_es_remove_extent(inode, start, end - start + 1);
+> +	if (ret)
+> +		goto out;
+> +
+> +	credits = ext4_writepage_trans_blocks(inode);
+> +	handle = ext4_journal_start(inode, EXT4_HT_TRUNCATE, credits);
+> +	if (IS_ERR(handle)) {
+> +		ret = PTR_ERR(handle);
+> +		goto out;
+> +	}
+> +
+> +	ret = ext4_ext_remove_space(inode, start, end);
+> +	if (ret)
+> +		goto journal_stop;
+> +
+> +	ext4_discard_preallocations(inode);
+> +
+> +	if (end < last_block) {
+> +		ret = ext4_ext_update_logical(inode, handle, end + 1,
+> +					      shift, last_block + 1);
+> +		if (ret)
+> +			goto journal_stop;
+> +	}
+> +	isize_reduced = (loff_t)shift << blkbits;
+> +	i_size_write(inode, inode->i_size - isize_reduced);
+> +	EXT4_I(inode)->i_disksize -= isize_reduced;
+> +	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
+> +	ext4_mark_inode_dirty(handle, inode);
+> +journal_stop:
+> +	ext4_journal_stop(handle);
+> +out:
+> +	ext4_inode_resume_unlocked_dio(inode);
+> +	up_write(&EXT4_I(inode)->i_data_sem);
+> +	return ret;
+> +}
+> +
+> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+> index 9491ac0..0530daf 100644
+> --- a/fs/ext4/ioctl.c
+> +++ b/fs/ext4/ioctl.c
+> @@ -622,6 +622,68 @@ resizefs_out:
+>  
+>  		return 0;
+>  	}
+> +	case EXT4_IOC_TRUNCATE_BLOCK_RANGE:
+> +	{
+> +		struct truncate_range tr;
+> +		ext4_lblk_t last_block, end_block;
+> +		int error;
+> +		loff_t i_size = i_size_read(inode);
+> +
+> +		if (!i_size)
+> +			return 0;
+> +
+> +		if (!(filp->f_mode & FMODE_WRITE))
+> +			return -EBADF;
+> +
+> +		if (IS_IMMUTABLE(inode) || IS_APPEND(inode))
+> +			return -EPERM;
+> +
+> +		if (!S_ISREG(inode->i_mode))
+> +			return -EOPNOTSUPP;
+> +
+> +		if (IS_SWAPFILE(inode))
+> +			return -EOPNOTSUPP;
+> +
+> +		if (!ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
+> +			return -EOPNOTSUPP;
+> +
+> +		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+> +		    EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
+> +			ext4_msg(sb, KERN_ERR,
+> +			 "Truncate block range not supported with bigalloc");
+> +			return -EOPNOTSUPP;
+> +		}
+> +
+> +		if (copy_from_user(&tr, (const void *) arg,
+> +				sizeof(struct truncate_range)))
+> +			return -EFAULT;
+> +
+> +		if (!tr.length)
+> +			return -EINVAL;
+> +
+> +		end_block = tr.start_block + tr.length - 1;
+> +
+> +		last_block = ((round_up(i_size,
+> +					EXT4_BLOCK_SIZE(inode->i_sb)))
+> +			      >> inode->i_blkbits) - 1;
+> +		if (tr.start_block > end_block ||
+> +		    tr.start_block > last_block)
+> +			return -EINVAL;
+> +
+> +		if (end_block > last_block)
+> +			end_block = last_block;
+> +
+> +		error = mnt_want_write_file(filp);
+> +		if (error)
+> +			return error;
+> +
+> +		mutex_lock(&inode->i_mutex);
+> +		error = ext4_ext_truncate_range(inode, tr.start_block,
+> +						end_block, last_block);
+> +		mutex_unlock(&inode->i_mutex);
+> +		mnt_drop_write_file(filp);
+> +		return error;
+> +	}
+>  
+>  	default:
+>  		return -ENOTTY;
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
