@@ -1,58 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab3FWBFy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 21:05:54 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37896 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751775Ab3FWBFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 21:05:50 -0400
-Message-ID: <1371949550.3137.16.camel@joe-AO722>
-Subject: Re: [PATCHv v3] power: Include additional information in
- pm_print_times
-From: Joe Perches <joe@perches.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Shuah Khan <shuah.kh@samsung.com>, pavel@ucw.cz, len.brown@intel.com,
-        gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Date: Sat, 22 Jun 2013 18:05:50 -0700
-In-Reply-To: <2732229.sfB5fHUFTc@vostro.rjw.lan>
-References: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com>
-	 <2534796.mOHH0DCD2A@vostro.rjw.lan> <1371868042.2086.0.camel@joe-AO722>
-	 <2732229.sfB5fHUFTc@vostro.rjw.lan>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752022Ab3FWBQZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 21:16:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35990 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751775Ab3FWBQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 21:16:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,921,1363158000"; 
+   d="scan'208";a="354166115"
+Message-ID: <51C64C5D.5090400@intel.com>
+Date: Sun, 23 Jun 2013 09:16:13 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Tim Chen <tim.c.chen@linux.intel.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] rwsem: check the lock before cpmxchg in down_write_trylock
+ and rwsem_do_wake
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com> <1371858695.22432.4.camel@schen9-DESK> <51C55082.5040500@hurleysoftware.com>
+In-Reply-To: <51C55082.5040500@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-22 at 21:52 +0200, Rafael J. Wysocki wrote:
-> On Friday, June 21, 2013 07:27:22 PM Joe Perches wrote:
-> > On Sat, 2013-06-22 at 02:24 +0200, Rafael J. Wysocki wrote:
-> > > Namely, there are tools that use these messages to create suspend/resume time
-> > > charts and they will stop working after the proposed changes.
-> > 
-> > dmesg output isn't guaranteed to be stable.
+On 06/22/2013 03:21 PM, Peter Hurley wrote:
+> On 06/21/2013 07:51 PM, Tim Chen wrote:
+>> Doing cmpxchg will cause cache bouncing when checking
+>> sem->count. This could cause scalability issue
+>> in a large machine (e.g. a 80 cores box).
+>>
+>> A pre-read of sem->count can mitigate this.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+>> ---
+>>   include/asm-generic/rwsem.h |    8 ++++----
+>>   lib/rwsem.c                 |   21 +++++++++++++--------
+>>   2 files changed, 17 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+>> index bb1e2cd..052d973 100644
+>> --- a/include/asm-generic/rwsem.h
+>> +++ b/include/asm-generic/rwsem.h
+>> @@ -70,11 +70,11 @@ static inline void __down_write(struct
+>> rw_semaphore *sem)
+>>
+>>   static inline int __down_write_trylock(struct rw_semaphore *sem)
+>>   {
+>> -    long tmp;
+>> +    if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
+>                      ^^^^^^^^^^^
 > 
-> So?
+> This is probably not what you want.
+> 
 
-So even if new information was only appended to
-the existing line, the script could break.
+this function logical is quite simple. check the sem->count before
+cmpxchg is no harm this logical.
 
-If any script needs something stable it should
-depend on information available through other
-sources like trace or proc or sysfs.
+So could you like to tell us what should we want?
 
-Tools that use dmesg should adapt to whatever gets
-thrown at it and handle the output from whatever
-kernel versions the script supports.
+> 
+>> +        return 0;
+>>
+>> -    tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+>> -              RWSEM_ACTIVE_WRITE_BIAS);
+>> -    return tmp == RWSEM_UNLOCKED_VALUE;
+>> +    return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+>> +        RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+>>   }
+>>
+>>   /*
+>> diff --git a/lib/rwsem.c b/lib/rwsem.c
+>> index 19c5fa9..2072af5 100644
+>> --- a/lib/rwsem.c
+>> +++ b/lib/rwsem.c
+>> @@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum
+>> rwsem_wake_type wake_type)
+>>                * will block as they will notice the queued writer.
+>>                */
+>>               wake_up_process(waiter->task);
+>> -        goto out;
+>> +        return sem;
+> 
+> Please put these flow control changes in a separate patch.
 
-For instance, what happens to the script when
-console_level is set to 1?
+I had sent the split patches to Tim&Davidlohr. They will send them out
+as a single patchset.
+> 
+> 
+>>       }
+>>
+>>       /* Writers might steal the lock before we grant it to the next
+>> reader.
+>> @@ -85,15 +85,21 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum
+>> rwsem_wake_type wake_type)
+>>       adjustment = 0;
+>>       if (wake_type != RWSEM_WAKE_READ_OWNED) {
+>>           adjustment = RWSEM_ACTIVE_READ_BIAS;
+>> - try_reader_grant:
+>> -        oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+>> -        if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
+>> -            /* A writer stole the lock. Undo our reader grant. */
+>> +        while (1) {
+>> +            /* A writer stole the lock. */
+>> +            if (sem->count < RWSEM_WAITING_BIAS)
+>> +                return sem;
+> 
+> I'm all for structured looping instead of goto labels but this optimization
+> is only useful on the 1st iteration. IOW, on the second iteration you
+> already
+> know that you need to try for reclaiming the lock.
+> 
 
-Requiring that no one can change a dmesg to
-add or improve the content for readability
-or intelligibility I think unreasonable.
+sorry. could you like to say more clear, what's the 1st or 2nd iteration
+or others?
+> 
+>> +
+>> +            oldcount = rwsem_atomic_update(adjustment, sem)
+>> +                                - adjustment;
+>> +            if (likely(oldcount >= RWSEM_WAITING_BIAS))
+>> +                break;
+>> +
+>> +             /* A writer stole the lock.  Undo our reader grant. */
+>>               if (rwsem_atomic_update(-adjustment, sem) &
+>>                           RWSEM_ACTIVE_MASK)
+>> -                goto out;
+>> +                return sem;
+>>               /* Last active locker left. Retry waking readers. */
+>> -            goto try_reader_grant;
+>>           }
+>>       }
+>>
+>> @@ -136,7 +142,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum
+>> rwsem_wake_type wake_type)
+>>       sem->wait_list.next = next;
+>>       next->prev = &sem->wait_list;
+>>
+>> - out:
+>>       return sem;
+>>   }
+> 
+> 
+> Alex and Tim,
+> 
+> Was there a v1 of this series; ie., is this v2 (or higher)?
+> 
+> How are you validating lock correctness/behavior with this series?
+
+some benchmark tested against this patch, mainly aim7. plus by eyes, we
+didn't change the logical except check the lock value before  do locking
+> 
+> Regards,
+> Peter Hurley
+> 
 
 
+-- 
+Thanks
+    Alex
