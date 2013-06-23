@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab3FWIak (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 04:30:40 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:34553 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab3FWIaf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 04:30:35 -0400
-MIME-Version: 1.0
-Date: Sun, 23 Jun 2013 13:53:10 +0530
-Message-ID: <CA+G9fYv_9EQUmpRNPUwioSwJVXnXJC5odEKiMd=vKHNWYRT8xw@mail.gmail.com>
-Subject: linux-next: panda build failed at arch/arm/mach-omap2/omap4-restart.c
-From: Naresh Kamboju <naresh.kamboju@linaro.org>
-To: Robin Holt <holt@sgi.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Andrey Konovalov <andrey.konovalov@linaro.org>,
-        Russ Anderson <rja@sgi.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org,
-        Milosz Wasilewski <milosz.wasilewski@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1751377Ab3FWIgQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 04:36:16 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51311 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751022Ab3FWIgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 04:36:14 -0400
+Message-ID: <1371976573.3137.20.camel@joe-AO722>
+Subject: Re: [PATCH] x86, tboot: provide debugfs interfaces to access TXT log
+From: Joe Perches <joe@perches.com>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>
+Date: Sun, 23 Jun 2013 01:36:13 -0700
+In-Reply-To: <1371974050-21436-1-git-send-email-qiaowei.ren@intel.com>
+References: <1371974050-21436-1-git-send-email-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 2013-06-23 at 15:54 +0800, Qiaowei Ren wrote:
+> These logs come from tboot (Trusted Boot, an open source,
+> pre-kernel/VMM module that uses Intel TXT to perform a
+> measured and verified launch of an OS kernel/VMM.).
+[]
+> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+[]
+> +static struct tboot_log *get_log(void)
+> +{
+> +	struct tboot_log *log;
+> +
+> +	log = (struct tboot_log *)ioremap_nocache(TBOOT_SERIAL_LOG_ADDR,
+> +						  TBOOT_SERIAL_LOG_SIZE);
 
-panda build broken on linux-next branch
+You might want to fix the sparse errors.
+  CHECK   arch/x86/kernel/tboot.c
+arch/x86/kernel/tboot.c:362:16: warning: cast removes address space of expression
+arch/x86/kernel/tboot.c:368:25: warning: incorrect type in argument 1 (different address spaces)
+arch/x86/kernel/tboot.c:368:25:    expected void volatile [noderef] <asn:2>*addr
+arch/x86/kernel/tboot.c:368:25:    got struct tboot_log *[assigned] log
+arch/x86/kernel/tboot.c:395:17: warning: incorrect type in argument 1 (different address spaces)
+arch/x86/kernel/tboot.c:395:17:    expected void volatile [noderef] <asn:2>*addr
+arch/x86/kernel/tboot.c:395:17:    got struct tboot_log *[assigned] log
+arch/x86/kernel/tboot.c:479:16: warning: incorrect type in assignment (different address spaces)
+arch/x86/kernel/tboot.c:479:16:    expected void *config
+arch/x86/kernel/tboot.c:479:16:    got void [noderef] <asn:2>*
+arch/x86/kernel/tboot.c:485:19: warning: incorrect type in assignment (different address spaces)
+arch/x86/kernel/tboot.c:485:19:    expected void *heap_base
+arch/x86/kernel/tboot.c:485:19:    got void [noderef] <asn:2>*
+arch/x86/kernel/tboot.c:487:17: warning: incorrect type in argument 1 (different address spaces)
+arch/x86/kernel/tboot.c:487:17:    expected void volatile [noderef] <asn:2>*addr
+arch/x86/kernel/tboot.c:487:17:    got void *config
 
-kernel_config=omap2plus_defconfig
-KERNEL_VERSION=3.10.0-rc6
-KERNEL_GIT=git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-KERNEL_COMMIT=e1a86578747376f08985627c84df088a5d0d1e92
 
-Build error log :
--------------------
-04:43:18   CC      arch/arm/mach-omap2/omap4-restart.o
-04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:28:
-warning: ‘enum reboot_mode’ declared inside parameter list [enabled by
-default]
-04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
-04:43:18                             ^
-04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:28:
-warning: its scope is only this definition or declaration, which is
-probably not what you want [enabled by default]
-04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:40:
-error: parameter 1 (‘mode’) has incomplete type
-04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
-04:43:18                                         ^
-04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:6:
-warning: function declaration isn’t a prototype [-Wstrict-prototypes]
-04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
-04:43:18       ^
-04:43:18 make[2]: *** [arch/arm/mach-omap2/omap4-restart.o] Error 1
-04:43:18 make[1]: *** [arch/arm/mach-omap2] Error 2
-
-Full build log:
-------------------
-https://ci.linaro.org/jenkins/job/linux-next/hwpack=panda,label=kernel_cloud/lastBuild/console
-
-Suspecting patch which caused build failed:
---------------------------------------------------------
-commit b61cdf2aebc5cd2f4efc4e0cbebeb8a91884a43e
-Author: Robin Holt <holt@sgi.com>
-Date:   Wed Jun 19 10:08:43 2013 +1000
-
-reboot: arm: change reboot_mode to use enum reboot_mode
-
-Preparing to move the parsing of reboot= to generic kernel code forces the
-change in reboot_mode handling to use the enum.
-
-Signed-off-by: Robin Holt <holt@sgi.com>
-
-...
-diff --git a/arch/arm/mach-omap2/omap4-restart.c
-b/arch/arm/mach-omap2/omap4-restart.c
-index f90e02e..652adde 100644
---- a/arch/arm/mach-omap2/omap4-restart.c
-+++ b/arch/arm/mach-omap2/omap4-restart.c
-@@ -18,7 +18,7 @@
-  * Resets the SoC.  For @cmd, see the 'reboot' syscall in
-  * kernel/sys.c.  No return value.
-  */
--void omap44xx_restart(char mode, const char *cmd)
-+void omap44xx_restart(enum reboot_mode mode, const char *cmd)
- {
-        /* XXX Should save 'cmd' into scratchpad for use after reboot */
-        omap4_prminst_global_warm_sw_reset(); /* never returns */
-...
-
-Best regards
-Naresh Kamboju
