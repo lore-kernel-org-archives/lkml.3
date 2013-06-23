@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238Ab3FWU6T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 16:58:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42930 "EHLO mail.zytor.com"
+	id S1751516Ab3FWVQV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 17:16:21 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48319 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab3FWU6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 16:58:18 -0400
-Message-ID: <51C7615B.5010508@zytor.com>
-Date: Sun, 23 Jun 2013 13:58:03 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751232Ab3FWVQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 17:16:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+Cc: linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] ACPI / dock / PCI: Fix problems with dock and PCI hotplug
+Date: Sun, 23 Jun 2013 23:25:42 +0200
+Message-ID: <1874788.JpoVk3cZ3x@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAN_LGv3LZbp-7JE=Lxo+53GxWTQ_D6nJ=w+OnuQ3JkmWfXOhxg@mail.gmail.com>
+References: <2737587.I0nULev1kj@vostro.rjw.lan> <CAN_LGv3LZbp-7JE=Lxo+53GxWTQ_D6nJ=w+OnuQ3JkmWfXOhxg@mail.gmail.com>
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Brice Goglin <brice.goglin@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: MTRR use in drivers
-References: <51C3DDFA.7050204@zytor.com> <51C69732.1010906@gmail.com> <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com> <20130623192936.GA28655@khazad-dum.debian.net> <51C75465.9060007@zytor.com> <CAPM=9tzkJTf4d=HfBUs3VwmNG1+Zo5J-JURYd4mYcJ82yXZOKg@mail.gmail.com> <51C75CD6.5010206@zytor.com> <CAPM=9tyf18k+WYE7HwuJi2hefFYPyAYp6vVRvfgfprSYjapE-g@mail.gmail.com>
-In-Reply-To: <CAPM=9tyf18k+WYE7HwuJi2hefFYPyAYp6vVRvfgfprSYjapE-g@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2013 01:54 PM, Dave Airlie wrote:
->>> breaking old boxes just because, is just going to get reverted when I
->>> get the first regression report that you broke old boxes.
->>>
->>
->> Not "just because", but *if* the choice is between breaking old boxes
->> and breaking new boxes I'll take the latter.
->>
+On Sunday, June 23, 2013 11:50:15 PM Alexander E. Patrakov wrote:
+> 2013/6/23 Rafael J. Wysocki <rjw@sisk.pl>:
+> > Alexander, I've modified patch [3/3] a bit since you have tested it.
+> > The modifications shouldn't affect the behavior, but if you could re-test it,
+> > that would be great.
 > 
-> But Linus won't so your choice doesn't matter.
+> Retested, everything works just as with the previous version of your patch.
 
-I hate to break it to you, but we regress on ancient hardware all the
-time.  Optimization work gets done on modern machines, so the sweet spot
-keeps moving.  In particular, if supporting ancient hardware means
-leaving a lot of performance on modern hardware on the table, we may
-have to take that penalty.
+Thanks for the confirmation!
 
-Fortunately, most of the time we don't have to.
-
-	-hpa
-
-
+Rafael
 
