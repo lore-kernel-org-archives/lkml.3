@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751308Ab3FWT3n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 15:29:43 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54798 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750849Ab3FWT3k (ORCPT
+	id S1751915Ab3FWTiv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 15:38:51 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:54055 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab3FWTis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 15:29:40 -0400
-X-Sasl-enc: AnvHA0QBxybdyCtfWQ9qRthateVmu5+P6VCADQooVrA2 1372015779
-Date: Sun, 23 Jun 2013 16:29:36 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Brice Goglin <brice.goglin@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: Re: MTRR use in drivers
-Message-ID: <20130623192936.GA28655@khazad-dum.debian.net>
-References: <51C3DDFA.7050204@zytor.com>
- <51C69732.1010906@gmail.com>
- <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com>
+	Sun, 23 Jun 2013 15:38:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372015744.3137.74.camel@joe-AO722>
+References: <20130621153331.2881.35589.stgit@bling.home>
+	<20130623114930.GA2557@8bytes.org>
+	<1372009427.3137.54.camel@joe-AO722>
+	<CAMuHMdWb4WK9ZuJ-vwdywgDSSbZTnnS1emF02VzrUgrSt5VKsg@mail.gmail.com>
+	<1372015744.3137.74.camel@joe-AO722>
+Date: Sun, 23 Jun 2013 21:38:48 +0200
+X-Google-Sender-Auth: HB_uDfs3EqdEPWXHQL-xKHMZUgE
+Message-ID: <CAMuHMdWHGmVpaqzMr9WZ++S9KcU=XL1c2Jdb7vDFxPD7=jbidg@mail.gmail.com>
+Subject: Re: [PATCH V2] iommu: Use %pa and %zx instead of casting
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joe Perches <joe@perches.com>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        iommu@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Jun 2013, H. Peter Anvin wrote:
-> Why do you care about performance when PAT is disabled?
+On Sun, Jun 23, 2013 at 9:29 PM, Joe Perches <joe@perches.com> wrote:
+>> While we're at it, paddr is phys_addr_t (which can be 32-bit or 64-bit),
+>> so it should be cast to unsigned long long (instead of unsigned long),
+>> and printed using %llx (instead of %lx).
+>
+> Sounds good to me, except using %pa instead is better still.
 
-It will regress already slow boxes.  We blacklist a LOT of P4s, PMs, etc and
-nobody ever took the pain to track down which ones of those actually have
-PAT+MTRR aliasing bugs.
+Thanks, you're right. Still not used to this newish %pa...
 
-These boxes have boards like the Radeon X300, which needs either PAT or MTRR
-to not become unusable...
+Gr{oetje,eeting}s,
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
