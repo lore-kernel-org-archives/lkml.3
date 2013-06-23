@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750955Ab3FWSRq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 14:17:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48057 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab3FWSRm (ORCPT
+	id S1751069Ab3FWS35 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 14:29:57 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:61163 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab3FWS3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 14:17:42 -0400
-Date: Sun, 23 Jun 2013 11:17:40 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 25/45] staging/octeon: Use get/put_online_cpus_atomic()
- to prevent CPU offline
-Message-ID: <20130623181740.GB24256@kroah.com>
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
- <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com>
+	Sun, 23 Jun 2013 14:29:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130623100920.GA19021@gmail.com>
+References: <20130620201713.GV8211@linux.intel.com>
+	<20130623100920.GA19021@gmail.com>
+Date: Sun, 23 Jun 2013 08:29:53 -1000
+X-Google-Sender-Auth: JJB7kJIU09SmKQdTozXJFLKwO9E
+Message-ID: <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Matthew Wilcox <willy@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nvme@lists.infradead.org,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23, 2013 at 07:13:33PM +0530, Srivatsa S. Bhat wrote:
-> Once stop_machine() is gone from the CPU offline path, we won't be able
-> to depend on disabling preemption to prevent CPUs from going offline
-> from under us.
-> 
-> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
-> offline, while invoking from atomic context.
-> 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: devel@driverdev.osuosl.org
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  drivers/staging/octeon/ethernet-rx.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-> index 34afc16..8588b4d 100644
-> --- a/drivers/staging/octeon/ethernet-rx.c
-> +++ b/drivers/staging/octeon/ethernet-rx.c
-> @@ -36,6 +36,7 @@
->  #include <linux/prefetch.h>
->  #include <linux/ratelimit.h>
->  #include <linux/smp.h>
-> +#include <linux/cpu.h>
->  #include <linux/interrupt.h>
->  #include <net/dst.h>
->  #ifdef CONFIG_XFRM
-> @@ -97,6 +98,7 @@ static void cvm_oct_enable_one_cpu(void)
->  		return;
->  
->  	/* ... if a CPU is available, Turn on NAPI polling for that CPU.  */
-> +	get_online_cpus_atomic();
->  	for_each_online_cpu(cpu) {
->  		if (!cpu_test_and_set(cpu, core_state.cpu_state)) {
->  			v = smp_call_function_single(cpu, cvm_oct_enable_napi,
-> @@ -106,6 +108,7 @@ static void cvm_oct_enable_one_cpu(void)
->  			break;
->  		}
->  	}
-> +	put_online_cpus_atomic();
+On Sun, Jun 23, 2013 at 12:09 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> The spinning approach you add has the disadvantage of actively wasting CPU
+> time, which could be used to run other tasks. In general it's much better
+> to make sure the completion IRQs are rate-limited and just schedule. This
+> (combined with a metric ton of fine details) is what the networking code
+> does in essence, and they have no trouble reaching very high throughput.
 
-Does this driver really need to be doing this in the first place?  If
-so, why?  The majority of network drivers don't, why is this one
-"special"?
+It's not about throughput - it's about latency. Don't ever confuse the
+two, they have almost nothing in common. Networking very very seldom
+has the kind of "submit and wait for immediate result" issues that
+disk reads do.
 
-thanks,
+That said, I dislike the patch intensely. I do not think it's at all a
+good idea to look at "need_resched" to say "I can spin now". You're
+still wasting CPU cycles.
 
-greg k-h
+So Willy, please do *not* mix this up with the scheduler, or at least
+not "need_resched". Instead, maybe we should introduce a notion of "if
+we are switching to the idle thread, let's see if we can try to do
+some IO synchronously".
+
+You could try to do that either *in* the idle thread (which would take
+the context switch overhead - maybe negating some of the advantages),
+or alternatively hook into the scheduler idle logic before actually
+doing the switch.
+
+But anything that starts polling when there are other runnable
+processes to be done sounds really debatable. Even if it's "only" 5us
+or so. There's a lot of real work that could be done in 5us.
+
+                       Linus
