@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab3FWTAN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 15:00:13 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34720 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab3FWTAG (ORCPT
+	id S1751795Ab3FWTAK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 15:00:10 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55263 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab3FWTAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 15:00:06 -0400
-Date: Sun, 23 Jun 2013 21:00:03 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcus Overhagen <marcus.overhagen@gmail.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        tj@kernel.org, mlord@pobox.com
-Subject: Re: SATA hdd refuses to reallocate a sector?
-Message-ID: <20130623190003.GA6714@amd.pavel.ucw.cz>
-References: <20130623101940.GA4448@amd.pavel.ucw.cz>
- <20130623112133.GA4837@amd.pavel.ucw.cz>
- <CAJBHPoj5hgp97=JH8UKX+Ty8TF9_ySQUYU6AnqcRjuLy5A-PcQ@mail.gmail.com>
+	Sun, 23 Jun 2013 15:00:04 -0400
+Message-ID: <51C744E6.1040905@linux.vnet.ibm.com>
+Date: Mon, 24 Jun 2013 00:26:38 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJBHPoj5hgp97=JH8UKX+Ty8TF9_ySQUYU6AnqcRjuLy5A-PcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Matt Turner <mattst88@gmail.com>
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        linux-alpha@vger.kernel.org
+Subject: Re: [PATCH 31/45] alpha/smp: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com> <20130623134516.19094.57189.stgit@srivatsabhat.in.ibm.com> <CAEdQ38HLzNoRABCUR7tEoBLJWn86xSd2VfSHxs0MPj5r5GvTXQ@mail.gmail.com>
+In-Reply-To: <CAEdQ38HLzNoRABCUR7tEoBLJWn86xSd2VfSHxs0MPj5r5GvTXQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062318-1618-0000-0000-0000042229C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > ...Ok, lets try with dd.
-> >
-> > root@amd:~# dd if=/dev/sda4 of=/dev/zero bs=1 skip=8958947328
-> > dd: reading `/dev/sda4': Input/output error
-> > 0+0 records in
-> > 0+0 records out
-> > 0 bytes (0 B) copied, 5.05805 s, 0.0 kB/s
+On 06/23/2013 11:20 PM, Matt Turner wrote:
+> On Sun, Jun 23, 2013 at 6:45 AM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> Once stop_machine() is gone from the CPU offline path, we won't be able
+>> to depend on disabling preemption to prevent CPUs from going offline
+>> from under us.
+>>
+>> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
+>> offline, while invoking from atomic context.
+>>
+>> Also, remove the non-ASCII character present in this file!
 > 
-> I once noticed a similar problem. The trouble is that the kernel
-> always seems to be doing a larger read access that failes for this
-> sector, and the write is never executed.
+> It's not non-ASCII. It's a page break.
+> 
 
-And returns success writing? That's pretty antisocial :-(.
+Oh, ok..
 
-> You can try: hdparam --write-sector 961237188 /dev/sda
+Regards,
+Srivatsa S. Bhat
 
-Thanks for the hint. (Insert rant about hdparm documentation
-explaining that it is bad idea, but not telling me _why_ is it bad
-idea. Can I expect cache consistency issues after that, or is it just
-simple "you are writing to the disk without any checks"? Plus, I guess
-documentation should mention what sector number is. I guess sectors
-are 512bytes for the old drives, but is it 512 or 4096 for new
-drives?)
-
-...but it does not do the trick :-(. It behaves strangely as if it was
-still cached somewhere. Do I need to turn off the write back cache?
-
-root@amd:~# hdparm --yes-i-know-what-i-am-doing  --read-sector
-  read-sector: bad/missing sector value
-root@amd:~# hdparm --yes-i-know-what-i-am-doing  --read-sector
-  961237188 /dev/sda
-
-/dev/sda:
-reading sector 961237188: FAILED: Input/output error
-root@amd:~# hdparm --yes-i-know-what-i-am-doing  --write-sector
-961237188 /dev/sda
-
-/dev/sda:
-re-writing sector 961237188: succeeded
-root@amd:~# hdparm --yes-i-know-what-i-am-doing  --read-sector
-961237188 /dev/sda | uniq
-
-/dev/sda:
-reading sector 961237188: succeeded
-0000 0000 0000 0000 0000 0000 0000 0000
-root@amd:~# sleep 10
-root@amd:~# hdparm --yes-i-know-what-i-am-doing  --read-sector
-961237188 /dev/sda | uniq
-
-/dev/sda:
-reading sector 961237188: succeeded
-0000 0000 0000 0000 0000 0000 0000 0000
-root@amd:~# sync
-root@amd:~# hdparm --yes-i-know-what-i-am-doing  --read-sector
-961237188 /dev/sda | uniq
-
-/dev/sda:
-reading sector 961237188: succeeded
-0000 0000 0000 0000 0000 0000 0000 0000
-root@amd:~# dd if=/dev/sda4 of=/dev/zero bs=4096
-skip=$[8958947328/4096]
-dd: reading `/dev/sda4': Input/output error
-102+0 records in
-102+0 records out
-417792 bytes (418 kB) copied, 5.36697 s, 77.8 kB/s
-root@amd:~# hdparm --yes-i-know-what-i-am-doing  --read-sector
-961237188 /dev/sda | uniq
-
-/dev/sda:
-FAILED: Input/output error
-reading sector 961237188: 
-root@amd:~# 
-
-Thanks,
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
