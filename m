@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3FWWLJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 18:11:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55547 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751606Ab3FWWK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 18:10:58 -0400
-Date: Mon, 24 Jun 2013 00:10:55 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
-        nico-linuxsetlocalversion@schottelius.org
-Subject: Re: [PATCH] scripts/setlocalversion on write-protected source tree
-Message-ID: <20130623221055.GA16118@pobox.suse.cz>
-References: <alpine.DEB.2.10.1306141756510.13746@trent.utfs.org>
+	id S1752064Ab3FWWOl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 18:14:41 -0400
+Received: from mail-gh0-f180.google.com ([209.85.160.180]:38502 "EHLO
+	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab3FWWOj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 18:14:39 -0400
+Message-ID: <51C77344.2040907@gmail.com>
+Date: Sun, 23 Jun 2013 15:14:28 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1306141756510.13746@trent.utfs.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Matthew Wilcox <willy@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
+        linux-scsi@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
+References: <20130620201713.GV8211@linux.intel.com> <20130623100920.GA19021@gmail.com>
+In-Reply-To: <20130623100920.GA19021@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 06:04:34PM -0700, Christian Kujau wrote:
-> I just stumbled across another[0] issue when scripts/setlocalversion 
-> operates on a write-protected source tree. Back then[0] the source tree 
-> was on an read-only NFS share, so "test -w" was introduced before "git 
-> update-index" was run.
-> 
-> This time, the source tree is on read/write NFS share, but the permissions 
-> are world-readable and only a specific user (or root) can write. 
-> Thus, "test -w ." returns "0" and then runs "git update-index", 
-> producing the following message (on a dirty tree):
-> 
->   fatal: Unable to create '/usr/local/src/linux-git/.git/index.lock': Permission denied
-> 
-> While it says "fatal", compilation continues just fine.
-> 
-> However, I don't think a kernel compilation should alter the source 
-> tree (or the .git directory) in any way and I don't see how removing 
-> "git update-index" could do any harm. The Mercurial and SVN routines in 
-> scripts/setlocalversion don't have any tree-modifying commands, AFAICS. 
-> So, maybe the patch below would be acceptable.
+On 6/23/13 3:09 AM, Ingo Molnar wrote:
+> If an IO driver is implemented properly then it will batch up requests for
+> the controller, and gets IRQ-notified on a (sub-)batch of buffers
+> completed.
+>
+> If there's any spinning done then it should be NAPI-alike polling: a
+> single "is stuff completed" polling pass per new block of work submitted,
+> to opportunistically interleave completion with submission work.
+>
+> I don't see where active spinning brings would improve performance
+> compared to a NAPI-alike technique. Your numbers obviously show a speedup
+> we'd like to have, I'm just wondering whether the same speedup (or even
+> more) could be implemented via:
+>
+>   - smart batching that rate-limits completion IRQs in essence
+>   + NAPI-alike polling
+>
+> ... which would almost never result in IRQ driven completion when we are
+> close to CPU-bound and while not yet saturating the IO controller's
+> capacity.
+>
+> The spinning approach you add has the disadvantage of actively wasting CPU
+> time, which could be used to run other tasks. In general it's much better
+> to make sure the completion IRQs are rate-limited and just schedule. This
+> (combined with a metric ton of fine details) is what the networking code
+> does in essence, and they have no trouble reaching very high throughput.
 
-Applied to kbuild.git#kbuild.
+Networking code has a similar proposal for low latency sockets using 
+polling: https://lwn.net/Articles/540281/
 
-Thanks,
-Michal
+David
