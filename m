@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3FWNoF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 09:44:05 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:47914 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab3FWNn7 (ORCPT
+	id S1752251Ab3FWNoP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 09:44:15 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55337 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201Ab3FWNoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 09:43:59 -0400
+	Sun, 23 Jun 2013 09:44:08 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 11/45] migration: Use raw_spin_lock/unlock since interrupts
- are already disabled
+Subject: [PATCH 12/45] sched/fair: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Date: Sun, 23 Jun 2013 19:10:37 +0530
-Message-ID: <20130623134033.19094.12817.stgit@srivatsabhat.in.ibm.com>
+Date: Sun, 23 Jun 2013 19:10:47 +0530
+Message-ID: <20130623134043.19094.8381.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
 References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,42 +31,114 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062313-8256-0000-0000-0000080B6422
+x-cbid: 13062313-4790-0000-0000-000008EEE155
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need not use the raw_spin_lock_irqsave/restore primitives because
-all CPU_DYING notifiers run with interrupts disabled. So just use
-raw_spin_lock/unlock.
+Once stop_machine() is gone from the CPU offline path, we won't be able
+to depend on disabling preemption to prevent CPUs from going offline
+from under us.
+
+Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
+offline, while invoking from atomic context.
 
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/sched/core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index accd550..ff26f54 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4682,14 +4682,14 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	case CPU_DYING:
- 		sched_ttwu_pending();
- 		/* Update our root-domain */
--		raw_spin_lock_irqsave(&rq->lock, flags);
-+		raw_spin_lock(&rq->lock); /* IRQs already disabled */
- 		if (rq->rd) {
- 			BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
- 			set_rq_offline(rq);
- 		}
- 		migrate_tasks(cpu);
- 		BUG_ON(rq->nr_running != 1); /* the migration thread */
--		raw_spin_unlock_irqrestore(&rq->lock, flags);
-+		raw_spin_unlock(&rq->lock);
- 		break;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c0ac2c3..88f056e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3338,7 +3338,8 @@ done:
+  *
+  * Returns the target CPU number, or the same CPU if no balancing is needed.
+  *
+- * preempt must be disabled.
++ * Must be called within get/put_online_cpus_atomic(), to prevent CPUs
++ * from going offline from under us.
+  */
+ static int
+ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+@@ -5267,6 +5268,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	raw_spin_unlock(&this_rq->lock);
  
- 	case CPU_DEAD:
+ 	update_blocked_averages(this_cpu);
++
++	get_online_cpus_atomic();
+ 	rcu_read_lock();
+ 	for_each_domain(this_cpu, sd) {
+ 		unsigned long interval;
+@@ -5290,6 +5293,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 		}
+ 	}
+ 	rcu_read_unlock();
++	put_online_cpus_atomic();
+ 
+ 	raw_spin_lock(&this_rq->lock);
+ 
+@@ -5316,6 +5320,7 @@ static int active_load_balance_cpu_stop(void *data)
+ 	struct rq *target_rq = cpu_rq(target_cpu);
+ 	struct sched_domain *sd;
+ 
++	get_online_cpus_atomic();
+ 	raw_spin_lock_irq(&busiest_rq->lock);
+ 
+ 	/* make sure the requested cpu hasn't gone down in the meantime */
+@@ -5367,6 +5372,7 @@ static int active_load_balance_cpu_stop(void *data)
+ out_unlock:
+ 	busiest_rq->active_balance = 0;
+ 	raw_spin_unlock_irq(&busiest_rq->lock);
++	put_online_cpus_atomic();
+ 	return 0;
+ }
+ 
+@@ -5527,6 +5533,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 
+ 	update_blocked_averages(cpu);
+ 
++	get_online_cpus_atomic();
+ 	rcu_read_lock();
+ 	for_each_domain(cpu, sd) {
+ 		if (!(sd->flags & SD_LOAD_BALANCE))
+@@ -5575,6 +5582,7 @@ out:
+ 			break;
+ 	}
+ 	rcu_read_unlock();
++	put_online_cpus_atomic();
+ 
+ 	/*
+ 	 * next_balance will be updated only when there is a need.
+@@ -5706,6 +5714,7 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 	enum cpu_idle_type idle = this_rq->idle_balance ?
+ 						CPU_IDLE : CPU_NOT_IDLE;
+ 
++	get_online_cpus_atomic();
+ 	rebalance_domains(this_cpu, idle);
+ 
+ 	/*
+@@ -5714,6 +5723,7 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 	 * stopped.
+ 	 */
+ 	nohz_idle_balance(this_cpu, idle);
++	put_online_cpus_atomic();
+ }
+ 
+ static inline int on_null_domain(int cpu)
+@@ -5731,8 +5741,10 @@ void trigger_load_balance(struct rq *rq, int cpu)
+ 	    likely(!on_null_domain(cpu)))
+ 		raise_softirq(SCHED_SOFTIRQ);
+ #ifdef CONFIG_NO_HZ_COMMON
++	get_online_cpus_atomic();
+ 	if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
+ 		nohz_balancer_kick(cpu);
++	put_online_cpus_atomic();
+ #endif
+ }
+ 
 
