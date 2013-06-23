@@ -1,173 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3FWBQZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 21:16:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35990 "EHLO mga09.intel.com"
+	id S1751966Ab3FWBp6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 21:45:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35852 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751775Ab3FWBQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 21:16:23 -0400
+	id S1751714Ab3FWBp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 21:45:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,921,1363158000"; 
-   d="scan'208";a="354166115"
-Message-ID: <51C64C5D.5090400@intel.com>
-Date: Sun, 23 Jun 2013 09:16:13 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+   d="scan'208";a="354176499"
+Date: Sun, 23 Jun 2013 09:45:53 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Raphael S Carvalho <raphael.scarv@gmail.com>
+Cc: kbuild@01.org, Julia Lawall <julia.lawall@lip6.fr>,
+        Liam Girdwood <lrg@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [kbuild] sound/soc/soc-fw.c:945:9-16: ERROR: se is NULL but
+ dereferenced.
+Message-ID: <20130623014553.GA10419@localhost>
+References: <51c5b942.ZhZXIoNf8EKpybq5%fengguang.wu@intel.com>
+ <CACz=WefaSAsB6NYY37WA1x-=VHxQ8Jfbud8xzH3nq1QHzynoaQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Tim Chen <tim.c.chen@linux.intel.com>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] rwsem: check the lock before cpmxchg in down_write_trylock
- and rwsem_do_wake
-References: <cover.1371855277.git.tim.c.chen@linux.intel.com> <1371858695.22432.4.camel@schen9-DESK> <51C55082.5040500@hurleysoftware.com>
-In-Reply-To: <51C55082.5040500@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACz=WefaSAsB6NYY37WA1x-=VHxQ8Jfbud8xzH3nq1QHzynoaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2013 03:21 PM, Peter Hurley wrote:
-> On 06/21/2013 07:51 PM, Tim Chen wrote:
->> Doing cmpxchg will cause cache bouncing when checking
->> sem->count. This could cause scalability issue
->> in a large machine (e.g. a 80 cores box).
->>
->> A pre-read of sem->count can mitigate this.
->>
->> Signed-off-by: Alex Shi <alex.shi@intel.com>
->> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
->> ---
->>   include/asm-generic/rwsem.h |    8 ++++----
->>   lib/rwsem.c                 |   21 +++++++++++++--------
->>   2 files changed, 17 insertions(+), 12 deletions(-)
->>
->> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
->> index bb1e2cd..052d973 100644
->> --- a/include/asm-generic/rwsem.h
->> +++ b/include/asm-generic/rwsem.h
->> @@ -70,11 +70,11 @@ static inline void __down_write(struct
->> rw_semaphore *sem)
->>
->>   static inline int __down_write_trylock(struct rw_semaphore *sem)
->>   {
->> -    long tmp;
->> +    if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
->                      ^^^^^^^^^^^
-> 
-> This is probably not what you want.
-> 
+On Sat, Jun 22, 2013 at 12:35:44PM -0300, Raphael S Carvalho wrote:
+> I'm in a Linux event now, and I can't clone the tree (probably the port for
+> that purpose isn't allowed)
+> Then I sending a simplified patch that shows which lines must be changed.
+ 
+Patch looks good to me. Thanks!
 
-this function logical is quite simple. check the sem->count before
-cmpxchg is no harm this logical.
+Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
 
-So could you like to tell us what should we want?
-
+> Signed-off: Raphael S. Carvalho <raphael.scarv@gmail.com>
 > 
->> +        return 0;
->>
->> -    tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
->> -              RWSEM_ACTIVE_WRITE_BIAS);
->> -    return tmp == RWSEM_UNLOCKED_VALUE;
->> +    return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
->> +        RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
->>   }
->>
->>   /*
->> diff --git a/lib/rwsem.c b/lib/rwsem.c
->> index 19c5fa9..2072af5 100644
->> --- a/lib/rwsem.c
->> +++ b/lib/rwsem.c
->> @@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum
->> rwsem_wake_type wake_type)
->>                * will block as they will notice the queued writer.
->>                */
->>               wake_up_process(waiter->task);
->> -        goto out;
->> +        return sem;
+> --- soc-fw_old.c    2013-06-22 12:13:48.000000000 -0300
+> +++ soc-fw_new.c    2013-06-22 12:19:41.000000000 -0300
+> @@ -893,7 +893,7 @@
+>          if (err < 0) {
+>              dev_err(sfw->dev, "ASoC: could not create"
+>                  " values for %s\n", ec->hdr.name);
+> -            goto err_se;
+> +            goto err;
+>          }
+>          /* fall through to create texts */
+>      case SOC_CONTROL_TYPE_ENUM:
+> @@ -905,13 +905,13 @@
+>          if (err < 0) {
+>              dev_err(sfw->dev, "ASoC: could not create"
+>                  " texts for %s\n", ec->hdr.name);
+> -            goto err_se;
+> +            goto err;
+>          }
+>          break;
+>      default:
+>          dev_err(sfw->dev, "ASoC: invalid enum control type %d for %s\n",
+>              ec->hdr.index, ec->hdr.name);
+> -        goto err_se;
+> +        goto err;
+>      }
 > 
-> Please put these flow control changes in a separate patch.
-
-I had sent the split patches to Tim&Davidlohr. They will send them out
-as a single patchset.
+>      /* map standard io handlers and check for external handlers */
+> @@ -928,21 +928,19 @@
+>                  SOC_CONTROL_GET_ID_GET(ec->hdr.index),
+>                  SOC_CONTROL_GET_ID_PUT(ec->hdr.index),
+>                  SOC_CONTROL_GET_ID_INFO(ec->hdr.index));
+> -            goto err_se;
+> +            goto err;
+>          }
 > 
+>          err = soc_fw_init_kcontrol(sfw, kc);
+>          if (err < 0) {
+>              dev_err(sfw->dev, "ASoC: failed to init %s\n",
+>                  ec->hdr.name);
+> -            goto err_se;
+> +            goto err;
+>          }
+>      }
+>      return kc;
 > 
->>       }
->>
->>       /* Writers might steal the lock before we grant it to the next
->> reader.
->> @@ -85,15 +85,21 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum
->> rwsem_wake_type wake_type)
->>       adjustment = 0;
->>       if (wake_type != RWSEM_WAKE_READ_OWNED) {
->>           adjustment = RWSEM_ACTIVE_READ_BIAS;
->> - try_reader_grant:
->> -        oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
->> -        if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
->> -            /* A writer stole the lock. Undo our reader grant. */
->> +        while (1) {
->> +            /* A writer stole the lock. */
->> +            if (sem->count < RWSEM_WAITING_BIAS)
->> +                return sem;
+> -err_se:
+> -    kfree(kc);
+> -
+> +err:
+>      /* free values and texts */
+>      if (se->dvalues)
+>          kfree(se->dvalues);
+> @@ -950,7 +948,8 @@
+>          kfree(se->dtexts[i]);
 > 
-> I'm all for structured looping instead of goto labels but this optimization
-> is only useful on the 1st iteration. IOW, on the second iteration you
-> already
-> know that you need to try for reclaiming the lock.
-> 
-
-sorry. could you like to say more clear, what's the 1st or 2nd iteration
-or others?
-> 
->> +
->> +            oldcount = rwsem_atomic_update(adjustment, sem)
->> +                                - adjustment;
->> +            if (likely(oldcount >= RWSEM_WAITING_BIAS))
->> +                break;
->> +
->> +             /* A writer stole the lock.  Undo our reader grant. */
->>               if (rwsem_atomic_update(-adjustment, sem) &
->>                           RWSEM_ACTIVE_MASK)
->> -                goto out;
->> +                return sem;
->>               /* Last active locker left. Retry waking readers. */
->> -            goto try_reader_grant;
->>           }
->>       }
->>
->> @@ -136,7 +142,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum
->> rwsem_wake_type wake_type)
->>       sem->wait_list.next = next;
->>       next->prev = &sem->wait_list;
->>
->> - out:
->>       return sem;
->>   }
+>      kfree(se);
+> -
+> +err_se:
+> +    kfree(kc);
+>      return NULL;
+>  }
 > 
 > 
-> Alex and Tim,
 > 
-> Was there a v1 of this series; ie., is this v2 (or higher)?
+> On Sat, Jun 22, 2013 at 11:48 AM, Fengguang Wu <fengguang.wu@intel.com>wrote:
 > 
-> How are you validating lock correctness/behavior with this series?
-
-some benchmark tested against this patch, mainly aim7. plus by eyes, we
-didn't change the logical except check the lock value before  do locking
-> 
-> Regards,
-> Peter Hurley
-> 
-
-
--- 
-Thanks
-    Alex
+> > TO: Liam Girdwood <lrg@ti.com>
+> > CC: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> >
+> >
+> > Hi Liam,
+> >
+> > FYI, there are coccinelle warnings in
+> >
+> > tree:   git://gitorious.org/omap-audio/linux-audiopeter/topic/ti-audio-next-bnw-wip
+> > head:   ac1981249f0c606cede98d6dab091ecb1ae480c9
+> > commit: 6d98dbbcfb5da2176b3e60faaf86d2279790fe67 ASoC: firmware: Add
+> > support for dynamic components
+> > date:   5 weeks ago
+> > :::::: branch date: 5 days ago
+> > :::::: commit date: 5 weeks ago
+> >
+> > >> sound/soc/soc-fw.c:945:9-16: ERROR: se is NULL but dereferenced.
+> > --
+> > >> sound/soc/soc-fw.c:1523:8-9: ERROR: reference preceded by free on line
+> > 1523
+> > >> sound/soc/soc-fw.c:1443:8-9: ERROR: reference preceded by free on line
+> > 1443
+> > >> sound/soc/soc-fw.c:1483:8-9: ERROR: reference preceded by free on line
+> > 1483
+> > --
+> > >> sound/soc/soc-fw.c:1528:6-8: ERROR: invalid reference to the index
+> > variable of the iterator on line 1513
+> > >> sound/soc/soc-fw.c:1448:6-8: ERROR: invalid reference to the index
+> > variable of the iterator on line 1433
+> > >> sound/soc/soc-fw.c:1488:6-8: ERROR: invalid reference to the index
+> > variable of the iterator on line 1473
+> >
+> > git remote add omap-audio git://gitorious.org/omap-audio/linux-audio
+> > git remote update omap-audio
+> > git checkout 6d98dbbcfb5da2176b3e60faaf86d2279790fe67
+> > vim +945 sound/soc/soc-fw.c
+> >
+> > 6d98dbbc Liam Girdwood 2012-12-05  929                          goto
+> > err_se;
+> > 6d98dbbc Liam Girdwood 2012-12-05  930                  }
+> > 6d98dbbc Liam Girdwood 2012-12-05  931
+> > 6d98dbbc Liam Girdwood 2012-12-05  932                  err =
+> > soc_fw_init_kcontrol(sfw, kc);
+> > 6d98dbbc Liam Girdwood 2012-12-05  933                  if (err < 0) {
+> > 6d98dbbc Liam Girdwood 2012-12-05  934
+> >  dev_err(sfw->dev, "ASoC: failed to init %s\n",
+> > 6d98dbbc Liam Girdwood 2012-12-05  935
+> >  ec->hdr.name);
+> > 6d98dbbc Liam Girdwood 2012-12-05  936                          goto
+> > err_se;
+> > 6d98dbbc Liam Girdwood 2012-12-05  937                  }
+> > 6d98dbbc Liam Girdwood 2012-12-05  938          }
+> > 6d98dbbc Liam Girdwood 2012-12-05  939          return kc;
+> > 6d98dbbc Liam Girdwood 2012-12-05  940
+> > 6d98dbbc Liam Girdwood 2012-12-05  941  err_se:
+> > 6d98dbbc Liam Girdwood 2012-12-05  942          kfree(kc);
+> > 6d98dbbc Liam Girdwood 2012-12-05  943
+> > 6d98dbbc Liam Girdwood 2012-12-05  944          /* free values and texts */
+> > 6d98dbbc Liam Girdwood 2012-12-05 @945          if (se->dvalues)
+> > 6d98dbbc Liam Girdwood 2012-12-05  946                  kfree(se->dvalues);
+> > 6d98dbbc Liam Girdwood 2012-12-05  947          for (i = 0; i < ec->max;
+> > i++)
+> > 6d98dbbc Liam Girdwood 2012-12-05  948
+> >  kfree(se->dtexts[i]);
+> > 6d98dbbc Liam Girdwood 2012-12-05  949
+> > 6d98dbbc Liam Girdwood 2012-12-05  950          kfree(se);
+> > 6d98dbbc Liam Girdwood 2012-12-05  951
+> > 6d98dbbc Liam Girdwood 2012-12-05  952          return NULL;
+> > 6d98dbbc Liam Girdwood 2012-12-05  953  }
+> >
+> > ---
+> > 0-DAY kernel build testing backend              Open Source Technology
+> > Center
+> > http://lists.01.org/mailman/listinfo/kbuild                 Intel
+> > Corporation
+> > _______________________________________________
+> > kbuild mailing list
+> > kbuild@lists.01.org
+> > https://lists.01.org/mailman/listinfo/kbuild
+> >
