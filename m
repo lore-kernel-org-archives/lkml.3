@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157Ab3FWFCs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 01:02:48 -0400
-Received: from relay.parallels.com ([195.214.232.42]:43450 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab3FWFCr (ORCPT
+	id S1751230Ab3FWFKX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 01:10:23 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:51661 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3FWFKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 01:02:47 -0400
-Date: Sun, 23 Jun 2013 09:00:24 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130623050023.GA678@paralelels.com>
-References: <20130619164540.GB22483@redhat.com>
- <20130619175356.GA23673@redhat.com>
- <20130619181302.GE5146@linux.vnet.ibm.com>
- <20130620001212.GB12151@redhat.com>
- <20130620161652.GA4462@linux.vnet.ibm.com>
- <20130621151119.GA1596@redhat.com>
- <20130621195949.GA15519@redhat.com>
- <20130622013731.GA22918@redhat.com>
- <20130622173129.GA29375@redhat.com>
- <20130622215905.GA28238@redhat.com>
+	Sun, 23 Jun 2013 01:10:20 -0400
+Date: Sun, 23 Jun 2013 07:10:18 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] rwsem: check the lock before cpmxchg in
+ down_write_trylock and rwsem_do_wake
+Message-ID: <20130623051018.GS6123@two.firstfloor.org>
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com>
+ <1371858695.22432.4.camel@schen9-DESK>
+ <51C55082.5040500@hurleysoftware.com>
+ <51C64C5D.5090400@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130622215905.GA28238@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.24.21.206]
+In-Reply-To: <51C64C5D.5090400@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 05:59:05PM -0400, Dave Jones wrote:
-> On Sat, Jun 22, 2013 at 07:31:29PM +0200, Oleg Nesterov wrote:
->  
->  > > [ 7485.261299] WARNING: at include/linux/nsproxy.h:63 get_proc_task_net+0x1c8/0x1d0()
->  > > [ 7485.262021] Modules linked in: 8021q garp stp tun fuse rfcomm bnep hidp snd_seq_dummy nfnetlink scsi_transport_iscsi can_bcm ipt_ULOG can_raw rds af_802154 nfc can rose caif_socket caif llc2 af_rxrpc phonet ipx p8023 p8022 pppoe pppox ppp_generic netrom slhc ax25 x25 af_key appletalk atm psnap llc irda crc_ccitt bluetooth rfkill coretemp hwmon kvm_intel snd_hda_codec_realtek kvm snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel microcode snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device pcspkr snd_pcm snd_page_alloc e1000e snd_timer ptp snd pps_core soundcore xfs libcrc32c
->  > > [ 7485.265434] CPU: 2 PID: 5623 Comm: trinity-child3 Not tainted 3.10.0-rc6+ #28 
->  > > [ 7485.267158]  ffffffff81a1529c ffff8801c8eafd30 ffffffff816e432d ffff8801c8eafd68
->  > > [ 7485.268045]  ffffffff8104a0c1 0000000000000000 ffff880225e9bd18 ffff8801bc6e4de0
->  > > [ 7485.268932]  0000000000000000 00000000000000dd ffff8801c8eafd78 ffffffff8104a19a
->  > > [ 7485.270463] Call Trace:
->  > > [ 7485.271338]  [<ffffffff816e432d>] dump_stack+0x19/0x1b
->  > > [ 7485.272207]  [<ffffffff8104a0c1>] warn_slowpath_common+0x61/0x80
->  > > [ 7485.273092]  [<ffffffff8104a19a>] warn_slowpath_null+0x1a/0x20
->  > > [ 7485.273942]  [<ffffffff81229f58>] get_proc_task_net+0x1c8/0x1d0
->  > > [ 7485.274793]  [<ffffffff81229d95>] ? get_proc_task_net+0x5/0x1d0
->  > > [ 7485.275659]  [<ffffffff8122a0bd>] proc_tgid_net_lookup+0x1d/0x80
->  > > [ 7485.276531]  [<ffffffff811b778d>] lookup_real+0x1d/0x50
->  > > [ 7485.277646]  [<ffffffff811b7d83>] __lookup_hash+0x33/0x40
->  > > [ 7485.278477]  [<ffffffff811bb143>] kern_path_create+0xb3/0x190
->  > > [ 7485.279345]  [<ffffffff811b93d5>] ? getname_flags+0xb5/0x190
->  > > [ 7485.280292]  [<ffffffff811bb261>] user_path_create+0x41/0x60
->  > > [ 7485.281233]  [<ffffffff811be6bb>] SyS_symlinkat+0x4b/0xd0
->  > > [ 7485.282072]  [<ffffffff816f5a54>] tracesys+0xdd/0xe2
->  > > [ 7485.282973] ---[ end trace 2204b7c65d6c5519 ]---
->  > 
->  > Hmm. The test case tries to create the symlink in /proc/*/net/ ?
+> >> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> >> index bb1e2cd..052d973 100644
+> >> --- a/include/asm-generic/rwsem.h
+> >> +++ b/include/asm-generic/rwsem.h
+> >> @@ -70,11 +70,11 @@ static inline void __down_write(struct
+> >> rw_semaphore *sem)
+> >>
+> >>   static inline int __down_write_trylock(struct rw_semaphore *sem)
+> >>   {
+> >> -    long tmp;
+> >> +    if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
+> >                      ^^^^^^^^^^^
+> > 
+> > This is probably not what you want.
+> > 
 > 
-> hit it with symlink, but also some other syscalls. eg:
+> this function logical is quite simple. check the sem->count before
+> cmpxchg is no harm this logical.
 > 
-> WARNING: at include/linux/nsproxy.h:63 get_proc_task_net+0x1c8/0x1d0()
->  Modules linked in: 8021q garp stp tun fuse rfcomm bnep hidp snd_seq_dummy nfnetlink scsi_transport_iscsi can_bcm ipt_ULOG can_raw rds af_802154 nfc can rose caif_socket caif llc2 af_rxrpc phonet ipx p8023 p8022 pppoe pppox ppp_generic netrom slhc ax25 x25 af_key appletalk atm psnap llc irda crc_ccitt bluetooth rfkill coretemp hwmon kvm_intel snd_hda_codec_realtek kvm snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel microcode snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device pcspkr snd_pcm snd_page_alloc e1000e snd_timer ptp snd pps_core soundcore xfs libcrc32c
->  CPU: 2 PID: 12821 Comm: trinity-child2 Tainted: G        W    3.10.0-rc6+ #28
->   ffffffff81a1529c ffff8801bcbdbc70 ffffffff816e432d ffff8801bcbdbca8
->   ffffffff8104a0c1 0000000000000000 ffff880226704828 ffff8801b95a7090
->   00000000ffffff9c 0000000000000008 ffff8801bcbdbcb8 ffffffff8104a19a
->  Call Trace:
->   [<ffffffff816e432d>] dump_stack+0x19/0x1b
->   [<ffffffff8104a0c1>] warn_slowpath_common+0x61/0x80
->   [<ffffffff8104a19a>] warn_slowpath_null+0x1a/0x20
->   [<ffffffff81229f58>] get_proc_task_net+0x1c8/0x1d0
->   [<ffffffff81229d95>] ? get_proc_task_net+0x5/0x1d0
->   [<ffffffff8122a0bd>] proc_tgid_net_lookup+0x1d/0x80
->   [<ffffffff811b778d>] lookup_real+0x1d/0x50
->   [<ffffffff811b7d83>] __lookup_hash+0x33/0x40
->   [<ffffffff816e3635>] lookup_slow+0x44/0xa9
->   [<ffffffff811bae88>] path_lookupat+0x7b8/0x810
->   [<ffffffff8119d3d2>] ? kmem_cache_alloc+0x142/0x320
->   [<ffffffff811b936f>] ? getname_flags+0x4f/0x190
->   [<ffffffff811b936f>] ? getname_flags+0x4f/0x190
->   [<ffffffff811baf0b>] filename_lookup+0x2b/0xc0
->   [<ffffffff811be144>] user_path_at_empty+0x54/0x90
->   [<ffffffff81145965>] ? user_exit+0x45/0x90
->   [<ffffffff810b773d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
->   [<ffffffff811be191>] user_path_at+0x11/0x20
->   [<ffffffff811d5338>] SyS_lgetxattr+0x38/0x90
->   [<ffffffff816f5a54>] tracesys+0xdd/0xe2
->  ---[ end trace 2204b7c65d6c551a ]---
->  
-> 
-> and a bunch of other similar VFS related calls.
+> So could you like to tell us what should we want?
 
-All these VFS related calls try to work with /proc/PID/ns/SMTH. If a
-process is zombie, it's detached from namespaces (except pidns), so if
-we try to read /proc/PID/ns/SMTH, we get this warning.
+You are comparing the address, not the value. Remove the &
+This was a nop too.
 
-> 
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
