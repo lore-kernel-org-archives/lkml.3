@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab3FWWK5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 18:10:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43193 "EHLO mail.zytor.com"
+	id S1752099Ab3FWWLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 18:11:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55547 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751606Ab3FWWK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 18:10:56 -0400
-Message-ID: <51C7725C.5090801@zytor.com>
-Date: Sun, 23 Jun 2013 15:10:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751606Ab3FWWK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 18:10:58 -0400
+Date: Mon, 24 Jun 2013 00:10:55 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
+        nico-linuxsetlocalversion@schottelius.org
+Subject: Re: [PATCH] scripts/setlocalversion on write-protected source tree
+Message-ID: <20130623221055.GA16118@pobox.suse.cz>
+References: <alpine.DEB.2.10.1306141756510.13746@trent.utfs.org>
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Brice Goglin <brice.goglin@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: Re: MTRR use in drivers
-References: <51C3DDFA.7050204@zytor.com> <51C69732.1010906@gmail.com> <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com> <20130623192936.GA28655@khazad-dum.debian.net> <51C75465.9060007@zytor.com> <20130623215649.GA1288@khazad-dum.debian.net>
-In-Reply-To: <20130623215649.GA1288@khazad-dum.debian.net>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1306141756510.13746@trent.utfs.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2013 02:56 PM, Henrique de Moraes Holschuh wrote:
+On Fri, Jun 14, 2013 at 06:04:34PM -0700, Christian Kujau wrote:
+> I just stumbled across another[0] issue when scripts/setlocalversion 
+> operates on a write-protected source tree. Back then[0] the source tree 
+> was on an read-only NFS share, so "test -w" was introduced before "git 
+> update-index" was run.
 > 
-> And as far as I could find from Intel's not-that-complete public
-> "specification updates", we are applying the errata workaround to a few more
-> processors than strictly required, but since I have no idea how to write a
-> test case, I can't whitelist the 3rd-gen Pentium M on my T43, nor can I get
-> ThinkPad owners to test it for us on 1st and 2nd-gen Pentium M and report
-> back.
+> This time, the source tree is on read/write NFS share, but the permissions 
+> are world-readable and only a specific user (or root) can write. 
+> Thus, "test -w ." returns "0" and then runs "git update-index", 
+> producing the following message (on a dirty tree):
 > 
+>   fatal: Unable to create '/usr/local/src/linux-git/.git/index.lock': Permission denied
+> 
+> While it says "fatal", compilation continues just fine.
+> 
+> However, I don't think a kernel compilation should alter the source 
+> tree (or the .git directory) in any way and I don't see how removing 
+> "git update-index" could do any harm. The Mercurial and SVN routines in 
+> scripts/setlocalversion don't have any tree-modifying commands, AFAICS. 
+> So, maybe the patch below would be acceptable.
 
-Which specific erratum are you referring to, here?  The "WC becomes UC"
-erratum?  I don't think there is a sane testcase for it since it needs a
-very complicated setup to trigger.
+Applied to kbuild.git#kbuild.
 
-	-hpa
-
+Thanks,
+Michal
