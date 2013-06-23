@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab3FWNqa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 09:46:30 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:49442 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab3FWNqZ (ORCPT
+	id S1752593Ab3FWNqo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 09:46:44 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:39901 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab3FWNqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 09:46:25 -0400
+	Sun, 23 Jun 2013 09:46:37 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 22/45] percpu_counter: Use get/put_online_cpus_atomic() to
+Subject: [PATCH 23/45] infiniband: ehca: Use get/put_online_cpus_atomic() to
  prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
@@ -20,17 +20,21 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Sun, 23 Jun 2013 19:12:59 +0530
-Message-ID: <20130623134256.19094.99231.stgit@srivatsabhat.in.ibm.com>
+        Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+        Christoph Raisch <raisch@de.ibm.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org
+Date: Sun, 23 Jun 2013 19:13:14 +0530
+Message-ID: <20130623134311.19094.9528.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
 References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062313-1618-0000-0000-00000421F1C1
+x-cbid: 13062313-3864-0000-0000-000008C2BA23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -42,31 +46,60 @@ from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
 offline, while invoking from atomic context.
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
+Cc: Christoph Raisch <raisch@de.ibm.com>
+Cc: Roland Dreier <roland@kernel.org>
+Cc: Sean Hefty <sean.hefty@intel.com>
+Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- lib/percpu_counter.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/infiniband/hw/ehca/ehca_irq.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index ba6085d..9cf9086 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -98,6 +98,7 @@ s64 __percpu_counter_sum(struct percpu_counter *fbc)
- 	s64 ret;
- 	int cpu;
+diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
+index 8615d7c..ace901e 100644
+--- a/drivers/infiniband/hw/ehca/ehca_irq.c
++++ b/drivers/infiniband/hw/ehca/ehca_irq.c
+@@ -43,6 +43,7 @@
+ 
+ #include <linux/slab.h>
+ #include <linux/smpboot.h>
++#include <linux/cpu.h>
+ 
+ #include "ehca_classes.h"
+ #include "ehca_irq.h"
+@@ -703,6 +704,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
+ 	int cq_jobs;
+ 	unsigned long flags;
  
 +	get_online_cpus_atomic();
- 	raw_spin_lock(&fbc->lock);
- 	ret = fbc->count;
- 	for_each_online_cpu(cpu) {
-@@ -105,6 +106,7 @@ s64 __percpu_counter_sum(struct percpu_counter *fbc)
- 		ret += *pcount;
+ 	cpu_id = find_next_online_cpu(pool);
+ 	BUG_ON(!cpu_online(cpu_id));
+ 
+@@ -720,6 +722,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
+ 		BUG_ON(!cct || !thread);
  	}
- 	raw_spin_unlock(&fbc->lock);
+ 	__queue_comp_task(__cq, cct, thread);
 +	put_online_cpus_atomic();
- 	return ret;
  }
- EXPORT_SYMBOL(__percpu_counter_sum);
+ 
+ static void run_comp_task(struct ehca_cpu_comp_task *cct)
+@@ -759,6 +762,7 @@ static void comp_task_park(unsigned int cpu)
+ 	list_splice_init(&cct->cq_list, &list);
+ 	spin_unlock_irq(&cct->task_lock);
+ 
++	get_online_cpus_atomic();
+ 	cpu = find_next_online_cpu(pool);
+ 	target = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
+ 	thread = *per_cpu_ptr(pool->cpu_comp_threads, cpu);
+@@ -768,6 +772,7 @@ static void comp_task_park(unsigned int cpu)
+ 		__queue_comp_task(cq, target, thread);
+ 	}
+ 	spin_unlock_irq(&target->task_lock);
++	put_online_cpus_atomic();
+ }
+ 
+ static void comp_task_stop(unsigned int cpu, bool online)
 
