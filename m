@@ -1,109 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab3FWT3I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 15:29:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44653 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750849Ab3FWT3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 15:29:05 -0400
-Message-ID: <1372015744.3137.74.camel@joe-AO722>
-Subject: [PATCH V2] iommu: Use %pa and %zx instead of casting
-From: Joe Perches <joe@perches.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        iommu@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 23 Jun 2013 12:29:04 -0700
-In-Reply-To: <CAMuHMdWb4WK9ZuJ-vwdywgDSSbZTnnS1emF02VzrUgrSt5VKsg@mail.gmail.com>
-References: <20130621153331.2881.35589.stgit@bling.home>
-	 <20130623114930.GA2557@8bytes.org> <1372009427.3137.54.camel@joe-AO722>
-	 <CAMuHMdWb4WK9ZuJ-vwdywgDSSbZTnnS1emF02VzrUgrSt5VKsg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751308Ab3FWT3n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 15:29:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54798 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750849Ab3FWT3k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 15:29:40 -0400
+X-Sasl-enc: AnvHA0QBxybdyCtfWQ9qRthateVmu5+P6VCADQooVrA2 1372015779
+Date: Sun, 23 Jun 2013 16:29:36 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Brice Goglin <brice.goglin@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: MTRR use in drivers
+Message-ID: <20130623192936.GA28655@khazad-dum.debian.net>
+References: <51C3DDFA.7050204@zytor.com>
+ <51C69732.1010906@gmail.com>
+ <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk supports using %pa for phys_addr_t and
-%zx for size_t so use those instead of %lx and
-casts to unsigned long.
+On Sun, 23 Jun 2013, H. Peter Anvin wrote:
+> Why do you care about performance when PAT is disabled?
 
-Other miscellaneous changes around this:
+It will regress already slow boxes.  We blacklist a LOT of P4s, PMs, etc and
+nobody ever took the pain to track down which ones of those actually have
+PAT+MTRR aliasing bugs.
 
-Always use 0x%zx for size instead of one use of decimal.
-Coalesce format and align arguments.
+These boxes have boards like the Radeon X300, which needs either PAT or MTRR
+to not become unusable...
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-> While we're at it, paddr is phys_addr_t (which can be 32-bit or 64-bit),
-> so it should be cast to unsigned long long (instead of unsigned long),
-> and printed using %llx (instead of %lx).
-
-Sounds good to me, except using %pa instead is better still.
-
- drivers/iommu/iommu.c | 23 ++++++++++-------------
- 1 file changed, 10 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index ab1fa19..fbe9ca7 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -807,20 +807,18 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
- 	 * size of the smallest page supported by the hardware
- 	 */
- 	if (!IS_ALIGNED(iova | paddr | size, min_pagesz)) {
--		pr_err("unaligned: iova 0x%lx pa 0x%lx size 0x%lx min_pagesz "
--			"0x%x\n", iova, (unsigned long)paddr,
--			(unsigned long)size, min_pagesz);
-+		pr_err("unaligned: iova 0x%lx pa 0x%pa size 0x%zx min_pagesz 0x%x\n",
-+		       iova, &paddr, size, min_pagesz);
- 		return -EINVAL;
- 	}
- 
--	pr_debug("map: iova 0x%lx pa 0x%lx size 0x%lx\n", iova,
--				(unsigned long)paddr, (unsigned long)size);
-+	pr_debug("map: iova 0x%lx pa 0x%pa size 0x%zx\n", iova, &paddr, size);
- 
- 	while (size) {
- 		size_t pgsize = iommu_pgsize(domain, iova | paddr, size);
- 
--		pr_debug("mapping: iova 0x%lx pa 0x%lx pgsize %lu\n", iova,
--			 (unsigned long)paddr, (unsigned long)pgsize);
-+		pr_debug("mapping: iova 0x%lx pa 0x%pa pgsize 0x%zx\n",
-+			 iova, &paddr, pgsize);
- 
- 		ret = domain->ops->map(domain, iova, paddr, pgsize, prot);
- 		if (ret)
-@@ -857,13 +855,12 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
- 	 * by the hardware
- 	 */
- 	if (!IS_ALIGNED(iova | size, min_pagesz)) {
--		pr_err("unaligned: iova 0x%lx size 0x%lx min_pagesz 0x%x\n",
--					iova, (unsigned long)size, min_pagesz);
-+		pr_err("unaligned: iova 0x%lx size 0x%zx min_pagesz 0x%x\n",
-+		       iova, size, min_pagesz);
- 		return -EINVAL;
- 	}
- 
--	pr_debug("unmap this: iova 0x%lx size 0x%lx\n", iova,
--							(unsigned long)size);
-+	pr_debug("unmap this: iova 0x%lx size 0x%zx\n", iova, size);
- 
- 	/*
- 	 * Keep iterating until we either unmap 'size' bytes (or more)
-@@ -876,8 +873,8 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
- 		if (!unmapped_page)
- 			break;
- 
--		pr_debug("unmapped: iova 0x%lx size %lx\n", iova,
--					(unsigned long)unmapped_page);
-+		pr_debug("unmapped: iova 0x%lx size 0x%zx\n",
-+			 iova, unmapped_page);
- 
- 		iova += unmapped_page;
- 		unmapped += unmapped_page;
-
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
