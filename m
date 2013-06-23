@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab3FWLvg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 07:51:36 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:55953 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab3FWLve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 07:51:34 -0400
-Date: Sun, 23 Jun 2013 15:51:29 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130623115127.GA7986@localhost.localdomain>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
- <20130618062623.GA20528@localhost.localdomain>
- <20130619071346.GA9545@dhcp22.suse.cz>
- <20130619142801.GA21483@dhcp22.suse.cz>
- <20130620141136.GA3351@localhost.localdomain>
- <20130620151201.GD27196@dhcp22.suse.cz>
- <20130621090021.GB12424@dhcp22.suse.cz>
+	id S1751738Ab3FWLwe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 07:52:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61131 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751238Ab3FWLwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 07:52:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,922,1363158000"; 
+   d="scan'208";a="334161609"
+Message-ID: <51C6E16C.5030703@intel.com>
+Date: Sun, 23 Jun 2013 19:52:12 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130621090021.GB12424@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+CC: Peter Hurley <peter@hurleysoftware.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] rwsem: check the lock before cpmxchg in down_write_trylock
+ and rwsem_do_wake
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com> <1371858695.22432.4.camel@schen9-DESK> <51C55082.5040500@hurleysoftware.com> <51C64C5D.5090400@intel.com> <20130623051018.GS6123@two.firstfloor.org>
+In-Reply-To: <20130623051018.GS6123@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 11:00:21AM +0200, Michal Hocko wrote:
-> On Thu 20-06-13 17:12:01, Michal Hocko wrote:
-> > I am bisecting it again. It is quite tedious, though, because good case
-> > is hard to be sure about.
-> 
-> OK, so now I converged to 2d4fc052 (inode: convert inode lru list to generic lru
-> list code.) in my tree and I have double checked it matches what is in
-> the linux-next. This doesn't help much to pin point the issue I am
-> afraid :/
-> 
-Can you revert this patch (easiest way ATM is to rewind your tree to a point
-right before it) and apply the following patch?
+On 06/23/2013 01:10 PM, Andi Kleen wrote:
+>>>> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+>>>> > >> index bb1e2cd..052d973 100644
+>>>> > >> --- a/include/asm-generic/rwsem.h
+>>>> > >> +++ b/include/asm-generic/rwsem.h
+>>>> > >> @@ -70,11 +70,11 @@ static inline void __down_write(struct
+>>>> > >> rw_semaphore *sem)
+>>>> > >>
+>>>> > >>   static inline int __down_write_trylock(struct rw_semaphore *sem)
+>>>> > >>   {
+>>>> > >> -    long tmp;
+>>>> > >> +    if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
+>>> > >                      ^^^^^^^^^^^
+>>> > > 
+>>> > > This is probably not what you want.
+>>> > > 
+>> > 
+>> > this function logical is quite simple. check the sem->count before
+>> > cmpxchg is no harm this logical.
+>> > 
+>> > So could you like to tell us what should we want?
+> You are comparing the address, not the value. Remove the &
+> This was a nop too.
 
-As Dave has mentioned, it is very likely that this bug was already there, we
-were just not ever checking imbalances. The attached patch would tell us at
-least if the imbalance was there before. If this is the case, I would suggest
-turning the BUG condition into a WARN_ON_ONCE since we would be officially
-not introducing any regression. It is no less of a bug, though, and we should
-keep looking for it.
+ops, So stupid I am! :(
 
-The main change from before / after the patch is that we are now keeping things
-per node. One possibility of having this BUGing would be to have an inode to be
-inserted into one node-lru and removed from another. I cannot see how it could
-happen, because kernel pages are stable in memory and are not moved from node
-to node. We could still have some sort of weird bug in the node calculation
-function. In any case, would it be possible for you to artificially restrict
-your setup to a single node ? Although I have no idea how to do that, we seem
-to have no parameter to disable numa. Maybe booting with less memory, enough to
-fit a single node?
-
+-- 
+Thanks
+    Alex
