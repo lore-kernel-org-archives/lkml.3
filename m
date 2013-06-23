@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750877Ab3FWGtX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 02:49:23 -0400
-Received: from clarion.unri.ac.id ([103.10.169.65]:33324 "EHLO
-	clarion.unri.ac.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3FWGtV convert rfc822-to-8bit (ORCPT
+	id S1750974Ab3FWHDj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 03:03:39 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:63147 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3FWHDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 02:49:21 -0400
-X-Greylist: delayed 2039 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Jun 2013 02:49:20 EDT
-Date: Sun, 23 Jun 2013 13:16:14 +0700 (WIT)
-From: vija Loan Firm <pusbangdik@unri.ac.id>
-Reply-To: vija Loan Firm <vija_nathloans@kimo.com>
-Message-ID: <270742868.107832.1371968174188.JavaMail.root@unri.ac.id>
-Subject: 
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [116.203.123.214]
-X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
-To: undisclosed-recipients:;
-X-Spam-Score: undef - pusbangdik@unri.ac.id is whitelisted.
-X-CanIt-Geo: ip=103.10.169.61; country=ID; region=37; city=Pekanbaru; latitude=0.5333; longitude=101.4500; http://maps.google.com/maps?q=0.5333,101.4500&z=6
-X-CanItPRO-Stream: default
-X-Canit-Stats-ID: 01JPGe5DA - 13648298653e - 20130623
+	Sun, 23 Jun 2013 03:03:36 -0400
+From: Chad Williamson <chad@dahc.us>
+To: gregkh@linuxfoundation.org
+Cc: puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
+        tulinizer@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Chad Williamson <chad@dahc.us>
+Subject: [PATCH 0/6] Staging: silicom: Remove all typedefs from bpctl_mod.c
+Date: Sun, 23 Jun 2013 02:02:22 -0500
+Message-Id: <1371970948-26802-1-git-send-email-chad@dahc.us>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day,
+More coding style cleanup on bpctl_mod.c in the form of a few typedef
+exorcisms, one of which is a little long (let me know if you'd like
+me to split it up into multiple patches...).
 
-Dear Investor's/Loan Seeker's, Do you need a loan?Are you in financial mess? We offer loan at low interest rate of 3% rate, We are project finding's and we offer loan from the range of $5,000 to $500,000,000 and also mainly in any currency USD, CAD, KWD, OMR, SGD, GBP, AUD, MYRð INR .contact us
+Chad Williamson (6):
+  Staging: silicom: remove bp_media_type enum typedef
+  Staging: silicom: capitalize labels in the bp_media_type enum
+  Staging: silicom: remove the bpctl_dev_t typdef
+  Staging: silicom: remove the board_t typedef in bpctl_mod.c
+  Staging: silicom: remove the typedef for bpmod_info_t
+  Staging: silicom: remove typedef for dev_desc_t
 
-Sincerely,
-Mrs Lina Vija.
+ drivers/staging/silicom/bpctl_mod.c | 608 ++++++++++++++++++------------------
+ 1 file changed, 303 insertions(+), 305 deletions(-)
 
-VIJA capitals Inc.
-Public Relations Officer.
+-- 
+1.8.1.4
+
