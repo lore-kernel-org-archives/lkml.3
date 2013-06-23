@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab3FWMiv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 08:38:51 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50870 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab3FWMiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 08:38:21 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Imre Deak <imre.deak@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH v3 1/4] lib/scatterlist: factor out sg_miter_get_next_page() from sg_miter_next()
-Date: Sun, 23 Jun 2013 21:37:38 +0900
-Message-Id: <1371991061-19437-2-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1371991061-19437-1-git-send-email-akinobu.mita@gmail.com>
-References: <1371991061-19437-1-git-send-email-akinobu.mita@gmail.com>
+	id S1751864Ab3FWMlU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 08:41:20 -0400
+Received: from sauhun.de ([89.238.76.85]:49655 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748Ab3FWMlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 08:41:18 -0400
+Date: Sun, 23 Jun 2013 14:43:18 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Bin Gao <bin_gao@linux.intel.com>
+Cc: Bin Gao <bin.gao@linux.intel.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
+Message-ID: <20130623124316.GA3025@katana>
+References: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
+ <CAHp75VcYgpUVpOnKOzkYoZXbEPO_0QG7=WUXza55wpOyRwcKCA@mail.gmail.com>
+ <20130606212620.GA13620@bingao-desk1.fm.intel.com>
+ <CAHp75VcGUtWyPHrvYDW59-4g8F2m58-Us3CrbJ2bnYJdxnd1Sg@mail.gmail.com>
+ <20130611171119.GA35135@bingao-desk1.fm.intel.com>
+ <CAHp75VdZA_gouZohD1J+o9ybpXVLLQH=D7QDo9OznW93iBDZpQ@mail.gmail.com>
+ <20130614190003.GA19617@bingao-desk1.fm.intel.com>
+ <20130619101348.GE2950@katana>
+ <51C4EF85.7010607@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
+Content-Disposition: inline
+In-Reply-To: <51C4EF85.7010607@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is used to proceed page iterator to the next page if
-necessary, and will be used to implement the variants of
-sg_copy_{from,to}_buffer() later.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Imre Deak <imre.deak@intel.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Douglas Gilbert <dgilbert@interlog.com>
-Cc: linux-scsi@vger.kernel.org
----
+--gKMricLos+KVdGMg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* Change from v2
-- Add Acked-by line
 
- lib/scatterlist.c | 39 ++++++++++++++++++++++++---------------
- 1 file changed, 24 insertions(+), 15 deletions(-)
+> >I also wonder about the need to unregister. I have to admit I don't know
+> >much about I2C handling in v4l2. But if it requires unregistering from
+> >i2c core and registering to v4l2 core, then it sounds to me like we
+> >could check if there is a more fundamential cleanup needed? Deferring
+> >for now, looks like an issue worth looking at, yet there are other
+> >things in the queue first.
+> >
+>=20
+> Platform codes are supposed to call i2c_register_board_info() or
+> i2c_new_device() to register devices, we don't want to change this.
 
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index a1cf8ca..c35b929 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -453,6 +453,28 @@ void sg_miter_start(struct sg_mapping_iter *miter, struct scatterlist *sgl,
- }
- EXPORT_SYMBOL(sg_miter_start);
- 
-+static bool sg_miter_get_next_page(struct sg_mapping_iter *miter)
-+{
-+	if (!miter->__remaining) {
-+		struct scatterlist *sg;
-+		unsigned long pgoffset;
-+
-+		if (!__sg_page_iter_next(&miter->piter))
-+			return false;
-+
-+		sg = miter->piter.sg;
-+		pgoffset = miter->piter.sg_pgoffset;
-+
-+		miter->__offset = pgoffset ? 0 : sg->offset;
-+		miter->__remaining = sg->offset + sg->length -
-+				(pgoffset << PAGE_SHIFT) - miter->__offset;
-+		miter->__remaining = min_t(unsigned long, miter->__remaining,
-+					   PAGE_SIZE - miter->__offset);
-+	}
-+
-+	return true;
-+}
-+
- /**
-  * sg_miter_next - proceed mapping iterator to the next mapping
-  * @miter: sg mapping iter to proceed
-@@ -478,22 +500,9 @@ bool sg_miter_next(struct sg_mapping_iter *miter)
- 	 * Get to the next page if necessary.
- 	 * __remaining, __offset is adjusted by sg_miter_stop
- 	 */
--	if (!miter->__remaining) {
--		struct scatterlist *sg;
--		unsigned long pgoffset;
--
--		if (!__sg_page_iter_next(&miter->piter))
--			return false;
--
--		sg = miter->piter.sg;
--		pgoffset = miter->piter.sg_pgoffset;
-+	if (!sg_miter_get_next_page(miter))
-+		return false;
- 
--		miter->__offset = pgoffset ? 0 : sg->offset;
--		miter->__remaining = sg->offset + sg->length -
--				(pgoffset << PAGE_SHIFT) - miter->__offset;
--		miter->__remaining = min_t(unsigned long, miter->__remaining,
--					   PAGE_SIZE - miter->__offset);
--	}
- 	miter->page = sg_page_iter_page(&miter->piter);
- 	miter->consumed = miter->length = miter->__remaining;
- 
--- 
-1.8.1.4
+Exactly.
 
+> Not sure v4l2 can still take over the devices without
+> unregistering/registering. Need look deeply into the v4l2 code...
+
+That would help, I currently don't have time for that.
+
+Thanks,
+
+   Wolfram
+
+--gKMricLos+KVdGMg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRxu1kAAoJEBQN5MwUoCm21S8P/2T2mBgsZrfKaki7bZaOrlWV
+oC+mr/hD3yQMjeDvMgASxNr9e3JclzDNISNNu3YXmXGmzEBP+YcgmT4prgnU/C20
+M6fe2Bx2XYplp3AuoQF7LCC0351vobhquT6Jx/NTcR2jHzCCd8wtpsO2QaW3pKS2
+74nVQ9iLdOV2PNrxNE4P8agZomhWTCyRX3dloZWifhJik5sLJSpqgSBdAouFM2at
+5Upy+9Q6aIeQEX6kwkulDYTpiHDBqafgOqG/Lo9Cn4Op4qBJ7mDmYxqhhG+rAe9X
+uZJ0mMzSpnMFG04onwvZ+514hJb5VIpdv8TNb1KXY8GQk0pUHyrJs44KnrRLEovb
+rDe/IjsRcTjQ+B1Vfdx3zqqGNh+rekcOGOiwpuUwDRhPQePtpYK4BOamjKc3xQXD
+zoxh7ed7m+b4lts6VuHCse/4qhQ3OveDp1zZY7nmAzxC/iSroWa8thlHkKQgYvnE
+4D7EOtTkl2xscHikLK3Vb1EmT/sd0Ozxae+b7lbXgp11v/qci3Bqqs9YuXeVvEry
+Wmq3RTOPb7P+ww31FYu/RTRhotRmT7Mky0MzafdtcxpIPd7vGVL7422k6SO23qgA
+TuVN/kD494GdCgCW/gk+rT9QH9z/JkndPse4bBpUnQ6wvvH4hObum5BxsQRxgAA1
+/aZYATxbebTZd4CroAMH
+=4OBp
+-----END PGP SIGNATURE-----
+
+--gKMricLos+KVdGMg--
