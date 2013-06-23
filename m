@@ -1,122 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab3FWEZe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 00:25:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17557 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750713Ab3FWEZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 00:25:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,922,1363158000"; 
-   d="scan'208";a="354209810"
-Date: Sun, 23 Jun 2013 12:25:28 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: Oops in ring_buffer_alloc_read_page()
-Message-ID: <20130623042528.GA20094@localhost>
-References: <20130618120855.GA29700@localhost>
- <1371737149.18733.92.camel@gandalf.local.home>
+	id S1751157Ab3FWFCs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 01:02:48 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43450 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3FWFCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 01:02:47 -0400
+Date: Sun, 23 Jun 2013 09:00:24 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130623050023.GA678@paralelels.com>
+References: <20130619164540.GB22483@redhat.com>
+ <20130619175356.GA23673@redhat.com>
+ <20130619181302.GE5146@linux.vnet.ibm.com>
+ <20130620001212.GB12151@redhat.com>
+ <20130620161652.GA4462@linux.vnet.ibm.com>
+ <20130621151119.GA1596@redhat.com>
+ <20130621195949.GA15519@redhat.com>
+ <20130622013731.GA22918@redhat.com>
+ <20130622173129.GA29375@redhat.com>
+ <20130622215905.GA28238@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="koi8-r"
 Content-Disposition: inline
-In-Reply-To: <1371737149.18733.92.camel@gandalf.local.home>
+In-Reply-To: <20130622215905.GA28238@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.24.21.206]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC Andi.
-I wonder whether the CPA self-test is expected to cause such problems.
+On Sat, Jun 22, 2013 at 05:59:05PM -0400, Dave Jones wrote:
+> On Sat, Jun 22, 2013 at 07:31:29PM +0200, Oleg Nesterov wrote:
+>  
+>  > > [ 7485.261299] WARNING: at include/linux/nsproxy.h:63 get_proc_task_net+0x1c8/0x1d0()
+>  > > [ 7485.262021] Modules linked in: 8021q garp stp tun fuse rfcomm bnep hidp snd_seq_dummy nfnetlink scsi_transport_iscsi can_bcm ipt_ULOG can_raw rds af_802154 nfc can rose caif_socket caif llc2 af_rxrpc phonet ipx p8023 p8022 pppoe pppox ppp_generic netrom slhc ax25 x25 af_key appletalk atm psnap llc irda crc_ccitt bluetooth rfkill coretemp hwmon kvm_intel snd_hda_codec_realtek kvm snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel microcode snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device pcspkr snd_pcm snd_page_alloc e1000e snd_timer ptp snd pps_core soundcore xfs libcrc32c
+>  > > [ 7485.265434] CPU: 2 PID: 5623 Comm: trinity-child3 Not tainted 3.10.0-rc6+ #28 
+>  > > [ 7485.267158]  ffffffff81a1529c ffff8801c8eafd30 ffffffff816e432d ffff8801c8eafd68
+>  > > [ 7485.268045]  ffffffff8104a0c1 0000000000000000 ffff880225e9bd18 ffff8801bc6e4de0
+>  > > [ 7485.268932]  0000000000000000 00000000000000dd ffff8801c8eafd78 ffffffff8104a19a
+>  > > [ 7485.270463] Call Trace:
+>  > > [ 7485.271338]  [<ffffffff816e432d>] dump_stack+0x19/0x1b
+>  > > [ 7485.272207]  [<ffffffff8104a0c1>] warn_slowpath_common+0x61/0x80
+>  > > [ 7485.273092]  [<ffffffff8104a19a>] warn_slowpath_null+0x1a/0x20
+>  > > [ 7485.273942]  [<ffffffff81229f58>] get_proc_task_net+0x1c8/0x1d0
+>  > > [ 7485.274793]  [<ffffffff81229d95>] ? get_proc_task_net+0x5/0x1d0
+>  > > [ 7485.275659]  [<ffffffff8122a0bd>] proc_tgid_net_lookup+0x1d/0x80
+>  > > [ 7485.276531]  [<ffffffff811b778d>] lookup_real+0x1d/0x50
+>  > > [ 7485.277646]  [<ffffffff811b7d83>] __lookup_hash+0x33/0x40
+>  > > [ 7485.278477]  [<ffffffff811bb143>] kern_path_create+0xb3/0x190
+>  > > [ 7485.279345]  [<ffffffff811b93d5>] ? getname_flags+0xb5/0x190
+>  > > [ 7485.280292]  [<ffffffff811bb261>] user_path_create+0x41/0x60
+>  > > [ 7485.281233]  [<ffffffff811be6bb>] SyS_symlinkat+0x4b/0xd0
+>  > > [ 7485.282072]  [<ffffffff816f5a54>] tracesys+0xdd/0xe2
+>  > > [ 7485.282973] ---[ end trace 2204b7c65d6c5519 ]---
+>  > 
+>  > Hmm. The test case tries to create the symlink in /proc/*/net/ ?
+> 
+> hit it with symlink, but also some other syscalls. eg:
+> 
+> WARNING: at include/linux/nsproxy.h:63 get_proc_task_net+0x1c8/0x1d0()
+>  Modules linked in: 8021q garp stp tun fuse rfcomm bnep hidp snd_seq_dummy nfnetlink scsi_transport_iscsi can_bcm ipt_ULOG can_raw rds af_802154 nfc can rose caif_socket caif llc2 af_rxrpc phonet ipx p8023 p8022 pppoe pppox ppp_generic netrom slhc ax25 x25 af_key appletalk atm psnap llc irda crc_ccitt bluetooth rfkill coretemp hwmon kvm_intel snd_hda_codec_realtek kvm snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel microcode snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device pcspkr snd_pcm snd_page_alloc e1000e snd_timer ptp snd pps_core soundcore xfs libcrc32c
+>  CPU: 2 PID: 12821 Comm: trinity-child2 Tainted: G        W    3.10.0-rc6+ #28
+>   ffffffff81a1529c ffff8801bcbdbc70 ffffffff816e432d ffff8801bcbdbca8
+>   ffffffff8104a0c1 0000000000000000 ffff880226704828 ffff8801b95a7090
+>   00000000ffffff9c 0000000000000008 ffff8801bcbdbcb8 ffffffff8104a19a
+>  Call Trace:
+>   [<ffffffff816e432d>] dump_stack+0x19/0x1b
+>   [<ffffffff8104a0c1>] warn_slowpath_common+0x61/0x80
+>   [<ffffffff8104a19a>] warn_slowpath_null+0x1a/0x20
+>   [<ffffffff81229f58>] get_proc_task_net+0x1c8/0x1d0
+>   [<ffffffff81229d95>] ? get_proc_task_net+0x5/0x1d0
+>   [<ffffffff8122a0bd>] proc_tgid_net_lookup+0x1d/0x80
+>   [<ffffffff811b778d>] lookup_real+0x1d/0x50
+>   [<ffffffff811b7d83>] __lookup_hash+0x33/0x40
+>   [<ffffffff816e3635>] lookup_slow+0x44/0xa9
+>   [<ffffffff811bae88>] path_lookupat+0x7b8/0x810
+>   [<ffffffff8119d3d2>] ? kmem_cache_alloc+0x142/0x320
+>   [<ffffffff811b936f>] ? getname_flags+0x4f/0x190
+>   [<ffffffff811b936f>] ? getname_flags+0x4f/0x190
+>   [<ffffffff811baf0b>] filename_lookup+0x2b/0xc0
+>   [<ffffffff811be144>] user_path_at_empty+0x54/0x90
+>   [<ffffffff81145965>] ? user_exit+0x45/0x90
+>   [<ffffffff810b773d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+>   [<ffffffff811be191>] user_path_at+0x11/0x20
+>   [<ffffffff811d5338>] SyS_lgetxattr+0x38/0x90
+>   [<ffffffff816f5a54>] tracesys+0xdd/0xe2
+>  ---[ end trace 2204b7c65d6c551a ]---
+>  
+> 
+> and a bunch of other similar VFS related calls.
 
-On Thu, Jun 20, 2013 at 10:05:49AM -0400, Steven Rostedt wrote:
-> On Tue, 2013-06-18 at 20:08 +0800, Fengguang Wu wrote:
-> > Greetings,
-> > 
-> > I got the below oops in upstream. It's a hard to reproduce one and at
-> > least is as old as v3.0.
-> > 
-> > [   36.774933] IP: [<7916a472>] ring_buffer_alloc_read_page+0x66/0x82
-> > [   36.776024] *pde = 0e3e1067 *pte = 061e7260 
-> > [   36.776024] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
-> > [   36.776024] CPU: 0 PID: 44 Comm: rb_consumer Not tainted 3.10.0-rc4-00292-gbed1059 #29
-> > [   36.776024] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-> > [   36.776024] task: 7e3a5000 ti: 7e3a8000 task.ti: 7e3a8000
-> > [   36.776024] EIP: 0060:[<7916a472>] EFLAGS: 00010246 CPU: 0
-> > [   36.776024] EIP is at ring_buffer_alloc_read_page+0x66/0x82
-> > [   36.776024] EAX: 7e1e7000 EBX: 0000feaf ECX: 00000000 EDX: 00000000
-> > [   36.776024] ESI: 7e3a5000 EDI: 00000000 EBP: 7e3a9ed0 ESP: 7e3a9ecc
-> > [   36.776024]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> > [   36.776024] CR0: 8005003b CR2: 7e1e7008 CR3: 05beb000 CR4: 00000690
-> > [   36.776024] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> > [   36.776024] DR6: ffff0ff0 DR7: 00000400
-> > [   36.776024] Stack:
-> > [   36.776024]  00000000 7e3a9f00 7916abae 00000001 00000001 7e1e7000 ffffffff 00000ff0
-> > [   36.776024]  00000ff0 00000000 00000000 7e3a5000 00000000 7e3a9f30 7916b38c 00000000
-> > [   36.776024]  003a9f14 7e3a5000 00000000 00000000 0670d10e 00000004 00000000 7916b191
-> > [   36.776024] Call Trace:
-> > [   36.776024]  [<7916abae>] read_page+0x25/0x608
-> > [   36.776024]  [<7916b38c>] ring_buffer_consumer_thread+0x1fb/0x549
-> > 
-> > git bisect  bad c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1  # 12:28      0-  Linux 3.9
-> > git bisect  bad 19f949f52599ba7c3f67a5897ac6be14bfcb1200  # 12:28      0-  Linux 3.8
-> > git bisect  bad 29594404d7fe73cd80eaa4ee8c43dcc53970c60e  # 12:28      0-  Linux 3.7
-> > git bisect  bad a0d271cbfed1dd50278c6b06bead3d00ba0a88f9  # 12:29      0-  Linux 3.6
-> > git bisect  bad 28a33cbc24e4256c143dce96c7d93bf423229f92  # 12:31    179-  Linux 3.5
-> > git bisect  bad 76e10d158efb6d4516018846f60c2ab5501900bc  # 20:58   3174-  Linux 3.4
-> > git bisect  bad c16fa4f2ad19908a47c63d8fa436a1178438c7e7  # 15:59  21714-  Linux 3.3
-> > git bisect  bad 805a6af8dba5dfdd35ec35dc52ec0122400b2610  # 16:20   2591-  Linux 3.2
-> > git bisect  bad c3b92c8787367a8bb53d57d9789b558f1295cc96  # 20:15   6321-  Linux 3.1
-> > git bisect  bad 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe  # 05:29  11960-  Linux 3.0
-> > git bisect  bad 8177a9d79c0e942dcac3312f15585d0344d505a5  # 06:23    493-  lseek(fd, n, SEEK_END) does *not* go to eof - n
-> > 
-> 
-> Looking at the dmesg you supplied:
-> 
-> [   36.745552] CPA self-test:
-> [   36.749335]  4k 65534 large 0 gb 0 x 65534[78000000-87ffd000] miss 0
-> [   36.773159] BUG: unable to handle kernel paging request at 7e1e7008
-> [   36.774933] IP: [<7916a472>] ring_buffer_alloc_read_page+0x66/0x82
-> [   36.776024] *pde = 0e3e1067 *pte = 061e7260 
-> [   36.776024] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
-> 
-> 
-> The ring buffer stress test runs continuously when compiled into the
-> core kernel. It constantly consumes from a test buffer and replenishes
-> the pages with:
-> 
-> void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu)
-> {
-> 	struct buffer_data_page *bpage;
-> 	struct page *page;
-> 
-> 	page = alloc_pages_node(cpu_to_node(cpu),
-> 				GFP_KERNEL | __GFP_NORETRY, 0);
-> 	if (!page)
-> 		return NULL;
-> 
-> 	bpage = page_address(page);
-> 
-> 	rb_init_page(bpage);
-> 
-> 	return bpage;
-> }
-> 
-> Which looks to be where the crash occurred. What caught my eye was that
-> "CPA self-test" just before the crash. That comes from pageattr_test()
-> in arch/x86/mm/pageattr-test.c. The comment just above that code is:
-> 
-> /* Change the global bit on random pages in the direct mapping */
-> 
-> Could this test affect the alloc_pages_node() or the page_address() used
-> in ring_buffer_alloc_read_page()? If so, that may be the cause of this
-> bug.
+All these VFS related calls try to work with /proc/PID/ns/SMTH. If a
+process is zombie, it's detached from namespaces (except pidns), so if
+we try to read /proc/PID/ns/SMTH, we get this warning.
 
-Good question! I tried disabling CPA self-test and the BUG does not
-show up for 10000 boots. So this should be the root cause.
-
-Thanks,
-Fengguang
+> 
