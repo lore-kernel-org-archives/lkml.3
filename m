@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab3FWT5Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 15:57:16 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:36958 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3FWT5N (ORCPT
+	id S1752373Ab3FWUBA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 16:01:00 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:40621 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab3FWUA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 15:57:13 -0400
+	Sun, 23 Jun 2013 16:00:59 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Joseph CHANG <josright123@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, joseph_chang@davicom.com.tw,
+        josright@hotmail.com
+Subject: Re: [PATCH 1/1] net: add dm9620 net usb driver
+References: <1371730801-2288-1-git-send-email-josright123@gmail.com>
+Date: Sun, 23 Jun 2013 22:00:52 +0200
+In-Reply-To: <1371730801-2288-1-git-send-email-josright123@gmail.com> (Joseph
+	CHANG's message of "Thu, 20 Jun 2013 20:20:01 +0800")
+Message-ID: <87mwqglhqj.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <51C71A27.1040600@gmail.com>
-References: <2737587.I0nULev1kj@vostro.rjw.lan>
-	<15269989.ojxutYs2L1@vostro.rjw.lan>
-	<51C71A27.1040600@gmail.com>
-Date: Sun, 23 Jun 2013 12:57:13 -0700
-X-Google-Sender-Auth: t2zUdMfiv5sRaKy9m0QeR0Ve0DE
-Message-ID: <CAE9FiQVGz-BOq4LeZ-iNCAKqPF=Tzuq6uTZ=AAnO=8yMa22jYw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ACPI / dock / PCI: Synchronous handling of dock
- events for PCI devices
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23, 2013 at 8:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> On 06/23/2013 05:25 AM, Rafael J. Wysocki wrote:
->> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> The interactions between the ACPI dock driver and the ACPI-based PCI
->> hotplug (acpiphp) are currently problematic because of ordering
->> issues during hot-remove operations.
->>
->> First of all, the current ACPI glue code expects that physical
->> devices will always be deleted before deleting the companion ACPI
->> device objects.  Otherwise, acpi_unbind_one() will fail with a
->> warning message printed to the kernel log, for example:
->>
->> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
->> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
->> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
->> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
->>
-> [...]
->> @@ -597,15 +654,11 @@ register_hotplug_dock_device(acpi_handle
->>                * ops
->>                */
->>               dd = find_dock_dependent_device(dock_station, handle);
->> -             if (dd) {
->> -                     dd->ops = ops;
->> -                     dd->context = context;
->> -                     dock_add_hotplug_device(dock_station, dd);
->> -                     ret = 0;
->> -             }
->> +             if (dd)
->> +                     return dock_init_hotplug(dd, ops, context,
->> +                                              init, release);
-> Hi Rafael,
->         Seems not an equivalent change. According to the comment just above the
-> code, we shouldn't return but continue here.
-> /*
->  * An ATA bay can be in a dock and itself can be ejected
->  * separately, so there are two 'dock stations' which need the
->  * ops
->  */
+>>>>> "Joseph" == Joseph CHANG <josright123@gmail.com> writes:
 
-two dock stations:
-Do you mean two dock station has same handle?
+ Joseph> DM9620 is an USB2.0 network adapter rather than DM9601 USB1.1. This
+ Joseph> driver processed the RX data 4 bytes header, TX data 2 bytes header,
+ Joseph> make the control bit exactly right in PHY write function, and optional
+ Joseph> IFF_ALLMUTLI bit for RX control.
 
-dock_add should add correctly flags for IS_DOCK and IS_ATA.
-if one handle has _DCK and _GTF etc.
+But dm9601.c already supports the dm9620 based devices. Why another
+driver for the same hardware?
 
-or do you mean there are two dependent devices with same handle?
-like one is for acpiphp slot and one is for ATA?
+Please CC me on dm9601 related patches.
 
-Yinghai
+ Joseph> Tested good for many platforms, include X86 desktop and ARM embedded.
+
+ Joseph> +static struct usb_driver dm9620_driver = {
+ Joseph> +	.name = "dm9620",
+ Joseph> +	.id_table = products,
+ Joseph> +	.probe = usbnet_probe,
+ Joseph> +	.disconnect = usbnet_disconnect,
+ Joseph> +	.suspend = usbnet_suspend,
+ Joseph> +	.resume = usbnet_resume,
+ Joseph> +	.disable_hub_initiated_lpm = 1,
+ Joseph> +};
+ Joseph> +
+ Joseph> +module_usb_driver(dm9620_driver);
+ Joseph> +
+ Joseph> +MODULE_AUTHOR("Peter Korsgaard <jacmet@sunsite.dk>");
+
+I'm not the author of this file.
+
+
+-- 
+Bye, Peter Korsgaard
