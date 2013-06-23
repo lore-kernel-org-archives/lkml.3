@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109Ab3FWJna (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 05:43:30 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:62912 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab3FWJn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 05:43:29 -0400
-Date: Sun, 23 Jun 2013 11:43:24 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Re: [PATCH][GIT PULL] trace,x86: Move creation of irq tracepoints
- from apic.c to irq.c
-Message-ID: <20130623094324.GA15002@gmail.com>
-References: <1371835898.18733.122.camel@gandalf.local.home>
- <51C4BC09.3000708@linux.intel.com>
- <20130623090317.GA13445@gmail.com>
+	id S1751261Ab3FWJuY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 05:50:24 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47769 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883Ab3FWJuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 05:50:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ACPI / dock / PCI: Synchronous handling of dock events for PCI devices
+Date: Sun, 23 Jun 2013 11:59:41 +0200
+Message-ID: <1410772.iYNzcAkY0L@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQV7R5mQKEFx+JhE7E1MjWSSxe2+WeK0aN_hVh6sZJ2GdQ@mail.gmail.com>
+References: <2737587.I0nULev1kj@vostro.rjw.lan> <15269989.ojxutYs2L1@vostro.rjw.lan> <CAE9FiQV7R5mQKEFx+JhE7E1MjWSSxe2+WeK0aN_hVh6sZJ2GdQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130623090317.GA13445@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday, June 22, 2013 05:22:20 PM Yinghai Lu wrote:
+> On Sat, Jun 22, 2013 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > To resolve that deadlock use the observation that
+> > unregister_hotplug_dock_device() won't need to acquire hp_lock
+> > if PCI bridges the devices on the dock station depend on are
+> > prevented from being removed prematurely while the first loop in
+> > hotplug_dock_devices() is in progress.
+> >
+> > To make that possible, introduce a mechanism by which the callers of
+> > register_hotplug_dock_device() can provide "init" and "release"
+> > routines that will be executed, respectively, after the addition
+> > and removal of the physical device object associated with the
+> > given ACPI device handle.  Make acpiphp use two new functions,
+> > acpiphp_dock_init() and acpiphp_dock_release(), respectively,
+> > calling get_bridge() and put_bridge() on the PCI bridge holding the
+> > given device, respectively, for this purpose.
+> >
+> > In addition to that, remove the dock station's list of
+> > "hotplug devices" and make the dock code always walk the whole list
+> > of "dependent devices" instead in such a way that the loops in
+> > hotplug_dock_devices() and dock_event() (replacing the loops over
+> > "hotplug devices") will take references to the list entries that
+> > register_hotplug_dock_device() has been called for.  That prevents
+> > the "release" routines associated with those entries from being
+> > called while the given entry is being processed and for PCI
+> > devices this means that their bridges won't be removed (by a
+> > concurrent thread) while hotplug_event_func() handling them is
+> > being executed.
+> ..
+> > -static void
+> > -dock_del_hotplug_device(struct dock_station *ds,
+> > -                       struct dock_dependent_device *dd)
+> > +static void dock_release_hotplug(struct dock_dependent_device *dd)
+> >  {
+> > -       mutex_lock(&ds->hp_lock);
+> > -       list_del(&dd->hotplug_list);
+> > -       mutex_unlock(&ds->hp_lock);
+> > +       void (*release)(void *) = NULL;
+> > +       void *context = NULL;
+> > +
+> > +       mutex_lock(&hotplug_lock);
+> > +
+> > +       if (dd->hp_context && !--dd->hp_refcount) {
+> > +               dd->hp_ops = NULL;
+> > +               context = dd->hp_context;
+> > +               dd->hp_context = NULL;
+> > +               release = dd->hp_release;
+> > +               dd->hp_release = NULL;
+> > +       }
+> > +
+> > +       if (release && context)
+> > +               release(context);
+> > +
+> > +       mutex_unlock(&hotplug_lock);
+> > +}
+> > +
+> > +static void dock_hotplug_event(struct dock_dependent_device *dd, u32 event,
+> > +                              bool uevent)
+> > +{
+> > +       acpi_notify_handler cb = NULL;
+> > +       bool run = false;
+> > +
+> > +       mutex_lock(&hotplug_lock);
+> > +
+> > +       if (dd->hp_context) {
+> > +               run = true;
+> > +               dd->hp_refcount++;
+> > +               if (dd->hp_ops)
+> > +                       cb = uevent ? dd->hp_ops->uevent : dd->hp_ops->handler;
+> > +       }
+> > +
+> > +       mutex_unlock(&hotplug_lock);
+> > +
+> > +       if (!run)
+> > +               return;
+> > +
+> > +       if (cb)
+> > +               cb(dd->handle, event, dd->hp_context);
+> > +
+> > +       dock_release_hotplug(dd);
+> 
+> during DOCKING, dock_release_hotplug get called too?
 
-* Ingo Molnar <mingo@kernel.org> wrote:
-
-> 
-> * H. Peter Anvin <hpa@linux.intel.com> wrote:
-> 
-> > On 06/21/2013 10:31 AM, Steven Rostedt wrote:
-> > > 
-> > > Peter,
-> > > 
-> > > I noticed that you pulled in Seiji's patches into tip. Last night I was
-> > > running my test suite on them, and this morning they showed the
-> > > following compile bug. I found the fix and attached it below. I pushed
-> > > it into my tree that's based on your x86/trace branch, for your
-> > > convenience.
-> > > 
-> > > My testing also triggered another bug, but I'm not sure it's related to
-> > > these patches or something that already existed. I'm currently
-> > > investigating it now.
-> > > 
-> > > -- Steve
-> > > 
-> > > 
-> > > Please pull the latest tip/x86/trace tree, which can be found at:
-> > > 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> > > tip/x86/trace
-> > > 
-> > > Head SHA1: 83ab85140bc1492f92de263a1c30ea04a0f465f7
-> > > 
-> > 
-> > Thanks, pulled!
-> 
-> It's still broken for some configs:
-> 
-> arch/x86/built-in.o: In function `trace_threshold_interrupt':
-> (.entry.text+0x1226): undefined reference to `smp_trace_threshold_interrupt'
-> arch/x86/built-in.o: In function `trace_thermal_interrupt':
-> (.entry.text+0x1306): undefined reference to `smp_trace_thermal_interrupt'
-> 
-> config attached.
-
-I've applied the fix from Seiji Aguchi and I'm testing the updated 
-tip:x86/trace branch now.
+Yes, we need to drop down the refcount we've just bumped up.
 
 Thanks,
+Rafael
 
-	Ingo
