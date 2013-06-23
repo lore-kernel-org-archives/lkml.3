@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab3FWVlu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 17:41:50 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48343 "EHLO hydra.sisk.pl"
+	id S1751795Ab3FWVnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 17:43:09 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48352 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab3FWVlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 17:41:42 -0400
+	id S1751426Ab3FWVnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 17:43:07 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Jiang Liu <liuj97@gmail.com>
 Cc: "Alexander E. Patrakov" <patrakov@gmail.com>,
@@ -16,8 +16,8 @@ Cc: "Alexander E. Patrakov" <patrakov@gmail.com>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
-Date: Sun, 23 Jun 2013 23:51:08 +0200
-Message-ID: <4594257.0MqNgJk35h@vostro.rjw.lan>
+Date: Sun, 23 Jun 2013 23:52:32 +0200
+Message-ID: <1397053.iSJsVQ5uPZ@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <51C71AFA.4090102@gmail.com>
 References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <4437606.laqX8rCptb@vostro.rjw.lan> <51C71AFA.4090102@gmail.com>
@@ -91,4 +91,3 @@ patchset.
 
 Thanks,
 Rafael
-
