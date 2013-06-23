@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509Ab3FWNmF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 09:42:05 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:47659 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab3FWNl4 (ORCPT
+	id S1751977Ab3FWNma (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 09:42:30 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56585 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab3FWNmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 09:41:56 -0400
+	Sun, 23 Jun 2013 09:42:24 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 03/45] Documentation,
- CPU hotplug: Recommend usage of get/put_online_cpus_atomic()
+Subject: [PATCH 05/45] CPU hotplug: Protect set_cpu_online() to avoid
+ false-positives
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
@@ -20,73 +20,65 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
-Date: Sun, 23 Jun 2013 19:08:29 +0530
-Message-ID: <20130623133824.19094.76756.stgit@srivatsabhat.in.ibm.com>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Date: Sun, 23 Jun 2013 19:09:02 +0530
+Message-ID: <20130623133858.19094.70477.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
 References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062313-5140-0000-0000-0000036ABC15
+x-cbid: 13062313-8878-0000-0000-000007A61883
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able
-to depend on disabling preemption to prevent CPUs from going offline
-from under us.
+When bringing a secondary CPU online, the task running on the CPU coming up
+sets itself in the cpu_online_mask. This is safe even though this task is not
+the hotplug writer task.
 
-So add documentation to recommend using the new get/put_online_cpus_atomic()
-APIs to prevent CPUs from going offline, while invoking from atomic context.
+But it is kinda hard to teach this to the CPU hotplug debug infrastructure,
+and if we get it wrong, we risk making the debug code too lenient, risking
+false-negatives.
 
-Cc: Rob Landley <rob@landley.net>
-Cc: linux-doc@vger.kernel.org
+Luckily, all architectures use set_cpu_online() to manipulate the
+cpu_online_mask. So, to avoid false-positive warnings from the CPU hotplug
+debug code, encapsulate the body of set_cpu_online() within
+get/put_online_cpus_atomic().
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- Documentation/cpu-hotplug.txt |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ kernel/cpu.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
-index 9f40135..7b3ca60 100644
---- a/Documentation/cpu-hotplug.txt
-+++ b/Documentation/cpu-hotplug.txt
-@@ -113,13 +113,18 @@ Never use anything other than cpumask_t to represent bitmap of CPUs.
- 	#include <linux/cpu.h>
- 	get_online_cpus() and put_online_cpus():
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index e90d9d7..23df9ba 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -818,10 +818,14 @@ void set_cpu_present(unsigned int cpu, bool present)
  
--The above calls are used to inhibit cpu hotplug operations. While the
-+The above calls are used to inhibit cpu hotplug operations, when invoked from
-+non-atomic contexts (because the above functions can sleep). While the
- cpu_hotplug.refcount is non zero, the cpu_online_mask will not change.
--If you merely need to avoid cpus going away, you could also use
--preempt_disable() and preempt_enable() for those sections.
--Just remember the critical section cannot call any
--function that can sleep or schedule this process away. The preempt_disable()
--will work as long as stop_machine_run() is used to take a cpu down.
+ void set_cpu_online(unsigned int cpu, bool online)
+ {
++	get_online_cpus_atomic();
 +
-+However, if you are executing in atomic context (ie., you can't afford to
-+sleep), and you merely need to avoid cpus going offline, you can use
-+get_online_cpus_atomic() and put_online_cpus_atomic() for those sections.
-+Just remember the critical section cannot call any function that can sleep or
-+schedule this process away. Using preempt_disable() will also work, as long
-+as stop_machine() is used to take a CPU down. But we are going to get rid of
-+stop_machine() in the CPU offline path soon, so it is strongly recommended
-+to use the APIs mentioned above.
- 
- CPU Hotplug - Frequently Asked Questions.
- 
-@@ -360,6 +365,9 @@ A: There are two ways.  If your code can be run in interrupt context, use
- 		return err;
- 	}
- 
-+   If my_func_on_cpu() itself cannot block, use get/put_online_cpus_atomic()
-+   instead of get/put_online_cpus(), to prevent CPUs from going offline.
+ 	if (online)
+ 		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+ 	else
+ 		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
 +
- Q: How do we determine how many CPUs are available for hotplug.
- A: There is no clear spec defined way from ACPI that can give us that
-    information today. Based on some input from Natalie of Unisys,
++	put_online_cpus_atomic();
+ }
+ 
+ void set_cpu_active(unsigned int cpu, bool active)
 
