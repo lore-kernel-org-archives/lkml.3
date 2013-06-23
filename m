@@ -1,32 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab3FWTRb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 15:17:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56486 "EHLO
+	id S1751697Ab3FWT3I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 15:29:08 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44653 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750848Ab3FWTR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 15:17:27 -0400
-Message-ID: <1372015045.3137.67.camel@joe-AO722>
-Subject: Re: [PATCH 25/45] staging/octeon: Use get/put_online_cpus_atomic()
- to prevent CPU offline
+	id S1750849Ab3FWT3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 15:29:05 -0400
+Message-ID: <1372015744.3137.74.camel@joe-AO722>
+Subject: [PATCH V2] iommu: Use %pa and %zx instead of casting
 From: Joe Perches <joe@perches.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, tglx@linutronix.de,
-        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, ddaney@caviumnetworks.com
-Date: Sun, 23 Jun 2013 12:17:25 -0700
-In-Reply-To: <51C744A9.8000406@linux.vnet.ibm.com>
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
-	 <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com>
-	 <20130623181740.GB24256@kroah.com> <51C744A9.8000406@linux.vnet.ibm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        iommu@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 23 Jun 2013 12:29:04 -0700
+In-Reply-To: <CAMuHMdWb4WK9ZuJ-vwdywgDSSbZTnnS1emF02VzrUgrSt5VKsg@mail.gmail.com>
+References: <20130621153331.2881.35589.stgit@bling.home>
+	 <20130623114930.GA2557@8bytes.org> <1372009427.3137.54.camel@joe-AO722>
+	 <CAMuHMdWb4WK9ZuJ-vwdywgDSSbZTnnS1emF02VzrUgrSt5VKsg@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
@@ -35,43 +27,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-24 at 00:25 +0530, Srivatsa S. Bhat wrote:
-> On 06/23/2013 11:47 PM, Greg Kroah-Hartman wrote:
-> > On Sun, Jun 23, 2013 at 07:13:33PM +0530, Srivatsa S. Bhat wrote:
-[]
-> >> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-[]
-> Honestly, I don't know. Let's CC the author of that code (David Daney).
-> I wonder why get_maintainer.pl didn't generate his name for this file,
-> even though the entire file is almost made up of his commits alone!
+printk supports using %pa for phys_addr_t and
+%zx for size_t so use those instead of %lx and
+casts to unsigned long.
 
-Because by default, get_maintainer looks for a matching
-file entry in MAINTAINERS.  Failing that, it looks at
-one year of git history.  In this case, no work has been
-done on the file for quite awhile.
+Other miscellaneous changes around this:
 
---git-blame can be added to the get_maintainer.pl command
-line to look for % of authorship by line and commit count.
+Always use 0x%zx for size instead of one use of decimal.
+Coalesce format and align arguments.
 
-Adding --git-blame can take a long time to run, that's why
-it's not on by default.  Also, very old history can give
-invalid email addresses as people move around and email
-addresses decay.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+> While we're at it, paddr is phys_addr_t (which can be 32-bit or 64-bit),
+> so it should be cast to unsigned long long (instead of unsigned long),
+> and printed using %llx (instead of %lx).
 
-If you always want to find original authors, you could
-use a .get_maintainer.conf file with --git-blame in it.
+Sounds good to me, except using %pa instead is better still.
 
-$ time ./scripts/get_maintainer.pl --git-blame -f drivers/staging/octeon/ethernet-tx.c
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:STAGING SUBSYSTEM,commits:4/16=25%)
-David Daney <ddaney@caviumnetworks.com> (authored lines:711/725=98%,commits:13/16=81%)
-Ralf Baechle <ralf@linux-mips.org> (commits:11/16=69%)
-Eric Dumazet <eric.dumazet@gmail.com> (commits:2/16=12%)
-Andrew Morton <akpm@linux-foundation.org> (commits:1/16=6%)
-devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM)
-linux-kernel@vger.kernel.org (open list)
+ drivers/iommu/iommu.c | 23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
-real	0m16.853s
-user	0m16.088s
-sys	0m0.444s
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index ab1fa19..fbe9ca7 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -807,20 +807,18 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+ 	 * size of the smallest page supported by the hardware
+ 	 */
+ 	if (!IS_ALIGNED(iova | paddr | size, min_pagesz)) {
+-		pr_err("unaligned: iova 0x%lx pa 0x%lx size 0x%lx min_pagesz "
+-			"0x%x\n", iova, (unsigned long)paddr,
+-			(unsigned long)size, min_pagesz);
++		pr_err("unaligned: iova 0x%lx pa 0x%pa size 0x%zx min_pagesz 0x%x\n",
++		       iova, &paddr, size, min_pagesz);
+ 		return -EINVAL;
+ 	}
+ 
+-	pr_debug("map: iova 0x%lx pa 0x%lx size 0x%lx\n", iova,
+-				(unsigned long)paddr, (unsigned long)size);
++	pr_debug("map: iova 0x%lx pa 0x%pa size 0x%zx\n", iova, &paddr, size);
+ 
+ 	while (size) {
+ 		size_t pgsize = iommu_pgsize(domain, iova | paddr, size);
+ 
+-		pr_debug("mapping: iova 0x%lx pa 0x%lx pgsize %lu\n", iova,
+-			 (unsigned long)paddr, (unsigned long)pgsize);
++		pr_debug("mapping: iova 0x%lx pa 0x%pa pgsize 0x%zx\n",
++			 iova, &paddr, pgsize);
+ 
+ 		ret = domain->ops->map(domain, iova, paddr, pgsize, prot);
+ 		if (ret)
+@@ -857,13 +855,12 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
+ 	 * by the hardware
+ 	 */
+ 	if (!IS_ALIGNED(iova | size, min_pagesz)) {
+-		pr_err("unaligned: iova 0x%lx size 0x%lx min_pagesz 0x%x\n",
+-					iova, (unsigned long)size, min_pagesz);
++		pr_err("unaligned: iova 0x%lx size 0x%zx min_pagesz 0x%x\n",
++		       iova, size, min_pagesz);
+ 		return -EINVAL;
+ 	}
+ 
+-	pr_debug("unmap this: iova 0x%lx size 0x%lx\n", iova,
+-							(unsigned long)size);
++	pr_debug("unmap this: iova 0x%lx size 0x%zx\n", iova, size);
+ 
+ 	/*
+ 	 * Keep iterating until we either unmap 'size' bytes (or more)
+@@ -876,8 +873,8 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
+ 		if (!unmapped_page)
+ 			break;
+ 
+-		pr_debug("unmapped: iova 0x%lx size %lx\n", iova,
+-					(unsigned long)unmapped_page);
++		pr_debug("unmapped: iova 0x%lx size 0x%zx\n",
++			 iova, unmapped_page);
+ 
+ 		iova += unmapped_page;
+ 		unmapped += unmapped_page;
 
 
