@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3FWCKl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 22:10:41 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:47371 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab3FWCKk (ORCPT
+	id S1752016Ab3FWCN7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 22:13:59 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:41157 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab3FWCN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 22:10:40 -0400
+	Sat, 22 Jun 2013 22:13:56 -0400
+Date: Sun, 23 Jun 2013 03:13:51 +0100
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2013-06-23
+Message-ID: <20130623021351.GA2327@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <CAAhV-H6s47NUHzbEX5UKYtkei7=s08PPXCMw39_fP_SV7Hv5Vg@mail.gmail.com>
-References: <1359527106-22879-1-git-send-email-chenhc@lemote.com>
-	<1359527106-22879-4-git-send-email-chenhc@lemote.com>
-	<5166ED66.7020307@realitydiluted.com>
-	<CAAhV-H6s47NUHzbEX5UKYtkei7=s08PPXCMw39_fP_SV7Hv5Vg@mail.gmail.com>
-Date: Sun, 23 Jun 2013 10:10:38 +0800
-X-Google-Sender-Auth: uTpdPRj06dw2TkFxSltPB5V4xis
-Message-ID: <CAAhV-H58Y_Rd8thj8MWXGCqqGtYJekDKrO-nXYjdp3214jnQ0A@mail.gmail.com>
-Subject: Re: [PATCH V9 03/13] MIPS: Loongson: Introduce and use
- cpu_has_coherent_cache feature
-From: Huacai Chen <chenhc@lemote.com>
-To: "Steven J. Hill" <sjhill@realitydiluted.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fUYQa+Pmc3FrFX/N"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Steven
 
-Is the 3rd patch of V10 is OK to be accepted now? If so, could the
-patchset of V10 be merged into 3.11?
+--fUYQa+Pmc3FrFX/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Huacai
+Hi John,
 
-On Fri, Apr 12, 2013 at 11:07 AM, Huacai Chen <chenhc@lemote.com> wrote:
-> Hi, Steven,
->
-> Maybe you are misunderstand Loongson-3's "hardware-maintained cache".
-> Loongson-3's hardware maintain the cache coherency between multi-cores (also
-> maintain coherency between CPU-core and DMA), but Loongson-3 can *still* has
-> cache alias (Cache alias in Loongson is sovled by 16K PageSize).
->
-> Meanwhile, I know why you misunderstand, because my code is like this:
->
->
-> static inline void local_r4k___flush_cache_all(void * args)
->         if (cpu_has_coherent_cache)
->                 return;
->
-> This implies that Loongson-3 has no cache alias, but in fact this is wrong
-> if Loongson has configured PageSize < 16K.
->
-> I think I should make my code in all flush functions like this:
->
-> static inline void local_r4k___flush_cache_all(void * args)
->         if (cpu_has_coherent_cache && !cpu_has_dc_aliases)
->                 return;
->
-> Am I right?
->
->
-> On Fri, Apr 12, 2013 at 1:05 AM, Steven J. Hill <sjhill@realitydiluted.com>
-> wrote:
->>
->> -----BEGIN PGP SIGNED MESSAGE-----
->> Hash: SHA1
->>
->> On 01/30/2013 12:24 AM, Huacai Chen wrote:
->> > Loongson-3 maintains cache coherency by hardware. So we introduce a cpu
->> > feature named cpu_has_coherent_cache and use it to modify MIPS's cache
->> > flushing functions.
->> >
->> > Signed-off-by: Huacai Chen <chenhc@lemote.com> Signed-off-by: Hongliang
->> > Tao
->> > <taohl@lemote.com> Signed-off-by: Hua Yan <yanh@lemote.com> ---
->> > arch/mips/include/asm/cacheflush.h                 |    6 +++++
->> > arch/mips/include/asm/cpu-features.h               |    3 ++
->> > .../asm/mach-loongson/cpu-feature-overrides.h      |    6 +++++
->> > arch/mips/mm/c-r4k.c                               |   21
->> > ++++++++++++++++++- 4 files changed, 34 insertions(+), 2 deletions(-)
->> >
->> Hello.
->>
->> This patch masks the problem that you are not properly probing your L1
->> caches
->> to start with. For some reason in 'probe_pcache()' you reach the default
->> case
->> where the primary data cache is marked as having aliases. If your CPU
->> truly is
->> HW coherent with no aliases, then MIPS_CACHE_ALIASES should never get set.
->> Fixing this would eliminate the 'arch/mips/include/asm/cacheflush.h' and
->> 'arch/mips/mm/c-r4k.c' changes completely. There is no need to add more
->> CPU
->> feature bits for this single platform, thus changes to 'cpu-features.h'
->> and
->> 'cpu-features-overrides.h' will not be accepted.
->>
->> Also, please do not copy the <linux-kernel@vger.kernel.org> mailing list
->> unless your patch touches files outside of 'arch/mips' in order to cut
->> down
->> traffic on an already busy list. Thanks.
->>
->> Steve
->> - -----
->> <sjhill@mips.com>
->> <Steven.Hill@imgtec.com>
->> -----BEGIN PGP SIGNATURE-----
->> Version: GnuPG v1.4.11 (GNU/Linux)
->> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
->>
->> iEYEARECAAYFAlFm7WAACgkQgyK5H2Ic36eHuwCeKZjp1+arkoheEpeuzjJkQskN
->> /7MAnig14A03hWxRvfqDOMbMFKXpZBO8
->> =HRPU
->> -----END PGP SIGNATURE-----
->>
->
+A important fix to 3.10, this patch fixes an issues that was preventing the=
+=20
+l2cap info response command to be handled properly. Please pull. Thanks!
+
+        Gustavo
+       =20
+---
+The following changes since commit fcb3701849957917a234a61b58ad70ed35c83eda:
+
+  brcmfmac: free primary net_device when brcmf_bus_start() fails (2013-06-1=
+3 13:24:12 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+
+for you to fetch changes up to 3f6fa3d489e127ca5a5b298eabac3ff5dbe0e112:
+
+  Bluetooth: Fix invalid length check in l2cap_information_rsp() (2013-06-2=
+3 00:24:58 +0100)
+
+----------------------------------------------------------------
+Jaganath Kanakkassery (1):
+      Bluetooth: Fix invalid length check in l2cap_information_rsp()
+
+ net/bluetooth/l2cap_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--fUYQa+Pmc3FrFX/N
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRxlnfAAoJEPs3PUX4s20oCq8P/j8Yag3fDWz8CjlJbYVqMsMw
+wyEU825uw6WYYfGksV6lGGWWFlqPDuKcsQ/NosGB/I7Hn1m9CuIESeuowiu/aw+V
+ZfHLVMe3x5NH/7lwPELHemBwKTGRVahaC7itP8sqOah0x8XG6WrIN6L75l+RR+3y
+EV0y3lcDmRiNA/BP0EVuuhjORUpfKuoQrJSea+Q7vtk16aLutlohHo4gFlij4E54
+lOht8Rc+FVDhL86rqg0ZrtkWc1aSmjjMLFpWV0hEzk+TaU4P1I6AMT1kPEVjK+5D
+39R4Eskw29PqsQq5Iz9MdTlODol0RQ2AVnMjd26ICjZM3PjujG8AgHF0RNKwlZO2
+Mgh5Iredhm7yGHMqiZ05jaOB3UIakKufx3wjaRViXUIGAYHrxe1kZ3FMHYSOAr38
+TxPnj7s3p8OG/Qf3wyUp4Lwz2KK0uZSgluNfZV6Uj2fjWvDgDupNXrXF0uz+PaUW
+zhi6OH5ui3I+Gf9HXeolRs5A7xx4fB+h16yHhFkhqip3ZolRB8NL5wNYBnhT1cz3
+EWmoZsnfFrpX+oic96rL8+8jQSIv3wBth3wM4HE9lRKlP3F+rsUhRcw92VX33hgn
+rwxCtObpaMbvs/6pKgTEKwUGsUK3Vs1psMxZrBBvW7LA775/BSoBdDBTbxUnclU3
+yLJ4+4SiQ5ENLoVF4ogO
+=hO+l
+-----END PGP SIGNATURE-----
+
+--fUYQa+Pmc3FrFX/N--
