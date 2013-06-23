@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab3FWOlC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 10:41:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43179 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751478Ab3FWOk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 10:40:59 -0400
-Date: Sun, 23 Jun 2013 16:36:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130623143634.GA2000@redhat.com>
-References: <20130619164540.GB22483@redhat.com> <20130619175356.GA23673@redhat.com> <20130619181302.GE5146@linux.vnet.ibm.com> <20130620001212.GB12151@redhat.com> <20130620161652.GA4462@linux.vnet.ibm.com> <20130621151119.GA1596@redhat.com> <20130621195949.GA15519@redhat.com> <20130622013731.GA22918@redhat.com> <20130622173129.GA29375@redhat.com> <20130622215905.GA28238@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130622215905.GA28238@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751930Ab3FWPAb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 11:00:31 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:40933 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab3FWPA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 11:00:28 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss@lists.ozlabs.org, Sekhar Nori <nsekhar@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v3 0/6] ARM: davinci: da850: add ethernet driver DT support
+Date: Sun, 23 Jun 2013 20:30:01 +0530
+Message-Id: <1371999607-6483-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22, Dave Jones wrote:
->
-> On Sat, Jun 22, 2013 at 07:31:29PM +0200, Oleg Nesterov wrote:
->
->  > > [ 7485.261299] WARNING: at include/linux/nsproxy.h:63 get_proc_task_net+0x1c8/0x1d0()
->  >
->  > Hmm. The test case tries to create the symlink in /proc/*/net/ ?
->
-> hit it with symlink, but also some other syscalls. eg:
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-Yes, this is fine, the warnings without lockup are not interesting.
-I thought that, perhaps, an exiting task can trigger this WARN()
-from task_work_run(). And this would be fine too! But this could
-provide more info if lockup happens after that. So please ignore.
+This patch set enables Ethernet support through device tree model.
+This patch set enables mii interface only and is being tested to boot via
+rootfs. The rmii phy is present on the i2c gpio expander chip (UI board)
+for which yet support needs to be added, once the DT support for the chip
+is enabled, enabling rmii will be subsequnet patch.
 
->  > But it seems you can't ?
->  >
->  > Dave, I am sorry but all I can do is to ask you to do more testing.
->  > Could you please reproduce the lockup again on the clean Linus's
->  > current ? (and _without_ reverting 8aac6270, of course).
->
-> I'll give it a shot.  Just rebuilt clean tree, and restarted the tests.
+Changes for v2:
+1: Enabled mdio device.
+2: Fixed clock lookup.
 
-Thanks a lot.
+Changes for v3:
+1: Fixed review comments pointed out by Sekhar.
 
-Oleg.
+Lad, Prabhakar (6):
+  ARM: davinci: da8xx: fix clock lookup for mdio device
+  ARM: davinci: da850: add DT node for mdio device
+  ARM: davinci: da850: add OF_DEV_AUXDATA entry for mdio.
+  ARM: davinci: da850: add DT node for eth0.
+  ARM: davinci: da850: add OF_DEV_AUXDATA entry for eth0.
+  ARM: davinci: da850: configure system configuration chip(CFGCHIP3)
+    for emac
+
+ arch/arm/boot/dts/da850-evm.dts            |   11 +++++++
+ arch/arm/boot/dts/da850.dtsi               |   43 ++++++++++++++++++++++++++
+ arch/arm/mach-davinci/board-da850-evm.c    |   36 ++--------------------
+ arch/arm/mach-davinci/da830.c              |    1 +
+ arch/arm/mach-davinci/da850.c              |   46 ++++++++++++++++++++++++++++
+ arch/arm/mach-davinci/da8xx-dt.c           |   20 ++++++++++++
+ arch/arm/mach-davinci/devices-da8xx.c      |    8 ++---
+ arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
+ 8 files changed, 126 insertions(+), 40 deletions(-)
+
+-- 
+1.7.9.5
 
