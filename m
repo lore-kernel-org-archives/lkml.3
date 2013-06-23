@@ -1,117 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751211Ab3FWJ2s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 05:28:48 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:36517 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab3FWJ2o (ORCPT
+	id S1751064Ab3FWJ3l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 05:29:41 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:36165 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab3FWJ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 05:28:44 -0400
-Date: Sun, 23 Jun 2013 11:28:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: holt@sgi.com, travis@sgi.com, rob@landley.net, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, yinghai@kernel.org,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
-Message-ID: <20130623092840.GB13445@gmail.com>
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
- <1371831934-156971-3-git-send-email-nzimmer@sgi.com>
+	Sun, 23 Jun 2013 05:29:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371831934-156971-3-git-send-email-nzimmer@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51BEB05C.7040802@linux.vnet.ibm.com>
+References: <1371435692-18831-1-git-send-email-leiwen@marvell.com>
+	<51BE8213.4000701@linux.vnet.ibm.com>
+	<CALZhoSR7pB8qJjT_9_naxp2cgtuz=UR0DzLk_J-_CVNaO55jyA@mail.gmail.com>
+	<51BEB05C.7040802@linux.vnet.ibm.com>
+Date: Sun, 23 Jun 2013 17:29:38 +0800
+Message-ID: <CALZhoSTne47rndKYw_tv_fBPpNvtk_R0fWMXaMqZEGU+tkykLQ@mail.gmail.com>
+Subject: Re: [PATCH] sched: add heuristic logic to pick idle peers
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Lei Wen <leiwen@marvell.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Michael,
 
-* Nathan Zimmer <nzimmer@sgi.com> wrote:
+On Mon, Jun 17, 2013 at 2:44 PM, Michael Wang
+<wangyun@linux.vnet.ibm.com> wrote:
+> On 06/17/2013 01:08 PM, Lei Wen wrote:
+>> Hi Michael,
+>>
+>> On Mon, Jun 17, 2013 at 11:27 AM, Michael Wang
+>> <wangyun@linux.vnet.ibm.com> wrote:
+>>> Hi, Lei
+>>>
+>>> On 06/17/2013 10:21 AM, Lei Wen wrote:
+>>>> nr_busy_cpus in sched_group_power structure cannot present the purpose
+>>>> for judging below statement:
+>>>> "this cpu's scheduler group has multiple busy cpu's exceeding
+>>>>  the group's power."
+>>>>
+>>>> But only could tell how many cpus is doing their jobs for currently.
+>>>
+>>> AFAIK, this nr_busy_cpus presents how many cpus in local group are not
+>>> idle, the logical here in nohz_kick_needed() is:
+>>>
+>>>         if domain cpus share resources and at least 2 cpus in
+>>>         local group are not idle, prefer to do balance.
+>>>
+>>
+>> Seems reasonable for me. But this comment is conflicted with current documented
+>> one. Do we need to modify the comment anyway, as previous says nr_busy>1 is
+>> "scheduler group has multiple busy cpu;s exceeding the group's power"?
+>
+> I agree it doesn't make sense (to me), the logical here only make sure
+> there are at least 2 non-idle cpus in local group, we may need some more
+> powerful folks to confirm that point.
+>
+>>
+>>> And the idea behind is, we catch the timing when there are idle-cpu and
+>>> busy-group and task-moving may cost low.
+>>
+>> Since there is only one task over runqueue now, then why we could need the
+>> load balance any way?...
+>
+> IMHO, this is just shot in the darkness... like 'I think in such cases
+> the chances of requiring a balance will be high', but the problem is,
+> the logical is already in mainline for some reasons, if we want to say
+> that is wrong, then we need to collect enough proof...
+>
+>>
+>>>
+>>> Your change will remove this timing for balance, I think you may need
+>>> some test to prove that this patch will make things better.
+>>
+>> I see. Yes, test data is always good. :)
+>> Do you have any suggestion like using what kind of test program to
+>> collect this data?
+>
+> Any workload which require a good balance to check whether the patch
+> cause damage, any workload which is latency-sensitive to check whether
+> the patch bring benefit, what about kernbench with enough threads firstly?
+>
+> Actually all the popular benchmark worth a try, until some improvement
+> was found, if after all the test, still no benefit located, then the
+> idea may have to be dropped...
 
-> The memory we set aside in the previous patch needs to be reinserted.
-> We start this process via late_initcall so we will have multiple cpus to do
-> the work.
-> 
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org> 
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/kernel/e820.c | 129 +++++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/base/memory.c  |  83 +++++++++++++++++++++++++++++++
->  include/linux/memory.h |   5 ++
->  3 files changed, 217 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-> index 3752dc5..d31039d 100644
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -23,6 +23,7 @@
->  
->  #ifdef CONFIG_DELAY_MEM_INIT
->  #include <linux/memory.h>
-> +#include <linux/delay.h>
->  #endif
->  
->  #include <asm/e820.h>
-> @@ -397,6 +398,22 @@ static u64 min_region_size;	/* min size of region to slice from */
->  static u64 pre_region_size;	/* multiply bsize for node low memory */
->  static u64 post_region_size;	/* multiply bsize for node high memory */
->  
-> +static unsigned long add_absent_work_start_time;
-> +static unsigned long add_absent_work_stop_time;
-> +static unsigned int add_absent_job_count;
-> +static atomic_t add_absent_work_count;
-> +
-> +struct absent_work {
-> +	struct work_struct	work;
-> +	struct absent_work	*next;
-> +	atomic_t		busy;
-> +	int			cpu;
-> +	int			node;
-> +	int			index;
-> +};
-> +static DEFINE_PER_CPU(struct absent_work, absent_work);
-> +static struct absent_work *first_absent_work;
+I try several benchmark, like cyclictest, sysbench...
+But seems the score it report shows get benefit little.
 
-That's 4.5 GB/sec initialization speed - that feels a bit slow and the 
-boot time effect should be felt on smaller 'a couple of gigabytes' desktop 
-boxes as well. Do we know exactly where the 2 hours of boot time on a 32 
-TB system is spent?
+However, since this change is applying towards idle path, the benchmark maybe
+wrong direction to illustrate its correctness.
 
-While you cannot profile the boot process (yet), you could try your 
-delayed patch and run a "perf record -g" call-graph profiling of the 
-late-time initialization routines. What does 'perf report' show?
+Suppose we are having two cpu socket/cluster, and two cpus in each
+socket/cluster.
+And socket 0's two cpus are idle, socket 1's  one cpu has two pined
+task, another is also idle.
 
-Delayed initialization makes sense I guess because 32 TB is a lot of 
-memory - I'm just wondering whether there's some low hanging fruits left 
-in the mem init code, that code is certainly not optimized for 
-performance.
+In such case, scheduler would keep wake the cpu0 in socket 0, and let
+it do the nohz balance.
+But for two tasks in socket1/cpu0 is pined, so it cannot be moved.
+So result is socket 0 would be waken up at least every scheduler tick.
 
-Plus with a struct page size of around 64 bytes (?) 32 TB of RAM has 512 
-GB of struct page arrays alone. Initializing those will take quite some 
-time as well - and I suspect they are allocated via zeroing them first. If 
-that memset() exists then getting rid of it might be a good move as well.
+If in such scenario, scheduler choose socket1/cpu1 with the patch
+applied, the whole system's power
+could be reduced, since waking up cpu0 over socket0 would increase
+addition socket/cluster power.
 
-Yet another thing to consider would be to implement an initialization 
-speedup of 3 orders of magnitude: initialize on the large page (2MB) 
-grandularity and on-demand delay the initialization of the 4K granular 
-struct pages [but still allocating them] - which I suspect are a good 
-chunk of the overhead? That way we could initialize in 2MB steps and speed 
-up the 2 hours bootup of 32 TB of RAM to 14 seconds...
-
-[ The cost would be one more branch in the buddy allocator, to detect
-  not-yet-initialized 2 MB chunks as we encounter them. Acceptable I 
-  think. ]
+Could it be one proof to support this patch?
 
 Thanks,
+Lei
 
-	Ingo
+>
+> Regards,
+> Michael Wang
+>
+>>
+>> Thanks,
+>> Lei
+>>
+>>>
+>>> Regards,
+>>> Michael Wang
+>>>
+>>>>
+>>>> However, the original purpose to add this logic still looks good.
+>>>> So we move this kind of logic to find_new_ilb, so that we could pick
+>>>> out peer from our sharing resource domain whenever possible.
+>>>>
+>>>> Signed-off-by: Lei Wen <leiwen@marvell.com>
+>>>> ---
+>>>>  kernel/sched/fair.c |   28 ++++++++++++++++++++++------
+>>>>  1 file changed, 22 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>>> index c61a614..64f9120 100644
+>>>> --- a/kernel/sched/fair.c
+>>>> +++ b/kernel/sched/fair.c
+>>>> @@ -5368,10 +5368,31 @@ static struct {
+>>>>       unsigned long next_balance;     /* in jiffy units */
+>>>>  } nohz ____cacheline_aligned;
+>>>>
+>>>> +/*
+>>>> + * Add the heuristic logic to try waking up idle cpu from
+>>>> + * those peers who share resources with us, so that the
+>>>> + * cost would be brought to minimum.
+>>>> + */
+>>>>  static inline int find_new_ilb(int call_cpu)
+>>>>  {
+>>>> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
+>>>> +     int ilb = nr_cpu_ids;
+>>>> +     struct sched_domain *sd;
+>>>> +
+>>>> +     rcu_read_lock();
+>>>> +     for_each_domain(call_cpu, sd) {
+>>>> +             /* We loop till sched_domain no longer share resource */
+>>>> +             if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
+>>>> +                     ilb = cpumask_first(nohz.idle_cpus_mask);
+>>>> +                     break;
+>>>> +             }
+>>>>
+>>>> +             /* else, we would try to pick the idle cpu from peers first */
+>>>> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
+>>>> +                             sched_domain_span(sd));
+>>>> +             if (ilb < nr_cpu_ids)
+>>>> +                     break;
+>>>> +     }
+>>>> +     rcu_read_unlock();
+>>>>       if (ilb < nr_cpu_ids && idle_cpu(ilb))
+>>>>               return ilb;
+>>>>
+>>>> @@ -5620,8 +5641,6 @@ end:
+>>>>   * Current heuristic for kicking the idle load balancer in the presence
+>>>>   * of an idle cpu is the system.
+>>>>   *   - This rq has more than one task.
+>>>> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
+>>>> - *     busy cpu's exceeding the group's power.
+>>>>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+>>>>   *     domain span are idle.
+>>>>   */
+>>>> @@ -5659,9 +5678,6 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>>>>               struct sched_group_power *sgp = sg->sgp;
+>>>>               int nr_busy = atomic_read(&sgp->nr_busy_cpus);
+>>>>
+>>>> -             if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
+>>>> -                     goto need_kick_unlock;
+>>>> -
+>>>>               if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
+>>>>                   && (cpumask_first_and(nohz.idle_cpus_mask,
+>>>>                                         sched_domain_span(sd)) < cpu))
+>>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
