@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261Ab3FWJuY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 05:50:24 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47769 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab3FWJuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 05:50:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ACPI / dock / PCI: Synchronous handling of dock events for PCI devices
-Date: Sun, 23 Jun 2013 11:59:41 +0200
-Message-ID: <1410772.iYNzcAkY0L@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQV7R5mQKEFx+JhE7E1MjWSSxe2+WeK0aN_hVh6sZJ2GdQ@mail.gmail.com>
-References: <2737587.I0nULev1kj@vostro.rjw.lan> <15269989.ojxutYs2L1@vostro.rjw.lan> <CAE9FiQV7R5mQKEFx+JhE7E1MjWSSxe2+WeK0aN_hVh6sZJ2GdQ@mail.gmail.com>
+	id S1751408Ab3FWJxL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 05:53:11 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49159 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab3FWJxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 05:53:09 -0400
+Date: Sun, 23 Jun 2013 11:53:07 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: =?iso-8859-1?Q?Ga=EBl?= PORTAY <g.portay@overkiz.com>,
+        Rob Landley <rob@landley.net>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
+Subject: Re: [RFC PATCH] led: add Cycle LED trigger.
+Message-ID: <20130623095305.GA3669@amd.pavel.ucw.cz>
+References: <1371572663-10846-1-git-send-email-g.portay@overkiz.com>
+ <20130622112619.GA8075@amd.pavel.ucw.cz>
+ <20130622164300.GB19420@earth.universe>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130622164300.GB19420@earth.universe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 22, 2013 05:22:20 PM Yinghai Lu wrote:
-> On Sat, Jun 22, 2013 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > To resolve that deadlock use the observation that
-> > unregister_hotplug_dock_device() won't need to acquire hp_lock
-> > if PCI bridges the devices on the dock station depend on are
-> > prevented from being removed prematurely while the first loop in
-> > hotplug_dock_devices() is in progress.
-> >
-> > To make that possible, introduce a mechanism by which the callers of
-> > register_hotplug_dock_device() can provide "init" and "release"
-> > routines that will be executed, respectively, after the addition
-> > and removal of the physical device object associated with the
-> > given ACPI device handle.  Make acpiphp use two new functions,
-> > acpiphp_dock_init() and acpiphp_dock_release(), respectively,
-> > calling get_bridge() and put_bridge() on the PCI bridge holding the
-> > given device, respectively, for this purpose.
-> >
-> > In addition to that, remove the dock station's list of
-> > "hotplug devices" and make the dock code always walk the whole list
-> > of "dependent devices" instead in such a way that the loops in
-> > hotplug_dock_devices() and dock_event() (replacing the loops over
-> > "hotplug devices") will take references to the list entries that
-> > register_hotplug_dock_device() has been called for.  That prevents
-> > the "release" routines associated with those entries from being
-> > called while the given entry is being processed and for PCI
-> > devices this means that their bridges won't be removed (by a
-> > concurrent thread) while hotplug_event_func() handling them is
-> > being executed.
-> ..
-> > -static void
-> > -dock_del_hotplug_device(struct dock_station *ds,
-> > -                       struct dock_dependent_device *dd)
-> > +static void dock_release_hotplug(struct dock_dependent_device *dd)
-> >  {
-> > -       mutex_lock(&ds->hp_lock);
-> > -       list_del(&dd->hotplug_list);
-> > -       mutex_unlock(&ds->hp_lock);
-> > +       void (*release)(void *) = NULL;
-> > +       void *context = NULL;
-> > +
-> > +       mutex_lock(&hotplug_lock);
-> > +
-> > +       if (dd->hp_context && !--dd->hp_refcount) {
-> > +               dd->hp_ops = NULL;
-> > +               context = dd->hp_context;
-> > +               dd->hp_context = NULL;
-> > +               release = dd->hp_release;
-> > +               dd->hp_release = NULL;
-> > +       }
-> > +
-> > +       if (release && context)
-> > +               release(context);
-> > +
-> > +       mutex_unlock(&hotplug_lock);
-> > +}
-> > +
-> > +static void dock_hotplug_event(struct dock_dependent_device *dd, u32 event,
-> > +                              bool uevent)
-> > +{
-> > +       acpi_notify_handler cb = NULL;
-> > +       bool run = false;
-> > +
-> > +       mutex_lock(&hotplug_lock);
-> > +
-> > +       if (dd->hp_context) {
-> > +               run = true;
-> > +               dd->hp_refcount++;
-> > +               if (dd->hp_ops)
-> > +                       cb = uevent ? dd->hp_ops->uevent : dd->hp_ops->handler;
-> > +       }
-> > +
-> > +       mutex_unlock(&hotplug_lock);
-> > +
-> > +       if (!run)
-> > +               return;
-> > +
-> > +       if (cb)
-> > +               cb(dd->handle, event, dd->hp_context);
-> > +
-> > +       dock_release_hotplug(dd);
+On Sat 2013-06-22 18:43:01, Sebastian Reichel wrote:
+> On Sat, Jun 22, 2013 at 01:26:20PM +0200, Pavel Machek wrote:
+> > On Tue 2013-06-18 18:24:23, Gaël PORTAY wrote:
+> > > Currently, none of available triggers supports playing with the LED brightness
+> > > level.  The cycle trigger provides a way to define custom brightness cycle.
+> > > For example, it is easy to customize the cycle to mock up the rhythm of human
+> > > breathing which is a nice cycle to tell the user the system is doing something.
+> > > 
+> > > This trigger is meant to be usable for waiting an event to happen, for example
+> > > when the system gets ready.  Those cycles may be used to reflect well known
+> > > system status (e.g. idle mode, startup...).
+> > > 
+> > > This implementation provides several interfaces:
+> > >  - to define the cycle itself:
+> > >    * plot: definition of plot points using plot or rawplot files,
+> > >            each points defines the brightness level
+> > >    * interval: constant time interval between each plot point
+> > >  - to control the cycle:
+> > >    * repeat: the number of repetition of the whole plot cycle
+> > >              0 for an infinite loop
+> > >    * control: used to control the cycle trigger
+> > >      + "start"/"stop": to start/stop the cycle
+> > >      + "reset" to clear the cycle counter and the internal plot point index
+> > >      + "pause"/"resume" to pause/resume the cycle
+> > > 
+> > > Signed-off-by: Gaël PORTAY <g.portay@overkiz.com>
+> > 
+> > I'd say this should go to userspace.... and maybe should handle RGB
+> > leds. ... like the one on n900/HTC dream/....
+> > 
+> > Actually, there's probably some daemon in maemo that already does
+> > this.
 > 
-> during DOCKING, dock_release_hotplug get called too?
+> Actually the n900 has hardware support for this. There's a
+> programmable LED driver on the board, which is called LP5523.
+> 
+> So... I don't think there's a daemon in maemo ;)
 
-Yes, we need to drop down the refcount we've just bumped up.
+Uh. It seems that LP5523 should get gcc support, not kernel
+support. It has limited memory, but 3 cores, and seems turing
+complete.
 
-Thanks,
-Rafael
-
+Not sure what is reasonable interface for that, but I guess subset
+that "makes sense" is enough.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
