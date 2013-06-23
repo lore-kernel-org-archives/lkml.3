@@ -1,168 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab3FWNvn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 09:51:43 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:57755 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab3FWNvg (ORCPT
+	id S1752924Ab3FWNxz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 09:53:55 -0400
+Received: from smtp-out-217.synserver.de ([212.40.185.217]:1408 "EHLO
+	smtp-out-216.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752309Ab3FWNxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 09:51:36 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 45/45] tile: Use get/put_online_cpus_atomic() to prevent CPU
- offline
-To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com
-Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
-        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Date: Sun, 23 Jun 2013 19:18:11 +0530
-Message-ID: <20130623134807.19094.82081.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Sun, 23 Jun 2013 09:53:52 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 5434
+Message-ID: <51C6FE00.8010900@metafoo.de>
+Date: Sun, 23 Jun 2013 15:54:08 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, jimwall@q.com,
+        brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCHv2 1/3] iio: Add Nuvoton NAU7802 ADC driver
+References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com> <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com> <51C590B5.2060308@kernel.org> <51C5923D.6030609@metafoo.de> <51C5A1AF.3070404@free-electrons.com> <51C5A499.5050509@metafoo.de> <51C5A68F.3000300@free-electrons.com>
+In-Reply-To: <51C5A68F.3000300@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062313-1396-0000-0000-00000328595C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able
-to depend on disabling preemption to prevent CPUs from going offline
-from under us.
+On 06/22/2013 03:28 PM, Alexandre Belloni wrote:
+> On 22/06/2013 15:20, Lars-Peter Clausen wrote:
+>> On 06/22/2013 03:07 PM, Alexandre Belloni wrote:
+>>> On 22/06/2013 14:02, Lars-Peter Clausen wrote:
+>>>> On 06/22/2013 01:55 PM, Jonathan Cameron wrote:
+>>>>> On 06/20/2013 07:57 PM, Alexandre Belloni wrote:
+>>>>>> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
+>>>>>> gain and sampling rates.
+>>>>>>
+>>>>> Sorry, somewhat low on time today so only a quick review.
+>>>>>
+>>>>> 1) Missing userspace ABI documentation.  Also, perhaps min_conversions is
+>>>>>    a little vague?  Not that I have a better idea!
+>>>> I really don't like the name min_conversions either. Isn't this effectively
+>>>> a decimation filter?
+>>> Yeah, it could be seen like that but it is only relevant and only
+>>> happens when switching between channels. I'm open to any ideas.
+>>>
+>> I see. Is there anything about this in the datasheet on how many conversions
+>> you usually need? Is this really something you need to change at runtime or
+>> does moving this to platform data work?
+>>
+>>
+> 
+> There is actually nothing in the datasheet. The default value (6
+> conversions) was found experimentally. What I did was saturating the ADC
+> with the higher value on one channel and the lower value on the other
+> one and I tried to find when reading both channel sequentially was
+> resulting in a correct value.
+> 
+> You may not need to change it at runtime. And that value mainly depend
+> on the precision versus speed balance you want to achieve. If you know
+> that the values on both channels will not be to far apart, then you may
+> not need to wait at all.
+> 
+> Would you think that is something I should hide in the DT ? Or maybe I
+> can drop that knob for now and see if it is needed in the future.
+> 
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
-offline, while invoking from atomic context.
+It is always a good idea to be conservative when introducing new ABI, so if
+you think we can get away with hardcoding this in the driver I think that's
+a good idea.
 
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- arch/tile/kernel/module.c |    3 +++
- arch/tile/kernel/tlb.c    |   15 +++++++++++++++
- arch/tile/mm/homecache.c  |    3 +++
- 3 files changed, 21 insertions(+)
-
-diff --git a/arch/tile/kernel/module.c b/arch/tile/kernel/module.c
-index 4918d91..db7d858 100644
---- a/arch/tile/kernel/module.c
-+++ b/arch/tile/kernel/module.c
-@@ -20,6 +20,7 @@
- #include <linux/fs.h>
- #include <linux/string.h>
- #include <linux/kernel.h>
-+#include <linux/cpu.h>
- #include <asm/pgtable.h>
- #include <asm/homecache.h>
- #include <arch/opcode.h>
-@@ -79,8 +80,10 @@ void module_free(struct module *mod, void *module_region)
- 	vfree(module_region);
- 
- 	/* Globally flush the L1 icache. */
-+	get_online_cpus_atomic();
- 	flush_remote(0, HV_FLUSH_EVICT_L1I, cpu_online_mask,
- 		     0, 0, 0, NULL, NULL, 0);
-+	put_online_cpus_atomic();
- 
- 	/*
- 	 * FIXME: If module_region == mod->module_init, trim exception
-diff --git a/arch/tile/kernel/tlb.c b/arch/tile/kernel/tlb.c
-index 3fd54d5..a32b9dd 100644
---- a/arch/tile/kernel/tlb.c
-+++ b/arch/tile/kernel/tlb.c
-@@ -14,6 +14,7 @@
-  */
- 
- #include <linux/cpumask.h>
-+#include <linux/cpu.h>
- #include <linux/module.h>
- #include <linux/hugetlb.h>
- #include <asm/tlbflush.h>
-@@ -35,6 +36,8 @@ void flush_tlb_mm(struct mm_struct *mm)
- {
- 	HV_Remote_ASID asids[NR_CPUS];
- 	int i = 0, cpu;
-+
-+	get_online_cpus_atomic();
- 	for_each_cpu(cpu, mm_cpumask(mm)) {
- 		HV_Remote_ASID *asid = &asids[i++];
- 		asid->y = cpu / smp_topology.width;
-@@ -43,6 +46,7 @@ void flush_tlb_mm(struct mm_struct *mm)
- 	}
- 	flush_remote(0, HV_FLUSH_EVICT_L1I, mm_cpumask(mm),
- 		     0, 0, 0, NULL, asids, i);
-+	put_online_cpus_atomic();
- }
- 
- void flush_tlb_current_task(void)
-@@ -55,8 +59,11 @@ void flush_tlb_page_mm(struct vm_area_struct *vma, struct mm_struct *mm,
- {
- 	unsigned long size = vma_kernel_pagesize(vma);
- 	int cache = (vma->vm_flags & VM_EXEC) ? HV_FLUSH_EVICT_L1I : 0;
-+
-+	get_online_cpus_atomic();
- 	flush_remote(0, cache, mm_cpumask(mm),
- 		     va, size, size, mm_cpumask(mm), NULL, 0);
-+	put_online_cpus_atomic();
- }
- 
- void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
-@@ -71,13 +78,18 @@ void flush_tlb_range(struct vm_area_struct *vma,
- 	unsigned long size = vma_kernel_pagesize(vma);
- 	struct mm_struct *mm = vma->vm_mm;
- 	int cache = (vma->vm_flags & VM_EXEC) ? HV_FLUSH_EVICT_L1I : 0;
-+
-+	get_online_cpus_atomic();
- 	flush_remote(0, cache, mm_cpumask(mm), start, end - start, size,
- 		     mm_cpumask(mm), NULL, 0);
-+	put_online_cpus_atomic();
- }
- 
- void flush_tlb_all(void)
- {
- 	int i;
-+
-+	get_online_cpus_atomic();
- 	for (i = 0; ; ++i) {
- 		HV_VirtAddrRange r = hv_inquire_virtual(i);
- 		if (r.size == 0)
-@@ -89,10 +101,13 @@ void flush_tlb_all(void)
- 			     r.start, r.size, HPAGE_SIZE, cpu_online_mask,
- 			     NULL, 0);
- 	}
-+	put_online_cpus_atomic();
- }
- 
- void flush_tlb_kernel_range(unsigned long start, unsigned long end)
- {
-+	get_online_cpus_atomic();
- 	flush_remote(0, HV_FLUSH_EVICT_L1I, cpu_online_mask,
- 		     start, end - start, PAGE_SIZE, cpu_online_mask, NULL, 0);
-+	put_online_cpus_atomic();
- }
-diff --git a/arch/tile/mm/homecache.c b/arch/tile/mm/homecache.c
-index 1ae9119..7ff5bf0 100644
---- a/arch/tile/mm/homecache.c
-+++ b/arch/tile/mm/homecache.c
-@@ -397,9 +397,12 @@ void homecache_change_page_home(struct page *page, int order, int home)
- 	BUG_ON(page_count(page) > 1);
- 	BUG_ON(page_mapcount(page) != 0);
- 	kva = (unsigned long) page_address(page);
-+
-+	get_online_cpus_atomic();
- 	flush_remote(0, HV_FLUSH_EVICT_L2, &cpu_cacheable_map,
- 		     kva, pages * PAGE_SIZE, PAGE_SIZE, cpu_online_mask,
- 		     NULL, 0);
-+	put_online_cpus_atomic();
- 
- 	for (i = 0; i < pages; ++i, kva += PAGE_SIZE) {
- 		pte_t *ptep = virt_to_pte(NULL, kva);
-
+- Lars
