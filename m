@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab3FWTCG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 15:02:06 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:58648 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab3FWTCD (ORCPT
+	id S1751461Ab3FWTOi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 15:14:38 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:64812 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab3FWTOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 15:02:03 -0400
-Message-ID: <51C7455B.904@linux.vnet.ibm.com>
-Date: Mon, 24 Jun 2013 00:28:35 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Sun, 23 Jun 2013 15:14:37 -0400
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH 07/45] CPU hotplug: Expose the new debug config option
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com> <20130623133928.19094.8259.stgit@srivatsabhat.in.ibm.com> <51C70F82.4030101@cogentembedded.com>
-In-Reply-To: <51C70F82.4030101@cogentembedded.com>
+In-Reply-To: <1372009427.3137.54.camel@joe-AO722>
+References: <20130621153331.2881.35589.stgit@bling.home>
+	<20130623114930.GA2557@8bytes.org>
+	<1372009427.3137.54.camel@joe-AO722>
+Date: Sun, 23 Jun 2013 21:14:36 +0200
+X-Google-Sender-Auth: YJ_0CffDbq7FQdkLDAUvIgjTmPc
+Message-ID: <CAMuHMdWb4WK9ZuJ-vwdywgDSSbZTnnS1emF02VzrUgrSt5VKsg@mail.gmail.com>
+Subject: Re: [PATCH] iommu: Use %zx instead %lx and cast to unsigned long
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joe Perches <joe@perches.com>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        iommu@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062318-9264-0000-0000-000003FED158
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2013 08:38 PM, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 23-06-2013 17:39, Srivatsa S. Bhat wrote:
-> 
->> Now that we have all the pieces of the CPU hotplug debug infrastructure
->> in place, expose the feature by growing a new Kconfig option,
->> CONFIG_DEBUG_HOTPLUG_CPU.
-> 
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>
->> Cc: Akinobu Mita <akinobu.mita@gmail.com>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: Michel Lespinasse <walken@google.com>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
-> 
->>   lib/Kconfig.debug |    9 +++++++++
->>   1 file changed, 9 insertions(+)
-> 
->> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
->> index 566cf2b..6be1e72 100644
->> --- a/lib/Kconfig.debug
->> +++ b/lib/Kconfig.debug
->> @@ -512,6 +512,15 @@ config DEBUG_PREEMPT
->>         if kernel code uses it in a preemption-unsafe way. Also, the
->> kernel
->>         will detect preemption count underflows.
->>
->> +config DEBUG_HOTPLUG_CPU
->> +    bool "Debug CPU hotplug"
->> +    depends on HOTPLUG_CPU
->> +    default n
-> 
->     It's the default default, no need to specify it.
-> 
+On Sun, Jun 23, 2013 at 7:43 PM, Joe Perches <joe@perches.com> wrote:
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -807,20 +807,19 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+>          * size of the smallest page supported by the hardware
+>          */
+>         if (!IS_ALIGNED(iova | paddr | size, min_pagesz)) {
+> -               pr_err("unaligned: iova 0x%lx pa 0x%lx size 0x%lx min_pagesz "
+> -                       "0x%x\n", iova, (unsigned long)paddr,
+> -                       (unsigned long)size, min_pagesz);
+> +               pr_err("unaligned: iova 0x%lx pa 0x%lx size 0x%zx min_pagesz 0x%x\n",
+> +                      iova, (unsigned long)paddr, size, min_pagesz);
 
-Ah, I see. Thanks!
+While we're at it, paddr is phys_addr_t (which can be 32-bit or 64-bit),
+so it should be cast to unsigned long long (instead of unsigned long),
+and printed using %llx (instead of %lx).
 
-Regards,
-Srivatsa S. Bhat
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
