@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab3FWO0S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 10:26:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19873 "EHLO mx1.redhat.com"
+	id S1751803Ab3FWOlC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 10:41:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43179 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab3FWO0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 10:26:15 -0400
-Date: Sun, 23 Jun 2013 17:26:58 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        Brad Hubbard <bhubbard@redhat.com>
-Subject: [PATCH net] macvtap: fix recovery from gup errors
-Message-ID: <20130623142658.GA21141@redhat.com>
+	id S1751478Ab3FWOk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 10:40:59 -0400
+Date: Sun, 23 Jun 2013 16:36:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Dave Jones <davej@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130623143634.GA2000@redhat.com>
+References: <20130619164540.GB22483@redhat.com> <20130619175356.GA23673@redhat.com> <20130619181302.GE5146@linux.vnet.ibm.com> <20130620001212.GB12151@redhat.com> <20130620161652.GA4462@linux.vnet.ibm.com> <20130621151119.GA1596@redhat.com> <20130621195949.GA15519@redhat.com> <20130622013731.GA22918@redhat.com> <20130622173129.GA29375@redhat.com> <20130622215905.GA28238@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130622215905.GA28238@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get user pages might fail partially in macvtap zero copy
-mode. To recover we need to put all pages that we got,
-but code used a wrong index resulting in double-free
-errors.
+On 06/22, Dave Jones wrote:
+>
+> On Sat, Jun 22, 2013 at 07:31:29PM +0200, Oleg Nesterov wrote:
+>
+>  > > [ 7485.261299] WARNING: at include/linux/nsproxy.h:63 get_proc_task_net+0x1c8/0x1d0()
+>  >
+>  > Hmm. The test case tries to create the symlink in /proc/*/net/ ?
+>
+> hit it with symlink, but also some other syscalls. eg:
 
-Reported-by: Brad Hubbard <bhubbard@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+Yes, this is fine, the warnings without lockup are not interesting.
+I thought that, perhaps, an exiting task can trigger this WARN()
+from task_work_run(). And this would be fine too! But this could
+provide more info if lockup happens after that. So please ignore.
 
-Same as the tun patch really. Also stable material.
+>  > But it seems you can't ?
+>  >
+>  > Dave, I am sorry but all I can do is to ask you to do more testing.
+>  > Could you please reproduce the lockup again on the clean Linus's
+>  > current ? (and _without_ reverting 8aac6270, of course).
+>
+> I'll give it a shot.  Just rebuilt clean tree, and restarted the tests.
 
- drivers/net/macvtap.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Thanks a lot.
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 59e9605..4ddd108 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -524,8 +524,9 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
- 			return -EMSGSIZE;
- 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
- 		if (num_pages != size) {
--			for (i = 0; i < num_pages; i++)
--				put_page(page[i]);
-+			int j;
-+			for (j = 0; j < num_pages; j++)
-+				put_page(page[i + j]);
- 			return -EFAULT;
- 		}
- 		truesize = size * PAGE_SIZE;
--- 
-MST
+Oleg.
+
