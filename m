@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab3FWSGK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 14:06:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25787 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737Ab3FWSGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 14:06:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,923,1363158000"; 
-   d="scan'208";a="334262308"
-Date: Sun, 23 Jun 2013 11:06:05 -0700
-From: Andi Kleen <ak@linux.jf.intel.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.jf.intel.com>
-Subject: Re: Oops in ring_buffer_alloc_read_page()
-Message-ID: <20130623180605.GM5643@tassilo.jf.intel.com>
-References: <20130618120855.GA29700@localhost>
- <1371737149.18733.92.camel@gandalf.local.home>
- <20130623042528.GA20094@localhost>
+	id S1750955Ab3FWSRq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 14:17:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48057 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab3FWSRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 14:17:42 -0400
+Date: Sun, 23 Jun 2013 11:17:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH 25/45] staging/octeon: Use get/put_online_cpus_atomic()
+ to prevent CPU offline
+Message-ID: <20130623181740.GB24256@kroah.com>
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
+ <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130623042528.GA20094@localhost>
+In-Reply-To: <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Good question! I tried disabling CPA self-test and the BUG does not
-> show up for 10000 boots. So this should be the root cause.
+On Sun, Jun 23, 2013 at 07:13:33PM +0530, Srivatsa S. Bhat wrote:
+> Once stop_machine() is gone from the CPU offline path, we won't be able
+> to depend on disabling preemption to prevent CPUs from going offline
+> from under us.
 > 
+> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
+> offline, while invoking from atomic context.
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: devel@driverdev.osuosl.org
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+> 
+>  drivers/staging/octeon/ethernet-rx.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+> index 34afc16..8588b4d 100644
+> --- a/drivers/staging/octeon/ethernet-rx.c
+> +++ b/drivers/staging/octeon/ethernet-rx.c
+> @@ -36,6 +36,7 @@
+>  #include <linux/prefetch.h>
+>  #include <linux/ratelimit.h>
+>  #include <linux/smp.h>
+> +#include <linux/cpu.h>
+>  #include <linux/interrupt.h>
+>  #include <net/dst.h>
+>  #ifdef CONFIG_XFRM
+> @@ -97,6 +98,7 @@ static void cvm_oct_enable_one_cpu(void)
+>  		return;
+>  
+>  	/* ... if a CPU is available, Turn on NAPI polling for that CPU.  */
+> +	get_online_cpus_atomic();
+>  	for_each_online_cpu(cpu) {
+>  		if (!cpu_test_and_set(cpu, core_state.cpu_state)) {
+>  			v = smp_call_function_single(cpu, cvm_oct_enable_napi,
+> @@ -106,6 +108,7 @@ static void cvm_oct_enable_one_cpu(void)
+>  			break;
+>  		}
+>  	}
+> +	put_online_cpus_atomic();
 
-The test is very different now than what I wrote originally, but I would
-generally expect any bug to be in change_page_attr(), not be in the
-self test.
+Does this driver really need to be doing this in the first place?  If
+so, why?  The majority of network drivers don't, why is this one
+"special"?
 
-> > > [   36.776024] *pde = 0e3e1067 *pte = 061e7260 
+thanks,
 
-The oops is in a 2MB page that should not have changed by CPA 
-in theory (it just adds 4KB pages)
-
-I suppose you could log the addresses touched by the test and compare
-to the oops addresses.
-
-Most likely the reason you don't see it all the time is that the 
-test is randomized. So you could make it more stable by fixing
-the seed in pageattr-test and perhaps changing it to use more
-pages.
-
-> > > [   36.776024] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-
-Could be also some virtualization problem?
-
--andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+greg k-h
