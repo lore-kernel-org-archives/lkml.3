@@ -1,188 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab3FWBp6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 21:45:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35852 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751714Ab3FWBp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 21:45:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,921,1363158000"; 
-   d="scan'208";a="354176499"
-Date: Sun, 23 Jun 2013 09:45:53 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Raphael S Carvalho <raphael.scarv@gmail.com>
-Cc: kbuild@01.org, Julia Lawall <julia.lawall@lip6.fr>,
-        Liam Girdwood <lrg@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [kbuild] sound/soc/soc-fw.c:945:9-16: ERROR: se is NULL but
- dereferenced.
-Message-ID: <20130623014553.GA10419@localhost>
-References: <51c5b942.ZhZXIoNf8EKpybq5%fengguang.wu@intel.com>
- <CACz=WefaSAsB6NYY37WA1x-=VHxQ8Jfbud8xzH3nq1QHzynoaQ@mail.gmail.com>
+	id S1751970Ab3FWCKl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 22:10:41 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:47371 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab3FWCKk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 22:10:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACz=WefaSAsB6NYY37WA1x-=VHxQ8Jfbud8xzH3nq1QHzynoaQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAhV-H6s47NUHzbEX5UKYtkei7=s08PPXCMw39_fP_SV7Hv5Vg@mail.gmail.com>
+References: <1359527106-22879-1-git-send-email-chenhc@lemote.com>
+	<1359527106-22879-4-git-send-email-chenhc@lemote.com>
+	<5166ED66.7020307@realitydiluted.com>
+	<CAAhV-H6s47NUHzbEX5UKYtkei7=s08PPXCMw39_fP_SV7Hv5Vg@mail.gmail.com>
+Date: Sun, 23 Jun 2013 10:10:38 +0800
+X-Google-Sender-Auth: uTpdPRj06dw2TkFxSltPB5V4xis
+Message-ID: <CAAhV-H58Y_Rd8thj8MWXGCqqGtYJekDKrO-nXYjdp3214jnQ0A@mail.gmail.com>
+Subject: Re: [PATCH V9 03/13] MIPS: Loongson: Introduce and use
+ cpu_has_coherent_cache feature
+From: Huacai Chen <chenhc@lemote.com>
+To: "Steven J. Hill" <sjhill@realitydiluted.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 12:35:44PM -0300, Raphael S Carvalho wrote:
-> I'm in a Linux event now, and I can't clone the tree (probably the port for
-> that purpose isn't allowed)
-> Then I sending a simplified patch that shows which lines must be changed.
- 
-Patch looks good to me. Thanks!
+Hi, Steven
 
-Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+Is the 3rd patch of V10 is OK to be accepted now? If so, could the
+patchset of V10 be merged into 3.11?
 
-> Signed-off: Raphael S. Carvalho <raphael.scarv@gmail.com>
-> 
-> --- soc-fw_old.c    2013-06-22 12:13:48.000000000 -0300
-> +++ soc-fw_new.c    2013-06-22 12:19:41.000000000 -0300
-> @@ -893,7 +893,7 @@
->          if (err < 0) {
->              dev_err(sfw->dev, "ASoC: could not create"
->                  " values for %s\n", ec->hdr.name);
-> -            goto err_se;
-> +            goto err;
->          }
->          /* fall through to create texts */
->      case SOC_CONTROL_TYPE_ENUM:
-> @@ -905,13 +905,13 @@
->          if (err < 0) {
->              dev_err(sfw->dev, "ASoC: could not create"
->                  " texts for %s\n", ec->hdr.name);
-> -            goto err_se;
-> +            goto err;
->          }
->          break;
->      default:
->          dev_err(sfw->dev, "ASoC: invalid enum control type %d for %s\n",
->              ec->hdr.index, ec->hdr.name);
-> -        goto err_se;
-> +        goto err;
->      }
-> 
->      /* map standard io handlers and check for external handlers */
-> @@ -928,21 +928,19 @@
->                  SOC_CONTROL_GET_ID_GET(ec->hdr.index),
->                  SOC_CONTROL_GET_ID_PUT(ec->hdr.index),
->                  SOC_CONTROL_GET_ID_INFO(ec->hdr.index));
-> -            goto err_se;
-> +            goto err;
->          }
-> 
->          err = soc_fw_init_kcontrol(sfw, kc);
->          if (err < 0) {
->              dev_err(sfw->dev, "ASoC: failed to init %s\n",
->                  ec->hdr.name);
-> -            goto err_se;
-> +            goto err;
->          }
->      }
->      return kc;
-> 
-> -err_se:
-> -    kfree(kc);
-> -
-> +err:
->      /* free values and texts */
->      if (se->dvalues)
->          kfree(se->dvalues);
-> @@ -950,7 +948,8 @@
->          kfree(se->dtexts[i]);
-> 
->      kfree(se);
-> -
-> +err_se:
-> +    kfree(kc);
->      return NULL;
->  }
-> 
-> 
-> 
-> On Sat, Jun 22, 2013 at 11:48 AM, Fengguang Wu <fengguang.wu@intel.com>wrote:
-> 
-> > TO: Liam Girdwood <lrg@ti.com>
-> > CC: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> >
-> >
-> > Hi Liam,
-> >
-> > FYI, there are coccinelle warnings in
-> >
-> > tree:   git://gitorious.org/omap-audio/linux-audiopeter/topic/ti-audio-next-bnw-wip
-> > head:   ac1981249f0c606cede98d6dab091ecb1ae480c9
-> > commit: 6d98dbbcfb5da2176b3e60faaf86d2279790fe67 ASoC: firmware: Add
-> > support for dynamic components
-> > date:   5 weeks ago
-> > :::::: branch date: 5 days ago
-> > :::::: commit date: 5 weeks ago
-> >
-> > >> sound/soc/soc-fw.c:945:9-16: ERROR: se is NULL but dereferenced.
-> > --
-> > >> sound/soc/soc-fw.c:1523:8-9: ERROR: reference preceded by free on line
-> > 1523
-> > >> sound/soc/soc-fw.c:1443:8-9: ERROR: reference preceded by free on line
-> > 1443
-> > >> sound/soc/soc-fw.c:1483:8-9: ERROR: reference preceded by free on line
-> > 1483
-> > --
-> > >> sound/soc/soc-fw.c:1528:6-8: ERROR: invalid reference to the index
-> > variable of the iterator on line 1513
-> > >> sound/soc/soc-fw.c:1448:6-8: ERROR: invalid reference to the index
-> > variable of the iterator on line 1433
-> > >> sound/soc/soc-fw.c:1488:6-8: ERROR: invalid reference to the index
-> > variable of the iterator on line 1473
-> >
-> > git remote add omap-audio git://gitorious.org/omap-audio/linux-audio
-> > git remote update omap-audio
-> > git checkout 6d98dbbcfb5da2176b3e60faaf86d2279790fe67
-> > vim +945 sound/soc/soc-fw.c
-> >
-> > 6d98dbbc Liam Girdwood 2012-12-05  929                          goto
-> > err_se;
-> > 6d98dbbc Liam Girdwood 2012-12-05  930                  }
-> > 6d98dbbc Liam Girdwood 2012-12-05  931
-> > 6d98dbbc Liam Girdwood 2012-12-05  932                  err =
-> > soc_fw_init_kcontrol(sfw, kc);
-> > 6d98dbbc Liam Girdwood 2012-12-05  933                  if (err < 0) {
-> > 6d98dbbc Liam Girdwood 2012-12-05  934
-> >  dev_err(sfw->dev, "ASoC: failed to init %s\n",
-> > 6d98dbbc Liam Girdwood 2012-12-05  935
-> >  ec->hdr.name);
-> > 6d98dbbc Liam Girdwood 2012-12-05  936                          goto
-> > err_se;
-> > 6d98dbbc Liam Girdwood 2012-12-05  937                  }
-> > 6d98dbbc Liam Girdwood 2012-12-05  938          }
-> > 6d98dbbc Liam Girdwood 2012-12-05  939          return kc;
-> > 6d98dbbc Liam Girdwood 2012-12-05  940
-> > 6d98dbbc Liam Girdwood 2012-12-05  941  err_se:
-> > 6d98dbbc Liam Girdwood 2012-12-05  942          kfree(kc);
-> > 6d98dbbc Liam Girdwood 2012-12-05  943
-> > 6d98dbbc Liam Girdwood 2012-12-05  944          /* free values and texts */
-> > 6d98dbbc Liam Girdwood 2012-12-05 @945          if (se->dvalues)
-> > 6d98dbbc Liam Girdwood 2012-12-05  946                  kfree(se->dvalues);
-> > 6d98dbbc Liam Girdwood 2012-12-05  947          for (i = 0; i < ec->max;
-> > i++)
-> > 6d98dbbc Liam Girdwood 2012-12-05  948
-> >  kfree(se->dtexts[i]);
-> > 6d98dbbc Liam Girdwood 2012-12-05  949
-> > 6d98dbbc Liam Girdwood 2012-12-05  950          kfree(se);
-> > 6d98dbbc Liam Girdwood 2012-12-05  951
-> > 6d98dbbc Liam Girdwood 2012-12-05  952          return NULL;
-> > 6d98dbbc Liam Girdwood 2012-12-05  953  }
-> >
-> > ---
-> > 0-DAY kernel build testing backend              Open Source Technology
-> > Center
-> > http://lists.01.org/mailman/listinfo/kbuild                 Intel
-> > Corporation
-> > _______________________________________________
-> > kbuild mailing list
-> > kbuild@lists.01.org
-> > https://lists.01.org/mailman/listinfo/kbuild
-> >
+Huacai
+
+On Fri, Apr 12, 2013 at 11:07 AM, Huacai Chen <chenhc@lemote.com> wrote:
+> Hi, Steven,
+>
+> Maybe you are misunderstand Loongson-3's "hardware-maintained cache".
+> Loongson-3's hardware maintain the cache coherency between multi-cores (also
+> maintain coherency between CPU-core and DMA), but Loongson-3 can *still* has
+> cache alias (Cache alias in Loongson is sovled by 16K PageSize).
+>
+> Meanwhile, I know why you misunderstand, because my code is like this:
+>
+>
+> static inline void local_r4k___flush_cache_all(void * args)
+>         if (cpu_has_coherent_cache)
+>                 return;
+>
+> This implies that Loongson-3 has no cache alias, but in fact this is wrong
+> if Loongson has configured PageSize < 16K.
+>
+> I think I should make my code in all flush functions like this:
+>
+> static inline void local_r4k___flush_cache_all(void * args)
+>         if (cpu_has_coherent_cache && !cpu_has_dc_aliases)
+>                 return;
+>
+> Am I right?
+>
+>
+> On Fri, Apr 12, 2013 at 1:05 AM, Steven J. Hill <sjhill@realitydiluted.com>
+> wrote:
+>>
+>> -----BEGIN PGP SIGNED MESSAGE-----
+>> Hash: SHA1
+>>
+>> On 01/30/2013 12:24 AM, Huacai Chen wrote:
+>> > Loongson-3 maintains cache coherency by hardware. So we introduce a cpu
+>> > feature named cpu_has_coherent_cache and use it to modify MIPS's cache
+>> > flushing functions.
+>> >
+>> > Signed-off-by: Huacai Chen <chenhc@lemote.com> Signed-off-by: Hongliang
+>> > Tao
+>> > <taohl@lemote.com> Signed-off-by: Hua Yan <yanh@lemote.com> ---
+>> > arch/mips/include/asm/cacheflush.h                 |    6 +++++
+>> > arch/mips/include/asm/cpu-features.h               |    3 ++
+>> > .../asm/mach-loongson/cpu-feature-overrides.h      |    6 +++++
+>> > arch/mips/mm/c-r4k.c                               |   21
+>> > ++++++++++++++++++- 4 files changed, 34 insertions(+), 2 deletions(-)
+>> >
+>> Hello.
+>>
+>> This patch masks the problem that you are not properly probing your L1
+>> caches
+>> to start with. For some reason in 'probe_pcache()' you reach the default
+>> case
+>> where the primary data cache is marked as having aliases. If your CPU
+>> truly is
+>> HW coherent with no aliases, then MIPS_CACHE_ALIASES should never get set.
+>> Fixing this would eliminate the 'arch/mips/include/asm/cacheflush.h' and
+>> 'arch/mips/mm/c-r4k.c' changes completely. There is no need to add more
+>> CPU
+>> feature bits for this single platform, thus changes to 'cpu-features.h'
+>> and
+>> 'cpu-features-overrides.h' will not be accepted.
+>>
+>> Also, please do not copy the <linux-kernel@vger.kernel.org> mailing list
+>> unless your patch touches files outside of 'arch/mips' in order to cut
+>> down
+>> traffic on an already busy list. Thanks.
+>>
+>> Steve
+>> - -----
+>> <sjhill@mips.com>
+>> <Steven.Hill@imgtec.com>
+>> -----BEGIN PGP SIGNATURE-----
+>> Version: GnuPG v1.4.11 (GNU/Linux)
+>> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+>>
+>> iEYEARECAAYFAlFm7WAACgkQgyK5H2Ic36eHuwCeKZjp1+arkoheEpeuzjJkQskN
+>> /7MAnig14A03hWxRvfqDOMbMFKXpZBO8
+>> =HRPU
+>> -----END PGP SIGNATURE-----
+>>
+>
