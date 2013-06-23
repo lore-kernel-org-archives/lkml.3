@@ -1,164 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab3FWNlu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 09:41:50 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:42254 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab3FWNlZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 09:41:25 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 01/45] CPU hotplug: Provide APIs to prevent CPU offline from
- atomic context
-To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com
-Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
-        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Date: Sun, 23 Jun 2013 19:08:01 +0530
-Message-ID: <20130623133756.19094.41723.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S1751718Ab3FWOIA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 10:08:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40484 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab3FWOH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 10:07:59 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <51C69732.1010906@gmail.com>
+References: <51C3DDFA.7050204@zytor.com> <51C69732.1010906@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062313-3864-0000-0000-000008C2B7E3
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: MTRR use in drivers
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 23 Jun 2013 07:07:46 -0700
+To: Brice Goglin <brice.goglin@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Message-ID: <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current CPU offline code uses stop_machine() internally. And disabling
-preemption prevents stop_machine() from taking effect, thus also preventing
-CPUs from going offline, as a side effect.
+Why do you care about performance when PAT is disabled?
 
-There are places where this side-effect of preempt_disable() (or equivalent)
-is used to synchronize with CPU hotplug. Typically these are in atomic
-sections of code, where they can't make use of get/put_online_cpus(), because
-the latter set of APIs can sleep.
+Brice Goglin <brice.goglin@gmail.com> wrote:
 
-Going forward, we want to get rid of stop_machine() from the CPU hotplug
-offline path. And then, with stop_machine() gone, disabling preemption will
-no longer prevent CPUs from going offline.
+>Le 21/06/2013 07:00, H. Peter Anvin a écrit :
+>> An awful lot of drivers, mostly DRI drivers, are still mucking with
+>> MTRRs directly as opposed to using ioremap_wc() or similar
+>interfaces.
+>> In addition to the architecture dependency, this is really
+>undesirable
+>> because MTRRs are a limited resource, whereas page table attributes
+>are not.
+>>
+>> Furthermore, this perpetuates the need for the horrific hack known as
+>> "MTRR cleanup".
+>>
+>> What, if anything, can we do to clean up this mess?
+>>
+>> 	-hpa
+>>
+>
+>The first network driver that used ioremap_wc() back in 2008 (myri10ge)
+>had to keep using MTRR because ioremap_wc() silently falls back to
+>ioremap_nocache() when PAT is disabled.
+>
+>I asked about this in https://lkml.org/lkml/2008/5/31/42 and there was
+>some talk about putting the MTRR addition in the nocache fallback path
+>but I guess nobody implemented the idea.
+>
+>Brice
 
-So provide a set of APIs for such atomic hotplug readers, to prevent (any)
-CPUs from going offline. For now, they will default to preempt_disable()
-and preempt_enable() itself, but this will help us do the tree-wide conversion,
-as a preparatory step to remove stop_machine() from CPU hotplug.
-
-(Besides, it is good documentation as well, since it clearly marks places
-where we synchronize with CPU hotplug, instead of combining it subtly with
-disabling preemption).
-
-In future, when actually removing stop_machine(), we will alter the
-implementation of these APIs to a suitable synchronization scheme.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- include/linux/cpu.h |   18 ++++++++++++++++++
- kernel/cpu.c        |   38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 56 insertions(+)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 9f3c7e8..e06c3ad 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -175,6 +175,8 @@ extern struct bus_type cpu_subsys;
- 
- extern void get_online_cpus(void);
- extern void put_online_cpus(void);
-+extern unsigned int get_online_cpus_atomic(void);
-+extern void put_online_cpus_atomic(void);
- extern void cpu_hotplug_disable(void);
- extern void cpu_hotplug_enable(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
-@@ -202,6 +204,22 @@ static inline void cpu_hotplug_driver_unlock(void)
- #define put_online_cpus()	do { } while (0)
- #define cpu_hotplug_disable()	do { } while (0)
- #define cpu_hotplug_enable()	do { } while (0)
-+
-+static inline unsigned int get_online_cpus_atomic(void)
-+{
-+	/*
-+	 * Disable preemption to avoid getting complaints from the
-+	 * debug_smp_processor_id() code.
-+	 */
-+	preempt_disable();
-+	return smp_processor_id();
-+}
-+
-+static inline void put_online_cpus_atomic(void)
-+{
-+	preempt_enable();
-+}
-+
- #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 198a388..2d03398 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -154,6 +154,44 @@ void cpu_hotplug_enable(void)
- 	cpu_maps_update_done();
- }
- 
-+/*
-+ * get_online_cpus_atomic - Prevent any CPU from going offline
-+ *
-+ * Atomic hotplug readers (tasks which wish to prevent CPUs from going
-+ * offline during their critical section, but can't afford to sleep)
-+ * can invoke this function to synchronize with CPU offline. This function
-+ * can be called recursively, provided it is matched with an equal number
-+ * of calls to put_online_cpus_atomic().
-+ *
-+ * Note: This does NOT prevent CPUs from coming online! It only prevents
-+ * CPUs from going offline.
-+ *
-+ * Lock ordering rule: Strictly speaking, there is no lock ordering
-+ * requirement here, but it is advisable to keep the locking consistent.
-+ * As a simple rule-of-thumb, use these functions in the outer-most blocks
-+ * of your critical sections, outside of other locks.
-+ *
-+ * Returns the current CPU number, with preemption disabled.
-+ */
-+unsigned int get_online_cpus_atomic(void)
-+{
-+	/*
-+	 * The current CPU hotplug implementation uses stop_machine() in
-+	 * the CPU offline path. And disabling preemption prevents
-+	 * stop_machine() from taking effect. Thus, this prevents any CPU
-+	 * from going offline.
-+	 */
-+	preempt_disable();
-+	return smp_processor_id();
-+}
-+EXPORT_SYMBOL_GPL(get_online_cpus_atomic);
-+
-+void put_online_cpus_atomic(void)
-+{
-+	preempt_enable();
-+}
-+EXPORT_SYMBOL_GPL(put_online_cpus_atomic);
-+
- #else /* #if CONFIG_HOTPLUG_CPU */
- static void cpu_hotplug_begin(void) {}
- static void cpu_hotplug_done(void) {}
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
