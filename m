@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab3FWAsl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 20:48:41 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:47162 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab3FWAsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 20:48:39 -0400
-Message-ID: <1371948514.9509.1.camel@phoenix>
-Subject: [PATCH] pinctrl: rockchip: Add missing irq_gc_unlock() call before
- return error
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, linux-kernel@vger.kernel.org
-Date: Sun, 23 Jun 2013 08:48:34 +0800
-Content-Type: text/plain; charset="UTF-8"
+	id S1751985Ab3FWBFy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 21:05:54 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37896 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751775Ab3FWBFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 21:05:50 -0400
+Message-ID: <1371949550.3137.16.camel@joe-AO722>
+Subject: Re: [PATCHv v3] power: Include additional information in
+ pm_print_times
+From: Joe Perches <joe@perches.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Shuah Khan <shuah.kh@samsung.com>, pavel@ucw.cz, len.brown@intel.com,
+        gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Date: Sat, 22 Jun 2013 18:05:50 -0700
+In-Reply-To: <2732229.sfB5fHUFTc@vostro.rjw.lan>
+References: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com>
+	 <2534796.mOHH0DCD2A@vostro.rjw.lan> <1371868042.2086.0.camel@joe-AO722>
+	 <2732229.sfB5fHUFTc@vostro.rjw.lan>
+Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -22,25 +27,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/pinctrl-rockchip.c | 1 +
- 1 file changed, 1 insertion(+)
+On Sat, 2013-06-22 at 21:52 +0200, Rafael J. Wysocki wrote:
+> On Friday, June 21, 2013 07:27:22 PM Joe Perches wrote:
+> > On Sat, 2013-06-22 at 02:24 +0200, Rafael J. Wysocki wrote:
+> > > Namely, there are tools that use these messages to create suspend/resume time
+> > > charts and they will stop working after the proposed changes.
+> > 
+> > dmesg output isn't guaranteed to be stable.
+> 
+> So?
 
-diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index 427564f..1eb5a2e 100644
---- a/drivers/pinctrl/pinctrl-rockchip.c
-+++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -1035,6 +1035,7 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
- 		polarity &= ~mask;
- 		break;
- 	default:
-+		irq_gc_unlock(gc);
- 		return -EINVAL;
- 	}
- 
--- 
-1.8.1.2
+So even if new information was only appended to
+the existing line, the script could break.
 
+If any script needs something stable it should
+depend on information available through other
+sources like trace or proc or sysfs.
+
+Tools that use dmesg should adapt to whatever gets
+thrown at it and handle the output from whatever
+kernel versions the script supports.
+
+For instance, what happens to the script when
+console_level is set to 1?
+
+Requiring that no one can change a dmesg to
+add or improve the content for readability
+or intelligibility I think unreasonable.
 
 
