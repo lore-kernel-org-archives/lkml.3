@@ -1,60 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab3FVX27 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jun 2013 19:28:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39415 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab3FVX25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jun 2013 19:28:57 -0400
-Message-ID: <1371943693.3944.104.camel@pasglop>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Alexander Graf <agraf@suse.de>,
-        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
-Date: Sun, 23 Jun 2013 09:28:13 +1000
-In-Reply-To: <20130622120304.GB25265@voom.fritz.box>
-References: <87txkun568.fsf@rustcorp.com.au>
-	 <1371617970.21896.232.camel@pasglop>
-	 <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>
-	 <1371653443.21896.291.camel@pasglop>
-	 <1371656989.22659.98.camel@ul30vt.home> <51C28BEA.8050501@ozlabs.ru>
-	 <20130620052822.GB3140@voom.redhat.com> <1371714449.3944.14.camel@pasglop>
-	 <51C2C1CC.9000003@ozlabs.ru> <1371740113.32709.22.camel@ul30vt.home>
-	 <20130622120304.GB25265@voom.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751913Ab3FWAWY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jun 2013 20:22:24 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:41584 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab3FWAWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jun 2013 20:22:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <15269989.ojxutYs2L1@vostro.rjw.lan>
+References: <2737587.I0nULev1kj@vostro.rjw.lan>
+	<15269989.ojxutYs2L1@vostro.rjw.lan>
+Date: Sat, 22 Jun 2013 17:22:20 -0700
+X-Google-Sender-Auth: 4FxZHtuIVek3KyYhX_jQilwuJ4E
+Message-ID: <CAE9FiQV7R5mQKEFx+JhE7E1MjWSSxe2+WeK0aN_hVh6sZJ2GdQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ACPI / dock / PCI: Synchronous handling of dock
+ events for PCI devices
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-22 at 22:03 +1000, David Gibson wrote:
-> I think the interface should not take the group fd, but the container
-> fd.  Holding a reference to *that* would keep the necessary things
-> around.  But more to the point, it's the right thing semantically:
-> 
-> The container is essentially the handle on a host iommu address space,
-> and so that's what should be bound by the KVM call to a particular
-> guest iommu address space.  e.g. it would make no sense to bind two
-> different groups to different guest iommu address spaces, if they were
-> in the same container - the guest thinks they are different spaces,
-> but if they're in the same container they must be the same space.
+On Sat, Jun 22, 2013 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> To resolve that deadlock use the observation that
+> unregister_hotplug_dock_device() won't need to acquire hp_lock
+> if PCI bridges the devices on the dock station depend on are
+> prevented from being removed prematurely while the first loop in
+> hotplug_dock_devices() is in progress.
+>
+> To make that possible, introduce a mechanism by which the callers of
+> register_hotplug_dock_device() can provide "init" and "release"
+> routines that will be executed, respectively, after the addition
+> and removal of the physical device object associated with the
+> given ACPI device handle.  Make acpiphp use two new functions,
+> acpiphp_dock_init() and acpiphp_dock_release(), respectively,
+> calling get_bridge() and put_bridge() on the PCI bridge holding the
+> given device, respectively, for this purpose.
+>
+> In addition to that, remove the dock station's list of
+> "hotplug devices" and make the dock code always walk the whole list
+> of "dependent devices" instead in such a way that the loops in
+> hotplug_dock_devices() and dock_event() (replacing the loops over
+> "hotplug devices") will take references to the list entries that
+> register_hotplug_dock_device() has been called for.  That prevents
+> the "release" routines associated with those entries from being
+> called while the given entry is being processed and for PCI
+> devices this means that their bridges won't be removed (by a
+> concurrent thread) while hotplug_event_func() handling them is
+> being executed.
+..
+> -static void
+> -dock_del_hotplug_device(struct dock_station *ds,
+> -                       struct dock_dependent_device *dd)
+> +static void dock_release_hotplug(struct dock_dependent_device *dd)
+>  {
+> -       mutex_lock(&ds->hp_lock);
+> -       list_del(&dd->hotplug_list);
+> -       mutex_unlock(&ds->hp_lock);
+> +       void (*release)(void *) = NULL;
+> +       void *context = NULL;
+> +
+> +       mutex_lock(&hotplug_lock);
+> +
+> +       if (dd->hp_context && !--dd->hp_refcount) {
+> +               dd->hp_ops = NULL;
+> +               context = dd->hp_context;
+> +               dd->hp_context = NULL;
+> +               release = dd->hp_release;
+> +               dd->hp_release = NULL;
+> +       }
+> +
+> +       if (release && context)
+> +               release(context);
+> +
+> +       mutex_unlock(&hotplug_lock);
+> +}
+> +
+> +static void dock_hotplug_event(struct dock_dependent_device *dd, u32 event,
+> +                              bool uevent)
+> +{
+> +       acpi_notify_handler cb = NULL;
+> +       bool run = false;
+> +
+> +       mutex_lock(&hotplug_lock);
+> +
+> +       if (dd->hp_context) {
+> +               run = true;
+> +               dd->hp_refcount++;
+> +               if (dd->hp_ops)
+> +                       cb = uevent ? dd->hp_ops->uevent : dd->hp_ops->handler;
+> +       }
+> +
+> +       mutex_unlock(&hotplug_lock);
+> +
+> +       if (!run)
+> +               return;
+> +
+> +       if (cb)
+> +               cb(dd->handle, event, dd->hp_context);
+> +
+> +       dock_release_hotplug(dd);
 
-Interestingly, how are we going to extend that when/if we implement
-DDW ?
+during DOCKING, dock_release_hotplug get called too?
 
-DDW means an API by which the guest can request the creation of
-additional iommus for a given device (typically, in addition to the
-default smallish 32-bit one using 4k pages, the guest can request
-a larger window in 64-bit space using a larger page size).
-
-Cheers,
-Ben.
-
-
+Yinghai
