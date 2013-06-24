@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab3FXTb0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:31:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47231 "EHLO
+	id S1751902Ab3FXTbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:31:44 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47363 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab3FXTbW (ORCPT
+	with ESMTP id S1751772Ab3FXTbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:31:22 -0400
+	Mon, 24 Jun 2013 15:31:39 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [PATCH 03/32] alpha: delete __cpuinit usage from all users
-Date: Mon, 24 Jun 2013 15:30:08 -0400
-Message-ID: <1372102237-8757-4-git-send-email-paul.gortmaker@windriver.com>
+        Jonas Bonn <jonas@southpole.se>, <linux@openrisc.net>
+Subject: [PATCH 20/32] openrisc: delete __cpuinit usage from all openrisc files
+Date: Mon, 24 Jun 2013 15:30:25 -0400
+Message-ID: <1372102237-8757-21-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
@@ -36,13 +34,22 @@ After a discussion on LKML[1] it was decided that cpuinit should go
 the way of devinit and be phased out.  Once all the users are gone,
 we can then finally remove the macros themselves from linux/init.h.
 
-This removes all the alpha uses of the __cpuinit macros.
+Note that some harmless section mismatch warnings may result, since
+notify_cpu_starting() and cpu_up() are arch independent (kernel/cpu.c)
+are flagged as __cpuinit  -- so if we remove the __cpuinit from
+arch specific callers, we will also get section mismatch warnings.
+As an intermediate step, we intend to turn the linux/init.h cpuinit
+content into no-ops as early as possible, since that will get rid
+of these warnings.  In any case, they are temporary and harmless.
+
+This removes all the arch/openrisc uses of the __cpuinit macros from
+all C files.  Currently openrisc does not have any __CPUINIT used in
+assembly files.
 
 [1] https://lkml.org/lkml/2013/5/20/589
 
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
+Cc: Jonas Bonn <jonas@southpole.se>
+Cc: linux@lists.openrisc.net
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
 
@@ -54,81 +61,22 @@ Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
  that is fine too, as the commits can largely be treated independently.
  For more information, please see: https://lkml.org/lkml/2013/6/20/513 ]
 
- arch/alpha/kernel/smp.c   | 10 +++++-----
- arch/alpha/kernel/traps.c |  4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ arch/openrisc/kernel/setup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
-index 7b60834..53b18a6 100644
---- a/arch/alpha/kernel/smp.c
-+++ b/arch/alpha/kernel/smp.c
-@@ -116,7 +116,7 @@ wait_boot_cpu_to_stop(int cpuid)
- /*
-  * Where secondaries begin a life of C.
+diff --git a/arch/openrisc/kernel/setup.c b/arch/openrisc/kernel/setup.c
+index f4d5bed..d7359ff 100644
+--- a/arch/openrisc/kernel/setup.c
++++ b/arch/openrisc/kernel/setup.c
+@@ -267,7 +267,7 @@ void __init detect_unit_config(unsigned long upr, unsigned long mask,
+  *
   */
--void __cpuinit
-+void
- smp_callin(void)
- {
- 	int cpuid = hard_smp_processor_id();
-@@ -194,7 +194,7 @@ wait_for_txrdy (unsigned long cpumask)
-  * Send a message to a secondary's console.  "START" is one such
-  * interesting message.  ;-)
-  */
--static void __cpuinit
-+static void
- send_secondary_console_msg(char *str, int cpuid)
- {
- 	struct percpu_struct *cpu;
-@@ -285,7 +285,7 @@ recv_secondary_console_msg(void)
- /*
-  * Convince the console to have a secondary cpu begin execution.
-  */
--static int __cpuinit
-+static int
- secondary_cpu_start(int cpuid, struct task_struct *idle)
- {
- 	struct percpu_struct *cpu;
-@@ -356,7 +356,7 @@ secondary_cpu_start(int cpuid, struct task_struct *idle)
- /*
-  * Bring one cpu online.
-  */
--static int __cpuinit
-+static int
- smp_boot_one_cpu(int cpuid, struct task_struct *idle)
- {
- 	unsigned long timeout;
-@@ -472,7 +472,7 @@ smp_prepare_boot_cpu(void)
- {
- }
  
--int __cpuinit
-+int
- __cpu_up(unsigned int cpu, struct task_struct *tidle)
+-void __cpuinit calibrate_delay(void)
++void calibrate_delay(void)
  {
- 	smp_boot_one_cpu(cpu, tidle);
-diff --git a/arch/alpha/kernel/traps.c b/arch/alpha/kernel/traps.c
-index affccb9..be1fba3 100644
---- a/arch/alpha/kernel/traps.c
-+++ b/arch/alpha/kernel/traps.c
-@@ -32,7 +32,7 @@
- 
- static int opDEC_fix;
- 
--static void __cpuinit
-+static void
- opDEC_check(void)
- {
- 	__asm__ __volatile__ (
-@@ -1059,7 +1059,7 @@ give_sigbus:
- 	return;
- }
- 
--void __cpuinit
-+void
- trap_init(void)
- {
- 	/* Tell PAL-code what global pointer we want in the kernel.  */
+ 	const int *val;
+ 	struct device_node *cpu = NULL;
 -- 
 1.8.1.2
 
