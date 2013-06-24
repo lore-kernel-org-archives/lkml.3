@@ -1,256 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab3FXID3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:03:29 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:25981
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752904Ab3FXID0 (ORCPT
+	id S1753154Ab3FXIEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:04:36 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:43395 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961Ab3FXIEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:03:26 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zzbb2dI98dI9371I1dbaI1432I1418Id799hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah5eeeK8275bhz2dh2a8h595h668h839h947hd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-From: "Getz, Robin" <robin.getz@analog.com>
-Organization: Analog Devices, Inc.
-To: pankaj chauhan <pankaj.chauhan@freescale.com>
-Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for Radio phy
-Date: Mon, 24 Jun 2013 04:19:27 -0400
-User-Agent: KMail/1.9.5
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Goyal Akhil-B35197 <B35197@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chauhan Pankaj-B32944 <B32944@freescale.com>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Lars-Peter Clausen <lars-peter.clausen@analog.com>
-References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com> <51C1AAC4.3010605@metafoo.de> <51C2DAE8.2040100@freescale.com>
-In-Reply-To: <51C2DAE8.2040100@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201306240419.33004.robin.getz@analog.com>
-X-OriginatorOrg: analog.com
+	Mon, 24 Jun 2013 04:04:32 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-48-51c7fd8abeef
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Doug Anderson'" <dianders@chromium.org>, "'Chris Ball'" <cjb@laptop.org>
+Cc: "'Olof Johansson'" <olof@lixom.net>,
+        "'Andrew Bresticker'" <abrestic@chromium.org>,
+        "'Alim Akhtar'" <alim.akhtar@samsung.com>,
+        "'Abhilash Kesavan'" <a.kesavan@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1371772064-7505-1-git-send-email-dianders@chromium.org>
+In-reply-to: <1371772064-7505-1-git-send-email-dianders@chromium.org>
+Subject: RE: [PATCH] mmc: dw_mmc: don't queue up a card detect at slot startup
+Date: Mon, 24 Jun 2013 17:04:25 +0900
+Message-id: <001401ce70b1$71c325e0$554971a0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac5uEKGYZViigKPkRqWY15FdNJN5sQChAfxg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t8zA92uv8cDDeY2qlk8XrOYyWLl+7+M
+	Fg/mbWOz2P56I5vF2WUH2Sxu/Gpjtbi8aw6bxZH//YwWp65/ZrNYtesPowOXx+yGiyweO2fd
+	Zfc4dGUto8eVE02sHn1bVjF6fN4kF8AWxWWTkpqTWZZapG+XwJXxfvtz9oKXkhU73u1ibGC8
+	JNLFyMkhIWAisfjCe1YIW0ziwr31bF2MXBxCAssYJXbdvscMU3RkXysjRGI6o8SeznOsEM4f
+	RonN15cygVSxCWhJ/H3zBqxDRMBL4sXuB8wgRcwCe5kk9v7sASsSEnCR+LJ/ORuIzSngKnHg
+	xy12EFtYwE/iy44+sGYWAVWJ9v/rWboYOTh4BWwlNi0sAgnzCghK/Jh8jwXEZhYwkHg/q48V
+	wpaX2LzmLTNIuYSAusSjv7oQJxhJzJ77kh2iRERi34t3YA9ICEzkkOh4/JQJYpWAxLfJh1gg
+	emUlNh2AelhS4uCKGywTGCVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiE73ixNzi0rx0
+	veT83E2MkDifsIPx3gHrQ4zJQOsnMkuJJucD00ReSbyhsZmRhamJqbGRuaUZacJK4rzqLdaB
+	QgLpiSWp2ampBalF8UWlOanFhxiZODilGhjr9Q+zdu3sV5CrXOt4TfPz2/Qr7tsuTVolExZi
+	3FXJEbzrsI/Us59/P2a+Yt7VJTRVRP5jgLXdkxMr1wglelTwmjc360fPsqpbcc56qsCqtfGV
+	jz9J+Xwu/SasOqdpy/d5/55kWoos0yk5YnDWNO+B6Q9boaaaWe8vGy7dIbc939bjn+7iWx5K
+	LMUZiYZazEXFiQAuPOSTCQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMKsWRmVeSWpSXmKPExsVy+t9jQd2uv8cDDdbdUrB4vGYxk8XK938Z
+	LR7M28Zmsf31RjaLs8sOslnc+NXGanF51xw2iyP/+xktTl3/zGaxatcfRgcuj9kNF1k8ds66
+	y+5x6MpaRo8rJ5pYPfq2rGL0+LxJLoAtqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ
+	19DSwlxJIS8xN9VWycUnQNctMwfoNiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1G
+	BmggYR1jxvvtz9kLXkpW7Hi3i7GB8ZJIFyMnh4SAicSRfa2MELaYxIV769m6GLk4hASmM0rs
+	6TzHCuH8YZTYfH0pE0gVm4CWxN83b5hBbBEBL4kXux8wgxQxC+xlktj7swesSEjAReLL/uVs
+	IDangKvEgR+32EFsYQE/iS87+sCaWQRUJdr/r2fpYuTg4BWwldi0sAgkzCsgKPFj8j0WEJtZ
+	wEDi/aw+VghbXmLzmrfMIOUSAuoSj/7qQpxgJDF77kt2iBIRiX0v3jFOYBSahWTSLCSTZiGZ
+	NAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwUnkmdQOxpUNFocYBTgYlXh4f1ge
+	DxRiTSwrrsw9xCjBwawkwnvoClCINyWxsiq1KD++qDQntfgQYzLQnxOZpUST84EJLq8k3tDY
+	xMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGKVTlK8pMhiuUqvn5Zmz
+	7Df/UpVHGhy7p1/vj9J2sHgoM5n/M9vDywtyY9NazMTeB9q92GGXfudf5aVXrtatK3adKS+I
+	ychVW7tdV1WWyaegMflP/D25lMkPG1b9tPJ/vtnz74e92Q++tx6LjovXcJu7spJj8s0o17q0
+	j+1ihskab858SuQPVGIpzkg01GIuKk4EAL6MfhVmAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 20 Jun 2013 06:35, pankaj chauhan pondered:
-> On 6/19/2013 6:27 PM, Lars-Peter Clausen wrote:
-> > On 06/17/2013 10:09 AM, akhil.goyal@freescale.com wrote:
-> >> From: Akhil Goyal <akhil.goyal@freescale.com>
-> >>
-> >> AD9361 is a radio phy(RFIC) for radio networks. This phy
-> >> can support LTE-FDD/LTE-TDD and WCDMA networks. The RFIC
-> >> can convert the analog radio signals from air to digital
-> >> IQ samples.
-> >>
-> >> AD9361 is controlled via an SPI bus and all the register
-> >> read/ write can be performed via SPI transactions.
+Hi,
 
-The AD9361 datasheet still hasn't been posted for public consumption yet (as 
-of today), but for those interested, here is something similar - just not 
-exactly - but it gets the idea across.
+On Fri, June 21 2013, Doug Anderson wrote:
+> The MMC subsystem handles looking for a card at probe time.  Queuing
+> up our own can race with the rest of the MMC subsystem and cause
+> problems if we get unlucky with timing.  Just remove our own
+> detection.
+This patch looks good to me. I agree above.
+Card detection procedure of mmc subsystem will be started by mmc_start_host during probe time.
+There is no need to do same in host driver.
+Could you describe the race point of this problem and why the duplication makes the problem?
+What is described below is not clear.
+If a actual detection of card is triggered during probe, similar problem may be occurred in spite of this patch.
 
-http://www.analog.com/static/imported-files/data_sheets/AD9357.pdf
-
-> >> Driver provides various operations for configuring and
-> >> controlling the AD PHY. These can be controlled from the
-> >> user space via the rfdev framework.
-> >>
-> >> Driver also binds itself to one of AIC lane using RF framework.
-> >> The combination of AIC lane and PHY connected to it works
-> >> as one RF device.
-> >>
-> >> Signed-off-by: Shaveta Leekha <shaveta@freescale.com>
-> >> Signed-off-by: Pankaj Chauhan <pankaj.chauhan@freescale.com>
-> >> Signed-off-by: Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>
-> >> Signed-off-by: Akhil Goyal <akhil.goyal@freescale.com>
-> >
-> > Hi,
-> >
-> > This is interesting. We at Analog Devices are currently also working on a
-> > driver for this part. We are using the Linux Industrial IO (IIO)
-> > framework though, since the AD9361 is more or less a multifunction device
-> > implementing different functions already covered by the IIO framework,
-> > like ADCs, DACs, clock chips and so on.
->
-> Yes i agree AD9361 is more of a multifunction device and it can fit in
-> IIO framework. This patch (ad9361: AD9361 device driver for Radio phy)
-> implements:
->
-> 1. Programming of AD9361 :
->
-> Most of initialization is done by parsing Low level script generated by
-> ADI tool, and sending the SPIwrite/read/wait calibration commands to the
-> driver. This is more of a raw write interface to device.
-
-The "ADI GUI tool", is a proprietary, closed source, Windows only application. 
-I think that for a Linux driver - we would want to be completely independent 
-of that, and that the driver should be (a) standalone, or (b) useable with 
-Linux based tools.
-
-> 2. Adding utility function APIs for higher layers:
->
-> We have LTE/WCDMA stacks running in user space. They have requirement of
-> monitoring RSSI, changing Attenuation, reading/changing Rx gain,
-> disable/enable of tx/rx antennas, changing LO frequency etc. This patch
-> exposes APIs which can be accessed through RF device layer user space
-> interface (explained later in the email).
-
-Wow - LTE in userspace?
-
-What's your requirements for real-timeness of the system? Bandwidth? Are you 
-running a stock kernel for this? If you are monitoring RSSI, and changing 
-attenuation (an AGC loop) - how quickly does this loop need to run? What 
-speed are you running the ADC/DACs into userspace?
-
-
-> 3. Control of Radio card (which has AD9361): We have radio card which
-> contains AD9361 and there are different set of PA/LNAs (Power
-> amplifier/Low Noise Amplifier). Each set caters a set of frequency
-> bands. This patch also exports functions to enable/disable a Tx/Rx path
-> (PA/LNAs) which are external to AD9361.
-
-Isn't this just normal GPIO control? (like Arnd suggested - if you need GPIO - 
-make things a MFD - and use the existing GPIO infrastructure - at least that 
-is how I thought the GPO would be handled, and maybe even the CNTRL IN/OUT).
-
-
-> May be we can spit this driver in two parts :
->
-> 1. AD9361 driver: which covers #1 and #2 as mentioned as above. And this
-> can be merged with the driver you have in IIO framework.
->
-> 2. Radio card driver: which covers #3 and uses AD9361 driver's exported
-> APIs to program AD9361 OR may be we can program AD9361 from user space
-> using IIO interface.
->
-> pls let me know what do you think is best approach.
-
-I don't know if we have all the answers yet either. We aren't running LTE - so 
-having a real world userspace consumer might help direct us down a workable 
-path for everyone.
-
-It sounds like all the internal filters (which require floating point to 
-calculate the coefficients) - you are letting the GUI tool handle all this? 
-This is part of the issue we have been looking at - how to split things, so 
-no floating point in the driver...
-
-
-> > You seem to have made the kernel layer as thin as possible and provide a
-> > IOCTL which allows userspace to directly modify the registers of the
-> > hardware. So this sentence from the documentation "user space interface
-> > is independent of component (vendor specific) drivers" is not exactly
-> > true. If you write a userspace application it will still only work with
-> > one specific RF-frontend. There is only a common interface on how to talk
-> > to the frontend. Your documentation on this is also a bit sparse, e.g.
-> > there is no explanation of the individual IOCTLs.
->
-> Yes modifying registers from user space is part of the patch set and
-> register read/write interface is aimed only for two purposes:
->
-> 1. Debugging : taking register dumps etc.
-> 2. Initializing AD9361 using Low level script generated by ADI GUI tool.
->
-> I'll try to explain what we meant by 'independent of vendor specific
-> drivers' and the framework itself.
->
->
-> Following is the overview of hardware on which are running these drivers:
->
-> 1. Antenna controller : This is part of SOC. The controller has
->     multiple IQ data lanes. On the application core of SOC we run Linux.
->     LTE/WCDMA stacks run in user space, and they interact with antenna
->     controller and RFPHY.
-> 2. Radio card: This contains one or more RF PHYS (AD9361). Each AD9361
->     is connected to Antenna controller IQ lane over JESD207 bus.
->
-> With this patch set we aim to abstract combination of a IQ data lane and
-> RF PHY as a 'radio device'. So this patch set is divided in three parts:
->
-> 1. RF device layer :
-> 	- Exposes IOCTLS to user space for device configuration.
-> 	- Exposes registration APIs so that antenna controllers and PHYs
-> 	  so that they can register their control operations.
-> 	  antenna controller and RF PHYs don't interact with user space
-> 	  directly.
-> 	- Maintains state of overall RF device. For example IQ data
-> 	  transfer starts only when both the controller and PHY are
-> 	  configured and ready.
->
-> 2. Antenna controller driver: This configures the Antenna controller
->     hardware. It registers its control functions as a ops structure
->     (containing function pointers) with RF device layer.
->
-> 3. RF PHY driver: This is AD9361 driver (in this patch set). This also
-> registers with it ops structure with RF device layer. One of the
-> operation is raw register read/write as you pointed out.
->
-> The RF device layer exposes the two (or more than two) devices (i.e
-> antenna controller and RF PHY) as a RF device 'rf0' to user space. It is
-> similar to Ethernet,  which  has two drivers (Ethernet MAC controller
-> driver, and the Ethernet PHY driver) under eth0/eth1 interface.
->
-> The exposed IOCTLs from RF device layer are generic or protocol specific
-> (except raw register read/write interface), for example:
->
-> 1. Setting network mode of device to LTE, WCDMA etc
-> 2. Configuring device in TDD or FDD mode.
-> 3. Setting bandwidth to 10 Mhz, 15 Mhz, or 20 Mz.
-> 4. Changing Downlink/Uplink LO frequency to 'X' Mhz.
-> 5. Capturing IQ data from controller.
-> 6. Changing RF settings: attenuation, rx gain etc.
-> 7. Raw register read/write: so that PHYS with programming model
->     similar to AD9361 (using script containing SPI commands) can
->     be supported.
->
-> Generally LTE/WCDMA stacks run in user space and they have to interact
-> with the antenna controller and the RF PHY (AD9361) for initialization,
-> control, IQ capture etc.
->
-> If we don't have RF device layer then these stacks have to write vendor
-> drivers (antenna controller and RF PHY) specific code for interaction
-> with underlying controller and PHY drivers.
->
-> The RF device layer solves this problem by exposing an interface which
-> is protocol/functionality specific, so that the user space stack do not
-> change if underlying antenna controller or RF phy changes.
->
-> In user space we have a library called 'rflib' which interacts with RF
-> device layer through exposed IOCTLs. User space LTE/WCDMA stacks
-> interact only with 'rflib' and they are immune to underlying vendor
-> specific drivers. This is the reason for calling 'vendor independent
-> interface'. And if user space wants to fine tune the RF PHY then raw
-> register read/write interface is also exposed.
->
-> We are not aware of any other subsystem which meets above mentioned
-> requirements, and exposes interface for LTE/WCDMA stacks for controlling
-> radio hardware. That's why we introduced RF device layer between user
-> space interface and controller specific drivers.
->
-> pls suggest what is best possible way/subsystem for hardware and
-> software requirements that i explained above.
->
-> > Since it is probably not such a good idea to have two different drivers
-> > for the same device in different subsystems we should probably try to
-> > figure something out that will work for us both.
->
-> I agree, for AD9361 should have one driver, we'll figure out way how
-> requirements for both of us can be met by single driver.
->
-> > I'd also be interested in learning more about how the userspace side
-> > looks like.
->
-> The user space (rflib) is not on a public repository yet, i'll try to
-> figure out how rflib can be
->
-> > - Lars
->
-> sorry for long reply, we'll cover the details of API/framework in
-> documentation in next version of patch.
->
-> thanks,
-> pankaj
+Thanks,
+Seungwon Jeon
+> 
+> Specifically, I found that with just the right set of printouts in my
+> system that one of the three SD/MMC devices in my system was having
+> trouble probing.  It would get an err -123 (-ENOMEDIUM) during probe.
+> I found that the source of the error was in
+> dw_mci_work_routine_card().  Adding more printouts to the code
+> sometimes made this error go away, so it's a little touchy.
+> 
+> You can see a snippet with my printouts in it (printouts were in
+> set_ios() on an exynos5420 board with some of our local patches):
+> 
+> [    4.216595] dwmmc_exynos 12210000.dwmmc1: Using internal DMA controller.
+> [    4.395935] dwmmc_exynos 12210000.dwmmc1: Version ID is 250a
+> [    4.401948] dwmmc_exynos 12210000.dwmmc1: DW MMC controller at irq 108, 64 bit host data width, 64
+> deep fifo
+> [    4.424430] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
+> [    4.453975] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
+> [    4.459592] mmc_host mmc1: Bus speed (slot 0) = 100000000Hz (slot req 400000Hz, actual 400000HZ div
+> = 125)
+> [    4.484258] dwmmc_exynos 12210000.dwmmc1: 1 slots initialized
+> [    4.485406] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
+> [    4.487606] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
+> [    4.489794] dwmmc_exynos 12210000.dwmmc1: sdr0 mode (irq=108, width=0)
+> [    4.509757] mmc1: error -123 whilst initialising SDIO card
+> 
+> While digging I found that doing our own card detection at init time
+> didn't appear to be necessary.  If I remove this code then cards that
+> are in the system at bootup are still detected just fine.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/mmc/host/dw_mmc.c | 6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index bc3a1bc..c3a6fe9 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -2016,12 +2016,6 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  	/* Card initially undetected */
+>  	slot->last_detect_state = 0;
+> 
+> -	/*
+> -	 * Card may have been plugged in prior to boot so we
+> -	 * need to run the detect tasklet
+> -	 */
+> -	queue_work(host->card_workqueue, &host->card_work);
+> -
+>  	return 0;
+> 
+>  err_setup_bus:
+> --
+> 1.8.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
