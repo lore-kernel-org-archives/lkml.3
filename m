@@ -1,144 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab3FXMjF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:39:05 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54849 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab3FXMjB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:39:01 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
-        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
-Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
-        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
-        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
-        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
-        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
-        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <stephan.diestelhorst@amd.com>,
-        <riel@redhat.com>, <drjones@redhat.com>,
-        <virtualization@lists.linux-foundation.org>,
-        <srivatsa.vaddagiri@gmail.com>
-Date: Mon, 24 Jun 2013 18:12:53 +0530
-Message-Id: <20130624124253.27508.60260.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V10 11/18]  xen/pvticketlock: Allow interrupts to be enabled while blocking
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062412-5816-0000-0000-0000089A6285
+	id S1753205Ab3FXMjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:39:16 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:46228 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753029Ab3FXMjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 08:39:14 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
+Date: Mon, 24 Jun 2013 14:39:05 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>
+References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com> <201306220139.28794.heiko@sntech.de> <CACRpkdYMe+q2GUXooSeVVua3-AHDJFfWQu21bn45b_omsA7FAQ@mail.gmail.com>
+In-Reply-To: <CACRpkdYMe+q2GUXooSeVVua3-AHDJFfWQu21bn45b_omsA7FAQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201306241439.05875.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xen/pvticketlock: Allow interrupts to be enabled while blocking
+Am Montag, 24. Juni 2013, 14:24:12 schrieb Linus Walleij:
+> On Sat, Jun 22, 2013 at 1:39 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> > Am Samstag, 22. Juni 2013, 01:30:18 schrieb Laurent Pinchart:
+> >> [Stephen]
+> >> 
+> >> > IIRC the idea of the PULL_PIN_DEFAULT was to avoid having to specify
+> >> > UP/DOWN for each pin/group, but could just say "default", which would
+> >> > then reduce the number of pinctrl mapping table entries or pinctrl DT
+> >> > property entries.
+> >> 
+> >> I may be mistaken, but I've understood the PULL_PIN_DEFAULT option as a
+> >> way to select the default bias configuration when the default value is
+> >> hardware- controlled, not as a pure software option.
+> > 
+> > Yep that was the original intent ... to handle hardware that hides the
+> > complete logic from the software and you only get to turn it on or off,
+> > while the direction and other params are determined internally for
+> > example by the pin function.
+> 
+> Heiko, can you send a documentation patch to clarify this so we
+> don't get any misunderstandings?
+> 
+> Maybe it'd be useful for software purposes as well, but let's save
+> that for when it gets used like that.
 
-From: Jeremy Fitzhardinge <jeremy@goop.org>
+will try to get this (and the changes from the other mail) done today
 
-If interrupts were enabled when taking the spinlock, we can leave them
-enabled while blocking to get the lock.
-
-If we can enable interrupts while waiting for the lock to become
-available, and we take an interrupt before entering the poll,
-and the handler takes a spinlock which ends up going into
-the slow state (invalidating the per-cpu "lock" and "want" values),
-then when the interrupt handler returns the event channel will
-remain pending so the poll will return immediately, causing it to
-return out to the main spinlock loop.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
- arch/x86/xen/spinlock.c |   46 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 40 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 3ebabde..2b012a5 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -140,7 +140,20 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	 * partially setup state.
- 	 */
- 	local_irq_save(flags);
--
-+	/*
-+	 * We don't really care if we're overwriting some other
-+	 * (lock,want) pair, as that would mean that we're currently
-+	 * in an interrupt context, and the outer context had
-+	 * interrupts enabled.  That has already kicked the VCPU out
-+	 * of xen_poll_irq(), so it will just return spuriously and
-+	 * retry with newly setup (lock,want).
-+	 *
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
- 	w->want = want;
- 	smp_wmb();
- 	w->lock = lock;
-@@ -155,24 +168,43 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
- 
--	/* Mark entry to slowpath before doing the pickup test to make
--	   sure we don't deadlock with an unlocker. */
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
- 	__ticket_enter_slowpath(lock);
- 
--	/* check again make sure it didn't become free while
--	   we weren't looking  */
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking
-+	 */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
- 		add_stats(TAKEN_SLOW_PICKUP, 1);
- 		goto out;
- 	}
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
- 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
- 	xen_poll_irq(irq);
- 	add_stats(TAKEN_SLOW_SPURIOUS, !xen_test_irq_pending(irq));
-+
-+	local_irq_save(flags);
-+
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- out:
- 	cpumask_clear_cpu(cpu, &waiting_cpus);
- 	w->lock = NULL;
-+
- 	local_irq_restore(flags);
-+
- 	spin_time_accum_blocked(start);
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
-@@ -186,7 +218,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	for_each_cpu(cpu, &waiting_cpus) {
- 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
- 
--		if (w->lock == lock && w->want == next) {
-+		/* Make sure we read lock before want */
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == next) {
- 			add_stats(RELEASED_SLOW_KICKED, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
- 			break;
-
+Heiko
