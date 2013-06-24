@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab3FXBok (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 21:44:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35058 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab3FXBoj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 21:44:39 -0400
-Date: Sun, 23 Jun 2013 18:44:37 -0700 (PDT)
-Message-Id: <20130623.184437.1772856342146874217.davem@davemloft.net>
-To: eliezer.tamir@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
-        e1000-devel@lists.sourceforge.net, willemb@google.com,
-        erdnetdev@gmail.com, bhutchings@solarflare.com, andi@firstfloor.org,
-        hpa@zytor.com, eilong@broadcom.com, or.gerlitz@gmail.com,
-        amirv@mellanox.com, alexr@mellanox.com, eliezer@tamir.org.il
-Subject: Re: [PATCH v3 net-next 0/1] net: lls select poll support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130619100421.22132.99447.stgit@ladj378.jer.intel.com>
-References: <20130619100421.22132.99447.stgit@ladj378.jer.intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1752465Ab3FXBuU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 21:50:20 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47084 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752310Ab3FXBuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 21:50:19 -0400
+Message-ID: <1372038589.3944.118.camel@pasglop>
+Subject: Re: [PATCH v2] powerpc/pci: Improve device hotplug initialization
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Yuanquan Chen <Yuanquan.Chen@freescale.com>,
+        Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>
+Date: Mon, 24 Jun 2013 11:49:49 +1000
+In-Reply-To: <20130621165453.GA5506@roeck-us.net>
+References: <1370884688-7753-1-git-send-email-linux@roeck-us.net>
+	 <20130621165453.GA5506@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Date: Wed, 19 Jun 2013 13:04:21 +0300
+On Fri, 2013-06-21 at 09:54 -0700, Guenter Roeck wrote:
 
-> One question: do we need in sock_poll() to test that sock->sk is not null?
-> (Thanks to Willem de Bruijn for pointing this out.) 
+> > v2: Ensure that PCI bus fixup code has been executed before calling
+> >     device setup code.
+> > 
+> Hi Ben,
+> 
+> any comments/feedback on this approach ?
+> 
+> It is much less invasive than before and should address your concerns.
 
-We should not have to.
+And also less nice cleanup :-) I'll have a look.
 
-Please clean up various things in this patch:
+Cheers,
+Ben.
 
-1) You have cases where you add tons of unnecessary empty lines, of the
-   form:
+> Thanks,
+> Guenter
+> 
+> >  arch/powerpc/kernel/pci-common.c |   17 ++++++++++++-----
+> >  1 file changed, 12 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+> > index 7f2273c..6909b13 100644
+> > --- a/arch/powerpc/kernel/pci-common.c
+> > +++ b/arch/powerpc/kernel/pci-common.c
+> > @@ -992,7 +992,7 @@ void pcibios_setup_bus_self(struct pci_bus *bus)
+> >  		ppc_md.pci_dma_bus_setup(bus);
+> >  }
+> >  
+> > -void pcibios_setup_device(struct pci_dev *dev)
+> > +static void pcibios_setup_device(struct pci_dev *dev)
+> >  {
+> >  	/* Fixup NUMA node as it may not be setup yet by the generic
+> >  	 * code and is needed by the DMA init
+> > @@ -1013,6 +1013,17 @@ void pcibios_setup_device(struct pci_dev *dev)
+> >  		ppc_md.pci_irq_fixup(dev);
+> >  }
+> >  
+> > +int pcibios_add_device(struct pci_dev *dev)
+> > +{
+> > +	/*
+> > +	 * We can only call pcibios_setup_device() after bus setup is complete,
+> > +	 * since some of the platform specific DMA setup code depends on it.
+> > +	 */
+> > +	if (dev->bus->is_added)
+> > +		pcibios_setup_device(dev);
+> > +	return 0;
+> > +}
+> > +
+> >  void pcibios_setup_bus_devices(struct pci_bus *bus)
+> >  {
+> >  	struct pci_dev *dev;
+> > @@ -1467,10 +1478,6 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+> >  		if (ppc_md.pcibios_enable_device_hook(dev))
+> >  			return -EINVAL;
+> >  
+> > -	/* avoid pcie irq fix up impact on cardbus */
+> > -	if (dev->hdr_type != PCI_HEADER_TYPE_CARDBUS)
+> > -		pcibios_setup_device(dev);
+> > -
+> >  	return pci_enable_resources(dev, mask);
+> >  }
+> >  
+> > -- 
+> > 1.7.9.7
+> > 
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-	if (foo) {
-	/* EMPTY LINE */
-		code...
 
-    please get rid of them.
-
-2) Some of the LL loops have conditions that are not properly formatted,
-   I see things like:
-
-	do {
-		...
-	} while (x && y && z
-			&& whatever)
-
-   That "&& whatever" is not properly indented.  You must always indent
-   multi-line conditions like this:
-
-	xxx (x && y &&
-	     z && ...)
-
-   That is, operators always end the line, the never begin the line.
-   And one the second and subsequent lines you must line up the first
-   character with the first column after the openning parenthesis of
-   the first line.  You should not just use a series of only TAB
-   characters to indent these expressions.
-
-Thanks.
