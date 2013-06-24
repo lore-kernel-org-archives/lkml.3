@@ -1,134 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab3FXRJS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:09:18 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:35706 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab3FXRJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:09:16 -0400
-Date: Mon, 24 Jun 2013 19:09:12 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: dri-devel@lists.freedesktop.org, chris@chris-wilson.co.uk,
-        imre.deak@intel.com, daniel.vetter@ffwll.ch, airlied@linux.ie,
-        airlied@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: make compact dma scatter lists creation work
- with SWIOTLB backend.
-Message-ID: <20130624170912.GH5823@phenom.ffwll.local>
-Mail-Followup-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	dri-devel@lists.freedesktop.org, chris@chris-wilson.co.uk,
-	imre.deak@intel.com, airlied@linux.ie, airlied@gmail.com,
-	linux-kernel@vger.kernel.org
-References: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
- <1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
-X-Operating-System: Linux phenom 3.10.0-rc5+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751660Ab3FXRLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:11:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33713 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab3FXRLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 13:11:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,929,1363158000"; 
+   d="scan'208";a="358773855"
+Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock
+ acquisition
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Alex Shi <alex.shi@intel.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <1372017836.1797.14.camel@buesod1.americas.hpqcorp.net>
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com>
+	 <1371858700.22432.5.camel@schen9-DESK>
+	 <51C558E2.1040108@hurleysoftware.com>
+	 <1372017836.1797.14.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Jun 2013 10:11:16 -0700
+Message-ID: <1372093876.22432.34.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 11:47:48AM -0400, Konrad Rzeszutek Wilk wrote:
-> Git commit 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
-> ("drm/i915: create compact dma scatter lists for gem objects") makes
-> certain assumptions about the under laying DMA API that are not always
-> correct.
+On Sun, 2013-06-23 at 13:03 -0700, Davidlohr Bueso wrote:
+> On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
+> > On 06/21/2013 07:51 PM, Tim Chen wrote:
+> > > Introduce in this patch optimistic spinning for writer lock
+> > > acquisition in read write semaphore.  The logic is
+> > > similar to the optimistic spinning in mutex but without
+> > > the MCS lock queueing of the spinner.  This provides a
+> > > better chance for a writer to acquire the lock before
+> > > being we block it and put it to sleep.
+> > 
+> > This is just my opinion but I'd rather read the justification
+> > here instead of referencing mutex logic that may or may not
+> > exist in 2 years.
 > 
-> On a ThinkPad X230 with an Intel HD 4000 with Xen during the bootup
-> I see:
+> We want to add optimistic spinning to rwsems because we've noticed that
+> the writer rwsem does not perform as well as mutexes. Tim noticed that
+> for exim (mail server) workloads, when reverting commit 4fc3f1d6 and I
+> noticed it when converting the i_mmap_mutex to a rwsem in some aim7
+> workloads. We've noticed that the biggest difference, in a nutshell, is
+> when we fail to acquire a mutex in the fastpath, optimistic spinning
+> comes in to play and we can avoid a large amount of unnecessary sleeping
+> and wait queue overhead.
 > 
-> [drm:intel_pipe_set_base] *ERROR* pin & fence failed
-> [drm:intel_crtc_set_config] *ERROR* failed to set mode on [CRTC:3], err = -28
+> For rwsems on the other hand, upon entering the writer slowpath in
+> rwsem_down_write_failed(), we just acquire the ->wait_lock, add
+> ourselves to the wait_queue and blocking until we get the lock.
 > 
-> Bit of debugging traced it down to dma_map_sg failing (in
-> i915_gem_gtt_prepare_object) as some of the SG entries were huge (3MB).
+> Makes sense?
 > 
-> That unfortunately are sizes that the SWIOTLB is incapable of handling -
-> the maximum it can handle is a an entry of 512KB of virtual contiguous
-> memory for its bounce buffer. (See IO_TLB_SEGSIZE).
-> 
-> Previous to the above mention git commit the SG entries were of 4KB, and
-> the code introduced by above git commit squashed the CPU contiguous PFNs
-> in one big virtual address provided to DMA API.
-> 
-> This patch is a simple semi-revert - were we emulate the old behavior
-> if we detect that SWIOTLB is online. If it is not online then we continue
-> on with the new compact scatter gather mechanism.
-> 
-> An alternative solution would be for the the '.get_pages' and the
-> i915_gem_gtt_prepare_object to retry with smaller max gap of the
-> amount of PFNs that can be combined together - but with this issue
-> discovered during rc7 that might be too risky.
-> 
-> Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> CC: Chris Wilson <chris@chris-wilson.co.uk>
-> CC: Imre Deak <imre.deak@intel.com>
-> CC: Daniel Vetter <daniel.vetter@ffwll.ch>
-> CC: David Airlie <airlied@linux.ie>
-> CC: <dri-devel@lists.freedesktop.org>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> More information from the original thread:
+> https://lkml.org/lkml/2013/6/21/482
 
-Two things:
-
-- SWIOTLB usage should seriously blow up all over the place in drm/i915.
-  We really rely on the everywhere else true fact that the pages and their
-  dma mapping point at the same backing storage.
-
-- How is this solved elsewhere when constructing sg tables? Or are we
-  really the only guys who try to construct such big sg entries? I
-  expected somewhat that the dma mapping backed would fill in the segment
-  limits accordingly, but I haven't found anything really on a quick
-  search.
+Sounds good.  
 
 
-Cheers, Daniel
-
-> ---
->  drivers/gpu/drm/i915/i915_gem.c | 15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-> index 970ad17..7045f45 100644
-> --- a/drivers/gpu/drm/i915/i915_gem.c
-> +++ b/drivers/gpu/drm/i915/i915_gem.c
-> @@ -1801,7 +1801,14 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
->  			gfp |= __GFP_NORETRY | __GFP_NOWARN | __GFP_NO_KSWAPD;
->  			gfp &= ~(__GFP_IO | __GFP_WAIT);
->  		}
-> -
-> +#ifdef CONFIG_SWIOTLB
-> +		if (swiotlb_nr_tbl()) {
-> +			st->nents++;
-> +			sg_set_page(sg, page, PAGE_SIZE, 0);
-> +			sg = sg_next(sg);
-> +			continue;
-> +		}
-> +#endif
->  		if (!i || page_to_pfn(page) != last_pfn + 1) {
->  			if (i)
->  				sg = sg_next(sg);
-> @@ -1812,8 +1819,10 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
->  		}
->  		last_pfn = page_to_pfn(page);
->  	}
-> -
-> -	sg_mark_end(sg);
-> +#ifdef CONFIG_SWIOTLB
-> +	if (!swiotlb_nr_tbl())
-> +#endif
-> +		sg_mark_end(sg);
->  	obj->pages = st;
->  
->  	if (i915_gem_object_needs_bit17_swizzle(obj))
-> -- 
-> 1.8.1.4
+> > 
+> > 
+> > > Disabling of pre-emption during optimistic spinning
+> > > was suggested by Davidlohr Bueso.  It
+> > > improved performance of aim7 for his test suite.
+> > >
+> > > Combined with the patch to avoid unnecesary cmpxchg,
+> > > in testing by Davidlohr Bueso on aim7 workloads
+> > > on 8 socket 80 cores system, he saw improvements of
+> > > alltests (+14.5%), custom (+17%), disk (+11%), high_systime
+> > > (+5%), shared (+15%) and short (+4%), most of them after around 500
+> > > users when he implemented i_mmap as rwsem.
+> > >
+> > > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > > ---
+> > >   Makefile              |    2 +-
+> > >   include/linux/rwsem.h |    3 +
+> > >   init/Kconfig          |    9 +++
+> > >   kernel/rwsem.c        |   29 +++++++++-
+> > >   lib/rwsem.c           |  148 +++++++++++++++++++++++++++++++++++++++++++++----
+> > >   5 files changed, 178 insertions(+), 13 deletions(-)
+> > >
+> > > diff --git a/Makefile b/Makefile
+> > > index 49aa84b..7d1ef64 100644
+> > > --- a/Makefile
+> > > +++ b/Makefile
+> > > @@ -1,7 +1,7 @@
+> > >   VERSION = 3
+> > >   PATCHLEVEL = 10
+> > >   SUBLEVEL = 0
+> > > -EXTRAVERSION = -rc4
+> > > +EXTRAVERSION = -rc4-optspin4
+> > >   NAME = Unicycling Gorilla
+> 
+> This must obviously go.
+
+Yes.  Should not be there.
+
+> 
+> > >
+> > >   # *DOCUMENTATION*
+> > > diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> > > index 0616ffe..0c5933b 100644
+> > > --- a/include/linux/rwsem.h
+> > > +++ b/include/linux/rwsem.h
+> > > @@ -29,6 +29,9 @@ struct rw_semaphore {
+> > >   #ifdef CONFIG_DEBUG_LOCK_ALLOC
+> > >   	struct lockdep_map	dep_map;
+> > >   #endif
+> > > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > > +	struct task_struct	*owner;
+> > > +#endif
+> > >   };
+> > >
+> > >   extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
+> > > diff --git a/init/Kconfig b/init/Kconfig
+> > > index 9d3a788..1c582d1 100644
+> > > --- a/init/Kconfig
+> > > +++ b/init/Kconfig
+> > > @@ -1595,6 +1595,15 @@ config TRACEPOINTS
+> > >
+> > >   source "arch/Kconfig"
+> > >
+> > > +config RWSEM_SPIN_ON_WRITE_OWNER
+> > > +	bool "Optimistic spin write acquisition for writer owned rw-sem"
+> > > +	default n
+> > > +	depends on SMP
+> > > +	help
+> > > +	  Allows a writer to perform optimistic spinning if another writer own
+> > > +	  the read write semaphore.  This gives a greater chance for writer to
+> > > +	  acquire a semaphore before blocking it and putting it to sleep.
+> > > +
+> > >   endmenu		# General setup
+> 
+> Can't we just use CONFIG_SMP insted of adding a new Kconfig variable?
+
+I am not comfortable to make the optimistic spinning of rw-sem a default
+SMP config option yet.  I will like it to see more performance testing
+in the tree.  I want the ability to turn it off easily.
+
+> 
+> > >
+> > >   config HAVE_GENERIC_DMA_COHERENT
+> > > diff --git a/kernel/rwsem.c b/kernel/rwsem.c
+> > > index cfff143..a32990a 100644
+> > > --- a/kernel/rwsem.c
+> > > +++ b/kernel/rwsem.c
+> > > @@ -12,6 +12,26 @@
+> > >
+> > >   #include <linux/atomic.h>
+> > >
+> > > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > > +static inline void rwsem_set_owner(struct rw_semaphore *sem)
+> > > +{
+> > > +	sem->owner = current;
+> > > +}
+> > > +
+> > > +static inline void rwsem_clear_owner(struct rw_semaphore *sem)
+> > > +{
+> > > +	sem->owner = NULL;
+> > > +}
+> > > +#else
+> > > +static inline void rwsem_set_owner(struct rw_semaphore *sem)
+> > > +{
+> > > +}
+> > > +
+> > > +static inline void rwsem_clear_owner(struct rw_semaphore *sem)
+> > > +{
+> > > +}
+> > > +#endif
+> > > +
+> > >   /*
+> > >    * lock for reading
+> > >    */
+> > > @@ -48,6 +68,7 @@ void __sched down_write(struct rw_semaphore *sem)
+> > >   	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
+> > >
+> > >   	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
+> > > +	rwsem_set_owner(sem);
+> > >   }
+> > >
+> > >   EXPORT_SYMBOL(down_write);
+> > > @@ -59,8 +80,10 @@ int down_write_trylock(struct rw_semaphore *sem)
+> > >   {
+> > >   	int ret = __down_write_trylock(sem);
+> > >
+> > > -	if (ret == 1)
+> > > +	if (ret == 1) {
+> > >   		rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
+> > > +		rwsem_set_owner(sem);
+> > > +	}
+> > >   	return ret;
+> > >   }
+> > >
+> > > @@ -86,6 +109,7 @@ void up_write(struct rw_semaphore *sem)
+> > >   	rwsem_release(&sem->dep_map, 1, _RET_IP_);
+> > >
+> > >   	__up_write(sem);
+> > > +	rwsem_clear_owner(sem);
+> > >   }
+> > >
+> > >   EXPORT_SYMBOL(up_write);
+> > > @@ -100,6 +124,7 @@ void downgrade_write(struct rw_semaphore *sem)
+> > >   	 * dependency.
+> > >   	 */
+> > >   	__downgrade_write(sem);
+> > > +	rwsem_clear_owner(sem);
+> > >   }
+> > >
+> > >   EXPORT_SYMBOL(downgrade_write);
+> > > @@ -122,6 +147,7 @@ void _down_write_nest_lock(struct rw_semaphore *sem, struct lockdep_map *nest)
+> > >   	rwsem_acquire_nest(&sem->dep_map, 0, 0, nest, _RET_IP_);
+> > >
+> > >   	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
+> > > +	rwsem_set_owner(sem);
+> > >   }
+> > >
+> > >   EXPORT_SYMBOL(_down_write_nest_lock);
+> > > @@ -141,6 +167,7 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
+> > >   	rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
+> > >
+> > >   	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
+> > > +	rwsem_set_owner(sem);
+> > >   }
+> > >
+> > >   EXPORT_SYMBOL(down_write_nested);
+> > > diff --git a/lib/rwsem.c b/lib/rwsem.c
+> > > index 2072af5..8e331c5 100644
+> > > --- a/lib/rwsem.c
+> > > +++ b/lib/rwsem.c
+> > > @@ -8,6 +8,7 @@
+> > >    */
+> > >   #include <linux/rwsem.h>
+> > >   #include <linux/sched.h>
+> > > +#include <linux/sched/rt.h>
+> > >   #include <linux/init.h>
+> > >   #include <linux/export.h>
+> > >
+> > > @@ -27,6 +28,9 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+> > >   	sem->count = RWSEM_UNLOCKED_VALUE;
+> > >   	raw_spin_lock_init(&sem->wait_lock);
+> > >   	INIT_LIST_HEAD(&sem->wait_list);
+> > > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > > +	sem->owner = NULL;
+> > > +#endif
+> > >   }
+> > >
+> > >   EXPORT_SYMBOL(__init_rwsem);
+> > > @@ -192,6 +196,128 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+> > >   	return sem;
+> > >   }
+> > >
+> > > +static inline int rwsem_try_write_lock(long count, bool need_lock,
+> > > +	struct rw_semaphore *sem)
+> > > +{
+> > > +	if (!(count & RWSEM_ACTIVE_MASK)) {
+> > > +		/* Try acquiring the write lock. */
+> > > +		if (sem->count == RWSEM_WAITING_BIAS &&
+> > > +		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
+> > > +			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
+> > > +			if (need_lock)
+> > > +				raw_spin_lock_irq(&sem->wait_lock);
+> > > +			if (!list_is_singular(&sem->wait_list))
+> > > +				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
+> > > +			return 1;
+> > > +		}
+> > > +	}
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > > +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+> > > +{
+> > > +	int retval = true;
+> > > +
+> > > +	/* Spin only if active writer running */
+> > > +	if (!sem->owner)
+> > > +		return false;
+> > > +
+> > > +	rcu_read_lock();
+> > > +	if (sem->owner)
+> > > +		retval = sem->owner->on_cpu;
+> >                           ^^^^^^^^^^^^^^^^^^
+> > 
+> > Why is this a safe dereference? Could not another cpu have just
+> > dropped the sem (and thus set sem->owner to NULL and oops)?
+> > 
+
+The rcu read lock should protect against sem->owner being NULL.
+
+> > 
+> > > +	rcu_read_unlock();
+> > > +	/*
+> > > +	 * if lock->owner is not set, the sem owner may have just acquired
+> > > +	 * it and not set the owner yet, or the sem has been released, or
+> > > +	 * reader active.
+> > > +	 */
+> > > +	return retval;
+> > > +}
+> > > +
+> > > +static inline bool owner_running(struct rw_semaphore *lock,
+> > > +				struct task_struct *owner)
+> > > +{
+> > > +	if (lock->owner != owner)
+> > > +		return false;
+> > > +
+> > > +	/*
+> > > +	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
+> > > +	 * lock->owner still matches owner, if that fails, owner might
+> > > +	 * point to free()d memory, if it still matches, the rcu_read_lock()
+> > > +	 * ensures the memory stays valid.
+> > > +	 */
+> > 
+> > Again just my opinion, but kernel style is to prefer multi-line comments
+> > in a function comment block.
+> > 
+> > > +	barrier();
+> > > +
+> > > +	return owner->on_cpu;
+> > > +}
+> 
+> A lot of these functions are exact duplicates of kernel/mutex.c - we
+> should probably think of adding generic interfaces for mutexes and
+> rwsems...
+
+Probably there are pros and cons.  The cons is the logic are 
+similar but may not be exact duplicate if later on we are 
+adding rw-sem specific tweaks.  May be cleaner to keep the two 
+separated.
+
+> 
+> > > +
+> > > +static noinline
+> > > +int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
+> > > +{
+> > > +	rcu_read_lock();
+> > > +	while (owner_running(lock, owner)) {
+> > > +		if (need_resched())
+> > > +			break;
+> > > +
+> > > +		arch_mutex_cpu_relax();
+> > > +	}
+> > > +	rcu_read_unlock();
+> > > +
+> > > +	/*
+> > > +	 * We break out the loop above on need_resched() and when the
+> > > +	 * owner changed, which is a sign for heavy contention. Return
+> > > +	 * success only when lock->owner is NULL.
+> > > +	 */
+> > > +	return lock->owner == NULL;
+> > > +}
+> 
+> ditto
+> 
+> > > +
+> > > +int rwsem_optimistic_spin(struct rw_semaphore *sem)
+> > > +{
+> > > +	struct	task_struct	*owner;
+> > > +	int	ret = 0;
+> > > +
+> > > +	/* sem->wait_lock should not be held when doing optimistic spinning */
+> > > +	if (!rwsem_can_spin_on_owner(sem))
+> > > +		return ret;
+> > > +
+> > > +	preempt_disable();
+> > > +	for (;;) {
+> > > +		owner = ACCESS_ONCE(sem->owner);
+> > > +		if (owner && !rwsem_spin_on_owner(sem, owner))
+> > > +			break;
+> > 
+> > Will this spin for full scheduler value on a reader-owned lock?
+> 
+> Yep, it should.
+
+No. We will spin only on writer-owned lock in the current version.  
+The owner field is only set when a writer own it.  Spinning on reader 
+is tricky as there could be multiple readers.  Earlier Davidlohr and
+I have privately tested a different version where we allowed the 
+owner field to be set by reader but only get cleared if 
+sem->owner == current (suggested by Matthew Wilcox).  However we 
+didn't get a performance boost so I did not include this.
+
+> 
+> > 
+> > > +		/* wait_lock will be acquired if write_lock is obtained */
+> > > +		if (rwsem_try_write_lock(sem->count, true, sem)) {
+> > > +			ret = 1;
+> > > +			goto out;
+> > > +		}
+> > > +
+> > > +		/*
+> > > +		 * When there's no owner, we might have preempted between the
+> >                                                          ^^^^^^^^
+> > 
+> > Isn't pre-emption disabled?
+> 
+> Hmm yeah, that might be a bogus comment.
+
+That's true. My original change didn't have pre-emption disabled so this
+slipped through.
+
+> 
+> > 
+> > 
+> > > +		 * owner acquiring the lock and setting the owner field. If
+> > > +		 * we're an RT task that will live-lock because we won't let
+> > > +		 * the owner complete.
+> > > +		 */
+> > > +		if (!owner && (need_resched() || rt_task(current)))
+> > > +			break;
+> > > +
+> > > +		/*
+> > > +		 * The cpu_relax() call is a compiler barrier which forces
+> > > +		 * everything in this loop to be re-loaded. We don't need
+> > > +		 * memory barriers as we'll eventually observe the right
+> > > +		 * values at the cost of a few extra spins.
+> > > +		 */
+> > > +		arch_mutex_cpu_relax();
+> > > +
+> > > +	}
+> > > +
+> > > +out:
+> > > +	preempt_enable();
+> > > +	return ret;
+> > > +}
+> > > +#endif
+> > > +
+> > >   /*
+> > >    * wait until we successfully acquire the write lock
+> > >    */
+> > > @@ -200,6 +326,9 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+> > >   	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
+> > >   	struct rwsem_waiter waiter;
+> > >   	struct task_struct *tsk = current;
+> > > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > > +	bool try_optimistic_spin = true;
+> > > +#endif
+> > >
+> > >   	/* set up my own style of waitqueue */
+> > >   	waiter.task = tsk;
+> > > @@ -223,20 +352,17 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+> > >   	/* wait until we successfully acquire the lock */
+> > >   	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+> > >   	while (true) {
+> > > -		if (!(count & RWSEM_ACTIVE_MASK)) {
+> > > -			/* Try acquiring the write lock. */
+> > > -			count = RWSEM_ACTIVE_WRITE_BIAS;
+> > > -			if (!list_is_singular(&sem->wait_list))
+> > > -				count += RWSEM_WAITING_BIAS;
+> > > -
+> > > -			if (sem->count == RWSEM_WAITING_BIAS &&
+> > > -			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
+> > > -							RWSEM_WAITING_BIAS)
+> > > -				break;
+> > > -		}
+> > > +		if (rwsem_try_write_lock(count, false, sem))
+> > > +			break;
+> > >
+> > >   		raw_spin_unlock_irq(&sem->wait_lock);
+> > >
+> > > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > > +		/* do optimistic spinning */
+> > > +		if (try_optimistic_spin && rwsem_optimistic_spin(sem))
+> > > +			break;
+> > > +		try_optimistic_spin = false;
+> > > +#endif
+> > >   		/* Block until there are no active lockers. */
+> > >   		do {
+> > >   			schedule();
+> > 
+> > Regards,
+> > Peter Hurley
+> > 
+> 
 > 
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+
