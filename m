@@ -1,92 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab3FXON3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 10:13:29 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39673 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab3FXON1 (ORCPT
+	id S1751683Ab3FXORV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 10:17:21 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:36646 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab3FXORS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 10:13:27 -0400
-Date: Mon, 24 Jun 2013 15:12:57 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        kernel@stlinux.com,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Message-ID: <20130624141257.GM27646@sirena.org.uk>
-References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
- <1371737138-9340-1-git-send-email-srinivas.kandagatla@st.com>
- <51C45816.5010207@st.com>
- <CACRpkdb-H2=GdF54Fay+PQVdXLTs++L5+QYe_vFPuzpa+E4ZMg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SvPICi00/oKz9jF1"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb-H2=GdF54Fay+PQVdXLTs++L5+QYe_vFPuzpa+E4ZMg@mail.gmail.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 03/10] pinctrl:st: Add pinctrl and pinconf support.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 24 Jun 2013 10:17:18 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: linux-fbdev@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: jimwall@q.com, brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCHv2 1/2] video: hx8357: Make IM pins optional
+Date: Mon, 24 Jun 2013 16:16:54 +0200
+Message-Id: <1372083415-9734-2-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372083415-9734-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1372083415-9734-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
---SvPICi00/oKz9jF1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The IM pins of the HX8357 controller are used to define the interface used to
+feed pixel stream to the LCD panel.
 
-On Mon, Jun 24, 2013 at 01:57:56PM +0200, Linus Walleij wrote:
+Most of the time, these pins are directly routed to either the ground or the VCC
+to set their values.
 
-> This seems fairly complete, but I cannot have such a basic dependency onto
-> the regmap tree this late in the merge window, i.e. I'm not ready to pull
-> all of regmap into the pinctrl tree. I'd consider this for merging
-> for the next kernel cycle so it's more orthogonal.
+Remove the need to assign GPIOs to these pins when we are in such a case.
 
-I've got the patch on a topic branch in regmap to allow for this sort of
-stuff - I can readily provide a signed tag for you to get just that
-patch if that'd help?  Alternatively I'm happy to carry the pinctrl
-patch in regmap?
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/video/backlight/hx8357.c | 53 +++++++++++++++++++++++-----------------
+ 1 file changed, 31 insertions(+), 22 deletions(-)
 
---SvPICi00/oKz9jF1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/video/backlight/hx8357.c b/drivers/video/backlight/hx8357.c
+index a0482b5..69f5672 100644
+--- a/drivers/video/backlight/hx8357.c
++++ b/drivers/video/backlight/hx8357.c
+@@ -76,6 +76,7 @@ struct hx8357_data {
+ 	unsigned		reset;
+ 	struct spi_device	*spi;
+ 	int			state;
++	u8			use_im_pins;
+ };
+ 
+ static u8 hx8357_seq_power[] = {
+@@ -250,9 +251,11 @@ static int hx8357_lcd_init(struct lcd_device *lcdev)
+ 	 * Set the interface selection pins to SPI mode, with three
+ 	 * wires
+ 	 */
+-	gpio_set_value_cansleep(lcd->im_pins[0], 1);
+-	gpio_set_value_cansleep(lcd->im_pins[1], 0);
+-	gpio_set_value_cansleep(lcd->im_pins[2], 1);
++	if (lcd->use_im_pins) {
++		gpio_set_value_cansleep(lcd->im_pins[0], 1);
++		gpio_set_value_cansleep(lcd->im_pins[1], 0);
++		gpio_set_value_cansleep(lcd->im_pins[2], 1);
++	}
+ 
+ 	/* Reset the screen */
+ 	gpio_set_value(lcd->reset, 1);
+@@ -424,26 +427,32 @@ static int hx8357_probe(struct spi_device *spi)
+ 		return -EINVAL;
+ 	}
+ 
+-	for (i = 0; i < HX8357_NUM_IM_PINS; i++) {
+-		lcd->im_pins[i] = of_get_named_gpio(spi->dev.of_node,
+-						"im-gpios", i);
+-		if (lcd->im_pins[i] == -EPROBE_DEFER) {
+-			dev_info(&spi->dev, "GPIO requested is not here yet, deferring the probe\n");
+-			return -EPROBE_DEFER;
+-		}
+-		if (!gpio_is_valid(lcd->im_pins[i])) {
+-			dev_err(&spi->dev, "Missing dt property: im-gpios\n");
+-			return -EINVAL;
++	if (of_find_property(spi->dev.of_node, "im-gpios", NULL)) {
++		lcd->use_im_pins = 1;
++
++		for (i = 0; i < HX8357_NUM_IM_PINS; i++) {
++			lcd->im_pins[i] = of_get_named_gpio(spi->dev.of_node,
++							    "im-gpios", i);
++			if (lcd->im_pins[i] == -EPROBE_DEFER) {
++				dev_info(&spi->dev, "GPIO requested is not here yet, deferring the probe\n");
++				return -EPROBE_DEFER;
++			}
++			if (!gpio_is_valid(lcd->im_pins[i])) {
++				dev_err(&spi->dev, "Missing dt property: im-gpios\n");
++				return -EINVAL;
++			}
++
++			ret = devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
++						    GPIOF_OUT_INIT_LOW,
++						    "im_pins");
++			if (ret) {
++				dev_err(&spi->dev, "failed to request gpio %d: %d\n",
++					lcd->im_pins[i], ret);
++				return -EINVAL;
++			}
+ 		}
+-
+-		ret = devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
+-					GPIOF_OUT_INIT_LOW, "im_pins");
+-		if (ret) {
+-			dev_err(&spi->dev, "failed to request gpio %d: %d\n",
+-				lcd->im_pins[i], ret);
+-			return -EINVAL;
+-		}
+-	}
++	} else
++		lcd->use_im_pins = 0;
+ 
+ 	lcdev = lcd_device_register("mxsfb", &spi->dev, lcd, &hx8357_ops);
+ 	if (IS_ERR(lcdev)) {
+-- 
+1.8.1.2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRyFPlAAoJELSic+t+oim9drkP/AvXwB+JkSkI5KOxPbYZLrAU
-f6QwGGF7ASGbxukfntYf3ktBYexugj5MQMCo/uPYam8jTRJ85tCoSwFDyWAnHleh
-8tEXp/7E0K6yEOUMlFjCvDQnQQctiBdKfTCy8/yI2BkvflVt2VzgJdGnck8PJ3ky
-RxjkPXNMGoDAwE6ylPhWS+wO27ZzH1pj37bQdOaOUxIP9DIAKhPtP2nP9MSiU9Lh
-0G1IwcmdrzCyUcwCTPEOzOcu0GlT7yHs6R0oDl5K/jR0z1WJOG+KOa+9zTOFJAk5
-ogGhX/tju2ej+kaQRxckbsiBedbhDedGik99a66hQLv6xv5bg5vBJq9FKDPMqvdP
-tUe1Xeua7BVvNop+TqfTvayVOPmoXRhe+Hz8qH0MgFQRy8kz1sD/HMfRTfRw9e39
-Khj/JBfmbZ+IIv+n3nFGJjb1+QSonlmYNxhABgjwDsgCVqgBkcCW4rh4r/zVzVZB
-jq2pFfchPnlASz1ZuzTIMnGS0cL3xGwnxMQKvAqe6rfWq+2uZPz1IhJSSwD7kAUJ
-bOQOizb5wm//SmZbIJKANN6YQ5MuUX3vbQahHczlnPZe/v9M++cUzr4zEaENRtsk
-WuiJqaS8+Vm5A7Gy9v8AmdT3saY7pqwCa1xBx58QQZUUDWV6eJIJ0m6zb9BMw6qR
-B48zlMq6FmnjmYq1kmV1
-=RT+C
------END PGP SIGNATURE-----
-
---SvPICi00/oKz9jF1--
