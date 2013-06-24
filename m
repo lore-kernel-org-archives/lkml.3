@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab3FXX2B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 19:28:01 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:57434 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab3FXX2A (ORCPT
+	id S1752219Ab3FXX2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 19:28:15 -0400
+Received: from mail-gh0-f170.google.com ([209.85.160.170]:59691 "EHLO
+	mail-gh0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab3FXX2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 19:28:00 -0400
-Date: Mon, 24 Jun 2013 16:27:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Imre Deak <imre.deak@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v3 2/4] lib/scatterlist: introduce sg_pcopy_from_buffer()
- and sg_pcopy_to_buffer()
-Message-ID: <20130624232753.GQ1918@mtj.dyndns.org>
-References: <1371991061-19437-1-git-send-email-akinobu.mita@gmail.com>
- <1371991061-19437-3-git-send-email-akinobu.mita@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371991061-19437-3-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Jun 2013 19:28:11 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: john.stultz@linaro.org
+Cc: tglx@linutronix.de, shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
+        sboyd@codeaurora.org, Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] clocksource: vf_pit_timer: Use <linux/sched_clock.h>
+Date: Mon, 24 Jun 2013 20:20:08 -0300
+Message-Id: <1372116008-2323-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23, 2013 at 09:37:39PM +0900, Akinobu Mita wrote:
-> The only difference between sg_pcopy_{from,to}_buffer() and
-> sg_copy_{from,to}_buffer() is an additional argument that specifies
-> the number of bytes to skip the SG list before copying.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Imre Deak <imre.deak@intel.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: linux-crypto@vger.kernel.org
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: Douglas Gilbert <dgilbert@interlog.com>
-> Cc: linux-scsi@vger.kernel.org
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Commit 38ff87f7 (sched_clock: Make ARM's sched_clock generic for all 
+architectures) changed the header to <linux/sched_clock.h>, so adapt it in order
+to fix the following build error:
 
-Thanks.
+drivers/clocksource/vf_pit_timer.c:15:29: fatal error: asm/sched_clock.h: No such file or directory
 
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/clocksource/vf_pit_timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clocksource/vf_pit_timer.c b/drivers/clocksource/vf_pit_timer.c
+index 598399d..587e020 100644
+--- a/drivers/clocksource/vf_pit_timer.c
++++ b/drivers/clocksource/vf_pit_timer.c
+@@ -12,7 +12,7 @@
+ #include <linux/clk.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+-#include <asm/sched_clock.h>
++#include <linux/sched_clock.h>
+ 
+ /*
+  * Each pit takes 0x10 Bytes register space
 -- 
-tejun
+1.8.1.2
+
