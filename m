@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab3FXRA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:00:26 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:40856 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab3FXRAZ (ORCPT
+	id S1752901Ab3FXRDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:03:20 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:44588 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3FXRDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:00:25 -0400
-X-IronPort-AV: E=Sophos;i="4.87,929,1363132800"; 
-   d="scan'208";a="31500351"
-Message-ID: <51C87B26.3010904@citrix.com>
-Date: Mon, 24 Jun 2013 18:00:22 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	Mon, 24 Jun 2013 13:03:18 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <xen-devel@lists.xen.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+In-Reply-To: <20130624074453.24481.96622.stgit@aruna-ThinkPad-T420>
+References: <20130624074453.24481.96622.stgit@aruna-ThinkPad-T420>
+Date: Mon, 24 Jun 2013 10:03:18 -0700
+X-Google-Sender-Auth: YxuUnaA-g-1qqv74obZSDw3nQSE
+Message-ID: <CAGXu5jJpQJCc5OU6M-CvyvLAMyOOb=pxDMh586deYADxff23hQ@mail.gmail.com>
+Subject: Re: [PATCH] pstore: Fail to unlink if a driver has not defined pstore_erase
+From: Kees Cook <keescook@chromium.org>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/4] time: add a notifier chain for when the system time
- is stepped
-References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-3-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306210953480.4013@ionos.tec.linutronix.de> <51C44A09.9010402@citrix.com> <alpine.DEB.2.02.1306212328350.4013@ionos.tec.linutronix.de> <51C824A8.1080305@citrix.com> <alpine.DEB.2.02.1306241753080.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306241753080.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+        Anton Vorontsov <cbouatmailru@gmail.com>, jkenisto@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, ananth@in.ibm.com, mahesh@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/06/13 17:30, Thomas Gleixner wrote:
-> 
-> We already have a synchronous notifier in place and the notifier call
-> itself is not expensive. What's expensive is the hypercall and there
-> is no way at the moment to figure out whether the update is relevant
-> for you or just a tick. Though that's trivial information to provide
-> without imposing another notifier including the surrounding mess on
-> the core code.
+On Mon, Jun 24, 2013 at 12:48 AM, Aruna Balakrishnaiah
+<aruna@linux.vnet.ibm.com> wrote:
+> pstore_erase is used to erase the record from the persistent store.
+> So if a driver has not defined pstore_erase callback return
+> -EINVAL instead of unlinking a file as deleting the file without
+> erasing its record in persistent store will give a wrong impression
+> to customers.
 
-This looks good, thanks.
+This is probably true -- I originally liked the idea of being able to
+clean up the entries, regardless of their storage state, but you're
+probably right. They shouldn't be deleted unless they can _actually_
+be deleted.
 
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-[...]
-> @@ -508,7 +509,7 @@ int do_settimeofday(const struct timespec *tv)
->  
->  	tk_set_xtime(tk, tv);
->  
-> -	timekeeping_update(tk, true, true);
-> +	timekeeping_update(tk, true, true, true);
+So, I support this change, but I think the return needs to be
+different. EINVAL isn't listed, for example, in unlink(2)'s man-page.
+Perhaps EROFS, EACCESS, or EPERM?
 
-These three booleans in a row is getting a bit opaque. How about I also
-change it to a set of flags?  e.g.,
+-Kees
 
-timekeeping_updated(tk, TK_CLEAR_NTP | TK_MIRROR | TK_CLOCK_WAS_SET);
+>
+> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+> ---
+>  fs/pstore/inode.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+> index e4bcb2c..fa6339a 100644
+> --- a/fs/pstore/inode.c
+> +++ b/fs/pstore/inode.c
+> @@ -178,6 +178,8 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+>         if (p->psi->erase)
+>                 p->psi->erase(p->type, p->id, p->count,
+>                               dentry->d_inode->i_ctime, p->psi);
+> +       else
+> +               return -EINVAL;
+>
+>         return simple_unlink(dir, dentry);
+>  }
+>
 
-David
+
+
+--
+Kees Cook
+Chrome OS Security
