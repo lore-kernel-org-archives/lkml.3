@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab3FXBm4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 21:42:56 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:36212 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab3FXBmz (ORCPT
+	id S1752470Ab3FXBnH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 21:43:07 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:52943 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab3FXBnE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 21:42:55 -0400
-Date: Sun, 23 Jun 2013 18:42:51 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.10-rc4
-Message-ID: <20130624014251.GA30264@core.coreip.homeip.net>
+	Sun, 23 Jun 2013 21:43:04 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C2FABA.5050207@suse.cz>
+References: <CA+qZnSSj+UCV9LUddS8qArnG5e8Q4wyC98B=awJ9TBbY+J6nBw@mail.gmail.com>
+	<51C2FABA.5050207@suse.cz>
+Date: Mon, 24 Jun 2013 09:43:03 +0800
+Message-ID: <CA+qZnSQNrp3C=6_pjVMVGxK1rH9wOE1DerzQjT3v0njZvtz8ZA@mail.gmail.com>
+Subject: Re:
+From: tingwei liu <tingw.liu@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Linus Torvalds <linus971@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 20, 2013 at 8:51 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 06/20/2013 02:28 PM, tingwei liu wrote:
+>> Hi, dears:
+>>
+>>       On Suse 11 sp2 3.0.13 kernel. After a few days, Nginx reply
+>> packets with src ip 0.0.0.0 and  dst ip 0.0.0.0。
+>>       Just like https://bbs.archlinux.org/viewtopic.php?id=129304. Is
+>> there a bug?
+>
+> You should better report this via suse's standard channels (suse
+> support/bugzilla). We cannot help you otherwise.
+>
+> thanks,
+> --
+> js
+> suse labs
 
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The problem has been fixed. It is a known bug has fixed by Eric Dumazet.
 
-Hi Linus,
+commit dfd25ffffc132c00070eed64200e8950da5d7e9d
+Author: Eric Dumazet <eric.dumazet@gmail.com>
+Date:   Sat Mar 10 09:20:21 2012 +0000
 
-Please pull from:
+    tcp: fix syncookie regression
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+    commit ea4fc0d619 (ipv4: Don't use rt->rt_{src,dst} in ip_queue_xmit())
+    added a serious regression on synflood handling.
 
-to receive updates for the input subsystem. You will get a few small
-fixups for cyttsp, wacom and xpad drivers.
+    Simon Kirby discovered a successful connection was delayed by 20 seconds
+    before being responsive.
 
-Changelog:
----------
+    In my tests, I discovered that xmit frames were lost, and needed ~4
+    retransmits and a socket dst rebuild before being really sent.
 
-Ben Hutchings (1):
-      Input: add missing dependencies on CONFIG_HAS_IOMEM
+    In case of syncookie initiated connection, we use a different path to
+    initialize the socket dst, and inet->cork.fl.u.ip4 is left cleared.
 
-Ferruh Yigit (2):
-      Input: cyttsp - fix memcpy size param
-      Input: cyttsp - add missing handshake
+    As ip_queue_xmit() now depends on inet flow being setup, fix this by
+    copying the temp flowi4 we use in cookie_v4_check().
 
-Matthias Kaehlcke (1):
-      Input: cyttsp - fix swapped mfg_stat and mfg_cmd registers
-
-Ping Cheng (1):
-      Input: wacom - add a new stylus (0x100802) for Intuos5 and Cintiqs
-
-Shawn Joseph (1):
-      Input: xpad - fix for "Mad Catz Street Fighter IV FightPad" controllers
-
-
-Diffstat:
---------
-
- drivers/input/joystick/xpad.c           |  2 +-
- drivers/input/keyboard/Kconfig          |  1 +
- drivers/input/serio/Kconfig             |  1 +
- drivers/input/tablet/wacom_wac.c        |  2 ++
- drivers/input/touchscreen/cyttsp_core.c | 28 +++++++++++++++++++++-------
- drivers/input/touchscreen/cyttsp_core.h |  2 +-
- 6 files changed, 27 insertions(+), 9 deletions(-)
-
-
---LQksG6bCIzRHxTLp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRx6QbAAoJEH70+W8r6ZYq2WoP/R5bT8N61JamZjHJQjXmO3sx
-G/0mt2UWHCXdCdOeL0tDYE1WW/sIyWC4IfdKXFCEK51UpP39TTh+969sLaxSrpni
-XyQ7rTOd9tMopk4u4Iy3ZWpNciQp285uqclFoCwKStz3r4v64nCSaFnBK3fE4pNl
-+Gdw5BHZSrvsDaJvynk5vzV0NOALT2GTHVXx/1NSlN0IAn2WcteLVdCeWNrnq8Go
-QVSUIyPMsJMWUeBknU6Mc6zuG9+FciL9QimDeg+IKtIgV/eVS9WZ+jhcurcxeY+O
-U0fse6LCbaKtBs4Y90kH8JF7VlJJqWVYUuvJa87Mj1FGHJcLNbW+vhlfWrL0C9xr
-uTxIeQX4rLZX4sI4F1UFCIesxM5pOoDHuNtbI8RcFr/4SefKo0YyEYwCnBuhylBq
-IIggGWu1WUzePBT5gYFC0aJJZRwR/TVLb/aYuW3tg9ZRK9QAkUfGqmREZXWDBsRt
-mACSQozubPMRILldMGLq/w9TZ5ERZ8N/sNqA5f9Ya9y7q+HJ3TRA2EFO6xzADjM6
-EQ8WaqbbMHCAOQDptagCMu7svrTYhlsQdsfdYa/Rj6Sru3VApV9j86ZGgpS1l/VF
-yrMBDWoAN7BoDEpbGYWmNQiUsY/QrLcyr6nLQE/Sww5eQg86pVblvo/I6Ar7O1i0
-heTFVoLjYd3ciKIr8DVC
-=2ABW
------END PGP SIGNATURE-----
-
---LQksG6bCIzRHxTLp--
+    Reported-by: Simon Kirby <sim@netnation.com>
+    Bisected-by: Simon Kirby <sim@netnation.com>
+    Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+    Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
