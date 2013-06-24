@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab3FXORV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 10:17:21 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:36646 "EHLO
+	id S1751264Ab3FXORU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 10:17:20 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:36645 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab3FXORS (ORCPT
+	with ESMTP id S1750783Ab3FXORS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Jun 2013 10:17:18 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
@@ -13,111 +13,36 @@ To: linux-fbdev@vger.kernel.org,
 Cc: jimwall@q.com, brian@crystalfontz.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCHv2 1/2] video: hx8357: Make IM pins optional
-Date: Mon, 24 Jun 2013 16:16:54 +0200
-Message-Id: <1372083415-9734-2-git-send-email-alexandre.belloni@free-electrons.com>
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 0/2] HX8357 driver improvement
+Date: Mon, 24 Jun 2013 16:16:53 +0200
+Message-Id: <1372083415-9734-1-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1372083415-9734-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1372083415-9734-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+Hi,
 
-The IM pins of the HX8357 controller are used to define the interface used to
-feed pixel stream to the LCD panel.
+This is a set of improvements for the hx8357 driver. The first patch removes the
+need to defines IM pins in the device tree. So that it is possible to use the
+controller with fixed IM pins.
 
-Most of the time, these pins are directly routed to either the ground or the VCC
-to set their values.
+The second patch adds support for the Himax HX8369 controller which is quite
+similar.
 
-Remove the need to assign GPIOs to these pins when we are in such a case.
+Tested on CFA-10055 (hx8357) and CFA-10056 (hx8369).
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/video/backlight/hx8357.c | 53 +++++++++++++++++++++++-----------------
- 1 file changed, 31 insertions(+), 22 deletions(-)
+Alexandre Belloni (1):
+  fb: backlight: HX8357: Add HX8369 support
 
-diff --git a/drivers/video/backlight/hx8357.c b/drivers/video/backlight/hx8357.c
-index a0482b5..69f5672 100644
---- a/drivers/video/backlight/hx8357.c
-+++ b/drivers/video/backlight/hx8357.c
-@@ -76,6 +76,7 @@ struct hx8357_data {
- 	unsigned		reset;
- 	struct spi_device	*spi;
- 	int			state;
-+	u8			use_im_pins;
- };
- 
- static u8 hx8357_seq_power[] = {
-@@ -250,9 +251,11 @@ static int hx8357_lcd_init(struct lcd_device *lcdev)
- 	 * Set the interface selection pins to SPI mode, with three
- 	 * wires
- 	 */
--	gpio_set_value_cansleep(lcd->im_pins[0], 1);
--	gpio_set_value_cansleep(lcd->im_pins[1], 0);
--	gpio_set_value_cansleep(lcd->im_pins[2], 1);
-+	if (lcd->use_im_pins) {
-+		gpio_set_value_cansleep(lcd->im_pins[0], 1);
-+		gpio_set_value_cansleep(lcd->im_pins[1], 0);
-+		gpio_set_value_cansleep(lcd->im_pins[2], 1);
-+	}
- 
- 	/* Reset the screen */
- 	gpio_set_value(lcd->reset, 1);
-@@ -424,26 +427,32 @@ static int hx8357_probe(struct spi_device *spi)
- 		return -EINVAL;
- 	}
- 
--	for (i = 0; i < HX8357_NUM_IM_PINS; i++) {
--		lcd->im_pins[i] = of_get_named_gpio(spi->dev.of_node,
--						"im-gpios", i);
--		if (lcd->im_pins[i] == -EPROBE_DEFER) {
--			dev_info(&spi->dev, "GPIO requested is not here yet, deferring the probe\n");
--			return -EPROBE_DEFER;
--		}
--		if (!gpio_is_valid(lcd->im_pins[i])) {
--			dev_err(&spi->dev, "Missing dt property: im-gpios\n");
--			return -EINVAL;
-+	if (of_find_property(spi->dev.of_node, "im-gpios", NULL)) {
-+		lcd->use_im_pins = 1;
-+
-+		for (i = 0; i < HX8357_NUM_IM_PINS; i++) {
-+			lcd->im_pins[i] = of_get_named_gpio(spi->dev.of_node,
-+							    "im-gpios", i);
-+			if (lcd->im_pins[i] == -EPROBE_DEFER) {
-+				dev_info(&spi->dev, "GPIO requested is not here yet, deferring the probe\n");
-+				return -EPROBE_DEFER;
-+			}
-+			if (!gpio_is_valid(lcd->im_pins[i])) {
-+				dev_err(&spi->dev, "Missing dt property: im-gpios\n");
-+				return -EINVAL;
-+			}
-+
-+			ret = devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
-+						    GPIOF_OUT_INIT_LOW,
-+						    "im_pins");
-+			if (ret) {
-+				dev_err(&spi->dev, "failed to request gpio %d: %d\n",
-+					lcd->im_pins[i], ret);
-+				return -EINVAL;
-+			}
- 		}
--
--		ret = devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
--					GPIOF_OUT_INIT_LOW, "im_pins");
--		if (ret) {
--			dev_err(&spi->dev, "failed to request gpio %d: %d\n",
--				lcd->im_pins[i], ret);
--			return -EINVAL;
--		}
--	}
-+	} else
-+		lcd->use_im_pins = 0;
- 
- 	lcdev = lcd_device_register("mxsfb", &spi->dev, lcd, &hx8357_ops);
- 	if (IS_ERR(lcdev)) {
+Maxime Ripard (1):
+  video: hx8357: Make IM pins optional
+
+ drivers/video/backlight/hx8357.c | 256 +++++++++++++++++++++++++++++++++------
+ 1 file changed, 219 insertions(+), 37 deletions(-)
+
 -- 
 1.8.1.2
 
