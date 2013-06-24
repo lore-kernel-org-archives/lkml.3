@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab3FXQst (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 12:48:49 -0400
-Received: from gmmr4.centrum.cz ([46.255.227.253]:55167 "EHLO gmmr4.centrum.cz"
+	id S1753178Ab3FXQth (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 12:49:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63757 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab3FXQsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 12:48:47 -0400
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=5D_memcg=3A_do_not_trap_chargers_with_full_callstack_on_OOM?=
-Date: Mon, 24 Jun 2013 18:48:40 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20130208171012.GH7557@dhcp22.suse.cz>, <20130208220243.EDEE0825@pobox.sk>, <20130210150310.GA9504@dhcp22.suse.cz>, <20130210174619.24F20488@pobox.sk>, <20130211112240.GC19922@dhcp22.suse.cz>, <20130222092332.4001E4B6@pobox.sk>, <20130606160446.GE24115@dhcp22.suse.cz>, <20130606181633.BCC3E02E@pobox.sk>, <20130607131157.GF8117@dhcp22.suse.cz>, <20130617122134.2E072BA8@pobox.sk> <20130619132614.GC16457@dhcp22.suse.cz>
-In-Reply-To: <20130619132614.GC16457@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1750939Ab3FXQtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 12:49:36 -0400
+Date: Mon, 24 Jun 2013 12:49:18 -0400
+From: Dave Jones <davej@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130624164918.GA8572@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrey Vagin <avagin@openvz.org>
+References: <20130622173129.GA29375@redhat.com>
+ <20130622215905.GA28238@redhat.com>
+ <20130623143634.GA2000@redhat.com>
+ <20130623150603.GA32313@redhat.com>
+ <20130623160452.GA11740@redhat.com>
+ <20130624020014.GB12811@redhat.com>
+ <20130624143928.GA20659@redhat.com>
+ <1372085549.18733.162.camel@gandalf.local.home>
+ <20130624160012.GB5993@redhat.com>
+ <20130624163708.GA31664@redhat.com>
 MIME-Version: 1.0
-Message-Id: <20130624184840.781777E6@pobox.sk>
-X-Maser: Georgo
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624163708.GA31664@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->I would be really interesting to see what those tasks are blocked on.
+On Mon, Jun 24, 2013 at 06:37:08PM +0200, Oleg Nesterov wrote:
+ > On 06/24, Dave Jones wrote:
+ > >
+ > > On Mon, Jun 24, 2013 at 10:52:29AM -0400, Steven Rostedt wrote:
+ > >
+ > >  > > >  check_list_nodes corruption. next->prev should be prev (ffff88023b8a1a08), but was 00ffff88023b8a1a. (next=ffff880243288001).
+ > >  > >
+ > >  > > Can't find "check_list_nodes" in lib/list_debug.c or elsewhere...
+ > >  > >
+ > >  > > >   [<ffffffff816e467d>] dump_stack+0x19/0x1b
+ > >  > > >   [<ffffffff8104a0c1>] warn_slowpath_common+0x61/0x80
+ > >  > > >   [<ffffffff8104a12c>] warn_slowpath_fmt+0x4c/0x50
+ > >  > > >   [<ffffffff81112c61>] rb_head_page_deactivate.isra.39+0x61/0x80
+ > >  > >
+ > >  > > How? rb_list_head_clear() just modifies list->next directly.
+ > >  > >
+ > >  > > > hopefully despite that it'll actually function as intended.
+ > >  > >
+ > >  > > Yes ;)
+ > >  >
+ > >  > I'm curious to what happened.
+ > >
+ > > Ah, this is the first victim of my new 'check sanity of nodes during list walks' patch.
+ > > It's doing the same prev->next next->prev checking as list_add and friends.
+ > > I'm looking at getting it into shape for a 3.12 merge after some other preparatory patches
+ > > go into 3.11
+ > 
+ > So you used the patched kernel when you hit the lockups ?
+ > 
+ > What else was changed?
+
+I hit the lockups on the vanilla tree too.
+
+	Dave
 
 
-Ok, i got it! Problem occurs two times and it behaves differently each time, I was running kernel with that latest patch.
-
-1.) It doesn't have impact on the whole server, only on one cgroup. Here are stacks:
-http://watchdog.sk/lkml/memcg-bug-7.tar.gz
 
 
-2.) It almost takes down the server because of huge I/O on HDDs. Unfortunately, i had a bug in my script which was suppose to gather stacks (i wasn't able to do it by hand like in (1), server was almost unoperable). But I was lucky and somehow killed processes from problematic cgroup (via htop) and server was ok again EXCEPT one important thing - processes from that cgroup were still running in D state and i wasn't able to kill them for good. They were taking web server network ports so i had to reboot the server :( BUT, before that, i gathered stacks:
-http://watchdog.sk/lkml/memcg-bug-8.tar.gz
-
-What do you think?
-
-azur
