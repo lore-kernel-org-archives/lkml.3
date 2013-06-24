@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3FXDGQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 23:06:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62814 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab3FXDGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 23:06:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,925,1363158000"; 
-   d="scan'208";a="358428696"
-Message-ID: <51C7B540.9020507@intel.com>
-Date: Mon, 24 Jun 2013 10:56:00 +0800
-From: Ren Qiaowei <qiaowei.ren@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1752547Ab3FXDMq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 23:12:46 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:60607 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752455Ab3FXDMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 23:12:44 -0400
+Date: Sun, 23 Jun 2013 23:12:35 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Eric Sandeen <esandeen@redhat.com>, Andreas Dilger <adilger@dilger.ca>,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "a.sangwan@samsung.com" <a.sangwan@samsung.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 0/3] ext4: introduce two new ioctls
+Message-ID: <20130624031235.GA6991@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Chinner <david@fromorbit.com>,
+	Eric Sandeen <esandeen@redhat.com>,
+	Andreas Dilger <adilger@dilger.ca>,
+	Namjae Jeon <linkinjeon@gmail.com>,
+	"adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"a.sangwan@samsung.com" <a.sangwan@samsung.com>,
+	Namjae Jeon <namjae.jeon@samsung.com>
+References: <1371967642-3116-1-git-send-email-linkinjeon@gmail.com>
+ <03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
+ <7D1878F6-0387-48F3-8724-4A8946AECF9E@redhat.com>
+ <20130624024459.GJ29376@dastard>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>
-Subject: Re: [PATCH] x86, tboot: provide debugfs interfaces to access TXT
- log
-References: <1371974050-21436-1-git-send-email-qiaowei.ren@intel.com> <1371976573.3137.20.camel@joe-AO722>
-In-Reply-To: <1371976573.3137.20.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624024459.GJ29376@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2013 04:36 PM, Joe Perches wrote:
-> On Sun, 2013-06-23 at 15:54 +0800, Qiaowei Ren wrote:
->> These logs come from tboot (Trusted Boot, an open source,
->> pre-kernel/VMM module that uses Intel TXT to perform a
->> measured and verified launch of an OS kernel/VMM.).
-> []
->> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-> []
->> +static struct tboot_log *get_log(void)
->> +{
->> +	struct tboot_log *log;
->> +
->> +	log = (struct tboot_log *)ioremap_nocache(TBOOT_SERIAL_LOG_ADDR,
->> +						  TBOOT_SERIAL_LOG_SIZE);
->
-> You might want to fix the sparse errors.
->    CHECK   arch/x86/kernel/tboot.c
-> arch/x86/kernel/tboot.c:362:16: warning: cast removes address space of expression
-> arch/x86/kernel/tboot.c:368:25: warning: incorrect type in argument 1 (different address spaces)
-> arch/x86/kernel/tboot.c:368:25:    expected void volatile [noderef] <asn:2>*addr
-> arch/x86/kernel/tboot.c:368:25:    got struct tboot_log *[assigned] log
-> arch/x86/kernel/tboot.c:395:17: warning: incorrect type in argument 1 (different address spaces)
-> arch/x86/kernel/tboot.c:395:17:    expected void volatile [noderef] <asn:2>*addr
-> arch/x86/kernel/tboot.c:395:17:    got struct tboot_log *[assigned] log
-> arch/x86/kernel/tboot.c:479:16: warning: incorrect type in assignment (different address spaces)
-> arch/x86/kernel/tboot.c:479:16:    expected void *config
-> arch/x86/kernel/tboot.c:479:16:    got void [noderef] <asn:2>*
-> arch/x86/kernel/tboot.c:485:19: warning: incorrect type in assignment (different address spaces)
-> arch/x86/kernel/tboot.c:485:19:    expected void *heap_base
-> arch/x86/kernel/tboot.c:485:19:    got void [noderef] <asn:2>*
-> arch/x86/kernel/tboot.c:487:17: warning: incorrect type in argument 1 (different address spaces)
-> arch/x86/kernel/tboot.c:487:17:    expected void volatile [noderef] <asn:2>*addr
-> arch/x86/kernel/tboot.c:487:17:    got void *config
->
->
-Well, I guess that I can use iomem related interface to fix these 
-warnings caused by sparse.
+On Mon, Jun 24, 2013 at 12:44:59PM +1000, Dave Chinner wrote:
+> 
+> Hence, at minimum, this should be a fallocate() operation, not a ext4
+> specific ioctl as it is relatively trivial to implement on most
+> extent based filesystems.
 
-Thanks,
-Qiaowei
+The fallocate() uses a units of bytes for the offset and length; would
+a FALLOC_FL_COLLAPSE_RANGE be guaranteed to work on any arbitrary
+offset and length?  Or would it only work if the offset and length are
+multiples of the file system blocksize?
+
+The the EXT4_IOC_TRUNCATE_BLOCK_RANGE interface solves this problem by
+using units of file system blocks (i.e., __u32 start_block), but that
+raises another issue, which is it forces the user space program to
+somehow figure out the file system block size, which seems a bit nasty.
+
+	       	       	    	   	       - Ted
