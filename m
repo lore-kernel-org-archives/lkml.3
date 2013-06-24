@@ -1,111 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275Ab3FXM2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:28:06 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54881 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab3FXM2F (ORCPT
+	id S1751423Ab3FXM3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:29:38 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:46236 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750884Ab3FXM3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:28:05 -0400
-Date: Mon, 24 Jun 2013 14:28:02 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcus Overhagen <marcus.overhagen@gmail.com>
-Cc: Mark Lord <mlord@pobox.com>, kernel list <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org, tj@kernel.org
-Subject: Re: SATA hdd refuses to reallocate a sector?
-Message-ID: <20130624122801.GA21124@amd.pavel.ucw.cz>
-References: <20130623101940.GA4448@amd.pavel.ucw.cz>
- <20130623112133.GA4837@amd.pavel.ucw.cz>
- <CAJBHPoj5hgp97=JH8UKX+Ty8TF9_ySQUYU6AnqcRjuLy5A-PcQ@mail.gmail.com>
- <20130623190003.GA6714@amd.pavel.ucw.cz>
- <51C76858.4060906@pobox.com>
- <20130623215100.GA7414@amd.pavel.ucw.cz>
- <51C77840.2060800@pobox.com>
- <CAJBHPojcNeCu1MPd8uM19KPdtaypALDRLaWUt+oRUOeJ9erYPA@mail.gmail.com>
+	Mon, 24 Jun 2013 08:29:35 -0400
+Message-ID: <51C83A6D.2060009@st.com>
+Date: Mon, 24 Jun 2013 13:24:13 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJBHPojcNeCu1MPd8uM19KPdtaypALDRLaWUt+oRUOeJ9erYPA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        kernel@stlinux.com,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3 03/10] pinctrl:st: Add pinctrl and pinconf support.
+References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com> <1371737138-9340-1-git-send-email-srinivas.kandagatla@st.com> <51C45816.5010207@st.com> <CACRpkdb-H2=GdF54Fay+PQVdXLTs++L5+QYe_vFPuzpa+E4ZMg@mail.gmail.com>
+In-Reply-To: <CACRpkdb-H2=GdF54Fay+PQVdXLTs++L5+QYe_vFPuzpa+E4ZMg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > > root@amd:~# dd if=/dev/sda4 of=/dev/zero bs=1 skip=8958947328
-> > > > dd: reading `/dev/sda4': Input/output error
-> > > > 0+0 records in
-> > > > 0+0 records out
-> > > > 0 bytes (0 B) copied, 5.05805 s, 0.0 kB/s
-> > >
-> > > I once noticed a similar problem. The trouble is that the kernel
-> > > always seems to be doing a larger read access that failes for this
-> > > sector, and the write is never executed.
-> >
-> > And returns success writing? That's pretty antisocial :-(.
+On 24/06/13 12:57, Linus Walleij wrote:
+> On Fri, Jun 21, 2013 at 3:41 PM, Srinivas KANDAGATLA
+> <srinivas.kandagatla@st.com> wrote:
 > 
-> On a second look i see that you have if and of reversed in the dd command.
-
-Well, I was doing two dd commands, one to overwrite with zeros, one to
-read...
-
-> However, what I was referring to was that writing a single sector with dd
-> will fail with a io error because the kernel first seems to do a
-> larger read.
-
-I see. But it seems that I'm not hitting this one.
-
-> > ...but it does not do the trick :-(. It behaves strangely as if it was
-> > still cached somewhere. Do I need to turn off the write back cache?
+>> Hi Linus W,
+>> If its not too late can this patch be considered for 3.11 via pinctrl tree?
+>> There is a build dependecy with regmap_field apis pulled by Mark Brown
+>> in regmap repository.
 > 
-> I used hdparm --write-sector successfully to fix a single sector where
-> dd would fail, but I really don't know what going on with your disk. I
-> guess your harddisk is having some more issues than this single
-> sector. If you haven't done it yet, make a complete backup!
+> This seems fairly complete, but I cannot have such a basic dependency onto
+> the regmap tree this late in the merge window, i.e. I'm not ready to pull
+> all of regmap into the pinctrl tree. I'd consider this for merging
+> for the next kernel cycle so it's more orthogonal.
+Hmmm..
+You mean 3.12*
 
-It looks like I went from ~10 bad sectors to ~2. But the last 2 seem
-to be very persistent :-(.
+Am not sure, But..
+Is it possible to make just regmap field api patch go via pinctrl tree,
+as "Mark Brow" has already accepted it.
 
-> So assuming(!) that sector 961237184of sda  is logical block 17498759
-> from sda4, you may need to write all sectors 961237184 to 961237193.
+Ideally, It would be nice this patch to be part of 3.11-* as, Arnd
+already pushed SOC support changes to his next branch.
+
+
+thanks,
+srini
+
 > 
-> However, regarding the smart data, the drive still thinks that it's
-> pretty healthy, only 3 reallocated sectors, and no pending.
-
-Well, after remapping experiments, I'm up to 6 sectors reallocated,
-and drive no longer thinks it is so healthy (see 187), but... still refuses.
-
-  5 Reallocated_Sector_Ct   0x0033   100   100   036    Pre-fail  Always       -       6
-  7 Seek_Error_Rate         0x000f   084   060   030    Pre-fail  Always       -       294493007
-  9 Power_On_Hours          0x0032   068   068   000    Old_age  Always       -       28275
- 10 Spin_Retry_Count        0x0013   100   100   097    Pre-fail  Always       -       0
- 12 Power_Cycle_Count       0x0032   099   037   020    Old_age  Always       -       1024
-184 End-to-End_Error        0x0032   100   100   099    Old_age  Always       -       0
-187 Reported_Uncorrect      0x0032   001   001   000    Old_age  Always       -       162
-
-> Perhaps writing the whole disk with dd and a larger blocksize would
-> ill work? something like
+> Yours,
+> Linus Walleij
 > 
-> dd if=/dev/zero of=/dev/sda bs=1M
-> 
-> You shouldn't have any partiton monted when doing so. All data ist
-> lost after that is finished. then you can look into the smart data to
-> see how many sectors were reallocated, and decide if you want to trash
-> the disk.
 
-Well, the disk is 500GB, in notebook, and it is my primary
-machine. I'm running backups now, but "full backup" is not exactly
-easy, and doing complete erase would be few days of work :-(.
-
-Fortunately, affected area is in small, ~15G partition, I don't really
-_need_.
-
-But I'd really like to understand what is going on there. New hdd for
-the notebook is not out of question, but... AFAICT I can expect cca
-4MB per second from the disk (it would be USB->SATA copy), and that
-would be 34 hours...
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
