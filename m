@@ -1,249 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab3FXJYv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 05:24:51 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.143]:52043 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751092Ab3FXJYt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 05:24:49 -0400
-X-Greylist: delayed 378 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jun 2013 05:24:49 EDT
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-16.tower-179.messagelabs.com!1372065491!27553148!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC V1] COMMIT 1: DA9210 driver files
-Thread-Topic: [RFC V1] COMMIT 1: DA9210 driver files
-Thread-Index: AQHObpIm+PFPby+OME2lP/6mSPiChZlEj/MQ
-Date: Mon, 24 Jun 2013 09:18:11 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB71D6CABFB@SW-EX-MBX02.diasemi.com>
-References: <201306201454.r5KEsAAS010978@swsrvapps-01.diasemi.com>
- <20130621151523.GA27646@sirena.org.uk>
-In-Reply-To: <20130621151523.GA27646@sirena.org.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751538Ab3FXJ0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 05:26:34 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40177 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab3FXJ0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 05:26:32 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-59-51c810baf3c7
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, "'Mauro Carvalho Chehab'" <mchehab@redhat.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>, cpgs@samsung.com,
+        "'Jeongtae Park'" <jtp.park@samsung.com>
+References: 
+In-reply-to: 
+Subject: [PATCH 3.9-stable] s5p makefiles: don't override other selections on
+ obj-[ym]
+Date: Mon, 24 Jun 2013 18:26:18 +0900
+Message-id: <004901ce70bc$e1d04b50$a570e1f0$%choi@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMAAA5gYwAMf3LxAEyH2k0A==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zQ93dAicCDTaoWLw8pGmxpJnb4sja
+	q0wWZ5vesFtc3jWHzWLP0cPsFgs2PmJ0YPd4v+8qm0ffllWMHp83yQUwR3HZpKTmZJalFunb
+	JXBlXOmbyVZwiKfi1oYOlgbGp1xdjJwcEgImEnOnz2GDsMUkLtxbD2RzcQgJLGOU2HBgHwtM
+	0Z2j15khEosYJZ62fYWq+ssoMXXBUVaQKjYBXYlj67eA2SIC3hKnpvwC62AW2MwocbFlK9Ao
+	DqAObonVzUEgNZwCPBLr/nQyg9jCAhESDc/WMoHYLAKqEkv+LQM7iVfATuLPtWZ2CFtQ4sfk
+	e2AXMQtoSazfeZwJwpaX2LzmLTPIeAkBdYlHf3VB1ooITGGU6Np3AKpGRGLfi3eMIAkJgXvs
+	EvfnPGGBWCYg8W3yIRaIZlmJTQeYIT6WlDi44gbLBEaJWUhWz0KyehaS1bOQrFjAyLKKUTS1
+	ILmgOCm9yFCvODG3uDQvXS85P3cTIyROe3cw3j5gfYgxGWj9RGYp0eR8YJznlcQbGpsZWZia
+	mBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHRUVnIKb8+8kdU//PJ
+	MtyLEt6WPrubtL/HxUFMMf3IzStHlpyetKZrN0/wxXuLRKtvrT62K3WmjIGNlImnitJvbu9Z
+	SjlHUvoKq3OU7+5PFbv8JroiYvYL3m0/bh3dtJ/lrpFkvuDV2R5s/BrAMFq2v+BPf2+IObMA
+	v77cZy4NudllW7yWHVFiKc5INNRiLipOBAAa1ZvI6QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAd1dAicCDSb9srB4eUjTYkkzt8WR
+	tVeZLM42vWG3uLxrDpvFnqOH2S0WbHzE6MDu8X7fVTaPvi2rGD0+b5ILYI5qYLTJSE1MSS1S
+	SM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqtpFCWmFMKFApILC5W
+	0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8y40jeTreAQT8WtDR0sDYxPuboYOTkkBEwk7hy9
+	zgxhi0lcuLeerYuRi0NIYBGjxNO2r1DOX0aJqQuOsoJUsQnoShxbvwXMFhHwljg15RczSBGz
+	wGZGiYstW1m6GDmAOrglVjcHgdRwCvBIrPvTCbZBWCBCouHZWiYQm0VAVWLJv2VsIDavgJ3E
+	n2vN7BC2oMSPyfdYQGxmAS2J9TuPM0HY8hKb17xlBhkvIaAu8eivLshaEYEpjBJd+w5A1YhI
+	7HvxjnECo9AsJKNmIRk1C8moWUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQITgPP
+	pHYwrmywOMQowMGoxMP7w/J4oBBrYllxZe4hRgkOZiUR3kNXgEK8KYmVValF+fFFpTmpxYcY
+	k4E+ncgsJZqcD0xReSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTB
+	KdXAuKRkYoxSU9bNhTe2871qnvxBaZ/a9WVXz7y22Ls/eq+5tqF6au/rq5FfGFP351x7/695
+	0y2Jsl6BaN3AxNZH3N93z1J8+qTJvohVvtw7TPrW14+ivDsjV6+zO+apuNxVcX4Ew0bb1tWi
+	QiwXz31UMGSulprkVKZWXnbI6c37v6cmFWtf8Hy8SYmlOCPRUIu5qDgRANpJbotHAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 June 2013, Mark Brown wrote:
+This patch looks like it should be in the 3.9-stable tree, should we apply
+it?
 
->
->On Thu, Jun 20, 2013 at 02:42:03PM +0100, Steve Twiss wrote:
->
->> @@ -293,6 +293,13 @@ config REGULATOR_LP8788
->>  	help
->>  	  This driver supports LP8788 voltage regulator chip.
->>
->> +config REGULATOR_DA9210
->> +	bool "Dialog Semiconductor DA9210 Regulator"
->> +	depends on I2C=y
->> +	select REGMAP_I2C
->> +	help
->> +	  Support for the Dialog Semiconductor DA9210 chip.
->> +
->>  config REGULATOR_PCF50633
->
->This file ought to be kept sorted though it seems that's not been happening, and I'm not
->seeing any reason why this can't be a tristate.
->
+------------------
 
-I have made this alphabetical now. 
-I will also change this so it is capable of being built as a module then re-submit.
+From: "Mauro Carvalho Chehab <mchehab@redhat.com>"
 
->> +#define DRIVER_NAME	"da9210"
->
->Why?
->
+commit 5f63adbb4cb9f952a8daee97f89c8811da5fd68a upstream
 
-This has been removed and the other places have been replaced with a string instead.
+The $obj-m/$obj-y vars should be adding new modules to build, not
+overriding it. So, it should never use
+	$obj-y := foo.o
+instead, it should use:
+	$obj-y += foo.o
 
->> +struct da9210 {
->> +	struct i2c_client *i2c;
->> +	struct device *dev;
->> +	struct mutex io_mutex;
->
->Why do you need an I/O lock?
->
+Failing to do that is very bad, as it will suppress needed modules.
 
-This has been removed.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ drivers/media/platform/s5p-jpeg/Makefile |    2 +-
+ drivers/media/platform/s5p-mfc/Makefile  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
->> +static int da9210_enable(struct regulator_dev *rdev); static int
->> +da9210_set_voltage(struct regulator_dev *rdev, int min_uV,
->> +			      int max_uV, unsigned *selector); static int
->> +da9210_get_voltage(struct regulator_dev *rdev); static int
->> +da9210_set_current_limit(struct regulator_dev *rdev, int min_uA,
->> +				    int max_uA);
->> +static int da9210_get_current_limit(struct regulator_dev *rdev);
->> +
->> +static struct regulator_ops da9210_buck_ops = {
->> +	.enable = da9210_enable,
->> +	.disable = regulator_disable_regmap,
->> +	.is_enabled = regulator_is_enabled_regmap,
->> +	.set_voltage = da9210_set_voltage,
->> +	.get_voltage = da9210_get_voltage,
->> +	.list_voltage = regulator_list_voltage_linear,
->> +	.set_current_limit = da9210_set_current_limit,
->> +	.get_current_limit = da9210_get_current_limit, };
->
->Drivers are normally written to avoid forward declarations like this.
->
-
-I will review this.
-
->> +static struct regulator_consumer_supply __initdata def_da9210_consumers[] = {
->> +	REGULATOR_SUPPLY("DA9210", NULL),
->> +};
->> +
->> +static struct regulator_init_data __initdata default_da9210_constraints = {
->> +	.constraints = {
->
->This is not at all sensible, there's a good solid reason why regulator drivers don't
->generally do this...  please review the machine interface and its purpose.
->
-
-I will do this then re-submit.
-
->> +static int da9210_set_voltage(struct regulator_dev *rdev, int min_uV,
->> +			      int max_uV, unsigned *selector) {
->> +	struct da9210 *chip = rdev_get_drvdata(rdev);
->> +	int val;
->> +	int ret;
->> +
->> +	val = regulator_map_voltage_linear(rdev, min_uV, max_uV);
->> +	if (val < 0)
->> +		return -EINVAL;
->> +
->> +	ret = regmap_update_bits(chip->regmap, DA9210_REG_VBUCK_A,
->> +				 DA9210_VBUCK_MASK, val);
->> +	return ret;
->> +}
->
->Why not just use set_voltage_sel()?
->
-
-Will re-write this to use core functionality 
-
->> +static int da9210_get_voltage_sel(struct regulator_dev *rdev) {
->> +	struct da9210 *chip = rdev_get_drvdata(rdev);
->> +	unsigned int data;
->> +	int sel;
->> +	int ret;
->> +
->> +	ret = regmap_read(chip->regmap, DA9210_REG_VBUCK_A, &data);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	sel = (data & DA9210_VBUCK_MASK) >> DA9210_VBUCK_SHIFT;
->> +	sel -= DA9210_VBUCK_BIAS;
->> +	if (sel < 0)
->> +		sel = 0;
->> +	if (sel >= chip->info->n_steps)
->> +		sel = chip->info->n_steps - 1;
->
->This looks like poor error handling, if the value is out of range isn't there an error state?
->
-
-I will review this 
-
->> +static int da9210_get_voltage(struct regulator_dev *rdev) {
->> +	struct da9210 *chip = rdev_get_drvdata(rdev);
->> +	int sel = da9210_get_voltage_sel(rdev);
->> +
->> +	if (sel < 0)
->> +		return sel;
->> +
->> +	return (chip->info->step_uV * sel) + chip->info->min_uV; }
->
->Why are you open coding core functionalit?
->
->> +static int da9210_enable(struct regulator_dev *rdev) {
->> +	return regulator_enable_regmap(rdev); }
->
->This is pointless, just use the generic function directly.
->
-
-Done: now using regulator_enable_regmap instead of function just containing regulator_enable_regmap.
-
->> +
->> +	dev_info(chip->dev, "Device DA9210 detected.\n");
->
->This is just noise.
->
-
-Removed this.
-
->> +static const struct i2c_device_id da9210_i2c_id[] = {
->> +	{DRIVER_NAME, 0},
->> +	{},
->
->Just use the string.
->
->> +static struct i2c_driver da9210_regulator_driver = {
->> +	.driver = {
->> +		.name = DRIVER_NAME,
->
->Similarly here.
->
-
-Yep, remove this now.
-
->> +		.owner = THIS_MODULE,
->> +		},
->
->Indentation.
->
-
-Done.
-
->> +static int __init da9210_regulator_init(void) {
->> +	int ret;
->> +
->> +	ret = i2c_add_driver(&da9210_regulator_driver);
->> +	if (0 != ret)
->> +		pr_err("Failed to register da9210 I2C driver\n");
->> +
->> +	return ret;
->> +}
->> +
->> +subsys_initcall(da9210_regulator_init);
->
->Just use module_platform_driver() now we have probe deferral.
->
-
-Yes. I will look at altering this then re-submit.
-
->> +/*
->> + * Registers bits
->> + */
->> +/* DA9210_REG_PAGE_CON (addr=0x00) */
->> +#define	DA9210_PEG_PAGE_SHIFT			0
->> +#define	DA9210_REG_PAGE_MASK			0x0F
->> +/* On I2C registers 0x00 - 0xFF */
->> +#define	DA9210_REG_PAGE0			0
->> +/* On I2C registers 0x100 - 0x1FF */
->> +#define	DA9210_REG_PAGE2			2
->> +#define	DA9210_PAGE_WRITE_MODE			0x00
->> +#define	DA9210_REPEAT_WRITE_MODE		0x40
->> +#define	DA9210_PAGE_REVERT			0x80
->
->This looks liike you should be using a regmap range.
-
-I will look at this again and then resubmit.
-Thanks for your comments.
-
+diff --git a/drivers/media/platform/s5p-jpeg/Makefile
+b/drivers/media/platform/s5p-jpeg/Makefile
+index ddc2900..d18cb5e 100644
+--- a/drivers/media/platform/s5p-jpeg/Makefile
++++ b/drivers/media/platform/s5p-jpeg/Makefile
+@@ -1,2 +1,2 @@
+ s5p-jpeg-objs := jpeg-core.o
+-obj-$(CONFIG_VIDEO_SAMSUNG_S5P_JPEG) := s5p-jpeg.o
++obj-$(CONFIG_VIDEO_SAMSUNG_S5P_JPEG) += s5p-jpeg.o
+diff --git a/drivers/media/platform/s5p-mfc/Makefile
+b/drivers/media/platform/s5p-mfc/Makefile
+index 379008c..15f59b3 100644
+--- a/drivers/media/platform/s5p-mfc/Makefile
++++ b/drivers/media/platform/s5p-mfc/Makefile
+@@ -1,4 +1,4 @@
+-obj-$(CONFIG_VIDEO_SAMSUNG_S5P_MFC) := s5p-mfc.o
++obj-$(CONFIG_VIDEO_SAMSUNG_S5P_MFC) += s5p-mfc.o
+ s5p-mfc-y += s5p_mfc.o s5p_mfc_intr.o
+ s5p-mfc-y += s5p_mfc_dec.o s5p_mfc_enc.o
+ s5p-mfc-y += s5p_mfc_ctrl.o s5p_mfc_pm.o
+-- 
+1.7.9.5
 
