@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab3FXHw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 03:52:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:12165 "EHLO relay.sw.ru"
+	id S1753157Ab3FXHxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 03:53:05 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:37826 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096Ab3FXHw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 03:52:56 -0400
-Subject: [PATCH v3 2/4] SUNRPC: fix races on PipeFS UMOUNT notifications
+	id S1752647Ab3FXHxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 03:53:03 -0400
+Subject: [PATCH v3 3/4] SUNRPC: split client creation routine into setup and
+	registration
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, devel@openvz.org, linux-kernel@vger.kernel.org,
         jlayton@redhat.com
-Date: Mon, 24 Jun 2013 11:52:45 +0400
-Message-ID: <20130624075245.17104.6279.stgit@localhost.localdomain>
+Date: Mon, 24 Jun 2013 11:52:52 +0400
+Message-ID: <20130624075252.17104.41933.stgit@localhost.localdomain>
 In-Reply-To: <20130624075131.17104.55399.stgit@localhost.localdomain>
 References: <20130624075131.17104.55399.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,83 +24,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPU#0                                   CPU#1
------------------------------           -----------------------------
-rpc_kill_sb
-sn->pipefs_sb = NULL                    rpc_release_client
-(UMOUNT_EVENT)                          rpc_free_auth
-rpc_pipefs_event
-rpc_get_client_for_event
-!atomic_inc_not_zero(cl_count)
-<skip the client>
-                                        atomic_inc(cl_count)
-                                        rpc_free_client
-                                        rpc_clnt_remove_pipedir
-                                        <skip client dir removing>
-
-To fix this, this patch does the following:
-
-1) Calls RPC_PIPEFS_UMOUNT notification with sn->pipefs_sb_lock being held.
-2) Removes SUNRPC client from the list AFTER pipes destroying.
-3) Doesn't hold RPC client on notification: if client in the list, then it
-can't be destroyed while sn->pipefs_sb_lock in hold by notification caller.
+This helper moves all "registration" code to the new rpc_client_register()
+helper.
+This helper will be used later in the series to synchronize against PipeFS
+MOUNT/UMOUNT events.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: stable@vger.kernel.org
 ---
- net/sunrpc/clnt.c     |    5 +----
- net/sunrpc/rpc_pipe.c |    2 +-
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ net/sunrpc/clnt.c |   64 ++++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 39 insertions(+), 25 deletions(-)
 
 diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index b827a4b..41f180c 100644
+index 41f180c..b4f1711 100644
 --- a/net/sunrpc/clnt.c
 +++ b/net/sunrpc/clnt.c
-@@ -236,8 +236,6 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
- 			continue;
- 		if (rpc_clnt_skip_event(clnt, event))
- 			continue;
--		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
--			continue;
- 		spin_unlock(&sn->rpc_client_lock);
- 		return clnt;
- 	}
-@@ -254,7 +252,6 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
- 
- 	while ((clnt = rpc_get_client_for_event(sb->s_fs_info, event))) {
- 		error = __rpc_pipefs_event(clnt, event, sb);
--		rpc_release_client(clnt);
- 		if (error)
- 			break;
- 	}
-@@ -641,8 +638,8 @@ rpc_free_client(struct rpc_clnt *clnt)
- 			rcu_dereference(clnt->cl_xprt)->servername);
- 	if (clnt->cl_parent != clnt)
- 		rpc_release_client(clnt->cl_parent);
--	rpc_unregister_client(clnt);
- 	rpc_clnt_remove_pipedir(clnt);
-+	rpc_unregister_client(clnt);
- 	rpc_free_iostats(clnt->cl_metrics);
- 	kfree(clnt->cl_principal);
- 	clnt->cl_metrics = NULL;
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index c512448..efca2f7 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -1165,7 +1165,6 @@ static void rpc_kill_sb(struct super_block *sb)
- 		goto out;
- 	}
- 	sn->pipefs_sb = NULL;
--	mutex_unlock(&sn->pipefs_sb_lock);
- 	dprintk("RPC:       sending pipefs UMOUNT notification for net %p%s\n",
- 		net, NET_NAME(net));
- 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
-@@ -1173,6 +1172,7 @@ static void rpc_kill_sb(struct super_block *sb)
- 					   sb);
- 	put_net(net);
- out:
-+	mutex_unlock(&sn->pipefs_sb_lock);
- 	kill_litter_super(sb);
+@@ -281,14 +281,47 @@ static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
+ 	memcpy(clnt->cl_nodename, nodename, clnt->cl_nodelen);
  }
  
++static int rpc_client_register(const struct rpc_create_args *args,
++			       struct rpc_clnt *clnt)
++{
++	const struct rpc_program *program = args->program;
++	struct rpc_auth *auth;
++	struct net *net = rpc_net_ns(clnt);
++	struct super_block *pipefs_sb;
++	int err = 0;
++
++	pipefs_sb = rpc_get_sb_net(net);
++	if (pipefs_sb) {
++		err = rpc_setup_pipedir(clnt, program->pipe_dir_name, pipefs_sb);
++		if (err)
++			goto out;
++	}
++
++	auth = rpcauth_create(args->authflavor, clnt);
++	if (IS_ERR(auth)) {
++		dprintk("RPC:       Couldn't create auth handle (flavor %u)\n",
++				args->authflavor);
++		err = PTR_ERR(auth);
++		goto err_auth;
++	}
++
++	rpc_register_client(clnt);
++out:
++	if (pipefs_sb)
++		rpc_put_sb_net(net);
++	return err;
++
++err_auth:
++	__rpc_clnt_remove_pipedir(clnt);
++	goto out;
++}
++
+ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, struct rpc_xprt *xprt)
+ {
+ 	const struct rpc_program *program = args->program;
+ 	const struct rpc_version *version;
+ 	struct rpc_clnt		*clnt = NULL;
+-	struct rpc_auth		*auth;
+ 	int err;
+-	struct super_block *pipefs_sb;
+ 
+ 	/* sanity check the name before trying to print it */
+ 	dprintk("RPC:       creating %s client for %s (xprt %p)\n",
+@@ -347,34 +380,15 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
+ 
+ 	atomic_set(&clnt->cl_count, 1);
+ 
+-	pipefs_sb = rpc_get_sb_net(rpc_net_ns(clnt));
+-	if (pipefs_sb) {
+-		err = rpc_setup_pipedir(clnt, program->pipe_dir_name, pipefs_sb);
+-		if (err)
+-			goto out_no_path;
+-	}
+-
+-	auth = rpcauth_create(args->authflavor, clnt);
+-	if (IS_ERR(auth)) {
+-		dprintk("RPC:       Couldn't create auth handle (flavor %u)\n",
+-				args->authflavor);
+-		err = PTR_ERR(auth);
+-		goto out_no_auth;
+-	}
+-
+ 	/* save the nodename */
+ 	rpc_clnt_set_nodename(clnt, utsname()->nodename);
+-	rpc_register_client(clnt);
+-	if (pipefs_sb)
+-		rpc_put_sb_net(rpc_net_ns(clnt));
++
++	err = rpc_client_register(args, clnt);
++	if (err)
++		goto out_no_path;
+ 	return clnt;
+ 
+-out_no_auth:
+-	if (pipefs_sb)
+-		__rpc_clnt_remove_pipedir(clnt);
+ out_no_path:
+-	if (pipefs_sb)
+-		rpc_put_sb_net(rpc_net_ns(clnt));
+ 	kfree(clnt->cl_principal);
+ out_no_principal:
+ 	rpc_free_iostats(clnt->cl_metrics);
 
