@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab3FXM4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:56:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41325 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab3FXM4J convert rfc822-to-8bit (ORCPT
+	id S1751169Ab3FXM6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:58:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60351 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750824Ab3FXM6H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:56:09 -0400
+	Mon, 24 Jun 2013 08:58:07 -0400
 From: "J, KEERTHY" <j-keerthy@ti.com>
 To: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
 CC: "broonie@kernel.org" <broonie@kernel.org>,
@@ -17,16 +17,15 @@ CC: "broonie@kernel.org" <broonie@kernel.org>,
         "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "J, KEERTHY" <j-keerthy@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
-Thread-Topic: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
-Thread-Index: AQHObaYtxXLB3GJS60SmpjiKShwczJlE2Mog
-Date: Mon, 24 Jun 2013 12:55:43 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EF495@DBDE04.ent.ti.com>
-References: <1371726289-10042-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1371726289-10042-1-git-send-email-j-keerthy@ti.com>
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: RE: [PATCH 3/4] regulators: Add TPS659038 documentation under Palmas
+Thread-Topic: [PATCH 3/4] regulators: Add TPS659038 documentation under
+ Palmas
+Thread-Index: AQHObaZOnplXeq3e6k651zZU6Eld4JlE2VZw
+Date: Mon, 24 Jun 2013 12:57:46 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EF4AE@DBDE04.ent.ti.com>
+References: <1371726344-10115-1-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1371726344-10115-1-git-send-email-j-keerthy@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -41,48 +40,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello Grant,
 
+
 > -----Original Message-----
 > From: J, KEERTHY
-> Sent: Thursday, June 20, 2013 4:35 PM
+> Sent: Thursday, June 20, 2013 4:36 PM
 > To: linux-omap@vger.kernel.org; grant.likely@secretlab.ca
 > Cc: broonie@kernel.org; J, KEERTHY; ldewangan@nvidia.com;
 > sameo@linux.intel.com; swarren@nvidia.com; linux-
 > kernel@vger.kernel.org; linux-doc@vger.kernel.org; devicetree-
 > discuss@lists.ozlabs.org; gg@slimlogic.co.uk
-> Subject: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
+> Subject: [PATCH 3/4] regulators: Add TPS659038 documentation under
+> Palmas
 > 
 > Add TPS659038 documentation under Palmas.
+
+Could you pull this one?
+
 > 
-
-Could you pull this Please?
-
 > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+> Acked-by: Mark Brown <broonie@linaro.org>
 > ---
->  Documentation/devicetree/bindings/mfd/palmas.txt |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>  .../devicetree/bindings/regulator/palmas-pmic.txt  |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt
-> b/Documentation/devicetree/bindings/mfd/palmas.txt
-> index 7bcd59c..89cb773 100644
-> --- a/Documentation/devicetree/bindings/mfd/palmas.txt
-> +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-> @@ -5,6 +5,7 @@ twl6035 (palmas)
->  twl6037 (palmas)
->  tps65913 (palmas)
->  tps65914 (palmas)
-> +tps659038
-> 
->  Required properties:
->  - compatible : Should be from the list
-> @@ -14,6 +15,7 @@ Required properties:
->    ti,tps65913
->    ti,tps65914
->    ti,tps80036
-> +  ti,tps659038
+> diff --git a/Documentation/devicetree/bindings/regulator/palmas-
+> pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+> index d5a3086..5115cd7 100644
+> --- a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+> +++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+> @@ -7,6 +7,7 @@ Required properties:
+>    ti,twl6037-pmic
+>    ti,tps65913-pmic
+>    ti,tps65914-pmic
+> +  ti,tps659038-pmic
 >  and also the generic series names
->    ti,palmas
->  - interrupt-controller : palmas has its own internal IRQs
+>    ti,palmas-pmic
+>  - interrupt-parent : The parent interrupt controller which is palmas.
 > --
 > 1.7.5.4
 
