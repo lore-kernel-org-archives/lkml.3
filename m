@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444Ab3FXOFE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 10:05:04 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38451 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750845Ab3FXOFC (ORCPT
+	id S1751619Ab3FXOGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 10:06:46 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:45162 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab3FXOGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 10:05:02 -0400
-Date: Mon, 24 Jun 2013 15:04:24 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Add support for LPAE style CONTEXTIDR
-Message-ID: <20130624140424.GA24861@mudshark.cambridge.arm.com>
-References: <1372080405-13365-1-git-send-email-cov@codeaurora.org>
+	Mon, 24 Jun 2013 10:06:45 -0400
+Message-ID: <51C85272.4040902@mentor.com>
+Date: Mon, 24 Jun 2013 15:06:42 +0100
+From: Dean Jenkins <Dean_Jenkins@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130523 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372080405-13365-1-git-send-email-cov@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: SLIP: Is there a maintainer for drivers/net/slip/slip.c ?
+References: <51C802DA.4080202@mentor.com> <51C84F76.5030402@hurleysoftware.com>
+In-Reply-To: <51C84F76.5030402@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Jun 2013 14:06:43.0441 (UTC) FILETIME=[0E426610:01CE70E4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christopher,
+Hi Peter,
 
-On Mon, Jun 24, 2013 at 02:26:45PM +0100, Christopher Covington wrote:
-> Using the long-descriptor translation table format changes
-> the layout of the CONTEXTIDR register.
-> 
-> Signed-off-by: Christopher Covington <cov@codeaurora.org>
-> ---
->  arch/arm/mm/context.c | 37 +++++++++++++++++++++++++++----------
->  1 file changed, 27 insertions(+), 10 deletions(-)
+On 24/06/13 14:53, Peter Hurley wrote:
+> On 06/24/2013 04:27 AM, Dean Jenkins wrote:
+>> Hi,
+>>
+>> Using the Linux v3.9 tag, I note that
+>>
+>> ./scripts/get_maintainer.pl -f drivers/net/slip/slip.c
+>> netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+>> linux-kernel@vger.kernel.org (open list)
+>>
+>> There seems to be no maintainer for drivers/net/slip/slip.c, is that 
+>> true ?
+>>
+>> I am asking because sl_encaps() and slip_write_wakeup() do not handle 
+>> error codes from tty->ops->write() and a recursive stack overflow 
+>> crash can occur if the tty->ops->write() fails to write all the 
+>> characters. I have some patches to fix this but would like some 
+>> feedback on an appropriate solution.
+>
+> SLIP changes would likely go through David Miller <davem@davemloft.net>.
+> TTY changes would go through Greg Kroah-Hartman 
+> <gregkh@linuxfoundation.org>
+I have already sent an E-mail to David Miller and the netdev mailing 
+list but so far got not reply from David.
 
-Hmm, I'd deliberately written the code as-is, so that debuggers wouldn't
-need context-sensitive parsing of the contextidr register depending on the
-type of page tables in use.
+So I guess I have sent my patches to the correct place ;)
 
-What's the advantage of this approach, other than you get an extra byte's
-worth of PID?
+Thanks,
 
-Will
+Regards,
+Dean Jenkins
+Mentor Graphics
