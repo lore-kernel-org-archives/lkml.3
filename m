@@ -1,127 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab3FXSRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:17:15 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:51428 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab3FXSRK (ORCPT
+	id S1753644Ab3FXSRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:17:13 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:58471 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab3FXSMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:17:10 -0400
-Message-ID: <51C88D22.5000408@gmail.com>
-Date: Mon, 24 Jun 2013 11:17:06 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Mon, 24 Jun 2013 14:12:10 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [PATCH 01/15] kconfig: Fix defconfig when one choice menu selects options that another choice menu depends on
+Date: Mon, 24 Jun 2013 20:11:45 +0200
+Message-Id: <fbe98bb9ed3dae23e320c6b113e35f129538d14a.1372097219.git.yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <cover.1372097219.git.yann.morin.1998@free.fr>
+References: <cover.1372097219.git.yann.morin.1998@free.fr>
+In-Reply-To: <cover.1372097219.git.yann.morin.1998@free.fr>
+References: <cover.1372097219.git.yann.morin.1998@free.fr>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, tglx@linutronix.de,
-        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, ddaney@caviumnetworks.com
-Subject: Re: [PATCH 25/45] staging/octeon: Use get/put_online_cpus_atomic()
- to prevent CPU offline
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com> <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com> <20130623181740.GB24256@kroah.com> <51C744A9.8000406@linux.vnet.ibm.com>
-In-Reply-To: <51C744A9.8000406@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2013 11:55 AM, Srivatsa S. Bhat wrote:
-> On 06/23/2013 11:47 PM, Greg Kroah-Hartman wrote:
->> On Sun, Jun 23, 2013 at 07:13:33PM +0530, Srivatsa S. Bhat wrote:
->>> Once stop_machine() is gone from the CPU offline path, we won't be able
->>> to depend on disabling preemption to prevent CPUs from going offline
->>> from under us.
->>>
->>> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
->>> offline, while invoking from atomic context.
->>>
->>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> Cc: devel@driverdev.osuosl.org
->>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->>> ---
->>>
->>>   drivers/staging/octeon/ethernet-rx.c |    3 +++
->>>   1 file changed, 3 insertions(+)
->>>
->>> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
->>> index 34afc16..8588b4d 100644
->>> --- a/drivers/staging/octeon/ethernet-rx.c
->>> +++ b/drivers/staging/octeon/ethernet-rx.c
->>> @@ -36,6 +36,7 @@
->>>   #include <linux/prefetch.h>
->>>   #include <linux/ratelimit.h>
->>>   #include <linux/smp.h>
->>> +#include <linux/cpu.h>
->>>   #include <linux/interrupt.h>
->>>   #include <net/dst.h>
->>>   #ifdef CONFIG_XFRM
->>> @@ -97,6 +98,7 @@ static void cvm_oct_enable_one_cpu(void)
->>>   		return;
->>>
->>>   	/* ... if a CPU is available, Turn on NAPI polling for that CPU.  */
->>> +	get_online_cpus_atomic();
->>>   	for_each_online_cpu(cpu) {
->>>   		if (!cpu_test_and_set(cpu, core_state.cpu_state)) {
->>>   			v = smp_call_function_single(cpu, cvm_oct_enable_napi,
->>> @@ -106,6 +108,7 @@ static void cvm_oct_enable_one_cpu(void)
->>>   			break;
->>>   		}
->>>   	}
->>> +	put_online_cpus_atomic();
->>
->> Does this driver really need to be doing this in the first place?  If
->> so, why?  The majority of network drivers don't, why is this one
->> "special"?
+From: Arve Hjønnevåg <arve@android.com>
 
+The defconfig and Kconfig combination below, which is based on 3.10-rc4
+Kconfigs, resulted in several options getting set to "m" instead of "y".
 
-It depends on your definition of "need".
+defconfig.choice:
+---8<---
+CONFIG_MODULES=y
+CONFIG_USB_ZERO=y
+---8<---
 
-The current driver receives packets from *all* network ports into a 
-single queue (in OCTEON speak this queue is called a POW group).  Under 
-high packet rates, the CPU time required to process the packets may 
-exceed the capabilities of a single CPU.
+Kconfig.choice:
+---8<---
+menuconfig MODULES
+	bool "Enable loadable module support"
 
-In order to increase throughput beyond the single CPU limited rate, we 
-bring more than one CPUs into play for NAPI receive.  The code being 
-patched here is part of the logic that controls which CPUs are used for 
-NAPI receive.
+config CONFIGFS_FS
+	tristate "Userspace-driven configuration filesystem"
 
-Just for the record:  Yes I know that doing this may lead to packet 
-reordering when doing forwarding.
+config OCFS2_FS
+        tristate "OCFS2 file system support"
+        depends on CONFIGFS_FS
+        select CRC32
 
-A further question that wasn't asked is: Will the code work at all if a 
-CPU is taken offline even if the race, the patch eliminates, is avoided?
+config USB_LIBCOMPOSITE
+	tristate
+	select CONFIGFS_FS
 
-I doubt it.
+choice
+	tristate "USB Gadget Drivers"
+	default USB_ETH
 
-As far as the patch goes:
+config USB_ZERO
+	tristate "Gadget Zero (DEVELOPMENT)"
+	select USB_LIBCOMPOSITE
 
-Acked-by: David Daney <david.daney@cavium.com>
+config USB_ETH
+	tristate "Ethernet Gadget (with CDC Ethernet support)"
+	select USB_LIBCOMPOSITE
 
-David Daney
+endchoice
 
->>
->
-> Honestly, I don't know. Let's CC the author of that code (David Daney).
-> I wonder why get_maintainer.pl didn't generate his name for this file,
-> even though the entire file is almost made up of his commits alone!
->
-> Regards,
-> Srivatsa S. Bhat
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+config CRC32
+        tristate "CRC32/CRC32c functions"
+        default y
+
+choice
+        prompt "CRC32 implementation"
+        depends on CRC32
+        default CRC32_SLICEBY8
+
+config CRC32_SLICEBY8
+        bool "Slice by 8 bytes"
+
+endchoice
+---8<---
+
+$ scripts/kconfig/conf --defconfig=defconfig.choice Kconfig.choice
+
+would result in:
+
+.config:
+---8<---
+CONFIG_MODULES=y
+CONFIG_CONFIGFS_FS=m
+CONFIG_USB_LIBCOMPOSITE=m
+CONFIG_USB_ZERO=m
+CONFIG_CRC32=y
+CONFIG_CRC32_SLICEBY8=y
+---8<---
+
+when the expected result would be:
+
+.config:
+---8<---
+CONFIG_MODULES=y
+CONFIG_CONFIGFS_FS=y
+CONFIG_USB_LIBCOMPOSITE=y
+CONFIG_USB_ZERO=y
+CONFIG_CRC32=y
+CONFIG_CRC32_SLICEBY8=y
+---8<---
+
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+[yann.morin.1998@free.fr: add the resulting .config to commit log,
+                          remove unneeded USB_GADGET from the defconfig]
+Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Signed-off-by: Yann E. MORIN <yann.morin.1998@free.fr>
+---
+ scripts/kconfig/confdata.c | 14 ++++++++++----
+ scripts/kconfig/expr.h     |  3 +++
+ scripts/kconfig/lkc.h      |  1 +
+ scripts/kconfig/symbol.c   | 11 +++++++++++
+ 4 files changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 43eda40..35e0f16 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -1083,7 +1083,7 @@ static void randomize_choice_values(struct symbol *csym)
+ 	csym->flags &= ~(SYMBOL_VALID);
+ }
+ 
+-static void set_all_choice_values(struct symbol *csym)
++void set_all_choice_values(struct symbol *csym)
+ {
+ 	struct property *prop;
+ 	struct symbol *sym;
+@@ -1100,7 +1100,7 @@ static void set_all_choice_values(struct symbol *csym)
+ 	}
+ 	csym->flags |= SYMBOL_DEF_USER;
+ 	/* clear VALID to get value calculated */
+-	csym->flags &= ~(SYMBOL_VALID);
++	csym->flags &= ~(SYMBOL_VALID | SYMBOL_NEED_SET_CHOICE_VALUES);
+ }
+ 
+ void conf_set_all_new_symbols(enum conf_def_mode mode)
+@@ -1202,6 +1202,14 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
+ 	 * selected in a choice block and we set it to yes,
+ 	 * and the rest to no.
+ 	 */
++	if (mode != def_random) {
++		for_all_symbols(i, csym) {
++			if ((sym_is_choice(csym) && !sym_has_value(csym)) ||
++			    sym_is_choice_value(csym))
++				csym->flags |= SYMBOL_NEED_SET_CHOICE_VALUES;
++		}
++	}
++
+ 	for_all_symbols(i, csym) {
+ 		if (sym_has_value(csym) || !sym_is_choice(csym))
+ 			continue;
+@@ -1209,7 +1217,5 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
+ 		sym_calc_value(csym);
+ 		if (mode == def_random)
+ 			randomize_choice_values(csym);
+-		else
+-			set_all_choice_values(csym);
+ 	}
+ }
+diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
+index cdd4860..df198a5 100644
+--- a/scripts/kconfig/expr.h
++++ b/scripts/kconfig/expr.h
+@@ -106,6 +106,9 @@ struct symbol {
+ #define SYMBOL_DEF3       0x40000  /* symbol.def[S_DEF_3] is valid */
+ #define SYMBOL_DEF4       0x80000  /* symbol.def[S_DEF_4] is valid */
+ 
++/* choice values need to be set before calculating this symbol value */
++#define SYMBOL_NEED_SET_CHOICE_VALUES  0x100000
++
+ #define SYMBOL_MAXLENGTH	256
+ #define SYMBOL_HASHSIZE		9973
+ 
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index f8aee5f..0c8d419 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -87,6 +87,7 @@ char *conf_get_default_confname(void);
+ void sym_set_change_count(int count);
+ void sym_add_change_count(int count);
+ void conf_set_all_new_symbols(enum conf_def_mode mode);
++void set_all_choice_values(struct symbol *csym);
+ 
+ struct conf_printer {
+ 	void (*print_symbol)(FILE *, struct symbol *, const char *, void *);
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index ecc5aa5..ab8f4c8 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -300,6 +300,14 @@ void sym_calc_value(struct symbol *sym)
+ 
+ 	if (sym->flags & SYMBOL_VALID)
+ 		return;
++
++	if (sym_is_choice_value(sym) &&
++	    sym->flags & SYMBOL_NEED_SET_CHOICE_VALUES) {
++		sym->flags &= ~SYMBOL_NEED_SET_CHOICE_VALUES;
++		prop = sym_get_choice_prop(sym);
++		sym_calc_value(prop_get_symbol(prop));
++	}
++
+ 	sym->flags |= SYMBOL_VALID;
+ 
+ 	oldval = sym->curr;
+@@ -425,6 +433,9 @@ void sym_calc_value(struct symbol *sym)
+ 
+ 	if (sym->flags & SYMBOL_AUTO)
+ 		sym->flags &= ~SYMBOL_WRITE;
++
++	if (sym->flags & SYMBOL_NEED_SET_CHOICE_VALUES)
++		set_all_choice_values(sym);
+ }
+ 
+ void sym_clear_all_valid(void)
+-- 
+1.8.1.2
 
