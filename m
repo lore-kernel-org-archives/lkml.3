@@ -1,89 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab3FXAbz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 20:31:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43831 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab3FXAby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 20:31:54 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130624000224.GA2832@khazad-dum.debian.net>
-References: <51C3DDFA.7050204@zytor.com> <51C69732.1010906@gmail.com> <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com> <20130623192936.GA28655@khazad-dum.debian.net> <51C75465.9060007@zytor.com> <20130623215649.GA1288@khazad-dum.debian.net> <51C7725C.5090801@zytor.com> <20130624000224.GA2832@khazad-dum.debian.net>
-MIME-Version: 1.0
+	id S1752053Ab3FXAcm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 20:32:42 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:39418 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3FXAck convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 20:32:40 -0400
 Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: MTRR use in drivers
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 23 Jun 2013 17:31:23 -0700
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Brice Goglin <brice.goglin@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Message-ID: <43cfe710-f22c-4b0b-b7e0-a3c8e6a49096@email.android.com>
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 0/3] ext4: introduce two new ioctls
+References: <1371967642-3116-1-git-send-email-linkinjeon@gmail.com> <03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
+From: Eric Sandeen <esandeen@redhat.com>
+MIME-Version: 1.0
+In-Reply-To: <03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
+Message-Id: <7D1878F6-0387-48F3-8724-4A8946AECF9E@redhat.com>
+Date: Sun, 23 Jun 2013 20:32:32 -0400 (EDT)
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, "tytso@mit.edu" <tytso@mit.edu>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "a.sangwan@samsung.com" <a.sangwan@samsung.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+X-Mailer: Zimbra 8.0.3_GA_5664 (MobileSync - Apple-iPhone3C1/1001.523)
+Thread-Topic: ext4: introduce two new ioctls
+Thread-Index: flratWPAxIBGLvJ2WvB6vvU8jdLuZA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The aliasing doesn't matter for Linux because we map the high and low half the same.
+On Jun 23, 2013, at 12:01 PM, Andreas Dilger <adilger@dilger.ca> wrote:
 
-Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-
->On Sun, 23 Jun 2013, H. Peter Anvin wrote:
->> On 06/23/2013 02:56 PM, Henrique de Moraes Holschuh wrote:
->> > 
->> > And as far as I could find from Intel's not-that-complete public
->> > "specification updates", we are applying the errata workaround to a
->few more
->> > processors than strictly required, but since I have no idea how to
->write a
->> > test case, I can't whitelist the 3rd-gen Pentium M on my T43, nor
->can I get
->> > ThinkPad owners to test it for us on 1st and 2nd-gen Pentium M and
->report
->> > back.
+> On 2013-06-23, at 0:07, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> 
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
 >> 
->> Which specific erratum are you referring to, here?  The "WC becomes
->UC"
->> erratum?  I don't think there is a sane testcase for it since it
->needs a
->> very complicated setup to trigger.
->
->There are at least two different nasty PAT issues that are not always
->critical, and one that outright hangs the processor (if the unsupported
->aliasing of WB with UC/WC happens).
->
->Interestingly enough, most of the P4-Xeons and P4 do not appear to have
->the
->"WC becomes UC" errata.
->
->However, LOTS of P4, M-P4, Xeon PIII, Xeon, and Pentium M have a bug
->where
->the four highest entries in the PAT table are inactive (aliased to the
->four
->lowest entries) in mode B (PSE) and mode C (PAE) for 4k pages.  They
->work
->fine for large pages.
->
->Also, lots of them can hang if you ever alias WB with UC or WC (which
->is
->apparently an unsupported configuration anyway, or so it says in the
->errata).
->
->There are other weird aliasing nasties, such as one where you get
->memory
->corruption if you alias WB data with code (being accessed as UC or WC)
->in
->the same cacheline, and some stuff such as weirdness should the page
->table
->be on WC memory...
->
->I can track down most of the CPUIDs involved if you want, but someone
->from
->Intel would be better (I assume they actually have access to the errata
->documentation in some less idiotic way than reading a ton of badly
->indexed
->PDFs that take forever to find in their site).
+>> This patch series introduces 2 new ioctls for ext4.
+>> 
+>> Truncate_block_range ioctl truncates blocks from source file.
+> 
+> How is this different from fallocate(FALLOC_FL_PUNCH_HOLE)?  That is already in existing kernels, and portable across multiple filesystems. 
+> 
+Same question.  Punch hole should do this already...
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+
+>> Transfer_block_range ioctl transfers data blocks from source file
+>> and append them at the end of destination file.
+> 
+> There is already a similar ioctl for defragmenting files. Is it possible to use that, or does it have different semantics?
+> 
+>> Ioctl1:        EXT4_IOC_TRUNCATE_BLOCK_RANGE:
+>> This ioctl truncates a range of data blocks from file.
+>> It is useful to remove easily and quickly the garbage data
+>> at the middle of file.
+>> 
+>> e.g. we have a movie file and there is long advertisement in movie file.
+>> user want to remove only advertisement range.
+> 
+> While this works in theory, there is very little chance that the movie data will align exactly to filesystem block boundaries. 
+> 
+Or more importantly on compression codec boundaries.   Wouldn't this look like corruption at playback time?
+
+Eric
+
+> Cheers, Andreas 
+> 
+>> 1) Movie file (8GB), There is the adverisement of 500MB size.
+>> ____________________________________________________________________
+>> |                     |                   |                         |
+>> |   a) range          | b) Advertisement  |     c) range            | 
+>> |                     | (unneeded data)   |                         |
+>> |_____________________|___________________|_________________________| 
+>> 
+>> 2) Currently if user want to remove portion b), the conventional way
+>>   would be to copy a) and c) (7.5GB) to new file by reading data from
+>>   original file and writing to new file, followed up by  delete original
+>>   file and rename new file. It will take long time.
+>>   When we measure time, it takes around 3 minutes.
+>> 
+>> 3) If we use EXT4_IOC_TRUNCATE_BLOCK_RANGE, we can have garbage data removed
+>>   in less than a second. Also, no need to perform deletion and rename.
+>> _______________________________________________
+>> |                     |                        |
+>> |   a) range          |     c) range           | 
+>> |                     |                        |
+>> |_____________________|________________________| 
+>> 
+>> 
+>> #define EXT4_IOC_TRUNCATE_BLOCK_RANGE  _IOW('f', 18, struct truncate_range)
+>> struct truncate_range {
+>>      __u32 start_block;
+>>      __u32 length;
+>> };
+>> 
+>> example =>
+>> Originally the file "abc" has the below extent tree:
+>> debugfs:  ex abc
+>> Level Entries       Logical        Physical Length Flags
+>> 0/ 0   1/  3     0 -     4  33615 -  33619      5 
+>> 0/ 0   2/  3     5 -     9  33855 -  33859      5 
+>> 0/ 0   3/  3    10 -    14  69657 -  69661      5
+>> 
+>> ls -lh abc
+>> -rw-r--r--    1 root     0          60.0K Jan  1 00:01 abc
+>> 
+>> du -h abc
+>> 60.0K    abc
+>> 
+>> e4_truncate_block_range abc 2 10
+>> Return:
+>> : Success
+>> 
+>> After executing truncate_block_range ioctl, the extent tree:
+>> ex abc
+>> Level Entries       Logical        Physical Length Flags
+>> 0/ 0   1/  2     0 -     1  33615 -  33616      2 
+>> 0/ 0   2/  2     2 -     4  69659 -  69661      3 
+>> 
+>> ls -lh abc
+>> -rw-r--r--    1 root     0          20.0K Jan  1 00:08 abc
+>> 
+>> du -h abc
+>> 20.0K    abc
+>> 
+>> This ioctl works in 2 parts:
+>> 1) remove _only_ data blocks that resides within specified range.
+>> If the entire range is a hole than nothing is removed.
+>> 
+>> 2) update file's logical block offsets ranging from block number
+>> "start_block + length" to last logical block of file such that
+>> lblk_number = lblk_number - length;
+>> This is done by updating starting block of all the extents that
+>> resides within the range.
+>> 
+>> If "start_block + length" is already equal to the last block of file
+>> than no block is updated. This case is similar to convential truncate.
+>> 
+>> In the above example:
+>> The data blocks ranging from [2 - 11] have been removed
+>> and the logical offsets of the file beyond block number 12 till last block 
+>> of file are updated by subtracting length from each of logical numbers.
+>> This gives a contiguous logical space to the file.
+>> Also, the logical size and disksize of the file are updated accordingly.
+>> 
+>> Ioctl2:        EXT4_IOC_TRANSFER_BLOCK_RANGE:
+>> This ioctl transfers a range of data blocks from source file and append
+>> them at the end of the destination file.
+>> This is not actual data transfer but only metadata is moved.
+>> 
+>> ____________________________________________________________________
+>> |                     |                   |                         |
+>> |   a) range          | b) range          |     c) range            |
+>> |                     |                   |                         |
+>> |_____________________|___________________|_________________________|
+>> 
+>> If user does not want b) in the orig file but wants to make a new file
+>> comprising only b) OR wants b) at the end of an already existing file,
+>> the conventional way of doing it would be to:
+>> 1) Copy b) to new file
+>> 2) Copy c) to temp file
+>> 3) Truncate orig file to a)
+>> 4) Copy c) from temp file to the end of orig file.
+>> 5) Delete temp file.
+>> 
+>> After this operations =>
+>> orig_file:
+>> __________________________________________
+>> |                     |                   |
+>> |   a) range          | c) range          |
+>> |                     |                   |
+>> |_____________________|___________________|
+>> 
+>> new_file:
+>> _______________________
+>> |                     |
+>> |   b) range          |
+>> |                     |
+>> |_____________________|
+>> 
+>> Again, this operation would take a long time (depending on the sizes of range)
+>> if done using conventional way while using transfer_block_range ioctl reduces
+>> the time within a second.
+>> 
+>> #define EXT4_IOC_TRANSFER_BLOCK_RANGE  _IOW('f', 19, struct transfer_range)
+>> struct transfer_range {
+>>   __u32 dest_fd;
+>>   __u32 start_block;
+>>   __u32 length;
+>> };
+>> 
+>> example=>
+>> debugfs: ex source
+>> Level Entries       Logical        Physical Length Flags
+>> 0/ 1   1/  1     0 -    24  32809              25
+>> 1/ 1   1/  5     0 -     4   4071 -   4075      5 
+>> 1/ 1   2/  5     5 -     9   4081 -   4085      5 
+>> 1/ 1   3/  5    10 -    14   4091 -   4095      5 
+>> 1/ 1   4/  5    15 -    19   4101 -   4105      5 
+>> 1/ 1   5/  5    20 -    24   4151 -   4155      5 
+>> 
+>> debugfs:  ex dest
+>> Level Entries       Logical        Physical Length Flags
+>> 0/ 0   1/  3     0 -     4  32825 -  32829      5 
+>> 0/ 0   2/  3     5 -     9  33545 -  33549      5 
+>> 0/ 0   3/  3    10 -    14  33615 -  33619      5
+>> 
+>> ls -lh source 
+>> -rw-r--r--    1 root     0         100.0K Jan  1 00:01 source
+>> ls -lh dest 
+>> -rw-r--r--    1 root     0          60.0K Jan  1 00:01 dest
+>> 
+>> du -h source 
+>> 104.0K    source
+>> du -h dest 
+>> 60.0K    dest
+>> 
+>> e4_transfer_block_range source dest 2 10
+>> Return:
+>> : Success
+>> 
+>> debugfs:  ex source
+>> Level Entries       Logical        Physical Length Flags
+>> 0/ 1   1/  1     0 -    24  32809              25
+>> 1/ 1   1/  4     0 -     1   4071 -   4072      2 
+>> 1/ 1   2/  4    12 -    14   4093 -   4095      3 
+>> 1/ 1   3/  4    15 -    19   4101 -   4105      5 
+>> 1/ 1   4/  4    20 -    24   4151 -   4155      5 
+>> debugfs:  ex dest
+>> Level Entries       Logical        Physical Length Flags
+>> 0/ 1   1/  1     0 -    24  32835              25
+>> 1/ 1   1/  6     0 -     4  32825 -  32829      5 
+>> 1/ 1   2/  6     5 -     9  33545 -  33549      5 
+>> 1/ 1   3/  6    10 -    14  33615 -  33619      5 
+>> 1/ 1   4/  6    15 -    17   4073 -   4075      3 
+>> 1/ 1   5/  6    18 -    22   4081 -   4085      5 
+>> 1/ 1   6/  6    23 -    24   4091 -   4092      2 
+>> 
+>> ls -lh source
+>> -rw-r--r--    1 root     0         100.0K Jan  1 00:04 source
+>> ls -lh dest 
+>> -rw-r--r--    1 root     0         100.0K Jan  1 00:04 dest
+>> 
+>> du -h source 
+>> 64.0K    source
+>> du -h dest
+>> 104.0K    dest
+>> 
+>> The data blocks lying between [start_block to start_block + length) are appended
+>> contiguously at the end of destination file.
+>> The block transfer leaves a hole in the source file.
+>> If any hole is encountered in the range, it is ommited.
+>> 
+>> This ioctl does not change the logical size of the source file hence
+>> leaves a hole in place of transfered range.
+>> If user want contiguous logical space for source file,
+>> it can truncate the hole by calling truncate_range_ioctl for source file.
+>> 
+>> Example for above "source" file:
+>> e4_truncate_block_range source 2 10
+>> Return:
+>> : Success
+>> debugfs:  ex source
+>> Level Entries       Logical        Physical Length Flags
+>> 0/ 1   1/  1     0 -    14  32809              15
+>> 1/ 1   1/  4     0 -     1   4071 -   4072      2 
+>> 1/ 1   2/  4     2 -     4   4093 -   4095      3 
+>> 1/ 1   3/  4     5 -     9   4101 -   4105      5 
+>> 1/ 1   4/  4    10 -    14   4151 -   4155      5 
+>> 
+>> Namjae Jeon (3):
+>> ext4: Add EXT4_IOC_TRUNCATE_BLOCK_RANGE ioctl
+>> ext4: make mext_next_extent non static and move get_ext_path
+>> ext4: Add EXT4_IOC_TRANSFER_BLOCK_RANGE ioctl
+>> 
+>> -- 
+>> 1.7.9.5
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
