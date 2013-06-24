@@ -1,104 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab3FXRkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:40:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1483 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752632Ab3FXRki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:40:38 -0400
-Date: Mon, 24 Jun 2013 19:35:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130624173510.GA1321@redhat.com>
-References: <20130620161652.GA4462@linux.vnet.ibm.com> <20130621151119.GA1596@redhat.com> <20130621195949.GA15519@redhat.com> <20130622013731.GA22918@redhat.com> <20130622173129.GA29375@redhat.com> <20130622215905.GA28238@redhat.com> <20130623143634.GA2000@redhat.com> <20130623150603.GA32313@redhat.com> <20130623160452.GA11740@redhat.com> <20130624155758.GA5993@redhat.com>
+	id S1752792Ab3FXRoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:44:23 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35305 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab3FXRoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 13:44:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624155758.GA5993@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <51C1A78A.3090904@redhat.com>
+References: <20130530183955.14686.89444.stgit@bling.home> <20130618172819.GA16134@google.com>
+ <1371579648.22681.209.camel@ul30vt.home> <CAErSpo5mRKhBYun_i=iFppmQ5+7ODCY7q=sehHjBXWqPRH=ZZw@mail.gmail.com>
+ <1371594159.22659.34.camel@ul30vt.home> <51C0E73F.1060708@redhat.com>
+ <CAErSpo7ambrpYm6Lw5bfb5k83ZpHgMvcZxtohVJvo2iTLOF1EQ@mail.gmail.com> <51C1A78A.3090904@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 24 Jun 2013 11:43:59 -0600
+Message-ID: <CAErSpo7iY6qEh7v8D3R8F-sYedO6eJ-MDnzBABBQhMAsxo6DVw@mail.gmail.com>
+Subject: Re: [PATCH] pci: Enable overrides for missing ACS capabilities
+To: Don Dutile <ddutile@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24, Dave Jones wrote:
+On Wed, Jun 19, 2013 at 6:43 AM, Don Dutile <ddutile@redhat.com> wrote:
+> On 06/18/2013 10:52 PM, Bjorn Helgaas wrote:
+>>
+>> On Tue, Jun 18, 2013 at 5:03 PM, Don Dutile<ddutile@redhat.com>  wrote:
+>>>
+>>> On 06/18/2013 06:22 PM, Alex Williamson wrote:
+>>>>
+>>>>
+>>>> On Tue, 2013-06-18 at 15:31 -0600, Bjorn Helgaas wrote:
+>>>>>
+>>>>>
+>>>>> On Tue, Jun 18, 2013 at 12:20 PM, Alex Williamson
+>>>>> <alex.williamson@redhat.com>   wrote:
+>>>>>>
+>>>>>>
+>>>>>> On Tue, 2013-06-18 at 11:28 -0600, Bjorn Helgaas wrote:
+>>>>>>>
+>>>>>>>
+>>>>>>> On Thu, May 30, 2013 at 12:40:19PM -0600, Alex Williamson wrote:
+>>>
+>>> ...
+>>>>>>>
+>>>>>>> Who do you expect to decide whether to use this option?  I think it
+>>>>>>> requires intimate knowledge of how the device works.
+>>>>>>>
+>>>>>>> I think the benefit of using the option is that it makes assignment
+>>>>>>> of
+>>>>>>> devices to guests more flexible, which will make it attractive to
+>>>>>>> users.
+>>>>>>> But most users have no way of knowing whether it's actually *safe* to
+>>>>>>> use this.  So I worry that you're adding an easy way to pretend
+>>>>>>> isolation
+>>>>>>> exists when there's no good way of being confident that it actually
+>>>>>>> does.
+>>
+>>
+>>> ...
+>>
+>>
+>>>>> I wonder if we should taint the kernel if this option is used (but not
+>>>>> for specific devices added to pci_dev_acs_enabled[]).  It would also
+>>>>> be nice if pci_dev_specific_acs_enabled() gave some indication in
+>>>>> dmesg for the specific devices you're hoping to add to
+>>>>> pci_dev_acs_enabled[].  It's not an enumeration-time quirk right now,
+>>>>> so I'm not sure how we'd limit it to one message per device.
+>>>>
+>>>>
+>>>> Right, setup vs use and getting single prints is a lot of extra code.
+>>>> Tainting is troublesome for support, Don had some objections when I
+>>>> suggested the same to him.
+>>>>
+>>> For RH GSS (Global Support Services), a 'taint' in the kernel printk
+>>> means
+>>> RH doesn't support that system.  The 'non-support' due to 'taint' being
+>>> printed
+>>> out in this case may be incorrect -- RH may support that use, at least
+>>> until
+>>> a more sufficient patched kernel is provided.
+>>> Thus my dissension that 'taint' be output.  WARN is ok. 'driver beware',
+>>> 'unleashed dog afoot'.... sure...
+>>
+>>
+>> So ...  that's really a RH-specific support issue, and easily worked
+>> around by RH adding a patch that turns off tainting.
+>>
+> sure. what's another patch to the thousands... :-/
 >
-> On Sun, Jun 23, 2013 at 06:04:52PM +0200, Oleg Nesterov wrote:
->  >
->  > Could you please do the following:
->  >
->  > 	1. # cd /sys/kernel/debug/tracing
->  > 	   # echo 0 >> options/function-trace
->  > 	   # echo preemptirqsoff >> current_tracer
->  >
->  > 	2. reproduce the lockup again
->  >
->  > 	3. show the result of
->  > 	   # cat trace
+>> It still sounds like a good idea to me for upstream, where use of this
+>> option can very possibly lead to corruption or information leakage
+>> between devices the user claimed were isolated, but in fact were not.
 >
-> Not sure this is helpful, but..
+> Did I miss something?  This patch provides a user-level/chosen override;
+> like all other overrides, (pci=realloc, etc.), it can lead to a failing
+> system.
+> IMO, this patch is no different.  If you want to tag this patch with taint,
+> then let's audit all the (PCI) overrides and taint them appropriately.
+> Taint should be reserved to changes to the kernel that were done outside
+> the development of the kernel, or with the explicit intent to circumvent
+> the normal operation of the kernel.  This patch provides a way to enable
+> ACS checking to succeed when the devices have not provided sufficiently
+> complete
+> ACS information.  i.e., it's a growth path for PCIe-ACS and its need for
+> proper support.
 
-This makes me think that something is seriously broken.
+We're telling the kernel to assume something (the hardware provides
+protection) that may not be true.  If that assumption turns out to be
+false, the result is that a VM can be crashed or comprised by another
+VM.
 
-Or I do not understand this stuff at all. Quite possible too.
-Steven, could you please help?
+One difference I see is that this override can lead to a crash that
+looks like random memory corruption and has no apparent connection to
+the actual cause.  Most other overrides won't cause run-time crashes
+(I think they're more likely to cause boot or device configuration
+failures), and the dmesg log will probably have good clues as to the
+reason.
 
-> # preemptirqsoff latency trace v1.1.5 on 3.10.0-rc7+
-> # --------------------------------------------------------------------
-> # latency: 165015310 us, #4/4, CPU#1 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:4)
+But the possibility of compromise is probably even more serious,
+because there would be no crash at all, and we'd have no indication
+that VM A read or corrupted data in VM B.  I'm very concerned about
+that, enough so that it's not clear to me that an override belongs in
+the upstream kernel at all.
 
-OK, 165015310/1000000 = 165, nice.
+Yes, that would mean some hardware is not suitable for device
+assignment.  That just sounds like "if hardware manufacturers do their
+homework and support ACS properly, their hardware is more useful for
+virtualization than other hardware."  I don't see the problem with
+that.
 
-> #    -----------------
-> #    | task: trinity-child1-3173 (uid:1000 nice:19 policy:0 rt_prio:0)
-> #    -----------------
-> #  => started at: vprintk_emit
-> #  => ended at:   vprintk_emit
-> #
-> #
-> #                  _------=> CPU#
-> #                 / _-----=> irqs-off
-> #                | / _----=> need-resched
-> #                || / _---=> hardirq/softirq
-> #                ||| / _--=> preempt-depth
-> #                |||| /     delay
-> #  cmd     pid   ||||| time  |   caller
-> #     \   /      |||||  \    |   /
-> trinity--3173    1dNh1    0us!: console_unlock <-vprintk_emit
-> trinity--3173    1dNh1 165015310us : console_unlock <-vprintk_emit
-> trinity--3173    1dNh1 165015311us+: stop_critical_timings <-vprintk_emit
-> trinity--3173    1dNh1 165015315us : <stack trace>
->  => console_unlock
->  => vprintk_emit
->  => printk
->  => watchdog_timer_fn
-
-But this is already called in the non-preemtible context, how can
-'started at' blame vprintk_emit?
-
->  => __run_hrtimer
->  => hrtimer_interrupt
->  => smp_apic_timer_interrupt
->  => apic_timer_interrupt
->  => _raw_spin_lock
-
-This is where start_critical_timing() should be called?
-
-Or by TRACE_IRQS_OFF in apic_timer_interrupt...
-
->  => sync_inodes_sb
->  => sync_inodes_one_sb
->  => iterate_supers
->  => sys_sync
->  => tracesys
-
-Also. watchdog_timer_fn() calls printk() only if it detects the
-lockup, so I assume you hit another one?
-
-Oleg.
-
+Bjorn
