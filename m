@@ -1,92 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157Ab3FXInA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:43:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39371 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab3FXIm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:42:59 -0400
-Message-ID: <51C80691.9030106@suse.cz>
-Date: Mon, 24 Jun 2013 10:42:57 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Roland Eggner <edvx1@systemanalysen.net>,
-        Wang YanQing <udknight@gmail.com>
-Subject: Re: [PATCH 12/14] kconfig: sort found symbols by relevance
-References: <cover.1371595499.git.yann.morin.1998@free.fr>  <3e2346029e33ef9405b87d72a32d96d0aafb524a.1371595499.git.yann.morin.1998@free.fr> <1372060659.4310.41.camel@chaos.site>
-In-Reply-To: <1372060659.4310.41.camel@chaos.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1751269Ab3FXIn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:43:56 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:60879 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab3FXIny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 04:43:54 -0400
+Message-ID: <1372063443.32157.10.camel@linux>
+Subject: Per route MTU settings are broken in linux kernel 3.2
+From: Yura Pakhuchiy <pakhuchiy@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 24 Jun 2013 15:44:03 +0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.6.2013 09:57, Jean Delvare wrote:
-> Hi Yann,
-> 
-> Sorry for the late reply...
-> 
-> Le Wednesday 19 June 2013 à 00:45 +0200, Yann E. MORIN a écrit :
->> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
->>
->> When searching for symbols, return the symbols sorted by relevance.
->>
->> Sorting is done as thus:
->>   - first, symbols with a prompt,   [1]
->>   - then, smallest offset,          [2]
->>   - then, shortest match,           [3]
->>   - then, highest relative match,   [4]
->>   - finally, alphabetical sort      [5]
->>
->> So, searching (eg.) for 'P.*CI' :
-> 
-> Nobody would actually search for that, so that's not a particularly good
-> example to determine whether your sort order is sane or not.
-> 
->>
->> [1] Symbols of interest are probably those with a prompt, as they can be
->>     changed, while symbols with no prompt are only for info. Thus:
->>         PCIEASPM comes before PCI_ATS
-> 
-> This is not necessarily true. I often look for symbols which have no
-> prompt, and the information I am looking for is exactly "does this
-> symbol have a prompt or is its value determined automatically"?
-> 
->> [2] Symbols that match earlier in the name are to be preferred over
->>     symbols which match later. Thus:
->>         PCI_MSI comes before WDTPCI
-> 
-> This makes some sense, although it could have some unexpected side
-> effects (e.g. FOO_BAR_PCI would be listed before SOMETHING_PCI_BAZBAZ,
-> right?)
-> 
->> [3] The shortest match is (IMHO) more interesting than a longer one.
->>     Thus:
->>         PCI comes before PCMCIA
-> 
-> This makes sense too, but I'm sure there are cases where it will be
-> confusing too, and alphabetical order would do it in part too.
+Hello Ben,
 
-PCI does sort before PCMCIA alphabetically ;). Also, the match lenght
-will only be different when using regular expressions, so this rule will
-not matter in the usual case.
+Looks like setting per route MTU (as described in [1]) is broken in
+Linux kernel 3.2. I tested with newer Ubuntu kernels 3.5 and 3.8 and it
+looks like problem is fixed there. I filled Ubuntu bug report [2] with
+more details and sample script which illustrates problem. But since this
+problem is probably also present in stock kernel (not just in Ubuntu),
+is it possible to backport fixes to stable 3.2 series?
 
+1. http://lartc.org/howto/lartc.cookbook.mtu-discovery.html
+2. https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1177507
 
->> [4] The relative match is the ratio of the length of the match against
->>     the length of the symbol. The more of a symbol name we match, the
->>     more instersting that symbol is. Thus:
->>         PCIEAER comes before PCIEASPM
-> 
-> This is an obscure sort rule and I'm sure it will add more confusion
-> than it will help. Alphabetical order should really be good enough at
-> this point.
+-- 
+Best regards,
+        Yura
 
-When the prefix matches, then I agree that most people will expect the
-matches be alphabetically sorted. Maybe only do this comparison only if
-s1->so != 0, otherwise fallback to the strcmp() directly?
-
-Thanks,
-Michal
