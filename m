@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab3FXPPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:15:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59779 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab3FXPPI (ORCPT
+	id S1752680Ab3FXPQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:16:11 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:37401 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368Ab3FXPQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:15:08 -0400
-Message-ID: <51C8627A.5000106@codeaurora.org>
-Date: Mon, 24 Jun 2013 11:15:06 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 24 Jun 2013 11:16:07 -0400
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Add support for LPAE style CONTEXTIDR
-References: <1372080405-13365-1-git-send-email-cov@codeaurora.org> <20130624140424.GA24861@mudshark.cambridge.arm.com> <51C85A0D.3070400@codeaurora.org> <20130624145303.GA25582@mudshark.cambridge.arm.com>
-In-Reply-To: <20130624145303.GA25582@mudshark.cambridge.arm.com>
+In-Reply-To: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com>
+References: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com>
+Date: Mon, 24 Jun 2013 17:16:06 +0200
+Message-ID: <CACRpkdYkDEz8xZyhTSNwLx3MvNRDBG+rtP2599KN9CzsCRtQQg@mail.gmail.com>
+Subject: Re: [PATCH 0/7] metag: tz1090: add irq-pdc, pinctrl and gpio to DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 10:53 AM, Will Deacon wrote:
-> On Mon, Jun 24, 2013 at 03:39:09PM +0100, Christopher Covington wrote:
->> Hi Will,
->>
->> On 06/24/2013 10:04 AM, Will Deacon wrote:
->> [...]
->>
->>> What's the advantage of this approach, other than you get an extra byte's
->>> worth of PID?
->>
->> In my view, the real advantage is that the the PID is located where people
->> reading ARM Architecture Reference Manual are told they can find it.
-> 
-> Perhaps, but I'd usually expect a debugger or trace tools to do something
-> with the PID, and they likely expect it to be shifted, so you can't really
-> win.
+On Thu, Jun 20, 2013 at 2:02 PM, James Hogan <james.hogan@imgtec.com> wrote:
 
-But reading and implementing the architecture *is* winning! LOL. I'll file a
-ticket with the architecture folks and see what they think.
+> This patchset, based on and for the metag tree, adds the necessary
+> device tree nodes and selects the necessary Kconfig symbols in order to
+> enable the irq-imgpdc, {pinctrl,gpio}-tz1090[-pdc] drivers once they are
+> accepted and merged.
+>
+> The first two patches set things up for metag so that we can include
+> <dt-bindings/*> files from device tree files.
+>
+> I plan on applying the first two patches soon, and the others after the
+> corresponding drivers have been accepted into the appropriate trees on
+> which they depend.
+>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
 
-Christopher
+The series:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Yours,
+Linus Walleij
