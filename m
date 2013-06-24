@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab3FXRDU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:03:20 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:44588 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab3FXRDS (ORCPT
+	id S1752961Ab3FXREj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:04:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11264 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab3FXREi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:03:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130624074453.24481.96622.stgit@aruna-ThinkPad-T420>
-References: <20130624074453.24481.96622.stgit@aruna-ThinkPad-T420>
-Date: Mon, 24 Jun 2013 10:03:18 -0700
-X-Google-Sender-Auth: YxuUnaA-g-1qqv74obZSDw3nQSE
-Message-ID: <CAGXu5jJpQJCc5OU6M-CvyvLAMyOOb=pxDMh586deYADxff23hQ@mail.gmail.com>
-Subject: Re: [PATCH] pstore: Fail to unlink if a driver has not defined pstore_erase
-From: Kees Cook <keescook@chromium.org>
-To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>, jkenisto@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, ananth@in.ibm.com, mahesh@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Jun 2013 13:04:38 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XqNnylozy48A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pkicDPhlfI0A:10 a=xfBPjy3jFk37ySpaGwwA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1372093476.18733.170.camel@gandalf.local.home>
+Subject: Re: frequent softlockups with 3.10rc6.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Date: Mon, 24 Jun 2013 13:04:36 -0400
+In-Reply-To: <20130624165140.GB8572@redhat.com>
+References: <20130622173129.GA29375@redhat.com>
+	 <20130622215905.GA28238@redhat.com> <20130623143634.GA2000@redhat.com>
+	 <20130623150603.GA32313@redhat.com> <20130623160452.GA11740@redhat.com>
+	 <20130624020014.GB12811@redhat.com> <20130624143928.GA20659@redhat.com>
+	 <1372085549.18733.162.camel@gandalf.local.home>
+	 <20130624160012.GB5993@redhat.com>
+	 <1372091079.18733.168.camel@gandalf.local.home>
+	 <20130624165140.GB8572@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 12:48 AM, Aruna Balakrishnaiah
-<aruna@linux.vnet.ibm.com> wrote:
-> pstore_erase is used to erase the record from the persistent store.
-> So if a driver has not defined pstore_erase callback return
-> -EINVAL instead of unlinking a file as deleting the file without
-> erasing its record in persistent store will give a wrong impression
-> to customers.
+On Mon, 2013-06-24 at 12:51 -0400, Dave Jones wrote:
+> On Mon, Jun 24, 2013 at 12:24:39PM -0400, Steven Rostedt wrote:
+> 
+>  > > Ah, this is the first victim of my new 'check sanity of nodes during list walks' patch.
+>  > > It's doing the same prev->next next->prev checking as list_add and friends.
+>  > > I'm looking at getting it into shape for a 3.12 merge after some other preparatory patches
+>  > > go into 3.11
+>  > 
+>  > OK, and you may need to make an exception for the ring buffer. To do a
+>  > lockless swap out of the reader page for one of the pages in the buffer,
+>  > it uses the 2 LSB as flags. Notice the "next=ffff880243288001", that "1"
+>  > is a flag that states the next page is the "header" page (next to be
+>  > read). We use cmpxchg to update the pages to handle races between the
+>  > reader and writer.
+> 
+> I just had a plumber come visit to replace my toilet.
+> I think even he would say "dude, gross" about that hack.
+> 
 
-This is probably true -- I originally liked the idea of being able to
-clean up the entries, regardless of their storage state, but you're
-probably right. They shouldn't be deleted unless they can _actually_
-be deleted.
+Wow, that hack made you so sick you needed to replace your toilet?
 
-So, I support this change, but I think the return needs to be
-different. EINVAL isn't listed, for example, in unlink(2)'s man-page.
-Perhaps EROFS, EACCESS, or EPERM?
+Note, the idea of using the 2 LSB bits of pointers came from -rt. Where
+we do the same with the rt_mutex owner.
 
--Kees
-
->
-> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-> ---
->  fs/pstore/inode.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-> index e4bcb2c..fa6339a 100644
-> --- a/fs/pstore/inode.c
-> +++ b/fs/pstore/inode.c
-> @@ -178,6 +178,8 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
->         if (p->psi->erase)
->                 p->psi->erase(p->type, p->id, p->count,
->                               dentry->d_inode->i_ctime, p->psi);
-> +       else
-> +               return -EINVAL;
->
->         return simple_unlink(dir, dentry);
->  }
->
+-- Steve
 
 
-
---
-Kees Cook
-Chrome OS Security
