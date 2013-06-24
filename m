@@ -1,114 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab3FXP6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:58:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57087 "EHLO mx1.redhat.com"
+	id S1752590Ab3FXP7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:59:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:11625 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab3FXP6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:58:53 -0400
-Date: Mon, 24 Jun 2013 11:57:58 -0400
-From: Dave Jones <davej@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130624155758.GA5993@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrey Vagin <avagin@openvz.org>
-References: <20130620001212.GB12151@redhat.com>
- <20130620161652.GA4462@linux.vnet.ibm.com>
- <20130621151119.GA1596@redhat.com>
- <20130621195949.GA15519@redhat.com>
- <20130622013731.GA22918@redhat.com>
- <20130622173129.GA29375@redhat.com>
- <20130622215905.GA28238@redhat.com>
- <20130623143634.GA2000@redhat.com>
- <20130623150603.GA32313@redhat.com>
- <20130623160452.GA11740@redhat.com>
+	id S1751869Ab3FXP7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 11:59:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,929,1363158000"; 
+   d="scan'208";a="321764122"
+Date: Mon, 24 Jun 2013 08:59:29 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Reilly Grant <grantr@vmware.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] xhci: Compute last_ctx from complete set of configured
+ endpoints.
+Message-ID: <20130624155758.GB5290@xanatos>
+References: <1371589753-23277-1-git-send-email-grantr@vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130623160452.GA11740@redhat.com>
+In-Reply-To: <1371589753-23277-1-git-send-email-grantr@vmware.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23, 2013 at 06:04:52PM +0200, Oleg Nesterov wrote:
- > > [11054.897670] BUG: soft lockup - CPU#2 stuck for 22s! [trinity-child2:14482]
- > > [11054.898503] Modules linked in: bridge stp snd_seq_dummy tun fuse hidp bnep rfcomm can_raw ipt_ULOG can_bcm nfnetlink af_rxrpc llc2 rose caif_socket caif can netrom appletalk af_802154 scsi_transport_iscsi nfc pppoe pppox ppp_generic slhc ipx p8023 psnap p8022 llc ax25 irda crc_ccitt af_key bluetooth rfkill x25 rds atm phonet coretemp hwmon kvm_intel kvm snd_hda_codec_realtek crc32c_intel ghash_clmulni_intel snd_hda_codec_hdmi microcode snd_hda_intel snd_hda_codec pcspkr snd_hwdep snd_seq snd_seq_device snd_pcm e1000e snd_page_alloc ptp snd_timer pps_core snd soundcore xfs libcrc32c
- > > [11054.905490] irq event stamp: 3857095
- > > [11054.905926] hardirqs last  enabled at (3857094): [<ffffffff816ed9a0>] restore_args+0x0/0x30
- > > [11054.906945] hardirqs last disabled at (3857095): [<ffffffff816f64aa>] apic_timer_interrupt+0x6a/0x80
- > > [11054.908054] softirqs last  enabled at (3856322): [<ffffffff810542e4>] __do_softirq+0x194/0x440
- > > [11054.909102] softirqs last disabled at (3856325): [<ffffffff8105474d>] irq_exit+0xcd/0xe0
- > > [11054.910088] CPU: 2 PID: 14482 Comm: trinity-child2 Not tainted 3.10.0-rc7+ #31
- > > [11054.912900] task: ffff8801ae44ca40 ti: ffff88021fe60000 task.ti: ffff88021fe60000
- > > [11054.913800] RIP: 0010:[<ffffffff81054201>]  [<ffffffff81054201>] __do_softirq+0xb1/0x440
- > 
- > OK, __do_softirq() again. But this doesn't necessarily mean it
- > is the offender.
- > 
- > Just in case, did you change /proc/sys/kernel/watchdog_thresh ?
- > This times the numbers look different.
- > 
- > Could you please do the following:
- > 
- > 	1. # cd /sys/kernel/debug/tracing
- > 	   # echo 0 >> options/function-trace
- > 	   # echo preemptirqsoff >> current_tracer
- > 
- > 	2. reproduce the lockup again
- > 
- > 	3. show the result of
- > 	   # cat trace
- 
-Not sure this is helpful, but..
+On Tue, Jun 18, 2013 at 02:09:13PM -0700, Reilly Grant wrote:
+> The context entries field of the slot context must be set to one more
+> than the highest endpoint index currently active. The previous logic
+> only included the set of endpoints currently being added, meaning that
+> if an endpoint where dropped then the field would be reset to 1,
+> deactivating all configured endpoints.
+> 
+> The xHCI spec is decidedly unclear on whether this field includes all
+> configured endpoints or only those being modified by a configure
+> endpoint command. My interpretation is the former as when the xHC writes
+> changes into the output device context array it must know how large it
+> is. It does not make sense for this field to only refer to the input
+> context.
 
-# tracer: preemptirqsoff
-#
-# preemptirqsoff latency trace v1.1.5 on 3.10.0-rc7+
-# --------------------------------------------------------------------
-# latency: 165015310 us, #4/4, CPU#1 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:4)
-#    -----------------
-#    | task: trinity-child1-3173 (uid:1000 nice:19 policy:0 rt_prio:0)
-#    -----------------
-#  => started at: vprintk_emit
-#  => ended at:   vprintk_emit
-#
-#
-#                  _------=> CPU#            
-#                 / _-----=> irqs-off        
-#                | / _----=> need-resched    
-#                || / _---=> hardirq/softirq 
-#                ||| / _--=> preempt-depth   
-#                |||| /     delay             
-#  cmd     pid   ||||| time  |   caller      
-#     \   /      |||||  \    |   /           
-trinity--3173    1dNh1    0us!: console_unlock <-vprintk_emit
-trinity--3173    1dNh1 165015310us : console_unlock <-vprintk_emit
-trinity--3173    1dNh1 165015311us+: stop_critical_timings <-vprintk_emit
-trinity--3173    1dNh1 165015315us : <stack trace>
- => console_unlock
- => vprintk_emit
- => printk
- => watchdog_timer_fn
- => __run_hrtimer
- => hrtimer_interrupt
- => smp_apic_timer_interrupt
- => apic_timer_interrupt
- => _raw_spin_lock
- => sync_inodes_sb
- => sync_inodes_one_sb
- => iterate_supers
- => sys_sync
- => tracesys
+My interpretation of the spec is that the last valid context index in
+the input context was supposed to be used as the last endpoint context
+that is valid for this command, not for the output context.
 
+Looking at the spec revision from 08/2012, there is an amendment to
+section 4.6.6.1 that makes this even more clear.  The part of the
+section that talks about what the hardware must do in order to evaluate
+each endpoint and update the output context says:
+
+"Set the Context Entries field in the Output Slot Context to the index
+of the last valid Endpoint Context in its Output Device Context
+structure, which shall be greater to or equal to the value of the
+Context Entries field in the Input Slot Context."
+
+That makes it fairly clear that software needs to set the last valid
+endpoint context index based on what endpoints are added or dropped in
+the input context, not which endpoints are still valid in the output
+context.
+
+So, no, I can't accept this patch.  If this fixes a real problem in some
+hardware, we'll add a quirk for that hardware.
+
+Sarah Sharp
+
+> ---
+>  drivers/usb/host/xhci.c | 52 +++++++++++++++++--------------------------------
+>  1 file changed, 18 insertions(+), 34 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index d8f640b..aa117d1 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -1571,12 +1571,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+>  	struct xhci_hcd *xhci;
+>  	struct xhci_container_ctx *in_ctx, *out_ctx;
+>  	struct xhci_input_control_ctx *ctrl_ctx;
+> -	struct xhci_slot_ctx *slot_ctx;
+> -	unsigned int last_ctx;
+>  	unsigned int ep_index;
+>  	struct xhci_ep_ctx *ep_ctx;
+>  	u32 drop_flag;
+> -	u32 new_add_flags, new_drop_flags, new_slot_info;
+> +	u32 new_add_flags, new_drop_flags;
+>  	int ret;
+>  
+>  	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
+> @@ -1617,24 +1615,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+>  	ctrl_ctx->add_flags &= cpu_to_le32(~drop_flag);
+>  	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
+>  
+> -	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx->add_flags));
+> -	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
+> -	/* Update the last valid endpoint context, if we deleted the last one */
+> -	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) >
+> -	    LAST_CTX(last_ctx)) {
+> -		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
+> -		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
+> -	}
+> -	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
+> -
+>  	xhci_endpoint_zero(xhci, xhci->devs[udev->slot_id], ep);
+>  
+> -	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
+> +	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
+>  			(unsigned int) ep->desc.bEndpointAddress,
+>  			udev->slot_id,
+>  			(unsigned int) new_drop_flags,
+> -			(unsigned int) new_add_flags,
+> -			(unsigned int) new_slot_info);
+> +			(unsigned int) new_add_flags);
+>  	return 0;
+>  }
+>  
+> @@ -1657,11 +1644,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+>  	struct xhci_hcd *xhci;
+>  	struct xhci_container_ctx *in_ctx, *out_ctx;
+>  	unsigned int ep_index;
+> -	struct xhci_slot_ctx *slot_ctx;
+>  	struct xhci_input_control_ctx *ctrl_ctx;
+>  	u32 added_ctxs;
+> -	unsigned int last_ctx;
+> -	u32 new_add_flags, new_drop_flags, new_slot_info;
+> +	u32 new_add_flags, new_drop_flags;
+>  	struct xhci_virt_device *virt_dev;
+>  	int ret = 0;
+>  
+> @@ -1676,7 +1661,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+>  		return -ENODEV;
+>  
+>  	added_ctxs = xhci_get_endpoint_flag(&ep->desc);
+> -	last_ctx = xhci_last_valid_endpoint(added_ctxs);
+>  	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {
+>  		/* FIXME when we have to issue an evaluate endpoint command to
+>  		 * deal with ep0 max packet size changing once we get the
+> @@ -1737,24 +1721,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+>  	 */
+>  	new_drop_flags = le32_to_cpu(ctrl_ctx->drop_flags);
+>  
+> -	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
+> -	/* Update the last valid endpoint context, if we just added one past */
+> -	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) <
+> -	    LAST_CTX(last_ctx)) {
+> -		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
+> -		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
+> -	}
+> -	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
+> -
+>  	/* Store the usb_device pointer for later use */
+>  	ep->hcpriv = udev;
+>  
+> -	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
+> +	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
+>  			(unsigned int) ep->desc.bEndpointAddress,
+>  			udev->slot_id,
+>  			(unsigned int) new_drop_flags,
+> -			(unsigned int) new_add_flags,
+> -			(unsigned int) new_slot_info);
+> +			(unsigned int) new_add_flags);
+>  	return 0;
+>  }
+>  
+> @@ -2698,10 +2672,20 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
+>  			ctrl_ctx->drop_flags == 0)
+>  		return 0;
+>  
+> -	xhci_dbg(xhci, "New Input Control Context:\n");
+> +	/* Update the last valid endpoint context. */
+>  	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
+> +	for (i = ARRAY_SIZE(virt_dev->eps) - 1; i >= 0; --i) {
+> +		if ((virt_dev->eps[i].ring &&
+> +		     !(le32_to_cpu(ctrl_ctx->drop_flags) & (1 << (i + 1)))) ||
+> +		    (le32_to_cpu(ctrl_ctx->add_flags) & (1 << (i + 1))))
+> +			break;
+> +	}
+> +	slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
+> +	slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(i + 1));
+> +
+> +	xhci_dbg(xhci, "New Input Control Context:\n");
+>  	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
+> -		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx->dev_info)));
+> +		     xhci_last_valid_endpoint(ctrl_ctx->add_flags));
+>  
+>  	ret = xhci_configure_endpoint(xhci, udev, NULL,
+>  			false, false);
+> -- 
+> 1.8.1.5
