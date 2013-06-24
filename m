@@ -1,147 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab3FXRcu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:32:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50418 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3FXRct (ORCPT
+	id S1752403Ab3FXRg2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:36:28 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:30324 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab3FXRg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:32:49 -0400
-Date: Mon, 24 Jun 2013 13:32:27 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: dri-devel@lists.freedesktop.org, chris@chris-wilson.co.uk,
-        imre.deak@intel.com, airlied@linux.ie, airlied@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: make compact dma scatter lists creation work
- with SWIOTLB backend.
-Message-ID: <20130624173227.GA24626@phenom.dumpdata.com>
-References: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
- <1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
- <20130624170912.GH5823@phenom.ffwll.local>
+	Mon, 24 Jun 2013 13:36:26 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <vinod.koul@intel.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Ludovic Desroches <ludovic.desroches@atmel.com>, <b.brezillon@overkiz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: [GIT PULL] dmaengine: at_hdmac: updates for 3.11
+Date: Mon, 24 Jun 2013 19:36:24 +0200
+Message-ID: <1372095384-1481-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624170912.GH5823@phenom.ffwll.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 07:09:12PM +0200, Daniel Vetter wrote:
-> On Mon, Jun 24, 2013 at 11:47:48AM -0400, Konrad Rzeszutek Wilk wrote:
-> > Git commit 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
-> > ("drm/i915: create compact dma scatter lists for gem objects") makes
-> > certain assumptions about the under laying DMA API that are not always
-> > correct.
-> > 
-> > On a ThinkPad X230 with an Intel HD 4000 with Xen during the bootup
-> > I see:
-> > 
-> > [drm:intel_pipe_set_base] *ERROR* pin & fence failed
-> > [drm:intel_crtc_set_config] *ERROR* failed to set mode on [CRTC:3], err = -28
-> > 
-> > Bit of debugging traced it down to dma_map_sg failing (in
-> > i915_gem_gtt_prepare_object) as some of the SG entries were huge (3MB).
-> > 
-> > That unfortunately are sizes that the SWIOTLB is incapable of handling -
-> > the maximum it can handle is a an entry of 512KB of virtual contiguous
-> > memory for its bounce buffer. (See IO_TLB_SEGSIZE).
-> > 
-> > Previous to the above mention git commit the SG entries were of 4KB, and
-> > the code introduced by above git commit squashed the CPU contiguous PFNs
-> > in one big virtual address provided to DMA API.
-> > 
-> > This patch is a simple semi-revert - were we emulate the old behavior
-> > if we detect that SWIOTLB is online. If it is not online then we continue
-> > on with the new compact scatter gather mechanism.
-> > 
-> > An alternative solution would be for the the '.get_pages' and the
-> > i915_gem_gtt_prepare_object to retry with smaller max gap of the
-> > amount of PFNs that can be combined together - but with this issue
-> > discovered during rc7 that might be too risky.
-> > 
-> > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > CC: Chris Wilson <chris@chris-wilson.co.uk>
-> > CC: Imre Deak <imre.deak@intel.com>
-> > CC: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > CC: David Airlie <airlied@linux.ie>
-> > CC: <dri-devel@lists.freedesktop.org>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> Two things:
+Vinod,
 
-Hey Daniel,
+As said previously, I have collected the patches that can reach sdma git tree
+for 3.11.
 
-> 
-> - SWIOTLB usage should seriously blow up all over the place in drm/i915.
->   We really rely on the everywhere else true fact that the pages and their
->   dma mapping point at the same backing storage.
+This is the patch series that has already been sent by Ludovic and myself.
+It is the part of the series that is dedicated to dmaengine. It is based on
+slave-dma/next. 
+This set of patches update the dt dma binding for at_hdmac since we need one
+more parameter. In order to keep backward compatibility, an existing cell will
+be used to add this parameter. Since the content of that cell will become a
+magic value due to the concatenation of the two parameters, it is time to
+use macros.
 
-It works. As in, it seems to work for just a normal desktop user. I don't 
-see much of dma_sync_* sprinkled around the drm/i915 so I would think that
-there are some issues would be hit as well - but at the first glance
-when using it on a laptop it looks OK.
- 
-> - How is this solved elsewhere when constructing sg tables? Or are we
->   really the only guys who try to construct such big sg entries? I
->   expected somewhat that the dma mapping backed would fill in the segment
->   limits accordingly, but I haven't found anything really on a quick
->   search.
+I have also stacked some cleanup and trivial patches that were arround for some
+time plus the more recent conversion to the clock routines with
+prepare/unprepare variants.
 
-The TTM layer (so radeon, nouveau) uses pci_alloc_coherent which will
-construct the dma mapped pages. That allows it to construct "SWIOTLB-approved"
-pages that won't need to go through dma_map/dma_unmap as they are
-already mapped and ready to go.
+Thanks, best regards,
 
-Coming back to your question - I think that i915 is the one that I've
-encountered.
-> 
-> 
-> Cheers, Daniel
-> 
-> > ---
-> >  drivers/gpu/drm/i915/i915_gem.c | 15 ++++++++++++---
-> >  1 file changed, 12 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-> > index 970ad17..7045f45 100644
-> > --- a/drivers/gpu/drm/i915/i915_gem.c
-> > +++ b/drivers/gpu/drm/i915/i915_gem.c
-> > @@ -1801,7 +1801,14 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
-> >  			gfp |= __GFP_NORETRY | __GFP_NOWARN | __GFP_NO_KSWAPD;
-> >  			gfp &= ~(__GFP_IO | __GFP_WAIT);
-> >  		}
-> > -
-> > +#ifdef CONFIG_SWIOTLB
-> > +		if (swiotlb_nr_tbl()) {
-> > +			st->nents++;
-> > +			sg_set_page(sg, page, PAGE_SIZE, 0);
-> > +			sg = sg_next(sg);
-> > +			continue;
-> > +		}
-> > +#endif
-> >  		if (!i || page_to_pfn(page) != last_pfn + 1) {
-> >  			if (i)
-> >  				sg = sg_next(sg);
-> > @@ -1812,8 +1819,10 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
-> >  		}
-> >  		last_pfn = page_to_pfn(page);
-> >  	}
-> > -
-> > -	sg_mark_end(sg);
-> > +#ifdef CONFIG_SWIOTLB
-> > +	if (!swiotlb_nr_tbl())
-> > +#endif
-> > +		sg_mark_end(sg);
-> >  	obj->pages = st;
-> >  
-> >  	if (i915_gem_object_needs_bit17_swizzle(obj))
-> > -- 
-> > 1.8.1.4
-> > 
-> 
-> -- 
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+The following changes since commit fdf3303434787a4ba00a37a6748eb68974c63b0d:
+
+  Merge branch 'for-linus' into next (2013-06-21 19:44:03 +0530)
+
+are available in the git repository at:
+
+
+  git://github.com/at91linux/linux-at91.git tags/at91-sdma
+
+for you to fetch changes up to 855a243e5cb50e7d81b1d1ba8cd9aae8aaa4de35:
+
+  dmaengine: at_hdmac: prepare clk before calling enable (2013-06-24 19:22:30 +0200)
+
+----------------------------------------------------------------
+dmaengine updates for Atmel AT91 driver: at_hdmac.c
+- Device Tree binding update adding the use of header file for coding FIFO
+  configuration values
+- a warning removal
+- use of clk_prepare_enable/disable_unprepare in driver
+
+----------------------------------------------------------------
+Boris BREZILLON (1):
+      dmaengine: at_hdmac: prepare clk before calling enable
+
+Ludovic Desroches (2):
+      ARM: at91: dt: add header to define at_hdmac configuration
+      dmaengine: at_hdmac: add FIFO configuration parameter to DMA DT binding
+
+Nicolas Ferre (2):
+      dmaengine: at_hdmac: remove unsuded atc_cleanup_descriptors()
+      dmaengine/trivial: at_hdmac: add curly brackets to if/else expressions
+
+ .../devicetree/bindings/dma/atmel-dma.txt          |  7 +-
+ drivers/dma/at_hdmac.c                             | 79 ++++++++++------------
+ include/dt-bindings/dma/at91.h                     | 27 ++++++++
+ 3 files changed, 68 insertions(+), 45 deletions(-)
+ create mode 100644 include/dt-bindings/dma/at91.h
+
+-- 
+Nicolas Ferre
