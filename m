@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab3FXTc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:32:28 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47562 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab3FXTcI (ORCPT
+	id S1752094Ab3FXTcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:32:42 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:54154 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab3FXTck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:32:08 -0400
+	Mon, 24 Jun 2013 15:32:40 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@freedesktop.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: [PATCH 29/32] rcu: delete __cpuinit usage from all rcu files
-Date: Mon, 24 Jun 2013 15:30:34 -0400
-Message-ID: <1372102237-8757-30-git-send-email-paul.gortmaker@windriver.com>
+        Fenghua Yu <fenghua.yu@intel.com>, <lm-sensors@lm-sensors.org>
+Subject: [PATCH 26/32] hwmon: delete __cpuinit usage from all hwmon files
+Date: Mon, 24 Jun 2013 15:30:31 -0400
+Message-ID: <1372102237-8757-27-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
@@ -36,14 +34,13 @@ After a discussion on LKML[1] it was decided that cpuinit should go
 the way of devinit and be phased out.  Once all the users are gone,
 we can then finally remove the macros themselves from linux/init.h.
 
-This removes all the drivers/rcu uses of the __cpuinit macros
+This removes all the drivers/hwmon uses of the __cpuinit macros
 from all C files.
 
 [1] https://lkml.org/lkml/2013/5/20/589
 
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@freedesktop.org>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: lm-sensors@lm-sensors.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
 
@@ -55,121 +52,197 @@ Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
  that is fine too, as the commits can largely be treated independently.
  For more information, please see: https://lkml.org/lkml/2013/6/20/513 ]
 
- kernel/rcutorture.c     | 6 +++---
- kernel/rcutree.c        | 6 +++---
- kernel/rcutree.h        | 4 ++--
- kernel/rcutree_plugin.h | 6 +++---
- 4 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/hwmon/coretemp.c    | 39 ++++++++++++++++++---------------------
+ drivers/hwmon/via-cputemp.c |  8 ++++----
+ 2 files changed, 22 insertions(+), 25 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index b1fa551..f4871e5 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -1476,7 +1476,7 @@ rcu_torture_shutdown(void *arg)
-  * Execute random CPU-hotplug operations at the interval specified
-  * by the onoff_interval.
-  */
--static int __cpuinit
-+static int
- rcu_torture_onoff(void *arg)
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index ade35cf..2e5e2dc 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -195,7 +195,7 @@ struct tjmax {
+ 	int tjmax;
+ };
+ 
+-static const struct tjmax __cpuinitconst tjmax_table[] = {
++static const struct tjmax tjmax_table[] = {
+ 	{ "CPU  230", 100000 },		/* Model 0x1c, stepping 2	*/
+ 	{ "CPU  330", 125000 },		/* Model 0x1c, stepping 2	*/
+ 	{ "CPU CE4110", 110000 },	/* Model 0x1c, stepping 10 Sodaville */
+@@ -211,7 +211,7 @@ struct tjmax_model {
+ 
+ #define ANY 0xff
+ 
+-static const struct tjmax_model __cpuinitconst tjmax_model_table[] = {
++static const struct tjmax_model tjmax_model_table[] = {
+ 	{ 0x1c, 10, 100000 },	/* D4xx, K4xx, N4xx, D5xx, K5xx, N5xx */
+ 	{ 0x1c, ANY, 90000 },	/* Z5xx, N2xx, possibly others
+ 				 * Note: Also matches 230 and 330,
+@@ -226,8 +226,7 @@ static const struct tjmax_model __cpuinitconst tjmax_model_table[] = {
+ 	{ 0x36, ANY, 100000 },	/* Atom Cedar Trail/Cedarview (N2xxx, D2xxx) */
+ };
+ 
+-static int __cpuinit adjust_tjmax(struct cpuinfo_x86 *c, u32 id,
+-				  struct device *dev)
++static int adjust_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
  {
- 	int cpu;
-@@ -1558,7 +1558,7 @@ rcu_torture_onoff(void *arg)
+ 	/* The 100C is default for both mobile and non mobile CPUs */
+ 
+@@ -317,8 +316,7 @@ static int __cpuinit adjust_tjmax(struct cpuinfo_x86 *c, u32 id,
+ 	return tjmax;
+ }
+ 
+-static int __cpuinit get_tjmax(struct cpuinfo_x86 *c, u32 id,
+-			       struct device *dev)
++static int get_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
+ {
+ 	int err;
+ 	u32 eax, edx;
+@@ -367,8 +365,8 @@ static int create_name_attr(struct platform_data *pdata,
+ 	return device_create_file(dev, &pdata->name_attr);
+ }
+ 
+-static int __cpuinit create_core_attrs(struct temp_data *tdata,
+-				       struct device *dev, int attr_no)
++static int create_core_attrs(struct temp_data *tdata, struct device *dev,
++			     int attr_no)
+ {
+ 	int err, i;
+ 	static ssize_t (*const rd_ptr[TOTAL_ATTRS]) (struct device *dev,
+@@ -401,7 +399,7 @@ exit_free:
+ }
+ 
+ 
+-static int __cpuinit chk_ucode_version(unsigned int cpu)
++static int chk_ucode_version(unsigned int cpu)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ 
+@@ -417,7 +415,7 @@ static int __cpuinit chk_ucode_version(unsigned int cpu)
  	return 0;
  }
  
--static int __cpuinit
-+static int
- rcu_torture_onoff_init(void)
+-static struct platform_device __cpuinit *coretemp_get_pdev(unsigned int cpu)
++static struct platform_device *coretemp_get_pdev(unsigned int cpu)
  {
- 	int ret;
-@@ -1601,7 +1601,7 @@ static void rcu_torture_onoff_cleanup(void)
-  * CPU-stall kthread.  It waits as specified by stall_cpu_holdoff, then
-  * induces a CPU stall for the time specified by stall_cpu.
-  */
--static int __cpuinit rcu_torture_stall(void *args)
-+static int rcu_torture_stall(void *args)
- {
- 	unsigned long stop_at;
- 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e08abb9..068de3a 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -2910,7 +2910,7 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
-  * can accept some slop in the rsp->completed access due to the fact
-  * that this CPU cannot possibly have any RCU callbacks in flight yet.
-  */
--static void __cpuinit
-+static void
- rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
- {
- 	unsigned long flags;
-@@ -2962,7 +2962,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
- 	mutex_unlock(&rsp->onoff_mutex);
+ 	u16 phys_proc_id = TO_PHYS_ID(cpu);
+ 	struct pdev_entry *p;
+@@ -434,8 +432,7 @@ static struct platform_device __cpuinit *coretemp_get_pdev(unsigned int cpu)
+ 	return NULL;
  }
  
--static void __cpuinit rcu_prepare_cpu(int cpu)
-+static void rcu_prepare_cpu(int cpu)
+-static struct temp_data __cpuinit *init_temp_data(unsigned int cpu,
+-						  int pkg_flag)
++static struct temp_data *init_temp_data(unsigned int cpu, int pkg_flag)
  {
- 	struct rcu_state *rsp;
+ 	struct temp_data *tdata;
  
-@@ -2974,7 +2974,7 @@ static void __cpuinit rcu_prepare_cpu(int cpu)
- /*
-  * Handle CPU online/offline notification events.
-  */
--static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
-+static int rcu_cpu_notify(struct notifier_block *self,
- 				    unsigned long action, void *hcpu)
- {
- 	long cpu = (long)hcpu;
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 4a39d36..b383258 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -521,10 +521,10 @@ static void invoke_rcu_callbacks_kthread(void);
- static bool rcu_is_callbacks_kthread(void);
- #ifdef CONFIG_RCU_BOOST
- static void rcu_preempt_do_callbacks(void);
--static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
-+static int rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
- 						 struct rcu_node *rnp);
- #endif /* #ifdef CONFIG_RCU_BOOST */
--static void __cpuinit rcu_prepare_kthreads(int cpu);
-+static void rcu_prepare_kthreads(int cpu);
- static void rcu_cleanup_after_idle(int cpu);
- static void rcu_prepare_for_idle(int cpu);
- static void rcu_idle_count_callbacks_posted(void);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 63098a5..769e12e 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1352,7 +1352,7 @@ static void rcu_preempt_boost_start_gp(struct rcu_node *rnp)
-  * already exist.  We only create this kthread for preemptible RCU.
-  * Returns zero if all is well, a negated errno otherwise.
-  */
--static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
-+static int rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
- 						 struct rcu_node *rnp)
- {
- 	int rnp_index = rnp - &rsp->node[0];
-@@ -1507,7 +1507,7 @@ static int __init rcu_spawn_kthreads(void)
+@@ -453,8 +450,8 @@ static struct temp_data __cpuinit *init_temp_data(unsigned int cpu,
+ 	return tdata;
  }
- early_initcall(rcu_spawn_kthreads);
  
--static void __cpuinit rcu_prepare_kthreads(int cpu)
-+static void rcu_prepare_kthreads(int cpu)
+-static int __cpuinit create_core_data(struct platform_device *pdev,
+-				unsigned int cpu, int pkg_flag)
++static int create_core_data(struct platform_device *pdev, unsigned int cpu,
++			    int pkg_flag)
  {
- 	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
- 	struct rcu_node *rnp = rdp->mynode;
-@@ -1549,7 +1549,7 @@ static int __init rcu_scheduler_really_started(void)
+ 	struct temp_data *tdata;
+ 	struct platform_data *pdata = platform_get_drvdata(pdev);
+@@ -524,7 +521,7 @@ exit_free:
+ 	return err;
  }
- early_initcall(rcu_scheduler_really_started);
  
--static void __cpuinit rcu_prepare_kthreads(int cpu)
-+static void rcu_prepare_kthreads(int cpu)
+-static void __cpuinit coretemp_add_core(unsigned int cpu, int pkg_flag)
++static void coretemp_add_core(unsigned int cpu, int pkg_flag)
  {
+ 	struct platform_device *pdev = coretemp_get_pdev(cpu);
+ 	int err;
+@@ -607,7 +604,7 @@ static struct platform_driver coretemp_driver = {
+ 	.remove = coretemp_remove,
+ };
+ 
+-static int __cpuinit coretemp_device_add(unsigned int cpu)
++static int coretemp_device_add(unsigned int cpu)
+ {
+ 	int err;
+ 	struct platform_device *pdev;
+@@ -651,7 +648,7 @@ exit:
+ 	return err;
  }
+ 
+-static void __cpuinit coretemp_device_remove(unsigned int cpu)
++static void coretemp_device_remove(unsigned int cpu)
+ {
+ 	struct pdev_entry *p, *n;
+ 	u16 phys_proc_id = TO_PHYS_ID(cpu);
+@@ -667,7 +664,7 @@ static void __cpuinit coretemp_device_remove(unsigned int cpu)
+ 	mutex_unlock(&pdev_list_mutex);
+ }
+ 
+-static bool __cpuinit is_any_core_online(struct platform_data *pdata)
++static bool is_any_core_online(struct platform_data *pdata)
+ {
+ 	int i;
+ 
+@@ -681,7 +678,7 @@ static bool __cpuinit is_any_core_online(struct platform_data *pdata)
+ 	return false;
+ }
+ 
+-static void __cpuinit get_core_online(unsigned int cpu)
++static void get_core_online(unsigned int cpu)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ 	struct platform_device *pdev = coretemp_get_pdev(cpu);
+@@ -723,7 +720,7 @@ static void __cpuinit get_core_online(unsigned int cpu)
+ 	coretemp_add_core(cpu, 0);
+ }
+ 
+-static void __cpuinit put_core_offline(unsigned int cpu)
++static void put_core_offline(unsigned int cpu)
+ {
+ 	int i, indx;
+ 	struct platform_data *pdata;
+@@ -771,7 +768,7 @@ static void __cpuinit put_core_offline(unsigned int cpu)
+ 		coretemp_device_remove(cpu);
+ }
+ 
+-static int __cpuinit coretemp_cpu_callback(struct notifier_block *nfb,
++static int coretemp_cpu_callback(struct notifier_block *nfb,
+ 				 unsigned long action, void *hcpu)
+ {
+ 	unsigned int cpu = (unsigned long) hcpu;
+diff --git a/drivers/hwmon/via-cputemp.c b/drivers/hwmon/via-cputemp.c
+index 76f157b..38944e9 100644
+--- a/drivers/hwmon/via-cputemp.c
++++ b/drivers/hwmon/via-cputemp.c
+@@ -221,7 +221,7 @@ struct pdev_entry {
+ static LIST_HEAD(pdev_list);
+ static DEFINE_MUTEX(pdev_list_mutex);
+ 
+-static int __cpuinit via_cputemp_device_add(unsigned int cpu)
++static int via_cputemp_device_add(unsigned int cpu)
+ {
+ 	int err;
+ 	struct platform_device *pdev;
+@@ -262,7 +262,7 @@ exit:
+ 	return err;
+ }
+ 
+-static void __cpuinit via_cputemp_device_remove(unsigned int cpu)
++static void via_cputemp_device_remove(unsigned int cpu)
+ {
+ 	struct pdev_entry *p;
+ 
+@@ -279,8 +279,8 @@ static void __cpuinit via_cputemp_device_remove(unsigned int cpu)
+ 	mutex_unlock(&pdev_list_mutex);
+ }
+ 
+-static int __cpuinit via_cputemp_cpu_callback(struct notifier_block *nfb,
+-				 unsigned long action, void *hcpu)
++static int via_cputemp_cpu_callback(struct notifier_block *nfb,
++				    unsigned long action, void *hcpu)
+ {
+ 	unsigned int cpu = (unsigned long) hcpu;
  
 -- 
 1.8.1.2
