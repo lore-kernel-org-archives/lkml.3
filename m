@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab3FXTiD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:38:03 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47295 "EHLO
+	id S1751746Ab3FXTiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:38:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47280 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3FXTbb (ORCPT
+	with ESMTP id S1751509Ab3FXTba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:31:31 -0400
+	Mon, 24 Jun 2013 15:31:30 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Richard Kuo <rkuo@codeaurora.org>, <linux-hexagon@vger.kernel.org>
-Subject: [PATCH 18/32] hexagon: delete __cpuinit usage from all hexagon files
-Date: Mon, 24 Jun 2013 15:30:23 -0400
-Message-ID: <1372102237-8757-19-git-send-email-paul.gortmaker@windriver.com>
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, <linux-cris-kernel@axis.com>
+Subject: [PATCH 16/32] cris: delete __cpuinit usage from all cris files
+Date: Mon, 24 Jun 2013 15:30:21 -0400
+Message-ID: <1372102237-8757-17-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
@@ -42,14 +43,15 @@ As an intermediate step, we intend to turn the linux/init.h cpuinit
 content into no-ops as early as possible, since that will get rid
 of these warnings.  In any case, they are temporary and harmless.
 
-This removes all the arch/hexagon uses of the __cpuinit macros from
-all C files.  Currently hexagon does not have any __CPUINIT used in
+This removes all the arch/cris uses of the __cpuinit macros from
+all C files.  Currently cris does not have any __CPUINIT used in
 assembly files.
 
 [1] https://lkml.org/lkml/2013/5/20/589
 
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-hexagon@vger.kernel.org
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
 
@@ -61,45 +63,22 @@ Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
  that is fine too, as the commits can largely be treated independently.
  For more information, please see: https://lkml.org/lkml/2013/6/20/513 ]
 
- arch/hexagon/kernel/setup.c | 2 +-
- arch/hexagon/kernel/smp.c   | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/cris/arch-v32/kernel/smp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/hexagon/kernel/setup.c b/arch/hexagon/kernel/setup.c
-index bfe1331..29d1f1b 100644
---- a/arch/hexagon/kernel/setup.c
-+++ b/arch/hexagon/kernel/setup.c
-@@ -41,7 +41,7 @@ static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
- 
- int on_simulator;
- 
--void __cpuinit calibrate_delay(void)
-+void calibrate_delay(void)
- {
- 	loops_per_jiffy = thread_freq_mhz * 1000000 / HZ;
- }
-diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
-index 0e364ca..9faaa94 100644
---- a/arch/hexagon/kernel/smp.c
-+++ b/arch/hexagon/kernel/smp.c
-@@ -146,7 +146,7 @@ void __init smp_prepare_boot_cpu(void)
-  * to point to current thread info
+diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
+index cdd1202..fe8e603 100644
+--- a/arch/cris/arch-v32/kernel/smp.c
++++ b/arch/cris/arch-v32/kernel/smp.c
+@@ -197,7 +197,7 @@ int setup_profiling_timer(unsigned int multiplier)
   */
+ unsigned long cache_decay_ticks = 1;
  
--void __cpuinit start_secondary(void)
-+void start_secondary(void)
+-int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
++int __cpu_up(unsigned int cpu, struct task_struct *tidle)
  {
- 	unsigned int cpu;
- 	unsigned long thread_ptr;
-@@ -194,7 +194,7 @@ void __cpuinit start_secondary(void)
-  * maintains control until "cpu_online(cpu)" is set.
-  */
- 
--int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
-+int __cpu_up(unsigned int cpu, struct task_struct *idle)
- {
- 	struct thread_info *thread = (struct thread_info *)idle->stack;
- 	void *stack_start;
+ 	smp_boot_one_cpu(cpu, tidle);
+ 	return cpu_online(cpu) ? 0 : -ENOSYS;
 -- 
 1.8.1.2
 
