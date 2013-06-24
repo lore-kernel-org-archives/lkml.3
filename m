@@ -1,86 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3FXR2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:28:49 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:36258 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab3FXR2p (ORCPT
+	id S1752484Ab3FXRcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:32:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50418 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3FXRct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:28:45 -0400
-Message-ID: <51C88103.8090301@linux.vnet.ibm.com>
-Date: Mon, 24 Jun 2013 22:55:23 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 24 Jun 2013 13:32:49 -0400
+Date: Mon, 24 Jun 2013 13:32:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: dri-devel@lists.freedesktop.org, chris@chris-wilson.co.uk,
+        imre.deak@intel.com, airlied@linux.ie, airlied@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: make compact dma scatter lists creation work
+ with SWIOTLB backend.
+Message-ID: <20130624173227.GA24626@phenom.dumpdata.com>
+References: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
+ <1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
+ <20130624170912.GH5823@phenom.ffwll.local>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        walken@google.com, mingo@kernel.org, linux-arch@vger.kernel.org,
-        vincent.guittot@linaro.org, ddaney@caviumnetworks.com,
-        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, devel@driverdev.osuosl.org,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, namhyung@kernel.org,
-        tglx@linutronix.de, laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, oleg@redhat.com,
-        sbw@mit.edu, netdev@vger.kernel.org, tj@kernel.org,
-        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 25/45] staging/octeon: Use get/put_online_cpus_atomic()
- to prevent CPU offline
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com> <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com> <20130623181740.GB24256@kroah.com> <51C744A9.8000406@linux.vnet.ibm.com> <1372015045.3137.67.camel@joe-AO722>
-In-Reply-To: <1372015045.3137.67.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062417-8256-0000-0000-0000080FA0AC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624170912.GH5823@phenom.ffwll.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 12:47 AM, Joe Perches wrote:
-> On Mon, 2013-06-24 at 00:25 +0530, Srivatsa S. Bhat wrote:
->> On 06/23/2013 11:47 PM, Greg Kroah-Hartman wrote:
->>> On Sun, Jun 23, 2013 at 07:13:33PM +0530, Srivatsa S. Bhat wrote:
-> []
->>>> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-> []
->> Honestly, I don't know. Let's CC the author of that code (David Daney).
->> I wonder why get_maintainer.pl didn't generate his name for this file,
->> even though the entire file is almost made up of his commits alone!
+On Mon, Jun 24, 2013 at 07:09:12PM +0200, Daniel Vetter wrote:
+> On Mon, Jun 24, 2013 at 11:47:48AM -0400, Konrad Rzeszutek Wilk wrote:
+> > Git commit 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
+> > ("drm/i915: create compact dma scatter lists for gem objects") makes
+> > certain assumptions about the under laying DMA API that are not always
+> > correct.
+> > 
+> > On a ThinkPad X230 with an Intel HD 4000 with Xen during the bootup
+> > I see:
+> > 
+> > [drm:intel_pipe_set_base] *ERROR* pin & fence failed
+> > [drm:intel_crtc_set_config] *ERROR* failed to set mode on [CRTC:3], err = -28
+> > 
+> > Bit of debugging traced it down to dma_map_sg failing (in
+> > i915_gem_gtt_prepare_object) as some of the SG entries were huge (3MB).
+> > 
+> > That unfortunately are sizes that the SWIOTLB is incapable of handling -
+> > the maximum it can handle is a an entry of 512KB of virtual contiguous
+> > memory for its bounce buffer. (See IO_TLB_SEGSIZE).
+> > 
+> > Previous to the above mention git commit the SG entries were of 4KB, and
+> > the code introduced by above git commit squashed the CPU contiguous PFNs
+> > in one big virtual address provided to DMA API.
+> > 
+> > This patch is a simple semi-revert - were we emulate the old behavior
+> > if we detect that SWIOTLB is online. If it is not online then we continue
+> > on with the new compact scatter gather mechanism.
+> > 
+> > An alternative solution would be for the the '.get_pages' and the
+> > i915_gem_gtt_prepare_object to retry with smaller max gap of the
+> > amount of PFNs that can be combined together - but with this issue
+> > discovered during rc7 that might be too risky.
+> > 
+> > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > CC: Chris Wilson <chris@chris-wilson.co.uk>
+> > CC: Imre Deak <imre.deak@intel.com>
+> > CC: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > CC: David Airlie <airlied@linux.ie>
+> > CC: <dri-devel@lists.freedesktop.org>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> Because by default, get_maintainer looks for a matching
-> file entry in MAINTAINERS.  Failing that, it looks at
-> one year of git history.  In this case, no work has been
-> done on the file for quite awhile.
-> 
-> --git-blame can be added to the get_maintainer.pl command
-> line to look for % of authorship by line and commit count.
-> 
-> Adding --git-blame can take a long time to run, that's why
-> it's not on by default.  Also, very old history can give
-> invalid email addresses as people move around and email
-> addresses decay.
-> 
-> If you always want to find original authors, you could
-> use a .get_maintainer.conf file with --git-blame in it.
-> 
-> $ time ./scripts/get_maintainer.pl --git-blame -f drivers/staging/octeon/ethernet-tx.c
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:STAGING SUBSYSTEM,commits:4/16=25%)
-> David Daney <ddaney@caviumnetworks.com> (authored lines:711/725=98%,commits:13/16=81%)
-> Ralf Baechle <ralf@linux-mips.org> (commits:11/16=69%)
-> Eric Dumazet <eric.dumazet@gmail.com> (commits:2/16=12%)
-> Andrew Morton <akpm@linux-foundation.org> (commits:1/16=6%)
-> devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM)
-> linux-kernel@vger.kernel.org (open list)
-> 
-> real	0m16.853s
-> user	0m16.088s
-> sys	0m0.444s
-> 
-> 
+> Two things:
 
-Oh, ok.. Thanks for the explanation and the tip!
+Hey Daniel,
 
-Regards,
-Srivatsa S. Bhat
+> 
+> - SWIOTLB usage should seriously blow up all over the place in drm/i915.
+>   We really rely on the everywhere else true fact that the pages and their
+>   dma mapping point at the same backing storage.
 
+It works. As in, it seems to work for just a normal desktop user. I don't 
+see much of dma_sync_* sprinkled around the drm/i915 so I would think that
+there are some issues would be hit as well - but at the first glance
+when using it on a laptop it looks OK.
+ 
+> - How is this solved elsewhere when constructing sg tables? Or are we
+>   really the only guys who try to construct such big sg entries? I
+>   expected somewhat that the dma mapping backed would fill in the segment
+>   limits accordingly, but I haven't found anything really on a quick
+>   search.
+
+The TTM layer (so radeon, nouveau) uses pci_alloc_coherent which will
+construct the dma mapped pages. That allows it to construct "SWIOTLB-approved"
+pages that won't need to go through dma_map/dma_unmap as they are
+already mapped and ready to go.
+
+Coming back to your question - I think that i915 is the one that I've
+encountered.
+> 
+> 
+> Cheers, Daniel
+> 
+> > ---
+> >  drivers/gpu/drm/i915/i915_gem.c | 15 ++++++++++++---
+> >  1 file changed, 12 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> > index 970ad17..7045f45 100644
+> > --- a/drivers/gpu/drm/i915/i915_gem.c
+> > +++ b/drivers/gpu/drm/i915/i915_gem.c
+> > @@ -1801,7 +1801,14 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
+> >  			gfp |= __GFP_NORETRY | __GFP_NOWARN | __GFP_NO_KSWAPD;
+> >  			gfp &= ~(__GFP_IO | __GFP_WAIT);
+> >  		}
+> > -
+> > +#ifdef CONFIG_SWIOTLB
+> > +		if (swiotlb_nr_tbl()) {
+> > +			st->nents++;
+> > +			sg_set_page(sg, page, PAGE_SIZE, 0);
+> > +			sg = sg_next(sg);
+> > +			continue;
+> > +		}
+> > +#endif
+> >  		if (!i || page_to_pfn(page) != last_pfn + 1) {
+> >  			if (i)
+> >  				sg = sg_next(sg);
+> > @@ -1812,8 +1819,10 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
+> >  		}
+> >  		last_pfn = page_to_pfn(page);
+> >  	}
+> > -
+> > -	sg_mark_end(sg);
+> > +#ifdef CONFIG_SWIOTLB
+> > +	if (!swiotlb_nr_tbl())
+> > +#endif
+> > +		sg_mark_end(sg);
+> >  	obj->pages = st;
+> >  
+> >  	if (i915_gem_object_needs_bit17_swizzle(obj))
+> > -- 
+> > 1.8.1.4
+> > 
+> 
+> -- 
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
