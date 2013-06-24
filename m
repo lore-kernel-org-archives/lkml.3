@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab3FXLc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 07:32:26 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:57058 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3FXLcZ (ORCPT
+	id S1752473Ab3FXLeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 07:34:20 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:59663 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab3FXLeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 07:32:25 -0400
+	Mon, 24 Jun 2013 07:34:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <1371737145-27662-3-git-send-email-patrice.chotard.st@gmail.com>
+In-Reply-To: <1371737145-27662-4-git-send-email-patrice.chotard.st@gmail.com>
 References: <1371737145-27662-1-git-send-email-patrice.chotard.st@gmail.com>
-	<1371737145-27662-3-git-send-email-patrice.chotard.st@gmail.com>
-Date: Mon, 24 Jun 2013 13:32:24 +0200
-Message-ID: <CACRpkdZR3R728=zwZYeddPg6O2cd7o0oF5CkGq-8wX5LsXe=BQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] pinctrl: abx500: fix abx500_gpio_get()
+	<1371737145-27662-4-git-send-email-patrice.chotard.st@gmail.com>
+Date: Mon, 24 Jun 2013 13:34:18 +0200
+Message-ID: <CACRpkdbhoVixuzJzyxNMo9K5+XOmyaRVQGXbiQcM5_GZmEoBgQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] pinctrl: abx500: factorize code
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Patrice Chotard <patrice.chotard.st@gmail.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -30,16 +30,12 @@ On Thu, Jun 20, 2013 at 4:05 PM,  <patrice.chotard.st@gmail.com> wrote:
 
 > From: Patrice Chotard <patrice.chotard@st.com>
 >
-> _ allow to get output GPIO value
-> _ as there is no GPIO0 on ABX500, use correct offset with
->   abx500_gpio_get_bit()
-
-Pls use a common dash "-" to prefix the items instead of
-_underscore.
-
+> Factorize code by adding abx500_pullud_supported()
+> which improve code readability.
+>
 > Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
 
-Patch applied (after fixing commit message).
+Patch applied, thanks!
 
 Yours,
 Linus Walleij
