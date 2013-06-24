@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab3FXTMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:12:30 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:40460 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab3FXTM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:12:29 -0400
-Date: Mon, 24 Jun 2013 21:12:03 +0200
-From: Marcus Gelderie <redmnic@gmail.com>
-To: john.stultz@linaro.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Race condition in time/alarmtimer.c
-Message-ID: <20130624191202.GA22643@cantor.Speedport_W_503V_Typ_C>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752879Ab3FXTM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:12:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13569 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752522Ab3FXTM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 15:12:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,930,1363158000"; 
+   d="scan'208";a="334806657"
+Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock
+ acquisition
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Alex Shi <alex.shi@intel.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <51C894C3.4040407@hurleysoftware.com>
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com>
+	 <1371858700.22432.5.camel@schen9-DESK>
+	 <51C558E2.1040108@hurleysoftware.com>
+	 <1372017836.1797.14.camel@buesod1.americas.hpqcorp.net>
+	 <1372093876.22432.34.camel@schen9-DESK>
+	 <51C894C3.4040407@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Jun 2013 12:13:00 -0700
+Message-ID: <1372101180.22432.58.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2013-06-24 at 14:49 -0400, Peter Hurley wrote:
+> On 06/24/2013 01:11 PM, Tim Chen wrote:
+> > On Sun, 2013-06-23 at 13:03 -0700, Davidlohr Bueso wrote:
+> >> On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
+> >>> On 06/21/2013 07:51 PM, Tim Chen wrote:
+> >>>>
+> >>>> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+> >>>> +{
+> >>>> +	int retval = true;
+> >>>> +
+> >>>> +	/* Spin only if active writer running */
+> >>>> +	if (!sem->owner)
+> >>>> +		return false;
+> >>>> +
+> >>>> +	rcu_read_lock();
+> >>>> +	if (sem->owner)
+> >>>> +		retval = sem->owner->on_cpu;
+> >>>                            ^^^^^^^^^^^^^^^^^^
+> >>>
+> >>> Why is this a safe dereference? Could not another cpu have just
+> >>> dropped the sem (and thus set sem->owner to NULL and oops)?
+> >>>
+> >
+> > The rcu read lock should protect against sem->owner being NULL.
+> 
+> It doesn't.
+> 
+> Here's the comment from mutex_spin_on_owner():
+> 
+>    /*
+>     * Look out! "owner" is an entirely speculative pointer
+>     * access and not reliable.
+>     */
+> 
 
-there seems to be a race condition in kernel/time/alarmtimer.c
+In mutex_spin_on_owner, after rcu_read_lock, the owner_running()
+function de-references the owner pointer.  The rcu_read_lock prevents
+owner from getting freed. The comment's intention is to warn that
+owner->on_cpu may not be reliable.
 
-More specifically, the following function (line numbers correspond to actual file):
+I'm using similar logic in rw-sem.
 
-584 static int alarmtimer_do_nsleep(struct alarm *alarm, ktime_t absexp)
-585 {
-586         alarm->data = (void *)current;
-587         do {
-588                 set_current_state(TASK_INTERRUPTIBLE);
-589                 alarm_start(alarm, absexp);
-590                 if (likely(alarm->data))
-591                         schedule();
-592 
-593                 alarm_cancel(alarm);
-594         } while (alarm->data && !signal_pending(current));
-595 
-596         __set_current_state(TASK_RUNNING);
-597 
-598         return (alarm->data == NULL);
-599 }
-
-has a race: If the task is preempted after set_current_state(TASK_INTERRUPTIBLE) 
-but before the alarm is started in the next line, the task never wakes up.
-
-Swapping both lines is not an option either, because then the alarm might trigger before 
-the thread sets itself to TASK_INTERRUPTIBLE, thereby loosing the wakeup. 
-
-A spinlock would disable preemption and protect alarm->data against the race from another CPU. 
-We could wrap lines 588 and 589 with a spin lock. Then the wakeup code would also aquire the 
-lock, of course. The lock could be attached to struct alarm. 
-
-An alternative would be a waitqueue, of course.
-
-If folks agree with me, I will provide a patch.
+Tim
 
 
-Cheers
-Marcus
+
