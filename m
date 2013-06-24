@@ -1,161 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab3FXHXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 03:23:35 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:45870 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab3FXHXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 03:23:34 -0400
-X-IronPort-AV: E=Sophos;i="4.87,927,1363104000"; 
-   d="scan'208";a="7658158"
-Message-ID: <51C7F4A3.6060307@cn.fujitsu.com>
-Date: Mon, 24 Jun 2013 15:26:27 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752934Ab3FXH0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 03:26:52 -0400
+Received: from 8bytes.org ([85.214.48.195]:38882 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752908Ab3FXH0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 03:26:51 -0400
+Date: Mon, 24 Jun 2013 09:26:48 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: suravee.suthikulpanit@amd.com, iommu@lists.linux-foundation.org,
+        ddutile@redhat.com, alex.williamson@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] iommu/amd: IOMMU Error Reporting/Handling/Filtering
+Message-ID: <20130624072648.GQ11309@8bytes.org>
+References: <1369250155-12226-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20130621151459.GK11309@8bytes.org>
+ <20130621155933.GA24385@pd.tnic>
+ <20130621162455.GN11309@8bytes.org>
+ <20130621173625.GH22006@pd.tnic>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618020357.GZ32663@mtj.dyndns.org> <51BFF464.809@cn.fujitsu.com> <20130618172129.GH2767@htj.dyndns.org> <51C298B2.9060900@cn.fujitsu.com> <20130620061719.GA16114@mtj.dyndns.org> <51C41AB4.9070500@cn.fujitsu.com> <20130621182511.GA1763@htj.dyndns.org> <51C7C258.8070906@cn.fujitsu.com>
-In-Reply-To: <51C7C258.8070906@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/24 15:22:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/24 15:22:18,
-	Serialize complete at 2013/06/24 15:22:18
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130621173625.GH22006@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jun 24 09:26:50 2013
+X-DSPAM-Confidence: 0.9988
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51c7f4ba20866720514722
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 11:51 AM, Tang Chen wrote:
-> On 06/22/2013 02:25 AM, Tejun Heo wrote:
->> Hey,
->>
->> On Fri, Jun 21, 2013 at 05:19:48PM +0800, Tang Chen wrote:
->>>> * As memblock allocator can relocate itself. There's no point in
->>>> avoiding setting NUMA node while parsing and registering NUMA
->>>> topology. Just parse and register NUMA info and later tell it to
->>>> relocate itself out of hot-pluggable node. A number of patches in
->>>> the series is doing this dancing - carefully reordering NUMA
->>>> probing. No need to do that. It's really fragile thing to do.
->>>>
->>>> * Once you get the above out of the way, I don't think there are a lot
->>>> of permanent allocations in the way before NUMA is initialized.
->>>> Re-order the remaining ones if that's cleaner to do. If that gets
->>>> overly messy / fragile, copying them around or freeing and reloading
->>>> afterwards could be an option too.
->>>
->>> memblock allocator can relocate itself, but it cannot relocate the
->>> memory
->>
->> Hmmm... maybe I wasn't clear but that's the first bullet point above.
->>
->>> it allocated for users. There could be some pointers pointing to these
->>> memory ranges. If we do the relocation, how to update these pointers ?
->>
->> And the second. Can you please list what persistent areas are
->> allocated before numa info is configured into memblock? There
->
-> Hi tj,
->
-> My box is x86_64, and the memory layout is:
-> [ 0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-> [ 0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x307ffffff]
-> [ 0.000000] SRAT: Node 1 PXM 2 [mem 0x308000000-0x587ffffff] Hot Pluggable
-> [ 0.000000] SRAT: Node 2 PXM 3 [mem 0x588000000-0x7ffffffff] Hot Pluggable
->
->
-> I marked ranges reserved by memblock before we parse SRAT with flag 0x4.
-> There are about 14 ranges which is persistent after boot.
->
-> [ 0.000000] reserved[0x0] [0x00000000000000-0x0000000000ffff], 0x10000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0x1] [0x00000000093000-0x000000000fffff], 0x6d000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0x2] [0x00000001000000-0x00000002a9afff], 0x1a9b000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0x3] [0x00000030000000-0x00000037ffffff], 0x8000000
-> bytes flags: 0x4
-> ...
-> [ 0.000000] reserved[0x5] [0x0000006da81000-0x0000006e46afff], 0x9ea000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0x6] [0x0000006ed6a000-0x0000006f246fff], 0x4dd000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0x7] [0x0000006f28a000-0x0000006f299fff], 0x10000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0x8] [0x0000006f29c000-0x0000006fe91fff], 0xbf6000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0x9] [0x00000070e92000-0x00000071d54fff], 0xec3000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0xa] [0x00000071d5e000-0x00000072204fff], 0x4a7000
-> bytes flags: 0x4
-> [ 0.000000] reserved[0xb] [0x00000072220000-0x0000007222074f], 0x750
-> bytes flags: 0x4
-> ...
-> [ 0.000000] reserved[0xd] [0x000000722bc000-0x000000722bc1cf], 0x1d0
-> bytes flags: 0x4
-> [ 0.000000] reserved[0xe] [0x00000072bd3000-0x00000076c8ffff], 0x40bd000
-> bytes flags: 0x4
-> ......
-> [ 0.000000] reserved[0x134] [0x000007fffdf000-0x000007ffffffff], 0x21000
-> bytes flags: 0x4
+On Fri, Jun 21, 2013 at 07:36:25PM +0200, Borislav Petkov wrote:
 
-This range is allocated by init_mem_mapping() in setup_arch(), it calls
-alloc_low_pages() to allocate pagetable pages.
+> IOW, what specific functionality in EDAC are you actually thinking of?
 
-I think if we do the local device pagetable, we can solve this problem
-without any relocation.
+Okay, my believe until yesterday was that EDAC provides a consistent way
+to report hardware errors to userspace. That seems to be wrong. This in
+mind I think having a trace-point for that makes sense.
 
-I will make a patch trying to do this. But I'm not sure if there are any
-other relocation problems on other architectures.
+But this trace-point must not be specific to a single IOMMU driver, I
+want it generic enough so that it can be used by all common IOMMU
+drivers to report hardware misbehaviors to userspace.
 
-But even if not, I still think this could be dangerous if someone modifies
-the boot path and allocates some persistent memory before SRAT parsed in
-the future. He has to be aware of memory hotplug things and do the 
-necessary
-relocation himself.
 
-I'll try to make the patch to acheve this with comment as full as possible.
+Thanks,
 
-Thanks. :)
+	Joerg
 
->
->
-> Just for the readability:
-> [0x00000308000000-0x00000587ffffff] Hot Pluggable
-> [0x00000588000000-0x000007ffffffff] Hot Pluggable
->
-> Seeing from the dmesg, only the last one is in hotpluggable area. I need
-> to go
-> through the code to find out what it is, and find a way to relocate it.
->
-> But I'm not sure if a box with a different SRAT will have different result.
->
-> I will send more info later.
->
-> Thanks. :)
->
->
->> shouldn't be whole lot. And, again, this type of information should
->> have been available in the head message so that high-level discussion
->> could take place right away.
->>
->> Thanks.
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
->
+
