@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab3FXTe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:34:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42946 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751445Ab3FXTez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:34:55 -0400
-Date: Mon, 24 Jun 2013 22:34:03 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-CC: <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
-        <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <akpm@linux-foundation.org>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
-        <benoit.cousson@linaro.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
-        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
-        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>
-Subject: Re: [PATCH v7 0/9] Generic PHY Framework
-Message-ID: <20130624193403.GB11815@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1371113039-5784-1-git-send-email-kishon@ti.com>
- <51BEE203.6090103@samsung.com>
- <20130618094942.GY5461@arwen.pp.htv.fi>
- <51C89D98.1070806@samsung.com>
+	id S1751849Ab3FXTbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:31:43 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:54050 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab3FXTbj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 15:31:39 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: [PATCH 28/32] net: delete __cpuinit usage from all net files
+Date: Mon, 24 Jun 2013 15:30:33 -0400
+Message-ID: <1372102237-8757-29-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
-Content-Disposition: inline
-In-Reply-To: <51C89D98.1070806@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ncSAzJYg3Aa9+CRW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The __cpuinit type of throwaway sections might have made sense
+some time ago when RAM was more constrained, but now the savings
+do not offset the cost and complications.  For example, the fix in
+commit 5e427ec2d0 ("x86: Fix bit corruption at CPU resume time")
+is a good example of the nasty type of bugs that can be created
+with improper use of the various __init prefixes.
 
-On Mon, Jun 24, 2013 at 09:27:20PM +0200, Sylwester Nawrocki wrote:
-> Hi,
->=20
-> On 06/18/2013 11:49 AM, Felipe Balbi wrote:
-> > On Mon, Jun 17, 2013 at 12:16:35PM +0200, Sylwester Nawrocki wrote:
-> >> I have already used this API for our MIPI CSI-2/DSIM DPHYs driver,
-> >> the RFC patch series can be found at [1].
-> >>
-> >> Thanks,
-> >> Sylwester
-> >>
-> >> [1] http://www.spinics.net/lists/arm-kernel/msg251666.html
-> >=20
-> > one comment to that series:
-> >=20
-> > let's make the phy names standardized, how about phy-exynos-video-mipi.c
-> > or phy-mipi-csi-dsim.c ?
->=20
-> Yes, I have been thinking about that, wasn't sure exactly what pattern to
-> chose. I would make it phy-exynos-mipi-video.c, phy-exynos-dsim-csis.c fe=
-els
-> a bit odd. phy-mipi-csis-dsim.c might be to generic as MIPI CSIS stands f=
-or
-> MIPI CSI Slave and MIPI DSIM - MIPI DSI Master. And there might be (actua=
-lly
-> are) IP blocks in an SoC that use the other MIPI Aliance standards.
-> For the HDMI PHY I guess just phy-exynos-hdmi.c could be used.
+After a discussion on LKML[1] it was decided that cpuinit should go
+the way of devinit and be phased out.  Once all the users are gone,
+we can then finally remove the macros themselves from linux/init.h.
 
-sounds good to me :-)
+This removes all the net/* uses of the __cpuinit macros
+from all C files.
 
---=20
-balbi
+[1] https://lkml.org/lkml/2013/5/20/589
 
---ncSAzJYg3Aa9+CRW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+[This commit is part of the __cpuinit removal work.  If you don't see
+ any problems with it, then you don't have to do anything ; it will be
+ submitted with all the rest of the __cpuinit removal work.  On the
+ other hand, if you want to carry this patch in with your other pending
+ changes so as to handle conflicts with other pending work yourself, then
+ that is fine too, as the commits can largely be treated independently.
+ For more information, please see: https://lkml.org/lkml/2013/6/20/513 ]
 
-iQIcBAEBAgAGBQJRyJ8rAAoJEIaOsuA1yqREkSYP/2qexP8Dx9H7/V27jpH0HX9E
-8MvETKnha0gPPT7aIp4wRK5ym1or1ZfWODJipaRvhgeG31JSFD+i3FHib8M2M08j
-ba01L45w6C9exijHIbFZ0kBpt/+bxnjeb1s5m/ieR8SxAiyocnlNEmRlSEXajzO8
-yFk7IzQUxslewCmFhkuuo68bp5xkH7G0yE278RfZQnBqMefdEGdCJr9CPKoS3NUI
-srYt3rWWeLcAzF6VNR9fY+5YhRSoP3goLPMrLHSgD3w1Pg80kSJtArnAeReHYcHN
-jsWt+gS7LU6c/WzGfR9Nm3CqvPNNXs++nepvNCFwGQGJCFrS/vSxOQQg7NMELNfX
-dN1NpgBn7JiYi3XVNJEWx/8+Mm6GcVKD6WCpP99Mh955urXAdrbNniVd3W7+SiVc
-0jPMDK6uf5HPPevdC0g4Lnz1AgdE1qjzEP77xx+MnrWFb0lzQPBtHIpdiqBli2Dq
-HwkWYDIMmQGtcSpxg44nPnv/IAecQ7V5QvHZSqL3TbAF48bgWKAJyOiaJE9XZyUa
-u1yJwrqJ4VSB9mXw9BcIgsTm0O5HS0bf0U8tF0jKaQGlcXXgpN1BdWal9pY4ilGn
-gKjDAQdHCULoh4A7PPyfGwNkT36kaFQULa7J8b8IMI06CIm/iUjbNUuK/IlgRQ3y
-QfQA5Ycvr0WFgethw3YO
-=Ny+s
------END PGP SIGNATURE-----
+ net/core/flow.c | 4 ++--
+ net/iucv/iucv.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---ncSAzJYg3Aa9+CRW--
+diff --git a/net/core/flow.c b/net/core/flow.c
+index 7102f16..dfa602c 100644
+--- a/net/core/flow.c
++++ b/net/core/flow.c
+@@ -403,7 +403,7 @@ void flow_cache_flush_deferred(void)
+ 	schedule_work(&flow_cache_flush_work);
+ }
+ 
+-static int __cpuinit flow_cache_cpu_prepare(struct flow_cache *fc, int cpu)
++static int flow_cache_cpu_prepare(struct flow_cache *fc, int cpu)
+ {
+ 	struct flow_cache_percpu *fcp = per_cpu_ptr(fc->percpu, cpu);
+ 	size_t sz = sizeof(struct hlist_head) * flow_cache_hash_size(fc);
+@@ -421,7 +421,7 @@ static int __cpuinit flow_cache_cpu_prepare(struct flow_cache *fc, int cpu)
+ 	return 0;
+ }
+ 
+-static int __cpuinit flow_cache_cpu(struct notifier_block *nfb,
++static int flow_cache_cpu(struct notifier_block *nfb,
+ 			  unsigned long action,
+ 			  void *hcpu)
+ {
+diff --git a/net/iucv/iucv.c b/net/iucv/iucv.c
+index 4fe76ff..cd5b8ec 100644
+--- a/net/iucv/iucv.c
++++ b/net/iucv/iucv.c
+@@ -621,7 +621,7 @@ static void iucv_disable(void)
+ 	put_online_cpus();
+ }
+ 
+-static int __cpuinit iucv_cpu_notify(struct notifier_block *self,
++static int iucv_cpu_notify(struct notifier_block *self,
+ 				     unsigned long action, void *hcpu)
+ {
+ 	cpumask_t cpumask;
+-- 
+1.8.1.2
+
