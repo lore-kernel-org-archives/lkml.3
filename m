@@ -1,136 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab3FXS23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:28:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59911 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753126Ab3FXS22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:28:28 -0400
-Date: Mon, 24 Jun 2013 20:05:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] tracing/uprobes: Support ftrace_event_file base
-	multibuffer
-Message-ID: <20130624180547.GA2794@redhat.com>
-References: <51C7ED2B.4040701@huawei.com>
+	id S1753320Ab3FXSaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:30:13 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:45294 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3FXSaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 14:30:11 -0400
+Date: Mon, 24 Jun 2013 20:30:08 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: dri-devel@lists.freedesktop.org, chris@chris-wilson.co.uk,
+        imre.deak@intel.com, daniel.vetter@ffwll.ch, airlied@linux.ie,
+        airlied@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: make compact dma scatter lists creation work
+ with SWIOTLB backend.
+Message-ID: <20130624183008.GI5823@phenom.ffwll.local>
+Mail-Followup-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	dri-devel@lists.freedesktop.org, chris@chris-wilson.co.uk,
+	imre.deak@intel.com, airlied@linux.ie, airlied@gmail.com,
+	linux-kernel@vger.kernel.org
+References: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
+ <1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51C7ED2B.4040701@huawei.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
+X-Operating-System: Linux phenom 3.10.0-rc5+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jovi,
-
-I'll try to read this patch carefully tomorrow.
-
-Looks fine at first glance, but some nits below.
-
-On 06/24, zhangwei(Jovi) wrote:
->
->  static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  {
-> -	if (!is_ret_probe(tu))
-> -		uprobe_trace_print(tu, 0, regs);
-> +	struct event_file_link *link;
-> +
-> +	if (is_ret_probe(tu))
-> +		return 0;
-> +
-> +	rcu_read_lock();
-> +
-> +	list_for_each_entry(link, &tu->files, list)
-> +		uprobe_trace_print(tu, 0, regs, link->file);
-> +
-> +	rcu_read_unlock();
-
-Purely cosmetic and I won't argue, but why the empty lines around
-list_for_each_entry() ?
-
->  static int
-> -probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
-> +probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
-> +		   filter_func_t filter)
->  {
-> +	int enabled = 0;
->  	int ret = 0;
+On Mon, Jun 24, 2013 at 11:47:48AM -0400, Konrad Rzeszutek Wilk wrote:
+> Git commit 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
+> ("drm/i915: create compact dma scatter lists for gem objects") makes
+> certain assumptions about the under laying DMA API that are not always
+> correct.
 > 
-> -	if (is_trace_uprobe_enabled(tu))
-> +	/*
-> +	 * Currently TP_FLAG_TRACE/TP_FLAG_PROFILE are mutually exclusive
-> +	 * for uprobe(filter argument issue), this need to fix in future.
-> +	 */
-> +	if ((file && (tu->flags & TP_FLAG_PROFILE)) ||
-> +	    (!file && (tu->flags & TP_FLAG_TRACE)))
->  		return -EINTR;
-
-Well, this looks confusing and overcomplicated, see below.
-
-> +	/* Currently we cannot call uprobe_register twice for same tu */
-> +	if (is_trace_uprobe_enabled(tu))
-> +		enabled = 1;
-
-The comment is wrong. It is not that we can't do this "Currently".
-
-We must not do uprobe_register(..., consumer) twice, consumer/uprobe
-are linked together.
-
-> +	if (file) {
-> +		struct event_file_link *link;
-> +
-
-Just add
-		if (TP_FLAG_PROFILE)
-			return -EINTR;
-
-here and kill the complicated check below. Same for the "else" branch.
-
-> +static void
-> +probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
-> +{
-> +	if (file) {
-> +		struct event_file_link *link;
-> +
-> +		link = find_event_file_link(tu, file);
-> +		if (!link)
-> +			return;
-> +
-> +		list_del_rcu(&link->list);
-> +		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
-> +		synchronize_sched();
-> +		kfree(link);
-> +
-> +		if (!list_empty(&tu->files))
-> +			return;
-> +
-> +		tu->flags &= ~TP_FLAG_TRACE;
-> +	} else
-> +		tu->flags &= ~TP_FLAG_PROFILE;
-> +
+> On a ThinkPad X230 with an Intel HD 4000 with Xen during the bootup
+> I see:
 > 
->  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+> [drm:intel_pipe_set_base] *ERROR* pin & fence failed
+> [drm:intel_crtc_set_config] *ERROR* failed to set mode on [CRTC:3], err = -28
 > 
-> -	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
-> -	tu->flags &= ~flag;
-> +	if (!is_trace_uprobe_enabled(tu))
-> +		uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+> Bit of debugging traced it down to dma_map_sg failing (in
+> i915_gem_gtt_prepare_object) as some of the SG entries were huge (3MB).
+> 
+> That unfortunately are sizes that the SWIOTLB is incapable of handling -
+> the maximum it can handle is a an entry of 512KB of virtual contiguous
+> memory for its bounce buffer. (See IO_TLB_SEGSIZE).
+> 
+> Previous to the above mention git commit the SG entries were of 4KB, and
+> the code introduced by above git commit squashed the CPU contiguous PFNs
+> in one big virtual address provided to DMA API.
+> 
+> This patch is a simple semi-revert - were we emulate the old behavior
+> if we detect that SWIOTLB is online. If it is not online then we continue
+> on with the new compact scatter gather mechanism.
+> 
+> An alternative solution would be for the the '.get_pages' and the
+> i915_gem_gtt_prepare_object to retry with smaller max gap of the
+> amount of PFNs that can be combined together - but with this issue
+> discovered during rc7 that might be too risky.
+> 
+> Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> CC: Chris Wilson <chris@chris-wilson.co.uk>
+> CC: Imre Deak <imre.deak@intel.com>
+> CC: Daniel Vetter <daniel.vetter@ffwll.ch>
+> CC: David Airlie <airlied@linux.ie>
+> CC: <dri-devel@lists.freedesktop.org>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Well, this is not exactly right... Currently this is fine, but still.
-
-It would be better to clear TP_FLAG_TRACE/TP_FLAG_PROFILE after
-uprobe_unregister(), when we can't race with the running handler
-which can check ->flags.
-
-And I'd suggest you to send the soft-enable/disable change in a
-separate (and trivial) patch.
-
-Oleg.
-
+Queued for -next (with cc: stable), thanks for the patch.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
