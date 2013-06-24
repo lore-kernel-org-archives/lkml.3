@@ -1,254 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab3GADqg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 23:46:36 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:21483
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751864Ab3GADqf (ORCPT
+	id S1755996Ab3GCLaq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:30:46 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:12567 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239Ab3GCLao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 23:46:35 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <vinod.koul@intel.com>, <djbw@fb.com>
-CC: <scottwood@freescale.com>, <vakul@freescale.com>, <leoLi@freescale.com>,
-        <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH 1/2] DMA: Freescale: Add new 8-channel DMA engine device tree nodes
-Date: Mon, 1 Jul 2013 11:46:17 +0800
-Message-ID: <1372650378-2936-1-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Wed, 3 Jul 2013 07:30:44 -0400
+X-AuditID: cbfee68e-b7f276d000002279-72-51d40b47fa74
+From: Yadwinder Singh Brar <yadi.brar@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: yadi.brar01@gmail.com, sbkim73@samsung.com, broonie@kernel.org,
+        lgirdwood@gmail.com, sameo@linux.intel.com, rob.herring@calxeda.com,
+        grant.likely@linaro.org, Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: [PATCH 0/4] Add DT support for s2mps11
+Date: Mon, 24 Jun 2013 16:50:54 +0530
+Message-id: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsWyRsSkRted+0qgwaWD2hZTHz5hszjwZwej
+	xbcrHUwWl3fNYbM4vOIAk8XpblaLiyu+MFnM/d3IajFn+jsmB06PBZ+vsHvsnHWX3WPTqk42
+	jzvX9rB5zDsZ6NG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZJz/vYCuYz14x9ccexgbGE6xd
+	jJwcEgImEs8vHWaCsMUkLtxbz9bFyMUhJLCUUeLVlpNACQ6wop5lXhDx6YwSX7+/ZYRw2pgk
+	9q1+AlbEJmAk8eqYHcggEQEFic29z1hBapgFLjFKTNt7BGybsIC+xOeLPcwgNouAqsTpR5tZ
+	QGxeAReJKy2NLBBXKEi0LjvEDtIsIbCMXWL3p8PsEA0CEt8mH2KBuEhWYtMBZoh6SYmDK26w
+	TGAUXMDIsIpRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMjMLRP/3vWt4Px5gHrQ4zJQOMmMkuJ
+	JucDYyOvJN7Q2MzIwtTE1NjI3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxS
+	DYyBujNeuS0Pbft28dLcvdO6Drwskqkun5WjEXu220c4KFjsSPSrps9STz6m/PM8va046aKK
+	xAmD7t8rdK9sZ1VP+5bb68ChrCnIfvtxfbSDn5OrNMPGzOQ1i/Ot+I7sWuDbsZ3luLoOJ6/2
+	mmUBt21tdUrzHBb2STya8brcfv1cBbe1drHcRkosxRmJhlrMRcWJAC/m8eaDAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t9jQV137iuBBkvWKVlMffiEzeLAnx2M
+	Ft+udDBZXN41h83i8IoDTBanu1ktLq74wmQx93cjq8Wc6e+YHDg9Fny+wu6xc9Zddo9NqzrZ
+	PO5c28PmMe9koEffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpa
+	WpgrKeQl5qbaKrn4BOi6ZeYAXaakUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAAN
+	JKxhzDj5eQdbwXz2iqk/9jA2MJ5g7WLk4JAQMJHoWebVxcgJZIpJXLi3nq2LkYtDSGA6o8TX
+	728ZIZw2Jol9q58wgTSwCRhJvDpmB9IgIqAgsbn3GStIDbPAJUaJaXuPsIIkhAX0JT5f7GEG
+	sVkEVCVOP9rMAmLzCrhIXGlpZIHYpiDRuuwQ+wRG7gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS
+	9ZLzczcxgiPnmfQOxlUNFocYBTgYlXh4HZ5dChRiTSwrrsw9xCjBwawkwjvxz+VAId6UxMqq
+	1KL8+KLSnNTiQ4zJQNsnMkuJJucDozqvJN7Q2MTc1NjU0sTCxMySNGElcd6DrdaBQgLpiSWp
+	2ampBalFMFuYODilGhhlvNZefbG/JUlY+tBH1f6F67mdr/41SeS5rRLqqKX8Y3kD65YCjuWv
+	J+70tRXovG5iPZNVtZHp0PrDNr94mpe9MXylmnPSoFFt5SaupM0TZ8fNb5X4erq6fmqXyJ2U
+	5LtrGI9rvmW9UtrVyfBnafdthQl8m593r7JewNVV65W4wvZna+pT5lYlluKMREMt5qLiRACC
+	umCk4AIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+Mainly this series adds dt support for s2mps11 in mfd and regulator driver.
+It also implements the set_voltage_time_sel() for bucks as we can not use
+generic implementation as we need to take care of ramp_disable and ramp_delay
+sharing by some bucks.
 
-Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch add
-the device tree nodes for them.
+Yadwinder Singh Brar (4):
+  regulator: s2mps11: Convert ramp rate to uV/us and set default ramp
+    rate
+  regulator: s2mps11: Implement set_voltage_time_sel() ops for bucks
+  mfd: s2mps11: Add device tree support
+  regulator: s2mps11: Add device tree support
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
----
- arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi |   90 +++++++++++++++++++++++++++
- arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi |   90 +++++++++++++++++++++++++++
- arch/powerpc/boot/dts/fsl/t4240si-post.dtsi |    4 +-
- 3 files changed, 182 insertions(+), 2 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
- create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
-
-diff --git a/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi b/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
-new file mode 100644
-index 0000000..c626c49
---- /dev/null
-+++ b/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
-@@ -0,0 +1,90 @@
-+/*
-+ * QorIQ DMA device tree stub [ controller @ offset 0x100000 ]
-+ *
-+ * Copyright 2011-2013 Freescale Semiconductor Inc.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Freescale Semiconductor nor the
-+ *       names of its contributors may be used to endorse or promote products
-+ *       derived from this software without specific prior written permission.
-+ *
-+ *
-+ * ALTERNATIVELY, this software may be distributed under the terms of the
-+ * GNU General Public License ("GPL") as published by the Free Software
-+ * Foundation, either version 2 of that License or (at your option) any
-+ * later version.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
-+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-+ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
-+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+dma0: dma@100300 {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	compatible = "fsl,eloplus-dma2";
-+	reg = <0x100300 0x4 0x100600 0x4>;
-+	ranges = <0x0 0x100100 0x500>;
-+	cell-index = <0>;
-+	dma-channel@0 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x0 0x80>;
-+		cell-index = <0>;
-+		interrupts = <28 2 0 0>;
-+	};
-+	dma-channel@80 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x80 0x80>;
-+		cell-index = <1>;
-+		interrupts = <29 2 0 0>;
-+	};
-+	dma-channel@100 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x100 0x80>;
-+		cell-index = <2>;
-+		interrupts = <30 2 0 0>;
-+	};
-+	dma-channel@180 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x180 0x80>;
-+		cell-index = <3>;
-+		interrupts = <31 2 0 0>;
-+	};
-+	dma-channel@300 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x300 0x80>;
-+		cell-index = <4>;
-+		interrupts = <76 2 0 0>;
-+	};
-+	dma-channel@380 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x380 0x80>;
-+		cell-index = <5>;
-+		interrupts = <77 2 0 0>;
-+	};
-+	dma-channel@400 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x400 0x80>;
-+		cell-index = <6>;
-+		interrupts = <78 2 0 0>;
-+	};
-+	dma-channel@480 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x480 0x80>;
-+		cell-index = <7>;
-+		interrupts = <79 2 0 0>;
-+	};
-+};
-diff --git a/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi b/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
-new file mode 100644
-index 0000000..980ea77
---- /dev/null
-+++ b/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
-@@ -0,0 +1,90 @@
-+/*
-+ * QorIQ DMA device tree stub [ controller @ offset 0x101000 ]
-+ *
-+ * Copyright 2011-2013 Freescale Semiconductor Inc.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Freescale Semiconductor nor the
-+ *       names of its contributors may be used to endorse or promote products
-+ *       derived from this software without specific prior written permission.
-+ *
-+ *
-+ * ALTERNATIVELY, this software may be distributed under the terms of the
-+ * GNU General Public License ("GPL") as published by the Free Software
-+ * Foundation, either version 2 of that License or (at your option) any
-+ * later version.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
-+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-+ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
-+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+dma1: dma@101300 {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	compatible = "fsl,eloplus-dma2";
-+	reg = <0x101300 0x4 0x101600 0x4>;
-+	ranges = <0x0 0x101100 0x500>;
-+	cell-index = <1>;
-+	dma-channel@0 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x0 0x80>;
-+		cell-index = <0>;
-+		interrupts = <32 2 0 0>;
-+	};
-+	dma-channel@80 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x80 0x80>;
-+		cell-index = <1>;
-+		interrupts = <33 2 0 0>;
-+	};
-+	dma-channel@100 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x100 0x80>;
-+		cell-index = <2>;
-+		interrupts = <34 2 0 0>;
-+	};
-+	dma-channel@180 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x180 0x80>;
-+		cell-index = <3>;
-+		interrupts = <35 2 0 0>;
-+	};
-+	dma-channel@300 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x300 0x80>;
-+		cell-index = <4>;
-+		interrupts = <80 2 0 0>;
-+	};
-+	dma-channel@380 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x380 0x80>;
-+		cell-index = <5>;
-+		interrupts = <81 2 0 0>;
-+	};
-+	dma-channel@400 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x400 0x80>;
-+		cell-index = <6>;
-+		interrupts = <82 2 0 0>;
-+	};
-+	dma-channel@480 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x480 0x80>;
-+		cell-index = <7>;
-+		interrupts = <83 2 0 0>;
-+	};
-+};
-diff --git a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
-index bd611a9..7d8bac6 100644
---- a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
-@@ -387,8 +387,8 @@
- 		reg	   = <0xea000 0x4000>;
- 	};
- 
--/include/ "qoriq-dma-0.dtsi"
--/include/ "qoriq-dma-1.dtsi"
-+/include/ "qoriq-dma2-0.dtsi"
-+/include/ "qoriq-dma2-1.dtsi"
- 
- /include/ "qoriq-espi-0.dtsi"
- 	spi@110000 {
--- 
-1.7.9.5
-
-
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   98 ++++++++++++
+ drivers/mfd/sec-core.c                            |    3 +
+ drivers/regulator/s2mps11.c                       |  176 +++++++++++++++++++--
+ include/linux/mfd/samsung/s2mps11.h               |    1 +
+ 4 files changed, 264 insertions(+), 14 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/s2mps11.txt
 
