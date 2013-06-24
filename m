@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab3FXOAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 10:00:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59674 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab3FXOAb (ORCPT
+	id S1751444Ab3FXOFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 10:05:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38451 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750845Ab3FXOFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 10:00:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org
-Subject: scripts/kallsyms: Avoid ARM veneer symbols
-Date: Mon, 24 Jun 2013 16:01:43 +0200
-Message-ID: <2983817.Xe2505Drlj@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
+	Mon, 24 Jun 2013 10:05:02 -0400
+Date: Mon, 24 Jun 2013 15:04:24 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Add support for LPAE style CONTEXTIDR
+Message-ID: <20130624140424.GA24861@mudshark.cambridge.arm.com>
+References: <1372080405-13365-1-git-send-email-cov@codeaurora.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:M4beAbuKpxwZLGplNNXxmkvnKEYt3mzm589idLvNXas
- +sBtPMCGsSCXBO6X955Ue5M/LjBNIlw9pHUW/VHeb/+x+e2MMw
- x97bzvvcp+uIVe9z3TXQ42ClnRwQCMY6Rw0MKdmpufPmJlJ6Xf
- gdvTXfHzFe8VDCy5KOQZlnXt/FpLgBeippGpL9NlDT8ZL35Q5z
- ako5gsu1CnyQwIrmH4UhKJesuYJ/qEhNU0x9QjtNS/8JtR5drF
- ir349KL7DRfKYMaCw+trTGlJvU8G1yoczaM2/r31H4fY5JIPFP
- 9SAogG587KhyaBSweDd3zjbS477qwJ+pMFXpuUp++fG26RF+T6
- mFBvXAF8ZhMZKUZrtZnw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372080405-13365-1-git-send-email-cov@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building ARM kernels that exceed a certain size, the linker
-will add "veneers" that allow long branches. Unfortunately,
-using a longer kallsyms section may lead to the extra veneers
-being needed, which leads to inconsistent kallsyms data with the
-message
+Hi Christopher,
 
-Inconsistent kallsyms data
-Try make KALLSYMS_EXTRA_PASS=1 as a workaround
+On Mon, Jun 24, 2013 at 02:26:45PM +0100, Christopher Covington wrote:
+> Using the long-descriptor translation table format changes
+> the layout of the CONTEXTIDR register.
+> 
+> Signed-off-by: Christopher Covington <cov@codeaurora.org>
+> ---
+>  arch/arm/mm/context.c | 37 +++++++++++++++++++++++++++----------
+>  1 file changed, 27 insertions(+), 10 deletions(-)
 
-In some case, not just one but up to three extra passes were
-needed before getting to a state that needed no extra veneers.
-The easiest solution is to skip veneers in kallsyms in the
-same way we already skip a couple of other symbols.
+Hmm, I'd deliberately written the code as-is, so that debuggers wouldn't
+need context-sensitive parsing of the contextidr register depending on the
+type of page tables in use.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 487ac6f..53ec0bb 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -69,14 +69,32 @@ static void usage(void)
- 	exit(1);
- }
- 
--/*
-- * This ignores the intensely annoying "mapping symbols" found
-- * in ARM ELF files: $a, $t and $d.
-- */
- static inline int is_arm_mapping_symbol(const char *str)
- {
--	return str[0] == '$' && strchr("atd", str[1])
--	       && (str[2] == '\0' || str[2] == '.');
-+	size_t len;
-+
-+	/*
-+	 * This ignores the intensely annoying "mapping symbols" found
-+	 * in ARM ELF files: $a, $t and $d.
-+	 */
-+	if (str[0] == '$' && strchr("atd", str[1])
-+	       && (str[2] == '\0' || str[2] == '.'))
-+		return 1;
-+
-+	len = strlen(str);
-+	if (len < 10)
-+		return 0;
-+
-+	/*
-+	 * This ignores any __.*_veneer symbol, which get
-+	 * inserted for large kernels, in order to avoid
-+	 * inconsistent data.
-+	 */
-+	if (str[0] == '_' && str[1] == '_' &&
-+	    strcmp(str + len - 7, "_veneer") == 0)
-+		return 1; 
-+
-+	return 0;
- }
- 
- static int read_symbol_tr(const char *sym, unsigned long long addr)
+What's the advantage of this approach, other than you get an extra byte's
+worth of PID?
 
+Will
