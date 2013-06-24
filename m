@@ -1,177 +1,521 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab3FXMhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:37:43 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:60685 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab3FXMhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:37:37 -0400
-Date: Mon, 24 Jun 2013 08:37:26 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Daniel J Blueman <daniel@quora.org>
-Cc: linux-ext4@vger.kernel.org, gnehzuil.liu@gmail.com
-Subject: Re: 3.9-rc6 ext4: free_rb_tree_fname oops
-Message-ID: <20130624123726.GA17012@thunk.org>
-References: <CAMVG2sskpWgL4JLKZZs8YXqNoLt4gB-UgeeMPnb8bTDKyUeRng@mail.gmail.com>
- <CAMVG2ssG0PvedeuT6f3g=20Gv51f6gXWxxMFbtL4H=ngAJ9Gvg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMVG2ssG0PvedeuT6f3g=20Gv51f6gXWxxMFbtL4H=ngAJ9Gvg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752261Ab3FXMhv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:37:51 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:51514 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3FXMhr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 08:37:47 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
+        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
+Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
+        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
+        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
+        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
+        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
+        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stephan.diestelhorst@amd.com>,
+        <riel@redhat.com>, <drjones@redhat.com>,
+        <virtualization@lists.linux-foundation.org>,
+        <srivatsa.vaddagiri@gmail.com>
+Date: Mon, 24 Jun 2013 18:11:35 +0530
+Message-Id: <20130624124135.27508.54305.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH RFC V10 5/18]  xen/pvticketlock: Xen implementation for PV ticket locks
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062423-3568-0000-0000-000003D2E0D3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(LKML and Linux-fsdevel moved to bcc)
+xen/pvticketlock: Xen implementation for PV ticket locks
 
-On Mon, Jun 24, 2013 at 02:34:00PM +0800, Daniel J Blueman wrote:
-> On 16 April 2013 15:37, Daniel J Blueman <daniel@quora.org> wrote:
-> > When using e4defrag on a ext4 filesystem created a month ago, I ran
-> > into this fatal page fault [1]
-> >  while running e4defrag on 3.9-rc6 (Ubuntu mainline).
-> >
-> > e2fsdump output is at http://quora.org/2012/e2fsdump.txt ; let me know
-> > if you need any more info.
-> 
-> With 3.9.6 mainline, I got the exact same protection fault at
-> free_rb_tree_fname() from ext4_htree_free_dir_info() [1]. This
-> suggests use-after-free, as there's no pagetable mapping.
-> 
-> There is nothing special with my setups, so there is fair chance it's
-> reproducible there with e4defrag on a few month old filesystem and
-> recent kernels.
+From: Jeremy Fitzhardinge <jeremy@goop.org>
 
-Sounds like we may have a bug in how the new extent_status tree code
-was integrated into fs/ext4/move_extent.c.  Zheng, if you could take a
-look I'd really appreciate it.
+Replace the old Xen implementation of PV spinlocks with and implementation
+of xen_lock_spinning and xen_unlock_kick.
 
-Thanks!!
+xen_lock_spinning simply registers the cpu in its entry in lock_waiting,
+adds itself to the waiting_cpus set, and blocks on an event channel
+until the channel becomes pending.
 
-						- Ted
+xen_unlock_kick searches the cpus in waiting_cpus looking for the one
+which next wants this lock with the next ticket, if any.  If found,
+it kicks it by making its event channel pending, which wakes it up.
 
+We need to make sure interrupts are disabled while we're relying on the
+contents of the per-cpu lock_waiting values, otherwise an interrupt
+handler could come in, try to take some other lock, block, and overwrite
+our values.
 
-> > --- [1]
-> >
-> > general protection fault: 0000 [#1] SMP
-> > Modules linked in: btrfs raid6_pq zlib_deflate xor ufs qnx4 hfsplus
-> > hfs minix ntfs msdos jfs xfs libcrc32c reiserfs ext2 8021q garp
-> > parport_pc ppdev rfcomm bnep nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
-> > fscache snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel
-> > kvm snd_hda_intel snd_hda_codec snd_hwdep ghash_clmulni_intel arc4
-> > bridge iwldvm joydev i915 cryptd snd_pcm mac80211 stp llc
-> > snd_page_alloc drm_kms_helper drm snd_seq_midi snd_seq_midi_event
-> > snd_rawmidi snd_seq psmouse snd_seq_device btusb ir_sony_decoder
-> > ir_rc5_decoder ir_lirc_codec lirc_dev ir_sanyo_decoder
-> > ir_mce_kbd_decoder ir_jvc_decoder serio_raw ir_rc6_decoder iwlwifi
-> > ir_nec_decoder snd_timer i2c_algo_bit rc_rc6_mce microcode nuvoton_cir
-> > snd rc_core bluetooth soundcore mac_hid cfg80211 mei lpc_ich video lp
-> > parport hid_generic usbhid hid r8169 ahci libahci
-> > CPU 0
-> > Pid: 18139, comm: e4defrag Not tainted 3.9.0-030900rc6-generic
-> > #201304080035 ZOTAC XXXXXX/XXXXXX
-> > RIP: 0010:[<ffffffff81238188>] [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
-> > RSP: 0018:ffff8801134a9e28 EFLAGS: 00010202
-> > RAX: 0036b44b00008001 RBX: ffff880080e09018 RCX: 0000000180400028
-> > RDX: 0036b44b00008001 RSI: 0000000000000001 RDI: ffff88013b001700
-> > RBP: ffff8801134a9e48 R08: 0000000000000000 R09: ffffea0000dbe380
-> > R10: ffffffff812381bc R11: 0000000000000206 R12: 0000000000000000
-> > R13: ffff880036f8ec80 R14: ffff880036f8ebc8 R15: ffff8800ade074c0
-> > FS: 00007fd1923d7740(0000) GS:ffff88013fa00000(0000) knlGS:0000000000000000
-> > CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > CR2: 00000000013974d8 CR3: 00000001352f2000 CR4: 00000000000407f0
-> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > Process e4defrag (pid: 18139, threadinfo ffff8801134a8000, task
-> > ffff880138d9c5f0)
-> > Stack:
-> >  ffff880036f8ec80 0000000040000010 ffff880021a2f900 ffff8800ade074c0
-> >  ffff8801134a9e68 ffffffff81238f36 0000000040000010 ffff88013890f000
-> >  ffff8801134a9e78 ffffffff81238f6a ffff8801134a9ec8 ffffffff8119f57a
-> > Call Trace:
-> >  [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
-> >  [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
-> >  [<ffffffff8119f57a>] __fput+0xba/0x240
-> >  [<ffffffff8119f70e>] ____fput+0xe/0x10
-> >  [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
-> >  [<ffffffff81014d7a>] do_notify_resume+0xaa/0xc0
-> >  [<ffffffff8170d0da>] int_signal+0x12/0x17
-> > Code: 90 90 90 66 66 66 66 90 55 48 89 e5 41 56 41 55 49 89 fd 41 54
-> > 53 48 8b 1f 48 85 db 74 67 48 8b 43 10 eb 11 0f 1f 80 00 00 00 00 <48>
-> > 8b 50 10 48 89 c3 48 89 d0 48 85 c0 75 f1 48 8b 43 08 48 85
-> > RIP [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
-> >  RSP <ffff8801134a9e28>
-> > ---[ end trace 02741f61e6b3c24b ]---
-> > general protection fault: 0000 [#2] SMP
-> > Modules linked in: btrfs raid6_pq zlib_deflate xor ufs qnx4 hfsplus
-> > hfs minix ntfs msdos jfs xfs libcrc32c reiserfs ext2 8021q garp
-> > parport_pc ppdev rfcomm bnep nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
-> > fscache snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel
-> > kvm snd_hda_intel snd_hda_codec snd_hwdep ghash_clmulni_intel arc4
-> > bridge iwldvm joydev i915 cryptd snd_pcm mac80211 stp llc
-> > snd_page_alloc drm_kms_helper drm snd_seq_midi snd_seq_midi_event
-> > snd_rawmidi snd_seq psmouse snd_seq_device btusb ir_sony_decoder
-> > ir_rc5_decoder ir_lirc_codec lirc_dev ir_sanyo_decoder
-> > ir_mce_kbd_decoder ir_jvc_decoder serio_raw ir_rc6_decoder iwlwifi
-> > ir_nec_decoder snd_timer i2c_algo_bit rc_rc6_mce microcode nuvoton_cir
-> > snd rc_core bluetooth soundcore mac_hid cfg80211 mei lpc_ich video lp
-> > parport hid_generic usbhid hid r8169 ahci libahci
-> > CPU 0
-> > Pid: 18139, comm: e4defrag Tainted: G   D   3.9.0-030900rc6-generic
-> > #201304080035 ZOTAC XXXXXX/XXXXXX
-> > RIP: 0010:[<ffffffff81238188>] [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
-> > RSP: 0018:ffff8801134a9b78 EFLAGS: 00010202
-> > RAX: 0036b44b00008001 RBX: ffff880080e09018 RCX: 0000000000000001
-> > RDX: 0036b44b00008001 RSI: ffff88013890fb00 RDI: ffff880036f8ef80
-> > RBP: ffff8801134a9b98 R08: 0000000000000000 R09: 0000000000000000
-> > R10: ffff88013890fb10 R11: 0000000000000000 R12: 0000000040000010
-> > R13: ffff880036f8ef80 R14: ffff8800ade07108 R15: ffff8800ade07108
-> > FS: 0000000000000000(0000) GS:ffff88013fa00000(0000) knlGS:0000000000000000
-> > CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > CR2: 00007f718650aed4 CR3: 0000000001c0d000 CR4: 00000000000407f0
-> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > Process e4defrag (pid: 18139, threadinfo ffff8801134a8000, task
-> > ffff880138d9c5f0)
-> > Stack:
-> >  ffff880036f8ef80 0000000040000010 ffff880021a2fb40 ffff8800ade07108
-> >  ffff8801134a9bb8 ffffffff81238f36 0000000040000010 ffff88013890fb00
-> >  ffff8801134a9bc8 ffffffff81238f6a ffff8801134a9c18 ffffffff8119f57a
-> > Call Trace:
-> >  [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
-> >  [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
-> >  [<ffffffff8119f57a>] __fput+0xba/0x240
-> >  [<ffffffff8119f70e>] ____fput+0xe/0x10
-> >  [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
-> >  [<ffffffff81060876>] do_exit+0x196/0x480
-> >  [<ffffffff81705329>] oops_end+0xb9/0x100
-> >  [<ffffffff81017d88>] die+0x58/0x90
-> >  [<ffffffff81704d9c>] do_general_protection+0xdc/0x160
-> >  [<ffffffff81704728>] general_protection+0x28/0x30
-> >  [<ffffffff812381bc>] ? free_rb_tree_fname+0x5c/0xb0
-> >  [<ffffffff81238188>] ? free_rb_tree_fname+0x28/0xb0
-> >  [<ffffffff812381bc>] ? free_rb_tree_fname+0x5c/0xb0
-> >  [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
-> >  [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
-> >  [<ffffffff8119f57a>] __fput+0xba/0x240
-> >  [<ffffffff8119f70e>] ____fput+0xe/0x10
-> >  [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
-> >  [<ffffffff81014d7a>] do_notify_resume+0xaa/0xc0
-> >  [<ffffffff8170d0da>] int_signal+0x12/0x17
-> > Code: 90 90 90 66 66 66 66 90 55 48 89 e5 41 56 41 55 49 89 fd 41 54
-> > 53 48 8b 1f 48 85 db 74 67 48 8b 43 10 eb 11 0f 1f 80 00 00 00 00 <48>
-> > 8b 50 10 48 89 c3 48 89 d0 48 85 c0 75 f1 48 8b 43 08 48 85
-> > RIP [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
-> >  RSP <ffff8801134a9b78>
-> > ---[ end trace 02741f61e6b3c24c ]---
-> > Fixing recursive fault but reboot is needed!
-> --
-> Daniel J Blueman
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+ [ Raghavendra:  use function + enum instead of macro, cmpxchg for zero status reset
+Reintroduce break since we know the exact vCPU to send IPI as suggested by Konrad.]
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+ arch/x86/xen/spinlock.c |  348 +++++++++++------------------------------------
+ 1 file changed, 79 insertions(+), 269 deletions(-)
+
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index d6481a9..d471c76 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -16,45 +16,44 @@
+ #include "xen-ops.h"
+ #include "debugfs.h"
+ 
+-#ifdef CONFIG_XEN_DEBUG_FS
+-static struct xen_spinlock_stats
+-{
+-	u64 taken;
+-	u32 taken_slow;
+-	u32 taken_slow_nested;
+-	u32 taken_slow_pickup;
+-	u32 taken_slow_spurious;
+-	u32 taken_slow_irqenable;
++enum xen_contention_stat {
++	TAKEN_SLOW,
++	TAKEN_SLOW_PICKUP,
++	TAKEN_SLOW_SPURIOUS,
++	RELEASED_SLOW,
++	RELEASED_SLOW_KICKED,
++	NR_CONTENTION_STATS
++};
+ 
+-	u64 released;
+-	u32 released_slow;
+-	u32 released_slow_kicked;
+ 
++#ifdef CONFIG_XEN_DEBUG_FS
+ #define HISTO_BUCKETS	30
+-	u32 histo_spin_total[HISTO_BUCKETS+1];
+-	u32 histo_spin_spinning[HISTO_BUCKETS+1];
++static struct xen_spinlock_stats
++{
++	u32 contention_stats[NR_CONTENTION_STATS];
+ 	u32 histo_spin_blocked[HISTO_BUCKETS+1];
+-
+-	u64 time_total;
+-	u64 time_spinning;
+ 	u64 time_blocked;
+ } spinlock_stats;
+ 
+ static u8 zero_stats;
+ 
+-static unsigned lock_timeout = 1 << 10;
+-#define TIMEOUT lock_timeout
+-
+ static inline void check_zero(void)
+ {
+-	if (unlikely(zero_stats)) {
+-		memset(&spinlock_stats, 0, sizeof(spinlock_stats));
+-		zero_stats = 0;
++	u8 ret;
++	u8 old = ACCESS_ONCE(zero_stats);
++	if (unlikely(old)) {
++		ret = cmpxchg(&zero_stats, old, 0);
++		/* This ensures only one fellow resets the stat */
++		if (ret == old)
++			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
+ 	}
+ }
+ 
+-#define ADD_STATS(elem, val)			\
+-	do { check_zero(); spinlock_stats.elem += (val); } while(0)
++static inline void add_stats(enum xen_contention_stat var, u32 val)
++{
++	check_zero();
++	spinlock_stats.contention_stats[var] += val;
++}
+ 
+ static inline u64 spin_time_start(void)
+ {
+@@ -73,22 +72,6 @@ static void __spin_time_accum(u64 delta, u32 *array)
+ 		array[HISTO_BUCKETS]++;
+ }
+ 
+-static inline void spin_time_accum_spinning(u64 start)
+-{
+-	u32 delta = xen_clocksource_read() - start;
+-
+-	__spin_time_accum(delta, spinlock_stats.histo_spin_spinning);
+-	spinlock_stats.time_spinning += delta;
+-}
+-
+-static inline void spin_time_accum_total(u64 start)
+-{
+-	u32 delta = xen_clocksource_read() - start;
+-
+-	__spin_time_accum(delta, spinlock_stats.histo_spin_total);
+-	spinlock_stats.time_total += delta;
+-}
+-
+ static inline void spin_time_accum_blocked(u64 start)
+ {
+ 	u32 delta = xen_clocksource_read() - start;
+@@ -98,19 +81,15 @@ static inline void spin_time_accum_blocked(u64 start)
+ }
+ #else  /* !CONFIG_XEN_DEBUG_FS */
+ #define TIMEOUT			(1 << 10)
+-#define ADD_STATS(elem, val)	do { (void)(val); } while(0)
++static inline void add_stats(enum xen_contention_stat var, u32 val)
++{
++}
+ 
+ static inline u64 spin_time_start(void)
+ {
+ 	return 0;
+ }
+ 
+-static inline void spin_time_accum_total(u64 start)
+-{
+-}
+-static inline void spin_time_accum_spinning(u64 start)
+-{
+-}
+ static inline void spin_time_accum_blocked(u64 start)
+ {
+ }
+@@ -133,229 +112,83 @@ typedef u16 xen_spinners_t;
+ 	asm(LOCK_PREFIX " decw %0" : "+m" ((xl)->spinners) : : "memory");
+ #endif
+ 
+-struct xen_spinlock {
+-	unsigned char lock;		/* 0 -> free; 1 -> locked */
+-	xen_spinners_t spinners;	/* count of waiting cpus */
++struct xen_lock_waiting {
++	struct arch_spinlock *lock;
++	__ticket_t want;
+ };
+ 
+ static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
++static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
++static cpumask_t waiting_cpus;
+ 
+-#if 0
+-static int xen_spin_is_locked(struct arch_spinlock *lock)
+-{
+-	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+-
+-	return xl->lock != 0;
+-}
+-
+-static int xen_spin_is_contended(struct arch_spinlock *lock)
++static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+ {
+-	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+-
+-	/* Not strictly true; this is only the count of contended
+-	   lock-takers entering the slow path. */
+-	return xl->spinners != 0;
+-}
+-
+-static int xen_spin_trylock(struct arch_spinlock *lock)
+-{
+-	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+-	u8 old = 1;
+-
+-	asm("xchgb %b0,%1"
+-	    : "+q" (old), "+m" (xl->lock) : : "memory");
+-
+-	return old == 0;
+-}
+-
+-static DEFINE_PER_CPU(struct xen_spinlock *, lock_spinners);
+-
+-/*
+- * Mark a cpu as interested in a lock.  Returns the CPU's previous
+- * lock of interest, in case we got preempted by an interrupt.
+- */
+-static inline struct xen_spinlock *spinning_lock(struct xen_spinlock *xl)
+-{
+-	struct xen_spinlock *prev;
+-
+-	prev = __this_cpu_read(lock_spinners);
+-	__this_cpu_write(lock_spinners, xl);
+-
+-	wmb();			/* set lock of interest before count */
+-
+-	inc_spinners(xl);
+-
+-	return prev;
+-}
+-
+-/*
+- * Mark a cpu as no longer interested in a lock.  Restores previous
+- * lock of interest (NULL for none).
+- */
+-static inline void unspinning_lock(struct xen_spinlock *xl, struct xen_spinlock *prev)
+-{
+-	dec_spinners(xl);
+-	wmb();			/* decrement count before restoring lock */
+-	__this_cpu_write(lock_spinners, prev);
+-}
+-
+-static noinline int xen_spin_lock_slow(struct arch_spinlock *lock, bool irq_enable)
+-{
+-	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+-	struct xen_spinlock *prev;
+ 	int irq = __this_cpu_read(lock_kicker_irq);
+-	int ret;
++	struct xen_lock_waiting *w = &__get_cpu_var(lock_waiting);
++	int cpu = smp_processor_id();
+ 	u64 start;
++	unsigned long flags;
+ 
+ 	/* If kicker interrupts not initialized yet, just spin */
+ 	if (irq == -1)
+-		return 0;
++		return;
+ 
+ 	start = spin_time_start();
+ 
+-	/* announce we're spinning */
+-	prev = spinning_lock(xl);
+-
+-	ADD_STATS(taken_slow, 1);
+-	ADD_STATS(taken_slow_nested, prev != NULL);
+-
+-	do {
+-		unsigned long flags;
+-
+-		/* clear pending */
+-		xen_clear_irq_pending(irq);
+-
+-		/* check again make sure it didn't become free while
+-		   we weren't looking  */
+-		ret = xen_spin_trylock(lock);
+-		if (ret) {
+-			ADD_STATS(taken_slow_pickup, 1);
+-
+-			/*
+-			 * If we interrupted another spinlock while it
+-			 * was blocking, make sure it doesn't block
+-			 * without rechecking the lock.
+-			 */
+-			if (prev != NULL)
+-				xen_set_irq_pending(irq);
+-			goto out;
+-		}
++	/*
++	 * Make sure an interrupt handler can't upset things in a
++	 * partially setup state.
++	 */
++	local_irq_save(flags);
+ 
+-		flags = arch_local_save_flags();
+-		if (irq_enable) {
+-			ADD_STATS(taken_slow_irqenable, 1);
+-			raw_local_irq_enable();
+-		}
++	w->want = want;
++	smp_wmb();
++	w->lock = lock;
+ 
+-		/*
+-		 * Block until irq becomes pending.  If we're
+-		 * interrupted at this point (after the trylock but
+-		 * before entering the block), then the nested lock
+-		 * handler guarantees that the irq will be left
+-		 * pending if there's any chance the lock became free;
+-		 * xen_poll_irq() returns immediately if the irq is
+-		 * pending.
+-		 */
+-		xen_poll_irq(irq);
++	/* This uses set_bit, which atomic and therefore a barrier */
++	cpumask_set_cpu(cpu, &waiting_cpus);
++	add_stats(TAKEN_SLOW, 1);
+ 
+-		raw_local_irq_restore(flags);
++	/* clear pending */
++	xen_clear_irq_pending(irq);
+ 
+-		ADD_STATS(taken_slow_spurious, !xen_test_irq_pending(irq));
+-	} while (!xen_test_irq_pending(irq)); /* check for spurious wakeups */
++	/* Only check lock once pending cleared */
++	barrier();
+ 
++	/* check again make sure it didn't become free while
++	   we weren't looking  */
++	if (ACCESS_ONCE(lock->tickets.head) == want) {
++		add_stats(TAKEN_SLOW_PICKUP, 1);
++		goto out;
++	}
++	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
++	xen_poll_irq(irq);
++	add_stats(TAKEN_SLOW_SPURIOUS, !xen_test_irq_pending(irq));
+ 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
+-
+ out:
+-	unspinning_lock(xl, prev);
++	cpumask_clear_cpu(cpu, &waiting_cpus);
++	w->lock = NULL;
++	local_irq_restore(flags);
+ 	spin_time_accum_blocked(start);
+-
+-	return ret;
+ }
+ 
+-static inline void __xen_spin_lock(struct arch_spinlock *lock, bool irq_enable)
+-{
+-	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+-	unsigned timeout;
+-	u8 oldval;
+-	u64 start_spin;
+-
+-	ADD_STATS(taken, 1);
+-
+-	start_spin = spin_time_start();
+-
+-	do {
+-		u64 start_spin_fast = spin_time_start();
+-
+-		timeout = TIMEOUT;
+-
+-		asm("1: xchgb %1,%0\n"
+-		    "   testb %1,%1\n"
+-		    "   jz 3f\n"
+-		    "2: rep;nop\n"
+-		    "   cmpb $0,%0\n"
+-		    "   je 1b\n"
+-		    "   dec %2\n"
+-		    "   jnz 2b\n"
+-		    "3:\n"
+-		    : "+m" (xl->lock), "=q" (oldval), "+r" (timeout)
+-		    : "1" (1)
+-		    : "memory");
+-
+-		spin_time_accum_spinning(start_spin_fast);
+-
+-	} while (unlikely(oldval != 0 &&
+-			  (TIMEOUT == ~0 || !xen_spin_lock_slow(lock, irq_enable))));
+-
+-	spin_time_accum_total(start_spin);
+-}
+-
+-static void xen_spin_lock(struct arch_spinlock *lock)
+-{
+-	__xen_spin_lock(lock, false);
+-}
+-
+-static void xen_spin_lock_flags(struct arch_spinlock *lock, unsigned long flags)
+-{
+-	__xen_spin_lock(lock, !raw_irqs_disabled_flags(flags));
+-}
+-
+-static noinline void xen_spin_unlock_slow(struct xen_spinlock *xl)
++static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
+ {
+ 	int cpu;
+ 
+-	ADD_STATS(released_slow, 1);
++	add_stats(RELEASED_SLOW, 1);
++
++	for_each_cpu(cpu, &waiting_cpus) {
++		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+ 
+-	for_each_online_cpu(cpu) {
+-		/* XXX should mix up next cpu selection */
+-		if (per_cpu(lock_spinners, cpu) == xl) {
+-			ADD_STATS(released_slow_kicked, 1);
++		if (w->lock == lock && w->want == next) {
++			add_stats(RELEASED_SLOW_KICKED, 1);
+ 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
++			break;
+ 		}
+ 	}
+ }
+ 
+-static void xen_spin_unlock(struct arch_spinlock *lock)
+-{
+-	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+-
+-	ADD_STATS(released, 1);
+-
+-	smp_wmb();		/* make sure no writes get moved after unlock */
+-	xl->lock = 0;		/* release lock */
+-
+-	/*
+-	 * Make sure unlock happens before checking for waiting
+-	 * spinners.  We need a strong barrier to enforce the
+-	 * write-read ordering to different memory locations, as the
+-	 * CPU makes no implied guarantees about their ordering.
+-	 */
+-	mb();
+-
+-	if (unlikely(xl->spinners))
+-		xen_spin_unlock_slow(xl);
+-}
+-#endif
+-
+ static irqreturn_t dummy_handler(int irq, void *dev_id)
+ {
+ 	BUG();
+@@ -415,15 +248,8 @@ void __init xen_init_spinlocks(void)
+ 	if (xen_hvm_domain())
+ 		return;
+ 
+-	BUILD_BUG_ON(sizeof(struct xen_spinlock) > sizeof(arch_spinlock_t));
+-#if 0
+-	pv_lock_ops.spin_is_locked = xen_spin_is_locked;
+-	pv_lock_ops.spin_is_contended = xen_spin_is_contended;
+-	pv_lock_ops.spin_lock = xen_spin_lock;
+-	pv_lock_ops.spin_lock_flags = xen_spin_lock_flags;
+-	pv_lock_ops.spin_trylock = xen_spin_trylock;
+-	pv_lock_ops.spin_unlock = xen_spin_unlock;
+-#endif
++	pv_lock_ops.lock_spinning = xen_lock_spinning;
++	pv_lock_ops.unlock_kick = xen_unlock_kick;
+ }
+ 
+ #ifdef CONFIG_XEN_DEBUG_FS
+@@ -441,37 +267,21 @@ static int __init xen_spinlock_debugfs(void)
+ 
+ 	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
+ 
+-	debugfs_create_u32("timeout", 0644, d_spin_debug, &lock_timeout);
+-
+-	debugfs_create_u64("taken", 0444, d_spin_debug, &spinlock_stats.taken);
+ 	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
+-			   &spinlock_stats.taken_slow);
+-	debugfs_create_u32("taken_slow_nested", 0444, d_spin_debug,
+-			   &spinlock_stats.taken_slow_nested);
++			   &spinlock_stats.contention_stats[TAKEN_SLOW]);
+ 	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
+-			   &spinlock_stats.taken_slow_pickup);
++			   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
+ 	debugfs_create_u32("taken_slow_spurious", 0444, d_spin_debug,
+-			   &spinlock_stats.taken_slow_spurious);
+-	debugfs_create_u32("taken_slow_irqenable", 0444, d_spin_debug,
+-			   &spinlock_stats.taken_slow_irqenable);
++			   &spinlock_stats.contention_stats[TAKEN_SLOW_SPURIOUS]);
+ 
+-	debugfs_create_u64("released", 0444, d_spin_debug, &spinlock_stats.released);
+ 	debugfs_create_u32("released_slow", 0444, d_spin_debug,
+-			   &spinlock_stats.released_slow);
++			   &spinlock_stats.contention_stats[RELEASED_SLOW]);
+ 	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
+-			   &spinlock_stats.released_slow_kicked);
++			   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
+ 
+-	debugfs_create_u64("time_spinning", 0444, d_spin_debug,
+-			   &spinlock_stats.time_spinning);
+ 	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
+ 			   &spinlock_stats.time_blocked);
+-	debugfs_create_u64("time_total", 0444, d_spin_debug,
+-			   &spinlock_stats.time_total);
+ 
+-	debugfs_create_u32_array("histo_total", 0444, d_spin_debug,
+-				spinlock_stats.histo_spin_total, HISTO_BUCKETS + 1);
+-	debugfs_create_u32_array("histo_spinning", 0444, d_spin_debug,
+-				spinlock_stats.histo_spin_spinning, HISTO_BUCKETS + 1);
+ 	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
+ 				spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
+ 
+
