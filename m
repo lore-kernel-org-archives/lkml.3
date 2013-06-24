@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab3FXNLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 09:11:01 -0400
+	id S1752171Ab3FXNLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 09:11:13 -0400
 Received: from mga14.intel.com ([143.182.124.37]:25371 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750807Ab3FXNK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 09:10:59 -0400
+	id S1750807Ab3FXNLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 09:11:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,928,1363158000"; 
-   d="scan'208";a="321686562"
+   d="scan'208";a="321686628"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 08/15] perf tools: tidy duplicated munmap code
-Date: Mon, 24 Jun 2013 16:16:05 +0300
-Message-Id: <1372079772-20803-9-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 11/15] perf tools: fix symbol_conf.nr_events
+Date: Mon, 24 Jun 2013 16:16:08 +0300
+Message-Id: <1372079772-20803-12-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
 References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
@@ -29,73 +29,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same lines of code are used in three places.
-Make it a new function '__perf_evlist__munmap()'.
+symbol_conf.nr_events must be updated when processing
+attribute events.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/evlist.c | 32 ++++++++++++++------------------
- 1 file changed, 14 insertions(+), 18 deletions(-)
+ tools/perf/util/header.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 99b43dd..3c8b569 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -403,16 +403,20 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
- 	return event;
- }
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 4037b0a..81a3a0d 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2968,6 +2968,8 @@ int perf_event__process_attr(struct perf_tool *tool __maybe_unused,
+ 		perf_evlist__id_add(evlist, evsel, 0, i, event->attr.id[i]);
+ 	}
  
-+static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx)
-+{
-+	if (evlist->mmap[idx].base != NULL) {
-+		munmap(evlist->mmap[idx].base, evlist->mmap_len);
-+		evlist->mmap[idx].base = NULL;
-+	}
-+}
++	symbol_conf.nr_events = evlist->nr_entries;
 +
- void perf_evlist__munmap(struct perf_evlist *evlist)
- {
- 	int i;
- 
--	for (i = 0; i < evlist->nr_mmaps; i++) {
--		if (evlist->mmap[i].base != NULL) {
--			munmap(evlist->mmap[i].base, evlist->mmap_len);
--			evlist->mmap[i].base = NULL;
--		}
--	}
-+	for (i = 0; i < evlist->nr_mmaps; i++)
-+		__perf_evlist__munmap(evlist, i);
- 
- 	free(evlist->mmap);
- 	evlist->mmap = NULL;
-@@ -477,12 +481,8 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
  	return 0;
- 
- out_unmap:
--	for (cpu = 0; cpu < nr_cpus; cpu++) {
--		if (evlist->mmap[cpu].base != NULL) {
--			munmap(evlist->mmap[cpu].base, evlist->mmap_len);
--			evlist->mmap[cpu].base = NULL;
--		}
--	}
-+	for (cpu = 0; cpu < nr_cpus; cpu++)
-+		__perf_evlist__munmap(evlist, cpu);
- 	return -1;
- }
- 
-@@ -517,12 +517,8 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 	return 0;
- 
- out_unmap:
--	for (thread = 0; thread < nr_threads; thread++) {
--		if (evlist->mmap[thread].base != NULL) {
--			munmap(evlist->mmap[thread].base, evlist->mmap_len);
--			evlist->mmap[thread].base = NULL;
--		}
--	}
-+	for (thread = 0; thread < nr_threads; thread++)
-+		__perf_evlist__munmap(evlist, thread);
- 	return -1;
  }
  
 -- 
