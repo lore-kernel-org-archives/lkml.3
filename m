@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab3FXIc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:32:59 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:64121 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab3FXIc6 (ORCPT
+	id S1753184Ab3FXIjt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:39:49 -0400
+Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:1235 "EHLO
+	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab3FXIjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:32:58 -0400
-Date: Mon, 24 Jun 2013 10:32:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Greg Price <price@mit.edu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH] perf report: Add option to collapse undesired parts of
- call graph
-Message-ID: <20130624083253.GA28025@gmail.com>
-References: <20121207072726.GY22203@biohazard-cafe.mit.edu>
- <20130111052736.GG3054@ghostprotocols.net>
- <20130623031720.GW22203@biohazard-cafe.mit.edu>
- <20130623215327.GA995@krava.redhat.com>
+	Mon, 24 Jun 2013 04:39:48 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH] media: i2c: tvp514x: add support for asynchronous probing
+Date: Mon, 24 Jun 2013 10:39:17 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10.0-rc6-tschai; KDE/4.9.5; x86_64; ; )
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+References: <1371896189-5475-1-git-send-email-prabhakar.csengg@gmail.com> <201306240911.14288.hverkuil@xs4all.nl> <CA+V-a8tziXOAU6NNUy6rp-Fdz2sVk8+KYHdzDsVSaFuRADUjig@mail.gmail.com>
+In-Reply-To: <CA+V-a8tziXOAU6NNUy6rp-Fdz2sVk8+KYHdzDsVSaFuRADUjig@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130623215327.GA995@krava.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306241039.17147.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jiri Olsa <jolsa@redhat.com> wrote:
-
-> It could also make sense to allow sorting on this
-> the same way as we do for '-s parent' and report only
-> '[other]' and 'blackbox' entries.
+On Mon June 24 2013 10:24:02 Prabhakar Lad wrote:
+> Hi Hans,
 > 
-> Also I dont like the 'blackbox' option name, it should
-> complement the parent option somehow.. but no idea ;-)
+> On Mon, Jun 24, 2013 at 12:41 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> > On Sun June 23 2013 17:48:20 Prabhakar Lad wrote:
+> >> Hi Guennadi,
+> >>
+> >> Thanks for the review.
+> >>
+> >> On Sun, Jun 23, 2013 at 8:49 PM, Guennadi Liakhovetski
+> >> <g.liakhovetski@gmx.de> wrote:
+> >> > On Sat, 22 Jun 2013, Prabhakar Lad wrote:
+> >> >
+> >> >> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> >> >>
+> >> >> Both synchronous and asynchronous tvp514x subdevice probing is supported by
+> >> >> this patch.
+> >> >>
+> >> >> Signed-off-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
+> >> >> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> >> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> >> >> Cc: Hans Verkuil <hverkuil@xs4all.nl>
+> >> >> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> >> >> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> >> >> ---
+> >> >>  drivers/media/i2c/tvp514x.c |   22 +++++++++++++++-------
+> >> >>  1 file changed, 15 insertions(+), 7 deletions(-)
+> >> >>
+> >> >> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
+> >> >> index 864eb14..d090caf 100644
+> >> >> --- a/drivers/media/i2c/tvp514x.c
+> >> >> +++ b/drivers/media/i2c/tvp514x.c
+> >> >> @@ -36,6 +36,7 @@
+> >> >>  #include <linux/module.h>
+> >> >>  #include <linux/v4l2-mediabus.h>
+> >> >>
+> >> >> +#include <media/v4l2-async.h>
+> >> >>  #include <media/v4l2-device.h>
+> >> >>  #include <media/v4l2-common.h>
+> >> >>  #include <media/v4l2-mediabus.h>
+> >> >
+> >> > Ok, but this one really does too many things in one patch:
+> >> >
+> >> >> @@ -1148,9 +1149,9 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
+> >> >>       /* Register with V4L2 layer as slave device */
+> >> >>       sd = &decoder->sd;
+> >> >>       v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
+> >> >> -     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
+> >> >>
+> >> >>  #if defined(CONFIG_MEDIA_CONTROLLER)
+> >> >> +     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
+> >> >
+> >> > This is unrelated
+> >> >
+> >> OK I'll split the patch or may be a line in a commit message can do ?
+> >
+> > Please split it up in two patches.
+> >
+> > Why is sd->name set anyway? And why is it moved under CONFIG_MEDIA_CONTROLLER?
+> > It's not obvious to me.
+> >
+> while using tvp514x subdev with media controller based drivers, when we
+> enumerate entities (MEDIA_IOC_ENUM_ENTITIES) to get the index id
+> of the entity we compare the entity name with "tvp514x", So I moved it
+> under CONFIG_MEDIA_CONTROLLER config. I hope you are OK with
+> moving this in a separate patch.
 
-Looks like a nice feature.
+Sorry, but this approach is wrong. sd->name must be a unique name, so manually
+setting sd->name will fail if you have two tvp514x devices.
 
-Maybe calling it '--collapse' would be a better name?
+There is no reason to override sd->name here, and it is actually a bug. I see
+that tvp7002 has the same problem (and a bunch of others as well).
 
-By default the call-graphs are all expanded to maximum. With this option 
-certain function(s) and all their child chains can be collapsed.
+When trying to find a tvp514x you can just use strstr() in your application.
+That will work all the time as long as there is only one tvp514x.
 
---parent filters the call-chains, excluding all others that don't include 
-this parent. It might make sense to rename it to --filter?
+Regards,
 
-It would also be nice if all these visualization variants were available 
-in the GTK front-end.
-
-Thanks,
-
-	Ingo
+	Hans
