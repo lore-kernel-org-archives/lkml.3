@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab3FXRg2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:36:28 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:30324 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab3FXRg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:36:26 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <vinod.koul@intel.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>, <b.brezillon@overkiz.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [GIT PULL] dmaengine: at_hdmac: updates for 3.11
-Date: Mon, 24 Jun 2013 19:36:24 +0200
-Message-ID: <1372095384-1481-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	id S1752530Ab3FXRie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:38:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58213 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444Ab3FXRid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 13:38:33 -0400
+Message-ID: <51C88400.7090907@zytor.com>
+Date: Mon, 24 Jun 2013 10:38:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@kernel.org>
+CC: Nathan Zimmer <nzimmer@sgi.com>, holt@sgi.com, travis@sgi.com,
+        rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
+        yinghai@kernel.org, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130623093250.GA13776@gmail.com>
+In-Reply-To: <20130623093250.GA13776@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vinod,
+On 06/23/2013 02:32 AM, Ingo Molnar wrote:
+> 
+> * Ingo Molnar <mingo@kernel.org> wrote:
+> 
+>> Yet another thing to consider would be to implement an initialization 
+>> speedup of 3 orders of magnitude: initialize on the large page (2MB) 
+>> grandularity and on-demand delay the initialization of the 4K granular 
+>> struct pages [but still allocating them] - which I suspect are a good 
+>> chunk of the overhead? That way we could initialize in 2MB steps and speed 
+>> up the 2 hours bootup of 32 TB of RAM to 14 seconds...
+>>
+>> [ The cost would be one more branch in the buddy allocator, to detect
+>>   not-yet-initialized 2 MB chunks as we encounter them. Acceptable I 
+>>   think. ]
+> 
+> One advantage of this scheme would be that we could use it on pretty much 
+> any box, it would provide instant boot time speedups everywhere [a couple 
+> of hundred msecs on a small 4GB box - significant I think] - and would 
+> spread out and parallelize initialization to later stages.
+> 
 
-As said previously, I have collected the patches that can reach sdma git tree
-for 3.11.
+Even better if we could start at the 1 GB level, which most of these
+really huge machines will have hardware support for.
 
-This is the patch series that has already been sent by Ludovic and myself.
-It is the part of the series that is dedicated to dmaengine. It is based on
-slave-dma/next. 
-This set of patches update the dt dma binding for at_hdmac since we need one
-more parameter. In order to keep backward compatibility, an existing cell will
-be used to add this parameter. Since the content of that cell will become a
-magic value due to the concatenation of the two parameters, it is time to
-use macros.
-
-I have also stacked some cleanup and trivial patches that were arround for some
-time plus the more recent conversion to the clock routines with
-prepare/unprepare variants.
-
-Thanks, best regards,
-
-The following changes since commit fdf3303434787a4ba00a37a6748eb68974c63b0d:
-
-  Merge branch 'for-linus' into next (2013-06-21 19:44:03 +0530)
-
-are available in the git repository at:
+	-hpa
 
 
-  git://github.com/at91linux/linux-at91.git tags/at91-sdma
-
-for you to fetch changes up to 855a243e5cb50e7d81b1d1ba8cd9aae8aaa4de35:
-
-  dmaengine: at_hdmac: prepare clk before calling enable (2013-06-24 19:22:30 +0200)
-
-----------------------------------------------------------------
-dmaengine updates for Atmel AT91 driver: at_hdmac.c
-- Device Tree binding update adding the use of header file for coding FIFO
-  configuration values
-- a warning removal
-- use of clk_prepare_enable/disable_unprepare in driver
-
-----------------------------------------------------------------
-Boris BREZILLON (1):
-      dmaengine: at_hdmac: prepare clk before calling enable
-
-Ludovic Desroches (2):
-      ARM: at91: dt: add header to define at_hdmac configuration
-      dmaengine: at_hdmac: add FIFO configuration parameter to DMA DT binding
-
-Nicolas Ferre (2):
-      dmaengine: at_hdmac: remove unsuded atc_cleanup_descriptors()
-      dmaengine/trivial: at_hdmac: add curly brackets to if/else expressions
-
- .../devicetree/bindings/dma/atmel-dma.txt          |  7 +-
- drivers/dma/at_hdmac.c                             | 79 ++++++++++------------
- include/dt-bindings/dma/at91.h                     | 27 ++++++++
- 3 files changed, 68 insertions(+), 45 deletions(-)
- create mode 100644 include/dt-bindings/dma/at91.h
-
--- 
-Nicolas Ferre
