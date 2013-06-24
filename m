@@ -1,67 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab3FXPIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:08:52 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:38335 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab3FXPIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:08:50 -0400
+	id S1752530Ab3FXPJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:09:41 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55418 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752003Ab3FXPJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 11:09:39 -0400
+Message-ID: <51C86113.1090902@ti.com>
+Date: Mon, 24 Jun 2013 18:09:07 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1371720391-21825-4-git-send-email-james.hogan@imgtec.com>
-References: <1371720391-21825-1-git-send-email-james.hogan@imgtec.com>
-	<1371720391-21825-4-git-send-email-james.hogan@imgtec.com>
-Date: Mon, 24 Jun 2013 17:08:50 +0200
-Message-ID: <CACRpkdbq8OP1FYpUuoC+Zo=qD0mA6Hmj5gUQJCbJasOspWz6SA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/4] pinctrl-tz1090-pdc: add TZ1090 PDC pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: <balbi@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
+ bus suspend
+References: <Pine.LNX.4.44L0.1306201326100.2063-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1306201326100.2063-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 11:26 AM, James Hogan <james.hogan@imgtec.com> wrote:
+Hi Alan,
 
-> Add a pin control driver for the TZ1090's low power pins via the
-> powerdown controller SOC_GPIO_CONTROL registers.
->
-> These pins have individually controlled pull-up, and group controlled
-> schmitt, slew-rate, drive-strength, and power-on-start (pos).
->
-> The pdc_gpio0 and pdc_gpio1 pins can also be muxed onto the
-> ir_mod_stable_out and ir_mod_power_out functions respectively. If no
-> function is set they remain in GPIO mode. These muxes can be overridden
-> by requesting them as GPIOs.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: linux-doc@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> ---
-> Changes in v3:
->  - separated from irq-imgpdc and removed arch/metag changes to allow
->    these patches to go upstream separately via the pinctrl[/gpio] trees
->    (particularly the pinctrl drivers depend on the new pinconf DT
->    bindings).
->  - some s/unsigned/unsigned int/.
->  - pinctrl-tz1090*: switch to generic pinconfig DT bindings and
->    pinconf_generic_dump_config.
->  - pinctrl-tz1090*: use tz1090, prefix for pins and function in DT
->    bindings.
->  - pinctrl-tz1090*: make internal functions static.
->  - pinctrl-tz1090*: move initcall from postcore to arch.
+On 06/20/2013 08:33 PM, Alan Stern wrote:
+> On Thu, 20 Jun 2013, Roger Quadros wrote:
+> 
+>>> runtime_resume(dev)
+>>> {
+>>> 	...
+>>>
+>>> 	if (omap->flags & OMAP_EHCI_IRQ_PENDING) {
+>>> 		process_pending_irqs(omap);
+>>
+>> OK, thanks. 
+>>
+>> But I'm not sure if the generic ehci_irq handler is able to
+>> run in a process context. Maybe if we replace spin_lock(&ehci->lock);
+>> with spin_lock_irqsave() there, it will work.
+>>
+>> Alan is this a doable option?
+> 
+> ehci_irq() will work okay in process context, provided the caller 
+> disables interrupts.
+> 
+> But maybe none of this will be needed after Roger redesigns the
+> controller suspend to work at the right time.  Or if it is, we could
+> adopt a simpler alternative: the controller's resume routine could
+> always call usb_hcd_resume_root_hub().  After all, about the only
+> reason for doing a runtime resume of the controller is because the root
+> hub needs to do something.
+> 
 
-Thanks, patch applied as well.
+OK I've tried to handle all this in an alternate way. Now the controller suspend/resume
+and runtime suspend/resume is independent of bus suspend.
 
-Yours,
-Linus Walleij
+The controller now runtime suspends when all devices on the bus have suspended and
+the hub auto suspends. NOTE: HW_ACCESSIBLE is still set on runtime_suspend.
+The challenge here is to process the interrupt in this state.
+
+I've tried to handle this state. (i.e. interrupt while controller is runtime suspended),
+by disabling the interrupt till we are ready and calling usb_hcd_resume_root_hub().
+We mark a flag (HW_IRQ_DISABLED) stating that the interrupt was disabled and based on
+that enable the IRQ and clear the flag in hcd_resume_work().
+
+Do let me know what you think of this approach.
+
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index d53547d..8879cd2 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2136,6 +2136,11 @@ static void hcd_resume_work(struct work_struct *work)
+ 	usb_lock_device(udev);
+ 	usb_remote_wakeup(udev);
+ 	usb_unlock_device(udev);
++	if (HCD_IRQ_DISABLED(hcd)) {
++		/* Interrupt was disabled */
++		clear_bit(HCD_FLAG_IRQ_DISABLED, &hcd->flags);
++		enable_irq(hcd->irq);
++	}
+ }
+ 
+ /**
+@@ -2225,6 +2230,16 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
+ 
+ 	if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
+ 		rc = IRQ_NONE;
++	else if (pm_runtime_status_suspended(hcd->self.controller)) {
++		/*
++		 * We can't handle it yet so disable IRQ, make note of it
++		 * and resume root hub (i.e. controller as well)
++		 */
++		disable_irq_nosync(hcd->irq);
++		set_bit(HCD_FLAG_IRQ_DISABLED, &hcd->flags);
++		usb_hcd_resume_root_hub(hcd);
++		rc = IRQ_HANDLED;
++	}
+ 	else if (hcd->driver->irq(hcd) == IRQ_NONE)
+ 		rc = IRQ_NONE;
+ 	else
+
+diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+index f5f5c7d..6c6287e 100644
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -110,6 +110,7 @@ struct usb_hcd {
+ #define HCD_FLAG_WAKEUP_PENDING		4	/* root hub is resuming? */
+ #define HCD_FLAG_RH_RUNNING		5	/* root hub is running? */
+ #define HCD_FLAG_DEAD			6	/* controller has died? */
++#define HCD_FLAG_IRQ_DISABLED		7	/* Interrupt was disabled */
+ 
+ 	/* The flags can be tested using these macros; they are likely to
+ 	 * be slightly faster than test_bit().
+@@ -120,6 +121,7 @@ struct usb_hcd {
+ #define HCD_WAKEUP_PENDING(hcd)	((hcd)->flags & (1U << HCD_FLAG_WAKEUP_PENDING))
+ #define HCD_RH_RUNNING(hcd)	((hcd)->flags & (1U << HCD_FLAG_RH_RUNNING))
+ #define HCD_DEAD(hcd)		((hcd)->flags & (1U << HCD_FLAG_DEAD))
++#define HCD_IRQ_DISABLED(hcd)	((hcd)->flags & (1U << HCD_FLAG_IRQ_DISABLED))
+ 
+ 	/* Flags that get set only during HCD registration or removal. */
+ 	unsigned		rh_registered:1;/* is root hub registered? */
+
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 16d7150..c5320c7 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -225,6 +225,8 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 		usb_phy_set_suspend(omap->phy[i], 0);
+ 	}
+ 
++	pm_runtime_put_sync(dev);
++
+ 	return 0;
+ 
+ err_pm_runtime:
+
