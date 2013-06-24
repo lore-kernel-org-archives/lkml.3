@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab3FXWIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 18:08:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55440 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3FXWIa (ORCPT
+	id S1751408Ab3FXWIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 18:08:52 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:55894 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751071Ab3FXWIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 18:08:30 -0400
-Message-ID: <51C8C35C.70307@codeaurora.org>
-Date: Mon, 24 Jun 2013 15:08:28 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 24 Jun 2013 18:08:50 -0400
+Message-ID: <51C8C36B.9020605@hurleysoftware.com>
+Date: Mon, 24 Jun 2013 18:08:43 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v5] clocksource:arm_global_timer: Add ARM global timer
- support.
-References: <1372089195-29219-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1372089195-29219-1-git-send-email-srinivas.kandagatla@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Alex Shi <alex.shi@intel.com>, Michel Lespinasse <walken@google.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock acquisition
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com>  <1371858700.22432.5.camel@schen9-DESK>  <51C558E2.1040108@hurleysoftware.com> <1372111092.22432.84.camel@schen9-DESK>
+In-Reply-To: <1372111092.22432.84.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/13 08:53, Srinivas KANDAGATLA wrote:
-> +#include <linux/clkdev.h>
+On 06/24/2013 05:58 PM, Tim Chen wrote:
+> On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
+>> Will this spin for full scheduler value on a reader-owned lock?
+>>
+>>> +		/* wait_lock will be acquired if write_lock is obtained */
+>>> +		if (rwsem_try_write_lock(sem->count, true, sem)) {
+>>> +			ret = 1;
+>>> +			goto out;
+>>> +		}
+>>> +
+>>> +		/*
+>>> +		 * When there's no owner, we might have preempted between the
+>>                                                           ^^^^^^^^
+>>
+>> Isn't pre-emption disabled?
+>>
+>
+> Peter, on further review, this code is needed.  This code guard against
+> the case of this thread preempting another thread in the middle
+> of setting the  owner field.  Disabling preemption does not prevent this
+> thread from preempting others, even though others cannot preempt
+> this thread.
 
-Why do you need this include?
+Yep; so the "we" in the quoted comment really refers to another thread
+executing down_write_xxxx().
 
-> +#include <asm/mach/irq.h>
+Thanks for the clarification.
 
-And this one?
-
-> +static u64 gt_counter_read(void)
-> +{
-> +	u64 counter;
-> +	u32 lower;
-> +	u32 upper, old_upper;
-> +
-> +	upper = readl_relaxed(gt_base + GT_COUNTER1);
-> +	do {
-> +		old_upper = upper;
-> +		lower = readl_relaxed(gt_base + GT_COUNTER0);
-> +		upper = readl_relaxed(gt_base + GT_COUNTER1);
-[snip]
-> +static void gt_compare_set(unsigned long delta, int periodic)
-> +{
-> +	u64 counter = gt_counter_read();
-> +	unsigned long ctrl = readl(gt_base + GT_CONTROL);
-> +
-> +	counter += delta;
-> +	ctrl &=  ~(GT_CONTROL_COMP_ENABLE | GT_CONTROL_IRQ_ENABLE);
-> +
-> +	writel(ctrl, gt_base + GT_CONTROL);
-> +	writel(lower_32_bits(counter), gt_base + GT_COMP0);
-> +	writel(upper_32_bits(counter), gt_base + GT_COMP1);
-> +
-> +	if (periodic) {
-> +		writel(delta, gt_base + GT_AUTO_INC);
-> +		ctrl |= GT_CONTROL_AUTO_INC;
-> +	}
-> +
-> +	ctrl |= GT_CONTROL_COMP_ENABLE | GT_CONTROL_IRQ_ENABLE;
-> +	writel(ctrl, gt_base + GT_CONTROL);
-> +}
-
-Why is there a mix of the relaxed and non-relaxed io accessors?
-
-> +#ifdef CONFIG_CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
-> +static u32 gt_sched_clock_read(void)
-
-notrace
-
-> +{
-> +	if (!gt_base)
-> +		return 0;
-
-Seems impossible? Remove this check?
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Regards,
+Peter Hurley
