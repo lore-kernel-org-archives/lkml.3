@@ -1,102 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab3FXIH4 (ORCPT <rfc822;w@1wt.eu>);
+	id S1753192Ab3FXIID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:08:03 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53414 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab3FXIH4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Jun 2013 04:07:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38325 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752893Ab3FXIHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:07:53 -0400
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH] writeback: Do not sort b_io list only because of block device inode
-Date: Mon, 24 Jun 2013 10:07:49 +0200
-Message-Id: <1372061269-16663-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
+Date: Mon, 24 Jun 2013 10:07:51 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Wilcox <willy@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nvme@lists.infradead.org,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
+Message-ID: <20130624080750.GA21768@gmail.com>
+References: <20130620201713.GV8211@linux.intel.com>
+ <20130623100920.GA19021@gmail.com>
+ <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is very likely that block device inode will be part of BDI dirty list
-as well. However it doesn't make sence to sort inodes on the b_io list
-just because of this inode (as it contains buffers all over the device
-anyway). So save some CPU cycles which is valuable since we hold relatively
-contented wb->list_lock.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/block_dev.c     | 2 +-
- fs/fs-writeback.c  | 8 +++++---
- include/linux/fs.h | 6 ++++++
- 3 files changed, 12 insertions(+), 4 deletions(-)
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 2091db8..2562330 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -606,7 +606,7 @@ static struct block_device *bd_acquire(struct inode *inode)
- 	return bdev;
- }
- 
--static inline int sb_is_blkdev_sb(struct super_block *sb)
-+int sb_is_blkdev_sb(struct super_block *sb)
- {
- 	return sb == blockdev_superblock;
- }
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 3be5718..cabdece 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -68,7 +68,7 @@ static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
- {
- 	struct super_block *sb = inode->i_sb;
- 
--	if (strcmp(sb->s_type->name, "bdev") == 0)
-+	if (sb_is_blkdev_sb(sb))
- 		return inode->i_mapping->backing_dev_info;
- 
- 	return sb->s_bdi;
-@@ -250,11 +250,13 @@ static int move_expired_inodes(struct list_head *delaying_queue,
- 		if (work->older_than_this &&
- 		    inode_dirtied_after(inode, *work->older_than_this))
- 			break;
-+		list_move(&inode->i_wb_list, &tmp);
-+		moved++;
-+		if (sb_is_blkdev_sb(inode->i_sb))
-+			continue;
- 		if (sb && sb != inode->i_sb)
- 			do_sb_sort = 1;
- 		sb = inode->i_sb;
--		list_move(&inode->i_wb_list, &tmp);
--		moved++;
- 	}
- 
- 	/* just one sb in list, splice to dispatch_queue and we're done */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 43db02e..8f897d0 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2058,6 +2058,7 @@ extern struct super_block *freeze_bdev(struct block_device *);
- extern void emergency_thaw_all(void);
- extern int thaw_bdev(struct block_device *bdev, struct super_block *sb);
- extern int fsync_bdev(struct block_device *);
-+extern int sb_is_blkdev_sb(struct super_block *sb);
- #else
- static inline void bd_forget(struct inode *inode) {}
- static inline int sync_blockdev(struct block_device *bdev) { return 0; }
-@@ -2077,6 +2078,11 @@ static inline int thaw_bdev(struct block_device *bdev, struct super_block *sb)
- static inline void iterate_bdevs(void (*f)(struct block_device *, void *), void *arg)
- {
- }
-+
-+static inline int sb_is_blkdev_sb(struct super_block *sb)
-+{
-+	return 0;
-+}
- #endif
- extern int sync_filesystem(struct super_block *);
- extern const struct file_operations def_blk_fops;
--- 
-1.8.1.4
+> On Sun, Jun 23, 2013 at 12:09 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > The spinning approach you add has the disadvantage of actively wasting 
+> > CPU time, which could be used to run other tasks. In general it's much 
+> > better to make sure the completion IRQs are rate-limited and just 
+> > schedule. This (combined with a metric ton of fine details) is what 
+> > the networking code does in essence, and they have no trouble reaching 
+> > very high throughput.
+> 
+> It's not about throughput - it's about latency. Don't ever confuse the 
+> two, they have almost nothing in common. Networking very very seldom has 
+> the kind of "submit and wait for immediate result" issues that disk 
+> reads do.
 
+Yeah, indeed that's true, the dd measurement Matthew did issued IO at a 
+rate of one sector at a time and waiting for every sector to complete:
+
+    dd if=/dev/nvme0n1 of=/dev/null iflag=direct bs=512 count=1000000
+
+So my suggestions about batching and IRQ rate control are immaterial...
+
+> That said, I dislike the patch intensely. I do not think it's at all a 
+> good idea to look at "need_resched" to say "I can spin now". You're 
+> still wasting CPU cycles.
+> 
+> So Willy, please do *not* mix this up with the scheduler, or at least 
+> not "need_resched". Instead, maybe we should introduce a notion of "if 
+> we are switching to the idle thread, let's see if we can try to do some 
+> IO synchronously".
+> 
+> You could try to do that either *in* the idle thread (which would take 
+> the context switch overhead - maybe negating some of the advantages), or 
+> alternatively hook into the scheduler idle logic before actually doing 
+> the switch.
+> 
+> But anything that starts polling when there are other runnable processes 
+> to be done sounds really debatable. Even if it's "only" 5us or so. 
+> There's a lot of real work that could be done in 5us.
+
+I'm wondering, how will this scheme work if the IO completion latency is a 
+lot more than the 5 usecs in the testcase? What if it takes 20 usecs or 
+100 usecs or more?
+
+Will we still burn our CPU time, wasting power, inflating this CPU's load 
+which keeps other CPUs from balancing tasks over to this CPU, etc?
+
+In the 5 usecs case it looks beneficial to do. In the longer-latency cases 
+I'm not so sure.
+
+Thanks,
+
+	Ingo
