@@ -1,84 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3FXMkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:40:22 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:41062 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab3FXMkF (ORCPT
+	id S1753468Ab3FXMkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:40:32 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41941 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab3FXMk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:40:05 -0400
-X-AuditID: cbfec7f5-b7f376d000001ec6-b9-51c83e221e21
-From: Tomasz Figa <t.figa@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Grant Likely <grant.likely@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Masanari Iida <standby24x7@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        rtc-linux@googlegroups.com, Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v3 0/3] regulator: max8998: Add support for Device Tree
-Date: Mon, 24 Jun 2013 14:39:51 +0200
-Message-id: <1372077594-17052-1-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 1.8.2.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t/xK7pKdicCDVomq1gsuXiV3WLqwyds
-	Fgf+7GC02D1nMYtF74KrbBbfrnQwWWx6fI3V4vKuOWwWM87vY7K4fZnX4vGseWwWh1ccYLJY
-	93I6i8X+zg5Gi9PdrBaXZlxnt1g/4zWLg6BHS3MPm8eCz1fYPXbOusvusWfiSTaPTas62Txe
-	rZ7J6nHn2h42j3knAz02L6n3uNCV7dG3ZRWjx5kFR9g9ps/7yeTxeZNcAF8Ul01Kak5mWWqR
-	vl0CV8bDJquCM7wV695PYG5gfMrZxcjJISFgInHqwExWCFtM4sK99WxdjFwcQgJLGSU6j1xk
-	hXD6mCTW/OtjBKliE1CT+NzwiA3EFhFQkNjc+wysiFngBotEx+FmdpCEsIC7xOSZC8FsFgFV
-	iT/nV7OA2LwCThLz/89ngVinIHF8+zbGCYzcCxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefn
-	bmKEhPbXHYxLj1kdYhTgYFTi4f1heTxQiDWxrLgy9xCjBAezkghvqMiJQCHelMTKqtSi/Pii
-	0pzU4kOMTBycUg2ME2UTfjA/8Jfffezw4c3/N+TV8Uct25XhJ2KtKlctu+xYloas9PU5hdvP
-	CNm/7cwI7ZZNVbFbxdHGt+BCVdVb13/V5rfOTFp+PJOls+G32Bcz+4Wx31vZ+AuyDZ3c3n3W
-	v3enMa9fV4DfYY6Wubpr3aNTKpLPlGYu21XlLlMTzneE85pLX5oSS3FGoqEWc1FxIgC+ej4/
-	SwIAAA==
+	Mon, 24 Jun 2013 08:40:28 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
+        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
+Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
+        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
+        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
+        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
+        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
+        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stephan.diestelhorst@amd.com>,
+        <riel@redhat.com>, <drjones@redhat.com>,
+        <virtualization@lists.linux-foundation.org>,
+        <srivatsa.vaddagiri@gmail.com>
+Date: Mon, 24 Jun 2013 18:14:15 +0530
+Message-Id: <20130624124415.27508.74230.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH RFC V10 18/18] kvm hypervisor: Add directed yield in vcpu block path
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062412-7014-0000-0000-00000338B723
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds Device Tree support to max8998 MFD driver.
+kvm hypervisor: Add directed yield in vcpu block path
 
-First patch reworks max8998-irq driver to use IRQ domains. Second patch
-prepares platform data structure to ease generating it at runtime from
-data parsed from device tree. Third patch implements Device Tree
-binding and adds necessary documentation.
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-Tested on Universal C210 board.
+We use the improved PLE handler logic in vcpu block patch for
+scheduling rather than plain schedule, so that we can make
+intelligent decisions.
 
-Changes since v2:
- - switched to simple domains to retain compatibility with platforms
-   that do not support Device Tree
- - removed clocks from DT regulator bindings (will be moved to common
-   clock framework in further patch)
- - beautified the code a bit
-Changes since v1:
- - rebased to current for-next of regulator tree
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+ arch/ia64/include/asm/kvm_host.h    |    5 +++++
+ arch/powerpc/include/asm/kvm_host.h |    5 +++++
+ arch/s390/include/asm/kvm_host.h    |    5 +++++
+ arch/x86/include/asm/kvm_host.h     |    2 +-
+ arch/x86/kvm/x86.c                  |    8 ++++++++
+ include/linux/kvm_host.h            |    2 +-
+ virt/kvm/kvm_main.c                 |    6 ++++--
+ 7 files changed, 29 insertions(+), 4 deletions(-)
 
-Tomasz Figa (3):
-  mfd: Add irq domain support for max8998 interrupts
-  regulator: max8998: Use arrays for specifying voltages in platform
-    data
-  mfd: max8998: Add support for Device Tree
-
- Documentation/devicetree/bindings/mfd/max8998.txt | 108 ++++++++++
- arch/arm/mach-exynos/mach-universal_c210.c        |   8 +-
- arch/arm/mach-s5pv210/mach-aquila.c               |   8 +-
- arch/arm/mach-s5pv210/mach-goni.c                 |   8 +-
- drivers/mfd/Kconfig                               |   1 +
- drivers/mfd/max8998-irq.c                         |  65 +++---
- drivers/mfd/max8998.c                             |  75 ++++++-
- drivers/regulator/max8998.c                       | 239 +++++++++++++++-------
- drivers/rtc/rtc-max8998.c                         |  14 +-
- include/linux/mfd/max8998-private.h               |   7 +-
- include/linux/mfd/max8998.h                       |  20 +-
- 11 files changed, 421 insertions(+), 132 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/max8998.txt
-
--- 
-1.8.2.1
+diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
+index 989dd3f..999ab15 100644
+--- a/arch/ia64/include/asm/kvm_host.h
++++ b/arch/ia64/include/asm/kvm_host.h
+@@ -595,6 +595,11 @@ int kvm_emulate_halt(struct kvm_vcpu *vcpu);
+ int kvm_pal_emul(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run);
+ void kvm_sal_emul(struct kvm_vcpu *vcpu);
+ 
++static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
++{
++	schedule();
++}
++
+ #define __KVM_HAVE_ARCH_VM_ALLOC 1
+ struct kvm *kvm_arch_alloc_vm(void);
+ void kvm_arch_free_vm(struct kvm *kvm);
+diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+index af326cd..1aeecc0 100644
+--- a/arch/powerpc/include/asm/kvm_host.h
++++ b/arch/powerpc/include/asm/kvm_host.h
+@@ -628,4 +628,9 @@ struct kvm_vcpu_arch {
+ #define __KVM_HAVE_ARCH_WQP
+ #define __KVM_HAVE_CREATE_DEVICE
+ 
++static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
++{
++	schedule();
++}
++
+ #endif /* __POWERPC_KVM_HOST_H__ */
+diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
+index 16bd5d1..db09a56 100644
+--- a/arch/s390/include/asm/kvm_host.h
++++ b/arch/s390/include/asm/kvm_host.h
+@@ -266,4 +266,9 @@ struct kvm_arch{
+ };
+ 
+ extern int sie64a(struct kvm_s390_sie_block *, u64 *);
++static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
++{
++	schedule();
++}
++
+ #endif
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 95702de..72ff791 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -1042,5 +1042,5 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info);
+ int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
+ void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
+ void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
+-
++void kvm_do_schedule(struct kvm_vcpu *vcpu);
+ #endif /* _ASM_X86_KVM_HOST_H */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index b963c86..84a4eb2 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7281,6 +7281,14 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
+ 			kvm_x86_ops->interrupt_allowed(vcpu);
+ }
+ 
++void kvm_do_schedule(struct kvm_vcpu *vcpu)
++{
++	/* We try to yield to a kicked vcpu else do a schedule */
++	if (kvm_vcpu_on_spin(vcpu) <= 0)
++		schedule();
++}
++EXPORT_SYMBOL_GPL(kvm_do_schedule);
++
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index f0eea07..39efc18 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -565,7 +565,7 @@ void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
+ void kvm_vcpu_block(struct kvm_vcpu *vcpu);
+ void kvm_vcpu_kick(struct kvm_vcpu *vcpu);
+ bool kvm_vcpu_yield_to(struct kvm_vcpu *target);
+-void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
++bool kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
+ void kvm_resched(struct kvm_vcpu *vcpu);
+ void kvm_load_guest_fpu(struct kvm_vcpu *vcpu);
+ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 302681c..8387247 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1685,7 +1685,7 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+ 		if (signal_pending(current))
+ 			break;
+ 
+-		schedule();
++		kvm_do_schedule(vcpu);
+ 	}
+ 
+ 	finish_wait(&vcpu->wq, &wait);
+@@ -1786,7 +1786,7 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
+ }
+ #endif
+ 
+-void kvm_vcpu_on_spin(struct kvm_vcpu *me)
++bool kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ {
+ 	struct kvm *kvm = me->kvm;
+ 	struct kvm_vcpu *vcpu;
+@@ -1835,6 +1835,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 
+ 	/* Ensure vcpu is not eligible during next spinloop */
+ 	kvm_vcpu_set_dy_eligible(me, false);
++
++	return yielded;
+ }
+ EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
+ 
 
