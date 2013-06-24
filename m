@@ -1,132 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab3FXVKi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 17:10:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52322 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab3FXVKh (ORCPT
+	id S1752197Ab3FXVKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 17:10:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48398 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752065Ab3FXVKv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 17:10:37 -0400
-Date: Mon, 24 Jun 2013 23:10:30 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] regulators: max8973: initial DT support
-In-Reply-To: <51C88E96.2010408@cogentembedded.com>
-Message-ID: <Pine.LNX.4.64.1306242305150.26438@axis700.grange>
-References: <Pine.LNX.4.64.1306241246580.19735@axis700.grange>
- <51C88E96.2010408@cogentembedded.com>
+	Mon, 24 Jun 2013 17:10:51 -0400
+From: "Fernandes, Joel A" <joelagnel@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <agnel.joel@gmail.com>
+CC: "Nori, Sekhar" <nsekhar@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Matt Porter" <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        "Devicetree Discuss" <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: RE: [PATCH v12 05/11] edma: config: Enable config options for EDMA
+Thread-Topic: [PATCH v12 05/11] edma: config: Enable config options for EDMA
+Thread-Index: AQHObfoZdlSH5JEXIkOVso7HMXcpAplASIaAgAA8ZgCAAAIzAIAABZOAgAADZwCAAEV1AIAAAQQAgAA09ICAAAWtAIAATfYAgARLc4CAAAEQgIAACeSA//+sj6A=
+Date: Mon, 24 Jun 2013 21:09:58 +0000
+Message-ID: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4EE5A1@DLEE08.ent.ti.com>
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
+ <201306242228.23297.arnd@arndb.de>
+ <CAD=GYpYwswOYGHRzZ6SeKD+sEfi-7s3HuqKr7G0OXQWFCA_EtQ@mail.gmail.com>
+ <201306242307.35840.arnd@arndb.de>
+In-Reply-To: <201306242307.35840.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:4Ofw/r9XbBI655acaZ1SW6vFrmmFjVodUztDId0mab/
- oDeJGiGgJWgOW2ESccTdecBRQJdVMNN/3tWUU4AMldxTgQoFO7
- Sc34Aa9VszHLjNKwvv+CtzQL22QA1r39zrMRSejhkagBGSofIf
- b3J21WWaRyPa12tZA23vXaqqP1yqa1rYVCFE+wkW64B6ANdOnW
- 4Ys06UwdY4wXJhy9jaRqrvI1YkJK9IRuexXPdwL1s9zoZQxg/M
- TNVeP1LdIj1uEHnnp+7/ahWp/v3PE9X1PJ0cVg0PoklANrEy4Z
- HHAWCi4QMtBe3zA4CS3ld4ATZVO84zo17vAIbA2Jx+j0cGEols
- 0J0XPTNKneCBsjS1xfXgEvAx4IGmgBjfufs+/l4YCUqfBeofgx
- 2Q0c7TFBHOjMg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jun 2013, Sergei Shtylyov wrote:
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Monday, June 24, 2013 4:08 PM
+> To: Joel A Fernandes
+> Cc: Nori, Sekhar; Fernandes, Joel A; Tony Lindgren; Matt Porter; Grant Likely;
+> Rob Herring; Vinod Koul; Mark Brown; Cousson, Benoit; Russell King; Rob
+> Landley; Andrew Morton; Jason Kridner; Koen Kooi; Devicetree Discuss; Linux
+> OMAP List; Linux ARM Kernel List; Linux DaVinci Kernel List; Linux Kernel
+> Mailing List; Linux Documentation List; Linux MMC List; Linux SPI Devel List
+> Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
+> 
+> On Monday 24 June 2013, Joel A Fernandes wrote:
+> > >> Yes sure, right now they are defined  as follows in include/linux/edma.h:
+> > >>
+> > >> #if defined(CONFIG_TI_EDMA) || defined(CONFIG_TI_EDMA_MODULE)
+> bool
+> > >> edma_filter_fn(struct dma_chan *, void *); #else static inline bool
+> > >> edma_filter_fn(struct dma_chan *chan, void *param) { return false;
+> > >> } #endif
+> > >
+> > > It's best to just define the filter function in the platform code
+> > > and pass a pointer to it through platform data. The way you do it
+> > > above makes the slave drivers inherently nonportable.
+> >
+> > But with DT-only platforms, can you really do that?
+> 
+> The nice thing about this is that with a DT-only platform, the filter function will
+> automatically go away: you have no platform_data, which means that if you
+> are using dma_request_slave_channel_compat, you just pass NULL as the filter
+> and the filter-data, same as just calling dma_request_slave_channel.
+> 
+ 
+[Joel] Ah yes! Thanks for that. Right, edma_filter_fn is not passed explicitly for DT case.
 
-> Hello.
-> 
-> On 06/24/2013 02:50 PM, Guennadi Liakhovetski wrote:
-> 
-> > This patch adds primitive DT support to the max8973 regulator driver. None
-> > of the configuration parameters, supported in the platform data are yet
-> > available in DT, therefore no configuration is performed if booting with
-> > no platform data. This means, that DT instantiation can only be used on
-> > boards, where no run-time configuration of the chip is required. In such
-> > cases the driver can be used to scale its output voltage. In the future
-> > support for configuration parameters should be added.
-> 
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> > ---
-> 
-> > v2: as suggested by Mark, regulator bindings are now directly under the
-> > main max8973 I2C device node.
-> 
-> >   .../bindings/regulator/max8973-regulator.txt       |   21 +++++++++++
-> >   drivers/regulator/max8973-regulator.c              |   37
-> > +++++++++++++------
-> >   2 files changed, 46 insertions(+), 12 deletions(-)
-> >   create mode 100644
-> > Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-> 
-> > diff --git
-> > a/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-> > b/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-> > new file mode 100644
-> > index 0000000..8d38ab2
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-> > @@ -0,0 +1,21 @@
-> > +* Maxim MAX8973 Voltage Regulator
-> > +
-> > +Required properties:
-> > +
-> > +- compatible:	must be "maxium,max8973"
-> 
->    I see only "maxim" and "dallas" for Maxim Integrated Products in
-> Documentation/devicetree/bindings/vendor-prefixes.txt. Is "maxium" some new,
-> unknown vendor?
-
-Yeah, it's an alias ;-) No, sure, it's a typo, thanks for catching. In 
-fact, it still works, becaus I2C OF parsing doesn't use the vendor string, 
-but it's better to get it right.
-
-Mark, you said you'd already applied this. Would you prefer an incremental 
-patch or shall I send an updated version?
-
-> 
-> > +- reg:		the i2c slave address of the regulator. It should be
-> > 0x1b.
-> > +
-> > +Any standard regulator properties can be used to configure the single
-> > max8973
-> > +DCDC.
-> > +
-> > +Example:
-> > +
-> > +	max8973@1b {
-> > +		compatible = "maxium,max8973";
-> > +		reg = <0x1b>;
-> > +
-> > +		regulator-min-microvolt = <935000>;
-> > +		regulator-max-microvolt = <1200000>;
-> > +		regulator-boot-on;
-> > +		regulator-always-on;
-> > +	};
-> > diff --git a/drivers/regulator/max8973-regulator.c
-> > b/drivers/regulator/max8973-regulator.c
-> > index b2dbdd7..0c5195a 100644
-> > --- a/drivers/regulator/max8973-regulator.c
-> > +++ b/drivers/regulator/max8973-regulator.c
-> [...]
-> > @@ -439,16 +447,21 @@ static int max8973_probe(struct i2c_client *client,
-> [...]
-> > +	if (pdata) {
-> > +		ret = max8973_init_dcdc(max, pdata);
-> > +		if (ret < 0) {
-> > +			dev_err(max->dev, "Max8973 Init failed, err = %d\n",
-> > ret);
-> 
->    Not "MAX8973"?
-
-If you hadn't removed the "-" lines, you would've seen, that I didn't 
-invent this string but just moved it from one place to another.
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Thanks,
+Joel
