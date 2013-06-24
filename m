@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab3FXSts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:49:48 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:46499 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750972Ab3FXStr (ORCPT
+	id S1752662Ab3FXSzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:55:52 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:41198 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab3FXSzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:49:47 -0400
-Message-ID: <51C894C3.4040407@hurleysoftware.com>
-Date: Mon, 24 Jun 2013 14:49:39 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, Alex Shi <alex.shi@intel.com>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock acquisition
-References: <cover.1371855277.git.tim.c.chen@linux.intel.com>  <1371858700.22432.5.camel@schen9-DESK>  <51C558E2.1040108@hurleysoftware.com>  <1372017836.1797.14.camel@buesod1.americas.hpqcorp.net> <1372093876.22432.34.camel@schen9-DESK>
-In-Reply-To: <1372093876.22432.34.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Mon, 24 Jun 2013 14:55:50 -0400
+From: Johannes Thumshirn <morbidrsa@gmail.com>
+To: dougthompson@xmission.com
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Thumshirn <morbidrsa@gmail.com>
+Subject: [PATCH] edac: mpc85xx_edac.c: Remove mpc85xx_pci_err_remove
+Date: Mon, 24 Jun 2013 20:59:34 +0200
+Message-Id: <1372100374-17726-1-git-send-email-morbidrsa@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 01:11 PM, Tim Chen wrote:
-> On Sun, 2013-06-23 at 13:03 -0700, Davidlohr Bueso wrote:
->> On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
->>> On 06/21/2013 07:51 PM, Tim Chen wrote:
->>>>
->>>> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
->>>> +{
->>>> +	int retval = true;
->>>> +
->>>> +	/* Spin only if active writer running */
->>>> +	if (!sem->owner)
->>>> +		return false;
->>>> +
->>>> +	rcu_read_lock();
->>>> +	if (sem->owner)
->>>> +		retval = sem->owner->on_cpu;
->>>                            ^^^^^^^^^^^^^^^^^^
->>>
->>> Why is this a safe dereference? Could not another cpu have just
->>> dropped the sem (and thus set sem->owner to NULL and oops)?
->>>
->
-> The rcu read lock should protect against sem->owner being NULL.
+Remove mpc85xx_pci_err_remove(...) which is obsolete, this removes the compiler
+warning which can be seen when building the driver either statically or as a
+module.
 
-It doesn't.
+Signed-off-by: Johannes Thumshirn <morbidrsa@gmail.com>
+---
+ drivers/edac/mpc85xx_edac.c | 22 ----------------------
+ 1 file changed, 22 deletions(-)
 
-Here's the comment from mutex_spin_on_owner():
-
-   /*
-    * Look out! "owner" is an entirely speculative pointer
-    * access and not reliable.
-    */
-
-Regards,
-Peter Hurley
+diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+index 3eb32f6..fd46b0b 100644
+--- a/drivers/edac/mpc85xx_edac.c
++++ b/drivers/edac/mpc85xx_edac.c
+@@ -327,28 +327,6 @@ err:
+ }
+ EXPORT_SYMBOL(mpc85xx_pci_err_probe);
+ 
+-static int mpc85xx_pci_err_remove(struct platform_device *op)
+-{
+-	struct edac_pci_ctl_info *pci = dev_get_drvdata(&op->dev);
+-	struct mpc85xx_pci_pdata *pdata = pci->pvt_info;
+-
+-	edac_dbg(0, "\n");
+-
+-	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR,
+-		 orig_pci_err_cap_dr);
+-
+-	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, orig_pci_err_en);
+-
+-	edac_pci_del_device(pci->dev);
+-
+-	if (edac_op_state == EDAC_OPSTATE_INT)
+-		irq_dispose_mapping(pdata->irq);
+-
+-	edac_pci_free_ctl_info(pci);
+-
+-	return 0;
+-}
+-
+ #endif				/* CONFIG_PCI */
+ 
+ /**************************** L2 Err device ***************************/
+-- 
+1.8.3.1
 
