@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab3FXSMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:12:33 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:45731 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab3FXSMa (ORCPT
+	id S1753468Ab3FXSNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:13:22 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:59167 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab3FXSMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:12:30 -0400
+	Mon, 24 Jun 2013 14:12:31 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
         "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Jean Delvare <jdelvare@suse.de>,
-        Roland Eggner <edvx1@systemanalysen.net>,
-        Wang YanQing <udknight@gmail.com>
-Subject: [PATCH 12/15] kconfig: sort found symbols by relevance
-Date: Mon, 24 Jun 2013 20:11:56 +0200
-Message-Id: <193b40aeb537b59eaa36e3dfaabedc2025332ebf.1372097219.git.yann.morin.1998@free.fr>
+        Jean Delvare <jdelvare@suse.de>
+Subject: [PATCH 13/15] kconfig/[mn]conf: make it explicit in the search box that a regexp is possible
+Date: Mon, 24 Jun 2013 20:11:57 +0200
+Message-Id: <a1ce636f560336ba007bfabb15b167ff31b592cf.1372097219.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1372097219.git.yann.morin.1998@free.fr>
 References: <cover.1372097219.git.yann.morin.1998@free.fr>
@@ -28,171 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-When searching for symbols, return the symbols sorted by relevance.
-
-Sorting is done as thus:
-  - first, symbols that match exactly
-  - then, alphabetical sort
-
-Since the search can be a regexp, it is possible that more than one symbol
-matches exactly. In this case, we can't decide which to sort first, so we
-fallback to alphabeticall sort.
-
-Explain this (new!) sorting heuristic in the documentation.
-
 Reported-by: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 Cc: Jean Delvare <jdelvare@suse.de>
 Cc: Michal Marek <mmarek@suse.cz>
-Cc: Roland Eggner <edvx1@systemanalysen.net>
-Cc: Wang YanQing <udknight@gmail.com>
-
---
-Changes v1->v2:
-  - drop the previous, complex heuristic in favour of a simpler heuristic
-    that is both easier to understand, *and* to maintain (Jean)
-  - explain sorting heuristic in the doc  (Jean)
 ---
- Documentation/kbuild/kconfig.txt | 13 +++++++
- scripts/kconfig/symbol.c         | 78 +++++++++++++++++++++++++++++++++++-----
- 2 files changed, 82 insertions(+), 9 deletions(-)
+ scripts/kconfig/mconf.c | 2 +-
+ scripts/kconfig/nconf.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/kbuild/kconfig.txt b/Documentation/kbuild/kconfig.txt
-index 3f429ed..e9f9e76 100644
---- a/Documentation/kbuild/kconfig.txt
-+++ b/Documentation/kbuild/kconfig.txt
-@@ -174,6 +174,19 @@ Searching in menuconfig:
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 6ee4aae..18d3dc9 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -401,7 +401,7 @@ static void search_conf(void)
+ 	struct subtitle_part stpart;
  
- 		/^hotplug
+ 	title = str_new();
+-	str_printf( &title, _("Enter %s (sub)string to search for "
++	str_printf( &title, _("Enter %s (sub)string or regexp to search for "
+ 			      "(with or without \"%s\")"), CONFIG_, CONFIG_);
  
-+	When searching, symbols are sorted thus:
-+	  - exact match first: an exact match is when the search matches
-+	    the complete symbol name;
-+	  - alphabetical order: when two symbols do not match exactly,
-+	    they are sorted in alphabetical order (in the user's current
-+	    locale).
-+	For example: ^ATH.K matches:
-+	    ATH5K ATH9K ATH5K_AHB ATH5K_DEBUG [...] ATH6KL ATH6KL_DEBUG
-+	    [...] ATH9K_AHB ATH9K_BTCOEX_SUPPORT ATH9K_COMMON [...]
-+	of which only ATH5K and ATH9K match exactly and so are sorted
-+	first (and in alphabetical order), then come all other symbols,
-+	sorted in alphabetical order.
-+
- ______________________________________________________________________
- User interface options for 'menuconfig'
+ again:
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index 0183153..7975d8d 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -695,7 +695,7 @@ static void search_conf(void)
+ 	int dres;
  
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index ab8f4c8..387d554 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -954,38 +954,98 @@ const char *sym_escape_string_value(const char *in)
- 	return res;
- }
+ 	title = str_new();
+-	str_printf( &title, _("Enter %s (sub)string to search for "
++	str_printf( &title, _("Enter %s (sub)string or regexp to search for "
+ 			      "(with or without \"%s\")"), CONFIG_, CONFIG_);
  
-+struct sym_match {
-+	struct symbol	*sym;
-+	off_t		so, eo;
-+};
-+
-+/* Compare matched symbols as thus:
-+ * - first, symbols that match exactly
-+ * - then, alphabetical sort
-+ */
-+static int sym_rel_comp( const void *sym1, const void *sym2 )
-+{
-+	struct sym_match *s1 = *(struct sym_match **)sym1;
-+	struct sym_match *s2 = *(struct sym_match **)sym2;
-+	int l1, l2;
-+
-+	/* Exact match:
-+	 * - if matched length on symbol s1 is the length of that symbol,
-+	 *   then this symbol should come first;
-+	 * - if matched length on symbol s2 is the length of that symbol,
-+	 *   then this symbol should come first.
-+	 * Note: since the search can be a regexp, both symbols may match
-+	 * exactly; if this is the case, we can't decide which comes first,
-+	 * and we fallback to sorting alphabetically.
-+	 */
-+	l1 = s1->eo - s1->so;
-+	l2 = s2->eo - s2->so;
-+	if (l1 == strlen(s1->sym->name) && l2 != strlen(s2->sym->name))
-+		return -1;
-+	if (l1 != strlen(s1->sym->name) && l2 == strlen(s2->sym->name))
-+		return 1;
-+
-+	/* As a fallback, sort symbols alphabetically */
-+	return strcmp(s1->sym->name, s2->sym->name);
-+}
-+
- struct symbol **sym_re_search(const char *pattern)
- {
- 	struct symbol *sym, **sym_arr = NULL;
-+	struct sym_match **sym_match_arr = NULL;
- 	int i, cnt, size;
- 	regex_t re;
-+	regmatch_t match[1];
- 
- 	cnt = size = 0;
- 	/* Skip if empty */
- 	if (strlen(pattern) == 0)
- 		return NULL;
--	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB|REG_ICASE))
-+	if (regcomp(&re, pattern, REG_EXTENDED|REG_ICASE))
- 		return NULL;
- 
- 	for_all_symbols(i, sym) {
-+		struct sym_match *tmp_sym_match;
- 		if (sym->flags & SYMBOL_CONST || !sym->name)
- 			continue;
--		if (regexec(&re, sym->name, 0, NULL, 0))
-+		if (regexec(&re, sym->name, 1, match, 0))
- 			continue;
- 		if (cnt + 1 >= size) {
--			void *tmp = sym_arr;
-+			void *tmp;
- 			size += 16;
--			sym_arr = realloc(sym_arr, size * sizeof(struct symbol *));
--			if (!sym_arr) {
--				free(tmp);
--				return NULL;
-+			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
-+			if (!tmp) {
-+				goto sym_re_search_free;
- 			}
-+			sym_match_arr = tmp;
- 		}
- 		sym_calc_value(sym);
--		sym_arr[cnt++] = sym;
-+		tmp_sym_match = (struct sym_match*)malloc(sizeof(struct sym_match));
-+		if (!tmp_sym_match)
-+			goto sym_re_search_free;
-+		tmp_sym_match->sym = sym;
-+		/* As regexec return 0, we know we have a match, so
-+		 * we can use match[0].rm_[se]o without further checks
-+		 */
-+		tmp_sym_match->so = match[0].rm_so;
-+		tmp_sym_match->eo = match[0].rm_eo;
-+		sym_match_arr[cnt++] = tmp_sym_match;
- 	}
--	if (sym_arr)
-+	if (sym_match_arr) {
-+		qsort(sym_match_arr, cnt, sizeof(struct sym_match*), sym_rel_comp);
-+		sym_arr = malloc((cnt+1) * sizeof(struct symbol));
-+		if (!sym_arr)
-+			goto sym_re_search_free;
-+		for (i = 0; i < cnt; i++)
-+			sym_arr[i] = sym_match_arr[i]->sym;
- 		sym_arr[cnt] = NULL;
-+	}
-+sym_re_search_free:
-+	if (sym_match_arr) {
-+		for (i = 0; i < cnt; i++)
-+			free(sym_match_arr[i]);
-+		free(sym_match_arr);
-+	}
- 	regfree(&re);
- 
- 	return sym_arr;
+ again:
 -- 
 1.8.1.2
 
