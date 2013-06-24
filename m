@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab3FXGns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 02:43:48 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:41278 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab3FXGnr (ORCPT
+	id S1752571Ab3FXGsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 02:48:16 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:40962 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab3FXGsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 02:43:47 -0400
-Message-ID: <51C7EA9C.60505@linux.vnet.ibm.com>
-Date: Mon, 24 Jun 2013 12:13:40 +0530
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 24 Jun 2013 02:48:15 -0400
 MIME-Version: 1.0
-To: Michael Neuling <mikey@neuling.org>
-CC: mahesh@linux.vnet.ibm.com, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc/pseries: Enable PSTORE in pseries_defconfig
-References: <20130621083639.4039.27789.stgit@aruna-ThinkPad-T420> <7684.1372036896@ale.ozlabs.ibm.com>
-In-Reply-To: <7684.1372036896@ale.ozlabs.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062406-8256-0000-0000-0000080D24C3
+In-Reply-To: <03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
+References: <1371967642-3116-1-git-send-email-linkinjeon@gmail.com>
+	<03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
+Date: Mon, 24 Jun 2013 15:48:14 +0900
+Message-ID: <CAKYAXd-QqhuDKAm8zFTtmiovWEax-OoyEixuQKSWxF2zQVXFSQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] ext4: introduce two new ioctls
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: "tytso@mit.edu" <tytso@mit.edu>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "a.sangwan@samsung.com" <a.sangwan@samsung.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
-
-On Monday 24 June 2013 06:51 AM, Michael Neuling wrote:
->> Enable PSTORE in pseries_defconfig
-> Please add a "why" to your changelogs eg. "Now we have pstore support for
-> nvram on pseries, enable it in the default config"
+2013/6/24, Andreas Dilger <adilger@dilger.ca>:
+> On 2013-06-23, at 0:07, Namjae Jeon <linkinjeon@gmail.com> wrote:
 >
-> "Why" you are changing something is more important than "what", since
-> you can always determine "what" is being changed, by looking at the diff.
-> The "why" will be long forgotten.
->
->> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
->> ---
->>   arch/powerpc/configs/pseries_defconfig |    1 +
->>   1 file changed, 1 insertion(+)
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
 >>
->> diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
->> index c4dfbaf..9630a50 100644
->> --- a/arch/powerpc/configs/pseries_defconfig
->> +++ b/arch/powerpc/configs/pseries_defconfig
->> @@ -347,3 +347,4 @@ CONFIG_VIRTUALIZATION=y
->>   CONFIG_KVM_BOOK3S_64=m
->>   CONFIG_KVM_BOOK3S_64_HV=y
->>   CONFIG_VHOST_NET=m
->> +CONFIG_PSTORE=y
-> This should really be added in the right location on the config, not
-> just at the end.   ie.
-
-Sorry, I overlooked this commentin my v2 patch. Will resend.
-
-> @@ -296,6 +293,7 @@
->   CONFIG_SQUASHFS_XATTR=y
->   CONFIG_SQUASHFS_LZO=y
->   CONFIG_SQUASHFS_XZ=y
-> +CONFIG_PSTORE=y
->   CONFIG_NFS_FS=y
->   CONFIG_NFS_V3_ACL=y
->   CONFIG_NFS_V4=y
+>> This patch series introduces 2 new ioctls for ext4.
+>>
+>> Truncate_block_range ioctl truncates blocks from source file.
 >
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
->
+Hi. Andreas.
+> How is this different from fallocate(FALLOC_FL_PUNCH_HOLE)?  That is already
+> in existing kernels, and portable across multiple filesystems.
+Dave chinner already answered it.
 
+>
+>> Transfer_block_range ioctl transfers data blocks from source file
+>> and append them at the end of destination file.
+>
+> There is already a similar ioctl for defragmenting files. Is it possible to
+> use that, or does it have different semantics?
+
+For defrag ioctl:
+struct move_extent {
+        __u32 reserved;         /* should be zero */
+        __u32 donor_fd;         /* donor file descriptor */
+        __u64 orig_start;       /* logical start offset in block for orig */
+        __u64 donor_start;      /* logical start offset in block for donor */
+        __u64 len;              /* block length to be moved */
+        __u64 moved_len;        /* moved block length */
+};
+
+For this ioctl to work, there are some pre conditions:
+1) Contiguous blocks for donor_fd are allocated in user space using fallocate.
+2) orig_start and donor_start should be same.
+
+The fundamental difference between these 2 ioctls is that in defrag
+ioctl data is copied, (page by page?) from the extents of source file
+to the newly allocated extents of donor file. However, in transfer
+block range ioctl the extents are transfered from the source file and
+appended at the end of donor file. There is only metadata movement.
+
+Thanks.
+>
+>> Ioctl1:        EXT4_IOC_TRUNCATE_BLOCK_RANGE:
+>> This ioctl truncates a range of data blocks from file.
+>> It is useful to remove easily and quickly the garbage data
+>> at the middle of file.
+>>
+>> e.g. we have a movie file and there is long advertisement in movie file.
+>> user want to remove only advertisement range.
+>
+> While this works in theory, there is very little chance that the movie data
+> will align exactly to filesystem block boundaries.
+>
+> Cheers, Andreas
+>
+>> 1) Movie file (8GB), There is the adverisement of 500MB size.
+>> ____________________________________________________________________
