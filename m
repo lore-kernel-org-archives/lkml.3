@@ -1,216 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab3FXD5i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 23:57:38 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:34904 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab3FXD5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 23:57:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <51C463B4.9070506@ti.com>
-References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com>
-	<1371451599-31035-9-git-send-email-amit.daniel@samsung.com>
-	<51C20CCC.3060502@ti.com>
-	<CADGdYn6FHXd2YELP1z9zbqnf3Yd0PG0svaz7V6w9NYO3xSW8PQ@mail.gmail.com>
-	<51C463B4.9070506@ti.com>
-Date: Mon, 24 Jun 2013 09:27:36 +0530
-X-Google-Sender-Auth: 8RnQ57pwUwvk9LBrQe2K2rzeBdE
-Message-ID: <CADGdYn5HHNxj=PzjejyJRW9zW=953HJQy67H=u=uhFbtpJyENA@mail.gmail.com>
-Subject: Re: [PATCH V6 08/30] thermal: exynos: Add missing definations and
- code cleanup
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, jonghwa3.lee@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752611Ab3FXD7V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 23:59:21 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52187 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752374Ab3FXD7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 23:59:19 -0400
+Message-ID: <1372046300.3944.131.camel@pasglop>
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Alexander Graf <agraf@suse.de>,
+        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
+        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
+Date: Mon, 24 Jun 2013 13:58:20 +1000
+In-Reply-To: <20130624035426.GE25265@voom.fritz.box>
+References: <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>
+	 <1371653443.21896.291.camel@pasglop>
+	 <1371656989.22659.98.camel@ul30vt.home> <51C28BEA.8050501@ozlabs.ru>
+	 <20130620052822.GB3140@voom.redhat.com> <1371714449.3944.14.camel@pasglop>
+	 <51C2C1CC.9000003@ozlabs.ru> <1371740113.32709.22.camel@ul30vt.home>
+	 <20130622120304.GB25265@voom.fritz.box> <1371943693.3944.104.camel@pasglop>
+	 <20130624035426.GE25265@voom.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 8:01 PM, Eduardo Valentin
-<eduardo.valentin@ti.com> wrote:
-> On 20-06-2013 22:01, amit daniel kachhap wrote:
->> Hi Eduardo,
->>
->> On Thu, Jun 20, 2013 at 1:25 AM, Eduardo Valentin
->> <eduardo.valentin@ti.com> wrote:
->>> On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
->>>> This patch adds some extra register bitfield definations and cleans
->>>> up the code to prepare for moving register macros and definations inside
->>>> the TMU data section.
->>>>
->>>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->>>> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
->>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>>> ---
->>>>  drivers/thermal/samsung/exynos_tmu.c |   62 +++++++++++++++++++++++++---------
->>>>  1 files changed, 46 insertions(+), 16 deletions(-)
->>>>
->>>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->>>> index 5df04a1..fa33a48 100644
->>>> --- a/drivers/thermal/samsung/exynos_tmu.c
->>>> +++ b/drivers/thermal/samsung/exynos_tmu.c
->>>> @@ -43,9 +43,12 @@
->>>>
->>>>  #define EXYNOS_TMU_TRIM_TEMP_MASK    0xff
->>>>  #define EXYNOS_TMU_GAIN_SHIFT                8
->>>> +#define EXYNOS_TMU_GAIN_MASK         0xf
->>>>  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT 24
->>>> -#define EXYNOS_TMU_CORE_ON           3
->>>> -#define EXYNOS_TMU_CORE_OFF          2
->>>> +#define EXYNOS_TMU_REF_VOLTAGE_MASK  0x1f
->>>> +#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK        0xf
->>>> +#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT       8
->>>> +#define EXYNOS_TMU_CORE_EN_SHIFT     0
->>>>  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET   50
->>>>
->>>>  /* Exynos4210 specific registers */
->>>> @@ -63,6 +66,7 @@
->>>>  #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK      0x10
->>>>  #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK      0x100
->>>>  #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK      0x1000
->>>> +#define EXYNOS4210_TMU_TRIG_LEVEL_MASK       0x1111
->>>>  #define EXYNOS4210_TMU_INTCLEAR_VAL  0x1111
->>>>
->>>>  /* Exynos5250 and Exynos4412 specific registers */
->>>> @@ -72,17 +76,30 @@
->>>>  #define EXYNOS_EMUL_CON              0x80
->>>>
->>>>  #define EXYNOS_TRIMINFO_RELOAD               0x1
->>>> +#define EXYNOS_TRIMINFO_SHIFT                0x0
->>>> +#define EXYNOS_TMU_RISE_INT_MASK     0x111
->>>> +#define EXYNOS_TMU_RISE_INT_SHIFT    0
->>>> +#define EXYNOS_TMU_FALL_INT_MASK     0x111
->>>> +#define EXYNOS_TMU_FALL_INT_SHIFT    12
->>>>  #define EXYNOS_TMU_CLEAR_RISE_INT    0x111
->>>>  #define EXYNOS_TMU_CLEAR_FALL_INT    (0x111 << 12)
->>>> -#define EXYNOS_MUX_ADDR_VALUE                6
->>>> -#define EXYNOS_MUX_ADDR_SHIFT                20
->>>>  #define EXYNOS_TMU_TRIP_MODE_SHIFT   13
->>>> +#define EXYNOS_TMU_TRIP_MODE_MASK    0x7
->>>> +
->>>> +#define EXYNOS_TMU_INTEN_RISE0_SHIFT 0
->>>> +#define EXYNOS_TMU_INTEN_RISE1_SHIFT 4
->>>> +#define EXYNOS_TMU_INTEN_RISE2_SHIFT 8
->>>> +#define EXYNOS_TMU_INTEN_RISE3_SHIFT 12
->>>> +#define EXYNOS_TMU_INTEN_FALL0_SHIFT 16
->>>> +#define EXYNOS_TMU_INTEN_FALL1_SHIFT 20
->>>> +#define EXYNOS_TMU_INTEN_FALL2_SHIFT 24
->>>>
->>>>  #define EFUSE_MIN_VALUE 40
->>>>  #define EFUSE_MAX_VALUE 100
->>>>
->>>>  #ifdef CONFIG_THERMAL_EMULATION
->>>>  #define EXYNOS_EMUL_TIME     0x57F0
->>>> +#define EXYNOS_EMUL_TIME_MASK        0xffff
->>>>  #define EXYNOS_EMUL_TIME_SHIFT       16
->>>>  #define EXYNOS_EMUL_DATA_SHIFT       8
->>>>  #define EXYNOS_EMUL_DATA_MASK        0xFF
->>>> @@ -261,24 +278,37 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
->>>>       mutex_lock(&data->lock);
->>>>       clk_enable(data->clk);
->>>>
->>>> -     con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
->>>> -             pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
->>>> +     con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
->>>>
->>>> -     if (data->soc == SOC_ARCH_EXYNOS) {
->>>> -             con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
->>>> -             con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
->>>> +     if (pdata->reference_voltage) {
->>>> +             con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
->>>> +                             EXYNOS_TMU_REF_VOLTAGE_SHIFT);
->>>> +             con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
->>>> +     }
->>>> +
->>>> +     if (pdata->gain) {
->>>> +             con &= ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
->>>> +             con |= (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
->>>> +     }
->>>> +
->>>> +     if (pdata->noise_cancel_mode) {
->>>> +             con &= ~(EXYNOS_TMU_TRIP_MODE_MASK <<
->>>> +                                     EXYNOS_TMU_TRIP_MODE_SHIFT);
->>>> +             con |= (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
->>>>       }
->>>>
->>>>       if (on) {
->>>> -             con |= EXYNOS_TMU_CORE_ON;
->>>
->>>
->>>
->>> Before, in order to turn core on you had:
->>>         con = con | 3;
->>>
->>> now you do:
->>>         con = con | (1 << 0);
->>>
->>> To me, before you would set bit 1 and 0, now you set bit 0.
->>>
->>>
->>>> -             interrupt_en = pdata->trigger_level3_en << 12 |
->>>> -                     pdata->trigger_level2_en << 8 |
->>>> -                     pdata->trigger_level1_en << 4 |
->>>> -                     pdata->trigger_level0_en;
->>>> +             con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
->>>> +             interrupt_en =
->>>> +             pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
->>>> +             pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
->>>> +             pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
->>>> +             pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
->>>>               if (pdata->threshold_falling)
->>>> -                     interrupt_en |= interrupt_en << 16;
->>>> +                     interrupt_en |=
->>>> +                             interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
->>>>       } else {
->>>> -             con |= EXYNOS_TMU_CORE_OFF;
->>>> +             con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
->>>
->>>
->>> Before, in order to turno core off you had:
->>>         con = con | 2;
->>>
->>> now you do:
->>>         con = con & ~(1 << 0);
->>>
->>> To me, before you would set bit 2, now you clear bit 0.
->>>
->>> Using the approach on this patch looks correct to me if you have 1 bit
->>> core_en for instance.
->>>
->>> so, Is this a fix?
->>>
->>> Just to be clear, is this what you want ?
->> Yes you are right. Bit 0 is the actual enable bit. Bit 1 is the
->> reserve bit and its default value is 1. Earlier both bits are used to
->> turn on/off the controller which was wrong so this patch rectifies it.
->
-> Care to mention this in your patch description? It is good for code history.
-Ok
->
->>
->> Thanks,
->> Amit
->>>
->>>>               interrupt_en = 0; /* Disable all interrupts */
->>>>       }
->>>>       writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
->>>>
->>>
->>>
->>> --
->>> You have got to be excited about what you are doing. (L. Lamport)
->>>
->>> Eduardo Valentin
->>>
->>
->>
->
->
-> --
-> You have got to be excited about what you are doing. (L. Lamport)
->
-> Eduardo Valentin
->
+On Mon, 2013-06-24 at 13:54 +1000, David Gibson wrote:
+> > DDW means an API by which the guest can request the creation of
+> > additional iommus for a given device (typically, in addition to the
+> > default smallish 32-bit one using 4k pages, the guest can request
+> > a larger window in 64-bit space using a larger page size).
+> 
+> So, would a PAPR gest requesting this expect the new window to have
+> a new liobn, or an existing liobn?
+
+New liobn or there is no way to H_PUT_TCE it (it exists in addition
+to the legacy window).
+
+Cheers,
+Ben.
+
+
