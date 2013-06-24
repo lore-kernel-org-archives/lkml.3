@@ -1,54 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3FXGxI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 02:53:08 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:57532 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab3FXGxH (ORCPT
+	id S1752685Ab3FXGzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 02:55:55 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:29963 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab3FXGzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 02:53:07 -0400
-Subject: [PATCH v3] powerpc/pseries: Enable PSTORE in pseries_defconfig
-To: linuxppc-dev@ozlabs.org, mikey@neuling.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: mahesh@linux.vnet.ibm.com, ananth@in.ibm.com
-Date: Mon, 24 Jun 2013 12:23:00 +0530
-Message-ID: <20130624064534.16842.3582.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
+	Mon, 24 Jun 2013 02:55:54 -0400
+Message-ID: <51C7ED2B.4040701@huawei.com>
+Date: Mon, 24 Jun 2013 14:54:35 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] tracing/uprobes: Support ftrace_event_file base multibuffer
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062406-5564-0000-0000-0000087CD423
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since now we have pstore support for nvram in pseries, enable it
-in the default config. With this config option enabled, pstore
-infra-structure will be used to read/write the messages from/to nvram.
+Support multi-buffer on uprobe-based dynamic events by
+using ftrace_event_file.
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+This patch is based kprobe-based dynamic events multibuffer
+support work initially, commited by Masami(commit 41a7dd420c),
+but revised as below:
+
+Oleg changed the kprobe-based multibuffer design from
+array-pointers of ftrace_event_file into simple list,
+so this patch also change to the list degisn.
+
+rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
+to synchronize with ftrace_event_file list add and delete.
+
+Even though we allow multi-uprobes instances now,
+but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive in
+probe_event_enable currently, this means we cannot allow
+one user is using uprobe-tracer, and another user is using
+perf-probe on same uprobe at same time.
+(Perhaps this will be fix in future)
+
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- v3:
-	Move pstore config to right place
- v2:
-	Change patch description
+ kernel/trace/trace_uprobe.c |  132 +++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 110 insertions(+), 22 deletions(-)
 
- arch/powerpc/configs/pseries_defconfig |    1 +
- 1 file changed, 1 insertion(+)
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 32494fb0..292c39a 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -53,6 +53,7 @@ struct trace_uprobe {
+ 	struct list_head		list;
+ 	struct ftrace_event_class	class;
+ 	struct ftrace_event_call	call;
++	struct list_head		files;
+ 	struct trace_uprobe_filter	filter;
+ 	struct uprobe_consumer		consumer;
+ 	struct inode			*inode;
+@@ -65,6 +66,11 @@ struct trace_uprobe {
+ 	struct probe_arg		args[];
+ };
 
-diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
-index c4dfbaf..bea8587 100644
---- a/arch/powerpc/configs/pseries_defconfig
-+++ b/arch/powerpc/configs/pseries_defconfig
-@@ -296,6 +296,7 @@ CONFIG_SQUASHFS=m
- CONFIG_SQUASHFS_XATTR=y
- CONFIG_SQUASHFS_LZO=y
- CONFIG_SQUASHFS_XZ=y
-+CONFIG_PSTORE=y
- CONFIG_NFS_FS=y
- CONFIG_NFS_V3_ACL=y
- CONFIG_NFS_V4=y
++struct event_file_link {
++	struct ftrace_event_file	*file;
++	struct list_head		list;
++};
++
+ #define SIZEOF_TRACE_UPROBE(n)			\
+ 	(offsetof(struct trace_uprobe, args) +	\
+ 	(sizeof(struct probe_arg) * (n)))
+@@ -124,6 +130,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
+ 		goto error;
+
+ 	INIT_LIST_HEAD(&tu->list);
++	INIT_LIST_HEAD(&tu->files);
+ 	tu->consumer.handler = uprobe_dispatcher;
+ 	if (is_ret)
+ 		tu->consumer.ret_handler = uretprobe_dispatcher;
+@@ -511,7 +518,8 @@ static const struct file_operations uprobe_profile_ops = {
+ };
+
+ static void uprobe_trace_print(struct trace_uprobe *tu,
+-				unsigned long func, struct pt_regs *regs)
++				unsigned long func, struct pt_regs *regs,
++				struct ftrace_event_file *ftrace_file)
+ {
+ 	struct uprobe_trace_entry_head *entry;
+ 	struct ring_buffer_event *event;
+@@ -520,9 +528,15 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ 	int size, i;
+ 	struct ftrace_event_call *call = &tu->call;
+
++	WARN_ON(call != ftrace_file->event_call);
++
++	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
++		return;
++
+ 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+-	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+-						  size + tu->size, 0, 0);
++	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
++						call->event.type,
++						size + tu->size, 0, 0);
+ 	if (!event)
+ 		return;
+
+@@ -546,15 +560,32 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ /* uprobe handler */
+ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+ {
+-	if (!is_ret_probe(tu))
+-		uprobe_trace_print(tu, 0, regs);
++	struct event_file_link *link;
++
++	if (is_ret_probe(tu))
++		return 0;
++
++	rcu_read_lock();
++
++	list_for_each_entry(link, &tu->files, list)
++		uprobe_trace_print(tu, 0, regs, link->file);
++
++	rcu_read_unlock();
++
+ 	return 0;
+ }
+
+ static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
+ 				struct pt_regs *regs)
+ {
+-	uprobe_trace_print(tu, func, regs);
++	struct event_file_link *link;
++
++	rcu_read_lock();
++
++	list_for_each_entry(link, &tu->files, list)
++		uprobe_trace_print(tu, func, regs, link->file);
++
++	rcu_read_unlock();
+ }
+
+ /* Event entry printers */
+@@ -605,33 +636,89 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
+ 				struct mm_struct *mm);
+
+ static int
+-probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
++probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
++		   filter_func_t filter)
+ {
++	int enabled = 0;
+ 	int ret = 0;
+
+-	if (is_trace_uprobe_enabled(tu))
++	/*
++	 * Currently TP_FLAG_TRACE/TP_FLAG_PROFILE are mutually exclusive
++	 * for uprobe(filter argument issue), this need to fix in future.
++	 */
++	if ((file && (tu->flags & TP_FLAG_PROFILE)) ||
++	    (!file && (tu->flags & TP_FLAG_TRACE)))
+ 		return -EINTR;
+
++	/* Currently we cannot call uprobe_register twice for same tu */
++	if (is_trace_uprobe_enabled(tu))
++		enabled = 1;
++
++	if (file) {
++		struct event_file_link *link;
++
++		link = kmalloc(sizeof(*link), GFP_KERNEL);
++		if (!link)
++			return -ENOMEM;
++
++		link->file = file;
++		list_add_rcu(&link->list, &tu->files);
++
++		tu->flags |= TP_FLAG_TRACE;
++	} else
++		tu->flags |= TP_FLAG_PROFILE;
++
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+
+-	tu->flags |= flag;
+-	tu->consumer.filter = filter;
+-	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+-	if (ret)
+-		tu->flags &= ~flag;
++	if (!enabled) {
++		tu->consumer.filter = filter;
++		ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
++		if (ret)
++			tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
++	}
+
+ 	return ret;
+ }
+
+-static void probe_event_disable(struct trace_uprobe *tu, int flag)
++static struct event_file_link *
++find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
+ {
+-	if (!is_trace_uprobe_enabled(tu))
+-		return;
++	struct event_file_link *link;
++
++	list_for_each_entry(link, &tu->files, list)
++		if (link->file == file)
++			return link;
++
++	return NULL;
++}
++
++static void
++probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
++{
++	if (file) {
++		struct event_file_link *link;
++
++		link = find_event_file_link(tu, file);
++		if (!link)
++			return;
++
++		list_del_rcu(&link->list);
++		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
++		synchronize_sched();
++		kfree(link);
++
++		if (!list_empty(&tu->files))
++			return;
++
++		tu->flags &= ~TP_FLAG_TRACE;
++	} else
++		tu->flags &= ~TP_FLAG_PROFILE;
++
+
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+
+-	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+-	tu->flags &= ~flag;
++	if (!is_trace_uprobe_enabled(tu))
++		uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+ }
+
+ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
+@@ -867,21 +954,22 @@ static
+ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
+ {
+ 	struct trace_uprobe *tu = event->data;
++	struct ftrace_event_file *file = data;
+
+ 	switch (type) {
+ 	case TRACE_REG_REGISTER:
+-		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
++		return probe_event_enable(tu, file, NULL);
+
+ 	case TRACE_REG_UNREGISTER:
+-		probe_event_disable(tu, TP_FLAG_TRACE);
++		probe_event_disable(tu, file);
+ 		return 0;
+
+ #ifdef CONFIG_PERF_EVENTS
+ 	case TRACE_REG_PERF_REGISTER:
+-		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
++		return probe_event_enable(tu, NULL, uprobe_perf_filter);
+
+ 	case TRACE_REG_PERF_UNREGISTER:
+-		probe_event_disable(tu, TP_FLAG_PROFILE);
++		probe_event_disable(tu, NULL);
+ 		return 0;
+
+ 	case TRACE_REG_PERF_OPEN:
+-- 
+1.7.9.7
+
 
