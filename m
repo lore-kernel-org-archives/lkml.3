@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab3FXR0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:26:09 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:37728 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3FXR0D (ORCPT
+	id S1752482Ab3FXR07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:26:59 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:48651 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506Ab3FXR06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:26:03 -0400
-Message-ID: <51C88129.30106@free-electrons.com>
-Date: Mon, 24 Jun 2013 19:26:01 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 24 Jun 2013 13:26:58 -0400
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        jimwall@q.com, brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCHv2 1/3] iio: Add Nuvoton NAU7802 ADC driver
-References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com> <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com> <51C7EA23.1040707@metafoo.de> <51C82169.1010203@free-electrons.com> <51C876B2.1050103@metafoo.de>
-In-Reply-To: <51C876B2.1050103@metafoo.de>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <20130624114832.GA9961@infradead.org>
+References: <CAMbhsRQU=xrcum+ZUbG3S+JfFUJK_qm_VB96Vz=PpL=vQYhUvg@mail.gmail.com>
+	<20130622103158.GA16304@infradead.org>
+	<CAMbhsRTz246dWPQOburNor2HvrgbN-AWb2jT_AEywtJHFbKWsA@mail.gmail.com>
+	<kq4v0b$p8p$3@ger.gmane.org>
+	<20130624114832.GA9961@infradead.org>
+Date: Mon, 24 Jun 2013 10:26:57 -0700
+Message-ID: <CAMbhsRTdMaVR1LZRigumDqz_e5FgeyfJLrSHCDs8t7ywrmumTQ@mail.gmail.com>
+Subject: Re: RFC: named anonymous vmas
+From: Colin Cross <ccross@google.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Alex Elsayed <eternaleye@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/06/2013 18:41, Lars-Peter Clausen wrote:
-> Ah, ok, makes sense.
->
+On Mon, Jun 24, 2013 at 4:48 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Sat, Jun 22, 2013 at 12:47:29PM -0700, Alex Elsayed wrote:
+>> Couldn't this be done by having a root-only tmpfs, and having a userspace
+>> component that creates per-app directories with restrictive permissions on
+>> startup/app install? Then each app creates files in its own directory, and
+>> can pass the fds around.
 
-I just sent v3, thanks for your reviews !
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
+If each app gets its own writable directory that's not really
+different than a world writable tmpfs.  It requires something that
+watches for apps to exit for any reason and cleans up their
+directories, and it requires each app to come up with an unused name
+when it wants to create a file, and the kernel can give you both very
+cleanly.
