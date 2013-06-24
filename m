@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab3FXP0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:26:21 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37076 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab3FXP0Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:26:16 -0400
-Date: Mon, 24 Jun 2013 16:25:53 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
-        patches@linaro.org
-Message-ID: <20130624152553.GT27646@sirena.org.uk>
-References: <1372066617-23518-1-git-send-email-sachin.kamat@linaro.org>
+	id S1752749Ab3FXP00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:26:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48068 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752656Ab3FXP0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 11:26:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,929,1363158000"; 
+   d="scan'208";a="354913176"
+Message-ID: <51C8651D.4010607@linux.intel.com>
+Date: Mon, 24 Jun 2013 08:26:21 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lbYR4+J2RcKO0WXU"
-Content-Disposition: inline
-In-Reply-To: <1372066617-23518-1-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] of/documentation: Update s5m8767-regulator bindings
- document
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        David Lang <david@lang.hm>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "pjt@google.com" <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: power-efficient scheduling design
+References: <20130530134718.GB32728@e103034-lin>  <20130531105204.GE30394@gmail.com> <20130614160522.GG32728@e103034-lin>  <51C07ABC.2080704@linux.intel.com>  <alpine.DEB.2.02.1306181039340.9258@nftneq.ynat.uz>  <51C1D0BB.3040705@linux.intel.com> <20130619170042.GH5460@e103034-lin>  <51C1E58D.9000408@linux.intel.com> <20130621085002.GJ5460@e103034-lin>  <51C47377.2000208@linux.intel.com>  <CAHkRjk5G7XJxzjcWa4BqRxz0AtAAh_-Eomzk4+dQRaFk1=HQqA@mail.gmail.com>  <51C4C6C8.1050008@linux.intel.com> <1372030320.3944.114.camel@pasglop>
+In-Reply-To: <1372030320.3944.114.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---lbYR4+J2RcKO0WXU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> I guess it depends on the system
+>
+> Sort-of. We have something similar with threads on ppc. IE, the core can
+> only really stop if all threads are. From a Linux persepctive it's a
+> matter of how we define the scope of that 'cluster' Catalin is talking
+> about. I'm sure you do too.
+>
+> Then there is the package, which adds MC etc...
+>
+>> the very first cpu needs to power on
+>> * the core itself
+>> * the "cluster" that you mention
+>> * the memory controller
+>> * the memory (out of self refresh)
+>>
+>> while the second cpu needs
+>> * the core itself
+>> * maybe a second cluster
+>>
+>> normally on Intel systems, the memory power delta is quite significant
+>> which then means the efficiency of the second core is huge compared to
+>> running things in sequence.
+>
+> What's your typical latency for bringing an MC back (and memory out of
+> self refresh) ? IE. Basically bringing a package back up ?
 
-On Mon, Jun 24, 2013 at 03:06:57PM +0530, Sachin Kamat wrote:
-> s5m8767 regulator is used on Exynos platforms which use pin controller
-> to configure GPIOs. Update the example accordingly.
+to bring the system back up if all cores in the whole system are idle and power gated,
+memory in SR etc... is typically < 250 usec (depends on the exact version
+of the cpu etc). But the moment even one core is running, that core will keep the system
+out of such deep state, and waking up a consecutive entity is much faster
 
-This smells bad, why does a driver using GPIOs through the GPIO API see
-a change in the binding?
+to bring just a core out of power gating is more in the 40 to 50 usec range
 
---lbYR4+J2RcKO0WXU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRyGT+AAoJELSic+t+oim9fecP/RSkd5vTH7/QxKdP/Xngg9wX
-1ljG4MLhQNrBrfryROS7KpWNNwWBqK8+UpTtLa+za0xk5P6i4tGUNrj5TOcrdADi
-aEr5fEQKCLfNvKG9IYKFRpdn9i/aW/von/2yKx/r6qDIYlCWwbRHJj68T5xSyXB6
-zc3fE9SHhMxxqEfTkyd0uRxoD2dTGvT2I605kBbGqZTvIAl1RHXf2GrRzfy20hHa
-jyEXuy0bZ6DNK/yPchhsS3kpnsiuW1vhyIfqL8GSt3ltxbAxxDX8q6KEjU64VASr
-IHco5GvKfRUQbToDS6CtIjzMWDOJ5A1Td9QTsFZIK4TxDA4ADHt4Zag+AUs5DA3t
-KVAsWXcbSF5LL/96Cy7Ajd4QiZILXp3YQK13mTsMJ4QRUnenWM8VyPgTltE+OA9N
-lknf2jyu5tJl1el8tcs1YvUtjqAmSm5WCn/V9+BAvFlwcshwmZOyWm4pkAC7Lebr
-xwGEHa8f69Hk0aYnbMGiLNV9m1BHHdXpOj/e+TIUmY347eZaS4PY0BnyYwZVkEO7
-Tg927x9SEXGVGMmfP7slV1//cUL1xz+rLng1gOzgGKLty0IDL1XkbdWbLV0yfO9b
-y3+q2hbTHSAmBpnSU4LVen4382zvw49xx/XqtRub7ydpKM8JnIYqI7uW8keeh79v
-Q+EhP6qsMzxk+W/ZyHK6
-=rsb+
------END PGP SIGNATURE-----
-
---lbYR4+J2RcKO0WXU--
