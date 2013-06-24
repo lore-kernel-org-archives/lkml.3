@@ -1,99 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab3FXSXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:23:23 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:51663 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab3FXSXV (ORCPT
+	id S1753687Ab3FXS0U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:26:20 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:61111 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab3FXS0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:23:21 -0400
-Message-ID: <51C88E96.2010408@cogentembedded.com>
-Date: Mon, 24 Jun 2013 22:23:18 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 24 Jun 2013 14:26:18 -0400
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] regulators: max8973: initial DT support
-References: <Pine.LNX.4.64.1306241246580.19735@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1306241246580.19735@axis700.grange>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20130624173227.GA24626@phenom.dumpdata.com>
+References: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
+	<1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
+	<20130624170912.GH5823@phenom.ffwll.local>
+	<20130624173227.GA24626@phenom.dumpdata.com>
+Date: Mon, 24 Jun 2013 20:26:18 +0200
+X-Google-Sender-Auth: DuKjkg-hPrOPGkYhUDyJYqb4pb4
+Message-ID: <CAKMK7uGPeAXmm21KCK4ZfqrynykyKCjn5dZVTsBheQ4JnaoW=A@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: make compact dma scatter lists creation work
+ with SWIOTLB backend.
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Imre Deak <imre.deak@intel.com>, Dave Airlie <airlied@linux.ie>,
+        Dave Airlie <airlied@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Jun 24, 2013 at 7:32 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Mon, Jun 24, 2013 at 07:09:12PM +0200, Daniel Vetter wrote:
+>> On Mon, Jun 24, 2013 at 11:47:48AM -0400, Konrad Rzeszutek Wilk wrote:
+>> > Git commit 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
+>> > ("drm/i915: create compact dma scatter lists for gem objects") makes
+>> > certain assumptions about the under laying DMA API that are not always
+>> > correct.
+>> >
+>> > On a ThinkPad X230 with an Intel HD 4000 with Xen during the bootup
+>> > I see:
+>> >
+>> > [drm:intel_pipe_set_base] *ERROR* pin & fence failed
+>> > [drm:intel_crtc_set_config] *ERROR* failed to set mode on [CRTC:3], err = -28
+>> >
+>> > Bit of debugging traced it down to dma_map_sg failing (in
+>> > i915_gem_gtt_prepare_object) as some of the SG entries were huge (3MB).
+>> >
+>> > That unfortunately are sizes that the SWIOTLB is incapable of handling -
+>> > the maximum it can handle is a an entry of 512KB of virtual contiguous
+>> > memory for its bounce buffer. (See IO_TLB_SEGSIZE).
+>> >
+>> > Previous to the above mention git commit the SG entries were of 4KB, and
+>> > the code introduced by above git commit squashed the CPU contiguous PFNs
+>> > in one big virtual address provided to DMA API.
+>> >
+>> > This patch is a simple semi-revert - were we emulate the old behavior
+>> > if we detect that SWIOTLB is online. If it is not online then we continue
+>> > on with the new compact scatter gather mechanism.
+>> >
+>> > An alternative solution would be for the the '.get_pages' and the
+>> > i915_gem_gtt_prepare_object to retry with smaller max gap of the
+>> > amount of PFNs that can be combined together - but with this issue
+>> > discovered during rc7 that might be too risky.
+>> >
+>> > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> > CC: Chris Wilson <chris@chris-wilson.co.uk>
+>> > CC: Imre Deak <imre.deak@intel.com>
+>> > CC: Daniel Vetter <daniel.vetter@ffwll.ch>
+>> > CC: David Airlie <airlied@linux.ie>
+>> > CC: <dri-devel@lists.freedesktop.org>
+>> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>
+>> Two things:
+>
+> Hey Daniel,
+>
+>>
+>> - SWIOTLB usage should seriously blow up all over the place in drm/i915.
+>>   We really rely on the everywhere else true fact that the pages and their
+>>   dma mapping point at the same backing storage.
+>
+> It works. As in, it seems to work for just a normal desktop user. I don't
+> see much of dma_sync_* sprinkled around the drm/i915 so I would think that
+> there are some issues would be hit as well - but at the first glance
+> when using it on a laptop it looks OK.
 
-On 06/24/2013 02:50 PM, Guennadi Liakhovetski wrote:
+Yeah, we have a pretty serious case of "roll our own coherency stuff".
+The biggest reason is that for a long time i915.ko didn't care one bit
+about iommus, and the thing we care about (flushing cpu caches for
+dma) isn't supported on x86 since x86 every dma is coherent (well, not
+quite, but we don't have support for it). I think longer-term it would
+make sense to move the clfushing we're doing into the dma layer.
 
-> This patch adds primitive DT support to the max8973 regulator driver. None
-> of the configuration parameters, supported in the platform data are yet
-> available in DT, therefore no configuration is performed if booting with
-> no platform data. This means, that DT instantiation can only be used on
-> boards, where no run-time configuration of the chip is required. In such
-> cases the driver can be used to scale its output voltage. In the future
-> support for configuration parameters should be added.
+>> - How is this solved elsewhere when constructing sg tables? Or are we
+>>   really the only guys who try to construct such big sg entries? I
+>>   expected somewhat that the dma mapping backed would fill in the segment
+>>   limits accordingly, but I haven't found anything really on a quick
+>>   search.
+>
+> The TTM layer (so radeon, nouveau) uses pci_alloc_coherent which will
+> construct the dma mapped pages. That allows it to construct "SWIOTLB-approved"
+> pages that won't need to go through dma_map/dma_unmap as they are
+> already mapped and ready to go.
+>
+> Coming back to your question - I think that i915 is the one that I've
+> encountered.
 
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> ---
+That's a bit surprising. With dma_buf graphics people will use sg
+tables much more (there's even a nice sg_alloc_table_from_pages helper
+to construct them), and those sg tables tend to have large segments. I
+guess we need some more generic solution here ...
 
-> v2: as suggested by Mark, regulator bindings are now directly under the
-> main max8973 I2C device node.
+For now I guess we can live with your CONFIG_SWIOTLB hack.
+-Daniel
 
->   .../bindings/regulator/max8973-regulator.txt       |   21 +++++++++++
->   drivers/regulator/max8973-regulator.c              |   37 +++++++++++++------
->   2 files changed, 46 insertions(+), 12 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/regulator/max8973-regulator.txt
 
-> diff --git a/Documentation/devicetree/bindings/regulator/max8973-regulator.txt b/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-> new file mode 100644
-> index 0000000..8d38ab2
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-> @@ -0,0 +1,21 @@
-> +* Maxim MAX8973 Voltage Regulator
-> +
-> +Required properties:
-> +
-> +- compatible:	must be "maxium,max8973"
 
-    I see only "maxim" and "dallas" for Maxim Integrated Products in 
-Documentation/devicetree/bindings/vendor-prefixes.txt. Is "maxium" some 
-new, unknown vendor?
+>>
+>>
+>> Cheers, Daniel
+>>
+>> > ---
+>> >  drivers/gpu/drm/i915/i915_gem.c | 15 ++++++++++++---
+>> >  1 file changed, 12 insertions(+), 3 deletions(-)
+>> >
+>> > diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+>> > index 970ad17..7045f45 100644
+>> > --- a/drivers/gpu/drm/i915/i915_gem.c
+>> > +++ b/drivers/gpu/drm/i915/i915_gem.c
+>> > @@ -1801,7 +1801,14 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
+>> >                     gfp |= __GFP_NORETRY | __GFP_NOWARN | __GFP_NO_KSWAPD;
+>> >                     gfp &= ~(__GFP_IO | __GFP_WAIT);
+>> >             }
+>> > -
+>> > +#ifdef CONFIG_SWIOTLB
+>> > +           if (swiotlb_nr_tbl()) {
+>> > +                   st->nents++;
+>> > +                   sg_set_page(sg, page, PAGE_SIZE, 0);
+>> > +                   sg = sg_next(sg);
+>> > +                   continue;
+>> > +           }
+>> > +#endif
+>> >             if (!i || page_to_pfn(page) != last_pfn + 1) {
+>> >                     if (i)
+>> >                             sg = sg_next(sg);
+>> > @@ -1812,8 +1819,10 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
+>> >             }
+>> >             last_pfn = page_to_pfn(page);
+>> >     }
+>> > -
+>> > -   sg_mark_end(sg);
+>> > +#ifdef CONFIG_SWIOTLB
+>> > +   if (!swiotlb_nr_tbl())
+>> > +#endif
+>> > +           sg_mark_end(sg);
+>> >     obj->pages = st;
+>> >
+>> >     if (i915_gem_object_needs_bit17_swizzle(obj))
+>> > --
+>> > 1.8.1.4
+>> >
+>>
+>> --
+>> Daniel Vetter
+>> Software Engineer, Intel Corporation
+>> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
-> +- reg:		the i2c slave address of the regulator. It should be 0x1b.
-> +
-> +Any standard regulator properties can be used to configure the single max8973
-> +DCDC.
-> +
-> +Example:
-> +
-> +	max8973@1b {
-> +		compatible = "maxium,max8973";
-> +		reg = <0x1b>;
-> +
-> +		regulator-min-microvolt = <935000>;
-> +		regulator-max-microvolt = <1200000>;
-> +		regulator-boot-on;
-> +		regulator-always-on;
-> +	};
-> diff --git a/drivers/regulator/max8973-regulator.c b/drivers/regulator/max8973-regulator.c
-> index b2dbdd7..0c5195a 100644
-> --- a/drivers/regulator/max8973-regulator.c
-> +++ b/drivers/regulator/max8973-regulator.c
-[...]
-> @@ -439,16 +447,21 @@ static int max8973_probe(struct i2c_client *client,
-[...]
-> +	if (pdata) {
-> +		ret = max8973_init_dcdc(max, pdata);
-> +		if (ret < 0) {
-> +			dev_err(max->dev, "Max8973 Init failed, err = %d\n", ret);
 
-    Not "MAX8973"?
 
-WBR, Sergei
-
+--
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
