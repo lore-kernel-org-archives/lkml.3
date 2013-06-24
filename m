@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab3FXJfj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 05:35:39 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:55464 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab3FXJfh (ORCPT
+	id S1751645Ab3FXJlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 05:41:17 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:47013 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab3FXJlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 05:35:37 -0400
+	Mon, 24 Jun 2013 05:41:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130624070656.GA20166@infradead.org>
-References: <1371967642-3116-1-git-send-email-linkinjeon@gmail.com>
-	<03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
-	<7D1878F6-0387-48F3-8724-4A8946AECF9E@redhat.com>
-	<20130624024459.GJ29376@dastard>
-	<20130624070656.GA20166@infradead.org>
-Date: Mon, 24 Jun 2013 18:35:37 +0900
-Message-ID: <CAKYAXd-hJ71+zDn5c2ABb2J-zL=kb2M=GNzOWNHkS7-C4KXEzA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] ext4: introduce two new ioctls
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, Eric Sandeen <esandeen@redhat.com>,
-        Andreas Dilger <adilger@dilger.ca>, "tytso@mit.edu" <tytso@mit.edu>,
-        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "a.sangwan@samsung.com" <a.sangwan@samsung.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <24083337.GLRAoa2hpo@vostro.rjw.lan>
+References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com>
+	<5527616.jZ71Fx7IV6@vostro.rjw.lan>
+	<CAKohponvcqJvU1KKkK0EymcLjjLsC9_=z1oSDsKbJdyWf8SB9Q@mail.gmail.com>
+	<24083337.GLRAoa2hpo@vostro.rjw.lan>
+Date: Mon, 24 Jun 2013 15:11:15 +0530
+Message-ID: <CAKohpo=q+2ULzOSeipjb8xS6NZBJLbR8AMptVcufD1vzULJGGw@mail.gmail.com>
+Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show
+ accumulated data of CPUs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/24, Christoph Hellwig <hch@infradead.org>:
-> On Mon, Jun 24, 2013 at 12:44:59PM +1000, Dave Chinner wrote:
->> various DVR companies shipping equivalent ioctl-based functionality
->> for XFS filesystems to both insert and remove chunks in video
->> streams, but I've never been able to find the code for it anywhere.
+On 24 June 2013 15:09, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, June 24, 2013 11:48:22 AM Viresh Kumar wrote:
+>> On 21 June 2013 18:43, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > Well, to be honest, I don't like the whole thing.  The more changes you need
+>> > to make to the common code to support it, the worse.
+>>
+>> You meant you didn't like this patch completely? Or the idea that
+>> I gave?
 >
-Hi. Christoph.
-> Samsung does this, also for UDF.  Namjae, could you please submit these
-> two as well, including a proper VFS interface?
-Yes, Sure.
-Intially, we also thought of adding a new flag to fallocate instead of ioctls.
-But as Ted rightly pointed, fallocate works on byte granularity and we
-have block aligned restrictions, so once we decided to go for ioctls
-and hear other people opninons.
-Currently, we can try implementing dave's suggesstion of introducing a
-new flag FALLOC_FL_COLLAPSE_RANGE  for falloctae instead of individual
-ioctls for both XFS and EXT4.
+> Well, kind of both ...
+>
+>> Getting the new frequency would be very useful IMHO. That would
+>> give us a relation between old/new freq and load on each cpu at
+>> that time. That's why I suggested it.
+>
+> Where "us" is user space or what?
 
-Thanks.
->
->
+User space as well as the developers who are accessing this information.
