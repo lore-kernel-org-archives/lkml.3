@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab3FXTiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:38:22 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47280 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab3FXTba (ORCPT
+	id S1752064Ab3FXTin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:38:43 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:54014 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab3FXTb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:31:30 -0400
+	Mon, 24 Jun 2013 15:31:29 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, <linux-cris-kernel@axis.com>
-Subject: [PATCH 16/32] cris: delete __cpuinit usage from all cris files
-Date: Mon, 24 Jun 2013 15:30:21 -0400
-Message-ID: <1372102237-8757-17-git-send-email-paul.gortmaker@windriver.com>
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH 17/32] frv: delete __cpuinit usage from all frv files
+Date: Mon, 24 Jun 2013 15:30:22 -0400
+Message-ID: <1372102237-8757-18-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
@@ -43,15 +42,13 @@ As an intermediate step, we intend to turn the linux/init.h cpuinit
 content into no-ops as early as possible, since that will get rid
 of these warnings.  In any case, they are temporary and harmless.
 
-This removes all the arch/cris uses of the __cpuinit macros from
-all C files.  Currently cris does not have any __CPUINIT used in
+This removes all the arch/frv uses of the __cpuinit macros from
+all C files.  Currently frv does not have any __CPUINIT used in
 assembly files.
 
 [1] https://lkml.org/lkml/2013/5/20/589
 
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com
+Cc: David Howells <dhowells@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
 
@@ -63,22 +60,22 @@ Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
  that is fine too, as the commits can largely be treated independently.
  For more information, please see: https://lkml.org/lkml/2013/6/20/513 ]
 
- arch/cris/arch-v32/kernel/smp.c | 2 +-
+ arch/frv/kernel/setup.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
-index cdd1202..fe8e603 100644
---- a/arch/cris/arch-v32/kernel/smp.c
-+++ b/arch/cris/arch-v32/kernel/smp.c
-@@ -197,7 +197,7 @@ int setup_profiling_timer(unsigned int multiplier)
+diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
+index ae3a670..9f3a7a6 100644
+--- a/arch/frv/kernel/setup.c
++++ b/arch/frv/kernel/setup.c
+@@ -709,7 +709,7 @@ static void __init reserve_dma_coherent(void)
+ /*
+  * calibrate the delay loop
   */
- unsigned long cache_decay_ticks = 1;
- 
--int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
-+int __cpu_up(unsigned int cpu, struct task_struct *tidle)
+-void __cpuinit calibrate_delay(void)
++void calibrate_delay(void)
  {
- 	smp_boot_one_cpu(cpu, tidle);
- 	return cpu_online(cpu) ? 0 : -ENOSYS;
+ 	loops_per_jiffy = __delay_loops_MHz * (1000000 / HZ);
+ 
 -- 
 1.8.1.2
 
