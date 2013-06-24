@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab3GCLbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:31:53 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35928 "EHLO
+	id S932598Ab3GCLcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:32:36 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:35997 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab3GCLbw (ORCPT
+	with ESMTP id S1752239Ab3GCLcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:31:52 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-88-51d40ba6d3cd
+	Wed, 3 Jul 2013 07:32:31 -0400
+X-AuditID: cbfee68e-b7f276d000002279-98-51d40bce8e82
 From: Yadwinder Singh Brar <yadi.brar@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: yadi.brar01@gmail.com, sbkim73@samsung.com, broonie@kernel.org,
         lgirdwood@gmail.com, sameo@linux.intel.com, rob.herring@calxeda.com,
         grant.likely@linaro.org, Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [PATCH 2/4] regulator: s2mps11: Implement set_voltage_time_sel() ops
- for bucks
-Date: Mon, 24 Jun 2013 16:50:56 +0530
-Message-id: <1372072858-6559-3-git-send-email-yadi.brar@samsung.com>
+Subject: [PATCH 3/4] mfd: s2mps11: Add device tree support
+Date: Mon, 24 Jun 2013 16:50:57 +0530
+Message-id: <1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
 In-reply-to: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
 References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42JZI2JSp7uM+0qgwYmtWhZTHz5hszjwZwej
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSp3uO+0qgwa3r2hZTHz5hszjwZwej
 	xbcrHUwWl3fNYbM4vOIAk8XpblaLiyu+MFnM/d3IajFn+jsmB06PBZ+vsHvsnHWX3WPTqk42
-	jzvX9rB5zDsZ6NG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZFz9tYy2YL1Jxcc561gbGVwJd
-	jJwcEgImEmfaNrBA2GISF+6tZ+ti5OIQEljKKLFw1V9GmKKXv3vZIRLTGSXm/r3CBOG0MUm8
-	avgO1M7BwSZgJPHqmB1Ig4iAgsTm3mesIDXMApcYJabtPcIKkhAWiJT439IBZrMIqEo87D0H
-	toFXwEVi65Yb7BDbFCRalx0CszkFXCVaX15gBpkvBFTT/JEFZKaEwC52ieVdf9gg5ghIfJt8
-	COwGCQFZiU0HmCHGSEocXHGDZQKj8AJGhlWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsYgbFw
-	+t+ziTsY7x+wPsSYDDRuIrOUaHI+MJbySuINjc2MLExNTI2NzC3NSBNWEudVb7EOFBJITyxJ
-	zU5NLUgtii8qzUktPsTIxMEp1cA4b464Rrm+yGknldoFtX+NOy+o/eJvkv8+5Tv3hqhKI2+p
-	Ih2rWzufuCrxKU47eq9v1/aU54bfrfYF1P48nmWcHnlyw8ILGc6cy5/kqdQ3Z/n0T6udl5bp
-	92D/FgdvRp3HBm9X71l181WDwYQHyyXck9X2nt7B8Sxm4Te+bQKTLOv+2SdatJ1XYinOSDTU
-	Yi4qTgQA3No8lJsCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t9jQd1l3FcCDS4eUbCY+vAJm8WBPzsY
-	Lb5d6WCyuLxrDpvF4RUHmCxOd7NaXFzxhcli7u9GVos5098xOXB6LPh8hd1j56y77B6bVnWy
-	edy5tofNY97JQI++LasYPT5vkgtgj2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0
-	tDBXUshLzE21VXLxCdB1y8wBukxJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEa
-	SFjDmHHx0zbWgvkiFRfnrGdtYHwl0MXIySEhYCLx8ncvO4QtJnHh3nq2LkYuDiGB6YwSc/9e
-	YYJw2pgkXjV8Z+li5OBgEzCSeHXMDqRBREBBYnPvM1aQGmaBS4wS0/YeYQVJCAtESvxv6QCz
-	WQRUJR72nmMEsXkFXCS2brkBtU1BonXZITCbU8BVovXlBWaQ+UJANc0fWSYw8i5gZFjFKJpa
-	kFxQnJSea6RXnJhbXJqXrpecn7uJERxpz6R3MK5qsDjEKMDBqMTD6/DsUqAQa2JZcWXuIUYJ
-	DmYlEd6Jfy4HCvGmJFZWpRblxxeV5qQWH2JMBjpqIrOUaHI+MAnklcQbGpuYmxqbWppYmJhZ
-	kiasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVANj0SL5hQJGH17sOu2dkWuodvAcs9quANlQ
-	z437jKsTuruMd2s3Jh+uqVUw7hbd+Fi30WWyAssRidqQB+07xRZ9ZJ539kMR37Mt+nEKlYYX
-	OzT1likt0pCuV/nPV7I/PeRMWeAizvUM5tp1E4QrhYuNZG7yz5iseVkmYfXq4rbPXtO+P+av
-	ZlBiKc5INNRiLipOBAB/mX+V+AIAAA==
+	jzvX9rB5zDsZ6NG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZW+98ZCqYrVhxZ/UdlgbGy1Jd
+	jJwcEgImEus3PGCDsMUkLtxbD2RzcQgJLGWUOH3wJTNM0fO5U6AS0xklVs59zAThtDFJfNz3
+	HaiKg4NNwEji1TE7kAYRAQWJzb3PWEFqmAUuMUpM23uEFSQhLGAlcebta7B1LAKqEp+/vGAB
+	6eUVcJF4+CcAYpmCROuyQ+wgNqeAq0Trywtg44WASpo/soCMlBDYxS7x7dhZdogxAhLfJh8C
+	GyMhICux6QDUzZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kZFecWJucWleul5yfu4mRmAknP73
+	rG8H480D1ocYk4HGTWSWEk3OB0ZSXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6Yklqdmp
+	qQWpRfFFpTmpxYcYmTg4pRoY415yadwwK7ono8JivXSTyhSpnL+SPdonSlPqNPgvLONia8xl
+	eRvy7qOoVc6eqX09ZeLtl486z9onVCzhoLLa2D44e7HUxg+xv16/T2O1mq5u8PnmrQPXDq3t
+	DvMW/RuxLTfmxoNrmxPkbd88nhp/w+pB8bqdq3QsGW4rfbO3WPzviHuupXmTEktxRqKhFnNR
+	cSIA3fNTeJoCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jQd1z3FcCDRofKVpMffiEzeLAnx2M
+	Ft+udDBZXN41h83i8IoDTBanu1ktLq74wmQx93cjq8Wc6e+YHDg9Fny+wu6xc9Zddo9NqzrZ
+	PO5c28PmMe9koEffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpa
+	WpgrKeQl5qbaKrn4BOi6ZeYAXaakUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAAN
+	JKxhzNh65yNTwWzFijur77A0MF6W6mLk5JAQMJF4PncKG4QtJnHh3nogm4tDSGA6o8TKuY+Z
+	IJw2JomP+74zdzFycLAJGEm8OmYH0iAioCCxufcZK0gNs8AlRolpe4+wgiSEBawkzrx9DTaV
+	RUBV4vOXFywgvbwCLhIP/wRALFOQaF12iB3E5hRwlWh9eQFsvBBQSfNHlgmMvAsYGVYxiqYW
+	JBcUJ6XnGukVJ+YWl+al6yXn525iBMfZM+kdjKsaLA4xCnAwKvHwOjy7FCjEmlhWXJl7iFGC
+	g1lJhHfin8uBQrwpiZVVqUX58UWlOanFhxiTgW6ayCwlmpwPTAF5JfGGxibmpsamliYWJmaW
+	pAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cDoG/V6bchaDq2I2z8DVLcmKig+ZLRRkNjv
+	qpi++G7Nku5Xi864eGxuejR1v8Dx/zPPnJzi2OWkJtdwaJ+Ay+rHC3eaSh7Zb7uZYdvHdV9P
+	JLRd2/bwCRPb87SzXF7/NlS6s8qITMi+XOA6f+7+7XdSOyWkXYqyJqlwlyvLFURPTRNZIWTt
+	r6mmxFKckWioxVxUnAgAwkyUpvcCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,86 +51,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently driver uses local struct s2mps11_info to store ramp rate for bucks
-whic its getting through platform data, so instead of using regulator
-constraints it should use s2mps11_info to calculate ramp delay.
+This patch adds DT compatible string for s2mps11 and binding documentation.
 
 Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
 ---
- drivers/regulator/s2mps11.c |   53 ++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 52 insertions(+), 1 deletions(-)
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   98 +++++++++++++++++++++
+ drivers/mfd/sec-core.c                            |    3 +
+ 2 files changed, 101 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/s2mps11.txt
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index 0ec9aea..d42ad2a 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -54,6 +54,57 @@ static int get_ramp_delay(int ramp_delay)
- 	return cnt;
- }
- 
-+static int s2mps11_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
-+				   unsigned int old_selector,
-+				   unsigned int new_selector)
-+{
-+	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
-+	unsigned int ramp_delay = 0;
-+	int old_volt, new_volt;
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+new file mode 100644
+index 0000000..7984625
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -0,0 +1,98 @@
 +
-+	switch (rdev->desc->id) {
-+	case S2MPS11_BUCK2:
-+		if (!s2mps11->buck2_ramp)
-+			return 0;
-+		ramp_delay = s2mps11->ramp_delay2;
-+		break;
-+	case S2MPS11_BUCK3:
-+		if (!s2mps11->buck3_ramp)
-+			return 0;
-+		ramp_delay = s2mps11->ramp_delay34;
-+		break;
-+	case S2MPS11_BUCK4:
-+		if (!s2mps11->buck4_ramp)
-+			return 0;
-+		ramp_delay = s2mps11->ramp_delay34;
-+		break;
-+	case S2MPS11_BUCK5:
-+		ramp_delay = s2mps11->ramp_delay5;
-+		break;
-+	case S2MPS11_BUCK6:
-+		if (!s2mps11->buck6_ramp)
-+			return 0;
-+	case S2MPS11_BUCK1:
-+		ramp_delay = s2mps11->ramp_delay16;
-+		break;
-+	case S2MPS11_BUCK7:
-+	case S2MPS11_BUCK8:
-+	case S2MPS11_BUCK10:
-+		ramp_delay = s2mps11->ramp_delay7810;
-+		break;
-+	case S2MPS11_BUCK9:
-+		ramp_delay = s2mps11->ramp_delay9;
-+	}
++* Samsung S2MPS11 Voltage and Current Regulator
 +
-+	if (ramp_delay == 0)
-+		ramp_delay = rdev->desc->ramp_delay;
++The Samsung S2MP211 is a multi-function device which includes volatage and
++current regulators, rtc, charger controller and other sub-blocks. It is
++interfaced to the host controller using a i2c interface. Each sub-block is
++addressed by the host system using different i2c slave address.
 +
-+	old_volt = rdev->desc->min_uV + (rdev->desc->uV_step * old_selector);
-+	new_volt = rdev->desc->min_uV + (rdev->desc->uV_step * new_selector);
++Required properties:
++- compatible: Should be "samsung,s2mps11-pmic".
++- reg: Specifies the i2c slave address of the pmic block. It should be 0x66.
 +
-+	return DIV_ROUND_UP(abs(new_volt - old_volt), ramp_delay);
-+}
++Optional properties:
++- interrupt-parent: Specifies the phandle of the interrupt controller to which
++  the interrupts from s2mps11 are delivered to.
++- interrupts: Interrupt specifiers for interrupt sources.
 +
- static struct regulator_ops s2mps11_ldo_ops = {
- 	.list_voltage		= regulator_list_voltage_linear,
- 	.map_voltage		= regulator_map_voltage_linear,
-@@ -73,7 +124,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.disable		= regulator_disable_regmap,
- 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
--	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+	.set_voltage_time_sel	= s2mps11_regulator_set_voltage_time_sel,
++Optional nodes:
++- regulators: The regulators of s2mps11 that have to be instantiated should be
++included in a sub-node named 'regulators'. Regulator nodes included in this
++sub-node should be of the format as listed below.
++
++	regulator_name {
++		[standard regulator constraints....];
++		[regulator-ramp-disable];
++	};
++
++ regulator-ramp-delay for BUCKs = [6250/12500/25000(default)/50000] uV/us
++
++ Optional property for BUCK[2/3/4/6] only:
++ regulator-ramp-disable: boolean, disables ramp delay on hardware.
++
++NOTE: Some BUCKs shares the ramp rate setting i.e. same ramp value will be set
++for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
++Grouping of BUCKs sharing ramp rate setting is as follow : BUCK[1, 6],
++BUCK[3, 4], and BUCK[7, 8, 10]
++
++The regulator constraints inside the regulator nodes use the standard regulator
++bindings which are documented elsewhere.
++
++The following are the names of the regulators that the s2mps11 pmic block
++supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
++as per the datasheet of s2mps11.
++
++	- LDOn
++		  - valid values for n are 1 to 28
++		  - Example: LDO0, LD01, LDO28
++	- BUCKn
++		  - valid values for n are 1 to 9.
++		  - Example: BUCK1, BUCK2, BUCK9
++
++Example:
++
++	s2mps11_pmic@66 {
++		compatible = "samsung,s2mps11-pmic";
++		reg = <0x66>;
++
++		regulators {
++			ldo1_reg: LDO1 {
++				regulator-name = "VDD_ABB_3.3V";
++				regulator-min-microvolt = <3300000>;
++				regulator-max-microvolt = <3300000>;
++			};
++
++			ldo2_reg: LDO2 {
++				regulator-name = "VDD_ALIVE_1.1V";
++				regulator-min-microvolt = <1100000>;
++				regulator-max-microvolt = <1100000>;
++				regulator-always-on;
++			};
++
++			buck1_reg: BUCK1 {
++				regulator-name = "vdd_mif";
++				regulator-min-microvolt = <950000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-always-on;
++				regulator-boot-on;
++			};
++
++			buck2_reg: BUCK2 {
++				regulator-name = "vdd_arm";
++				regulator-min-microvolt = <950000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-ramp-delay = <50000>;
++			};
++
++			buck3_reg: BUCK3 {
++				regulator-name = "vdd_xxx";
++				regulator-min-microvolt = <950000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-ramp-disable;
++			};
++		};
++	};
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 77ee26e..760da8a 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -66,6 +66,9 @@ static struct of_device_id sec_dt_match[] = {
+ 	{	.compatible = "samsung,s5m8767-pmic",
+ 		.data = (void *)S5M8767X,
+ 	},
++	{	.compatible = "samsung,s2mps11-pmic",
++		.data = (void *)S2MPS11X,
++	},
+ 	{},
  };
- 
- #define regulator_desc_ldo1(num)	{		\
+ #endif
 -- 
 1.7.0.4
 
