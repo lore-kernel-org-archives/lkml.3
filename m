@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab3FXTgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:36:15 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:54056 "EHLO
+	id S1751916Ab3FXTgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:36:54 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:54032 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782Ab3FXTbl (ORCPT
+	with ESMTP id S1751645Ab3FXTbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:31:41 -0400
+	Mon, 24 Jun 2013 15:31:32 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        <linux-m32r@ml.linux-m32r.org>, <linux-m32r-ja@ml.linux-m32r.org>
-Subject: [PATCH 19/32] m32r: delete __cpuinit usage from all m32r files
-Date: Mon, 24 Jun 2013 15:30:24 -0400
-Message-ID: <1372102237-8757-20-git-send-email-paul.gortmaker@windriver.com>
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        <linux-xtensa@linux-xtensa.org>
+Subject: [PATCH 21/32] xtensa: delete __cpuinit usage from all xtensa files
+Date: Mon, 24 Jun 2013 15:30:26 -0400
+Message-ID: <1372102237-8757-22-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
@@ -43,15 +43,15 @@ As an intermediate step, we intend to turn the linux/init.h cpuinit
 content into no-ops as early as possible, since that will get rid
 of these warnings.  In any case, they are temporary and harmless.
 
-This removes all the arch/m32r uses of the __cpuinit macros from
-all C files.  Currently m32r does not have any __CPUINIT used in
+This removes all the arch/xtensa uses of the __cpuinit macros from
+all C files.  Currently xtensa does not have any __CPUINIT used in
 assembly files.
 
 [1] https://lkml.org/lkml/2013/5/20/589
 
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: linux-m32r@ml.linux-m32r.org
-Cc: linux-m32r-ja@ml.linux-m32r.org
+Cc: Chris Zankel <chris@zankel.net>
+Cc: Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
 
@@ -63,22 +63,22 @@ Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
  that is fine too, as the commits can largely be treated independently.
  For more information, please see: https://lkml.org/lkml/2013/6/20/513 ]
 
- arch/m32r/kernel/smpboot.c | 2 +-
+ arch/xtensa/kernel/time.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/m32r/kernel/smpboot.c b/arch/m32r/kernel/smpboot.c
-index 0ac558a..bb21f4f 100644
---- a/arch/m32r/kernel/smpboot.c
-+++ b/arch/m32r/kernel/smpboot.c
-@@ -343,7 +343,7 @@ static void __init do_boot_cpu(int phys_id)
- 	}
+diff --git a/arch/xtensa/kernel/time.c b/arch/xtensa/kernel/time.c
+index ffb4741..f1818db 100644
+--- a/arch/xtensa/kernel/time.c
++++ b/arch/xtensa/kernel/time.c
+@@ -109,7 +109,7 @@ again:
  }
  
--int __cpuinit __cpu_up(unsigned int cpu_id, struct task_struct *tidle)
-+int __cpu_up(unsigned int cpu_id, struct task_struct *tidle)
+ #ifndef CONFIG_GENERIC_CALIBRATE_DELAY
+-void __cpuinit calibrate_delay(void)
++void calibrate_delay(void)
  {
- 	int timeout;
- 
+ 	loops_per_jiffy = CCOUNT_PER_JIFFY;
+ 	printk("Calibrating delay loop (skipped)... "
 -- 
 1.8.1.2
 
