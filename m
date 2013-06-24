@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3FXRos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:44:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64690 "EHLO mx1.redhat.com"
+	id S1752774Ab3FXRrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:47:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58227 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab3FXRoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:44:46 -0400
-Date: Mon, 24 Jun 2013 13:44:06 -0400
-From: Dave Jones <davej@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130624174406.GC8572@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrey Vagin <avagin@openvz.org>,
-	Steven Rostedt <rostedt@goodmis.org>
-References: <20130621151119.GA1596@redhat.com>
- <20130621195949.GA15519@redhat.com>
- <20130622013731.GA22918@redhat.com>
- <20130622173129.GA29375@redhat.com>
- <20130622215905.GA28238@redhat.com>
- <20130623143634.GA2000@redhat.com>
- <20130623150603.GA32313@redhat.com>
- <20130623160452.GA11740@redhat.com>
- <20130624155758.GA5993@redhat.com>
- <20130624173510.GA1321@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624173510.GA1321@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751435Ab3FXRrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 13:47:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,929,1363158000"; 
+   d="scan'208";a="358790517"
+Subject: Re: [PATCH 0/2] rwsem: performance enhancements for systems with
+ many cores
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <1371861805.13136.23.camel@buesod1.americas.hpqcorp.net>
+References: <1371858691.22432.3.camel@schen9-DESK>
+	 <1371859222.13136.11.camel@buesod1.americas.hpqcorp.net>
+	 <CANN689G1hyV_+2DxOiLqHDLGGuCjAqn9GhV-g4A0Jfd6YRQupQ@mail.gmail.com>
+	 <1371861805.13136.23.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Jun 2013 10:47:02 -0700
+Message-ID: <1372096022.22432.49.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 07:35:10PM +0200, Oleg Nesterov wrote:
- 
- > > Not sure this is helpful, but..
- > 
- > This makes me think that something is seriously broken.
- > 
- > Or I do not understand this stuff at all. Quite possible too.
- > Steven, could you please help?
- > 
- > But this is already called in the non-preemtible context, how can
- > 'started at' blame vprintk_emit?
- > 
+On Fri, 2013-06-21 at 17:43 -0700, Davidlohr Bueso wrote:
+> On Fri, 2013-06-21 at 17:25 -0700, Michel Lespinasse wrote:
+> > On Fri, Jun 21, 2013 at 5:00 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+> > > On Fri, 2013-06-21 at 16:51 -0700, Tim Chen wrote:
+> > >> In this patchset, we introduce two optimizations to read write semaphore.
+> > >> The first one reduces cache bouncing of the sem->count field
+> > >> by doing a pre-read of the sem->count and avoid cmpxchg if possible.
+> > >> The second patch introduces similar optimistic spining logic in
+> > >> the mutex code for the writer lock acquisition of rw-sem.
+> > >>
+> > >> Combining the two patches, in testing by Davidlohr Bueso on aim7 workloads
+> > >> on 8 socket 80 cores system, he saw improvements of
+> > >> alltests (+14.5%), custom (+17%), disk (+11%), high_systime
+> > >> (+5%), shared (+15%) and short (+4%), most of them after around 500
+> > >> users when i_mmap was implemented as rwsem.
+> > >>
+> > >> Feedbacks on the effectiveness of these tweaks on other workloads
+> > >> will be appreciated.
+> > >
+> > > Tim, I was really hoping to send all this in one big bundle. I was doing
+> > > some further testing (enabling hyperthreading and some Oracle runs),
+> > > fortunately everything looks ok and we are getting actual improvements
+> > > on large boxes.
+> > >
+> > > That said, how about I send you my i_mmap rwsem patchset for a v2 of
+> > > this patchset?
+> > 
+> > I'm a bit confused about the state of these patchsets - it looks like
+> > I'm only copied into half of the conversations. Should I wait for a v2
+> > here, or should I hunt down for Alex's version of things, or... ?
+> 
+> Except for some internal patch logistics, you haven't been left out on
+> any conversations :)
+> 
+> My original plan was to send out, in one patchset: 
+> 
+> - rwsem optimizations from Alex (patch 1/2 here, which should be
+> actually 4 patches) +
+> - rwsem optimistic spinning (patch 2/2 here) +
+> - i_mmap_mutex to rwsem conversion (5 more patches)
+> 
+> Now, I realize that the i_mmap stuff might not be welcomed in a
+> rwsem-specific optimizations patchset like this one, but I think it's
+> relevant to include everything in a single bundle as it really shows the
+> performance boosts and it's what I have been using and measuring the
+> original negative rwsem performance when compared to a mutex. 
+> 
+> If folks don't agree, I can always send it as a separate patchset.
 
-I'll do another run on just plain rc7 again, just to rule out my debug patches.
+I think the i_mmap_mutex conversion probably should be a separate
+patch set.  There are probably a lot of i_mmap specific considerations
+that need to be considered.
 
-	Dave
+I'll resend a version two of the patchset that restructure Alex's
+changes into 4 patches and incorporate review comments.
+
+Thanks.
+
+Tim
 
 
