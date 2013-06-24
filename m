@@ -1,98 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab3FXUs5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 16:48:57 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:38718 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751072Ab3FXUs4 (ORCPT
+	id S1751509Ab3FXUwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 16:52:49 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:59906 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab3FXUwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 16:48:56 -0400
-Message-ID: <51C8B0AA.4070204@hurleysoftware.com>
-Date: Mon, 24 Jun 2013 16:48:42 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 24 Jun 2013 16:52:47 -0400
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, Alex Shi <alex.shi@intel.com>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock acquisition
-References: <cover.1371855277.git.tim.c.chen@linux.intel.com>  <1371858700.22432.5.camel@schen9-DESK>  <51C558E2.1040108@hurleysoftware.com>  <1372017836.1797.14.camel@buesod1.americas.hpqcorp.net>  <1372093876.22432.34.camel@schen9-DESK>  <51C894C3.4040407@hurleysoftware.com> <1372105065.22432.65.camel@schen9-DESK>
-In-Reply-To: <1372105065.22432.65.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+In-Reply-To: <20130624183409.GA25015@phenom.dumpdata.com>
+References: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
+	<1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
+	<20130624170912.GH5823@phenom.ffwll.local>
+	<20130624173227.GA24626@phenom.dumpdata.com>
+	<CAKMK7uGPeAXmm21KCK4ZfqrynykyKCjn5dZVTsBheQ4JnaoW=A@mail.gmail.com>
+	<20130624183409.GA25015@phenom.dumpdata.com>
+Date: Tue, 25 Jun 2013 06:52:45 +1000
+Message-ID: <CAPM=9tx2pquifzbSEE7DNZB1uLpWGRPqEmE3Dt-AOOcL_9FOng@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: make compact dma scatter lists creation work
+ with SWIOTLB backend.
+From: Dave Airlie <airlied@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Imre Deak <imre.deak@intel.com>, Dave Airlie <airlied@linux.ie>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 04:17 PM, Tim Chen wrote:
-> On Mon, 2013-06-24 at 14:49 -0400, Peter Hurley wrote:
->> On 06/24/2013 01:11 PM, Tim Chen wrote:
->>> On Sun, 2013-06-23 at 13:03 -0700, Davidlohr Bueso wrote:
->>>> On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
->>>>> On 06/21/2013 07:51 PM, Tim Chen wrote:
->>>>>>
->>>>>> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
->>>>>> +{
->>>>>> +	int retval = true;
->>>>>> +
->>>>>> +	/* Spin only if active writer running */
->>>>>> +	if (!sem->owner)
->>>>>> +		return false;
->>>>>> +
->>>>>> +	rcu_read_lock();
->>>>>> +	if (sem->owner)
->>>>>> +		retval = sem->owner->on_cpu;
->>>>>                             ^^^^^^^^^^^^^^^^^^
->>>>>
->>>>> Why is this a safe dereference? Could not another cpu have just
->>>>> dropped the sem (and thus set sem->owner to NULL and oops)?
->>>>>
->>>
->>> The rcu read lock should protect against sem->owner being NULL.
+On Tue, Jun 25, 2013 at 4:34 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Mon, Jun 24, 2013 at 08:26:18PM +0200, Daniel Vetter wrote:
+>> On Mon, Jun 24, 2013 at 7:32 PM, Konrad Rzeszutek Wilk
+>> <konrad.wilk@oracle.com> wrote:
+>> > On Mon, Jun 24, 2013 at 07:09:12PM +0200, Daniel Vetter wrote:
+>> >> On Mon, Jun 24, 2013 at 11:47:48AM -0400, Konrad Rzeszutek Wilk wrote:
+>> >> > Git commit 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
+>> >> > ("drm/i915: create compact dma scatter lists for gem objects") makes
+>> >> > certain assumptions about the under laying DMA API that are not always
+>> >> > correct.
+>> >> >
+>> >> > On a ThinkPad X230 with an Intel HD 4000 with Xen during the bootup
+>> >> > I see:
+>> >> >
+>> >> > [drm:intel_pipe_set_base] *ERROR* pin & fence failed
+>> >> > [drm:intel_crtc_set_config] *ERROR* failed to set mode on [CRTC:3], err = -28
+>> >> >
+>> >> > Bit of debugging traced it down to dma_map_sg failing (in
+>> >> > i915_gem_gtt_prepare_object) as some of the SG entries were huge (3MB).
+>> >> >
+>> >> > That unfortunately are sizes that the SWIOTLB is incapable of handling -
+>> >> > the maximum it can handle is a an entry of 512KB of virtual contiguous
+>> >> > memory for its bounce buffer. (See IO_TLB_SEGSIZE).
+>> >> >
+>> >> > Previous to the above mention git commit the SG entries were of 4KB, and
+>> >> > the code introduced by above git commit squashed the CPU contiguous PFNs
+>> >> > in one big virtual address provided to DMA API.
+>> >> >
+>> >> > This patch is a simple semi-revert - were we emulate the old behavior
+>> >> > if we detect that SWIOTLB is online. If it is not online then we continue
+>> >> > on with the new compact scatter gather mechanism.
+>> >> >
+>> >> > An alternative solution would be for the the '.get_pages' and the
+>> >> > i915_gem_gtt_prepare_object to retry with smaller max gap of the
+>> >> > amount of PFNs that can be combined together - but with this issue
+>> >> > discovered during rc7 that might be too risky.
+>> >> >
+>> >> > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> >> > CC: Chris Wilson <chris@chris-wilson.co.uk>
+>> >> > CC: Imre Deak <imre.deak@intel.com>
+>> >> > CC: Daniel Vetter <daniel.vetter@ffwll.ch>
+>> >> > CC: David Airlie <airlied@linux.ie>
+>> >> > CC: <dri-devel@lists.freedesktop.org>
+>> >> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> >>
+>> >> Two things:
+>> >
+>> > Hey Daniel,
+>> >
+>> >>
+>> >> - SWIOTLB usage should seriously blow up all over the place in drm/i915.
+>> >>   We really rely on the everywhere else true fact that the pages and their
+>> >>   dma mapping point at the same backing storage.
+>> >
+>> > It works. As in, it seems to work for just a normal desktop user. I don't
+>> > see much of dma_sync_* sprinkled around the drm/i915 so I would think that
+>> > there are some issues would be hit as well - but at the first glance
+>> > when using it on a laptop it looks OK.
 >>
->> It doesn't.
+>> Yeah, we have a pretty serious case of "roll our own coherency stuff".
+>> The biggest reason is that for a long time i915.ko didn't care one bit
+>> about iommus, and the thing we care about (flushing cpu caches for
+>> dma) isn't supported on x86 since x86 every dma is coherent (well, not
+>> quite, but we don't have support for it). I think longer-term it would
+>> make sense to move the clfushing we're doing into the dma layer.
 >>
->> Here's the comment from mutex_spin_on_owner():
+>> >> - How is this solved elsewhere when constructing sg tables? Or are we
+>> >>   really the only guys who try to construct such big sg entries? I
+>> >>   expected somewhat that the dma mapping backed would fill in the segment
+>> >>   limits accordingly, but I haven't found anything really on a quick
+>> >>   search.
+>> >
+>> > The TTM layer (so radeon, nouveau) uses pci_alloc_coherent which will
+>> > construct the dma mapped pages. That allows it to construct "SWIOTLB-approved"
+>> > pages that won't need to go through dma_map/dma_unmap as they are
+>> > already mapped and ready to go.
+>> >
+>> > Coming back to your question - I think that i915 is the one that I've
+>> > encountered.
 >>
->>     /*
->>      * Look out! "owner" is an entirely speculative pointer
->>      * access and not reliable.
->>      */
+>> That's a bit surprising. With dma_buf graphics people will use sg
+>> tables much more (there's even a nice sg_alloc_table_from_pages helper
+>> to construct them), and those sg tables tend to have large segments. I
+>> guess we need some more generic solution here ...
 >
-> On second thought, I agree with you.  I should change this to
-> something like
+> Yes. I don't grok the full picture yet so I am not sure how to help with
+> this right now. Is there a roadmap or Wiki on how this was envisioned?
+>>
+>> For now I guess we can live with your CONFIG_SWIOTLB hack.
+>> -Daniel
 >
-> 	int retval = true;
-> 	task_struct *sem_owner;
->
-> 	/* Spin only if active writer running */
-> 	if (!sem->owner)
-> 		return false;
->
-> 	rcu_read_lock();
-> 	sem_owner = sem->owner;
-> 	if (sem_owner)
-> 		retval = sem_owner->on_cpu;
->
+> OK, I read that as an Ack-ed-by. Should I send the patch to Dave Airlie
+> in a GIT PULL or some other way to make it on the v3.10-rc7 train?
 
-Our emails passed each other.
+I don't like this at all, I'll accept the patch on the condition you
+investigate further :-)
 
-Also, I haven't given a lot of thought to if preemption must be disabled
-before calling rwsem_can_spin_on_owner(). If so, wouldn't you just drop
-rwsem_can_spin_on_owner() (because the conditions tested in the loop are
-equivalent)?
+If you are using swiotlb on i915 things should break, I know I've
+investigated problems before where swiotlb was being incorrectly used
+due to page masks or other issues. Shouldn't you be passing through
+using the real iommu?
 
-Regards,
-Peter Hurley
-
-
+Dave.
