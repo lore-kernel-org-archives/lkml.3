@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3FXVQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 17:16:28 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26171 "EHLO
+	id S1752124Ab3FXVRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 17:17:21 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26509 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab3FXVQ0 (ORCPT
+	with ESMTP id S1750958Ab3FXVRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 17:16:26 -0400
-Message-ID: <51C8B720.3000800@oracle.com>
-Date: Mon, 24 Jun 2013 15:16:16 -0600
+	Mon, 24 Jun 2013 17:17:20 -0400
+Message-ID: <51C8B75C.8040606@oracle.com>
+Date: Mon, 24 Jun 2013 15:17:16 -0600
 From: Khalid Aziz <khalid.aziz@oracle.com>
 Organization: Oracle Corp
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, James.Bottomley@HansenPartnership.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Khalid Aziz <khalid@gonehiking.org>
-Subject: Re: [PATCH RESEND v2 2/2] scsi: 64-bit port of buslogic driver
-References: <cover.1368754558.git.khalid.aziz@oracle.com> <97daf2d29ceb78bdef3ddf6358dc634de35d0345.1368754556.git.khalid.aziz@oracle.com> <20130624210747.GA19721@redhat.com>
-In-Reply-To: <20130624210747.GA19721@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 0/2] scsi: Port buslogic driver to 64 bits
+References: <cover.1368754558.git.khalid.aziz@oracle.com> <1372107313.2013.81.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1372107313.2013.81.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 03:07 PM, Dave Jones wrote:
-> On Mon, Jun 24, 2013 at 02:26:00PM -0600, Khalid Aziz wrote:
+On 06/24/2013 02:55 PM, James Bottomley wrote:
+> On Mon, 2013-06-24 at 14:25 -0600, Khalid Aziz wrote:
+>> This patchset ports buslogic driver to 64-bit.
 >
->   > @@ -821,7 +821,7 @@ struct blogic_ccb {
->   >  	unsigned char cdblen;				/* Byte 2 */
->   >  	unsigned char sense_datalen;			/* Byte 3 */
->   >  	u32 datalen;					/* Bytes 4-7 */
->   > -	u32 data;					/* Bytes 8-11 */
->   > +	void *data;					/* Bytes 8-11 */
->
-> The comment (and subsequent ones for this struct)  are now wrong on 64-bit.
-> More of a concern though is that above this struct is this...
->
-> /*
->    Define the 32 Bit Mode Command Control Block (CCB) structure.  The first 40
->    bytes are defined by and common to both the MultiMaster Firmware and the
->    FlashPoint SCCB Manager.
->
->
-> Is it safe to change this if the firmware/3rd party sw is expecting it to be a u32 ?
->
-> 	Dave
->
+> OK, thought long and hard about this., I'll take it on the proviso that
+> you're the new buslogic maintainer.  The reason being that without
+> someone to sort through any bug reports, the only option I have on a bug
+> which is in the rework but not the original would be to revert to the
+> original.
 
-Dave,
 
-You are right. The comment does need to be updated. It is safe though to 
-change it to void *. I have verified this field is used by the lower 
-layer SCCB manager (not fw) and the upper layer buslogic driver only. 
-This field does get used to store 64-bit memory pointers as well as 
-32-bit DMA pointers depending upon the operation specified in 
-blogic_ccb, and I have made sure the usage is consistent between the two 
-layers.
+James,
 
-I can correct the comments in another patch if that is ok by James.
+Understood. I am ok with this.
 
 --
 Khalid
