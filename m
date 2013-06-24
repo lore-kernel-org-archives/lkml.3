@@ -1,88 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab3FXC4P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 22:56:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40064 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab3FXC4N (ORCPT
+	id S1752520Ab3FXC5D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 22:57:03 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:65207 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab3FXC5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 22:56:13 -0400
-Date: Mon, 24 Jun 2013 12:56:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20130624125600.fecd2b8062dfe61b889927d9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Jun_2013_12_56_00_+1000_HKL+yV+zYzNnl83i"
+	Sun, 23 Jun 2013 22:57:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <1371783624-23962-1-git-send-email-gcondra@google.com>
+References: <1371783624-23962-1-git-send-email-gcondra@google.com>
+Date: Sun, 23 Jun 2013 21:57:01 -0500
+Message-ID: <CABqD9harhkD_n8b2y6e6Kc5jzSCjFFAJL+yAxy80qduwLVUntw@mail.gmail.com>
+Subject: Re: [PATCH v2] dm: verity: Add support for emitting uevents on
+ dm-verity errors.
+From: Will Drewry <wad@chromium.org>
+To: Geremy Condra <gcondra@google.com>
+Cc: dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Jun_2013_12_56_00_+1000_HKL+yV+zYzNnl83i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 20, 2013 at 10:00 PM, Geremy Condra <gcondra@google.com> wrote:
+> With this change dm-verity errors will cause uevents to be
+> sent to userspace, notifying it that an error has occurred
+> and potentially triggering recovery actions.
+>
+> Signed-off-by: Geremy Condra <gcondra@google.com>
+> ---
+> Changelog since v1:
+> - Removed the DM_VERITY_ERROR_NOTIFY config option
+>
+>  drivers/md/dm-uevent.c | 40 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/md/dm-uevent.h | 12 ++++++++++--
+>  drivers/md/dm-verity.c | 28 ++++++++++++++++++++++++++++
+>  3 files changed, 78 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/md/dm-uevent.c b/drivers/md/dm-uevent.c
+> index 8efe033..17a6662 100644
+> --- a/drivers/md/dm-uevent.c
+> +++ b/drivers/md/dm-uevent.c
+> @@ -36,6 +36,8 @@ static const struct {
+>  } _dm_uevent_type_names[] = {
+>         {DM_UEVENT_PATH_FAILED, KOBJ_CHANGE, "PATH_FAILED"},
+>         {DM_UEVENT_PATH_REINSTATED, KOBJ_CHANGE, "PATH_REINSTATED"},
+> +       {DM_UEVENT_VERITY_DATA_ERROR, KOBJ_CHANGE, "VERITY_DATA_ERROR"},
+> +       {DM_UEVENT_VERITY_HASH_ERROR, KOBJ_CHANGE, "VERITY_HASH_ERROR"},
+>  };
+>
+>  static struct kmem_cache *_dm_event_cache;
+> @@ -202,6 +204,44 @@ void dm_path_uevent(enum dm_uevent_type event_type, struct dm_target *ti,
+>  }
+>  EXPORT_SYMBOL_GPL(dm_path_uevent);
+>
+> +void dm_send_verity_uevent(enum dm_uevent_type event_type, struct dm_target *ti,
+> +                                               unsigned long long block_nr)
+> +{
+> +       struct mapped_device *md = dm_table_get_md(ti->table);
+> +       struct dm_uevent *event = dm_uevent_alloc(md);
+> +       struct gendisk *disk = dm_disk(md);
+> +
+> +       if (!event) {
+> +               DMERR("%s: dm_uevent_alloc() failed", __func__);
+> +               return;
+> +       }
+> +
+> +       if (event_type >= ARRAY_SIZE(_dm_uevent_type_names)) {
+> +               DMERR("%s: Invalid event_type %d", __func__, event_type);
+> +               goto out;
+> +       }
+> +
+> +       if (add_uevent_var(&event->ku_env, "DM_VERITY_BLOCK_NR=%llu", block_nr)) {
+> +               DMERR("%s: add_uevent_var() for DM_VERITY_BLOCK failed", __func__);
+> +               goto out;
+> +       }
+> +
+> +       if (add_uevent_var(&event->ku_env, "DM_ACTION=%s",
+> +                       _dm_uevent_type_names[event_type].name)) {
+> +               DMERR("%s: add_uevent_var() for DM_ACTION failed", __func__);
+> +               goto out;
+> +       }
+> +
+> +       if (kobject_uevent_env(&disk_to_dev(disk)->kobj, event_type,
+> +                               event->ku_env.envp)) {
+> +               DMERR("%s: kobject_uevent_env failed", __func__);
+> +       }
+> +
+> +out:
+> +       dm_uevent_free(event);
+> +}
+> +EXPORT_SYMBOL_GPL(dm_send_verity_uevent);
+> +
+>  int dm_uevent_init(void)
+>  {
+>         _dm_event_cache = KMEM_CACHE(dm_uevent, 0);
+> diff --git a/drivers/md/dm-uevent.h b/drivers/md/dm-uevent.h
+> index 2eccc8b..1c59dba 100644
+> --- a/drivers/md/dm-uevent.h
+> +++ b/drivers/md/dm-uevent.h
+> @@ -24,6 +24,8 @@
+>  enum dm_uevent_type {
+>         DM_UEVENT_PATH_FAILED,
+>         DM_UEVENT_PATH_REINSTATED,
+> +       DM_UEVENT_VERITY_DATA_ERROR,
+> +       DM_UEVENT_VERITY_HASH_ERROR,
+>  };
+>
+>  #ifdef CONFIG_DM_UEVENT
+> @@ -34,7 +36,9 @@ extern void dm_send_uevents(struct list_head *events, struct kobject *kobj);
+>  extern void dm_path_uevent(enum dm_uevent_type event_type,
+>                            struct dm_target *ti, const char *path,
+>                            unsigned nr_valid_paths);
+> -
+> +extern void dm_send_verity_uevent(enum dm_uevent_type event_type,
+> +                                       struct dm_target *ti,
+> +                                       unsigned long long block_nr);
+>  #else
+>
+>  static inline int dm_uevent_init(void)
+> @@ -53,7 +57,11 @@ static inline void dm_path_uevent(enum dm_uevent_type event_type,
+>                                   unsigned nr_valid_paths)
+>  {
+>  }
+> -
+> +static inline void dm_send_verity_uevent(enum dm_uevent_type event_type,
+> +                                       struct dm_target *ti,
+> +                                       unsigned long long block_nr)
+> +{
+> +}
+>  #endif /* CONFIG_DM_UEVENT */
+>
+>  #endif /* DM_UEVENT_H */
+> diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
+> index 68bf5c3..2e3695b 100644
+> --- a/drivers/md/dm-verity.c
+> +++ b/drivers/md/dm-verity.c
+> @@ -20,6 +20,8 @@
+>  #include <linux/device-mapper.h>
+>  #include <crypto/hash.h>
+>
+> +#include "dm-uevent.h"
+> +
+>  #define DM_MSG_PREFIX                  "verity"
+>
+>  #define DM_VERITY_IO_VEC_INLINE                16
+> @@ -137,6 +139,30 @@ static void dm_bufio_alloc_callback(struct dm_buffer *buf)
+>  }
+>
+>  /*
+> + * Trigger userspace data corruption handler.
+> + */
+> +#ifdef CONFIG_DM_UEVENT
+> +static void verity_data_error(struct dm_verity *v, unsigned long long block_nr)
+> +{
+> +       dm_send_verity_uevent(DM_UEVENT_VERITY_DATA_ERROR, v->ti, block_nr);
+> +}
+> +
+> +static void verity_hash_error(struct dm_verity *v, unsigned long long block_nr)
+> +{
+> +       dm_send_verity_uevent(DM_UEVENT_VERITY_HASH_ERROR, v->ti, block_nr);
+> +}
+> +#else
+> +static inline void verity_data_error(struct dm_verity *v,
+> +                                       unsigned long long block_nr)
+> +{
+> +}
+> +static inline void verity_hash_error(struct dm_verity *v,
+> +                                       unsigned long long block_nr)
+> +{
+> +}
+> +#endif
+> +
+> +/*
+>   * Translate input sector number to the sector number on the target device.
+>   */
+>  static sector_t verity_map_sector(struct dm_verity *v, sector_t bi_sector)
+> @@ -255,6 +281,7 @@ static int verity_verify_level(struct dm_verity_io *io, sector_t block,
+>                                 (unsigned long long)hash_block);
+>                         v->hash_failed = 1;
+>                         r = -EIO;
+> +                       verity_hash_error(v, (unsigned long long)hash_block);
+>                         goto release_ret_r;
+>                 } else
+>                         aux->hash_verified = 1;
+> @@ -375,6 +402,7 @@ test_block_hash:
+>                         DMERR_LIMIT("data block %llu is corrupted",
+>                                 (unsigned long long)(io->block + b));
+>                         v->hash_failed = 1;
+> +                       verity_data_error(v, (unsigned long long)(io->block + b));
+>                         return -EIO;
+>                 }
+>         }
+> --
+> 1.8.3
 
-Hi Dave,
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/drm_prime.c between commit ebc0bad4a05a ("drm/prime:
-Honor requested file flags when exporting a buffer") from Linus' tree and
-commit ca793f75d91d ("drm: move pinning/unpinning to buffer attach") from
-the drm tree.
+Thanks for doing this!  (I much prefer this to using notifiers chains!)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/gpu/drm/drm_prime.c
-index 5b7b911,d92853e..0000000
---- a/drivers/gpu/drm/drm_prime.c
-+++ b/drivers/gpu/drm/drm_prime.c
-@@@ -185,12 -210,8 +210,7 @@@ static const struct dma_buf_ops drm_gem
-  struct dma_buf *drm_gem_prime_export(struct drm_device *dev,
-  				     struct drm_gem_object *obj, int flags)
-  {
-- 	if (dev->driver->gem_prime_pin) {
-- 		int ret =3D dev->driver->gem_prime_pin(obj);
-- 		if (ret)
-- 			return ERR_PTR(ret);
-- 	}
- -	return dma_buf_export(obj, &drm_gem_prime_dmabuf_ops, obj->size,
- -			     0600);
- +	return dma_buf_export(obj, &drm_gem_prime_dmabuf_ops, obj->size, flags);
-  }
-  EXPORT_SYMBOL(drm_gem_prime_export);
- =20
-
---Signature=_Mon__24_Jun_2013_12_56_00_+1000_HKL+yV+zYzNnl83i
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRx7VEAAoJEECxmPOUX5FEdyoQAKPSssv8avOCU8oDowSOCe6g
-8haE5H/cfXIIEwHNYPpkk2sTxcM9quv1LYE3cQWDI0oC9EHHTE9GMHumTmpZl5Bx
-vmdsMEp/sIrEG08YeIeV4S9yfCOTD/XJ8fDV6qgp2dTmOtiJtBB0WGEXiWm8ZhWZ
-jQ8GldFzAz7DEAQaadpUqcSJ7uPVomAH6mCOfUqIEIy+m1rVrlpFBFecfb/FMpGb
-VT4RYCuiEdeanHkU6JEN2sI6QRia5ZUncJoMDGqjZjtLL6u8BvUte1CZoujC9ffN
-h3P/DhhzbJDka3ZAvVWmxDJmURZv4/j1CMip1UqLouVgIt6HvEjRpMKuBtg3cCiF
-84wOC43JnlLerDzLnvOE+Zgll2j76JH9+aPM/ebtkz31ag4+mV/9Bh0ral+NcfaY
-wr5os4uhxgjWuPR3B78y/rcMJHlYsu8F6+ek/vboBBVG38MaVJBsh5Cx209EAwvo
-0qppi/ufiDP5DFdw9u/X2CmAz/i7PGTEO9Fl1olpegPm4yv8Kf5ASC/i7f9PLClc
-BiAvv8h6WYvZMDB+D0JrgBV9l1O2H8xALp0yQf8QtiYpSYBZWts/BefQDrrW3lPW
-QcfuYQk7JotQEgpl7kPA2pl+vjg2xxn3ACSQLUgM704MB2WgH/O7r8AhwVZDgT9t
-OZhRHNu55VbBw6FGjp5W
-=rroz
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Jun_2013_12_56_00_+1000_HKL+yV+zYzNnl83i--
+Acked-by: Will Drewry <wad@chromium.org>
