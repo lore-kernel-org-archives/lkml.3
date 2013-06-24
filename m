@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab3FXAAW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 20:00:22 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55856 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab3FXAAV (ORCPT
+	id S1752029Ab3FXACa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 20:02:30 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47699 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751553Ab3FXAC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 20:00:21 -0400
-Date: Mon, 24 Jun 2013 10:00:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.10-rc7
-Message-Id: <20130624100011.1f384d9c930aaa56ff0f72e1@canb.auug.org.au>
-In-Reply-To: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
-References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Jun_2013_10_00_11_+1000_VyIzaQ3t0FJhCesO"
+	Sun, 23 Jun 2013 20:02:29 -0400
+X-Sasl-enc: rlD559pa74msre20RwVkwDDnmZb54K8xW0OEtjSEu8gt 1372032147
+Date: Sun, 23 Jun 2013 21:02:24 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Brice Goglin <brice.goglin@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: MTRR use in drivers
+Message-ID: <20130624000224.GA2832@khazad-dum.debian.net>
+References: <51C3DDFA.7050204@zytor.com>
+ <51C69732.1010906@gmail.com>
+ <b8bfa877-5663-4a93-94b4-6ea313e4d563@email.android.com>
+ <20130623192936.GA28655@khazad-dum.debian.net>
+ <51C75465.9060007@zytor.com>
+ <20130623215649.GA1288@khazad-dum.debian.net>
+ <51C7725C.5090801@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C7725C.5090801@zytor.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Jun_2013_10_00_11_+1000_VyIzaQ3t0FJhCesO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 23 Jun 2013, H. Peter Anvin wrote:
+> On 06/23/2013 02:56 PM, Henrique de Moraes Holschuh wrote:
+> > 
+> > And as far as I could find from Intel's not-that-complete public
+> > "specification updates", we are applying the errata workaround to a few more
+> > processors than strictly required, but since I have no idea how to write a
+> > test case, I can't whitelist the 3rd-gen Pentium M on my T43, nor can I get
+> > ThinkPad owners to test it for us on 1st and 2nd-gen Pentium M and report
+> > back.
+> 
+> Which specific erratum are you referring to, here?  The "WC becomes UC"
+> erratum?  I don't think there is a sane testcase for it since it needs a
+> very complicated setup to trigger.
 
-On Sat, 22 Jun 2013 11:04:27 -1000 Linus Torvalds <torvalds@linux-foundatio=
-n.org> wrote:
->
-> So this is hopefully the last -rc in the series, and things have
-> indeed be calming down finally, so assuming that trend continues,
-> we're all good.
+There are at least two different nasty PAT issues that are not always
+critical, and one that outright hangs the processor (if the unsupported
+aliasing of WB with UC/WC happens).
 
-And you are all going to resist rebasing your trees (for no apparent
-reason) this close to the merge window, right?  Ah, I am too late for
-some of you, I see. :-(
+Interestingly enough, most of the P4-Xeons and P4 do not appear to have the
+"WC becomes UC" errata.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+However, LOTS of P4, M-P4, Xeon PIII, Xeon, and Pentium M have a bug where
+the four highest entries in the PAT table are inactive (aliased to the four
+lowest entries) in mode B (PSE) and mode C (PAE) for 4k pages.  They work
+fine for large pages.
 
---Signature=_Mon__24_Jun_2013_10_00_11_+1000_VyIzaQ3t0FJhCesO
-Content-Type: application/pgp-signature
+Also, lots of them can hang if you ever alias WB with UC or WC (which is
+apparently an unsupported configuration anyway, or so it says in the
+errata).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+There are other weird aliasing nasties, such as one where you get memory
+corruption if you alias WB data with code (being accessed as UC or WC) in
+the same cacheline, and some stuff such as weirdness should the page table
+be on WC memory...
 
-iQIcBAEBCAAGBQJRx4wPAAoJEECxmPOUX5FEzJEP/3a74NH4qcomjwWp3ntWr7cX
-ZY0FEcK8/3dTsauiIVgHppusHOsRdJrkM0D28pFXrMHSWq+Phnv/qPoCFXNzEBAW
-Dq4l+nGuqAqa+HE0SvemItCZNHGRvDtppY//EYyWkE0LUeBVj7jEgyQYsRY5KRZ9
-5Xus5epUT6uwNQ/kJWwaB/c3EydWvkuQdSsYlLIsFNs1LagxRhp8KasCgwxbYsd/
-reYtFb2hX5UWAecDBlui0WX3mUbYmcL2jX1lpxHfEbi7LXmpUGEbUdhtA/EU7IVu
-oYP9MnRGD6OhK75A5s/MfhvXovRi3b2h3KcDA9p6S4+w6/VGHB8TB1ArUO7Lvoox
-E425B8WNb0Sk8Ym6A05q8tVbbqte21xBQThA2cqEM5GEr12tu4F2tAgmCPHiEwcZ
-k3sXxJKigcND9uZ5ZqvfobhY1bCqXlsTfVCaUhXd8mD4wIB1/9WLpnAn/c1fkIhp
-if0uCokrppMgx8uaPRwn+ac6k4/coJgnvI2HmTCxuzwRC+b+AkIpolc7ljbGK12h
-zVu4vpHOogryIh/Xbxe8To5CaHhc18X3sNw7Gp1vxUXm31YMkEzmbNVuIq+oimSA
-EuL0OF9QKykO4Pqulpyn8nggwmQN6QHUZEh1SkQyloJX6C0hCJk0wVW1uMTzWJvE
-OjEbgQgA4a0yOaUX30ZX
-=KkPZ
------END PGP SIGNATURE-----
+I can track down most of the CPUIDs involved if you want, but someone from
+Intel would be better (I assume they actually have access to the errata
+documentation in some less idiotic way than reading a ton of badly indexed
+PDFs that take forever to find in their site).
 
---Signature=_Mon__24_Jun_2013_10_00_11_+1000_VyIzaQ3t0FJhCesO--
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
