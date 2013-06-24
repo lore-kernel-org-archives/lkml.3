@@ -1,50 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab3FXK5q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:57:46 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:29579 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab3FXK5o (ORCPT
+	id S1752940Ab3FXKvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:51:51 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:58859 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab3FXKvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:57:44 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Bo Shen <voice.shen@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Wenyou Yang <wenyou.yang@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91/PMC: fix at91sam9n12 USB FS init
-Date: Mon, 24 Jun 2013 12:57:42 +0200
-Message-ID: <1372071462-29063-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 24 Jun 2013 06:51:48 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH V7 09/30] thermal: exynos: Add extra entries in the tmu platform data
+Date: Mon, 24 Jun 2013 16:20:30 +0530
+Message-Id: <1372071051-3167-10-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
+References: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-at91sam9n12 has Full-speed only USB. So we should add
-it to the list in at91_pllb_usbfs_clock_init() function.
+This patch adds entries min_efuse_value, max_efuse_value, default_temp_offset,
+trigger_type, cal_type, trim_first_point, trim_second_point, max_trigger_level
+trigger_enable in the TMU platform data structure. Also the driver is modified
+to use the data passed by these new platform memebers instead of the constant
+macros. All these changes helps in separating the SOC specific data part from
+the TMU driver.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- arch/arm/mach-at91/clock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/thermal/samsung/exynos_thermal_common.h |    7 +++
+ drivers/thermal/samsung/exynos_tmu.c            |   43 ++++++++++----------
+ drivers/thermal/samsung/exynos_tmu.h            |   49 ++++++++++++++--------
+ drivers/thermal/samsung/exynos_tmu_data.c       |   34 ++++++++++++----
+ 4 files changed, 85 insertions(+), 48 deletions(-)
 
-diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-index 978de42..2f732d9 100644
---- a/arch/arm/mach-at91/clock.c
-+++ b/arch/arm/mach-at91/clock.c
-@@ -699,7 +699,7 @@ static void __init at91_pllb_usbfs_clock_init(unsigned long main_clock)
- 		at91_pmc_write(AT91_PMC_SCER, AT91RM9200_PMC_MCKUDP);
- 	} else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() ||
- 		   cpu_is_at91sam9263() || cpu_is_at91sam9g20() ||
--		   cpu_is_at91sam9g10()) {
-+		   cpu_is_at91sam9g10() || cpu_is_at91sam9n12()) {
- 		uhpck.pmc_mask = AT91SAM926x_PMC_UHP;
- 		udpck.pmc_mask = AT91SAM926x_PMC_UDP;
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+index 57ce33b..fee1588 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.h
++++ b/drivers/thermal/samsung/exynos_thermal_common.h
+@@ -44,6 +44,13 @@
+ 
+ #define EXYNOS_ZONE_COUNT	3
+ 
++enum trigger_type {
++	THROTTLE_ACTIVE = 1,
++	THROTTLE_PASSIVE,
++	SW_TRIP,
++	HW_TRIP,
++};
++
+ /**
+  * struct freq_clip_table
+  * @freq_clip_max: maximum frequency allowed for this cooling state.
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index fa33a48..401ec98 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -49,7 +49,6 @@
+ #define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
+ #define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
+ #define EXYNOS_TMU_CORE_EN_SHIFT	0
+-#define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET	50
+ 
+ /* Exynos4210 specific registers */
+ #define EXYNOS4210_TMU_REG_THRESHOLD_TEMP	0x44
+@@ -94,9 +93,6 @@
+ #define EXYNOS_TMU_INTEN_FALL1_SHIFT	20
+ #define EXYNOS_TMU_INTEN_FALL2_SHIFT	24
+ 
+-#define EFUSE_MIN_VALUE 40
+-#define EFUSE_MAX_VALUE 100
+-
+ #ifdef CONFIG_THERMAL_EMULATION
+ #define EXYNOS_EMUL_TIME	0x57F0
+ #define EXYNOS_EMUL_TIME_MASK	0xffff
+@@ -136,15 +132,16 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
+ 
+ 	switch (pdata->cal_type) {
+ 	case TYPE_TWO_POINT_TRIMMING:
+-		temp_code = (temp - 25) *
+-		    (data->temp_error2 - data->temp_error1) /
+-		    (85 - 25) + data->temp_error1;
++		temp_code = (temp - pdata->first_point_trim) *
++			(data->temp_error2 - data->temp_error1) /
++			(pdata->second_point_trim - pdata->first_point_trim) +
++			data->temp_error1;
+ 		break;
+ 	case TYPE_ONE_POINT_TRIMMING:
+-		temp_code = temp + data->temp_error1 - 25;
++		temp_code = temp + data->temp_error1 - pdata->first_point_trim;
+ 		break;
+ 	default:
+-		temp_code = temp + EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
++		temp_code = temp + pdata->default_temp_offset;
+ 		break;
  	}
+ out:
+@@ -169,14 +166,16 @@ static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code)
+ 
+ 	switch (pdata->cal_type) {
+ 	case TYPE_TWO_POINT_TRIMMING:
+-		temp = (temp_code - data->temp_error1) * (85 - 25) /
+-		    (data->temp_error2 - data->temp_error1) + 25;
++		temp = (temp_code - data->temp_error1) *
++			(pdata->second_point_trim - pdata->first_point_trim) /
++			(data->temp_error2 - data->temp_error1) +
++			pdata->first_point_trim;
+ 		break;
+ 	case TYPE_ONE_POINT_TRIMMING:
+-		temp = temp_code - data->temp_error1 + 25;
++		temp = temp_code - data->temp_error1 + pdata->first_point_trim;
+ 		break;
+ 	default:
+-		temp = temp_code - EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
++		temp = temp_code - pdata->default_temp_offset;
+ 		break;
+ 	}
+ out:
+@@ -209,8 +208,8 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	data->temp_error1 = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
+ 	data->temp_error2 = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
+ 
+-	if ((EFUSE_MIN_VALUE > data->temp_error1) ||
+-			(data->temp_error1 > EFUSE_MAX_VALUE) ||
++	if ((pdata->min_efuse_value > data->temp_error1) ||
++			(data->temp_error1 > pdata->max_efuse_value) ||
+ 			(data->temp_error2 != 0))
+ 		data->temp_error1 = pdata->efuse_value;
+ 
+@@ -300,10 +299,10 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+ 	if (on) {
+ 		con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
+ 		interrupt_en =
+-		pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
+-		pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
+-		pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
+-		pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
++		pdata->trigger_enable[3] << EXYNOS_TMU_INTEN_RISE3_SHIFT |
++		pdata->trigger_enable[2] << EXYNOS_TMU_INTEN_RISE2_SHIFT |
++		pdata->trigger_enable[1] << EXYNOS_TMU_INTEN_RISE1_SHIFT |
++		pdata->trigger_enable[0] << EXYNOS_TMU_INTEN_RISE0_SHIFT;
+ 		if (pdata->threshold_falling)
+ 			interrupt_en |=
+ 				interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
+@@ -533,9 +532,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+ 
+ 	/* Register the sensor with thermal management interface */
+ 	(&exynos_sensor_conf)->private_data = data;
+-	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en +
+-			pdata->trigger_level1_en + pdata->trigger_level2_en +
+-			pdata->trigger_level3_en;
++	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_enable[0] +
++			pdata->trigger_enable[1] + pdata->trigger_enable[2]+
++			pdata->trigger_enable[3];
+ 
+ 	for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++)
+ 		exynos_sensor_conf.trip_data.trip_val[i] =
+diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+index 1857609..473acae 100644
+--- a/drivers/thermal/samsung/exynos_tmu.h
++++ b/drivers/thermal/samsung/exynos_tmu.h
+@@ -32,6 +32,11 @@ enum calibration_type {
+ 	TYPE_NONE,
+ };
+ 
++enum calibration_mode {
++	SW_MODE,
++	HW_MODE,
++};
++
+ enum soc_type {
+ 	SOC_ARCH_EXYNOS4210 = 1,
+ 	SOC_ARCH_EXYNOS,
+@@ -57,18 +62,15 @@ enum soc_type {
+  *	3: temperature for trigger_level3 interrupt
+  *	   condition for trigger_level3 interrupt:
+  *		current temperature > threshold + trigger_levels[3]
+- * @trigger_level0_en:
+- *	1 = enable trigger_level0 interrupt,
+- *	0 = disable trigger_level0 interrupt
+- * @trigger_level1_en:
+- *	1 = enable trigger_level1 interrupt,
+- *	0 = disable trigger_level1 interrupt
+- * @trigger_level2_en:
+- *	1 = enable trigger_level2 interrupt,
+- *	0 = disable trigger_level2 interrupt
+- * @trigger_level3_en:
+- *	1 = enable trigger_level3 interrupt,
+- *	0 = disable trigger_level3 interrupt
++ * @trigger_type: defines the type of trigger. Possible values are,
++ *	THROTTLE_ACTIVE trigger type
++ *	THROTTLE_PASSIVE trigger type
++ *	SW_TRIP trigger type
++ *	HW_TRIP
++ * @trigger_enable[]: array to denote which trigger levels are enabled.
++ *	1 = enable trigger_level[] interrupt,
++ *	0 = disable trigger_level[] interrupt
++ * @max_trigger_level: max trigger level supported by the TMU
+  * @gain: gain of amplifier in the positive-TC generator block
+  *	0 <= gain <= 15
+  * @reference_voltage: reference voltage of amplifier
+@@ -78,7 +80,13 @@ enum soc_type {
+  *	000, 100, 101, 110 and 111 can be different modes
+  * @type: determines the type of SOC
+  * @efuse_value: platform defined fuse value
++ * @min_efuse_value: minimum valid trimming data
++ * @max_efuse_value: maximum valid trimming data
++ * @first_point_trim: temp value of the first point trimming
++ * @second_point_trim: temp value of the second point trimming
++ * @default_temp_offset: default temperature offset in case of no trimming
+  * @cal_type: calibration type for temperature
++ * @cal_mode: calibration mode for temperature
+  * @freq_clip_table: Table representing frequency reduction percentage.
+  * @freq_tab_count: Count of the above table as frequency reduction may
+  *	applicable to only some of the trigger levels.
+@@ -88,18 +96,23 @@ enum soc_type {
+ struct exynos_tmu_platform_data {
+ 	u8 threshold;
+ 	u8 threshold_falling;
+-	u8 trigger_levels[4];
+-	bool trigger_level0_en;
+-	bool trigger_level1_en;
+-	bool trigger_level2_en;
+-	bool trigger_level3_en;
+-
++	u8 trigger_levels[MAX_TRIP_COUNT];
++	enum trigger_type trigger_type[MAX_TRIP_COUNT];
++	bool trigger_enable[MAX_TRIP_COUNT];
++	u8 max_trigger_level;
+ 	u8 gain;
+ 	u8 reference_voltage;
+ 	u8 noise_cancel_mode;
++
+ 	u32 efuse_value;
++	u32 min_efuse_value;
++	u32 max_efuse_value;
++	u8 first_point_trim;
++	u8 second_point_trim;
++	u8 default_temp_offset;
+ 
+ 	enum calibration_type cal_type;
++	enum calibration_mode cal_mode;
+ 	enum soc_type type;
+ 	struct freq_clip_table freq_tab[4];
+ 	unsigned int freq_tab_count;
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 144ba44..24934d7 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -30,13 +30,22 @@ struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
+ 	.trigger_levels[0] = 5,
+ 	.trigger_levels[1] = 20,
+ 	.trigger_levels[2] = 30,
+-	.trigger_level0_en = 1,
+-	.trigger_level1_en = 1,
+-	.trigger_level2_en = 1,
+-	.trigger_level3_en = 0,
++	.trigger_enable[0] = true,
++	.trigger_enable[1] = true,
++	.trigger_enable[2] = true,
++	.trigger_enable[3] = false,
++	.trigger_type[0] = THROTTLE_ACTIVE,
++	.trigger_type[1] = THROTTLE_ACTIVE,
++	.trigger_type[2] = SW_TRIP,
++	.max_trigger_level = 4,
+ 	.gain = 15,
+ 	.reference_voltage = 7,
+ 	.cal_type = TYPE_ONE_POINT_TRIMMING,
++	.min_efuse_value = 40,
++	.max_efuse_value = 100,
++	.first_point_trim = 25,
++	.second_point_trim = 85,
++	.default_temp_offset = 50,
+ 	.freq_tab[0] = {
+ 		.freq_clip_max = 800 * 1000,
+ 		.temp_level = 85,
+@@ -56,15 +65,24 @@ struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
+ 	.trigger_levels[0] = 85,
+ 	.trigger_levels[1] = 103,
+ 	.trigger_levels[2] = 110,
+-	.trigger_level0_en = 1,
+-	.trigger_level1_en = 1,
+-	.trigger_level2_en = 1,
+-	.trigger_level3_en = 0,
++	.trigger_enable[0] = true,
++	.trigger_enable[1] = true,
++	.trigger_enable[2] = true,
++	.trigger_enable[3] = false,
++	.trigger_type[0] = THROTTLE_ACTIVE,
++	.trigger_type[1] = THROTTLE_ACTIVE,
++	.trigger_type[2] = SW_TRIP,
++	.max_trigger_level = 4,
+ 	.gain = 8,
+ 	.reference_voltage = 16,
+ 	.noise_cancel_mode = 4,
+ 	.cal_type = TYPE_ONE_POINT_TRIMMING,
+ 	.efuse_value = 55,
++	.min_efuse_value = 40,
++	.max_efuse_value = 100,
++	.first_point_trim = 25,
++	.second_point_trim = 85,
++	.default_temp_offset = 50,
+ 	.freq_tab[0] = {
+ 		.freq_clip_max = 800 * 1000,
+ 		.temp_level = 85,
 -- 
-1.8.2.2
+1.7.1
 
