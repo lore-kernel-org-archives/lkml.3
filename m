@@ -1,137 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab3FXDs5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 23:48:57 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:26422 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab3FXDsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 23:48:55 -0400
-X-IronPort-AV: E=Sophos;i="4.87,925,1363104000"; 
-   d="scan'208";a="7655772"
-Message-ID: <51C7C258.8070906@cn.fujitsu.com>
-Date: Mon, 24 Jun 2013 11:51:52 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752586Ab3FXDyk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 23:54:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:52855 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752407Ab3FXDyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 23:54:37 -0400
+Date: Mon, 24 Jun 2013 13:54:26 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Alexander Graf <agraf@suse.de>,
+        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
+        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+Message-ID: <20130624035426.GE25265@voom.fritz.box>
+References: <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>
+ <1371653443.21896.291.camel@pasglop>
+ <1371656989.22659.98.camel@ul30vt.home>
+ <51C28BEA.8050501@ozlabs.ru>
+ <20130620052822.GB3140@voom.redhat.com>
+ <1371714449.3944.14.camel@pasglop>
+ <51C2C1CC.9000003@ozlabs.ru>
+ <1371740113.32709.22.camel@ul30vt.home>
+ <20130622120304.GB25265@voom.fritz.box>
+ <1371943693.3944.104.camel@pasglop>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618020357.GZ32663@mtj.dyndns.org> <51BFF464.809@cn.fujitsu.com> <20130618172129.GH2767@htj.dyndns.org> <51C298B2.9060900@cn.fujitsu.com> <20130620061719.GA16114@mtj.dyndns.org> <51C41AB4.9070500@cn.fujitsu.com> <20130621182511.GA1763@htj.dyndns.org>
-In-Reply-To: <20130621182511.GA1763@htj.dyndns.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/24 11:47:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/24 11:47:40,
-	Serialize complete at 2013/06/24 11:47:40
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xA/XKXTdy9G3iaIz"
+Content-Disposition: inline
+In-Reply-To: <1371943693.3944.104.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2013 02:25 AM, Tejun Heo wrote:
-> Hey,
->
-> On Fri, Jun 21, 2013 at 05:19:48PM +0800, Tang Chen wrote:
->>> * As memblock allocator can relocate itself.  There's no point in
->>>    avoiding setting NUMA node while parsing and registering NUMA
->>>    topology.  Just parse and register NUMA info and later tell it to
->>>    relocate itself out of hot-pluggable node.  A number of patches in
->>>    the series is doing this dancing - carefully reordering NUMA
->>>    probing.  No need to do that.  It's really fragile thing to do.
->>>
->>> * Once you get the above out of the way, I don't think there are a lot
->>>    of permanent allocations in the way before NUMA is initialized.
->>>    Re-order the remaining ones if that's cleaner to do.  If that gets
->>>    overly messy / fragile, copying them around or freeing and reloading
->>>    afterwards could be an option too.
->>
->> memblock allocator can relocate itself, but it cannot relocate the memory
->
-> Hmmm... maybe I wasn't clear but that's the first bullet point above.
->
->> it allocated for users. There could be some pointers pointing to these
->> memory ranges. If we do the relocation, how to update these pointers ?
->
-> And the second.  Can you please list what persistent areas are
-> allocated before numa info is configured into memblock?  There
 
-Hi tj,
+--xA/XKXTdy9G3iaIz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-My box is x86_64, and the memory layout is:
-[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-[    0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x307ffffff]
-[    0.000000] SRAT: Node 1 PXM 2 [mem 0x308000000-0x587ffffff] Hot 
-Pluggable
-[    0.000000] SRAT: Node 2 PXM 3 [mem 0x588000000-0x7ffffffff] Hot 
-Pluggable
+On Sun, Jun 23, 2013 at 09:28:13AM +1000, Benjamin Herrenschmidt wrote:
+> On Sat, 2013-06-22 at 22:03 +1000, David Gibson wrote:
+> > I think the interface should not take the group fd, but the container
+> > fd.  Holding a reference to *that* would keep the necessary things
+> > around.  But more to the point, it's the right thing semantically:
+> >=20
+> > The container is essentially the handle on a host iommu address space,
+> > and so that's what should be bound by the KVM call to a particular
+> > guest iommu address space.  e.g. it would make no sense to bind two
+> > different groups to different guest iommu address spaces, if they were
+> > in the same container - the guest thinks they are different spaces,
+> > but if they're in the same container they must be the same space.
+>=20
+> Interestingly, how are we going to extend that when/if we implement
+> DDW ?
+>=20
+> DDW means an API by which the guest can request the creation of
+> additional iommus for a given device (typically, in addition to the
+> default smallish 32-bit one using 4k pages, the guest can request
+> a larger window in 64-bit space using a larger page size).
 
+So, would a PAPR gest requesting this expect the new window to have
+a new liobn, or an existing liobn?
 
-I marked ranges reserved by memblock before we parse SRAT with flag 0x4.
-There are about 14 ranges which is persistent after boot.
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
 
-[    0.000000]  reserved[0x0]   [0x00000000000000-0x0000000000ffff], 
-0x10000 bytes flags: 0x4
-[    0.000000]  reserved[0x1]   [0x00000000093000-0x000000000fffff], 
-0x6d000 bytes flags: 0x4
-[    0.000000]  reserved[0x2]   [0x00000001000000-0x00000002a9afff], 
-0x1a9b000 bytes flags: 0x4
-[    0.000000]  reserved[0x3]   [0x00000030000000-0x00000037ffffff], 
-0x8000000 bytes flags: 0x4
-...
-[    0.000000]  reserved[0x5]   [0x0000006da81000-0x0000006e46afff], 
-0x9ea000 bytes flags: 0x4
-[    0.000000]  reserved[0x6]   [0x0000006ed6a000-0x0000006f246fff], 
-0x4dd000 bytes flags: 0x4
-[    0.000000]  reserved[0x7]   [0x0000006f28a000-0x0000006f299fff], 
-0x10000 bytes flags: 0x4
-[    0.000000]  reserved[0x8]   [0x0000006f29c000-0x0000006fe91fff], 
-0xbf6000 bytes flags: 0x4
-[    0.000000]  reserved[0x9]   [0x00000070e92000-0x00000071d54fff], 
-0xec3000 bytes flags: 0x4
-[    0.000000]  reserved[0xa]   [0x00000071d5e000-0x00000072204fff], 
-0x4a7000 bytes flags: 0x4
-[    0.000000]  reserved[0xb]   [0x00000072220000-0x0000007222074f], 
-0x750 bytes flags: 0x4
-...
-[    0.000000]  reserved[0xd]   [0x000000722bc000-0x000000722bc1cf], 
-0x1d0 bytes flags: 0x4
-[    0.000000]  reserved[0xe]   [0x00000072bd3000-0x00000076c8ffff], 
-0x40bd000 bytes flags: 0x4
-......
-[    0.000000]  reserved[0x134] [0x000007fffdf000-0x000007ffffffff], 
-0x21000 bytes flags: 0x4
+--xA/XKXTdy9G3iaIz
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
 
-Just for the readability:
-                                 [0x00000308000000-0x00000587ffffff] 
-    Hot Pluggable
-                                 [0x00000588000000-0x000007ffffffff] 
-    Hot Pluggable
+iEYEARECAAYFAlHHwvIACgkQaILKxv3ab8ZVOQCdFa0KpJIGERzTedt0JRVzHMad
++a4An30IO7PRSBaVjZgA2Is1VyepZ6V2
+=wviw
+-----END PGP SIGNATURE-----
 
-Seeing from the dmesg, only the last one is in hotpluggable area. I need 
-to go
-through the code to find out what it is, and find a way to relocate it.
-
-But I'm not sure if a box with a different SRAT will have different result.
-
-I will send more info later.
-
-Thanks. :)
-
-
-> shouldn't be whole lot.  And, again, this type of information should
-> have been available in the head message so that high-level discussion
-> could take place right away.
->
-> Thanks.
->
-
+--xA/XKXTdy9G3iaIz--
