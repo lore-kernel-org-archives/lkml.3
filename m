@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab3FXKvy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:51:54 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:56310 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab3FXKvw (ORCPT
+	id S1753136Ab3FXKwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:52:09 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:48794 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753066Ab3FXKwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:51:52 -0400
+	Mon, 24 Jun 2013 06:52:04 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH V7 10/30] thermal: exynos: Move register definitions from driver to data file
-Date: Mon, 24 Jun 2013 16:20:31 +0530
-Message-Id: <1372071051-3167-11-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V7 13/30] thermal: exynos: Add support for instance based register/unregister
+Date: Mon, 24 Jun 2013 16:20:34 +0530
+Message-Id: <1372071051-3167-14-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
 References: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
@@ -22,642 +22,267 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch migrates the TMU register definition/bitfields to data file. This
-is needed to support SoC's which use the same TMU controller but register
-validity, offsets or bitfield may slightly vary across SOC's.
+This code modifies the thermal driver to have multiple thermal zone
+support by replacing the global thermal zone variable with device data
+member of thermal_zone_device.
 
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c      |  172 +++++++++-------------------
- drivers/thermal/samsung/exynos_tmu.h      |  133 ++++++++++++++++++++++
- drivers/thermal/samsung/exynos_tmu_data.c |   59 ++++++++++
- drivers/thermal/samsung/exynos_tmu_data.h |   68 +++++++++++
- 4 files changed, 315 insertions(+), 117 deletions(-)
+ drivers/thermal/samsung/exynos_thermal_common.c |   51 ++++++++++++++++-------
+ drivers/thermal/samsung/exynos_thermal_common.h |    9 ++--
+ drivers/thermal/samsung/exynos_tmu.c            |   15 ++++---
+ 3 files changed, 49 insertions(+), 26 deletions(-)
 
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+index c9edc30..0b014e8 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.c
++++ b/drivers/thermal/samsung/exynos_thermal_common.c
+@@ -37,12 +37,11 @@ struct exynos_thermal_zone {
+ 	bool bind;
+ };
+ 
+-static struct exynos_thermal_zone *th_zone;
+-
+ /* Get mode callback functions for thermal zone */
+ static int exynos_get_mode(struct thermal_zone_device *thermal,
+ 			enum thermal_device_mode *mode)
+ {
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	if (th_zone)
+ 		*mode = th_zone->mode;
+ 	return 0;
+@@ -52,25 +51,26 @@ static int exynos_get_mode(struct thermal_zone_device *thermal,
+ static int exynos_set_mode(struct thermal_zone_device *thermal,
+ 			enum thermal_device_mode mode)
+ {
+-	if (!th_zone->therm_dev) {
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
++	if (!th_zone) {
+ 		pr_notice("thermal zone not registered\n");
+ 		return 0;
+ 	}
+ 
+-	mutex_lock(&th_zone->therm_dev->lock);
++	mutex_lock(&thermal->lock);
+ 
+ 	if (mode == THERMAL_DEVICE_ENABLED &&
+ 		!th_zone->sensor_conf->trip_data.trigger_falling)
+-		th_zone->therm_dev->polling_delay = IDLE_INTERVAL;
++		thermal->polling_delay = IDLE_INTERVAL;
+ 	else
+-		th_zone->therm_dev->polling_delay = 0;
++		thermal->polling_delay = 0;
+ 
+-	mutex_unlock(&th_zone->therm_dev->lock);
++	mutex_unlock(&thermal->lock);
+ 
+ 	th_zone->mode = mode;
+-	thermal_zone_device_update(th_zone->therm_dev);
++	thermal_zone_device_update(thermal);
+ 	pr_info("thermal polling set for duration=%d msec\n",
+-				th_zone->therm_dev->polling_delay);
++				thermal->polling_delay);
+ 	return 0;
+ }
+ 
+@@ -97,6 +97,8 @@ static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
+ static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
+ 				unsigned long *temp)
+ {
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
++
+ 	if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
+ 		return -EINVAL;
+ 
+@@ -123,6 +125,7 @@ static int exynos_bind(struct thermal_zone_device *thermal,
+ {
+ 	int ret = 0, i, tab_size, level;
+ 	struct freq_clip_table *tab_ptr, *clip_data;
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	struct thermal_sensor_conf *data = th_zone->sensor_conf;
+ 
+ 	tab_ptr = (struct freq_clip_table *)data->cooling_data.freq_data;
+@@ -169,6 +172,7 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
+ 			struct thermal_cooling_device *cdev)
+ {
+ 	int ret = 0, i, tab_size;
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	struct thermal_sensor_conf *data = th_zone->sensor_conf;
+ 
+ 	if (th_zone->bind == false)
+@@ -211,6 +215,7 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
+ static int exynos_get_temp(struct thermal_zone_device *thermal,
+ 			unsigned long *temp)
+ {
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	void *data;
+ 
+ 	if (!th_zone->sensor_conf) {
+@@ -230,6 +235,7 @@ static int exynos_set_emul_temp(struct thermal_zone_device *thermal,
+ {
+ 	void *data;
+ 	int ret = -EINVAL;
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 
+ 	if (!th_zone->sensor_conf) {
+ 		pr_info("Temperature sensor not initialised\n");
+@@ -277,14 +283,22 @@ static struct thermal_zone_device_ops const exynos_dev_ops = {
+  * This function may be called from interrupt based temperature sensor
+  * when threshold is changed.
+  */
+-void exynos_report_trigger(void)
++void exynos_report_trigger(struct thermal_sensor_conf *conf)
+ {
+ 	unsigned int i;
+ 	char data[10];
+ 	char *envp[] = { data, NULL };
++	struct exynos_thermal_zone *th_zone;
+ 
+-	if (!th_zone || !th_zone->therm_dev)
++	if (!conf || !conf->pzone_data) {
++		pr_err("Invalid temperature sensor configuration data\n");
+ 		return;
++	}
++
++	th_zone = conf->pzone_data;
++	if (th_zone->therm_dev)
++		return;
++
+ 	if (th_zone->bind == false) {
+ 		for (i = 0; i < th_zone->cool_dev_size; i++) {
+ 			if (!th_zone->cool_dev[i])
+@@ -322,6 +336,7 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ {
+ 	int ret;
+ 	struct cpumask mask_val;
++	struct exynos_thermal_zone *th_zone;
+ 
+ 	if (!sensor_conf || !sensor_conf->read_temperature) {
+ 		pr_err("Temperature sensor not initialised\n");
+@@ -343,7 +358,7 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 	th_zone->cool_dev_size++;
+ 
+ 	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
+-			EXYNOS_ZONE_COUNT, 0, NULL, &exynos_dev_ops, NULL, 0,
++			EXYNOS_ZONE_COUNT, 0, th_zone, &exynos_dev_ops, NULL, 0,
+ 			sensor_conf->trip_data.trigger_falling ?
+ 			0 : IDLE_INTERVAL);
+ 
+@@ -353,23 +368,29 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 		goto err_unregister;
+ 	}
+ 	th_zone->mode = THERMAL_DEVICE_ENABLED;
++	sensor_conf->pzone_data = th_zone;
+ 
+ 	pr_info("Exynos: Kernel Thermal management registered\n");
+ 
+ 	return 0;
+ 
+ err_unregister:
+-	exynos_unregister_thermal();
++	exynos_unregister_thermal(sensor_conf);
+ 	return ret;
+ }
+ 
+ /* Un-Register with the in-kernel thermal management */
+-void exynos_unregister_thermal(void)
++void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf)
+ {
+ 	int i;
++	struct exynos_thermal_zone *th_zone;
+ 
+-	if (!th_zone)
++	if (!sensor_conf || !sensor_conf->pzone_data) {
++		pr_err("Invalid temperature sensor configuration data\n");
+ 		return;
++	}
++
++	th_zone = sensor_conf->pzone_data;
+ 
+ 	if (th_zone->therm_dev)
+ 		thermal_zone_device_unregister(th_zone->therm_dev);
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+index fee1588..86c1f84 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.h
++++ b/drivers/thermal/samsung/exynos_thermal_common.h
+@@ -85,22 +85,23 @@ struct thermal_sensor_conf {
+ 	struct thermal_trip_point_conf trip_data;
+ 	struct thermal_cooling_conf cooling_data;
+ 	void *private_data;
++	void *pzone_data;
+ };
+ 
+ /*Functions used exynos based thermal sensor driver*/
+ #ifdef CONFIG_EXYNOS_THERMAL_CORE
+-void exynos_unregister_thermal(void);
++void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf);
+ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf);
+-void exynos_report_trigger(void);
++void exynos_report_trigger(struct thermal_sensor_conf *sensor_conf);
+ #else
+ static inline void
+-exynos_unregister_thermal(void) { return; }
++exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf) { return; }
+ 
+ static inline int
+ exynos_register_thermal(struct thermal_sensor_conf *sensor_conf) { return 0; }
+ 
+ static inline void
+-exynos_report_trigger(void) { return; }
++exynos_report_trigger(struct thermal_sensor_conf *sensor_conf) { return; }
+ 
+ #endif /* CONFIG_EXYNOS_THERMAL_CORE */
+ #endif /* _EXYNOS_THERMAL_COMMON_H */
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 401ec98..6fd776f 100644
+index f6f63ca..a7bba69 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -32,76 +32,6 @@
- #include "exynos_tmu.h"
- #include "exynos_tmu_data.h"
+@@ -345,6 +345,12 @@ static int exynos_tmu_set_emulation(void *drv_data,	unsigned long temp)
+ 	{ return -EINVAL; }
+ #endif/*CONFIG_THERMAL_EMULATION*/
  
--/* Exynos generic registers */
--#define EXYNOS_TMU_REG_TRIMINFO		0x0
--#define EXYNOS_TMU_REG_CONTROL		0x20
--#define EXYNOS_TMU_REG_STATUS		0x28
--#define EXYNOS_TMU_REG_CURRENT_TEMP	0x40
--#define EXYNOS_TMU_REG_INTEN		0x70
--#define EXYNOS_TMU_REG_INTSTAT		0x74
--#define EXYNOS_TMU_REG_INTCLEAR		0x78
--
--#define EXYNOS_TMU_TRIM_TEMP_MASK	0xff
--#define EXYNOS_TMU_GAIN_SHIFT		8
--#define EXYNOS_TMU_GAIN_MASK		0xf
--#define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
--#define EXYNOS_TMU_REF_VOLTAGE_MASK	0x1f
--#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
--#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
--#define EXYNOS_TMU_CORE_EN_SHIFT	0
--
--/* Exynos4210 specific registers */
--#define EXYNOS4210_TMU_REG_THRESHOLD_TEMP	0x44
--#define EXYNOS4210_TMU_REG_TRIG_LEVEL0	0x50
--#define EXYNOS4210_TMU_REG_TRIG_LEVEL1	0x54
--#define EXYNOS4210_TMU_REG_TRIG_LEVEL2	0x58
--#define EXYNOS4210_TMU_REG_TRIG_LEVEL3	0x5C
--#define EXYNOS4210_TMU_REG_PAST_TEMP0	0x60
--#define EXYNOS4210_TMU_REG_PAST_TEMP1	0x64
--#define EXYNOS4210_TMU_REG_PAST_TEMP2	0x68
--#define EXYNOS4210_TMU_REG_PAST_TEMP3	0x6C
--
--#define EXYNOS4210_TMU_TRIG_LEVEL0_MASK	0x1
--#define EXYNOS4210_TMU_TRIG_LEVEL1_MASK	0x10
--#define EXYNOS4210_TMU_TRIG_LEVEL2_MASK	0x100
--#define EXYNOS4210_TMU_TRIG_LEVEL3_MASK	0x1000
--#define EXYNOS4210_TMU_TRIG_LEVEL_MASK	0x1111
--#define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
--
--/* Exynos5250 and Exynos4412 specific registers */
--#define EXYNOS_TMU_TRIMINFO_CON	0x14
--#define EXYNOS_THD_TEMP_RISE		0x50
--#define EXYNOS_THD_TEMP_FALL		0x54
--#define EXYNOS_EMUL_CON		0x80
--
--#define EXYNOS_TRIMINFO_RELOAD		0x1
--#define EXYNOS_TRIMINFO_SHIFT		0x0
--#define EXYNOS_TMU_RISE_INT_MASK	0x111
--#define EXYNOS_TMU_RISE_INT_SHIFT	0
--#define EXYNOS_TMU_FALL_INT_MASK	0x111
--#define EXYNOS_TMU_FALL_INT_SHIFT	12
--#define EXYNOS_TMU_CLEAR_RISE_INT	0x111
--#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
--#define EXYNOS_TMU_TRIP_MODE_SHIFT	13
--#define EXYNOS_TMU_TRIP_MODE_MASK	0x7
--
--#define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
--#define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
--#define EXYNOS_TMU_INTEN_RISE2_SHIFT	8
--#define EXYNOS_TMU_INTEN_RISE3_SHIFT	12
--#define EXYNOS_TMU_INTEN_FALL0_SHIFT	16
--#define EXYNOS_TMU_INTEN_FALL1_SHIFT	20
--#define EXYNOS_TMU_INTEN_FALL2_SHIFT	24
--
--#ifdef CONFIG_THERMAL_EMULATION
--#define EXYNOS_EMUL_TIME	0x57F0
--#define EXYNOS_EMUL_TIME_MASK	0xffff
--#define EXYNOS_EMUL_TIME_SHIFT	16
--#define EXYNOS_EMUL_DATA_SHIFT	8
--#define EXYNOS_EMUL_DATA_MASK	0xFF
--#define EXYNOS_EMUL_ENABLE	0x1
--#endif /* CONFIG_THERMAL_EMULATION */
--
- struct exynos_tmu_data {
- 	struct exynos_tmu_platform_data *pdata;
- 	struct resource *mem;
-@@ -186,6 +116,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- {
- 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
-+	const struct exynos_tmu_registers *reg = pdata->registers;
- 	unsigned int status, trim_info;
- 	unsigned int rising_threshold = 0, falling_threshold = 0;
- 	int ret = 0, threshold_code, i, trigger_levs = 0;
-@@ -193,20 +124,20 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	status = readb(data->base + EXYNOS_TMU_REG_STATUS);
-+	status = readb(data->base + reg->tmu_status);
- 	if (!status) {
- 		ret = -EBUSY;
- 		goto out;
- 	}
- 
--	if (data->soc == SOC_ARCH_EXYNOS) {
--		__raw_writel(EXYNOS_TRIMINFO_RELOAD,
--				data->base + EXYNOS_TMU_TRIMINFO_CON);
--	}
-+	if (data->soc == SOC_ARCH_EXYNOS)
-+		__raw_writel(1, data->base + reg->triminfo_ctrl);
++static struct thermal_sensor_conf exynos_sensor_conf = {
++	.name			= "exynos-therm",
++	.read_temperature	= (int (*)(void *))exynos_tmu_read,
++	.write_emul_temp	= exynos_tmu_set_emulation,
++};
 +
- 	/* Save trimming info in order to perform calibration */
--	trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
--	data->temp_error1 = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
--	data->temp_error2 = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
-+	trim_info = readl(data->base + reg->triminfo_data);
-+	data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
-+	data->temp_error2 = ((trim_info >> reg->triminfo_85_shift) &
-+				EXYNOS_TMU_TEMP_MASK);
- 
- 	if ((pdata->min_efuse_value > data->temp_error1) ||
- 			(data->temp_error1 > pdata->max_efuse_value) ||
-@@ -226,13 +157,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 			goto out;
- 		}
- 		writeb(threshold_code,
--			data->base + EXYNOS4210_TMU_REG_THRESHOLD_TEMP);
-+			data->base + reg->threshold_temp);
- 		for (i = 0; i < trigger_levs; i++)
--			writeb(pdata->trigger_levels[i],
--			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL0 + i * 4);
-+			writeb(pdata->trigger_levels[i], data->base +
-+			reg->threshold_th0 + i * sizeof(reg->threshold_th0));
- 
--		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
--			data->base + EXYNOS_TMU_REG_INTCLEAR);
-+		writel(reg->inten_rise_mask, data->base + reg->tmu_intclear);
- 	} else if (data->soc == SOC_ARCH_EXYNOS) {
- 		/* Write temperature code for rising and falling threshold */
- 		for (i = 0; i < trigger_levs; i++) {
-@@ -254,12 +184,13 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 		}
- 
- 		writel(rising_threshold,
--				data->base + EXYNOS_THD_TEMP_RISE);
-+				data->base + reg->threshold_th0);
- 		writel(falling_threshold,
--				data->base + EXYNOS_THD_TEMP_FALL);
-+				data->base + reg->threshold_th1);
- 
--		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT,
--				data->base + EXYNOS_TMU_REG_INTCLEAR);
-+		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
-+			(reg->inten_fall_mask << reg->inten_fall_shift),
-+				data->base + reg->tmu_intclear);
- 	}
- out:
- 	clk_disable(data->clk);
-@@ -272,46 +203,46 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- {
- 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
-+	const struct exynos_tmu_registers *reg = pdata->registers;
- 	unsigned int con, interrupt_en;
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
-+	con = readl(data->base + reg->tmu_ctrl);
- 
- 	if (pdata->reference_voltage) {
--		con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
--				EXYNOS_TMU_REF_VOLTAGE_SHIFT);
--		con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
-+		con &= ~(reg->buf_vref_sel_mask << reg->buf_vref_sel_shift);
-+		con |= pdata->reference_voltage << reg->buf_vref_sel_shift;
- 	}
- 
- 	if (pdata->gain) {
--		con &= ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
--		con |= (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
-+		con &= ~(reg->buf_slope_sel_mask << reg->buf_slope_sel_shift);
-+		con |= (pdata->gain << reg->buf_slope_sel_shift);
- 	}
- 
- 	if (pdata->noise_cancel_mode) {
--		con &= ~(EXYNOS_TMU_TRIP_MODE_MASK <<
--					EXYNOS_TMU_TRIP_MODE_SHIFT);
--		con |= (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
-+		con &= ~(reg->therm_trip_mode_mask <<
-+					reg->therm_trip_mode_shift);
-+		con |= (pdata->noise_cancel_mode << reg->therm_trip_mode_shift);
- 	}
- 
- 	if (on) {
--		con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
-+		con |= (1 << reg->core_en_shift);
- 		interrupt_en =
--		pdata->trigger_enable[3] << EXYNOS_TMU_INTEN_RISE3_SHIFT |
--		pdata->trigger_enable[2] << EXYNOS_TMU_INTEN_RISE2_SHIFT |
--		pdata->trigger_enable[1] << EXYNOS_TMU_INTEN_RISE1_SHIFT |
--		pdata->trigger_enable[0] << EXYNOS_TMU_INTEN_RISE0_SHIFT;
-+			pdata->trigger_enable[3] << reg->inten_rise3_shift |
-+			pdata->trigger_enable[2] << reg->inten_rise2_shift |
-+			pdata->trigger_enable[1] << reg->inten_rise1_shift |
-+			pdata->trigger_enable[0] << reg->inten_rise0_shift;
- 		if (pdata->threshold_falling)
- 			interrupt_en |=
--				interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
-+				interrupt_en << reg->inten_fall0_shift;
- 	} else {
--		con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
-+		con &= ~(1 << reg->core_en_shift);
- 		interrupt_en = 0; /* Disable all interrupts */
- 	}
--	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
--	writel(con, data->base + EXYNOS_TMU_REG_CONTROL);
-+	writel(interrupt_en, data->base + reg->tmu_inten);
-+	writel(con, data->base + reg->tmu_ctrl);
- 
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-@@ -319,13 +250,15 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- 
- static int exynos_tmu_read(struct exynos_tmu_data *data)
- {
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
-+	const struct exynos_tmu_registers *reg = pdata->registers;
- 	u8 temp_code;
- 	int temp;
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	temp_code = readb(data->base + EXYNOS_TMU_REG_CURRENT_TEMP);
-+	temp_code = readb(data->base + reg->tmu_cur_temp);
- 	temp = code_to_temp(data, temp_code);
- 
- 	clk_disable(data->clk);
-@@ -338,7 +271,9 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
- static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
- {
- 	struct exynos_tmu_data *data = drv_data;
--	unsigned int reg;
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
-+	const struct exynos_tmu_registers *reg = pdata->registers;
-+	unsigned int val;
- 	int ret = -EINVAL;
- 
- 	if (data->soc == SOC_ARCH_EXYNOS4210)
-@@ -350,19 +285,19 @@ static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	reg = readl(data->base + EXYNOS_EMUL_CON);
-+	val = readl(data->base + reg->emul_con);
- 
- 	if (temp) {
- 		temp /= MCELSIUS;
- 
--		reg = (EXYNOS_EMUL_TIME << EXYNOS_EMUL_TIME_SHIFT) |
-+		val = (EXYNOS_EMUL_TIME << reg->emul_time_shift) |
- 			(temp_to_code(data, temp)
--			 << EXYNOS_EMUL_DATA_SHIFT) | EXYNOS_EMUL_ENABLE;
-+			 << reg->emul_temp_shift) | EXYNOS_EMUL_ENABLE;
- 	} else {
--		reg &= ~EXYNOS_EMUL_ENABLE;
-+		val &= ~EXYNOS_EMUL_ENABLE;
- 	}
- 
--	writel(reg, data->base + EXYNOS_EMUL_CON);
-+	writel(val, data->base + reg->emul_con);
- 
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-@@ -379,17 +314,20 @@ static void exynos_tmu_work(struct work_struct *work)
+ static void exynos_tmu_work(struct work_struct *work)
  {
  	struct exynos_tmu_data *data = container_of(work,
- 			struct exynos_tmu_data, irq_work);
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
-+	const struct exynos_tmu_registers *reg = pdata->registers;
+@@ -353,7 +359,7 @@ static void exynos_tmu_work(struct work_struct *work)
+ 	const struct exynos_tmu_registers *reg = pdata->registers;
+ 	unsigned int val_irq;
  
- 	exynos_report_trigger();
+-	exynos_report_trigger();
++	exynos_report_trigger(&exynos_sensor_conf);
  	mutex_lock(&data->lock);
  	clk_enable(data->clk);
-+
- 	if (data->soc == SOC_ARCH_EXYNOS)
--		writel(EXYNOS_TMU_CLEAR_RISE_INT |
--				EXYNOS_TMU_CLEAR_FALL_INT,
--				data->base + EXYNOS_TMU_REG_INTCLEAR);
-+		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
-+			(reg->inten_fall_mask << reg->inten_fall_shift),
-+				data->base + reg->tmu_intclear);
- 	else
--		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
--				data->base + EXYNOS_TMU_REG_INTCLEAR);
-+		writel(reg->inten_rise_mask, data->base + reg->tmu_intclear);
-+
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
  
-diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index 473acae..ef5dc0e 100644
---- a/drivers/thermal/samsung/exynos_tmu.h
-+++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -43,6 +43,136 @@ enum soc_type {
- };
+@@ -377,11 +383,6 @@ static irqreturn_t exynos_tmu_irq(int irq, void *id)
  
- /**
-+ * struct exynos_tmu_register - register descriptors to access registers and
-+ * bitfields. The register validity, offsets and bitfield values may vary
-+ * slightly across different exynos SOC's.
-+ * @triminfo_data: register containing 2 pont trimming data
-+ * @triminfo_25_shift: shift bit of the 25 C trim value in triminfo_data reg.
-+ * @triminfo_85_shift: shift bit of the 85 C trim value in triminfo_data reg.
-+ * @triminfo_ctrl: trim info controller register.
-+ * @triminfo_reload_shift: shift of triminfo reload enable bit in triminfo_ctrl
-+	reg.
-+ * @tmu_ctrl: TMU main controller register.
-+ * @buf_vref_sel_shift: shift bits of reference voltage in tmu_ctrl register.
-+ * @buf_vref_sel_mask: mask bits of reference voltage in tmu_ctrl register.
-+ * @therm_trip_mode_shift: shift bits of tripping mode in tmu_ctrl register.
-+ * @therm_trip_mode_mask: mask bits of tripping mode in tmu_ctrl register.
-+ * @therm_trip_en_shift: shift bits of tripping enable in tmu_ctrl register.
-+ * @buf_slope_sel_shift: shift bits of amplifier gain value in tmu_ctrl
-+	register.
-+ * @buf_slope_sel_mask: mask bits of amplifier gain value in tmu_ctrl register.
-+ * @therm_trip_tq_en_shift: shift bits of thermal trip enable by TQ pin in
-+	tmu_ctrl register.
-+ * @core_en_shift: shift bits of TMU core enable bit in tmu_ctrl register.
-+ * @tmu_status: register drescribing the TMU status.
-+ * @tmu_cur_temp: register containing the current temperature of the TMU.
-+ * @tmu_cur_temp_shift: shift bits of current temp value in tmu_cur_temp
-+	register.
-+ * @threshold_temp: register containing the base threshold level.
-+ * @threshold_th0: Register containing first set of rising levels.
-+ * @threshold_th0_l0_shift: shift bits of level0 threshold temperature.
-+ * @threshold_th0_l1_shift: shift bits of level1 threshold temperature.
-+ * @threshold_th0_l2_shift: shift bits of level2 threshold temperature.
-+ * @threshold_th0_l3_shift: shift bits of level3 threshold temperature.
-+ * @threshold_th1: Register containing second set of rising levels.
-+ * @threshold_th1_l0_shift: shift bits of level0 threshold temperature.
-+ * @threshold_th1_l1_shift: shift bits of level1 threshold temperature.
-+ * @threshold_th1_l2_shift: shift bits of level2 threshold temperature.
-+ * @threshold_th1_l3_shift: shift bits of level3 threshold temperature.
-+ * @threshold_th2: Register containing third set of rising levels.
-+ * @threshold_th2_l0_shift: shift bits of level0 threshold temperature.
-+ * @threshold_th3: Register containing fourth set of rising levels.
-+ * @threshold_th3_l0_shift: shift bits of level0 threshold temperature.
-+ * @tmu_inten: register containing the different threshold interrupt
-+	enable bits.
-+ * @inten_rise_shift: shift bits of all rising interrupt bits.
-+ * @inten_rise_mask: mask bits of all rising interrupt bits.
-+ * @inten_fall_shift: shift bits of all rising interrupt bits.
-+ * @inten_fall_mask: mask bits of all rising interrupt bits.
-+ * @inten_rise0_shift: shift bits of rising 0 interrupt bits.
-+ * @inten_rise1_shift: shift bits of rising 1 interrupt bits.
-+ * @inten_rise2_shift: shift bits of rising 2 interrupt bits.
-+ * @inten_rise3_shift: shift bits of rising 3 interrupt bits.
-+ * @inten_fall0_shift: shift bits of falling 0 interrupt bits.
-+ * @inten_fall1_shift: shift bits of falling 1 interrupt bits.
-+ * @inten_fall2_shift: shift bits of falling 2 interrupt bits.
-+ * @inten_fall3_shift: shift bits of falling 3 interrupt bits.
-+ * @tmu_intstat: Register containing the interrupt status values.
-+ * @tmu_intclear: Register for clearing the raised interrupt status.
-+ * @emul_con: TMU emulation controller register.
-+ * @emul_temp_shift: shift bits of emulation temperature.
-+ * @emul_time_shift: shift bits of emulation time.
-+ * @emul_time_mask: mask bits of emulation time.
-+ */
-+struct exynos_tmu_registers {
-+	u32	triminfo_data;
-+	u32	triminfo_25_shift;
-+	u32	triminfo_85_shift;
-+
-+	u32	triminfo_ctrl;
-+	u32	triminfo_reload_shift;
-+
-+	u32	tmu_ctrl;
-+	u32	buf_vref_sel_shift;
-+	u32	buf_vref_sel_mask;
-+	u32	therm_trip_mode_shift;
-+	u32	therm_trip_mode_mask;
-+	u32	therm_trip_en_shift;
-+	u32	buf_slope_sel_shift;
-+	u32	buf_slope_sel_mask;
-+	u32	therm_trip_tq_en_shift;
-+	u32	core_en_shift;
-+
-+	u32	tmu_status;
-+
-+	u32	tmu_cur_temp;
-+	u32	tmu_cur_temp_shift;
-+
-+	u32	threshold_temp;
-+
-+	u32	threshold_th0;
-+	u32	threshold_th0_l0_shift;
-+	u32	threshold_th0_l1_shift;
-+	u32	threshold_th0_l2_shift;
-+	u32	threshold_th0_l3_shift;
-+
-+	u32	threshold_th1;
-+	u32	threshold_th1_l0_shift;
-+	u32	threshold_th1_l1_shift;
-+	u32	threshold_th1_l2_shift;
-+	u32	threshold_th1_l3_shift;
-+
-+	u32	threshold_th2;
-+	u32	threshold_th2_l0_shift;
-+
-+	u32	threshold_th3;
-+	u32	threshold_th3_l0_shift;
-+
-+	u32	tmu_inten;
-+	u32	inten_rise_shift;
-+	u32	inten_rise_mask;
-+	u32	inten_fall_shift;
-+	u32	inten_fall_mask;
-+	u32	inten_rise0_shift;
-+	u32	inten_rise1_shift;
-+	u32	inten_rise2_shift;
-+	u32	inten_rise3_shift;
-+	u32	inten_fall0_shift;
-+	u32	inten_fall1_shift;
-+	u32	inten_fall2_shift;
-+	u32	inten_fall3_shift;
-+
-+	u32	tmu_intstat;
-+
-+	u32	tmu_intclear;
-+
-+	u32	emul_con;
-+	u32	emul_temp_shift;
-+	u32	emul_time_shift;
-+	u32	emul_time_mask;
-+};
-+
-+/**
-  * struct exynos_tmu_platform_data
-  * @threshold: basic temperature for generating interrupt
-  *	       25 <= threshold <= 125 [unit: degree Celsius]
-@@ -90,6 +220,8 @@ enum soc_type {
-  * @freq_clip_table: Table representing frequency reduction percentage.
-  * @freq_tab_count: Count of the above table as frequency reduction may
-  *	applicable to only some of the trigger levels.
-+ * @registers: Pointer to structure containing all the TMU controller registers
-+ *	and bitfields shifts and masks.
-  *
-  * This structure is required for configuration of exynos_tmu driver.
-  */
-@@ -116,5 +248,6 @@ struct exynos_tmu_platform_data {
- 	enum soc_type type;
- 	struct freq_clip_table freq_tab[4];
- 	unsigned int freq_tab_count;
-+	const struct exynos_tmu_registers *registers;
- };
- #endif /* _EXYNOS_TMU_H */
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 24934d7..896aa2a 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -25,6 +25,28 @@
- #include "exynos_tmu_data.h"
+ 	return IRQ_HANDLED;
+ }
+-static struct thermal_sensor_conf exynos_sensor_conf = {
+-	.name			= "exynos-therm",
+-	.read_temperature	= (int (*)(void *))exynos_tmu_read,
+-	.write_emul_temp	= exynos_tmu_set_emulation,
+-};
  
- #if defined(CONFIG_CPU_EXYNOS4210)
-+static const struct exynos_tmu_registers exynos4210_tmu_registers = {
-+	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
-+	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-+	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-+	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
-+	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
-+	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
-+	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
-+	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
-+	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
-+	.tmu_status = EXYNOS_TMU_REG_STATUS,
-+	.tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
-+	.threshold_temp = EXYNOS4210_TMU_REG_THRESHOLD_TEMP,
-+	.threshold_th0 = EXYNOS4210_TMU_REG_TRIG_LEVEL0,
-+	.tmu_inten = EXYNOS_TMU_REG_INTEN,
-+	.inten_rise_mask = EXYNOS4210_TMU_TRIG_LEVEL_MASK,
-+	.inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
-+	.inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
-+	.inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
-+	.inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
-+	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
-+};
- struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
- 	.threshold = 80,
- 	.trigger_levels[0] = 5,
-@@ -56,10 +78,46 @@ struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
- 	},
- 	.freq_tab_count = 2,
- 	.type = SOC_ARCH_EXYNOS4210,
-+	.registers = &exynos4210_tmu_registers,
- };
- #endif
+ #ifdef CONFIG_OF
+ static const struct of_device_id exynos_tmu_match[] = {
+@@ -541,7 +542,7 @@ static int exynos_tmu_remove(struct platform_device *pdev)
  
- #if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412)
-+static const struct exynos_tmu_registers exynos5250_tmu_registers = {
-+	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
-+	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-+	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-+	.triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
-+	.triminfo_reload_shift = EXYNOS_TRIMINFO_RELOAD_SHIFT,
-+	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
-+	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
-+	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
-+	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
-+	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
-+	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
-+	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
-+	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
-+	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
-+	.tmu_status = EXYNOS_TMU_REG_STATUS,
-+	.tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
-+	.threshold_th0 = EXYNOS_THD_TEMP_RISE,
-+	.threshold_th1 = EXYNOS_THD_TEMP_FALL,
-+	.tmu_inten = EXYNOS_TMU_REG_INTEN,
-+	.inten_rise_mask = EXYNOS_TMU_RISE_INT_MASK,
-+	.inten_rise_shift = EXYNOS_TMU_RISE_INT_SHIFT,
-+	.inten_fall_mask = EXYNOS_TMU_FALL_INT_MASK,
-+	.inten_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
-+	.inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
-+	.inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
-+	.inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
-+	.inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
-+	.inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
-+	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
-+	.emul_con = EXYNOS_EMUL_CON,
-+	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
-+	.emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
-+	.emul_time_mask = EXYNOS_EMUL_TIME_MASK,
-+};
- struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
- 	.threshold_falling = 10,
- 	.trigger_levels[0] = 85,
-@@ -93,5 +151,6 @@ struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
- 	},
- 	.freq_tab_count = 2,
- 	.type = SOC_ARCH_EXYNOS,
-+	.registers = &exynos5250_tmu_registers,
- };
- #endif
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-index b7835fe..0e2244f 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.h
-+++ b/drivers/thermal/samsung/exynos_tmu_data.h
-@@ -23,6 +23,74 @@
- #ifndef _EXYNOS_TMU_DATA_H
- #define _EXYNOS_TMU_DATA_H
+ 	exynos_tmu_control(pdev, false);
  
-+/* Exynos generic registers */
-+#define EXYNOS_TMU_REG_TRIMINFO		0x0
-+#define EXYNOS_TMU_REG_CONTROL		0x20
-+#define EXYNOS_TMU_REG_STATUS		0x28
-+#define EXYNOS_TMU_REG_CURRENT_TEMP	0x40
-+#define EXYNOS_TMU_REG_INTEN		0x70
-+#define EXYNOS_TMU_REG_INTSTAT		0x74
-+#define EXYNOS_TMU_REG_INTCLEAR		0x78
-+
-+#define EXYNOS_TMU_TEMP_MASK		0xff
-+#define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
-+#define EXYNOS_TMU_REF_VOLTAGE_MASK	0x1f
-+#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
-+#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
-+#define EXYNOS_TMU_CORE_EN_SHIFT	0
-+
-+/* Exynos4210 specific registers */
-+#define EXYNOS4210_TMU_REG_THRESHOLD_TEMP	0x44
-+#define EXYNOS4210_TMU_REG_TRIG_LEVEL0	0x50
-+#define EXYNOS4210_TMU_REG_TRIG_LEVEL1	0x54
-+#define EXYNOS4210_TMU_REG_TRIG_LEVEL2	0x58
-+#define EXYNOS4210_TMU_REG_TRIG_LEVEL3	0x5C
-+#define EXYNOS4210_TMU_REG_PAST_TEMP0	0x60
-+#define EXYNOS4210_TMU_REG_PAST_TEMP1	0x64
-+#define EXYNOS4210_TMU_REG_PAST_TEMP2	0x68
-+#define EXYNOS4210_TMU_REG_PAST_TEMP3	0x6C
-+
-+#define EXYNOS4210_TMU_TRIG_LEVEL0_MASK	0x1
-+#define EXYNOS4210_TMU_TRIG_LEVEL1_MASK	0x10
-+#define EXYNOS4210_TMU_TRIG_LEVEL2_MASK	0x100
-+#define EXYNOS4210_TMU_TRIG_LEVEL3_MASK	0x1000
-+#define EXYNOS4210_TMU_TRIG_LEVEL_MASK	0x1111
-+#define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
-+
-+/* Exynos5250 and Exynos4412 specific registers */
-+#define EXYNOS_TMU_TRIMINFO_CON	0x14
-+#define EXYNOS_THD_TEMP_RISE		0x50
-+#define EXYNOS_THD_TEMP_FALL		0x54
-+#define EXYNOS_EMUL_CON		0x80
-+
-+#define EXYNOS_TRIMINFO_RELOAD_SHIFT	1
-+#define EXYNOS_TRIMINFO_25_SHIFT	0
-+#define EXYNOS_TRIMINFO_85_SHIFT	8
-+#define EXYNOS_TMU_RISE_INT_MASK	0x111
-+#define EXYNOS_TMU_RISE_INT_SHIFT	0
-+#define EXYNOS_TMU_FALL_INT_MASK	0x111
-+#define EXYNOS_TMU_FALL_INT_SHIFT	12
-+#define EXYNOS_TMU_CLEAR_RISE_INT	0x111
-+#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
-+#define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-+#define EXYNOS_TMU_TRIP_MODE_MASK	0x7
-+#define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
-+
-+#define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
-+#define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
-+#define EXYNOS_TMU_INTEN_RISE2_SHIFT	8
-+#define EXYNOS_TMU_INTEN_RISE3_SHIFT	12
-+#define EXYNOS_TMU_INTEN_FALL0_SHIFT	16
-+#define EXYNOS_TMU_INTEN_FALL1_SHIFT	20
-+#define EXYNOS_TMU_INTEN_FALL2_SHIFT	24
-+
-+#define EXYNOS_EMUL_TIME	0x57F0
-+#define EXYNOS_EMUL_TIME_MASK	0xffff
-+#define EXYNOS_EMUL_TIME_SHIFT	16
-+#define EXYNOS_EMUL_DATA_SHIFT	8
-+#define EXYNOS_EMUL_DATA_MASK	0xFF
-+#define EXYNOS_EMUL_ENABLE	0x1
-+
- #if defined(CONFIG_CPU_EXYNOS4210)
- extern struct exynos_tmu_platform_data const exynos4210_default_tmu_data;
- #define EXYNOS4210_TMU_DRV_DATA (&exynos4210_default_tmu_data)
+-	exynos_unregister_thermal();
++	exynos_unregister_thermal(&exynos_sensor_conf);
+ 
+ 	clk_unprepare(data->clk);
+ 
 -- 
 1.7.1
 
