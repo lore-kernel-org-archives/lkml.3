@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab3GCLcg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:32:36 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35997 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab3GCLcb (ORCPT
+	id S1756060Ab3GCLdS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:33:18 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20188 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab3GCLdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:32:31 -0400
-X-AuditID: cbfee68e-b7f276d000002279-98-51d40bce8e82
+	Wed, 3 Jul 2013 07:33:17 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-82-51d40bfb0886
 From: Yadwinder Singh Brar <yadi.brar@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: yadi.brar01@gmail.com, sbkim73@samsung.com, broonie@kernel.org,
         lgirdwood@gmail.com, sameo@linux.intel.com, rob.herring@calxeda.com,
         grant.likely@linaro.org, Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [PATCH 3/4] mfd: s2mps11: Add device tree support
-Date: Mon, 24 Jun 2013 16:50:57 +0530
-Message-id: <1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
+Subject: [PATCH 4/4] regulator: s2mps11: Add device tree support
+Date: Mon, 24 Jun 2013 16:50:58 +0530
+Message-id: <1372072858-6559-5-git-send-email-yadi.brar@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
 In-reply-to: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
 References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSp3uO+0qgwa3r2hZTHz5hszjwZwej
-	xbcrHUwWl3fNYbM4vOIAk8XpblaLiyu+MFnM/d3IajFn+jsmB06PBZ+vsHvsnHWX3WPTqk42
-	jzvX9rB5zDsZ6NG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZW+98ZCqYrVhxZ/UdlgbGy1Jd
-	jJwcEgImEus3PGCDsMUkLtxbD2RzcQgJLGWUOH3wJTNM0fO5U6AS0xklVs59zAThtDFJfNz3
-	HaiKg4NNwEji1TE7kAYRAQWJzb3PWEFqmAUuMUpM23uEFSQhLGAlcebta7B1LAKqEp+/vGAB
-	6eUVcJF4+CcAYpmCROuyQ+wgNqeAq0Trywtg44WASpo/soCMlBDYxS7x7dhZdogxAhLfJh8C
-	GyMhICux6QDUzZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kZFecWJucWleul5yfu4mRmAknP73
-	rG8H480D1ocYk4HGTWSWEk3OB0ZSXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6Yklqdmp
-	qQWpRfFFpTmpxYcYmTg4pRoY415yadwwK7ono8JivXSTyhSpnL+SPdonSlPqNPgvLONia8xl
-	eRvy7qOoVc6eqX09ZeLtl486z9onVCzhoLLa2D44e7HUxg+xv16/T2O1mq5u8PnmrQPXDq3t
-	DvMW/RuxLTfmxoNrmxPkbd88nhp/w+pB8bqdq3QsGW4rfbO3WPzviHuupXmTEktxRqKhFnNR
-	cSIA3fNTeJoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jQd1z3FcCDRofKVpMffiEzeLAnx2M
-	Ft+udDBZXN41h83i8IoDTBanu1ktLq74wmQx93cjq8Wc6e+YHDg9Fny+wu6xc9Zddo9NqzrZ
-	PO5c28PmMe9koEffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpa
-	WpgrKeQl5qbaKrn4BOi6ZeYAXaakUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAAN
-	JKxhzNh65yNTwWzFijur77A0MF6W6mLk5JAQMJF4PncKG4QtJnHh3nogm4tDSGA6o8TKuY+Z
-	IJw2JomP+74zdzFycLAJGEm8OmYH0iAioCCxufcZK0gNs8AlRolpe4+wgiSEBawkzrx9DTaV
-	RUBV4vOXFywgvbwCLhIP/wRALFOQaF12iB3E5hRwlWh9eQFsvBBQSfNHlgmMvAsYGVYxiqYW
-	JBcUJ6XnGukVJ+YWl+al6yXn525iBMfZM+kdjKsaLA4xCnAwKvHwOjy7FCjEmlhWXJl7iFGC
-	g1lJhHfin8uBQrwpiZVVqUX58UWlOanFhxiTgW6ayCwlmpwPTAF5JfGGxibmpsamliYWJmaW
-	pAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cDoG/V6bchaDq2I2z8DVLcmKig+ZLRRkNjv
-	qpi++G7Nku5Xi864eGxuejR1v8Dx/zPPnJzi2OWkJtdwaJ+Ay+rHC3eaSh7Zb7uZYdvHdV9P
-	JLRd2/bwCRPb87SzXF7/NlS6s8qITMi+XOA6f+7+7XdSOyWkXYqyJqlwlyvLFURPTRNZIWTt
-	r6mmxFKckWioxVxUnAgAwkyUpvcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSo/uH+0qgQYOQxdSHT9gsDvzZwWjx
+	7UoHk8XlXXPYLA6vOMBkcbqb1eLiii9MFnN/N7JazJn+jsmB02PB5yvsHjtn3WX32LSqk83j
+	zrU9bB7zTgZ69G1ZxejxeZNcAHsUl01Kak5mWWqRvl0CV8aDM0fYCzq1KuZOE25gbFfuYuTg
+	kBAwkeic5tPFyAlkiklcuLeerYuRi0NIYCmjxOKzbcwQCROJaTufMUEkpjNKXF9zkR3CaWOS
+	uLr5IjPIJDYBI4lXx+xAGkQEFCQ29z5jBalhFrjEKDFt7xFWkISwgIPE5XWLwKayCKhKPN21
+	lh2kl1fARaLtoDDEMgWJ1mWH2EFsTgFXidaXF8DGCwGVNH9kARkpIbCLXWL3wuVMEGMEJL5N
+	PsQC8YysxKYDUDdLShxccYNlAqPwAkaGVYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxiBMXD6
+	37P+HYx3D1gfYkwGGjeRWUo0OR8YQ3kl8YbGZkYWpiamxkbmlmakCSuJ86q1WAcKCaQnlqRm
+	p6YWpBbFF5XmpBYfYmTi4JRqYJwkr5xz0ePsgvqYjP5Lf6oX8+ybpnhgzbfvZ7h1zz0q3N7L
+	/ml2yn0WVoGrWuZyS8NDtjdOsmPTfyyg4M/Kldc/O+0Yv6btloPa8h3CDuGbdP7OUgvW+njo
+	nmHWG7/dJgIZB29bfNKTlLbsOFpl+frc29/Xvf96bA1KUXq2U2Z1yvKVWu3fjJVYijMSDbWY
+	i4oTAVguLOqXAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t9jQd3f3FcCDW7vN7aY+vAJm8WBPzsY
+	Lb5d6WCyuLxrDpvF4RUHmCxOd7NaXFzxhcli7u9GVos5098xOXB6LPh8hd1j56y77B6bVnWy
+	edy5tofNY97JQI++LasYPT5vkgtgj2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0
+	tDBXUshLzE21VXLxCdB1y8wBukxJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEa
+	SFjDmPHgzBH2gk6tirnThBsY25W7GDk5JARMJKbtfMYEYYtJXLi3nq2LkYtDSGA6o8T1NRfZ
+	IZw2Jomrmy8ydzFycLAJGEm8OmYH0iAioCCxufcZK0gNs8AlRolpe4+wgiSEBRwkLq9bxAxi
+	swioSjzdtZYdpJdXwEWi7aAwxDIFidZlh9hBbE4BV4nWlxfAxgsBlTR/ZJnAyLuAkWEVo2hq
+	QXJBcVJ6rpFecWJucWleul5yfu4mRnCUPZPewbiqweIQowAHoxIPr8OzS4FCrIllxZW5hxgl
+	OJiVRHgn/rkcKMSbklhZlVqUH19UmpNafIgxGeimicxSosn5wASQVxJvaGxibmpsamliYWJm
+	SZqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2Mfh6WdqdK1f+3epkvvdTMMHtRqsK+BxUa
+	t1bnJxScmHMop1V+rrLel9f9GoyT/+dHHgorPWIxtfHG6wCpiZ4nX7Kql+2U/FF1XJZNd7rp
+	r6CVc8+q1XRxPmkPmM31/Mbeef1GD2eE7ZXNDdQX3yCrk2ryYIpr3udfoo3Ch+byzz6TXDbh
+	iuRpJZbijERDLeai4kQAo8hNpfYCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,133 +51,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DT compatible string for s2mps11 and binding documentation.
+This patch adds device tree support. It parses parent's node to get regulator
+constraints. This patch also rearrange code little bit.
 
 Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
 ---
- Documentation/devicetree/bindings/mfd/s2mps11.txt |   98 +++++++++++++++++++++
- drivers/mfd/sec-core.c                            |    3 +
- 2 files changed, 101 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/s2mps11.txt
+ drivers/regulator/s2mps11.c |  116 ++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 104 insertions(+), 12 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-new file mode 100644
-index 0000000..7984625
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-@@ -0,0 +1,98 @@
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index d42ad2a..559ad7b 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -20,9 +20,12 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
+ #include <linux/mfd/samsung/core.h>
+ #include <linux/mfd/samsung/s2mps11.h>
+ 
++#define S2MPS11_REGULATOR_CNT ARRAY_SIZE(regulators)
 +
-+* Samsung S2MPS11 Voltage and Current Regulator
-+
-+The Samsung S2MP211 is a multi-function device which includes volatage and
-+current regulators, rtc, charger controller and other sub-blocks. It is
-+interfaced to the host controller using a i2c interface. Each sub-block is
-+addressed by the host system using different i2c slave address.
-+
-+Required properties:
-+- compatible: Should be "samsung,s2mps11-pmic".
-+- reg: Specifies the i2c slave address of the pmic block. It should be 0x66.
-+
-+Optional properties:
-+- interrupt-parent: Specifies the phandle of the interrupt controller to which
-+  the interrupts from s2mps11 are delivered to.
-+- interrupts: Interrupt specifiers for interrupt sources.
-+
-+Optional nodes:
-+- regulators: The regulators of s2mps11 that have to be instantiated should be
-+included in a sub-node named 'regulators'. Regulator nodes included in this
-+sub-node should be of the format as listed below.
-+
-+	regulator_name {
-+		[standard regulator constraints....];
-+		[regulator-ramp-disable];
-+	};
-+
-+ regulator-ramp-delay for BUCKs = [6250/12500/25000(default)/50000] uV/us
-+
-+ Optional property for BUCK[2/3/4/6] only:
-+ regulator-ramp-disable: boolean, disables ramp delay on hardware.
-+
-+NOTE: Some BUCKs shares the ramp rate setting i.e. same ramp value will be set
-+for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
-+Grouping of BUCKs sharing ramp rate setting is as follow : BUCK[1, 6],
-+BUCK[3, 4], and BUCK[7, 8, 10]
-+
-+The regulator constraints inside the regulator nodes use the standard regulator
-+bindings which are documented elsewhere.
-+
-+The following are the names of the regulators that the s2mps11 pmic block
-+supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
-+as per the datasheet of s2mps11.
-+
-+	- LDOn
-+		  - valid values for n are 1 to 28
-+		  - Example: LDO0, LD01, LDO28
-+	- BUCKn
-+		  - valid values for n are 1 to 9.
-+		  - Example: BUCK1, BUCK2, BUCK9
-+
-+Example:
-+
-+	s2mps11_pmic@66 {
-+		compatible = "samsung,s2mps11-pmic";
-+		reg = <0x66>;
-+
-+		regulators {
-+			ldo1_reg: LDO1 {
-+				regulator-name = "VDD_ABB_3.3V";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+
-+			ldo2_reg: LDO2 {
-+				regulator-name = "VDD_ALIVE_1.1V";
-+				regulator-min-microvolt = <1100000>;
-+				regulator-max-microvolt = <1100000>;
-+				regulator-always-on;
-+			};
-+
-+			buck1_reg: BUCK1 {
-+				regulator-name = "vdd_mif";
-+				regulator-min-microvolt = <950000>;
-+				regulator-max-microvolt = <1350000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			buck2_reg: BUCK2 {
-+				regulator-name = "vdd_arm";
-+				regulator-min-microvolt = <950000>;
-+				regulator-max-microvolt = <1350000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <50000>;
-+			};
-+
-+			buck3_reg: BUCK3 {
-+				regulator-name = "vdd_xxx";
-+				regulator-min-microvolt = <950000>;
-+				regulator-max-microvolt = <1350000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-disable;
-+			};
-+		};
-+	};
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 77ee26e..760da8a 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -66,6 +66,9 @@ static struct of_device_id sec_dt_match[] = {
- 	{	.compatible = "samsung,s5m8767-pmic",
- 		.data = (void *)S5M8767X,
- 	},
-+	{	.compatible = "samsung,s2mps11-pmic",
-+		.data = (void *)S2MPS11X,
-+	},
- 	{},
+ struct s2mps11_info {
+ 	struct regulator_dev *rdev[S2MPS11_REGULATOR_MAX];
+ 
+@@ -287,26 +290,107 @@ static struct regulator_desc regulators[] = {
+ 	regulator_desc_buck10,
  };
- #endif
+ 
++static void s2mps11_pmic_set_buck_ramp(struct regulator_init_data *init_data,
++					struct s2mps11_info *s2mps11, int id)
++{
++	unsigned int ramp_rate;
++
++	if (!init_data)
++		return;
++
++	ramp_rate = init_data->constraints.ramp_delay;
++
++	switch (id) {
++	case S2MPS11_BUCK2:
++		s2mps11->ramp_delay2 = ramp_rate;
++		break;
++	case S2MPS11_BUCK3:
++	case S2MPS11_BUCK4:
++		if (ramp_rate > s2mps11->ramp_delay34)
++			s2mps11->ramp_delay34 = ramp_rate;
++		break;
++	case S2MPS11_BUCK5:
++		s2mps11->ramp_delay5 = ramp_rate;
++		break;
++	case S2MPS11_BUCK1:
++	case S2MPS11_BUCK6:
++		if (ramp_rate > s2mps11->ramp_delay16)
++			s2mps11->ramp_delay16 = ramp_rate;
++		break;
++	case S2MPS11_BUCK7:
++	case S2MPS11_BUCK8:
++	case S2MPS11_BUCK10:
++		if (ramp_rate > s2mps11->ramp_delay7810)
++			s2mps11->ramp_delay7810 = ramp_rate;
++		break;
++	case S2MPS11_BUCK9:
++		s2mps11->ramp_delay9 = ramp_rate;
++	}
++}
++
++static void s2mps11_pmic_parse_dt(struct of_regulator_match *rdata,
++					struct s2mps11_info *s2mps11)
++{
++	if (!of_find_property(rdata[S2MPS11_BUCK2].of_node,
++				"regulator-ramp-disable", NULL))
++		s2mps11->buck2_ramp = true;
++
++	if (!of_find_property(rdata[S2MPS11_BUCK3].of_node,
++				"regulator-ramp-disable", NULL))
++		s2mps11->buck3_ramp = true;
++
++	if (!of_find_property(rdata[S2MPS11_BUCK4].of_node,
++				"regulator-ramp-disable", NULL))
++		s2mps11->buck4_ramp = true;
++
++	if (!of_find_property(rdata[S2MPS11_BUCK6].of_node,
++				"regulator-ramp-disable", NULL))
++		s2mps11->buck6_ramp = true;
++}
++
+ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+ 	struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
++	struct of_regulator_match rdata[S2MPS11_REGULATOR_MAX];
++	struct device_node *reg_np = NULL;
+ 	struct regulator_config config = { };
+ 	struct s2mps11_info *s2mps11;
+-	int i, ret;
++	int i, id, ret;
+ 	unsigned char ramp_enable, ramp_reg = 0;
+ 
+-	if (!pdata) {
+-		dev_err(pdev->dev.parent, "Platform data not supplied\n");
+-		return -ENODEV;
+-	}
+-
+ 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
+ 				GFP_KERNEL);
+ 	if (!s2mps11)
+ 		return -ENOMEM;
+ 
+-	platform_set_drvdata(pdev, s2mps11);
++	if (iodev->dev->of_node)
++		goto p_data;
++
++	for (i = 0; i < S2MPS11_REGULATOR_CNT; i++) {
++		id = regulators[i].id;
++		rdata[id].name = regulators[i].name;
++	}
++
++	reg_np = of_find_node_by_name(iodev->dev->of_node, "regulators");
++	if (!reg_np) {
++		dev_err(&pdev->dev, "could not find regulators sub-node\n");
++		return -EINVAL;
++	}
++
++	of_regulator_match(&pdev->dev, reg_np, rdata, S2MPS11_REGULATOR_MAX);
++
++	s2mps11_pmic_parse_dt(rdata, s2mps11);
++
++	for (id = S2MPS11_BUCK1; id <= S2MPS11_BUCK9; id++)
++		s2mps11_pmic_set_buck_ramp(rdata[id].init_data, s2mps11, id);
++
++	goto set_ramp;
++p_data:
++	if (!pdata) {
++		dev_err(pdev->dev.parent, "Platform data not supplied\n");
++		return -ENODEV;
++	}
+ 
+ 	s2mps11->ramp_delay2 = pdata->buck2_ramp_delay;
+ 	s2mps11->ramp_delay34 = pdata->buck34_ramp_delay;
+@@ -320,6 +404,7 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	s2mps11->buck3_ramp = pdata->buck3_ramp_enable;
+ 	s2mps11->buck4_ramp = pdata->buck4_ramp_enable;
+ 
++set_ramp:
+ 	ramp_enable = (s2mps11->buck2_ramp << 3) | (s2mps11->buck3_ramp << 2) |
+ 		(s2mps11->buck4_ramp << 1) | s2mps11->buck6_ramp ;
+ 
+@@ -338,12 +423,19 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay9);
+ 	sec_reg_write(iodev, S2MPS11_REG_RAMP_BUCK, ramp_reg);
+ 
+-	for (i = 0; i < S2MPS11_REGULATOR_MAX; i++) {
++	platform_set_drvdata(pdev, s2mps11);
+ 
+-		config.dev = &pdev->dev;
+-		config.regmap = iodev->regmap;
+-		config.init_data = pdata->regulators[i].initdata;
+-		config.driver_data = s2mps11;
++	config.dev = &pdev->dev;
++	config.regmap = iodev->regmap;
++	config.driver_data = s2mps11;
++	for (i = 0; i < S2MPS11_REGULATOR_MAX; i++) {
++		if (reg_np) {
++			config.init_data = pdata->regulators[i].initdata;
++		} else {
++			id = regulators[i].id;
++			config.init_data = rdata[id].init_data;
++			config.of_node = rdata[id].of_node;
++		}
+ 
+ 		s2mps11->rdev[i] = regulator_register(&regulators[i], &config);
+ 		if (IS_ERR(s2mps11->rdev[i])) {
 -- 
 1.7.0.4
 
