@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3FXQnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 12:43:41 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28471 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab3FXQnj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 12:43:39 -0400
-Date: Mon, 24 Jun 2013 19:43:29 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] vfs: check for integer overflows in posix_acl_alloc()
-Message-ID: <20130624164329.GG5714@mwanda>
-References: <20130624162719.GB32503@elgon.mountain>
+	id S1752961Ab3FXQst (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 12:48:49 -0400
+Received: from gmmr4.centrum.cz ([46.255.227.253]:55167 "EHLO gmmr4.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958Ab3FXQsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 12:48:47 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=5D_memcg=3A_do_not_trap_chargers_with_full_callstack_on_OOM?=
+Date: Mon, 24 Jun 2013 18:48:40 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+References: <20130208171012.GH7557@dhcp22.suse.cz>, <20130208220243.EDEE0825@pobox.sk>, <20130210150310.GA9504@dhcp22.suse.cz>, <20130210174619.24F20488@pobox.sk>, <20130211112240.GC19922@dhcp22.suse.cz>, <20130222092332.4001E4B6@pobox.sk>, <20130606160446.GE24115@dhcp22.suse.cz>, <20130606181633.BCC3E02E@pobox.sk>, <20130607131157.GF8117@dhcp22.suse.cz>, <20130617122134.2E072BA8@pobox.sk> <20130619132614.GC16457@dhcp22.suse.cz>
+In-Reply-To: <20130619132614.GC16457@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624162719.GB32503@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Message-Id: <20130624184840.781777E6@pobox.sk>
+X-Maser: Georgo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 07:27:19PM +0300, Dan Carpenter wrote:
-> We've seen cases where people passed negative numbers to
-> posix_acl_alloc() and we fixed the caller.  For example 093019cf1b "xfs:
-> fix acl count validation in xfs_acl_from_disk()".  But there are other
-> places which might be affected like ext4_acl_from_disk() which checks
-> for negative but doesn't check an upper limit.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> diff --git a/fs/posix_acl.c b/fs/posix_acl.c
-> index cea4623..cd7fd2f 100644
-> --- a/fs/posix_acl.c
-> +++ b/fs/posix_acl.c
-> @@ -46,7 +46,12 @@ posix_acl_alloc(int count, gfp_t flags)
->  {
->  	const size_t size = sizeof(struct posix_acl) +
->  	                    count * sizeof(struct posix_acl_entry);
-> -	struct posix_acl *acl = kmalloc(size, flags);
-> +	struct posix_acl *acl;
-> +
-> +	if (count < 0 || count > (SIZE_MAX - sizeof(struct posix_acl) /
-> +					sizeof(struct posix_acl_entry)))
+>I would be really interesting to see what those tasks are blocked on.
 
-Gar.  I completely screwed that up.  Please ignore this.  I will
-send a better patch in a couple days.  I am sorry.
 
-regards,
-dan carpenter
+Ok, i got it! Problem occurs two times and it behaves differently each time, I was running kernel with that latest patch.
 
-> +		return NULL;
-> +	acl = kmalloc(size, flags);
->  	if (acl)
->  		posix_acl_init(acl, count);
->  	return acl;
+1.) It doesn't have impact on the whole server, only on one cgroup. Here are stacks:
+http://watchdog.sk/lkml/memcg-bug-7.tar.gz
+
+
+2.) It almost takes down the server because of huge I/O on HDDs. Unfortunately, i had a bug in my script which was suppose to gather stacks (i wasn't able to do it by hand like in (1), server was almost unoperable). But I was lucky and somehow killed processes from problematic cgroup (via htop) and server was ok again EXCEPT one important thing - processes from that cgroup were still running in D state and i wasn't able to kill them for good. They were taking web server network ports so i had to reboot the server :( BUT, before that, i gathered stacks:
+http://watchdog.sk/lkml/memcg-bug-8.tar.gz
+
+What do you think?
+
+azur
