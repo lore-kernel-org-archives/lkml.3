@@ -1,207 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709Ab3FXRTI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:19:08 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:64490 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936Ab3FXRTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:19:05 -0400
-X-IronPort-AV: E=Sophos;i="4.87,929,1363132800"; 
-   d="scan'208";a="33090715"
-Date: Mon, 24 Jun 2013 18:18:56 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Feng Jin <joe.jin@oracle.com>, Yuval Shaia <yuval.shaia@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chien Yen <chien.yen@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when
- driver load first time
-In-Reply-To: <51C7F2FE.3090803@oracle.com>
-Message-ID: <alpine.DEB.2.02.1306241807100.4782@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com> <20130513182055.GC14177@phenom.dumpdata.com> <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com> <20130514142013.GA10173@konrad-lan.dumpdata.com>
- <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com> <5195944A.3050608@oracle.com> <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com> <20130520175706.GA27973@phenom.dumpdata.com> <20130520203855.GA30616@phenom.dumpdata.com>
- <519B474E.4000202@citrix.com> <20130521134059.GE492@phenom.dumpdata.com> <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com> <alpine.DEB.2.02.1305291850030.4799@kaball.uk.xensource.com> <51AECC3A.7060803@oracle.com> <alpine.DEB.2.02.1306051349380.4589@kaball.uk.xensource.com>
- <51C26F98.8070103@oracle.com> <alpine.DEB.2.02.1306201507010.4548@kaball.uk.xensource.com> <51C7F2FE.3090803@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752101Ab3FXRVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:21:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61473 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab3FXRVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 13:21:36 -0400
+Message-ID: <51C87FBD.2000501@ontolinux.com>
+Date: Mon, 24 Jun 2013 19:19:57 +0200
+From: Christian Stroetmann <stroetmann@ontolinux.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Andreas Karlsson <andreas@proxel.se>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Daniel Phillips <daniel.raymond.phillips@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>
+Subject: Re: Tux3 Report: Meet Shardmap, the designated successor of HTree
+References: <1EC23D2B9975384993D85B5DB93AAE8860E5A2@sisaex02sj> <51C353C6.2070406@ontolinux.com> <20130624141835.GA23245@amd.pavel.ucw.cz> <51C862CC.1010606@ontolinux.com> <51C86817.6030304@proxel.se>
+In-Reply-To: <51C86817.6030304@proxel.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:D1Rh6PfQSZUq5m331IfoTpOBsVGcTu5EohJQerel5gy
+ nTfRFEV0wSr4fy5QkpFp87cWU/7D3vGc8cAylS5CKMH5YRM3uM
+ 6tabEVb4IAxCfr8lSts9lo2xnonEvps3upuc1nslB6J6LSiAKZ
+ MxJxLE+MYyC5zjDppp54mcsKGuo483laUfiSmvPEljpQHKmfOi
+ v0FI6aAVzzXhFl4HJROqwhDeoowTRKcbkMPEboez2RPDLBEt/d
+ qgEod1RWnODlVqTqap3WhfrXtuQqEHx1hnsacMV+ekytA3dCCP
+ jwANn91UPd5FSldC3szr9LS2+x0aTcyjGu2JgVc2NVmVtK5bJJ
+ P8M362oWzlLKK+MKE9ro=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trimming some of the people in CC
+Dear Mr. Andreas Karlsson:
 
-On Mon, 24 Jun 2013, Zhenzhong Duan wrote:
-> On 2013-06-20 22:21, Stefano Stabellini wrote:
-> > On Thu, 20 Jun 2013, Zhenzhong Duan wrote:
-> > > On 2013-06-05 20:50, Stefano Stabellini wrote:
-> > > > On Wed, 5 Jun 2013, Zhenzhong Duan wrote:
-> > > > > Stefano Stabellini wrote:
-> > > > > 
-> > > > > On Tue, 21 May 2013, Stefano Stabellini wrote:
-> > > > >     On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > >       Looking at the hypervisor code I couldn't see anything obviously
-> > > > > wrong.
-> > > > >           I think the culprit is "physdev_unmap_pirq":
-> > > > > 
-> > > > >      if ( is_hvm_domain(d) )
-> > > > >       {
-> > > > >           spin_lock(&d->event_lock);
-> > > > >           gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s, irq: %d\n",
-> > > > >               d->domain_id, pirq, domain_pirq_to_emuirq(d, pirq),
-> > > > >               domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ?
-> > > > > "unbound" :
-> > > > > "",
-> > > > >               domain_pirq_to_irq(d, pirq));
-> > > > >                                                                                            if
-> > > > > ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )
-> > > > >               ret = unmap_domain_pirq_emuirq(d, pirq);
-> > > > >           spin_unlock(&d->event_lock);
-> > > > >           if ( domid == DOMID_SELF || ret )
-> > > > >               goto free_domain;
-> > > > > 
-> > > > > It always tells me unbound:
-> > > > > 
-> > > > > (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
-> > > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > > > (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
-> > > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > > > (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
-> > > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > > > (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
-> > > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > > > (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
-> > > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > > > (a bit older debug code, so the 'unbound' does not show up here).
-> > > > > 
-> > > > > Which means that the call to unmap_domain_pirq_emuirq does not happen.
-> > > > > The checks in unmap_domain_pirq_emuirq also look to be depend
-> > > > > on the code being IRQ_UNBOUND.
-> > > > > 
-> > > > > In other words, all of that code looks to only clear things when
-> > > > > they are !IRQ_UNBOUND.
-> > > > > 
-> > > > > But the other logic (IRQ_UNBOUND) looks to be missing a removal
-> > > > > in the radix tree:
-> > > > > 
-> > > > >     if ( emuirq != IRQ_PT )
-> > > > >           radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq, emuirq);
-> > > > >                                                                           And
-> > > > > I think that is what is causing the leak - the radix tree
-> > > > > needs to be pruned? Or perhaps the allocate_pirq should check
-> > > > > the radix tree for IRQ_UNBOUND ones and re-use them?
-> > > > >         I think that you are looking in the wrong place.
-> > > > > The issue is that QEMU doesn't call pt_msi_disable in
-> > > > > pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
-> > > > > 
-> > > > > The code above is correct as is because it is trying to handle
-> > > > > emulated
-> > > > > IRQs and MSIs, not real passthrough MSIs. They latter are not added to
-> > > > > that radix tree, see physdev_hvm_map_pirq and physdev_map_pirq.
-> > > > >       
-> > > > > This patch fixes the issue, I have only tested MSI (MSI-X completely
-> > > > > untested).
-> > > > > 
-> > > > > 
-> > > > > diff --git a/hw/pass-through.c b/hw/pass-through.c
-> > > > > index 304c438..079e465 100644
-> > > > > --- a/hw/pass-through.c
-> > > > > +++ b/hw/pass-through.c
-> > > > > @@ -3866,7 +3866,11 @@ static int pt_msgctrl_reg_write(struct pt_dev
-> > > > > *ptdev,
-> > > > >            ptdev->msi->flags |= PCI_MSI_FLAGS_ENABLE;
-> > > > >        }
-> > > > >        else
-> > > > > -        ptdev->msi->flags &= ~PCI_MSI_FLAGS_ENABLE;
-> > > > > +    {
-> > > > > +        if (ptdev->msi->flags & PT_MSI_MAPPED) {
-> > > > > +            pt_msi_disable(ptdev);
-> > > > > +        }
-> > > > > +    }
-> > > > >          /* pass through MSI_ENABLE bit when no MSI-INTx translation
-> > > > > */
-> > > > >        if (!ptdev->msi_trans_en) {
-> > > > > @@ -4013,6 +4017,8 @@ static int pt_msixctrl_reg_write(struct pt_dev
-> > > > > *ptdev,
-> > > > >                pt_disable_msi_translate(ptdev);
-> > > > >            }
-> > > > >            pt_msix_update(ptdev);
-> > > > > +    } else if (!(*value & PCI_MSIX_ENABLE) && ptdev->msix->enabled) {
-> > > > > +        pt_msix_delete(ptdev);
-> > > > >     Hi Stefano,
-> > > > > I made a test with this patch, os reboot when driver reload. If use
-> > > > > pt_msix_disable
-> > > > > instead of pt_msix_delete, driver could be reloaded.
-> > > > > But I still see some error in qemu.log and xen console. Seems four
-> > > > > IRQs
-> > > > > are not freed
-> > > > > when unmap.
-> > > > > --------------first load---------------------------
-> > > > > pt_msix_update_one: pt_msix_update_one requested pirq = 103
-> > > > > pt_msix_update_one: Update msix entry 0 with pirq 67 gvec 0
-> > > > > pt_msix_update_one: pt_msix_update_one requested pirq = 102
-> > > > > pt_msix_update_one: Update msix entry 1 with pirq 66 gvec 0
-> > > > > pt_msix_update_one: pt_msix_update_one requested pirq = 101
-> > > > > pt_msix_update_one: Update msix entry 2 with pirq 65 gvec 0
-> > > > > pt_msix_update_one: pt_msix_update_one requested pirq = 100
-> > > > > pt_msix_update_one: Update msix entry 3 with pirq 64 gvec 0
-> > > > > ------------- first unload---------------------------
-> > > > > pt_msix_disable: Unbind msix with pirq 67, gvec 0
-> > > > > pt_msix_disable: Unmap msix with pirq 67
-> > > > > pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
-> > > > > pt_msix_disable: Unbind msix with pirq 66, gvec 0
-> > > > > pt_msix_disable: Unmap msix with pirq 66
-> > > > > pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
-> > > > > pt_msix_disable: Unbind msix with pirq 65, gvec 0
-> > > > > pt_msix_disable: Unmap msix with pirq 65
-> > > > > pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
-> > > > > pt_msix_disable: Unbind msix with pirq 64, gvec 0
-> > > > > pt_msix_disable: Unmap msix with pirq 64
-> > > > > pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
-> > > > Can you add some printks in Xen (the hypercall name is
-> > > > PHYSDEVOP_unmap_pirq) to figure out exactly why they are failing?
-> > > Did some test, domain_pirq_to_emuirq(d, unmap->pirq) = IRQ_UNBOUND in
-> > > physdev_unmap_pirq.
-> > That means that Linux didn't call irq_enable on the MSI-X in question:
-> > 
-> > irq_enable -> __startup_pirq -> EVTCHNOP_bind_pirq
-> > 
-> > EVTCHNOP_bind_pirq is implemented by evtchn_bind_pirq in Xen and calls
-> > map_domain_emuirq_pirq, so domain_pirq_to_emuirq(d, unmap->pirq) should
-> > be IRQ_PT.
-> > 
-> > I don't know if that's a normal condition, but in any case it should
-> > not create any problems to physdev_unmap_pirq, in fact the folloing
-> > check:
-> > 
-> >      if ( domid == DOMID_SELF || ret )
-> >              goto free_domain;
-> > 
-> > should fail so Xen should continue and execute unmap_domain_pirq. That's
-> > what we want.
-> From linux side, request_irq->  request_threaded_irq-> __setup_irq->
-> irq_startup->  startup_pirq-> EVTCHNOP_bind_pirq
-> If irq_enable isn't called, how does the driver receive interrupt, I did see
-> four interrupts in /proc/interrupt and driver works ok.
+Thank you for the quote. If we really want to bring this down to the 
+lowest level, then an idea is not copyrighted per se, for sure.
 
-Good to know
+But, what is the problem? That I have used the wrong word? The context 
+was clear and hence the meaning of the word "ideas". So, simply add the 
+word "described", "presented", or "publicated" before the word "ideas" 
+or substitute the word "ideas" with the term "technical descriptions 
+given in textual form".
 
-> Could you have a look if there is something wrong in xen side of clearing the
-> mapping?
+Or is the problem that the idea has been publicated and everybody is now 
+free to take it? The answer is: yes and no.
+Yes:
+Everybody can implement an idea, concept, system, or method of operation 
+even if it is given with a copyrighted representation, and give it away 
+or even sell it, because in the latter case it is not patented. But how 
+should somebody give something away or sell something without giving a 
+description about what it is? This leads to the other case.
 
-What I am saying is that the error you are getting:
+No:
+What you and many other persons might misunderstand is the fact that if 
+an idea is copyrighted by being represented in a textual, visual, or 
+other form, it even does not matter at all if somebody else takes 
+another text or image as long as the sense/the idea described in this 
+other way is still the same as described in the original text or image, 
+because it does not matter in which way the copyrighted thing is 
+communicated. As a good example take a melody publicated with written 
+notes. It does not matter on which instrument you play it or in which 
+style you sing it. It is still the same melody. Or take a written script 
+of a movie that is narrated from the view of the main protagonist in the 
+original plot and from the view of another actor or a voice in the back 
+in a copied plot. In all cases it is still the same copyrighted idea/story.
 
-pt_msix_disable: Unbind msix with pirq 67, gvec 0
-pt_msix_disable: Unmap msix with pirq 67
-pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+Said this, every other description or documentation that uses different 
+terms, a source code, even a visual graphic, or whatever representation 
+of a file system that has the characteristical features of my 
+log-structured hashing based data storage system with one or more of the 
+optional features like for example consistent hashing, different data 
+structures on the physical storage system and in the (virtual) memory, 
+finger table, logged finger or hash tables in memory, and ACID 
+properties (see again the given links), as it is the case with the 
+latest description of the Tux3 FS with Shardmap, transports/communicates 
+the copyrighted description of the same idea/concept/system in large 
+parts or even as a whole somehow. And simply coding and compiling it 
+does not help as well due to the many possibilities of re-engineering.
 
-cannot be caused by domain_pirq_to_emuirq(d, pirq) returning
-IRQ_UNBOUND.
-So, why are you getting this error? What is failing?
-I am ready to believe the problem is in Xen but Without understanding
-why you are getting the error it's hard to find a solution.
+
+
+Regards
+Christian Stroetmann
+
+> Hi,
+>
+> I assume it is serious since ideas cannot be copyrighted in most (or 
+> maybe even all) countries.
+>
+> From the FAQ of the U.S. Copyright Office [1]:
+>
+> "Copyright does not protect facts, ideas, systems, or methods of 
+> operation, although it may protect the way these things are expressed."
+>
+> "How do I protect my idea?
+>
+> Copyright does not protect ideas, concepts, systems, or methods of 
+> doing something. You may express your ideas in writing or drawings and 
+> claim copyright in your description, but be aware that copyright will 
+> not protect the idea itself as revealed in your written or artistic 
+> work."
+>
+> Andreas
+>
+> [1] http://www.copyright.gov/help/faq/faq-protect.html#what_protect
+>
+> On 06/24/2013 05:16 PM, Christian Stroetmann wrote:
+>> Dear Mr. Pavel Machek:
+>>
+>> Is this a serious comment?
+>> Nevertheless, this is a copyrighted idea [1].
+>>
+>>
+>> Sincerely
+>> Christian Stroetmann
+>>
+>> [1] Log-Structured Hash-based File System (LogHashFS or LHFS;
+>> www.ontonics.com/innovation/pipeline.htm#loghashfs)
+>>
+>>> Hi!
+>>>
+>>>> At first you came up with a file system that can handle a great
+>>>> many/billions files and has ACID feature, which are both features of
+>>>> my Ontologic File System (OntoFS; see [1]). Both were said to be a
+>>>> no-go at that time (around 2007 and 2008).
+>>>> Then you came up, with my concept of a log-structured hashing based
+>>>> file system [2] and [3], presented it as your invention yesterday
+>>>> [4], and even integrated it with your Tux3 file system that already
+>>>> has or should have the said features of my OntoFS. I only waited for
+>>>> this step by somebody strongly connected with the company Samsung
+>>>> since the October 2012. AIso, I do think that both steps are very
+>>>> clear signs that shows what is going on behind the curtain.
+>>>> And now your are so bold and please me that I should credit these
+>>>> ideas in the sense of crediting your ideas. For sure, I always do
+>>>> claim for copyright of my ideas, and the true question is if you are
+>>>> allowed to implement them at all. In this conjunction, I would give
+>>> Fortunately, you can't copyright ideas. Chuck Norris managed to do it
+>>> once, but you can't.
+>>>
+>>> Pavel
+>>
+>
+
