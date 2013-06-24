@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3GCLbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:31:10 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35843 "EHLO
+	id S1756037Ab3GCLbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:31:53 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:35928 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab3GCLbI (ORCPT
+	with ESMTP id S1752239Ab3GCLbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:31:08 -0400
-X-AuditID: cbfee68e-b7f276d000002279-09-51d40b79745c
+	Wed, 3 Jul 2013 07:31:52 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-88-51d40ba6d3cd
 From: Yadwinder Singh Brar <yadi.brar@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: yadi.brar01@gmail.com, sbkim73@samsung.com, broonie@kernel.org,
         lgirdwood@gmail.com, sameo@linux.intel.com, rob.herring@calxeda.com,
         grant.likely@linaro.org, Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [PATCH 1/4] regulator: s2mps11: Convert ramp rate to uV/us and set
- default ramp rate
-Date: Mon, 24 Jun 2013 16:50:55 +0530
-Message-id: <1372072858-6559-2-git-send-email-yadi.brar@samsung.com>
+Subject: [PATCH 2/4] regulator: s2mps11: Implement set_voltage_time_sel() ops
+ for bucks
+Date: Mon, 24 Jun 2013 16:50:56 +0530
+Message-id: <1372072858-6559-3-git-send-email-yadi.brar@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
 In-reply-to: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
 References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42JZI2JSq1vJfSXQ4M4pS4upD5+wWRz4s4PR
-	4tuVDiaLy7vmsFkcXnGAyeJ0N6vFxRVfmCzm/m5ktZgz/R2TA6fHgs9X2D12zrrL7rFpVSeb
-	x51re9g85p0M9OjbsorR4/MmuQD2KC6blNSczLLUIn27BK6MF72TWQquSlY8uPiCuYHxjUgX
-	IyeHhICJxPrts9ghbDGJC/fWs3UxcnEICSxllDi2r48Fpuj4sldMEInpjBKbLm5gh3DamCTO
-	Pepm7GLk4GATMJJ4dcwOpEFEQEFic+8zVpAaZoFLjBLT9h5hBUkIC8RLLOndyQxiswioSmx/
-	OpcJxOYVcJHYtKUP6gwFidZlh8BsTgFXidaXF5hB5gsB1TR/ZAGZKSGwi11i2YvHTBBzBCS+
-	TT7EAlIjISArsekAM8QYSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMj
-	MBZO/3vWt4Px5gHrQ4zJQOMmMkuJJucDYymvJN7Q2MzIwtTE1NjI3NKMNGElcV61FutAIYH0
-	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYyljc82fsq93/Iuc8LhqmcKjjvrq9ewOc3+m9h2wvmT
-	9Pc1+53147ql9KotdAusPlqZz6wwO+UdqeRi0f10F7v6HMGi7xMWr9VTP1aRrrtQ6EpW4L9l
-	bTdmaD3cZqStd9o/IC+a6eocD8liPueZT2TFGNJereVeZX+guEx3pevEjbzz3Oq9gpRYijMS
-	DbWYi4oTAZCIpKibAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t9jQd1K7iuBBu+f6FtMffiEzeLAnx2M
-	Ft+udDBZXN41h83i8IoDTBanu1ktLq74wmQx93cjq8Wc6e+YHDg9Fny+wu6xc9Zddo9NqzrZ
-	PO5c28PmMe9koEffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpa
-	WpgrKeQl5qbaKrn4BOi6ZeYAXaakUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAAN
-	JKxhzHjRO5ml4KpkxYOLL5gbGN+IdDFyckgImEgcX/aKCcIWk7hwbz1bFyMXh5DAdEaJTRc3
-	sEM4bUwS5x51M3YxcnCwCRhJvDpmB9IgIqAgsbn3GStIDbPAJUaJaXuPsIIkhAXiJZb07mQG
-	sVkEVCW2P50LtoFXwEVi05Y+dohtChKtyw6B2ZwCrhKtLy8wg8wXAqpp/sgygZF3ASPDKkbR
-	1ILkguKk9FwjveLE3OLSvHS95PzcTYzgSHsmvYNxVYPFIUYBDkYlHl6HZ5cChVgTy4orcw8x
-	SnAwK4nwTvxzOVCINyWxsiq1KD++qDQntfgQYzLQUROZpUST84FJIK8k3tDYxNzU2NTSxMLE
-	zJI0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGMtN/COLsn0rBVe9m3xXVv5h4zoFh1xL
-	RpvMoge3d22Ov+Q/L3SOV0z/rl5fOUXmRzdcXsocbLle69fkMdF8QX7XR18Rk4vbC6x1o068
-	3/myb1HeMeX6Bef7n/it2HPEpvgqm8MT9VsfWd8UzzuvXpvblOr0UTPPqfx3UPgH1cz3k9ru
-	fw3cqsRSnJFoqMVcVJwIAHC+r9f4AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42JZI2JSp7uM+0qgwYmtWhZTHz5hszjwZwej
+	xbcrHUwWl3fNYbM4vOIAk8XpblaLiyu+MFnM/d3IajFn+jsmB06PBZ+vsHvsnHWX3WPTqk42
+	jzvX9rB5zDsZ6NG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZFz9tYy2YL1Jxcc561gbGVwJd
+	jJwcEgImEmfaNrBA2GISF+6tZ+ti5OIQEljKKLFw1V9GmKKXv3vZIRLTGSXm/r3CBOG0MUm8
+	avgO1M7BwSZgJPHqmB1Ig4iAgsTm3mesIDXMApcYJabtPcIKkhAWiJT439IBZrMIqEo87D0H
+	toFXwEVi65Yb7BDbFCRalx0CszkFXCVaX15gBpkvBFTT/JEFZKaEwC52ieVdf9gg5ghIfJt8
+	COwGCQFZiU0HmCHGSEocXHGDZQKj8AJGhlWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsYgbFw
+	+t+ziTsY7x+wPsSYDDRuIrOUaHI+MJbySuINjc2MLExNTI2NzC3NSBNWEudVb7EOFBJITyxJ
+	zU5NLUgtii8qzUktPsTIxMEp1cA4b464Rrm+yGknldoFtX+NOy+o/eJvkv8+5Tv3hqhKI2+p
+	Ih2rWzufuCrxKU47eq9v1/aU54bfrfYF1P48nmWcHnlyw8ILGc6cy5/kqdQ3Z/n0T6udl5bp
+	92D/FgdvRp3HBm9X71l181WDwYQHyyXck9X2nt7B8Sxm4Te+bQKTLOv+2SdatJ1XYinOSDTU
+	Yi4qTgQA3No8lJsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t9jQd1l3FcCDS4eUbCY+vAJm8WBPzsY
+	Lb5d6WCyuLxrDpvF4RUHmCxOd7NaXFzxhcli7u9GVos5098xOXB6LPh8hd1j56y77B6bVnWy
+	edy5tofNY97JQI++LasYPT5vkgtgj2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0
+	tDBXUshLzE21VXLxCdB1y8wBukxJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEa
+	SFjDmHHx0zbWgvkiFRfnrGdtYHwl0MXIySEhYCLx8ncvO4QtJnHh3nq2LkYuDiGB6YwSc/9e
+	YYJw2pgkXjV8Z+li5OBgEzCSeHXMDqRBREBBYnPvM1aQGmaBS4wS0/YeYQVJCAtESvxv6QCz
+	WQRUJR72nmMEsXkFXCS2brkBtU1BonXZITCbU8BVovXlBWaQ+UJANc0fWSYw8i5gZFjFKJpa
+	kFxQnJSea6RXnJhbXJqXrpecn7uJERxpz6R3MK5qsDjEKMDBqMTD6/DsUqAQa2JZcWXuIUYJ
+	DmYlEd6Jfy4HCvGmJFZWpRblxxeV5qQWH2JMBjpqIrOUaHI+MAnklcQbGpuYmxqbWppYmJhZ
+	kiasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVANj0SL5hQJGH17sOu2dkWuodvAcs9quANlQ
+	z437jKsTuruMd2s3Jh+uqVUw7hbd+Fi30WWyAssRidqQB+07xRZ9ZJ539kMR37Mt+nEKlYYX
+	OzT1likt0pCuV/nPV7I/PeRMWeAizvUM5tp1E4QrhYuNZG7yz5iseVkmYfXq4rbPXtO+P+av
+	ZlBiKc5INNRiLipOBAB/mX+V+AIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,83 +52,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes driver to use uV/us as units of ramp_delay. It makes driver
-in compliance with regulator framework and make ramp rate precise.
-
-This patch also sets default ramp rate in regulator descriptor which can be
-used in case if case ramp rate is not set in regulator constraints.
+Currently driver uses local struct s2mps11_info to store ramp rate for bucks
+whic its getting through platform data, so instead of using regulator
+constraints it should use s2mps11_info to calculate ramp delay.
 
 Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
 ---
- drivers/regulator/s2mps11.c         |    7 ++++++-
- include/linux/mfd/samsung/s2mps11.h |    1 +
- 2 files changed, 7 insertions(+), 1 deletions(-)
+ drivers/regulator/s2mps11.c |   53 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 52 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index cd9ea2e..0ec9aea 100644
+index 0ec9aea..d42ad2a 100644
 --- a/drivers/regulator/s2mps11.c
 +++ b/drivers/regulator/s2mps11.c
-@@ -43,7 +43,7 @@ static int get_ramp_delay(int ramp_delay)
- {
- 	unsigned char cnt = 0;
+@@ -54,6 +54,57 @@ static int get_ramp_delay(int ramp_delay)
+ 	return cnt;
+ }
  
--	ramp_delay /= 6;
-+	ramp_delay /= 6250;
++static int s2mps11_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
++				   unsigned int old_selector,
++				   unsigned int new_selector)
++{
++	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
++	unsigned int ramp_delay = 0;
++	int old_volt, new_volt;
++
++	switch (rdev->desc->id) {
++	case S2MPS11_BUCK2:
++		if (!s2mps11->buck2_ramp)
++			return 0;
++		ramp_delay = s2mps11->ramp_delay2;
++		break;
++	case S2MPS11_BUCK3:
++		if (!s2mps11->buck3_ramp)
++			return 0;
++		ramp_delay = s2mps11->ramp_delay34;
++		break;
++	case S2MPS11_BUCK4:
++		if (!s2mps11->buck4_ramp)
++			return 0;
++		ramp_delay = s2mps11->ramp_delay34;
++		break;
++	case S2MPS11_BUCK5:
++		ramp_delay = s2mps11->ramp_delay5;
++		break;
++	case S2MPS11_BUCK6:
++		if (!s2mps11->buck6_ramp)
++			return 0;
++	case S2MPS11_BUCK1:
++		ramp_delay = s2mps11->ramp_delay16;
++		break;
++	case S2MPS11_BUCK7:
++	case S2MPS11_BUCK8:
++	case S2MPS11_BUCK10:
++		ramp_delay = s2mps11->ramp_delay7810;
++		break;
++	case S2MPS11_BUCK9:
++		ramp_delay = s2mps11->ramp_delay9;
++	}
++
++	if (ramp_delay == 0)
++		ramp_delay = rdev->desc->ramp_delay;
++
++	old_volt = rdev->desc->min_uV + (rdev->desc->uV_step * old_selector);
++	new_volt = rdev->desc->min_uV + (rdev->desc->uV_step * new_selector);
++
++	return DIV_ROUND_UP(abs(new_volt - old_volt), ramp_delay);
++}
++
+ static struct regulator_ops s2mps11_ldo_ops = {
+ 	.list_voltage		= regulator_list_voltage_linear,
+ 	.map_voltage		= regulator_map_voltage_linear,
+@@ -73,7 +124,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.disable		= regulator_disable_regmap,
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+-	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_voltage_time_sel	= s2mps11_regulator_set_voltage_time_sel,
+ };
  
- 	while (true) {
- 		ramp_delay = ramp_delay >> 1;
-@@ -114,6 +114,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.min_uV		= S2MPS11_BUCK_MIN1,			\
- 	.uV_step	= S2MPS11_BUCK_STEP1,			\
- 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
- 	.vsel_reg	= S2MPS11_REG_B1CTRL2 + (num - 1) * 2,	\
- 	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
- 	.enable_reg	= S2MPS11_REG_B1CTRL1 + (num - 1) * 2,	\
-@@ -129,6 +130,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.min_uV		= S2MPS11_BUCK_MIN1,			\
- 	.uV_step	= S2MPS11_BUCK_STEP1,			\
- 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
- 	.vsel_reg	= S2MPS11_REG_B5CTRL2,			\
- 	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
- 	.enable_reg	= S2MPS11_REG_B5CTRL1,			\
-@@ -144,6 +146,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.min_uV		= S2MPS11_BUCK_MIN1,			\
- 	.uV_step	= S2MPS11_BUCK_STEP1,			\
- 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
- 	.vsel_reg	= S2MPS11_REG_B6CTRL2 + (num - 6) * 2,	\
- 	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
- 	.enable_reg	= S2MPS11_REG_B6CTRL1 + (num - 6) * 2,	\
-@@ -159,6 +162,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.min_uV		= S2MPS11_BUCK_MIN3,			\
- 	.uV_step	= S2MPS11_BUCK_STEP3,			\
- 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
- 	.vsel_reg	= S2MPS11_REG_B9CTRL2,			\
- 	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
- 	.enable_reg	= S2MPS11_REG_B9CTRL1,			\
-@@ -174,6 +178,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.min_uV		= S2MPS11_BUCK_MIN2,			\
- 	.uV_step	= S2MPS11_BUCK_STEP2,			\
- 	.n_voltages	= S2MPS11_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPS11_RAMP_DELAY,			\
- 	.vsel_reg	= S2MPS11_REG_B10CTRL2,			\
- 	.vsel_mask	= S2MPS11_BUCK_VSEL_MASK,		\
- 	.enable_reg	= S2MPS11_REG_B10CTRL1,			\
-diff --git a/include/linux/mfd/samsung/s2mps11.h b/include/linux/mfd/samsung/s2mps11.h
-index ad2252f..4e94dc6 100644
---- a/include/linux/mfd/samsung/s2mps11.h
-+++ b/include/linux/mfd/samsung/s2mps11.h
-@@ -189,6 +189,7 @@ enum s2mps11_regulators {
- #define S2MPS11_ENABLE_SHIFT	0x06
- #define S2MPS11_LDO_N_VOLTAGES	(S2MPS11_LDO_VSEL_MASK + 1)
- #define S2MPS11_BUCK_N_VOLTAGES (S2MPS11_BUCK_VSEL_MASK + 1)
-+#define S2MPS11_RAMP_DELAY	25000		/* uV/us */
- 
- #define S2MPS11_PMIC_EN_SHIFT	6
- #define S2MPS11_REGULATOR_MAX (S2MPS11_REG_MAX - 3)
+ #define regulator_desc_ldo1(num)	{		\
 -- 
 1.7.0.4
 
