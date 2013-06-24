@@ -1,94 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab3FXQhc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 12:37:32 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:59575 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab3FXQha convert rfc822-to-8bit (ORCPT
+	id S1752844Ab3FXQiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 12:38:04 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:45599 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab3FXQiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 12:37:30 -0400
-X-AuditID: cbfec37c-b7f166d000004b4e-87-51c875c9497b
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Joe Perches <joe@perches.com>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCHv v3] power: Include additional information in pm_print_times
-Thread-topic: [PATCHv v3] power: Include additional information in
- pm_print_times
-Thread-index: AQHOa5INUOX6+S75906ZF4yA9Bsfdg==
-Date: Mon, 24 Jun 2013 16:37:28 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E6172F34D@sisaex02sj>
-References: <1371497795-20084-1-git-send-email-shuah.kh@samsung.com>
- <3043483.hQyzHovghE@vostro.rjw.lan> <1371987257.3137.44.camel@joe-AO722>
- <7303551.DgZO2t6GUO@vostro.rjw.lan>
- <B8EFE96D1287C24090BAD9D858E15E6172F2E7@sisaex02sj>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t9hX92TpScCDeZ90bVoXryezWL2/ccs
-	FrOm7GWyuLxrDpvF594jjBZ3Tx1ls+hf2Mtk8fWngwOHx85Zd9k9Fu95yeSxf+4ado8vq64x
-	ezxa3MLosWL1d3aPz5vkAtijuGxSUnMyy1KL9O0SuDI2np7HWnCPq2Lt5G72BsabHF2MnBwS
-	AiYS+1afYYawxSQu3FvP1sXIxSEksIxRYuK30+wQTi+TxIXd56Cc+YwSLxqnsIO0sAmoS3x+
-	vQPMFhFQlWi5+hisnVlgNrPEmisf2EASwgIBEv8nT2KBKAqWmPfrGyOErSexdvZqsBoWoOaN
-	xx+BDeIVsJfY+/I91B2vGSUeXf8CdiAj0IHfT61hArGZBcQlmltvskAcLiCxZM95qCdEJV4+
-	/sfaxcgBZCtKbF9tBVGuJbF+53GoVm2JJ+8usELsEpT4MfkeywRGsVlIps5C0jILScssJC0L
-	GFlWMYqVFicXFCelp1YY6xUn5haX5qXrJefnbmKERGzNDsZ7X20OMQpwMCrx8H6IOxEoxJpY
-	VlyZe4hRgoNZSYQ3VAQoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgbFO/h2D2Iupj7xtSvb0195q
-	n1+Q65sXf/2P6+JL/AEL5+sxtRzTiTh1TXodf1QFa9MtzYd69Rfm8rpuKby0YYoR07lbj+cF
-	9rg3MpacSlUKaA/h5GSrDPh1eMJr/jKVE/+nPGI5Khg4++1Rj92f+dvYU93bpZUvd9zlq1Nx
-	VtjJ8uT2T4uZSUosxRmJhlrMRcWJAMaDlwa2AgAA
+	Mon, 24 Jun 2013 12:38:01 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Bo Shen <voice.shen@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Wenyou Yang <wenyou.yang@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/2] ARM: at91/PMC: fix at91sam9n12 USB FS init
+Date: Mon, 24 Jun 2013 18:37:59 +0200
+Message-ID: <1372091879-28459-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 10:25 AM, Shuah Khan wrote:
-> On 06/23/2013 03:49 PM, Rafael J. Wysocki wrote:
->> On Sunday, June 23, 2013 04:34:17 AM Joe Perches wrote:
->>> On Sun, 2013-06-23 at 13:36 +0200, Rafael J. Wysocki wrote:
->>>> Please keep the existing format as is literally and append any
->>>> new information to the end of the line.
->>>
->>> Hi Shuah.
->>>
->>> Perhaps the better long-term approach would be to add
->>> a new tracepoint too.
->>
->> In fact, I would even prefer it if new tracepoints were added so that we
->> could deprecate the dmesg messages at one point in the future.
->>
->> Thanks,
->> Rafael
->>
->>
->
-> Rafael/Joe,
->
-> I can work on adding a tracepoint. Do you want to take the v2 patch in
-> the meantime?
->
+at91sam9n12 has Full-speed only USB. So we should add
+it to the list in at91_pllb_usbfs_clock_init() function.
+Moreover, at91sam9n12 has an unusual PMC in the sense that it
+has a PLLB but also has a USB clock register.
 
-Rafael,
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/clock.c                 | 25 +++++++++++++++++++++----
+ arch/arm/mach-at91/include/mach/at91_pmc.h |  3 +++
+ 2 files changed, 24 insertions(+), 4 deletions(-)
 
-ok. Caught up with the entire thread. v2 patch uses dev_info() and hence 
-same concern about format change applies to that one as well.
+diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+index 978de42..661111f 100644
+--- a/arch/arm/mach-at91/clock.c
++++ b/arch/arm/mach-at91/clock.c
+@@ -489,7 +489,7 @@ static int at91_clk_show(struct seq_file *s, void *unused)
+ 		seq_printf(s, "UCKR = %8x\n", uckr);
+ 	}
+ 	seq_printf(s, "MCKR = %8x\n", at91_pmc_read(AT91_PMC_MCKR));
+-	if (cpu_has_upll())
++	if (cpu_has_upll() || cpu_is_at91sam9n12())
+ 		seq_printf(s, "USB  = %8x\n", at91_pmc_read(AT91_PMC_USB));
+ 	seq_printf(s, "SR   = %8x\n", sr);
+ 
+@@ -614,6 +614,8 @@ static u32 __init at91_usb_rate(struct clk *pll, u32 freq, u32 reg)
+ {
+ 	if (pll == &pllb && (reg & AT91_PMC_USB96M))
+ 		return freq / 2;
++	else if (pll == &utmi_clk || cpu_is_at91sam9n12())
++		return freq / (1 + ((reg & AT91_PMC_OHCIUSBDIV) >> 8));
+ 	else
+ 		return freq;
+ }
+@@ -683,6 +685,8 @@ static struct clk *const standard_pmc_clocks[] __initconst = {
+ /* PLLB generated USB full speed clock init */
+ static void __init at91_pllb_usbfs_clock_init(unsigned long main_clock)
+ {
++	unsigned int reg;
++
+ 	/*
+ 	 * USB clock init:  choose 48 MHz PLLB value,
+ 	 * disable 48MHz clock during usb peripheral suspend.
+@@ -691,22 +695,35 @@ static void __init at91_pllb_usbfs_clock_init(unsigned long main_clock)
+ 	 */
+ 	uhpck.parent = &pllb;
+ 
+-	at91_pllb_usb_init = at91_pll_calc(main_clock, 48000000 * 2) | AT91_PMC_USB96M;
++	reg = at91_pllb_usb_init = at91_pll_calc(main_clock, 48000000 * 2);
+ 	pllb.rate_hz = at91_pll_rate(&pllb, main_clock, at91_pllb_usb_init);
+ 	if (cpu_is_at91rm9200()) {
++		reg = at91_pllb_usb_init |= AT91_PMC_USB96M;
+ 		uhpck.pmc_mask = AT91RM9200_PMC_UHP;
+ 		udpck.pmc_mask = AT91RM9200_PMC_UDP;
+ 		at91_pmc_write(AT91_PMC_SCER, AT91RM9200_PMC_MCKUDP);
+ 	} else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() ||
+ 		   cpu_is_at91sam9263() || cpu_is_at91sam9g20() ||
+ 		   cpu_is_at91sam9g10()) {
++		reg = at91_pllb_usb_init |= AT91_PMC_USB96M;
++		uhpck.pmc_mask = AT91SAM926x_PMC_UHP;
++		udpck.pmc_mask = AT91SAM926x_PMC_UDP;
++	} else if (cpu_is_at91sam9n12()) {
++		/* Divider for USB clock is in USB clock register for 9n12 */
++		reg = AT91_PMC_USBS_PLLB;
++
++		/* For PLLB output 96M, set usb divider 2 (USBDIV + 1) */
++		reg |= AT91_PMC_OHCIUSBDIV_2;
++		at91_pmc_write(AT91_PMC_USB, reg);
++
++		/* Still setup masks */
+ 		uhpck.pmc_mask = AT91SAM926x_PMC_UHP;
+ 		udpck.pmc_mask = AT91SAM926x_PMC_UDP;
+ 	}
+ 	at91_pmc_write(AT91_CKGR_PLLBR, 0);
+ 
+-	udpck.rate_hz = at91_usb_rate(&pllb, pllb.rate_hz, at91_pllb_usb_init);
+-	uhpck.rate_hz = at91_usb_rate(&pllb, pllb.rate_hz, at91_pllb_usb_init);
++	udpck.rate_hz = at91_usb_rate(&pllb, pllb.rate_hz, reg);
++	uhpck.rate_hz = at91_usb_rate(&pllb, pllb.rate_hz, reg);
+ }
+ 
+ /* UPLL generated USB full speed clock init */
+diff --git a/arch/arm/mach-at91/include/mach/at91_pmc.h b/arch/arm/mach-at91/include/mach/at91_pmc.h
+index 2bd7f51..c604cc6 100644
+--- a/arch/arm/mach-at91/include/mach/at91_pmc.h
++++ b/arch/arm/mach-at91/include/mach/at91_pmc.h
+@@ -130,7 +130,10 @@ extern void __iomem *at91_pmc_base;
+ #define		AT91_PMC_USBS		(0x1 <<  0)		/* USB OHCI Input clock selection */
+ #define			AT91_PMC_USBS_PLLA		(0 << 0)
+ #define			AT91_PMC_USBS_UPLL		(1 << 0)
++#define			AT91_PMC_USBS_PLLB		(1 << 0)	/* [AT91SAMN12 only] */
+ #define		AT91_PMC_OHCIUSBDIV	(0xF <<  8)		/* Divider for USB OHCI Clock */
++#define			AT91_PMC_OHCIUSBDIV_1	(0x0 <<  8)
++#define			AT91_PMC_OHCIUSBDIV_2	(0x1 <<  8)
+ 
+ #define	AT91_PMC_SMD		0x3c			/* Soft Modem Clock Register [some SAM9 only] */
+ #define		AT91_PMC_SMDS		(0x1  <<  0)		/* SMD input clock selection */
+-- 
+1.8.2.2
 
-Do you want to take the v1 patch that didn't change the format and just 
-added the additional information at the end?
-
-https://lkml.org/lkml/2013/6/14/330
-
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
