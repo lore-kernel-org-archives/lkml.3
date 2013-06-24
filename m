@@ -1,136 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3FXHLn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 03:11:43 -0400
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:3977 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab3FXHLm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 03:11:42 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH] media: i2c: tvp514x: add support for asynchronous probing
-Date: Mon, 24 Jun 2013 09:11:14 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10.0-rc6-tschai; KDE/4.9.5; x86_64; ; )
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-References: <1371896189-5475-1-git-send-email-prabhakar.csengg@gmail.com> <Pine.LNX.4.64.1306231716050.13783@axis700.grange> <CA+V-a8sFzDndeCBc=bgcvpqtvzQWVLngNc_mtXCebQcarM+w+Q@mail.gmail.com>
-In-Reply-To: <CA+V-a8sFzDndeCBc=bgcvpqtvzQWVLngNc_mtXCebQcarM+w+Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306240911.14288.hverkuil@xs4all.nl>
+	id S1752789Ab3FXHNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 03:13:34 -0400
+Received: from ozlabs.org ([203.10.76.45]:47752 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752586Ab3FXHNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 03:13:33 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, mahesh@linux.vnet.ibm.com, ananth@in.ibm.com
+Subject: Re: [PATCH v3] powerpc/pseries: Enable PSTORE in pseries_defconfig
+In-reply-to: <20130624064534.16842.3582.stgit@aruna-ThinkPad-T420>
+References: <20130624064534.16842.3582.stgit@aruna-ThinkPad-T420>
+Comments: In-reply-to Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+   message dated "Mon, 24 Jun 2013 12:23:00 +0530."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Mon, 24 Jun 2013 17:13:27 +1000
+Message-ID: <31757.1372058007@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun June 23 2013 17:48:20 Prabhakar Lad wrote:
-> Hi Guennadi,
+Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com> wrote:
+
+> Since now we have pstore support for nvram in pseries, enable it
+> in the default config. With this config option enabled, pstore
+> infra-structure will be used to read/write the messages from/to nvram.
 > 
-> Thanks for the review.
+> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+Acked-by: Michael Neuling <mikey@neuling.org>
+
+> ---
+>  v3:
+> 	Move pstore config to right place
+>  v2:
+> 	Change patch description
 > 
-> On Sun, Jun 23, 2013 at 8:49 PM, Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> wrote:
-> > On Sat, 22 Jun 2013, Prabhakar Lad wrote:
-> >
-> >> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> >>
-> >> Both synchronous and asynchronous tvp514x subdevice probing is supported by
-> >> this patch.
-> >>
-> >> Signed-off-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
-> >> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> >> Cc: Hans Verkuil <hverkuil@xs4all.nl>
-> >> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> >> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> >> ---
-> >>  drivers/media/i2c/tvp514x.c |   22 +++++++++++++++-------
-> >>  1 file changed, 15 insertions(+), 7 deletions(-)
-> >>
-> >> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-> >> index 864eb14..d090caf 100644
-> >> --- a/drivers/media/i2c/tvp514x.c
-> >> +++ b/drivers/media/i2c/tvp514x.c
-> >> @@ -36,6 +36,7 @@
-> >>  #include <linux/module.h>
-> >>  #include <linux/v4l2-mediabus.h>
-> >>
-> >> +#include <media/v4l2-async.h>
-> >>  #include <media/v4l2-device.h>
-> >>  #include <media/v4l2-common.h>
-> >>  #include <media/v4l2-mediabus.h>
-> >
-> > Ok, but this one really does too many things in one patch:
-> >
-> >> @@ -1148,9 +1149,9 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> >>       /* Register with V4L2 layer as slave device */
-> >>       sd = &decoder->sd;
-> >>       v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
-> >> -     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
-> >>
-> >>  #if defined(CONFIG_MEDIA_CONTROLLER)
-> >> +     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
-> >
-> > This is unrelated
-> >
-> OK I'll split the patch or may be a line in a commit message can do ?
-
-Please split it up in two patches.
-
-Why is sd->name set anyway? And why is it moved under CONFIG_MEDIA_CONTROLLER?
-It's not obvious to me.
-
-The remainder of the patch makes sense.
-
-Regards,
-
-	Hans
-
+>  arch/powerpc/configs/pseries_defconfig |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> >>       decoder->pad.flags = MEDIA_PAD_FL_SOURCE;
-> >>       decoder->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-> >>       decoder->sd.entity.flags |= MEDIA_ENT_T_V4L2_SUBDEV_DECODER;
-> >> @@ -1176,16 +1177,22 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> >>       sd->ctrl_handler = &decoder->hdl;
-> >>       if (decoder->hdl.error) {
-> >>               ret = decoder->hdl.error;
-> >> -
-> >> -             v4l2_ctrl_handler_free(&decoder->hdl);
-> >> -             return ret;
-> >> +             goto done;
-> >>       }
-> >>       v4l2_ctrl_handler_setup(&decoder->hdl);
-> >>
-> >> -     v4l2_info(sd, "%s decoder driver registered !!\n", sd->name);
-> >> -
-> >> -     return 0;
-> >> +     ret = v4l2_async_register_subdev(&decoder->sd);
-> >> +     if (!ret)
-> >> +             v4l2_info(sd, "%s decoder driver registered !!\n", sd->name);
-> >>
-> >> +done:
-> >> +     if (ret < 0) {
-> >> +             v4l2_ctrl_handler_free(&decoder->hdl);
-> >> +#if defined(CONFIG_MEDIA_CONTROLLER)
-> >> +             media_entity_cleanup(&decoder->sd.entity);
-> >
-> > So is this - it wasn't called before in the "if (decoder->hdl.error)" case
-> > above.
-> >
-> Yes so fixed it up here.
-> 
-> Regards,
-> --Prabhakar Lad
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
+> index c4dfbaf..bea8587 100644
+> --- a/arch/powerpc/configs/pseries_defconfig
+> +++ b/arch/powerpc/configs/pseries_defconfig
+> @@ -296,6 +296,7 @@ CONFIG_SQUASHFS=m
+>  CONFIG_SQUASHFS_XATTR=y
+>  CONFIG_SQUASHFS_LZO=y
+>  CONFIG_SQUASHFS_XZ=y
+> +CONFIG_PSTORE=y
+>  CONFIG_NFS_FS=y
+>  CONFIG_NFS_V3_ACL=y
+>  CONFIG_NFS_V4=y
 > 
