@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3FXSEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:04:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49647 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab3FXSEo (ORCPT
+	id S1752984Ab3FXSGs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:06:48 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:59462 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab3FXSGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:04:44 -0400
-Message-ID: <51C88A39.3040201@wwwdotorg.org>
-Date: Mon, 24 Jun 2013 12:04:41 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 24 Jun 2013 14:06:46 -0400
+Date: Mon, 24 Jun 2013 11:06:36 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 22/45] percpu_counter: Use get/put_online_cpus_atomic()
+ to prevent CPU offline
+Message-ID: <20130624180636.GB1918@mtj.dyndns.org>
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
+ <20130623134256.19094.99231.stgit@srivatsabhat.in.ibm.com>
+ <20130624175535.GA1918@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: James Hogan <james.hogan@imgtec.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        =?UTF-8?B?77+9?= <heiko@sntech.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Anmar Oueja <anmar.oueja@linaro.org>
-Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
-References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com> <51C2F7BE.2060805@imgtec.com> <51C4A447.3090807@wwwdotorg.org> <3185376.o7RqphCDfQ@avalon>
-In-Reply-To: <3185376.o7RqphCDfQ@avalon>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624175535.GA1918@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2013 05:30 PM, Laurent Pinchart wrote:
-> Hi Stephen,
+On Mon, Jun 24, 2013 at 10:55:35AM -0700, Tejun Heo wrote:
+> > @@ -105,6 +106,7 @@ s64 __percpu_counter_sum(struct percpu_counter *fbc)
+> >  		ret += *pcount;
+> >  	}
+> >  	raw_spin_unlock(&fbc->lock);
+> > +	put_online_cpus_atomic();
 > 
-> On Friday 21 June 2013 13:06:47 Stephen Warren wrote:
-...
->> IIRC the idea of the PULL_PIN_DEFAULT was to avoid having to specify
->> UP/DOWN for each pin/group, but could just say "default", which would
->> then reduce the number of pinctrl mapping table entries or pinctrl DT
->> property entries.
-> 
-> I may be mistaken, but I've understood the PULL_PIN_DEFAULT option as a way to 
-> select the default bias configuration when the default value is hardware-
-> controlled, not as a pure software option.
+> I don't think this is necessary.  CPU on/offlining is explicitly
+> handled via the hotplug callback which synchronizes through fbc->lock.
+> __percpu_counter_sum() racing with actual on/offlining doesn't affect
+> correctness and adding superflous get_online_cpus_atomic() around it
+> can be misleading.
 
-That's my understanding too.
+Ah, okay, so you added a debug feature which triggers warning if
+online mask is accessed without synchronization.  Yeah, that makes
+sense and while the above is not strictly necessary, it probably is
+better to just add it rather than suppressing the warning in a
+different way.  Can you please at least add a comment explaining that?
 
+Thanks.
 
+-- 
+tejun
