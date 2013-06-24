@@ -1,63 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab3FXNMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 09:12:17 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:41602
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752117Ab3FXNLM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 09:11:12 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 24 Jun 2013 21:11:32 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Philippe Reynes <tremyfr@yahoo.fr>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <gwenhael.goavec-merou@armadeus.com>, <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] apf27dev: add rtc ds1374 to the device tree
-Message-ID: <20130624131130.GD30747@S2101-09.ap.freescale.net>
-References: <1371831853-24754-1-git-send-email-tremyfr@yahoo.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1371831853-24754-1-git-send-email-tremyfr@yahoo.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	id S1752314Ab3FXNMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 09:12:41 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25371 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab3FXNLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 09:11:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,928,1363158000"; 
+   d="scan'208";a="321686602"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH 10/15] perf tools: add debug prints
+Date: Mon, 24 Jun 2013 16:16:07 +0300
+Message-Id: <1372079772-20803-11-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 06:24:13PM +0200, Philippe Reynes wrote:
-> 
-> Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
+It is useful to see the arguments to perf_event_open
+and whether the perf events ring buffer was mmapped
+per-cpu or per-thread.  That information will now be
+displayed when verbose is 2 i.e option -vv
 
-Applied, thanks.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/evlist.c |  3 +++
+ tools/perf/util/evsel.c  | 52 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 55 insertions(+)
 
-Shawn
-
-> ---
->  arch/arm/boot/dts/imx27-apf27dev.dts |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/imx27-apf27dev.dts b/arch/arm/boot/dts/imx27-apf27dev.dts
-> index 66b8e1c..2a377ca 100644
-> --- a/arch/arm/boot/dts/imx27-apf27dev.dts
-> +++ b/arch/arm/boot/dts/imx27-apf27dev.dts
-> @@ -53,6 +53,11 @@
->  &i2c1 {
->  	clock-frequency = <400000>;
->  	status = "okay";
-> +
-> +	rtc@68 {
-> +		compatible = "dallas,ds1374";
-> +		reg = <0x68>;
-> +	};
->  };
->  
->  &i2c2 {
-> -- 
-> 1.7.4.4
-> 
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 3c8b569..a660f56 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -14,6 +14,7 @@
+ #include "target.h"
+ #include "evlist.h"
+ #include "evsel.h"
++#include "debug.h"
+ #include <unistd.h>
+ 
+ #include "parse-events.h"
+@@ -454,6 +455,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+ 	int nr_threads = thread_map__nr(evlist->threads);
+ 
++	pr_debug2("perf event ring buffer mmapped per cpu\n");
+ 	for (cpu = 0; cpu < nr_cpus; cpu++) {
+ 		int output = -1;
+ 
+@@ -492,6 +494,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
+ 	int thread;
+ 	int nr_threads = thread_map__nr(evlist->threads);
+ 
++	pr_debug2("perf event ring buffer mmapped per thread\n");
+ 	for (thread = 0; thread < nr_threads; thread++) {
+ 		int output = -1;
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 63b6f8c..d01d2cd 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -21,6 +21,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/perf_event.h>
+ #include "perf_regs.h"
++#include "debug.h"
+ 
+ static struct {
+ 	bool sample_id_all;
+@@ -817,6 +818,54 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
+ 	return fd;
+ }
+ 
++static void show_attr(struct perf_event_attr *attr)
++{
++	pr_debug2("------------------------------------------------------------\n");
++	pr_debug2("perf_event_attr:\n");
++	pr_debug2("  type                %u\n", attr->type);
++	pr_debug2("  size                %u\n", attr->size);
++	pr_debug2("  config              %#"PRIx64"\n", (uint64_t)attr->config);
++	pr_debug2("  sample_period       %"PRIu64"\n", (uint64_t)attr->sample_period);
++	pr_debug2("  sample_freq         %"PRIu64"\n", (uint64_t)attr->sample_freq);
++	pr_debug2("  sample_type         %#"PRIx64"\n", (uint64_t)attr->sample_type);
++	pr_debug2("  read_format         %#"PRIx64"\n", (uint64_t)attr->read_format);
++
++	pr_debug2("  disabled            %u    ", attr->disabled);
++	pr_debug2("inherit             %u\n", attr->inherit);
++	pr_debug2("  pinned              %u    ", attr->pinned);
++	pr_debug2("exclusive           %u\n", attr->exclusive);
++	pr_debug2("  exclude_user        %u    ", attr->exclude_user);
++	pr_debug2("exclude_kernel      %u\n", attr->exclude_kernel);
++	pr_debug2("  exclude_hv          %u    ", attr->exclude_hv);
++	pr_debug2("exclude_idle        %u\n", attr->exclude_idle);
++	pr_debug2("  mmap                %u    ", attr->mmap);
++	pr_debug2("comm                %u\n", attr->comm);
++	pr_debug2("  freq                %u    ", attr->freq);
++	pr_debug2("inherit_stat        %u\n", attr->inherit_stat);
++	pr_debug2("  enable_on_exec      %u    ", attr->enable_on_exec);
++	pr_debug2("task                %u\n", attr->task);
++	pr_debug2("  watermark           %u    ", attr->watermark);
++	pr_debug2("precise_ip          %u\n", attr->precise_ip);
++	pr_debug2("  mmap_data           %u    ", attr->mmap_data);
++	pr_debug2("sample_id_all       %u\n", attr->sample_id_all);
++	pr_debug2("  exclude_host        %u    ", attr->exclude_host);
++	pr_debug2("exclude_guest       %u\n", attr->exclude_guest);
++	pr_debug2("  excl.callchain.kern %u    ", attr->exclude_callchain_kernel);
++	pr_debug2("excl.callchain.user %u\n", attr->exclude_callchain_user);
++
++	pr_debug2("  wakeup_events       %u\n", attr->wakeup_events);
++	pr_debug2("  wakeup_watermark    %u\n", attr->wakeup_watermark);
++	pr_debug2("  bp_type             %#x\n", attr->bp_type);
++	pr_debug2("  bp_addr             %#"PRIx64"\n", (uint64_t)attr->bp_addr);
++	pr_debug2("  config1             %#"PRIx64"\n", (uint64_t)attr->config1);
++	pr_debug2("  bp_len              %"PRIu64"\n", (uint64_t)attr->bp_len);
++	pr_debug2("  config2             %#"PRIx64"\n", (uint64_t)attr->config2);
++	pr_debug2("  branch_sample_type  %#"PRIx64"\n", (uint64_t)attr->branch_sample_type);
++	pr_debug2("  sample_regs_user    %#"PRIx64"\n", (uint64_t)attr->sample_regs_user);
++	pr_debug2("  sample_stack_user   %u\n", attr->sample_stack_user);
++	pr_debug2("------------------------------------------------------------\n");
++}
++
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+@@ -840,6 +889,7 @@ retry_sample_id:
+ 	if (perf_missing_features.sample_id_all)
+ 		evsel->attr.sample_id_all = 0;
+ 
++	show_attr(&evsel->attr);
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 
+ 		for (thread = 0; thread < threads->nr; thread++) {
+@@ -850,6 +900,8 @@ retry_sample_id:
+ 
+ 			group_fd = get_group_fd(evsel, cpu, thread);
+ 
++			pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
++				  pid, cpus->map[cpu], group_fd, flags);
+ 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+ 								     pid,
+ 								     cpus->map[cpu],
+-- 
+1.7.11.7
 
