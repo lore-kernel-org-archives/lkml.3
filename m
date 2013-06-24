@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab3FXVAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 17:00:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52500 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab3FXVAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 17:00:47 -0400
-From: David Brown <davidb@codeaurora.org>
-To: arm@kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: [GIT PULL v2] msm clock for 3.11
-Date: Mon, 24 Jun 2013 14:00:28 -0700
-Message-Id: <1372107629-25862-1-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-reply-to: <20130614195238.GA2381@codeaurora.org>
+	id S1751060Ab3FXVCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 17:02:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42552 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784Ab3FXVCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 17:02:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,930,1363158000"; 
+   d="scan'208";a="321911845"
+Message-ID: <1372107737.7914.27.camel@envy.home>
+Subject: Re: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
+ hugepage
+From: Darren Hart <dvhart@linux.intel.com>
+To: zhang.yi20@zte.com.cn
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        "'Ingo Molnar'" <mingo@kernel.org>,
+        "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>, Zhang Yi <wetpzy@gmail.com>
+Date: Mon, 24 Jun 2013 14:02:17 -0700
+In-Reply-To: <OF7A810108.AA9BB6C1-ON48257B6D.000A1424-48257B6D.000B1EC6@zte.com.cn>
+References: <000101ce5174$1962bac0$4c283040$@com>
+	 <20130515142035.GD11497@suse.de>
+	 <OF1450163D.E6FBE6A2-ON48257B6D.00048ADD-48257B6D.00070A58@zte.com.cn>
+	 <519436B7.2050101@linux.intel.com>
+	 <OF7A810108.AA9BB6C1-ON48257B6D.000A1424-48257B6D.000B1EC6@zte.com.cn>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pull request differs from the previous one for the clock code by:
+On Thu, 2013-05-16 at 10:00 +0800, zhang.yi20@zte.com.cn wrote:
+> 
+> Darren Hart <dvhart@linux.intel.com> wrote on 2013/05/16 09:30:31:
+> 
+> >
+> > pgoff_t is an unsigned long, and page_to_pfn() returns an unsigned long.
+> > Since compound_idx can be assigned from page_to_pfn() and it is added
+> > with index in the return value, unsigned long seems like a better choice
+> > to me. Is there a specific reason you prefer an int? It might be "fine"
+> > but it is likely to raise eyebrows whenever someone read through it.
+> >
+> No other specific  reason. I just think that int is enough.
 
-  - Gathered additional Acked-by lines.
-  - A small #include fixup found by Stephen Boyd
+Hi Yi,
 
-The only Ack not received was from Chris Ball, who is CC'd on this
-request.
+I believe this patch is still pending a final version from you. Mel and
+I both asked after the change of compound_idx from int to unsigned long.
+While "int" may be adequate, for consistency with the return type
+assigned and such, the unsigned long is preferred. Could you respin and
+send along the patch so Thomas can pull it in?
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+Thanks,
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-clock-for-3.11b
-
-for you to fetch changes up to 8cc7f5338e729b79194e6c22e3c794faaef974b8:
-
-  ARM: msm: Migrate to common clock framework (2013-06-24 13:08:05 -0700)
-
-----------------------------------------------------------------
-MSM clock updates for 3.11.
-
-Per Stephen Boyd's coverletter:
-
-Resending to collect higher level maintainer acks per Olof's request.
-The plan is to push this patchset through MSM to the arm-soc tree.
-
-This patchset moves the existing MSM clock code and affected drivers
-to the common clock framework. A prerequisite of moving to the common
-clock framework is to use clk_prepare() and clk_enable() so the first
-few patches migrate drivers to that call (clk_prepare() is a no-op on
-MSM right now). It also removes some custom clock APIs that MSM
-provides and finally moves the proc_comm clock code to the common
-struct clk.
-
-This patch series will be used as the foundation of the MSM 8660/8960
-clock code that I plan to send out after this series.
-
-----------------------------------------------------------------
-Stephen Boyd (12):
-      msm_serial: Convert to clk_prepare/unprepare
-      msm_serial: Use devm_clk_get() and properly return errors
-      usb: otg: msm: Convert to clk_prepare/unprepare
-      msm_sdcc: Convert to clk_prepare/unprepare
-      msm: iommu: Convert to clk_prepare/unprepare
-      msm: iommu: Use clk_set_rate() instead of clk_set_min_rate()
-      ARM: msm: Remove custom clk_set_flags() API
-      ARM: msm: Remove custom clk_set_{max,min}_rate() API
-      ARM: msm: Remove clock-7x30.h include file
-      ARM: msm: Prepare clk_get() users in mach-msm for clock-pcom driver
-      ARM: msm: Make proc_comm clock control into a platform driver
-      ARM: msm: Migrate to common clock framework
-
- arch/arm/Kconfig                       |   2 +-
- arch/arm/mach-msm/Makefile             |  10 +-
- arch/arm/mach-msm/board-halibut.c      |   2 +-
- arch/arm/mach-msm/board-msm7x30.c      |   2 +-
- arch/arm/mach-msm/board-qsd8x50.c      |   2 +-
- arch/arm/mach-msm/board-trout-panel.c  |  19 ++--
- arch/arm/mach-msm/board-trout.c        |   3 +-
- arch/arm/mach-msm/clock-7x30.h         | 155 ------------------------------
- arch/arm/mach-msm/clock-debug.c        | 130 --------------------------
- arch/arm/mach-msm/clock-pcom.c         | 149 ++++++++++++++++++-----------
- arch/arm/mach-msm/clock-pcom.h         |  31 +++---
- arch/arm/mach-msm/clock.c              | 166 +--------------------------------
- arch/arm/mach-msm/clock.h              |  51 +++-------
- arch/arm/mach-msm/devices-msm7x00.c    |  12 ++-
- arch/arm/mach-msm/devices-msm7x30.c    |  15 ++-
- arch/arm/mach-msm/devices-qsd8x50.c    |  12 ++-
- arch/arm/mach-msm/devices.h            |  15 +--
- arch/arm/mach-msm/dma.c                |   5 +-
- arch/arm/mach-msm/include/mach/board.h |   5 -
- arch/arm/mach-msm/include/mach/clk.h   |   9 --
- drivers/iommu/msm_iommu_dev.c          |  20 ++--
- drivers/mmc/host/msm_sdcc.c            |  14 ++-
- drivers/tty/serial/msm_serial.c        |  35 +++----
- drivers/usb/phy/phy-msm-usb.c          |  38 ++++----
- 24 files changed, 243 insertions(+), 659 deletions(-)
- delete mode 100644 arch/arm/mach-msm/clock-7x30.h
- delete mode 100644 arch/arm/mach-msm/clock-debug.c
