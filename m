@@ -1,67 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab3FXMuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:50:40 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:65377 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab3FXMug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:50:36 -0400
+	id S1751412Ab3FXMt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:49:58 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:2050 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab3FXMt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 08:49:57 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 0/2] metag: cache aliasing detection fixes
+Date: Mon, 24 Jun 2013 13:49:46 +0100
+Message-ID: <1372078188-26602-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-In-Reply-To: <1662523.HdXbLYrd2q@vostro.rjw.lan>
-References: <CAKohpo=v4qPDH32Y4ithr_p007nTn5AOUzkUCiHTGgQN6-=BEw@mail.gmail.com>
-	<7195611.gCcafMWC85@vostro.rjw.lan>
-	<CAKohpomdnEgDcAExoyN1b4vohHNEg3NDH1mM8NWG8gQoPvff+Q@mail.gmail.com>
-	<1662523.HdXbLYrd2q@vostro.rjw.lan>
-Date: Mon, 24 Jun 2013 18:20:35 +0530
-Message-ID: <CAKohpo=3DHa0+3trrL7b1JVhxrXLtERX9kth5AjLGu7Tf6Adig@mail.gmail.com>
-Subject: Re: [GIT PULL] ARM: CPUFreq updates for 3.11
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: cpufreq@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_06_24_13_49_56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 June 2013 17:15, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Well, it should go last.  Also I'd prefer to apply it directly.
+A couple of metag cache aliasing detection fixes I intend on applying
+for v3.11.
 
-Okay.. Below is pull request for ARM patches alone.
+James Hogan (2):
+  metag: panic if cache aliasing possible
+  metag: don't check for cache aliasing on smp cpu boot
 
-The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
+ arch/metag/kernel/cachepart.c | 13 +++++++------
+ arch/metag/kernel/smp.c       |  6 ------
+ 2 files changed, 7 insertions(+), 12 deletions(-)
 
-  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
+-- 
+1.8.1.2
 
-are available in the git repository at:
 
-  git://git.linaro.org/people/vireshk/linux.git cpufreq-fix-notification-arm
-
-for you to fetch changes up to f56cc99e3f189ce214408e9c0fdda9e664d83dc1:
-
-  cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier in error cases
-(2013-06-24 18:19:01 +0530)
-
-----------------------------------------------------------------
-Viresh Kumar (8):
-      cpufreq: arm-big-little: call CPUFREQ_POSTCHANGE notfier in error cases
-      cpufreq: davinci: call CPUFREQ_POSTCHANGE notfier in error cases
-      cpufreq: dbx500: call CPUFREQ_POSTCHANGE notfier in error cases
-      cpufreq: exynos: call CPUFREQ_POSTCHANGE notfier in error cases
-      cpufreq: imx6q: call CPUFREQ_POSTCHANGE notfier in error cases
-      cpufreq: omap: call CPUFREQ_POSTCHANGE notfier in error cases
-      cpufreq: s3c64xx: call CPUFREQ_POSTCHANGE notfier in error cases
-      cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier in error cases
-
- drivers/cpufreq/arm_big_little.c  |  4 +---
- drivers/cpufreq/davinci-cpufreq.c |  3 +++
- drivers/cpufreq/dbx500-cpufreq.c  |  4 ++--
- drivers/cpufreq/exynos-cpufreq.c  | 10 ++++++++--
- drivers/cpufreq/imx6q-cpufreq.c   | 17 +++++++++++------
- drivers/cpufreq/omap-cpufreq.c    |  6 +++---
- drivers/cpufreq/s3c64xx-cpufreq.c |  8 ++++++--
- drivers/cpufreq/tegra-cpufreq.c   |  4 ++--
- 8 files changed, 36 insertions(+), 20 deletions(-)
