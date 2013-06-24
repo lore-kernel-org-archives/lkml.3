@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab3FXIVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:21:53 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:46131 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3FXIVv (ORCPT
+	id S1753137Ab3FXIYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:24:25 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:47506 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab3FXIYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:21:51 -0400
-Date: Mon, 24 Jun 2013 10:21:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Matthew Wilcox <willy@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
-        linux-scsi@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
-Message-ID: <20130624082147.GC21768@gmail.com>
-References: <20130620201713.GV8211@linux.intel.com>
- <20130623100920.GA19021@gmail.com>
- <51C77344.2040907@gmail.com>
+	Mon, 24 Jun 2013 04:24:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C77344.2040907@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201306240911.14288.hverkuil@xs4all.nl>
+References: <1371896189-5475-1-git-send-email-prabhakar.csengg@gmail.com>
+ <Pine.LNX.4.64.1306231716050.13783@axis700.grange> <CA+V-a8sFzDndeCBc=bgcvpqtvzQWVLngNc_mtXCebQcarM+w+Q@mail.gmail.com>
+ <201306240911.14288.hverkuil@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 24 Jun 2013 13:54:02 +0530
+Message-ID: <CA+V-a8tziXOAU6NNUy6rp-Fdz2sVk8+KYHdzDsVSaFuRADUjig@mail.gmail.com>
+Subject: Re: [PATCH] media: i2c: tvp514x: add support for asynchronous probing
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hans,
 
-* David Ahern <dsahern@gmail.com> wrote:
+On Mon, Jun 24, 2013 at 12:41 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> On Sun June 23 2013 17:48:20 Prabhakar Lad wrote:
+>> Hi Guennadi,
+>>
+>> Thanks for the review.
+>>
+>> On Sun, Jun 23, 2013 at 8:49 PM, Guennadi Liakhovetski
+>> <g.liakhovetski@gmx.de> wrote:
+>> > On Sat, 22 Jun 2013, Prabhakar Lad wrote:
+>> >
+>> >> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>> >>
+>> >> Both synchronous and asynchronous tvp514x subdevice probing is supported by
+>> >> this patch.
+>> >>
+>> >> Signed-off-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
+>> >> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+>> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> >> Cc: Hans Verkuil <hverkuil@xs4all.nl>
+>> >> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+>> >> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> >> ---
+>> >>  drivers/media/i2c/tvp514x.c |   22 +++++++++++++++-------
+>> >>  1 file changed, 15 insertions(+), 7 deletions(-)
+>> >>
+>> >> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
+>> >> index 864eb14..d090caf 100644
+>> >> --- a/drivers/media/i2c/tvp514x.c
+>> >> +++ b/drivers/media/i2c/tvp514x.c
+>> >> @@ -36,6 +36,7 @@
+>> >>  #include <linux/module.h>
+>> >>  #include <linux/v4l2-mediabus.h>
+>> >>
+>> >> +#include <media/v4l2-async.h>
+>> >>  #include <media/v4l2-device.h>
+>> >>  #include <media/v4l2-common.h>
+>> >>  #include <media/v4l2-mediabus.h>
+>> >
+>> > Ok, but this one really does too many things in one patch:
+>> >
+>> >> @@ -1148,9 +1149,9 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>> >>       /* Register with V4L2 layer as slave device */
+>> >>       sd = &decoder->sd;
+>> >>       v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
+>> >> -     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
+>> >>
+>> >>  #if defined(CONFIG_MEDIA_CONTROLLER)
+>> >> +     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
+>> >
+>> > This is unrelated
+>> >
+>> OK I'll split the patch or may be a line in a commit message can do ?
+>
+> Please split it up in two patches.
+>
+> Why is sd->name set anyway? And why is it moved under CONFIG_MEDIA_CONTROLLER?
+> It's not obvious to me.
+>
+while using tvp514x subdev with media controller based drivers, when we
+enumerate entities (MEDIA_IOC_ENUM_ENTITIES) to get the index id
+of the entity we compare the entity name with "tvp514x", So I moved it
+under CONFIG_MEDIA_CONTROLLER config. I hope you are OK with
+moving this in a separate patch.
 
-> On 6/23/13 3:09 AM, Ingo Molnar wrote:
-> >If an IO driver is implemented properly then it will batch up requests for
-> >the controller, and gets IRQ-notified on a (sub-)batch of buffers
-> >completed.
-> >
-> >If there's any spinning done then it should be NAPI-alike polling: a
-> >single "is stuff completed" polling pass per new block of work submitted,
-> >to opportunistically interleave completion with submission work.
-> >
-> >I don't see where active spinning brings would improve performance
-> >compared to a NAPI-alike technique. Your numbers obviously show a speedup
-> >we'd like to have, I'm just wondering whether the same speedup (or even
-> >more) could be implemented via:
-> >
-> >  - smart batching that rate-limits completion IRQs in essence
-> >  + NAPI-alike polling
-> >
-> >... which would almost never result in IRQ driven completion when we are
-> >close to CPU-bound and while not yet saturating the IO controller's
-> >capacity.
-> >
-> >The spinning approach you add has the disadvantage of actively wasting CPU
-> >time, which could be used to run other tasks. In general it's much better
-> >to make sure the completion IRQs are rate-limited and just schedule. This
-> >(combined with a metric ton of fine details) is what the networking code
-> >does in essence, and they have no trouble reaching very high throughput.
-> 
-> Networking code has a similar proposal for low latency sockets using 
-> polling: https://lwn.net/Articles/540281/
-
-In that case it might make sense to try the generic approach I suggested 
-in the previous mail, which would measure average sleep latencies of 
-tasks, and would do light idle-polling instead of the more expensive 
-switch-to-the-idle-task context switch plus associated RCU, nohz, etc. 
-busy-CPU-tear-down and the symmetric build-up work on idle wakeup.
-
-The IO driver would still have to take an IRQ though, preferably on the 
-CPU that runs the IO task ...
-
-Thanks,
-
-	Ingo
+Regards,
+--Prabhakar Lad
