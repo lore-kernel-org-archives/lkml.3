@@ -1,96 +1,481 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263Ab3FXUAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 16:00:07 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:39725 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3FXUAE (ORCPT
+	id S1751806Ab3FXUBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 16:01:52 -0400
+Received: from mail.windriver.com ([147.11.1.11]:56716 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab3FXUBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 16:00:04 -0400
-Date: Mon, 24 Jun 2013 12:59:56 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-Message-ID: <20130624195956.GG1918@mtj.dyndns.org>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
- <20130618020357.GZ32663@mtj.dyndns.org>
- <51BFF464.809@cn.fujitsu.com>
- <20130618172129.GH2767@htj.dyndns.org>
- <51C298B2.9060900@cn.fujitsu.com>
- <20130620061719.GA16114@mtj.dyndns.org>
- <51C41AB4.9070500@cn.fujitsu.com>
- <20130621182511.GA1763@htj.dyndns.org>
- <51C7C258.8070906@cn.fujitsu.com>
- <51C7F4A3.6060307@cn.fujitsu.com>
+	Mon, 24 Jun 2013 16:01:49 -0400
+Message-ID: <51C8A555.8090006@windriver.com>
+Date: Mon, 24 Jun 2013 16:00:21 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C7F4A3.6060307@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-cris-kernel@axis.com>,
+        <linux-hexagon@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
+        <linux-ia64@vger.kernel.org>, <linux-m32r@ml.linux-m32r.org>,
+        <linux-m32r-ja@ml.linux-m32r.org>, <netdev@vger.kernel.org>,
+        <linux-parisc@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux390@de.ibm.com>, <linux-s390@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <sparclinux@vger.kernel.org>,
+        <x86@kernel.org>, <linux-xtensa@linux-xtensa.org>
+Subject: [PATCH-next 00/32] Delete support for __cpuinit
+References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tang.
+[Resending with only lists on Cc: -- previous mail header on the 00/32
+ was too long; failed to get passed vger's crap filters.]
 
-On Mon, Jun 24, 2013 at 03:26:27PM +0800, Tang Chen wrote:
-> >My box is x86_64, and the memory layout is:
-> >[ 0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-> >[ 0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x307ffffff]
-> >[ 0.000000] SRAT: Node 1 PXM 2 [mem 0x308000000-0x587ffffff] Hot Pluggable
-> >[ 0.000000] SRAT: Node 2 PXM 3 [mem 0x588000000-0x7ffffffff] Hot Pluggable
-> >
-> >
-> >I marked ranges reserved by memblock before we parse SRAT with flag 0x4.
-> >There are about 14 ranges which is persistent after boot.
-
-You can also record the caller address or short backtrace with each
-allocation (maybe controlled by some debug parameter).  It'd be a nice
-capability to keep around anyway.
-
-> This range is allocated by init_mem_mapping() in setup_arch(), it calls
-> alloc_low_pages() to allocate pagetable pages.
+On 13-06-24 03:30 PM, Paul Gortmaker wrote:
+> This is the whole patch queue for removal of __cpuinit support
+> against the latest linux-next tree (Jun24th).  Some of you may
+> have already seen chunks of it, or already read the logistics
+> of what is being done (and why) here:
 > 
-> I think if we do the local device pagetable, we can solve this problem
-> without any relocation.
-
-Yeah, I really can't think of many places which would allocate
-permanent piece of memory before memblock is fully initialized.  Just
-in case I wasn't clear, I don't have anything fundamentally against
-reordering operations if that's cleaner, but we really should at least
-find out what needs to be reordered and have a mechanism to verify and
-track them down, and of course if relocating / reloading / whatever is
-cleaner and/or more robust, that's what we should do.
-
-> I will make a patch trying to do this. But I'm not sure if there are any
-> other relocation problems on other architectures.
+>   https://lkml.org/lkml/2013/6/20/513
 > 
-> But even if not, I still think this could be dangerous if someone modifies
-> the boot path and allocates some persistent memory before SRAT parsed in
-> the future. He has to be aware of memory hotplug things and do the
-> necessary relocation himself.
-
-As I wrote above, I think it'd be nice to have a way to track memblock
-allocations.  It can be a debug thing but we can just do it by
-default, e.g., for allocations before memblock is fully initialized.
-It's not like there are a ton of them.  Those extra allocations can be
-freed on boot completion anyway, so they won't affect NUMA hotplug
-either and we'll be able to continuously watch, and thus properly
-maintain, the early boot hotplug issue on most configurations whether
-they actually support and perform hotplug or not, which will be
-multiple times more robust than trying to tweak boot sequence once and
-hoping that it doesn't deteriorate over time.
-
-Thanks.
-
--- 
-tejun
+> I won't repeat all that here again, other than to say this send
+> is to ensure arch/subsystem maintainers get a 2nd chance to know
+> what is going on and to look at what is being proposed for their
+> area of code.  That, and to ensure one complete continuous copy
+> of it gets mailed out.  You can also see the patch queue here:
+> 
+>   http://git.kernel.org/cgit/linux/kernel/git/paulg/cpuinit-delete.git
+> 
+> If you've noticed that a chunk for MIPS isn't present here, that
+> is because it has already been queued in the linux-mips for-next
+> branch.
+> 
+> Thanks,
+> Paul.
+> 
+> ---
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Richard Henderson <rth@twiddle.net>
+> Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+> Cc: Matt Turner <mattst88@gmail.com>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: Bob Liu <lliubbo@gmail.com>
+> Cc: Sonic Zhang <sonic.zhang@analog.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: Mikael Starvik <starvik@axis.com>
+> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Richard Kuo <rkuo@codeaurora.org>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Hirokazu Takata <takata@linux-m32r.org>
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Jonas Bonn <jonas@southpole.se>
+> Cc: Helge Deller <deller@gmx.de>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Josh Boyer <jwboyer@gmail.com>
+> Cc: Matt Porter <mporter@kernel.crashing.org>
+> Cc: Kumar Gala <galak@kernel.crashing.org>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Josh Triplett <josh@freedesktop.org>
+> Cc: Dipankar Sarma <dipankar@in.ibm.com>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Chen Liqin <liqin.chen@sunplusct.com>
+> Cc: Lennox Wu <lennox.wu@gmail.com>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Chris Zankel <chris@zankel.net>
+> Cc: Max Filippov <jcmvbkbc@gmail.com>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: uclinux-dist-devel@blackfin.uclinux.org
+> Cc: cpufreq@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-cris-kernel@axis.com
+> Cc: linux-hexagon@vger.kernel.org
+> Cc: lm-sensors@lm-sensors.org
+> Cc: linux-ia64@vger.kernel.org
+> Cc: linux-m32r@ml.linux-m32r.org
+> Cc: linux-m32r-ja@ml.linux-m32r.org
+> Cc: netdev@vger.kernel.org
+> Cc: linux@lists.openrisc.net
+> Cc: linux-parisc@vger.kernel.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux390@de.ibm.com
+> Cc: linux-s390@vger.kernel.org
+> Cc: linux-sh@vger.kernel.org
+> Cc: sparclinux@vger.kernel.org
+> Cc: x86@kernel.org
+> Cc: linux-xtensa@linux-xtensa.org
+> 
+> Paul Gortmaker (32):
+>   init.h: remove __cpuinit sections from the kernel
+>   modpost: remove all traces of cpuinit/cpuexit sections
+>   alpha: delete __cpuinit usage from all users
+>   powerpc: delete __cpuinit usage from all users
+>   parisc: delete __cpuinit usage from all users
+>   ia64: delete __cpuinit usage from all ia64 users
+>   arm: delete __cpuinit/__CPUINIT usage from all ARM users
+>   sparc: delete __cpuinit/__CPUINIT usage from all users
+>   arm64: delete __cpuinit usage from all users
+>   arc: delete __cpuinit usage from all arc files
+>   blackfin: delete __cpuinit usage from all blackfin files
+>   s390: delete __cpuinit usage from all s390 files
+>   sh: delete __cpuinit usage from all sh files
+>   tile: delete __cpuinit usage from all tile files
+>   metag: delete __cpuinit usage from all metag files
+>   cris: delete __cpuinit usage from all cris files
+>   frv: delete __cpuinit usage from all frv files
+>   hexagon: delete __cpuinit usage from all hexagon files
+>   m32r: delete __cpuinit usage from all m32r files
+>   openrisc: delete __cpuinit usage from all openrisc files
+>   xtensa: delete __cpuinit usage from all xtensa files
+>   score: delete __cpuinit usage from all score files
+>   x86: delete __cpuinit usage from all x86 files
+>   clocksource+irqchip: delete __cpuinit usage from all related files
+>   cpufreq: delete __cpuinit usage from all cpufreq files
+>   hwmon: delete __cpuinit usage from all hwmon files
+>   acpi: delete __cpuinit usage from all acpi files
+>   net: delete __cpuinit usage from all net files
+>   rcu: delete __cpuinit usage from all rcu files
+>   kernel: delete __cpuinit usage from all core kernel files
+>   drivers: delete __cpuinit usage from all remaining drivers files
+>   block: delete __cpuinit usage from all block files
+> 
+>  Documentation/cpu-hotplug.txt                 |  6 +--
+>  arch/alpha/kernel/smp.c                       | 10 ++---
+>  arch/alpha/kernel/traps.c                     |  4 +-
+>  arch/arc/include/asm/irq.h                    |  2 +-
+>  arch/arc/kernel/irq.c                         |  2 +-
+>  arch/arc/kernel/setup.c                       | 10 ++---
+>  arch/arc/kernel/smp.c                         |  4 +-
+>  arch/arc/kernel/time.c                        |  6 +--
+>  arch/arc/mm/cache_arc700.c                    |  4 +-
+>  arch/arc/mm/tlb.c                             |  4 +-
+>  arch/arm/common/mcpm_platsmp.c                |  4 +-
+>  arch/arm/include/asm/arch_timer.h             |  2 +-
+>  arch/arm/kernel/head-common.S                 |  1 -
+>  arch/arm/kernel/head.S                        |  1 -
+>  arch/arm/kernel/hw_breakpoint.c               |  4 +-
+>  arch/arm/kernel/perf_event_cpu.c              |  6 +--
+>  arch/arm/kernel/psci_smp.c                    |  3 +-
+>  arch/arm/kernel/smp.c                         | 18 ++++----
+>  arch/arm/kernel/smp_twd.c                     |  6 +--
+>  arch/arm/lib/delay.c                          |  2 +-
+>  arch/arm/mach-exynos/headsmp.S                |  2 -
+>  arch/arm/mach-exynos/platsmp.c                |  4 +-
+>  arch/arm/mach-highbank/platsmp.c              |  2 +-
+>  arch/arm/mach-imx/platsmp.c                   |  2 +-
+>  arch/arm/mach-msm/headsmp.S                   |  2 -
+>  arch/arm/mach-msm/platsmp.c                   |  6 +--
+>  arch/arm/mach-msm/timer.c                     |  4 +-
+>  arch/arm/mach-mvebu/coherency.c               |  2 +-
+>  arch/arm/mach-mvebu/headsmp.S                 |  2 -
+>  arch/arm/mach-mvebu/platsmp.c                 |  5 +--
+>  arch/arm/mach-omap2/omap-headsmp.S            |  2 -
+>  arch/arm/mach-omap2/omap-mpuss-lowpower.c     |  2 +-
+>  arch/arm/mach-omap2/omap-smp.c                |  4 +-
+>  arch/arm/mach-omap2/omap-wakeupgen.c          |  4 +-
+>  arch/arm/mach-prima2/headsmp.S                |  2 -
+>  arch/arm/mach-prima2/platsmp.c                |  4 +-
+>  arch/arm/mach-shmobile/headsmp-scu.S          |  1 -
+>  arch/arm/mach-shmobile/headsmp.S              |  2 -
+>  arch/arm/mach-shmobile/smp-emev2.c            |  2 +-
+>  arch/arm/mach-shmobile/smp-r8a7779.c          |  2 +-
+>  arch/arm/mach-shmobile/smp-sh73a0.c           |  2 +-
+>  arch/arm/mach-socfpga/headsmp.S               |  1 -
+>  arch/arm/mach-socfpga/platsmp.c               |  2 +-
+>  arch/arm/mach-spear/generic.h                 |  2 +-
+>  arch/arm/mach-spear/platsmp.c                 |  4 +-
+>  arch/arm/mach-tegra/platsmp.c                 |  4 +-
+>  arch/arm/mach-tegra/pm.c                      |  2 +-
+>  arch/arm/mach-ux500/platsmp.c                 |  4 +-
+>  arch/arm/mach-zynq/common.h                   |  2 +-
+>  arch/arm/mach-zynq/headsmp.S                  |  2 -
+>  arch/arm/mach-zynq/platsmp.c                  |  6 +--
+>  arch/arm/mm/proc-arm1020.S                    |  2 -
+>  arch/arm/mm/proc-arm1020e.S                   |  2 -
+>  arch/arm/mm/proc-arm1022.S                    |  2 -
+>  arch/arm/mm/proc-arm1026.S                    |  3 --
+>  arch/arm/mm/proc-arm720.S                     |  2 -
+>  arch/arm/mm/proc-arm740.S                     |  2 -
+>  arch/arm/mm/proc-arm7tdmi.S                   |  2 -
+>  arch/arm/mm/proc-arm920.S                     |  2 -
+>  arch/arm/mm/proc-arm922.S                     |  2 -
+>  arch/arm/mm/proc-arm925.S                     |  2 -
+>  arch/arm/mm/proc-arm926.S                     |  2 -
+>  arch/arm/mm/proc-arm940.S                     |  2 -
+>  arch/arm/mm/proc-arm946.S                     |  2 -
+>  arch/arm/mm/proc-arm9tdmi.S                   |  2 -
+>  arch/arm/mm/proc-fa526.S                      |  2 -
+>  arch/arm/mm/proc-feroceon.S                   |  2 -
+>  arch/arm/mm/proc-mohawk.S                     |  2 -
+>  arch/arm/mm/proc-sa110.S                      |  2 -
+>  arch/arm/mm/proc-sa1100.S                     |  2 -
+>  arch/arm/mm/proc-v6.S                         |  2 -
+>  arch/arm/mm/proc-v7-2level.S                  |  4 --
+>  arch/arm/mm/proc-v7-3level.S                  |  4 --
+>  arch/arm/mm/proc-v7.S                         |  2 -
+>  arch/arm/mm/proc-xsc3.S                       |  2 -
+>  arch/arm/mm/proc-xscale.S                     |  2 -
+>  arch/arm/plat-versatile/platsmp.c             |  6 +--
+>  arch/arm64/include/asm/arch_timer.h           |  2 +-
+>  arch/arm64/kernel/debug-monitors.c            |  6 +--
+>  arch/arm64/kernel/hw_breakpoint.c             |  4 +-
+>  arch/arm64/kernel/smp.c                       |  8 ++--
+>  arch/blackfin/kernel/perf_event.c             |  2 +-
+>  arch/blackfin/kernel/setup.c                  |  4 +-
+>  arch/blackfin/mach-bf561/smp.c                |  6 +--
+>  arch/blackfin/mach-common/cache-c.c           |  4 +-
+>  arch/blackfin/mach-common/ints-priority.c     |  2 +-
+>  arch/blackfin/mach-common/smp.c               |  8 ++--
+>  arch/cris/arch-v32/kernel/smp.c               |  2 +-
+>  arch/frv/kernel/setup.c                       |  2 +-
+>  arch/hexagon/kernel/setup.c                   |  2 +-
+>  arch/hexagon/kernel/smp.c                     |  4 +-
+>  arch/ia64/kernel/acpi.c                       |  4 +-
+>  arch/ia64/kernel/err_inject.c                 |  8 ++--
+>  arch/ia64/kernel/mca.c                        | 12 ++---
+>  arch/ia64/kernel/numa.c                       |  4 +-
+>  arch/ia64/kernel/palinfo.c                    |  4 +-
+>  arch/ia64/kernel/salinfo.c                    |  4 +-
+>  arch/ia64/kernel/setup.c                      | 10 ++---
+>  arch/ia64/kernel/smpboot.c                    |  8 ++--
+>  arch/ia64/kernel/topology.c                   | 18 ++++----
+>  arch/ia64/mm/contig.c                         |  3 +-
+>  arch/ia64/mm/discontig.c                      |  2 +-
+>  arch/ia64/mm/numa.c                           |  2 +-
+>  arch/ia64/sn/kernel/setup.c                   |  8 ++--
+>  arch/ia64/xen/hypervisor.c                    |  2 +-
+>  arch/m32r/kernel/smpboot.c                    |  2 +-
+>  arch/metag/kernel/perf/perf_event.c           |  6 +--
+>  arch/metag/kernel/smp.c                       | 16 +++----
+>  arch/metag/kernel/traps.c                     |  2 +-
+>  arch/openrisc/kernel/setup.c                  |  2 +-
+>  arch/parisc/kernel/firmware.c                 | 14 +++---
+>  arch/parisc/kernel/hardware.c                 |  2 +-
+>  arch/parisc/kernel/processor.c                |  6 +--
+>  arch/parisc/kernel/smp.c                      |  8 ++--
+>  arch/powerpc/include/asm/rtas.h               |  4 +-
+>  arch/powerpc/include/asm/vdso.h               |  2 +-
+>  arch/powerpc/kernel/cacheinfo.c               | 36 ++++++++-------
+>  arch/powerpc/kernel/rtas.c                    |  4 +-
+>  arch/powerpc/kernel/smp.c                     |  4 +-
+>  arch/powerpc/kernel/sysfs.c                   |  6 +--
+>  arch/powerpc/kernel/time.c                    |  1 -
+>  arch/powerpc/kernel/vdso.c                    |  2 +-
+>  arch/powerpc/mm/44x_mmu.c                     |  6 +--
+>  arch/powerpc/mm/hash_utils_64.c               |  2 +-
+>  arch/powerpc/mm/mmu_context_nohash.c          |  6 +--
+>  arch/powerpc/mm/numa.c                        |  7 ++-
+>  arch/powerpc/mm/tlb_nohash.c                  |  2 +-
+>  arch/powerpc/perf/core-book3s.c               |  4 +-
+>  arch/powerpc/platforms/44x/currituck.c        |  4 +-
+>  arch/powerpc/platforms/44x/iss4xx.c           |  4 +-
+>  arch/powerpc/platforms/85xx/smp.c             |  6 +--
+>  arch/powerpc/platforms/powermac/smp.c         |  2 +-
+>  arch/powerpc/platforms/powernv/smp.c          |  2 +-
+>  arch/s390/kernel/cache.c                      | 15 +++----
+>  arch/s390/kernel/perf_cpum_cf.c               |  4 +-
+>  arch/s390/kernel/processor.c                  |  2 +-
+>  arch/s390/kernel/smp.c                        | 17 ++++---
+>  arch/s390/kernel/sysinfo.c                    |  2 +-
+>  arch/s390/kernel/vtime.c                      |  6 +--
+>  arch/s390/mm/fault.c                          |  4 +-
+>  arch/score/mm/tlb-score.c                     |  2 +-
+>  arch/sh/kernel/cpu/init.c                     | 18 ++++----
+>  arch/sh/kernel/cpu/sh2/probe.c                |  2 +-
+>  arch/sh/kernel/cpu/sh2a/probe.c               |  2 +-
+>  arch/sh/kernel/cpu/sh3/probe.c                |  2 +-
+>  arch/sh/kernel/cpu/sh4/probe.c                |  2 +-
+>  arch/sh/kernel/cpu/sh4a/smp-shx3.c            |  6 +--
+>  arch/sh/kernel/cpu/sh5/probe.c                |  2 +-
+>  arch/sh/kernel/perf_event.c                   |  4 +-
+>  arch/sh/kernel/process.c                      |  2 +-
+>  arch/sh/kernel/setup.c                        |  2 +-
+>  arch/sh/kernel/smp.c                          |  8 ++--
+>  arch/sh/kernel/traps_32.c                     |  2 +-
+>  arch/sh/kernel/traps_64.c                     |  2 +-
+>  arch/sh/mm/tlb-sh5.c                          |  2 +-
+>  arch/sparc/kernel/ds.c                        | 11 ++---
+>  arch/sparc/kernel/entry.h                     |  2 +-
+>  arch/sparc/kernel/hvtramp.S                   |  1 -
+>  arch/sparc/kernel/irq_64.c                    |  5 ++-
+>  arch/sparc/kernel/leon_smp.c                  | 10 ++---
+>  arch/sparc/kernel/mdesc.c                     | 34 +++++++-------
+>  arch/sparc/kernel/smp_32.c                    | 20 ++++-----
+>  arch/sparc/kernel/smp_64.c                    |  9 ++--
+>  arch/sparc/kernel/sun4d_smp.c                 |  6 +--
+>  arch/sparc/kernel/sun4m_smp.c                 |  6 +--
+>  arch/sparc/kernel/sysfs.c                     |  4 +-
+>  arch/sparc/kernel/trampoline_32.S             |  3 --
+>  arch/sparc/kernel/trampoline_64.S             |  2 -
+>  arch/sparc/mm/init_64.c                       |  2 +-
+>  arch/sparc/mm/srmmu.c                         | 12 ++---
+>  arch/tile/kernel/irq.c                        |  2 +-
+>  arch/tile/kernel/messaging.c                  |  2 +-
+>  arch/tile/kernel/setup.c                      | 12 ++---
+>  arch/tile/kernel/smpboot.c                    |  8 ++--
+>  arch/tile/kernel/time.c                       |  2 +-
+>  arch/x86/include/asm/cpu.h                    |  2 +-
+>  arch/x86/include/asm/microcode.h              |  4 +-
+>  arch/x86/include/asm/microcode_intel.h        |  4 +-
+>  arch/x86/include/asm/mmconfig.h               |  4 +-
+>  arch/x86/include/asm/mpspec.h                 |  2 +-
+>  arch/x86/include/asm/numa.h                   |  6 +--
+>  arch/x86/include/asm/prom.h                   |  2 +-
+>  arch/x86/include/asm/smp.h                    |  2 +-
+>  arch/x86/kernel/acpi/boot.c                   |  6 +--
+>  arch/x86/kernel/apic/apic.c                   | 30 ++++++-------
+>  arch/x86/kernel/apic/apic_numachip.c          |  2 +-
+>  arch/x86/kernel/apic/es7000_32.c              |  2 +-
+>  arch/x86/kernel/apic/numaq_32.c               |  2 +-
+>  arch/x86/kernel/apic/x2apic_cluster.c         |  2 +-
+>  arch/x86/kernel/apic/x2apic_uv_x.c            | 14 +++---
+>  arch/x86/kernel/cpu/amd.c                     | 33 +++++++-------
+>  arch/x86/kernel/cpu/centaur.c                 | 26 +++++------
+>  arch/x86/kernel/cpu/common.c                  | 64 +++++++++++++--------------
+>  arch/x86/kernel/cpu/cyrix.c                   | 40 ++++++++---------
+>  arch/x86/kernel/cpu/hypervisor.c              |  2 +-
+>  arch/x86/kernel/cpu/intel.c                   | 30 ++++++-------
+>  arch/x86/kernel/cpu/intel_cacheinfo.c         | 55 +++++++++++------------
+>  arch/x86/kernel/cpu/mcheck/mce.c              | 23 +++++-----
+>  arch/x86/kernel/cpu/mcheck/mce_amd.c          | 14 +++---
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c      |  9 ++--
+>  arch/x86/kernel/cpu/perf_event.c              |  2 +-
+>  arch/x86/kernel/cpu/perf_event_amd_ibs.c      |  2 +-
+>  arch/x86/kernel/cpu/perf_event_amd_uncore.c   | 31 +++++++------
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 20 ++++-----
+>  arch/x86/kernel/cpu/rdrand.c                  |  2 +-
+>  arch/x86/kernel/cpu/scattered.c               |  4 +-
+>  arch/x86/kernel/cpu/topology.c                |  2 +-
+>  arch/x86/kernel/cpu/transmeta.c               |  6 +--
+>  arch/x86/kernel/cpu/umc.c                     |  2 +-
+>  arch/x86/kernel/cpu/vmware.c                  |  2 +-
+>  arch/x86/kernel/cpuid.c                       |  7 ++-
+>  arch/x86/kernel/devicetree.c                  |  2 +-
+>  arch/x86/kernel/head_32.S                     |  1 -
+>  arch/x86/kernel/i387.c                        |  8 ++--
+>  arch/x86/kernel/irq_32.c                      |  2 +-
+>  arch/x86/kernel/kvm.c                         | 10 ++---
+>  arch/x86/kernel/kvmclock.c                    |  2 +-
+>  arch/x86/kernel/microcode_core.c              |  2 +-
+>  arch/x86/kernel/microcode_core_early.c        |  6 +--
+>  arch/x86/kernel/microcode_intel_early.c       | 26 +++++------
+>  arch/x86/kernel/mmconf-fam10h_64.c            | 12 ++---
+>  arch/x86/kernel/msr.c                         |  6 +--
+>  arch/x86/kernel/process.c                     |  2 +-
+>  arch/x86/kernel/setup.c                       |  2 +-
+>  arch/x86/kernel/smpboot.c                     | 28 ++++++------
+>  arch/x86/kernel/tboot.c                       |  6 +--
+>  arch/x86/kernel/tsc.c                         |  4 +-
+>  arch/x86/kernel/tsc_sync.c                    | 18 ++++----
+>  arch/x86/kernel/vsyscall_64.c                 |  6 +--
+>  arch/x86/kernel/x86_init.c                    |  4 +-
+>  arch/x86/kernel/xsave.c                       |  4 +-
+>  arch/x86/mm/mmio-mod.c                        |  4 +-
+>  arch/x86/mm/numa.c                            | 12 ++---
+>  arch/x86/mm/numa_emulation.c                  | 12 ++---
+>  arch/x86/mm/setup_nx.c                        |  4 +-
+>  arch/x86/pci/amd_bus.c                        |  8 ++--
+>  arch/x86/platform/ce4100/ce4100.c             |  2 +-
+>  arch/x86/platform/mrst/mrst.c                 |  4 +-
+>  arch/x86/xen/enlighten.c                      |  6 +--
+>  arch/x86/xen/setup.c                          |  6 +--
+>  arch/x86/xen/smp.c                            | 12 ++---
+>  arch/x86/xen/spinlock.c                       |  2 +-
+>  arch/x86/xen/xen-ops.h                        |  2 +-
+>  arch/xtensa/kernel/time.c                     |  2 +-
+>  block/blk-iopoll.c                            |  6 +--
+>  block/blk-softirq.c                           |  6 +--
+>  drivers/acpi/acpi_processor.c                 |  2 +-
+>  drivers/acpi/processor_core.c                 |  8 ++--
+>  drivers/acpi/processor_driver.c               |  8 ++--
+>  drivers/acpi/processor_idle.c                 |  6 +--
+>  drivers/base/cpu.c                            |  2 +-
+>  drivers/base/topology.c                       | 10 ++---
+>  drivers/clocksource/arm_arch_timer.c          |  8 ++--
+>  drivers/clocksource/exynos_mct.c              |  4 +-
+>  drivers/clocksource/metag_generic.c           |  6 +--
+>  drivers/clocksource/time-armada-370-xp.c      |  4 +-
+>  drivers/clocksource/timer-marco.c             |  4 +-
+>  drivers/cpufreq/cpufreq.c                     |  4 +-
+>  drivers/cpufreq/cpufreq_stats.c               |  4 +-
+>  drivers/cpufreq/dbx500-cpufreq.c              |  2 +-
+>  drivers/cpufreq/intel_pstate.c                |  4 +-
+>  drivers/cpufreq/longhaul.c                    |  6 +--
+>  drivers/cpufreq/longhaul.h                    | 26 +++++------
+>  drivers/cpufreq/longrun.c                     |  8 ++--
+>  drivers/cpufreq/omap-cpufreq.c                |  2 +-
+>  drivers/cpufreq/powernow-k7.c                 |  8 ++--
+>  drivers/cpufreq/powernow-k8.c                 |  6 +--
+>  drivers/hwmon/coretemp.c                      | 39 ++++++++--------
+>  drivers/hwmon/via-cputemp.c                   |  8 ++--
+>  drivers/irqchip/irq-gic.c                     |  8 ++--
+>  drivers/oprofile/timer_int.c                  |  4 +-
+>  drivers/xen/xen-acpi-cpuhotplug.c             |  2 +-
+>  include/asm-generic/vmlinux.lds.h             | 12 -----
+>  include/linux/cpu.h                           |  2 +-
+>  include/linux/init.h                          | 19 ++++----
+>  include/linux/perf_event.h                    |  2 +-
+>  init/calibrate.c                              | 13 +++---
+>  kernel/cpu.c                                  |  6 +--
+>  kernel/events/core.c                          |  4 +-
+>  kernel/fork.c                                 |  2 +-
+>  kernel/hrtimer.c                              |  6 +--
+>  kernel/printk.c                               |  2 +-
+>  kernel/profile.c                              |  2 +-
+>  kernel/rcutorture.c                           |  6 +--
+>  kernel/rcutree.c                              |  6 +--
+>  kernel/rcutree.h                              |  4 +-
+>  kernel/rcutree_plugin.h                       |  6 +--
+>  kernel/relay.c                                |  2 +-
+>  kernel/sched/core.c                           | 12 ++---
+>  kernel/sched/fair.c                           |  2 +-
+>  kernel/smp.c                                  |  2 +-
+>  kernel/smpboot.c                              |  2 +-
+>  kernel/softirq.c                              |  8 ++--
+>  kernel/time/tick-sched.c                      |  2 +-
+>  kernel/timer.c                                | 10 ++---
+>  kernel/workqueue.c                            |  4 +-
+>  lib/Kconfig.debug                             |  2 +-
+>  lib/earlycpio.c                               |  2 +-
+>  lib/percpu_counter.c                          |  2 +-
+>  mm/memcontrol.c                               |  2 +-
+>  mm/page-writeback.c                           |  4 +-
+>  mm/slab.c                                     | 10 ++---
+>  mm/slub.c                                     |  4 +-
+>  mm/vmstat.c                                   |  6 +--
+>  net/core/flow.c                               |  4 +-
+>  net/iucv/iucv.c                               |  2 +-
+>  scripts/mod/modpost.c                         | 52 ++++------------------
+>  307 files changed, 896 insertions(+), 1037 deletions(-)
+> 
