@@ -1,93 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab3FXLeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 07:34:25 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48958 "EHLO hydra.sisk.pl"
+	id S1752723Ab3FXLew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 07:34:52 -0400
+Received: from mail.us.es ([193.147.175.20]:59700 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab3FXLeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 07:34:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        dave.martin@arm.com
-Subject: Re: [PATCH 13/13] cpufreq: make sure frequency transitions are serialized
-Date: Mon, 24 Jun 2013 13:43:48 +0200
-Message-ID: <1894928.On8nI7rMdZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <0bebf56a27f799a282cc00d0c17c187f9941f122.1371630975.git.viresh.kumar@linaro.org>
-References: <cover.1371630975.git.viresh.kumar@linaro.org> <0bebf56a27f799a282cc00d0c17c187f9941f122.1371630975.git.viresh.kumar@linaro.org>
+	id S1751122Ab3FXLev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 07:34:51 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.8/17405. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-97.8/7.5):. 
+ Processed in 1.829385 secs); 24 Jun 2013 11:34:49 -0000
+X-Envelope-From: pneira@us.es
+Date: Mon, 24 Jun 2013 13:34:41 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: George Spelvin <linux@horizon.com>, bp@alien8.de, kaber@trash.net,
+        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org
+Subject: Re: v3.10-rc7 oops soon after boot
+Message-ID: <20130624113441.GA2583@localhost>
+References: <20130624094145.2576.qmail@science.horizon.com>
+ <51C816C8.4080709@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/mixed; boundary="mP3DRpeJDSE+ciuQ"
+Content-Disposition: inline
+In-Reply-To: <51C816C8.4080709@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 19, 2013 02:23:07 PM Viresh Kumar wrote:
-> Whenever we are changing frequency of a cpu, we are calling PRECHANGE and
-> POSTCHANGE notifiers. They must be serialized. i.e. PRECHANGE or POSTCHANGE
-> shouldn't be called twice contiguously.
-> 
-> This can happen due to bugs in users of __cpufreq_driver_target() or actual
-> cpufreq drivers who are sending these notifiers.
-> 
-> This patch adds some protection against this. Now, we keep track of the last
-> transaction and see if something went wrong.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 2d53f47..92cb8b3 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -107,6 +107,9 @@ static void handle_update(struct work_struct *work);
->  static BLOCKING_NOTIFIER_HEAD(cpufreq_policy_notifier_list);
->  static struct srcu_notifier_head cpufreq_transition_notifier_list;
->  
-> +/* Tracks status of transition */
-> +static int transition_ongoing;
-> +
->  static bool init_cpufreq_transition_notifier_list_called;
->  static int __init init_cpufreq_transition_notifier_list(void)
->  {
-> @@ -264,6 +267,8 @@ void __cpufreq_notify_transition(struct cpufreq_policy *policy,
->  	switch (state) {
->  
->  	case CPUFREQ_PRECHANGE:
-> +		WARN_ON(transition_ongoing++);
-> +
->  		/* detect if the driver reported a value as "old frequency"
->  		 * which is not equal to what the cpufreq core thinks is
->  		 * "old frequency".
-> @@ -283,6 +288,8 @@ void __cpufreq_notify_transition(struct cpufreq_policy *policy,
->  		break;
->  
->  	case CPUFREQ_POSTCHANGE:
-> +		WARN_ON(!transition_ongoing--);
 
-Shouldn't we try to avoid going into the negative range here?
+--mP3DRpeJDSE+ciuQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> +
->  		adjust_jiffies(CPUFREQ_POSTCHANGE, freqs);
->  		pr_debug("FREQ: %lu - CPU: %lu", (unsigned long)freqs->new,
->  			(unsigned long)freqs->cpu);
-> @@ -1458,6 +1465,8 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
->  
->  	if (cpufreq_disabled())
->  		return -ENODEV;
-> +	if (transition_ongoing)
-> +		return -EBUSY;
->  
->  	/* Make sure that target_freq is within supported range */
->  	if (target_freq > policy->max)
+On Mon, Jun 24, 2013 at 05:52:08PM +0800, Gao feng wrote:
+> On 06/24/2013 05:41 PM, George Spelvin wrote:
+> >> Please try the patch below,
+> >> I think this bug is introduced by me :(
+> >>
+> >> Thanks!
+> > 
+> > Well, you changed it, but it still crashes.
+> > 
+> > It's now at del_timer+0x9/0x58, with the code being:
 > 
+> This one should work.
+> 
+> Thanks for your quickly reply.
 
-Rafael
+I managed to crash it using a group != 1 (default) and enabling
+batching:
 
+iptables -I INPUT -j ULOG --ulog-nlgroup 2 --ulog-qthresh 50
+
+It seems ulog->nlgroup[i] is always left unset.
+
+I have mangled your patch, find it attached.
+
+--mP3DRpeJDSE+ciuQ
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-netfilter-ipt_ULOG-fix-incorrect-setting-of-ulog-tim.patch"
+
+>From 79da8ea854c06ca9320decbb2f9d2e8d25b2f7e5 Mon Sep 17 00:00:00 2001
+From: Gao feng <gaofeng@cn.fujitsu.com>
+Date: Mon, 24 Jun 2013 17:04:02 +0800
+Subject: [PATCH] netfilter: ipt_ULOG: fix incorrect setting of ulog timer
+
+The parameter of setup_timer should be &ulog->nlgroup[i].
+the incorrect parameter will cause kernel panic in
+ulog_timer.
+
+Bug introducted in commit 355430671ad93546b34b4e91bdf720f3a704efa4
+"netfilter: ipt_ULOG: add net namespace support for ipt_ULOG"
+
+ebt_ULOG doesn't have this problem.
+
+Reported-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ net/ipv4/netfilter/ipt_ULOG.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/net/ipv4/netfilter/ipt_ULOG.c b/net/ipv4/netfilter/ipt_ULOG.c
+index ff4b781..32b0e97 100644
+--- a/net/ipv4/netfilter/ipt_ULOG.c
++++ b/net/ipv4/netfilter/ipt_ULOG.c
+@@ -125,15 +125,16 @@ static void ulog_send(struct ulog_net *ulog, unsigned int nlgroupnum)
+ /* timer function to flush queue in flushtimeout time */
+ static void ulog_timer(unsigned long data)
+ {
++	unsigned int groupnum = *((unsigned int *)data);
+ 	struct ulog_net *ulog = container_of((void *)data,
+ 					     struct ulog_net,
+-					     nlgroup[*(unsigned int *)data]);
++					     nlgroup[groupnum]);
+ 	pr_debug("timer function called, calling ulog_send\n");
+ 
+ 	/* lock to protect against somebody modifying our structure
+ 	 * from ipt_ulog_target at the same time */
+ 	spin_lock_bh(&ulog->lock);
+-	ulog_send(ulog, data);
++	ulog_send(ulog, groupnum);
+ 	spin_unlock_bh(&ulog->lock);
+ }
+ 
+@@ -407,8 +408,11 @@ static int __net_init ulog_tg_net_init(struct net *net)
+ 
+ 	spin_lock_init(&ulog->lock);
+ 	/* initialize ulog_buffers */
+-	for (i = 0; i < ULOG_MAXNLGROUPS; i++)
+-		setup_timer(&ulog->ulog_buffers[i].timer, ulog_timer, i);
++	for (i = 0; i < ULOG_MAXNLGROUPS; i++) {
++		ulog->nlgroup[i] = i;
++		setup_timer(&ulog->ulog_buffers[i].timer, ulog_timer,
++			    (unsigned long)&ulog->nlgroup[i]);
++	}
+ 
+ 	ulog->nflognl = netlink_kernel_create(net, NETLINK_NFLOG, &cfg);
+ 	if (!ulog->nflognl)
+-- 
+1.7.10.4
+
+
+--mP3DRpeJDSE+ciuQ--
