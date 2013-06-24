@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab3FXIYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:24:53 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:59739 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548Ab3FXIYv (ORCPT
+	id S1753126Ab3FXI1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:27:11 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:45654 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab3FXI1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:24:51 -0400
-Message-ID: <51C8024F.7070502@suse.cz>
-Date: Mon, 24 Jun 2013 10:24:47 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Mon, 24 Jun 2013 04:27:09 -0400
+Message-ID: <51C802DA.4080202@mentor.com>
+Date: Mon, 24 Jun 2013 09:27:06 +0100
+From: Dean Jenkins <Dean_Jenkins@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130523 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: tingwei liu <tingw.liu@gmail.com>
-CC: linux-kernel@vger.kernel.org, Linus Torvalds <linus971@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re:
-References: <CA+qZnSSj+UCV9LUddS8qArnG5e8Q4wyC98B=awJ9TBbY+J6nBw@mail.gmail.com> <51C2FABA.5050207@suse.cz> <CA+qZnSQNrp3C=6_pjVMVGxK1rH9wOE1DerzQjT3v0njZvtz8ZA@mail.gmail.com>
-In-Reply-To: <CA+qZnSQNrp3C=6_pjVMVGxK1rH9wOE1DerzQjT3v0njZvtz8ZA@mail.gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+Subject: SLIP: Is there a maintainer for drivers/net/slip/slip.c ?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Jun 2013 08:27:07.0769 (UTC) FILETIME=[9D699690:01CE70B4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 03:43 AM, tingwei liu wrote:
-> The problem has been fixed. It is a known bug has fixed by Eric Dumazet.
-> 
-> commit dfd25ffffc132c00070eed64200e8950da5d7e9d
-> Author: Eric Dumazet <eric.dumazet@gmail.com>
-> Date:   Sat Mar 10 09:20:21 2012 +0000
+Hi,
 
-Which is a part of 3.0.26, pushed into the SLE kernel in Apr 2012...
+Using the Linux v3.9 tag, I note that
 
--- 
-js
-suse labs
+./scripts/get_maintainer.pl -f drivers/net/slip/slip.c
+netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+linux-kernel@vger.kernel.org (open list)
+
+There seems to be no maintainer for drivers/net/slip/slip.c, is that true ?
+
+I am asking because sl_encaps() and slip_write_wakeup() do not handle 
+error codes from tty->ops->write() and a recursive stack overflow crash 
+can occur if the tty->ops->write() fails to write all the characters. I 
+have some patches to fix this but would like some feedback on an 
+appropriate solution.
+
+Thanks,
+
+Dean Jenkins
+Mentor Graphics
