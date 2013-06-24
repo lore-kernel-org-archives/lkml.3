@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab3FXWkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 18:40:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42903 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751767Ab3FXWkh (ORCPT
+	id S1751825Ab3FXWlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 18:41:39 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:51673 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab3FXWlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 18:40:37 -0400
-X-Sasl-enc: L3oDM0+Cl+zFKYUDBHAMFfVjrr/Kd2Gl/iYXaHMhIVZD 1372113636
-Date: Mon, 24 Jun 2013 15:40:35 -0700
-From: Greg KH <greg@kroah.com>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-ID: <20130624224035.GD24099@kroah.com>
-References: <20130619181031.8b53acc44466ba70a47e1fcd@canb.auug.org.au>
- <CA+a=Yy4z-ufq2GEtzC17TBbrNGWv6ZUzuVe=VLBH48Df=3HZxA@mail.gmail.com>
+	Mon, 24 Jun 2013 18:41:37 -0400
+Date: Mon, 24 Jun 2013 15:41:31 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Dirk Griesbach <spamthis@freenet.de>
+Subject: Re: [PATCH] libata-acpi: add back ACPI based hotplug functionality
+Message-ID: <20130624224131.GM1918@mtj.dyndns.org>
+References: <1715067.uK3nZ8ehWr@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+a=Yy4z-ufq2GEtzC17TBbrNGWv6ZUzuVe=VLBH48Df=3HZxA@mail.gmail.com>
+In-Reply-To: <1715067.uK3nZ8ehWr@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 05:26:57PM +0800, Peng Tao wrote:
-> On Wed, Jun 19, 2013 at 4:10 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi all,
-> >
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
-> >
-> > In file included from drivers/staging/lustre/include/linux/libcfs/libcfs.h:203:0,
-> >                  from drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.h:67,
-> >                  from drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c:41:
-> > drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c: In function 'kiblnd_dev_need_failover':
-> > drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:215:16: error: implicit declaration of function 'NIPQUAD' [-Werror=implicit-function-declaration]
-> >   static struct libcfs_debug_msg_data msgdata;      \
-> >                 ^
-> Thanks for reporting!
+Hello,
+
+On Mon, Jun 24, 2013 at 02:43:27PM +0200, Rafael J. Wysocki wrote:
+> From: Aaron Lu <aaron.lu@intel.com>
 > 
-> It is a bug in Lustre code that it is missing NIPQUAD definition on
-> Linux platform. I will send fix later.
+> Commit 30dcf76acc69 "libata: migrate ACPI code over to new bindings"
+> mistakenly dropped the code to register hotplug notificaion handler
+> for ATA port/devices, causing regression for people using ATA bay,
+> as kernel bug #59871 shows.
+> 
+> Fix this by adding back the hotplug notification handler registration
+> code.  Since this code has to be run once and notification needs to
+> be installed on every ATA port/devices handle no matter if there is
+> actual device attached, we can't do this in binding time for ATA
+> device ACPI handle, as the binding only occurs when a SCSI device is
+> created, i.e. there is device attached.  So introduce the
+> ata_acpi_hotplug_init() function to loop scan all ATA ACPI handles
+> and if it is available, install the notificaion handler for it during
+> ATA init time.
+> 
+> With the ATA ACPI handle binding to SCSI device tree, it is possible
+> now that when the SCSI hotplug work removes the SCSI device, the ACPI
+> unbind function will find that the corresponding ACPI device has
+> already been deleted by dock driver, causing a scaring message like:
+> [  128.263966] scsi 4:0:0:0: Oops, 'acpi_handle' corrupt
+> Fix this by waiting for SCSI hotplug task finish in our notificaion
+> handler, so that the removal of ACPI device done in ACPI unbind
+> function triggered by the removal of SCSI device is run earlier when
+> ACPI device is still available.
+> 
+> [rjw: Rebased]
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=59871
+> Reported-bisected-and-tested-by: Dirk Griesbach <spamthis@freenet.de>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 
-We are running out of time, my tree is pretty much closed for 3.11 now,
-should I just disable the build of this module for 3.11?
+Acked-by: Tejun Heo <tj@kernel.org>
 
-thanks,
+> May I add the $subject patch to that series and push along with it?
 
-greg k-h
+Yes, please.
+
+Thanks a lot!
+
+-- 
+tejun
