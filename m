@@ -1,117 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3FXKvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:51:16 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:38387 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab3FXKvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:51:12 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH V7 01/30] thermal: exynos: Moving exynos thermal files into samsung directory
-Date: Mon, 24 Jun 2013 16:20:22 +0530
-Message-Id: <1372071051-3167-2-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
-References: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
+	id S1752643Ab3FXLAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 07:00:36 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48932 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab3FXKvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 06:51:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show accumulated data of CPUs
+Date: Mon, 24 Jun 2013 13:00:41 +0200
+Message-ID: <4710866.fhlicB7Bsa@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohponJ7WZ9pc20653gj_bPEAC_ZCA43XgZVPmNBcBs7pLFAQ@mail.gmail.com>
+References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com> <3966081.PYqoVoQ0Wq@vostro.rjw.lan> <CAKohponJ7WZ9pc20653gj_bPEAC_ZCA43XgZVPmNBcBs7pLFAQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This movement of files is done for easy maintenance and adding more
-new sensor's support for exynos platform easily . This will also help in
-bifurcating exynos common, sensor driver and sensor data related parts.
+On Monday, June 24, 2013 04:03:15 PM Viresh Kumar wrote:
+> On 24 June 2013 15:50, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > My impression was that that new interface wouldn't be useful on all platforms
+> > supported by cpufreq.  If that's the case, I'd rather not make changes in the
+> > core code that are needed only to implement that new interface, at least to
+> > start with.
+> 
+> Every platform might not have userspace software that would do some
+> actions based on this. But, these are nice and useful stats to have.
+> 
+> They tell you a lot about how the hardware/governor/policies are
+> behaving with load. And so will eventually help getting performance based
+> on governor tunables for your platform. That's why I asked to put this in
+> core as this should be pretty much useful.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
- drivers/thermal/Kconfig                        |   13 +++++--------
- drivers/thermal/Makefile                       |    2 +-
- drivers/thermal/samsung/Kconfig                |    9 +++++++++
- drivers/thermal/samsung/Makefile               |    4 ++++
- drivers/thermal/{ => samsung}/exynos_thermal.c |    0
- 5 files changed, 19 insertions(+), 9 deletions(-)
- create mode 100644 drivers/thermal/samsung/Kconfig
- create mode 100644 drivers/thermal/samsung/Makefile
- rename drivers/thermal/{ => samsung}/exynos_thermal.c (100%)
+OK, let's see how the code will look like.
 
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index e988c81..34fa688 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -114,14 +114,6 @@ config KIRKWOOD_THERMAL
- 	  Support for the Kirkwood thermal sensor driver into the Linux thermal
- 	  framework. Only kirkwood 88F6282 and 88F6283 have this sensor.
- 
--config EXYNOS_THERMAL
--	tristate "Temperature sensor on Samsung EXYNOS"
--	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5)
--	depends on CPU_THERMAL
--	help
--	  If you say yes here you get support for TMU (Thermal Management
--	  Unit) on SAMSUNG EXYNOS series of SoC.
--
- config DOVE_THERMAL
- 	tristate "Temperature sensor on Marvell Dove SoCs"
- 	depends on ARCH_DOVE
-@@ -184,4 +176,9 @@ menu "Texas Instruments thermal drivers"
- source "drivers/thermal/ti-soc-thermal/Kconfig"
- endmenu
- 
-+menu "Samsung thermal drivers"
-+depends on PLAT_SAMSUNG
-+source "drivers/thermal/samsung/Kconfig"
-+endmenu
-+
- endif
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index 67184a2..1f27ada 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -17,7 +17,7 @@ thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
- obj-$(CONFIG_SPEAR_THERMAL)	+= spear_thermal.o
- obj-$(CONFIG_RCAR_THERMAL)	+= rcar_thermal.o
- obj-$(CONFIG_KIRKWOOD_THERMAL)  += kirkwood_thermal.o
--obj-$(CONFIG_EXYNOS_THERMAL)	+= exynos_thermal.o
-+obj-y				+= samsung/
- obj-$(CONFIG_DOVE_THERMAL)  	+= dove_thermal.o
- obj-$(CONFIG_DB8500_THERMAL)	+= db8500_thermal.o
- obj-$(CONFIG_ARMADA_THERMAL)	+= armada_thermal.o
-diff --git a/drivers/thermal/samsung/Kconfig b/drivers/thermal/samsung/Kconfig
-new file mode 100644
-index 0000000..2d3d9dc
---- /dev/null
-+++ b/drivers/thermal/samsung/Kconfig
-@@ -0,0 +1,9 @@
-+config EXYNOS_THERMAL
-+	tristate "Temperature sensor on Samsung EXYNOS"
-+	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5)
-+	depends on CPU_THERMAL
-+	help
-+	  If you say yes here you get support for TMU (Thermal Management
-+	  Unit) on SAMSUNG EXYNOS series of SoC. This helps in registering
-+	  the exynos thermal driver with the core thermal layer and cpu
-+	  cooling API's.
-diff --git a/drivers/thermal/samsung/Makefile b/drivers/thermal/samsung/Makefile
-new file mode 100644
-index 0000000..1fe6d93
---- /dev/null
-+++ b/drivers/thermal/samsung/Makefile
-@@ -0,0 +1,4 @@
-+#
-+# Samsung thermal specific Makefile
-+#
-+obj-$(CONFIG_EXYNOS_THERMAL)	+= exynos_thermal.o
-diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/samsung/exynos_thermal.c
-similarity index 100%
-rename from drivers/thermal/exynos_thermal.c
-rename to drivers/thermal/samsung/exynos_thermal.c
+Chanwoo, please prepare a v4 with the changes suggested by Viresh.
+
+Thanks,
+Rafael
+
+
 -- 
-1.7.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
