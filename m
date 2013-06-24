@@ -1,87 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab3FXHsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 03:48:38 -0400
-Received: from shutemov.name ([204.155.152.216]:38140 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753081Ab3FXHsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 03:48:37 -0400
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH] perf: fix build with perl 5.18
-Date: Mon, 24 Jun 2013 11:43:14 +0300
-Message-Id: <1372063394-20126-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753042Ab3FXHwC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 03:52:02 -0400
+Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:4172 "EHLO
+	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab3FXHwA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 03:52:00 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH RFC v3] media: OF: add video sync endpoint property
+Date: Mon, 24 Jun 2013 09:51:07 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10.0-rc6-tschai; KDE/4.9.5; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+References: <1371913383-25088-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1371913383-25088-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306240951.07426.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Hi Prabhakar,
 
-perl.h from new Perl release doesn't like -Wundef and -Wswitch-default:
+On Sat June 22 2013 17:03:03 Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> 
+> This patch adds video sync properties as part of endpoint
+> properties and also support to parse them in the parser.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
 
-/usr/lib/perl5/core_perl/CORE/perl.h:548:5: error: "SILENT_NO_TAINT_SUPPORT" is not defined [-Werror=undef]
- #if SILENT_NO_TAINT_SUPPORT && !defined(NO_TAINT_SUPPORT)
-     ^
-/usr/lib/perl5/core_perl/CORE/perl.h:556:5: error: "NO_TAINT_SUPPORT" is not defined [-Werror=undef]
- #if NO_TAINT_SUPPORT
-     ^
-In file included from /usr/lib/perl5/core_perl/CORE/perl.h:3471:0,
-                 from util/scripting-engines/trace-event-perl.c:30:
-/usr/lib/perl5/core_perl/CORE/sv.h:1455:5: error: "NO_TAINT_SUPPORT" is not defined [-Werror=undef]
- #if NO_TAINT_SUPPORT
-     ^
-In file included from /usr/lib/perl5/core_perl/CORE/perl.h:3472:0,
-                 from util/scripting-engines/trace-event-perl.c:30:
-/usr/lib/perl5/core_perl/CORE/regexp.h:436:5: error: "NO_TAINT_SUPPORT" is not defined [-Werror=undef]
- #if NO_TAINT_SUPPORT
-     ^
-In file included from /usr/lib/perl5/core_perl/CORE/hv.h:592:0,
-                 from /usr/lib/perl5/core_perl/CORE/perl.h:3480,
-                 from util/scripting-engines/trace-event-perl.c:30:
-/usr/lib/perl5/core_perl/CORE/hv_func.h: In function ‘S_perl_hash_siphash_2_4’:
-/usr/lib/perl5/core_perl/CORE/hv_func.h:222:3: error: switch missing default case [-Werror=switch-default]
-   switch( left )
-   ^
-/usr/lib/perl5/core_perl/CORE/hv_func.h: In function ‘S_perl_hash_superfast’:
-/usr/lib/perl5/core_perl/CORE/hv_func.h:274:5: error: switch missing default case [-Werror=switch-default]
-     switch (rem) { \
-     ^
-/usr/lib/perl5/core_perl/CORE/hv_func.h: In function ‘S_perl_hash_murmur3’:
-/usr/lib/perl5/core_perl/CORE/hv_func.h:398:5: error: switch missing default case [-Werror=switch-default]
-     switch(bytes_in_carry) { /* how many bytes in carry */
-     ^
+FYI: using my private email when CC-ing me generally works better.
+I often skip v4l2-related emails to my work address since I assume those
+have either been CC-ed to my private email and/or linux-media.
 
-Let's disable the warnings for code which uses perl.h.
+I wondered why I never saw RFC v1/2, now I know :-)
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- tools/perf/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  This patch has 10 warnings for line over 80 characters
+>  for which I think can be ignored.
+>  
+>  RFC v2 https://patchwork.kernel.org/patch/2578091/
+>  RFC V1 https://patchwork.kernel.org/patch/2572341/
+>  Changes for v3:
+>  1: Fixed review comments pointed by Laurent and Sylwester.
+>  
+>  .../devicetree/bindings/media/video-interfaces.txt |    1 +
+>  drivers/media/v4l2-core/v4l2-of.c                  |   20 ++++++++++++++++++
+>  include/dt-bindings/media/video-interfaces.h       |   17 +++++++++++++++
+>  include/media/v4l2-mediabus.h                      |   22 +++++++++++---------
+>  4 files changed, 50 insertions(+), 10 deletions(-)
+>  create mode 100644 include/dt-bindings/media/video-interfaces.h
+> 
+> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
+> index e022d2d..2081278 100644
+> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
+> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
+> @@ -101,6 +101,7 @@ Optional endpoint properties
+>    array contains only one entry.
+>  - clock-noncontinuous: a boolean property to allow MIPI CSI-2 non-continuous
+>    clock mode.
+> +- video-sync: property indicating to sync the video on a signal in RGB.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b0f164b..3230f9e 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -1035,10 +1035,10 @@ $(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
- 
- $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default $<
- 
- $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o: scripts/perl/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs -Wno-undef -Wno-switch-default $<
- 
- $(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/trace-event-python.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
--- 
-1.8.3.1
+Please document what the various syncs actually mean.
 
+>  
+>  
+>  Example
+> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
+> index aa59639..1a54530 100644
+> --- a/drivers/media/v4l2-core/v4l2-of.c
+> +++ b/drivers/media/v4l2-core/v4l2-of.c
+> @@ -100,6 +100,26 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
+>  	if (!of_property_read_u32(node, "data-shift", &v))
+>  		bus->data_shift = v;
+>  
+> +	if (!of_property_read_u32(node, "video-sync", &v)) {
+> +		switch (v) {
+> +		case V4L2_MBUS_VIDEO_SEPARATE_SYNC:
+> +			flags |= V4L2_MBUS_VIDEO_SEPARATE_SYNC;
+> +			break;
+> +		case V4L2_MBUS_VIDEO_COMPOSITE_SYNC:
+> +			flags |= V4L2_MBUS_VIDEO_COMPOSITE_SYNC;
+> +			break;
+> +		case V4L2_MBUS_VIDEO_SYNC_ON_COMPOSITE:
+> +			flags |= V4L2_MBUS_VIDEO_SYNC_ON_COMPOSITE;
+> +			break;
+> +		case V4L2_MBUS_VIDEO_SYNC_ON_GREEN:
+> +			flags |= V4L2_MBUS_VIDEO_SYNC_ON_GREEN;
+> +			break;
+> +		case V4L2_MBUS_VIDEO_SYNC_ON_LUMINANCE:
+> +			flags |= V4L2_MBUS_VIDEO_SYNC_ON_LUMINANCE;
+> +			break;
+> +		}
+> +	}
+> +
+>  	bus->flags = flags;
+>  
+>  }
+> diff --git a/include/dt-bindings/media/video-interfaces.h b/include/dt-bindings/media/video-interfaces.h
+> new file mode 100644
+> index 0000000..1a083dd
+> --- /dev/null
+> +++ b/include/dt-bindings/media/video-interfaces.h
+> @@ -0,0 +1,17 @@
+> +/*
+> + * This header provides constants for video interface.
+> + *
+> + */
+> +
+> +#ifndef _DT_BINDINGS_VIDEO_INTERFACES_H
+> +#define _DT_BINDINGS_VIDEO_INTERFACES_H
+> +
+> +#define V4L2_MBUS_VIDEO_SEPARATE_SYNC		(1 << 2)
+> +#define V4L2_MBUS_VIDEO_COMPOSITE_SYNC		(1 << 3)
+> +#define V4L2_MBUS_VIDEO_SYNC_ON_COMPOSITE	(1 << 4)
+
+What on earth is the difference between "COMPOSITE_SYNC" and "SYNC_ON_COMPOSITE"?!
+
+> +#define V4L2_MBUS_VIDEO_SYNC_ON_GREEN		(1 << 5)
+> +#define V4L2_MBUS_VIDEO_SYNC_ON_LUMINANCE	(1 << 6)
+> +
+> +#define V4L2_MBUS_VIDEO_INTERFACES_END		6
+> +
+> +#endif
+
+Why would this be here? It isn't Device Tree specific, the same defines can
+be used without DT as well.
+
+> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
+> index 83ae07e..a4676dd 100644
+> --- a/include/media/v4l2-mediabus.h
+> +++ b/include/media/v4l2-mediabus.h
+> @@ -11,6 +11,8 @@
+>  #ifndef V4L2_MEDIABUS_H
+>  #define V4L2_MEDIABUS_H
+>  
+> +#include <dt-bindings/media/video-interfaces.h>
+> +
+>  #include <linux/v4l2-mediabus.h>
+>  
+>  /* Parallel flags */
+> @@ -28,18 +30,18 @@
+>   * V4L2_MBUS_[HV]SYNC* flags should be also used for specifying
+>   * configuration of hardware that uses [HV]REF signals
+>   */
+> -#define V4L2_MBUS_HSYNC_ACTIVE_HIGH		(1 << 2)
+> -#define V4L2_MBUS_HSYNC_ACTIVE_LOW		(1 << 3)
+> -#define V4L2_MBUS_VSYNC_ACTIVE_HIGH		(1 << 4)
+> -#define V4L2_MBUS_VSYNC_ACTIVE_LOW		(1 << 5)
+> -#define V4L2_MBUS_PCLK_SAMPLE_RISING		(1 << 6)
+> -#define V4L2_MBUS_PCLK_SAMPLE_FALLING		(1 << 7)
+> -#define V4L2_MBUS_DATA_ACTIVE_HIGH		(1 << 8)
+> -#define V4L2_MBUS_DATA_ACTIVE_LOW		(1 << 9)
+> +#define V4L2_MBUS_HSYNC_ACTIVE_HIGH		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 1))
+> +#define V4L2_MBUS_HSYNC_ACTIVE_LOW		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 2))
+> +#define V4L2_MBUS_VSYNC_ACTIVE_HIGH		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 3))
+> +#define V4L2_MBUS_VSYNC_ACTIVE_LOW		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 4))
+> +#define V4L2_MBUS_PCLK_SAMPLE_RISING		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 5))
+> +#define V4L2_MBUS_PCLK_SAMPLE_FALLING		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 6))
+> +#define V4L2_MBUS_DATA_ACTIVE_HIGH		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 7))
+> +#define V4L2_MBUS_DATA_ACTIVE_LOW		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 8))
+>  /* FIELD = 0/1 - Field1 (odd)/Field2 (even) */
+> -#define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
+> +#define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 9))
+>  /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
+> -#define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
+> +#define V4L2_MBUS_FIELD_EVEN_LOW		(1 << (V4L2_MBUS_VIDEO_INTERFACES_END + 10))
+
+And that would also do away with the ugly V4L2_MBUS_VIDEO_INTERFACES_END
+define. It's just asking for problems when some of the flags are defined
+in one header, and some in another header.
+
+I know it was discussed before, but I am uncomfortable with adding all these
+different sync types when the only one used in tvp7002 is SYNC_ON_GREEN.
+
+The only sync types I see in practice are Separate Sync (using separate H and V
+sync signals), Embedded Sync (using SAV/EAV codes) and in very rare cases
+Sync-on-Green. Sync-on-Luminance is I expect really identical to Sync-on-Green,
+only instead of using RGB it uses YUV where Y maps to the Green pin.
+
+Anyway, this needs more work I'm afraid.
+
+Regards,
+
+	Hans
+
+>  
+>  /* Serial flags */
+>  /* How many lanes the client can use */
+> 
