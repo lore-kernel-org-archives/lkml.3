@@ -1,74 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab3FXSQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:16:40 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:42880 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab3FXSMN (ORCPT
+	id S1753662Ab3FXSRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:17:15 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:51428 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab3FXSRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:12:13 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 03/15] kconfig/lxdialog: Use new mininimum resize definitions in conf_choice()
-Date: Mon, 24 Jun 2013 20:11:47 +0200
-Message-Id: <ff7b0c2c2430b5b116108441cbd0680efbef68d1.1372097219.git.yann.morin.1998@free.fr>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <cover.1372097219.git.yann.morin.1998@free.fr>
-References: <cover.1372097219.git.yann.morin.1998@free.fr>
-In-Reply-To: <cover.1372097219.git.yann.morin.1998@free.fr>
-References: <cover.1372097219.git.yann.morin.1998@free.fr>
+	Mon, 24 Jun 2013 14:17:10 -0400
+Message-ID: <51C88D22.5000408@gmail.com>
+Date: Mon, 24 Jun 2013 11:17:06 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, tglx@linutronix.de,
+        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, ddaney@caviumnetworks.com
+Subject: Re: [PATCH 25/45] staging/octeon: Use get/put_online_cpus_atomic()
+ to prevent CPU offline
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com> <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com> <20130623181740.GB24256@kroah.com> <51C744A9.8000406@linux.vnet.ibm.com>
+In-Reply-To: <51C744A9.8000406@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sedat Dilek <sedat.dilek@gmail.com>
+On 06/23/2013 11:55 AM, Srivatsa S. Bhat wrote:
+> On 06/23/2013 11:47 PM, Greg Kroah-Hartman wrote:
+>> On Sun, Jun 23, 2013 at 07:13:33PM +0530, Srivatsa S. Bhat wrote:
+>>> Once stop_machine() is gone from the CPU offline path, we won't be able
+>>> to depend on disabling preemption to prevent CPUs from going offline
+>>> from under us.
+>>>
+>>> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
+>>> offline, while invoking from atomic context.
+>>>
+>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> Cc: devel@driverdev.osuosl.org
+>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>> ---
+>>>
+>>>   drivers/staging/octeon/ethernet-rx.c |    3 +++
+>>>   1 file changed, 3 insertions(+)
+>>>
+>>> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+>>> index 34afc16..8588b4d 100644
+>>> --- a/drivers/staging/octeon/ethernet-rx.c
+>>> +++ b/drivers/staging/octeon/ethernet-rx.c
+>>> @@ -36,6 +36,7 @@
+>>>   #include <linux/prefetch.h>
+>>>   #include <linux/ratelimit.h>
+>>>   #include <linux/smp.h>
+>>> +#include <linux/cpu.h>
+>>>   #include <linux/interrupt.h>
+>>>   #include <net/dst.h>
+>>>   #ifdef CONFIG_XFRM
+>>> @@ -97,6 +98,7 @@ static void cvm_oct_enable_one_cpu(void)
+>>>   		return;
+>>>
+>>>   	/* ... if a CPU is available, Turn on NAPI polling for that CPU.  */
+>>> +	get_online_cpus_atomic();
+>>>   	for_each_online_cpu(cpu) {
+>>>   		if (!cpu_test_and_set(cpu, core_state.cpu_state)) {
+>>>   			v = smp_call_function_single(cpu, cvm_oct_enable_napi,
+>>> @@ -106,6 +108,7 @@ static void cvm_oct_enable_one_cpu(void)
+>>>   			break;
+>>>   		}
+>>>   	}
+>>> +	put_online_cpus_atomic();
+>>
+>> Does this driver really need to be doing this in the first place?  If
+>> so, why?  The majority of network drivers don't, why is this one
+>> "special"?
 
-This is a cleanup which uses the proper (new) definitions and does
-not change current behaviour.
 
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
-Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+It depends on your definition of "need".
 
----
-Yann had some more ideas on improvements:
+The current driver receives packets from *all* network ports into a 
+single queue (in OCTEON speak this queue is called a POW group).  Under 
+high packet rates, the CPU time required to process the packets may 
+exceed the capabilities of a single CPU.
 
-"What would be nice is an improvement that scales the choice window to
-the number of entries in the choice. If there are a lot of choice
-entries, then the choice popup grows in height (but does not overflow
-the screen of course). So, instead of seeing only 6 entries, we'd see
-as much as possible in the current screen.
+In order to increase throughput beyond the single CPU limited rate, we 
+bring more than one CPUs into play for NAPI receive.  The code being 
+patched here is part of the logic that controls which CPUs are used for 
+NAPI receive.
 
-Ditto for the width: the popup adapts to the longest prompt (but does
-not overflow the screen either, of course), so prompts are not
-truncated."
+Just for the record:  Yes I know that doing this may lead to packet 
+reordering when doing forwarding.
 
-NOTE: This patch requires [1].
+A further question that wasn't asked is: Will the code work at all if a 
+CPU is taken offline even if the race, the patch eliminates, is avoided?
 
-[1] http://marc.info/?l=linux-kbuild&m=137128726917166&w=2
----
- scripts/kconfig/mconf.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I doubt it.
 
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index 387dc8d..2396c5b 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -825,7 +825,9 @@ static void conf_choice(struct menu *menu)
- 		dialog_clear();
- 		res = dialog_checklist(prompt ? _(prompt) : _("Main Menu"),
- 					_(radiolist_instructions),
--					 15, 70, 6);
-+					MENUBOX_HEIGTH_MIN,
-+					MENUBOX_WIDTH_MIN,
-+					CHECKLIST_HEIGTH_MIN);
- 		selected = item_activate_selected();
- 		switch (res) {
- 		case 0:
--- 
-1.8.1.2
+As far as the patch goes:
+
+Acked-by: David Daney <david.daney@cavium.com>
+
+David Daney
+
+>>
+>
+> Honestly, I don't know. Let's CC the author of that code (David Daney).
+> I wonder why get_maintainer.pl didn't generate his name for this file,
+> even though the entire file is almost made up of his commits alone!
+>
+> Regards,
+> Srivatsa S. Bhat
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
