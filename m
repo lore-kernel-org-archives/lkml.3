@@ -1,73 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab3FXVhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 17:37:18 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:10613 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751013Ab3FXVhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 17:37:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnUOAI26yFF5LPX0/2dsb2JhbABagwmDFrd5hSsEAYELF3SCIwEBBAE6HCMFCwgDGAklDwUlAyEBEogIBbsAFo4BARqBHQeDYwOXQoofhyaDIiqBLAEBHgY
-Date: Tue, 25 Jun 2013 07:37:09 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>, g@dastard
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] vfs: check for integer overflows in posix_acl_alloc()
-Message-ID: <20130624213709.GT29338@dastard>
-References: <20130624162719.GB32503@elgon.mountain>
+	id S1751325Ab3FXVkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 17:40:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46803 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791Ab3FXVkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 17:40:12 -0400
+Message-ID: <51C8BC91.6020707@ti.com>
+Date: Mon, 24 Jun 2013 17:39:29 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624162719.GB32503@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: <tony@atomide.com>, <grant.likely@linaro.org>, <linux-pm@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 5/6] arm: omap2plus_defconfig: enable TI bandgap driver
+References: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com> <1370637968-23299-6-git-send-email-eduardo.valentin@ti.com> <51C0C2A8.4020707@ti.com>
+In-Reply-To: <51C0C2A8.4020707@ti.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2CKBKKUITQKDBTQMRNPIV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 07:27:19PM +0300, Dan Carpenter wrote:
-> We've seen cases where people passed negative numbers to
-> posix_acl_alloc() and we fixed the caller.  For example 093019cf1b "xfs:
-> fix acl count validation in xfs_acl_from_disk()".
+------enig2CKBKKUITQKDBTQMRNPIV
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, we failed to detect an on-disk corruption correctly....
+Tony,
 
-> But there are other
-> places which might be affected like ext4_acl_from_disk() which checks
-> for negative but doesn't check an upper limit.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> diff --git a/fs/posix_acl.c b/fs/posix_acl.c
-> index cea4623..cd7fd2f 100644
-> --- a/fs/posix_acl.c
-> +++ b/fs/posix_acl.c
-> @@ -46,7 +46,12 @@ posix_acl_alloc(int count, gfp_t flags)
->  {
->  	const size_t size = sizeof(struct posix_acl) +
->  	                    count * sizeof(struct posix_acl_entry);
-> -	struct posix_acl *acl = kmalloc(size, flags);
-> +	struct posix_acl *acl;
-> +
-> +	if (count < 0 || count > (SIZE_MAX - sizeof(struct posix_acl) /
-> +					sizeof(struct posix_acl_entry)))
-> +		return NULL;
+On 18-06-2013 16:27, Eduardo Valentin wrote:
+> Tony,
+>=20
+> On 07-06-2013 16:46, Eduardo Valentin wrote:
+>> Enable the bandgap driver for TI SoCs thermal support.
+>>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> Cc: AnilKumar Ch <anilkumar@ti.com>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>=20
+> Is it possible for you to queue this one and patch 6 for 3.11?
 
-That's not going to solve your problems, because ACLs are limied by
-filesystem on-disk formats, not SIZE_MAX.  The number of valid ACLs
-is capped by the fact they are stored in xattrs on most (all?)
-filesystems, and so are limited to fitting into the maximum
-attribute data length which is 64k.
+Gentle reminder.
 
-IOWs, the valid ACL limit is per-filesystem, and needs to be checked
-in the filesystem code as something that is beyond the range of what
-the on-disk format of the filesystem can handle is a corruption
-event and needs to be treated as a corruption, not a ENOMEM error..
+>=20
+> Cheers,
+>=20
+>> ---
+>>  arch/arm/configs/omap2plus_defconfig | 11 +++++++++++
+>>  1 file changed, 11 insertions(+)
+>>
+>> diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/o=
+map2plus_defconfig
+>> index c1ef64b..6e6c494 100644
+>> --- a/arch/arm/configs/omap2plus_defconfig
+>> +++ b/arch/arm/configs/omap2plus_defconfig
+>> @@ -151,6 +151,13 @@ CONFIG_W1=3Dy
+>>  CONFIG_POWER_SUPPLY=3Dy
+>>  CONFIG_SENSORS_LM75=3Dm
+>>  CONFIG_WATCHDOG=3Dy
+>> +CONFIG_THERMAL=3Dy
+>> +CONFIG_THERMAL_HWMON=3Dy
+>> +CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=3Dy
+>> +CONFIG_THERMAL_GOV_FAIR_SHARE=3Dy
+>> +CONFIG_THERMAL_GOV_STEP_WISE=3Dy
+>> +CONFIG_THERMAL_GOV_USER_SPACE=3Dy
+>> +CONFIG_CPU_THERMAL=3Dy
+>>  CONFIG_OMAP_WATCHDOG=3Dy
+>>  CONFIG_TWL4030_WATCHDOG=3Dy
+>>  CONFIG_MFD_TPS65217=3Dy
+>> @@ -237,6 +244,10 @@ CONFIG_RTC_DRV_TWL4030=3Dy
+>>  CONFIG_RTC_DRV_OMAP=3Dy
+>>  CONFIG_DMADEVICES=3Dy
+>>  CONFIG_DMA_OMAP=3Dy
+>> +CONFIG_TI_SOC_THERMAL=3Dy
+>> +CONFIG_TI_THERMAL=3Dy
+>> +CONFIG_OMAP4_THERMAL=3Dy
+>> +CONFIG_OMAP5_THERMAL=3Dy
+>>  CONFIG_EXT2_FS=3Dy
+>>  CONFIG_EXT3_FS=3Dy
+>>  # CONFIG_EXT3_FS_XATTR is not set
+>>
+>=20
+>=20
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+------enig2CKBKKUITQKDBTQMRNPIV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlHIvJEACgkQCXcVR3XQvP17CAEAsQRxaLXGKVlKxhjqWLaYqDB/
+0tBkz790uTd295hV5c0BAM7ye45PYJYOSEIKlMpLVJCgmFgV3npI9WdMdMk8GVnH
+=c1qE
+-----END PGP SIGNATURE-----
+
+------enig2CKBKKUITQKDBTQMRNPIV--
