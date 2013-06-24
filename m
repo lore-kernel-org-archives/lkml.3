@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab3FXNIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 09:08:34 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:60001 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab3FXNI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 09:08:26 -0400
-Message-ID: <1372079315.32157.15.camel@linux>
-Subject: Re: Per route MTU settings are broken in linux kernel 3.2
-From: Yura Pakhuchiy <pakhuchiy@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        stable@vger.kernel.org
-Date: Mon, 24 Jun 2013 20:08:35 +0700
-In-Reply-To: <1372077951.21189.16.camel@deadeye.wl.decadent.org.uk>
-References: <1372063443.32157.10.camel@linux>
-	 <1372077951.21189.16.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751275Ab3FXNKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 09:10:36 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25371 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750829Ab3FXNKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 09:10:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,928,1363158000"; 
+   d="scan'208";a="321686284"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH 00/15] perf tools: some fixes and tweaks
+Date: Mon, 24 Jun 2013 16:15:57 +0300
+Message-Id: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-24 at 13:45 +0100, Ben Hutchings wrote:
-> On Mon, 2013-06-24 at 15:44 +0700, Yura Pakhuchiy wrote:
-> > Hello Ben,
-> > 
-> > Looks like setting per route MTU (as described in [1]) is broken in
-> > Linux kernel 3.2. I tested with newer Ubuntu kernels 3.5 and 3.8 and it
-> > looks like problem is fixed there. I filled Ubuntu bug report [2] with
-> > more details and sample script which illustrates problem. But since this
-> > problem is probably also present in stock kernel (not just in Ubuntu),
-> > is it possible to backport fixes to stable 3.2 series?
-> > 
-> > 1. http://lartc.org/howto/lartc.cookbook.mtu-discovery.html
-> > 2. https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1177507
-> 
-> Sure, what are the fixes?
+Hi
 
-Actually, I do not know :-( Ubuntu devs have not fixed this problem in
-Ubuntu 3.2 kernel. But these commits in mainline kernel looks related:
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=9b04f350057863d1fad1ba071e09362a1da3503e
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=5f2d04f1f9b52604fca6ee08a77972c0df67e082
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=d851c12b60471188e15e5c8405b289073e8dd025
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=7f92d334ba19a0d8e96f8f8f092219553367d921
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=ee9a8f7ab2edf801b8b514c310455c94acc232f6
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=38d523e2948162776903349c89d65f7b9370dadb
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=fa1e492aa3cbafba9f8fc6d05e5b08a3091daf4a
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=05ab86c55683410593720003442dde629782aaac
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=9cb3a50c5f63ed745702972f66eaee8767659acd
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=b44108dbdbaa07c609bb5755e8dd6c2035236251
-
-However I'm not sure whether they all are required or sufficient to fix
-everything correctly.
+Here are some fixes and tweaks to perf tools.
 
 
--- 
-Best regards,
-        Yura
+Adrian Hunter (15):
+      perf tools: remove unused parameter
+      perf tools: fix missing tool parameter
+      perf tools: fix missing 'finished_round'
+      perf tools: fix parse_events_terms() segfault on error path
+      perf tools: fix new_term() missing free on error path
+      perf tools: fix parse_events_terms() freeing local variable on error path
+      perf tools: add const specifier to perf_pmu__find name parameter
+      perf tools: tidy duplicated munmap code
+      perf tools: validate perf event header size
+      perf tools: add debug prints
+      perf tools: fix symbol_conf.nr_events
+      perf tools: allow non-matching sample types
+      perf tools: struct thread has a tid not a pid
+      perf tools: add pid to struct thread
+      perf tools: fix ppid in thread__fork()
 
+ tools/perf/builtin-inject.c    |  40 ++++++-------
+ tools/perf/builtin-kmem.c      |   2 +-
+ tools/perf/builtin-sched.c     |  12 ++--
+ tools/perf/builtin-trace.c     |   4 +-
+ tools/perf/ui/browsers/hists.c |   6 +-
+ tools/perf/util/event.c        |   2 +-
+ tools/perf/util/event.h        |   6 ++
+ tools/perf/util/evlist.c       | 128 ++++++++++++++++++++++++++++++++++-------
+ tools/perf/util/evlist.h       |   3 +
+ tools/perf/util/evsel.c        |  93 ++++++++++++++++++++++++++++++
+ tools/perf/util/evsel.h        |   4 ++
+ tools/perf/util/header.c       |   8 ++-
+ tools/perf/util/header.h       |   6 +-
+ tools/perf/util/machine.c      |  57 +++++++++++++-----
+ tools/perf/util/machine.h      |   8 ++-
+ tools/perf/util/parse-events.c |   4 +-
+ tools/perf/util/pmu.c          |  17 +++---
+ tools/perf/util/pmu.h          |   2 +-
+ tools/perf/util/session.c      |  25 ++++----
+ tools/perf/util/sort.c         |   6 +-
+ tools/perf/util/thread.c       |  11 ++--
+ tools/perf/util/thread.h       |   5 +-
+ tools/perf/util/tool.h         |   9 ++-
+ 23 files changed, 348 insertions(+), 110 deletions(-)
+
+
+Regards
+Adrian
