@@ -1,60 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3FXDaG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 23:30:06 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:52781 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab3FXDaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 23:30:04 -0400
-Date: Sun, 23 Jun 2013 20:30:03 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: majianpeng <majianpeng@gmail.com>
-cc: davem <davem@davemloft.net>, ceph-devel <ceph-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] libceph: Call con->ops->put(con) if cancel_delayed_work(&con->work)
- worked.
-In-Reply-To: <201306240921544358210@gmail.com>
-Message-ID: <alpine.DEB.2.00.1306232029480.20076@cobra.newdream.net>
-References: <201306240921544358210@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752547Ab3FXDs5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 23:48:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26422 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752374Ab3FXDsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 23:48:55 -0400
+X-IronPort-AV: E=Sophos;i="4.87,925,1363104000"; 
+   d="scan'208";a="7655772"
+Message-ID: <51C7C258.8070906@cn.fujitsu.com>
+Date: Mon, 24 Jun 2013 11:51:52 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618020357.GZ32663@mtj.dyndns.org> <51BFF464.809@cn.fujitsu.com> <20130618172129.GH2767@htj.dyndns.org> <51C298B2.9060900@cn.fujitsu.com> <20130620061719.GA16114@mtj.dyndns.org> <51C41AB4.9070500@cn.fujitsu.com> <20130621182511.GA1763@htj.dyndns.org>
+In-Reply-To: <20130621182511.GA1763@htj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/24 11:47:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/24 11:47:40,
+	Serialize complete at 2013/06/24 11:47:40
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jun 2013, majianpeng wrote:
-> Because in func queue_con_delay, it will call con->ops->get(con).
-> So if we cancel the work successfully,we must call con->ops->put(con).
-> Otherwise some resource can't free like 'struct ceph_mds_session'.
-> 
-> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+On 06/22/2013 02:25 AM, Tejun Heo wrote:
+> Hey,
+>
+> On Fri, Jun 21, 2013 at 05:19:48PM +0800, Tang Chen wrote:
+>>> * As memblock allocator can relocate itself.  There's no point in
+>>>    avoiding setting NUMA node while parsing and registering NUMA
+>>>    topology.  Just parse and register NUMA info and later tell it to
+>>>    relocate itself out of hot-pluggable node.  A number of patches in
+>>>    the series is doing this dancing - carefully reordering NUMA
+>>>    probing.  No need to do that.  It's really fragile thing to do.
+>>>
+>>> * Once you get the above out of the way, I don't think there are a lot
+>>>    of permanent allocations in the way before NUMA is initialized.
+>>>    Re-order the remaining ones if that's cleaner to do.  If that gets
+>>>    overly messy / fragile, copying them around or freeing and reloading
+>>>    afterwards could be an option too.
+>>
+>> memblock allocator can relocate itself, but it cannot relocate the memory
+>
+> Hmmm... maybe I wasn't clear but that's the first bullet point above.
+>
+>> it allocated for users. There could be some pointers pointing to these
+>> memory ranges. If we do the relocation, how to update these pointers ?
+>
+> And the second.  Can you please list what persistent areas are
+> allocated before numa info is configured into memblock?  There
 
-Looks good, applied to the testing branch.
+Hi tj,
 
-Thanks!
-sage
+My box is x86_64, and the memory layout is:
+[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+[    0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x307ffffff]
+[    0.000000] SRAT: Node 1 PXM 2 [mem 0x308000000-0x587ffffff] Hot 
+Pluggable
+[    0.000000] SRAT: Node 2 PXM 3 [mem 0x588000000-0x7ffffffff] Hot 
+Pluggable
 
-> ---
->  net/ceph/messenger.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-> index eb0a46a..8207b37 100644
-> --- a/net/ceph/messenger.c
-> +++ b/net/ceph/messenger.c
-> @@ -661,7 +661,8 @@ void ceph_con_close(struct ceph_connection *con)
->  
->  	reset_connection(con);
->  	con->peer_global_seq = 0;
-> -	cancel_delayed_work(&con->work);
-> +	if (cancel_delayed_work(&con->work))
-> +		con->ops->put(con);
->  	con_close_socket(con);
->  	mutex_unlock(&con->mutex);
->  }
-> -- 
-> 1.8.1.2
-> 
+
+I marked ranges reserved by memblock before we parse SRAT with flag 0x4.
+There are about 14 ranges which is persistent after boot.
+
+[    0.000000]  reserved[0x0]   [0x00000000000000-0x0000000000ffff], 
+0x10000 bytes flags: 0x4
+[    0.000000]  reserved[0x1]   [0x00000000093000-0x000000000fffff], 
+0x6d000 bytes flags: 0x4
+[    0.000000]  reserved[0x2]   [0x00000001000000-0x00000002a9afff], 
+0x1a9b000 bytes flags: 0x4
+[    0.000000]  reserved[0x3]   [0x00000030000000-0x00000037ffffff], 
+0x8000000 bytes flags: 0x4
+...
+[    0.000000]  reserved[0x5]   [0x0000006da81000-0x0000006e46afff], 
+0x9ea000 bytes flags: 0x4
+[    0.000000]  reserved[0x6]   [0x0000006ed6a000-0x0000006f246fff], 
+0x4dd000 bytes flags: 0x4
+[    0.000000]  reserved[0x7]   [0x0000006f28a000-0x0000006f299fff], 
+0x10000 bytes flags: 0x4
+[    0.000000]  reserved[0x8]   [0x0000006f29c000-0x0000006fe91fff], 
+0xbf6000 bytes flags: 0x4
+[    0.000000]  reserved[0x9]   [0x00000070e92000-0x00000071d54fff], 
+0xec3000 bytes flags: 0x4
+[    0.000000]  reserved[0xa]   [0x00000071d5e000-0x00000072204fff], 
+0x4a7000 bytes flags: 0x4
+[    0.000000]  reserved[0xb]   [0x00000072220000-0x0000007222074f], 
+0x750 bytes flags: 0x4
+...
+[    0.000000]  reserved[0xd]   [0x000000722bc000-0x000000722bc1cf], 
+0x1d0 bytes flags: 0x4
+[    0.000000]  reserved[0xe]   [0x00000072bd3000-0x00000076c8ffff], 
+0x40bd000 bytes flags: 0x4
+......
+[    0.000000]  reserved[0x134] [0x000007fffdf000-0x000007ffffffff], 
+0x21000 bytes flags: 0x4
+
+
+Just for the readability:
+                                 [0x00000308000000-0x00000587ffffff] 
+    Hot Pluggable
+                                 [0x00000588000000-0x000007ffffffff] 
+    Hot Pluggable
+
+Seeing from the dmesg, only the last one is in hotpluggable area. I need 
+to go
+through the code to find out what it is, and find a way to relocate it.
+
+But I'm not sure if a box with a different SRAT will have different result.
+
+I will send more info later.
+
+Thanks. :)
+
+
+> shouldn't be whole lot.  And, again, this type of information should
+> have been available in the head message so that high-level discussion
+> could take place right away.
+>
+> Thanks.
+>
+
