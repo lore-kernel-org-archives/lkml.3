@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab3FXIjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:39:49 -0400
-Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:1235 "EHLO
-	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab3FXIjs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:39:48 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH] media: i2c: tvp514x: add support for asynchronous probing
-Date: Mon, 24 Jun 2013 10:39:17 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10.0-rc6-tschai; KDE/4.9.5; x86_64; ; )
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-References: <1371896189-5475-1-git-send-email-prabhakar.csengg@gmail.com> <201306240911.14288.hverkuil@xs4all.nl> <CA+V-a8tziXOAU6NNUy6rp-Fdz2sVk8+KYHdzDsVSaFuRADUjig@mail.gmail.com>
-In-Reply-To: <CA+V-a8tziXOAU6NNUy6rp-Fdz2sVk8+KYHdzDsVSaFuRADUjig@mail.gmail.com>
+	id S1751157Ab3FXInA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:43:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39371 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788Ab3FXIm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 04:42:59 -0400
+Message-ID: <51C80691.9030106@suse.cz>
+Date: Mon, 24 Jun 2013 10:42:57 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306241039.17147.hverkuil@xs4all.nl>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Roland Eggner <edvx1@systemanalysen.net>,
+        Wang YanQing <udknight@gmail.com>
+Subject: Re: [PATCH 12/14] kconfig: sort found symbols by relevance
+References: <cover.1371595499.git.yann.morin.1998@free.fr>  <3e2346029e33ef9405b87d72a32d96d0aafb524a.1371595499.git.yann.morin.1998@free.fr> <1372060659.4310.41.camel@chaos.site>
+In-Reply-To: <1372060659.4310.41.camel@chaos.site>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon June 24 2013 10:24:02 Prabhakar Lad wrote:
-> Hi Hans,
+On 24.6.2013 09:57, Jean Delvare wrote:
+> Hi Yann,
 > 
-> On Mon, Jun 24, 2013 at 12:41 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> > On Sun June 23 2013 17:48:20 Prabhakar Lad wrote:
-> >> Hi Guennadi,
-> >>
-> >> Thanks for the review.
-> >>
-> >> On Sun, Jun 23, 2013 at 8:49 PM, Guennadi Liakhovetski
-> >> <g.liakhovetski@gmx.de> wrote:
-> >> > On Sat, 22 Jun 2013, Prabhakar Lad wrote:
-> >> >
-> >> >> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> >> >>
-> >> >> Both synchronous and asynchronous tvp514x subdevice probing is supported by
-> >> >> this patch.
-> >> >>
-> >> >> Signed-off-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
-> >> >> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> >> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> >> >> Cc: Hans Verkuil <hverkuil@xs4all.nl>
-> >> >> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> >> >> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> >> >> ---
-> >> >>  drivers/media/i2c/tvp514x.c |   22 +++++++++++++++-------
-> >> >>  1 file changed, 15 insertions(+), 7 deletions(-)
-> >> >>
-> >> >> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-> >> >> index 864eb14..d090caf 100644
-> >> >> --- a/drivers/media/i2c/tvp514x.c
-> >> >> +++ b/drivers/media/i2c/tvp514x.c
-> >> >> @@ -36,6 +36,7 @@
-> >> >>  #include <linux/module.h>
-> >> >>  #include <linux/v4l2-mediabus.h>
-> >> >>
-> >> >> +#include <media/v4l2-async.h>
-> >> >>  #include <media/v4l2-device.h>
-> >> >>  #include <media/v4l2-common.h>
-> >> >>  #include <media/v4l2-mediabus.h>
-> >> >
-> >> > Ok, but this one really does too many things in one patch:
-> >> >
-> >> >> @@ -1148,9 +1149,9 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> >> >>       /* Register with V4L2 layer as slave device */
-> >> >>       sd = &decoder->sd;
-> >> >>       v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
-> >> >> -     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
-> >> >>
-> >> >>  #if defined(CONFIG_MEDIA_CONTROLLER)
-> >> >> +     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
-> >> >
-> >> > This is unrelated
-> >> >
-> >> OK I'll split the patch or may be a line in a commit message can do ?
-> >
-> > Please split it up in two patches.
-> >
-> > Why is sd->name set anyway? And why is it moved under CONFIG_MEDIA_CONTROLLER?
-> > It's not obvious to me.
-> >
-> while using tvp514x subdev with media controller based drivers, when we
-> enumerate entities (MEDIA_IOC_ENUM_ENTITIES) to get the index id
-> of the entity we compare the entity name with "tvp514x", So I moved it
-> under CONFIG_MEDIA_CONTROLLER config. I hope you are OK with
-> moving this in a separate patch.
+> Sorry for the late reply...
+> 
+> Le Wednesday 19 June 2013 à 00:45 +0200, Yann E. MORIN a écrit :
+>> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+>>
+>> When searching for symbols, return the symbols sorted by relevance.
+>>
+>> Sorting is done as thus:
+>>   - first, symbols with a prompt,   [1]
+>>   - then, smallest offset,          [2]
+>>   - then, shortest match,           [3]
+>>   - then, highest relative match,   [4]
+>>   - finally, alphabetical sort      [5]
+>>
+>> So, searching (eg.) for 'P.*CI' :
+> 
+> Nobody would actually search for that, so that's not a particularly good
+> example to determine whether your sort order is sane or not.
+> 
+>>
+>> [1] Symbols of interest are probably those with a prompt, as they can be
+>>     changed, while symbols with no prompt are only for info. Thus:
+>>         PCIEASPM comes before PCI_ATS
+> 
+> This is not necessarily true. I often look for symbols which have no
+> prompt, and the information I am looking for is exactly "does this
+> symbol have a prompt or is its value determined automatically"?
+> 
+>> [2] Symbols that match earlier in the name are to be preferred over
+>>     symbols which match later. Thus:
+>>         PCI_MSI comes before WDTPCI
+> 
+> This makes some sense, although it could have some unexpected side
+> effects (e.g. FOO_BAR_PCI would be listed before SOMETHING_PCI_BAZBAZ,
+> right?)
+> 
+>> [3] The shortest match is (IMHO) more interesting than a longer one.
+>>     Thus:
+>>         PCI comes before PCMCIA
+> 
+> This makes sense too, but I'm sure there are cases where it will be
+> confusing too, and alphabetical order would do it in part too.
 
-Sorry, but this approach is wrong. sd->name must be a unique name, so manually
-setting sd->name will fail if you have two tvp514x devices.
+PCI does sort before PCMCIA alphabetically ;). Also, the match lenght
+will only be different when using regular expressions, so this rule will
+not matter in the usual case.
 
-There is no reason to override sd->name here, and it is actually a bug. I see
-that tvp7002 has the same problem (and a bunch of others as well).
 
-When trying to find a tvp514x you can just use strstr() in your application.
-That will work all the time as long as there is only one tvp514x.
+>> [4] The relative match is the ratio of the length of the match against
+>>     the length of the symbol. The more of a symbol name we match, the
+>>     more instersting that symbol is. Thus:
+>>         PCIEAER comes before PCIEASPM
+> 
+> This is an obscure sort rule and I'm sure it will add more confusion
+> than it will help. Alphabetical order should really be good enough at
+> this point.
 
-Regards,
+When the prefix matches, then I agree that most people will expect the
+matches be alphabetically sorted. Maybe only do this comparison only if
+s1->so != 0, otherwise fallback to the strcmp() directly?
 
-	Hans
+Thanks,
+Michal
