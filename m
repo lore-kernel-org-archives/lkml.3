@@ -1,166 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3FXR1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:27:25 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:33905 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab3FXR1W (ORCPT
+	id S1752556Ab3FXR2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:28:49 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:36258 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab3FXR2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:27:22 -0400
+	Mon, 24 Jun 2013 13:28:45 -0400
+Message-ID: <51C88103.8090301@linux.vnet.ibm.com>
+Date: Mon, 24 Jun 2013 22:55:23 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1371764634.30572.47.camel@ul30vt.home>
-References: <20130607162732.7733.17758.stgit@bling.home> <20130607163441.7733.23221.stgit@bling.home>
- <20130618170926.GA9203@google.com> <1371580735.22681.216.camel@ul30vt.home>
- <CAErSpo75R26gqO=muqrR28igNkMay4NNRW-VJWPt3xQCqp1YBQ@mail.gmail.com>
- <1371595667.22659.53.camel@ul30vt.home> <CAErSpo7Z9v1QPQZLpfNAUPiq3w4ZfmzS1PStJW+SgJ_DmjjFvg@mail.gmail.com>
- <1371764634.30572.47.camel@ul30vt.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 24 Jun 2013 11:27:02 -0600
-Message-ID: <CAErSpo6JU-PUvZRxwgJ3McpFno-d0Apae4fLq+856y89XoCPRA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] pci: Fix flaw in pci_acs_enabled()
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Joe Perches <joe@perches.com>
+CC: peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        walken@google.com, mingo@kernel.org, linux-arch@vger.kernel.org,
+        vincent.guittot@linaro.org, ddaney@caviumnetworks.com,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, devel@driverdev.osuosl.org,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, namhyung@kernel.org,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, oleg@redhat.com,
+        sbw@mit.edu, netdev@vger.kernel.org, tj@kernel.org,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 25/45] staging/octeon: Use get/put_online_cpus_atomic()
+ to prevent CPU offline
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com> <20130623134331.19094.80396.stgit@srivatsabhat.in.ibm.com> <20130623181740.GB24256@kroah.com> <51C744A9.8000406@linux.vnet.ibm.com> <1372015045.3137.67.camel@joe-AO722>
+In-Reply-To: <1372015045.3137.67.camel@joe-AO722>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062417-8256-0000-0000-0000080FA0AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 3:43 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Tue, 2013-06-18 at 20:30 -0600, Bjorn Helgaas wrote:
->> On Tue, Jun 18, 2013 at 4:47 PM, Alex Williamson
->> <alex.williamson@redhat.com> wrote:
->> > On Tue, 2013-06-18 at 16:10 -0600, Bjorn Helgaas wrote:
->> >> On Tue, Jun 18, 2013 at 12:38 PM, Alex Williamson
->> >> <alex.williamson@redhat.com> wrote:
->> >> > On Tue, 2013-06-18 at 11:09 -0600, Bjorn Helgaas wrote:
->> >> >> On Fri, Jun 07, 2013 at 10:34:41AM -0600, Alex Williamson wrote:
->> > ...
->> >> >> >   * pci_acs_enabled - test ACS against required flags for a given device
->> >> >> >   * @pdev: device to test
->> >> >> > @@ -2364,8 +2377,7 @@ void pci_enable_acs(struct pci_dev *dev)
->> >> >> >   */
->> >> >> >  bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
->> >> >>
->> >> >> I know you didn't change the *name* of this function, but I think it
->> >> >> would be easier to follow if you did change the name to something more
->> >> >> descriptive, e.g., something to do with the actual property you're
->> >> >> interested in, which has to do with routing peer-to-peer DMA.
->> >> >>
->> >> >> That property makes sense even for the excluded devices, while the
->> >> >> idea of an ACS capability that doesn't even exist is implicitly
->> >> >> enabled, really doesn't.
->> >> >
->> >> > I think we also don't want to put the complexity at the caller for
->> >> > understanding what capabilities are applicable to a given device.  It's
->> >> > also convenient to use the set of ACS flags.  Given that, the current
->> >> > naming came about.  It's a little awkward, but it's easy to use.
->> >> > Suggestions for a better name?
->> >>
->> >> 100% agreed the caller shouldn't have to worry about different device
->> >> types.  I was thinking something like "pci_enforces_peer_isolation()"
->> >> or "pci_peer_dma_routed_upstream()".  Or maybe it should be
->> >> "pci_dev_...()".
->> >
->> > Ok, I'll play with those.  I'm worried that there are nuances to each
->> > flag bit that don't all fit under such a broad description.
->>
->> It's true that they might be overly broad.  On the other hand, the set
->> of flags we look for is always the same: PCI_ACS_SV | PCI_ACS_RR |
->> PCI_ACS_CR | PCI_ACS_UF, so what's the point in making a completely
->> general-purpose interface?  I'm not sure it's even worth passing the
->> flags around if the code would be clearer without that.
->>
->> > Do you want
->> > to gate this series on a rename of an existing function?
+On 06/24/2013 12:47 AM, Joe Perches wrote:
+> On Mon, 2013-06-24 at 00:25 +0530, Srivatsa S. Bhat wrote:
+>> On 06/23/2013 11:47 PM, Greg Kroah-Hartman wrote:
+>>> On Sun, Jun 23, 2013 at 07:13:33PM +0530, Srivatsa S. Bhat wrote:
+> []
+>>>> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+> []
+>> Honestly, I don't know. Let's CC the author of that code (David Daney).
+>> I wonder why get_maintainer.pl didn't generate his name for this file,
+>> even though the entire file is almost made up of his commits alone!
+> 
+> Because by default, get_maintainer looks for a matching
+> file entry in MAINTAINERS.  Failing that, it looks at
+> one year of git history.  In this case, no work has been
+> done on the file for quite awhile.
+> 
+> --git-blame can be added to the get_maintainer.pl command
+> line to look for % of authorship by line and commit count.
+> 
+> Adding --git-blame can take a long time to run, that's why
+> it's not on by default.  Also, very old history can give
+> invalid email addresses as people move around and email
+> addresses decay.
+> 
+> If you always want to find original authors, you could
+> use a .get_maintainer.conf file with --git-blame in it.
+> 
+> $ time ./scripts/get_maintainer.pl --git-blame -f drivers/staging/octeon/ethernet-tx.c
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:STAGING SUBSYSTEM,commits:4/16=25%)
+> David Daney <ddaney@caviumnetworks.com> (authored lines:711/725=98%,commits:13/16=81%)
+> Ralf Baechle <ralf@linux-mips.org> (commits:11/16=69%)
+> Eric Dumazet <eric.dumazet@gmail.com> (commits:2/16=12%)
+> Andrew Morton <akpm@linux-foundation.org> (commits:1/16=6%)
+> devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM)
+> linux-kernel@vger.kernel.org (open list)
+> 
+> real	0m16.853s
+> user	0m16.088s
+> sys	0m0.444s
+> 
+> 
 
-OK, forget about the name.  I'm happy with the existing name as long
-as we add a comment about the routing implications.  The spec
-references are good, but they don't really help understand what's
-going on in the hardware.
+Oh, ok.. Thanks for the explanation and the tip!
 
->> >> Hmm...  What *is* the correct behavior for a bridge?  You return
->> >> "true," i.e., you're saying that a PCIe-to-PCI bridge will always
->> >> route peer-to-peer transactions from PCI devices upstream to its PCIe
->> >> link.  But that seems wrong: a PCI DMA transaction can target a peer
->> >> on the same PCI bus, and it's not even possible for the bridge to
->> >> validate the transaction or forward it upstream.
->> >>
->> >> I suspect the "ACS is never applicable to a PCI Express to PCI Bridge
->> >> Function" statement in 6.12.1 just means "it's impossible for ACS to
->> >> isolate the devices below the bridge from each other, so it would be
->> >> misleading to implement the capability."
->> >
->> > Note that we never consider ACS to be enabled for a conventional PCI
->> > device.  I suppose we could have cases where it's the only device on a
->> > bus, but for the most part, it's not worth the trouble (it may be the
->> > only device now, then a hotplug occurs).  So really saying the bridge
->> > does or doesn't support ACS doesn't matter to the devices behind it.
->>
->> > What does matter is the fan-out of that isolation group of the
->> > conventional devices beyond the bridge.  If the spec is indicating that
->> > a bridge cannot do peer-to-peer with other devices  then all of the
->> > conventional devices behind it are in an isolation domain so long as the
->> > path between the bridge and the RC supports ACS.  If the bridge can do
->> > peer-to-peer and it is a multifunction device, then the isolation domain
->> > grows to include the other functions and subordinates of the other
->> > functions.  I took the assumption that a bridge probably needs to
->> > forward transaction upstream.  Do you have an alternate opinion?
->>
->> I think you're talking about a multi-function device with several
->> PCIe-to-PCI bridges (e.g., Option A of Figure 1-4, p. 29, of the PCIe
->> bridge spec 1.0), and the question is whether the bridge can forward a
->> transaction between bus X and bus Y without forwarding it upstream.
->
-> Right, or the second function may not be a bridge, it could be anything
-> that could accept a p2p DMA.
->
->> I don't see any mention of forwarding transactions between functions
->> of a multi-ported bridge, so the conservative assumption would be that
->> a bridge is allowed to do that.  I would expect a conventional
->> multi-port PCI-PCI bridge to forward between functions, because in
->> conventional PCI there would be no reason to forward it upstream, so
->> I'd think PCIe-PCI bridges, at least those designed pre-ACS, would be
->> similar.  And I don't think the ACS capability is expressive enough to
->> say "peer-to-peer transactions between functions must be forwarded
->> upstream, but peer-to-peer transactions below a single function may
->> not be."
->
-> The best I can find is the statement that the bridge must forward
-> transactions from the secondary interface to the primary interface.  We
-> could infer that that means upstream, but we can't rule out some switch
-> logic in a multifunction package that could do a re-route from that
-> statement.  However then why would the PCIe spec forbid a PCIe-to-PCI
-> bridge from implementing ACS?
->
-> ACS doesn't need to be expressive enough for what you're describing.  We
-> know that there's no protection against p2p on conventional PCI.
+Regards,
+Srivatsa S. Bhat
 
-My point was that if a PCIe-to-PCI bridge did implement ACS, it would
-be hard to interpret it.  Setting the R bit would have to mean
-something like "peer-to-peer transactions between devices below
-separate bridge functions must be forwarded upstream, but peer-to-peer
-transactions between devices below a single bridge function are not."
-Those are pretty complicated semantics, and that could be enough of a
-reason to disallow it.
-
->  The
-> PCIe bridge spec even indicates that transactions within the bridge
-> apertures should not be forwarded to the primary interface (which should
-> really be a big red flag that we shouldn't even attempt to support
-> assignment of such devices).  The question is whether a transaction
-> going out the primary interface is necessarily headed upstream or if it
-> can go directly to a peer device.  In that case, I can't figure out why
-> ACS is precluded from PCIe-to-PCI bridges.  If anything this is an
-> example of why we need a user override, then we could it to the more
-> conservative value pending further information and let the user change
-> it.  Thanks,
-
-Getting back to the point, I think we should return "false" for
-PCIe-to-PCI bridges (and probably event collectors, though it probably
-doesn't matter there), not "true."  I just don't see a convincing
-argument otherwise.
-
-Bjorn
