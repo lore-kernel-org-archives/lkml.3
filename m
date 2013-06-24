@@ -1,134 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab3FXV6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 17:58:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6986 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab3FXV6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 17:58:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,931,1363158000"; 
-   d="scan'208";a="334879529"
-Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock
- acquisition
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Alex Shi <alex.shi@intel.com>, Michel Lespinasse <walken@google.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <51C558E2.1040108@hurleysoftware.com>
-References: <cover.1371855277.git.tim.c.chen@linux.intel.com>
-	 <1371858700.22432.5.camel@schen9-DESK>
-	 <51C558E2.1040108@hurleysoftware.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Jun 2013 14:58:12 -0700
-Message-ID: <1372111092.22432.84.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1752053Ab3FXWAW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 18:00:22 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55100 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab3FXWAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 18:00:20 -0400
+Message-ID: <51C8C172.8020207@codeaurora.org>
+Date: Mon, 24 Jun 2013 15:00:18 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: srinivas.kandagatla@st.com
+CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v5] clocksource:arm_global_timer: Add ARM global timer
+ support.
+References: <1372089195-29219-1-git-send-email-srinivas.kandagatla@st.com> <51C8A6C8.8000009@codeaurora.org> <51C8B551.9080203@st.com>
+In-Reply-To: <51C8B551.9080203@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
-> Will this spin for full scheduler value on a reader-owned lock?
-> 
-> > +		/* wait_lock will be acquired if write_lock is obtained */
-> > +		if (rwsem_try_write_lock(sem->count, true, sem)) {
-> > +			ret = 1;
-> > +			goto out;
-> > +		}
-> > +
-> > +		/*
-> > +		 * When there's no owner, we might have preempted between the
->                                                          ^^^^^^^^
-> 
-> Isn't pre-emption disabled?
-> 
+On 06/24/13 14:08, Srinivas KANDAGATLA wrote:
+> On 24/06/13 21:06, Stephen Boyd wrote:
+>> On 06/24/13 08:53, Srinivas KANDAGATLA wrote:
+>>> +
+>>> +static void gt_clockevents_stop(struct clock_event_device *clk)
+>>> +{
+>>> +	gt_clockevent_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
+>>> +	disable_percpu_irq(clk->irq);
+>>> +}
+>>> +
+>>> +static int __cpuinit gt_clockevents_setup(struct clock_event_device *clk)
+>>> +{
+>>> +	struct clock_event_device *evt = this_cpu_ptr(gt_evt);
+>>> +	return evt->name ? 0 : gt_clockevents_init(evt);
+>>> +}
+>> How does this work? gt_clockevents_stop() is using the
+>> clock_event_device struct from the ARM local timer layer whereas
+>> gt_clockevents_setup() is using a driver private allocation.
+> Thanks for pointing this..
+> This should fix it.
+>
+> static void gt_clockevents_stop(struct clock_event_device *clk)
+> {
+> 	struct clock_event_device *evt = this_cpu_ptr(gt_evt);
+> 	gt_clockevent_set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+> 	disable_percpu_irq(evt->irq);
+> }
 
-Peter, on further review, this code is needed.  This code guard against 
-the case of this thread preempting another thread in the middle
-of setting the  owner field.  Disabling preemption does not prevent this
-thread from preempting others, even though others cannot preempt 
-this thread.
+Looks good, but even better would be to not use the local timer API.
 
+>  Please just
+>> don't use the local timer API at all and use cpu notifiers instead.
+> Last time when I did try using cpu notifiers like arm_arch_timer, the
+> broadcast dummy timer did kick off and took over the local timer on the
+> secondary cpus. Resulting in lot of broadcast IPI's.
+>
+> If I use cpu notifiers I will end up two clk events on a each core (one
+> dummy from arm/kernel/smp.c and other gt clk_evt). I think I can only
+> use cpu notifiers in my case once your patches are in.
+> Also I cant disable LOCAL_TIMERS as it y by default.
+>
+> Am I missing something?
+>
+> Am happy to move to cpu notifiers if it works, else the driver will be
+> broken.
 
-> 
-> > +		 * owner acquiring the lock and setting the owner field. If
-> > +		 * we're an RT task that will live-lock because we won't let
-> > +		 * the owner complete.
-> > +		 */
-> > +		if (!owner && (need_resched() || rt_task(current)))
-> > +			break;
-> > +
-> > +		/*
-> > +		 * The cpu_relax() call is a compiler barrier which forces
-> > +		 * everything in this loop to be re-loaded. We don't need
-> > +		 * memory barriers as we'll eventually observe the right
-> > +		 * values at the cost of a few extra spins.
-> > +		 */
-> > +		arch_mutex_cpu_relax();
-> > +
-> > +	}
-> > +
-> > +out:
-> > +	preempt_enable();
-> > +	return ret;
-> > +}
-> > +#endif
-> > +
-> >   /*
-> >    * wait until we successfully acquire the write lock
-> >    */
-> > @@ -200,6 +326,9 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
-> >   	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
-> >   	struct rwsem_waiter waiter;
-> >   	struct task_struct *tsk = current;
-> > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-> > +	bool try_optimistic_spin = true;
-> > +#endif
-> >
-> >   	/* set up my own style of waitqueue */
-> >   	waiter.task = tsk;
-> > @@ -223,20 +352,17 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
-> >   	/* wait until we successfully acquire the lock */
-> >   	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-> >   	while (true) {
-> > -		if (!(count & RWSEM_ACTIVE_MASK)) {
-> > -			/* Try acquiring the write lock. */
-> > -			count = RWSEM_ACTIVE_WRITE_BIAS;
-> > -			if (!list_is_singular(&sem->wait_list))
-> > -				count += RWSEM_WAITING_BIAS;
-> > -
-> > -			if (sem->count == RWSEM_WAITING_BIAS &&
-> > -			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
-> > -							RWSEM_WAITING_BIAS)
-> > -				break;
-> > -		}
-> > +		if (rwsem_try_write_lock(count, false, sem))
-> > +			break;
-> >
-> >   		raw_spin_unlock_irq(&sem->wait_lock);
-> >
-> > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-> > +		/* do optimistic spinning */
-> > +		if (try_optimistic_spin && rwsem_optimistic_spin(sem))
-> > +			break;
-> > +		try_optimistic_spin = false;
-> > +#endif
-> >   		/* Block until there are no active lockers. */
-> >   		do {
-> >   			schedule();
-> 
+I think the problem is your clockevent has no rating. Please give it a
+rating (300?) so that it prevents the dummy from taking over. You don't
+need to worry about disabling the local timer API, it will register a
+harmless clockevent with a low rating (100) that should be ignored.
 
-Thanks.
-
-Tim
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
