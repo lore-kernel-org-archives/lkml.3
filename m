@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab3FXMOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:14:20 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:57405 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752091Ab3FXMOS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:14:18 -0400
-From: Patrice CHOTARD <patrice.chotard@st.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Patrice Chotard <patrice.chotard.st@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olivier CLERGEAUD <olivier.clergeaud@st.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Date: Mon, 24 Jun 2013 14:13:59 +0200
-Subject: Re: [PATCH v2 1/4] pinctrl: abx500: suppress hardcoded value
-Thread-Topic: [PATCH v2 1/4] pinctrl: abx500: suppress hardcoded value
-Thread-Index: Ac5w1FE//BuqNJ1dQr2MytQb/mCZsQ==
-Message-ID: <51C83807.8060705@st.com>
-References: <1371737145-27662-1-git-send-email-patrice.chotard.st@gmail.com>
- <1371737145-27662-2-git-send-email-patrice.chotard.st@gmail.com>
- <CACRpkdaAT4vEtthPgfd=yptpoK9GPdMx5w6VaQNe0+2WySwy1g@mail.gmail.com>
-In-Reply-To: <CACRpkdaAT4vEtthPgfd=yptpoK9GPdMx5w6VaQNe0+2WySwy1g@mail.gmail.com>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
- Thunderbird/12.0.1
-acceptlanguage: fr-FR, en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752792Ab3FXMSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:18:37 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:43607 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3FXMSe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 08:18:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=O1qK1Z
+	1g5kg+jKrsHnxbe9s7I/DS+DTgP3aGZ/6f8L5Tn/91NvZBi1RI00qRwYuwfaoOpy
+	c60gYBRITSYqJOYhhNz/OxvocfkWzeOy0zm/D2ClrrLTDpNb3KmDNqqtPpZAYG+1
+	vv0HgyhC4NnjPCjb+QzSkJb4Tv+cFEPG7Io1U=
+Message-ID: <51C83907.2020202@pobox.com>
+Date: Mon, 24 Jun 2013 08:18:15 -0400
+From: Mark Lord <mlord@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: Pavel Machek <pavel@ucw.cz>, Marcus Overhagen <marcus.overhagen@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        tj@kernel.org
+Subject: Re: SATA hdd refuses to reallocate a sector?
+References: <20130623101940.GA4448@amd.pavel.ucw.cz> <51C76858.4060906@pobox.com> <20130623215100.GA7414@amd.pavel.ucw.cz> <201306240914.29502.linux@rainbow-software.org>
+In-Reply-To: <201306240914.29502.linux@rainbow-software.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: 27287372-DCC8-11E2-9DD3-D5430E5B5709-82205200!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 01:29 PM, Linus Walleij wrote:
+On 13-06-24 03:14 AM, Ondrej Zary wrote:
+..
+> Being tired of using hdparm manually, I created a simple hdd_realloc utility
+> that reads the disk in big blocks (1 MB). When there's a read error, it reads
+> the failed block sector-by-sector and tries to rewrite the sectors that fail
+> to read. It work fine for disks with just a couple of pending sectors.
 
-> On Thu, Jun 20, 2013 at 4:05 PM,  <patrice.chotard.st@gmail.com> wrote:
-> 
->> From: Patrice Chotard <patrice.chotard@st.com>
->>
->> Replace hardcoded value by corresponding #define's.
->>
->> Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
-> 
-> This is not so good. The commit message is saying it
-> replaces values by #defines but is actually replacing it
-> by an enum.
-> 
-> Then you're in each instance calling
-> 
-> abx500_gpio_set_bits(struct gpio_chip *chip, u8 reg,
->                 unsigned offset, int val)
-> 
-> The last argument is a hardware register value, but here you
-> case an enum abx500_gpio_direction to an integer and pass
-> to this function.
-> 
-> It would be better if the patch did what it says: create a
-> #define for ABX500_GPIO_INPUT and ABX500_GPIO_OUTPUT
-> locally in drivers/pinctrl/pinctrl-abx500.c and use it locally
-> instead of touching <mfd/abx500/ab8500-gpio.h>.
+Something like that would work very well if it used the hdparm approach
+(directly to the drive) for the sector-by-sector part.
 
+Going through the block layer isn't always going to work,
+because the kernel likes to do I/O in PAGE_SIZE multiples.
 
-Ok, i'll resubmit this
+And the SCSI stack in Linux has rather atrocious error handling.
+It lumps multiple requests together, and can fail the entire lot even
+if only a single sector is bad.
 
-> 
-> Thanks,
-> Linus Walleij
-
+Cheers
+-- 
+Mark Lord
+Real-Time Remedies Inc.
+mlord@pobox.com
