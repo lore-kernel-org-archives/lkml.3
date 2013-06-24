@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab3FXMS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:18:58 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:34029 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab3FXMS5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:18:57 -0400
+	id S1752772Ab3FXMXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:23:48 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:46862 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751458Ab3FXMXr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 08:23:47 -0400
+From: Patrice CHOTARD <patrice.chotard@st.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Patrice Chotard <patrice.chotard.st@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olivier CLERGEAUD <olivier.clergeaud@st.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Date: Mon, 24 Jun 2013 14:23:41 +0200
+Subject: Re: [PATCH v2 4/4] pinctrl: abx500: rework error path
+Thread-Topic: [PATCH v2 4/4] pinctrl: abx500: rework error path
+Thread-Index: Ac5w1aoHVhgPoJJOTUu76bTAmWMxtw==
+Message-ID: <51C83A4D.9030903@st.com>
+References: <1371737145-27662-1-git-send-email-patrice.chotard.st@gmail.com>
+ <1371737145-27662-5-git-send-email-patrice.chotard.st@gmail.com>
+ <CACRpkdZm-A-CVU+Lf=74HR71gH2fwTsigv7gJRGTS2seL=Vs=A@mail.gmail.com>
+In-Reply-To: <CACRpkdZm-A-CVU+Lf=74HR71gH2fwTsigv7gJRGTS2seL=Vs=A@mail.gmail.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
+ Thunderbird/12.0.1
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <1371851554-4492-1-git-send-email-hanumant@codeaurora.org>
-References: <1371851554-4492-1-git-send-email-hanumant@codeaurora.org>
-Date: Mon, 24 Jun 2013 14:18:56 +0200
-Message-ID: <CACRpkdbcscJYRgTQv_4SdR3i3PJwWfYQu=OonABz3xyLO+3Ubg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Hanumant Singh <hanumant@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 11:52 PM, Hanumant Singh
-<hanumant@codeaurora.org> wrote:
+On 06/24/2013 01:37 PM, Linus Walleij wrote:
 
-> Add a new device tree enabled pinctrl driver for
-> Qualcomm MSM SoC's. This driver provides an extensible
-> framework to interface all MSM's that use a TLMM pinmux,
-> with the pinctrl subsytem.
-
-This is really nice.
-
-> +  The pin group node must additionally have a pin configuration node as its own
-> +  child node. There can be more then one such configuration node for a pin group
-> +  node. There can be one or more configurations within the configuration
-> +  node. These configurations are applied to all pins mentoned above using the
-> +  "qcom,pins" property. These configurations are specific to the pintype of the
-> +  pins. The following pin configuration properties are supported by general
-> +  purpose pins.
-> +
-> +  - qcom,gp-pull: Pull up/down configuration.
-> +  - qcom,gp-drv: Drive strength configuration.
-> +  - qcom,gp-dir: Pull up/down configuration in power down mode.
-
-Rebase this to use the generic pin config mappings and parsing
-code that can be found in the "devel" branch of the pinctrl tree.
-
-> +  The following pin configurations are properties are supported by SDC pins
-> +  - qcom,sdc1-clk-pull: Pull up/down configuration SDC1 clock pin.
-> +  - qcom,sdc1-clk-drv: Drive strength configuration for SDC1 clock pin.
-> +  - qcom,sdc1-cmd-pull: Pull up/down configuration for SDC1 command pin.
-> +  - qcom,sdc1-cmd-drv: Drive strength configuration for SDC1 command pin.
-> +  - qcom,sdc1-data-pull: Pull up/down configuration for SDC1 data pin.
-> +  - qcom,sdc1-data-drv: Drive strength configuration for SDC1 data pin.
-> +  - qcom,sdc2-clk-pull: Pull up/down configuration SDC2 clock pin.
-> +  - qcom,sdc2-clk-drv: Drive strength configuration for SDC2 clock pin.
-> +  - qcom,sdc2-cmd-pull: Pull up/down configuration for SDC2 command pin.
-> +  - qcom,sdc2-cmd-drv: Drive strength configuration for SDC2 command pin.
-> +  - qcom,sdc2-data-pull: Pull up/down configuration for SDC2 data pin.
-> +  - qcom,sdc2-data-drv: Drive strength configuration for SDC2 data pin.
-
-I don't understand why each sdc thing needs its own definition
-for everything. Please use the generic pin config bindings, call the
-generic parser function and then reject if someone tries to config
-something that is not supported.
-
-> +               spi-bus {
-> +                       /*
-> +                        * MOSI, MISO and CLK lines
-> +                        * all sharing same function and config
-> +                        * settings for each configuration node.
-> +                        */
-> +                       qcom,pins = <&gp 0>, <&gp 1>, <&gp 3>;
-> +                       qcom,pin-func = <1>;
-> +
-> +                       /* Active configuration of bus pins */
-> +                       spi-bus-active: spi-bus-active {
-> +                               qcom,gp-drv = <3>; /* 8 MA */
-> +                               qcom,gp-pull = <0>; /* No PULL */
+> On Thu, Jun 20, 2013 at 4:05 PM,  <patrice.chotard.st@gmail.com> wrote:
+> 
+>> From: Patrice Chotard <patrice.chotard@st.com>
+>>
+>> At several places, return value was not tested
+>> and error output was missing.
+>>
+>> Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
+> 
+> This looks fine, but does not apply since I didn't accept patch 1/4.
 
 
-This would be:
+I am surprised that patch 4/4 doesn't apply, because in my side i am
+able to apply it on your devel branch even without patch 1/4
 
-drive-strength = <8>;
-bias-disable;
+Anyway, i'll submit 1/4 and 4/4.
 
-With the generic bindings I believe.
+Thanks
 
-> +Example 4: Set up the default pin state for spi controller.
-> +
-> +       static inline int msm_spi_request_pins{struct msm_spi *dd)
-> +       {
-> +               /* ... */
-> +               dd->pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-> +       }
+Patrice
 
-Nowadays the device core will do this, so this is not any good
-advice. (See commit ab78029ecc347debbd737f06688d788bd9d60c1d)
+>
 
-I will look closer at this when it uses generic pinconf and
-generic pinconf DT bindings, let's target v3.12.
+> Please resend 1/4 and this 4/4 after fixing up 1/4.
+> 
+> (You can rebase onto devel if you want to be 100% sure it applies.)
+> 
+> Yours,
+> Linus Walleij
 
-Yours,
-Linus Walleij
