@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab3FXMXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:23:48 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:46862 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751458Ab3FXMXr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:23:47 -0400
-From: Patrice CHOTARD <patrice.chotard@st.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Patrice Chotard <patrice.chotard.st@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olivier CLERGEAUD <olivier.clergeaud@st.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Date: Mon, 24 Jun 2013 14:23:41 +0200
-Subject: Re: [PATCH v2 4/4] pinctrl: abx500: rework error path
-Thread-Topic: [PATCH v2 4/4] pinctrl: abx500: rework error path
-Thread-Index: Ac5w1aoHVhgPoJJOTUu76bTAmWMxtw==
-Message-ID: <51C83A4D.9030903@st.com>
-References: <1371737145-27662-1-git-send-email-patrice.chotard.st@gmail.com>
- <1371737145-27662-5-git-send-email-patrice.chotard.st@gmail.com>
- <CACRpkdZm-A-CVU+Lf=74HR71gH2fwTsigv7gJRGTS2seL=Vs=A@mail.gmail.com>
-In-Reply-To: <CACRpkdZm-A-CVU+Lf=74HR71gH2fwTsigv7gJRGTS2seL=Vs=A@mail.gmail.com>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
- Thunderbird/12.0.1
-acceptlanguage: fr-FR, en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752853Ab3FXMYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:24:14 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:44479 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab3FXMYM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 08:24:12 -0400
 MIME-Version: 1.0
+In-Reply-To: <201306220139.28794.heiko@sntech.de>
+References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com>
+	<51C4A447.3090807@wwwdotorg.org>
+	<3185376.o7RqphCDfQ@avalon>
+	<201306220139.28794.heiko@sntech.de>
+Date: Mon, 24 Jun 2013 14:24:12 +0200
+Message-ID: <CACRpkdYMe+q2GUXooSeVVua3-AHDJFfWQu21bn45b_omsA7FAQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 01:37 PM, Linus Walleij wrote:
-
-> On Thu, Jun 20, 2013 at 4:05 PM,  <patrice.chotard.st@gmail.com> wrote:
-> 
->> From: Patrice Chotard <patrice.chotard@st.com>
+On Sat, Jun 22, 2013 at 1:39 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Samstag, 22. Juni 2013, 01:30:18 schrieb Laurent Pinchart:
+>> [Stephen]
+>> > IIRC the idea of the PULL_PIN_DEFAULT was to avoid having to specify
+>> > UP/DOWN for each pin/group, but could just say "default", which would
+>> > then reduce the number of pinctrl mapping table entries or pinctrl DT
+>> > property entries.
 >>
->> At several places, return value was not tested
->> and error output was missing.
->>
->> Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
-> 
-> This looks fine, but does not apply since I didn't accept patch 1/4.
-
-
-I am surprised that patch 4/4 doesn't apply, because in my side i am
-able to apply it on your devel branch even without patch 1/4
-
-Anyway, i'll submit 1/4 and 4/4.
-
-Thanks
-
-Patrice
-
+>> I may be mistaken, but I've understood the PULL_PIN_DEFAULT option as a way
+>> to select the default bias configuration when the default value is
+>> hardware- controlled, not as a pure software option.
 >
+> Yep that was the original intent ... to handle hardware that hides the
+> complete logic from the software and you only get to turn it on or off, while
+> the direction and other params are determined internally for example by the
+> pin function.
 
-> Please resend 1/4 and this 4/4 after fixing up 1/4.
-> 
-> (You can rebase onto devel if you want to be 100% sure it applies.)
-> 
-> Yours,
-> Linus Walleij
+Heiko, can you send a documentation patch to clarify this so we
+don't get any misunderstandings?
 
+Maybe it'd be useful for software purposes as well, but let's save
+that for when it gets used like that.
+
+Yours,
+Linus Walleij
