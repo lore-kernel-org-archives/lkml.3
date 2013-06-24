@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab3FXIs3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:48:29 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64542 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751115Ab3FXIs0 (ORCPT
+	id S1751970Ab3FXIt5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:49:57 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60126 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab3FXItz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:48:26 -0400
-Date: Mon, 24 Jun 2013 09:47:44 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch: arm64: kernel: add '#ifdef CONFIG_COMPAT' for
- aarch32_break_handler()
-Message-ID: <20130624084744.GA23779@mudshark.cambridge.arm.com>
-References: <51C53C06.7050205@asianux.com>
+	Mon, 24 Jun 2013 04:49:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51C53C06.7050205@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C802DA.4080202@mentor.com>
+References: <51C802DA.4080202@mentor.com>
+Date: Mon, 24 Jun 2013 10:49:54 +0200
+X-Google-Sender-Auth: 1NPUkyu4rAi5XaRRbMirb_rKlvs
+Message-ID: <CAMuHMdXDrPxw2Fs7ncATz+8JTJYu=dm3m0bQrca4KY9UZvyV8A@mail.gmail.com>
+Subject: Re: SLIP: Is there a maintainer for drivers/net/slip/slip.c ?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dean Jenkins <Dean_Jenkins@mentor.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 06:54:14AM +0100, Chen Gang wrote:
-> 
-> If 'COMPAT' not defined, aarch32_break_handler() cannot pass compiling,
-> so need add '#ifdef' for it just like the header file has done.
-> 
-> The related make:
-> 
->   make ARCH=arm64 randconfig
->   make ARCH=arm64 menuconfig
->   make ARCH=arm64 V=1 EXTRA_CFLAGS=-W
-> 
-> The related error:
-> 
->   arch/arm64/kernel/debug-monitors.c:249:5: error: redefinition of ‘aarch32_break_handler’
->   In file included from arch/arm64/kernel/debug-monitors.c:29:0:
->   /root/linux-next/arch/arm64/include/asm/debug-monitors.h:89:12: note: previous definition of ‘aarch32_break_handler’ was here
+On Mon, Jun 24, 2013 at 10:27 AM, Dean Jenkins <Dean_Jenkins@mentor.com> wrote:
+> Using the Linux v3.9 tag, I note that
+>
+> ./scripts/get_maintainer.pl -f drivers/net/slip/slip.c
+> netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+> linux-kernel@vger.kernel.org (open list)
+>
+> There seems to be no maintainer for drivers/net/slip/slip.c, is that true ?
 
-Actually, can we just kill the static definition in debug-monitors.h
-instead? I don't see anything in the full-blown aardch32_break_handler that
-won't play nicely if !COMPAT.
+netdev seems to be the most appropriate mailing list, cfr. what
+get_maintainer.pl reported, hence CC netdev added.
 
-Will
+> I am asking because sl_encaps() and slip_write_wakeup() do not handle error
+> codes from tty->ops->write() and a recursive stack overflow crash can occur
+> if the tty->ops->write() fails to write all the characters. I have some
+> patches to fix this but would like some feedback on an appropriate solution.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
