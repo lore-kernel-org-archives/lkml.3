@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab3FXFsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 01:48:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40901 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab3FXFss (ORCPT
+	id S1752506Ab3FXFuj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 01:50:39 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:56409 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab3FXFug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 01:48:48 -0400
-Date: Mon, 24 Jun 2013 15:48:28 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: linux-next: manual merge of the clk tree with the samsung tree
-Message-Id: <20130624154828.292bd8800c80c526695c1659@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Jun_2013_15_48_28_+1000_JPoihGJ4ElMqRHxo"
+	Mon, 24 Jun 2013 01:50:36 -0400
+MIME-Version: 1.0
+Date: Mon, 24 Jun 2013 11:20:35 +0530
+Message-ID: <CAKohpo=v4qPDH32Y4ithr_p007nTn5AOUzkUCiHTGgQN6-=BEw@mail.gmail.com>
+Subject: [GIT PULL] ARM: CPUFreq updates for 3.11
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Jun_2013_15_48_28_+1000_JPoihGJ4ElMqRHxo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Rafael,
 
-Hi Mike,
+This is part of my patchset "CPUFreq: Fix {PRE|POST}CHANGE notification
+sequence". It contains changes specific to cpufreq core and ARM drivers.
 
-Today's linux-next merge of the clk tree got a conflict in
-drivers/clk/samsung/clk-exynos4.c between commit 6082f908b060 ("clk:
-exynos4: Staticize local symbols") from the samsung tree and commit
-82ba93b27cf5 ("clk: exynos4: Fix clock aliases for cpufreq related
-clocks") from the clk tree.
+I have left changes to non-ARM cpufreq drivers from this pull request. See if
+you can take them for 3.11.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
 
-diff --cc drivers/clk/samsung/clk-exynos4.c
-index 50af410,94c5e1a..0000000
---- a/drivers/clk/samsung/clk-exynos4.c
-+++ b/drivers/clk/samsung/clk-exynos4.c
-@@@ -355,9 -355,9 +355,9 @@@ static struct samsung_fixed_rate_clock=20
-  };
- =20
-  /* list of mux clocks supported in all exynos4 soc's */
- -struct samsung_mux_clock exynos4_mux_clks[] __initdata =3D {
- +static struct samsung_mux_clock exynos4_mux_clks[] __initdata =3D {
-- 	MUX_F(mout_apll, "mout_apll", mout_apll_p, SRC_CPU, 0, 1,
-- 			CLK_SET_RATE_PARENT, 0),
-+ 	MUX_FA(mout_apll, "mout_apll", mout_apll_p, SRC_CPU, 0, 1,
-+ 			CLK_SET_RATE_PARENT, 0, "mout_apll"),
-  	MUX(none, "mout_hdmi", mout_hdmi_p, SRC_TV, 0, 1),
-  	MUX(none, "mout_mfc1", sclk_evpll_p, SRC_MFC, 4, 1),
-  	MUX(none, "mout_mfc", mout_mfc_p, SRC_MFC, 8, 1),
-@@@ -423,9 -423,9 +423,9 @@@ static struct samsung_mux_clock exynos4
-  };
- =20
-  /* list of mux clocks supported in exynos4x12 soc */
- -struct samsung_mux_clock exynos4x12_mux_clks[] __initdata =3D {
- +static struct samsung_mux_clock exynos4x12_mux_clks[] __initdata =3D {
-- 	MUX(mout_mpll_user_c, "mout_mpll_user_c", mout_mpll_user_p4x12,
-- 			SRC_CPU, 24, 1),
-+ 	MUX_A(mout_mpll_user_c, "mout_mpll_user_c", mout_mpll_user_p4x12,
-+ 			SRC_CPU, 24, 1, "mout_mpll"),
-  	MUX(none, "mout_aclk266_gps", aclk_p4412, SRC_TOP1, 4, 1),
-  	MUX(none, "mout_aclk400_mcuisp", aclk_p4412, SRC_TOP1, 8, 1),
-  	MUX(mout_mpll_user_t, "mout_mpll_user_t", mout_mpll_user_p4x12,
+are available in the git repository at:
 
---Signature=_Mon__24_Jun_2013_15_48_28_+1000_JPoihGJ4ElMqRHxo
-Content-Type: application/pgp-signature
+  git://git.linaro.org/people/vireshk/linux.git cpufreq-fix-notification-arm
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+for you to fetch changes up to f2d65dd0d573e6961165f0be35bac84997b9e707:
 
-iQIbBAEBCAAGBQJRx92wAAoJEECxmPOUX5FEduUP+OYRF0rHMo/3gUYhW+ZaFwsd
-K8ekhKsvawuOvFhmdU1RpDNHZaPLfSswIuWXb/iwY9ltBsJQpIA8s9z5GqYF0zu+
-t7mrm6pNbOLeWEuW0VDlEnQ4+jfpgPrME+lMI1LlyvXP5XCIq72VZvc4A/ZQ3wdU
-Ugt4QOX3WUVbHsDIH7II+aaM3CmwvmsLITpTbjzlAYiq/0hAkurkbbrNRLgS9fTK
-QyALkQ0KpDGG9tdGiIe97zU33yBiOjE62bYzSpNa3sDM1kRoMEBD3JpAuD5b1CVn
-TTqNLSdFsTpdygOr3apOF+ZnfVrurmHB2MWZEvPRIxZ1S1/ujasIWzTcGJbrSJoG
-WZVElp4kwNLSowrfRosrPtf/jpOMrEj35WKSPX2Fmrm5jughQGP40XmATKZb2bwW
-kbxT7t4aAeBU1wIDtnq/520kOI2tQCsHudkPT8uhlhz6ynsKKQfeT+V6jkwWbOK8
-uMAhqoMVSqh6IUrh5kP41bFRSp87eRb92aMm52RksQnzb1chiPVmZPaH3TFJyHP+
-B4ZlKBLhPkBcuVejA2bwkmnk5RZzFjkZjtKP+7xTVtOtgnkXF7jlQ7pQCck32vJy
-RQOus1J55TaM14RAmOJK2Co9NoslFj4apm1s4/k5tYXJ2URd1CDaw8OHYSHIvKBD
-4Okzyc8DuOxnmTuHcSY=
-=orwx
------END PGP SIGNATURE-----
+  cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier in error cases
+(2013-06-24 11:14:24 +0530)
 
---Signature=_Mon__24_Jun_2013_15_48_28_+1000_JPoihGJ4ElMqRHxo--
+----------------------------------------------------------------
+Viresh Kumar (9):
+      cpufreq: make sure frequency transitions are serialized
+      cpufreq: arm-big-little: call CPUFREQ_POSTCHANGE notfier in error cases
+      cpufreq: davinci: call CPUFREQ_POSTCHANGE notfier in error cases
+      cpufreq: dbx500: call CPUFREQ_POSTCHANGE notfier in error cases
+      cpufreq: exynos: call CPUFREQ_POSTCHANGE notfier in error cases
+      cpufreq: imx6q: call CPUFREQ_POSTCHANGE notfier in error cases
+      cpufreq: omap: call CPUFREQ_POSTCHANGE notfier in error cases
+      cpufreq: s3c64xx: call CPUFREQ_POSTCHANGE notfier in error cases
+      cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier in error cases
+
+ drivers/cpufreq/arm_big_little.c  |  4 +---
+ drivers/cpufreq/cpufreq.c         |  9 +++++++++
+ drivers/cpufreq/davinci-cpufreq.c |  3 +++
+ drivers/cpufreq/dbx500-cpufreq.c  |  4 ++--
+ drivers/cpufreq/exynos-cpufreq.c  | 10 ++++++++--
+ drivers/cpufreq/imx6q-cpufreq.c   | 17 +++++++++++------
+ drivers/cpufreq/omap-cpufreq.c    |  6 +++---
+ drivers/cpufreq/s3c64xx-cpufreq.c |  8 ++++++--
+ drivers/cpufreq/tegra-cpufreq.c   |  4 ++--
+ 9 files changed, 45 insertions(+), 20 deletions(-)
