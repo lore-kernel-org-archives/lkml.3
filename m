@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab3FXXfM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 19:35:12 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:55118 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab3FXXfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 19:35:10 -0400
-Message-ID: <51C8D796.8000005@interlog.com>
-Date: Tue, 25 Jun 2013 01:34:46 +0200
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752137Ab3FXXiP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 19:38:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33288 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab3FXXiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 19:38:14 -0400
+Date: Mon, 24 Jun 2013 16:38:13 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jiri Slaby <jslaby@suse.cz>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v5] serial:st-asc: Add ST ASC driver.
+Message-ID: <20130624233813.GA4108@kroah.com>
+References: <1372058503-30505-1-git-send-email-srinivas.kandagatla@gmail.com>
 MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] scsi_debug: fix do_device_access() with wrap around
- range
-References: <1371991061-19437-1-git-send-email-akinobu.mita@gmail.com> <1371991061-19437-5-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1371991061-19437-5-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1372058503-30505-1-git-send-email-srinivas.kandagatla@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-06-23 02:37 PM, Akinobu Mita wrote:
-> do_device_access() is a function that abstracts copying SG list from/to
-> ramdisk storage (fake_storep).
->
-> It must deal with the ranges exceeding actual fake_storep size, because
-> such ranges are valid if virtual_gb is set greater than zero, and they
-> should be treated as fake_storep is repeatedly mirrored up to virtual size.
->
-> Unfortunately, it can't deal with the range which wraps around the end of
-> fake_storep. A wrap around range is copied by two sg_copy_{from,to}_buffer()
-> calls, but sg_copy_{from,to}_buffer() can't copy from/to in the middle of
-> SG list, therefore the second call can't copy correctly.
->
-> This fixes it by using sg_pcopy_{from,to}_buffer() that can copy from/to
-> the middle of SG list.
->
-> This also simplifies the assignment of sdb->resid in fill_from_dev_buffer().
-> Because fill_from_dev_buffer() is now only called once per command
-> execution cycle.  So it is not necessary to take care to decrease
-> sdb->resid if fill_from_dev_buffer() is called more than once.
->
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: Douglas Gilbert <dgilbert@interlog.com>
-> Cc: linux-scsi@vger.kernel.org
+On Mon, Jun 24, 2013 at 08:21:43AM +0100, Srinivas KANDAGATLA wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> 
+> This patch adds support to ASC (asynchronous serial controller)
+> driver, which is basically a standard serial driver. This IP is common
+> across all the ST parts for settop box platforms.
+> 
+> ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
+> It support all industry standard baud rates.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> CC: Stephen Gallimore <stephen.gallimore@st.com>
+> CC: Stuart Menefy <stuart.menefy@st.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
 > ---
->
-> * No change from v2
+> Hi Greg,
+> 
+> This patch is the part of the driver support for Stixxxx SOCs.
+> This patch undergone 3-4 cycles of review in arm-kernel mailing list.
+> As Arnd prefered to take only SOC support patches via arm-soc, Am 
+> sending this patch seperately.
+> 
+> If its not too late, can you consider this patch for 3.11 via tty tree?
 
-Acked-by: Douglas Gilbert <dgilbert@interlog.com>
+I would have taken it, but it breaks the build on my machine:
 
+drivers/tty/serial/st-asc.c: In function ‘asc_serial_resume’:
+drivers/tty/serial/st-asc.c:774:15: error: ‘struct device’ has no member named ‘pins’
+drivers/tty/serial/st-asc.c:775:3: error: implicit declaration of function ‘pinctrl_select_state’ [-Werror=implicit-function-declaration]
+drivers/tty/serial/st-asc.c:775:37: error: ‘struct device’ has no member named ‘pins’
+drivers/tty/serial/st-asc.c:776:16: error: ‘struct device’ has no member named ‘pins’
+
+Please test your patches out on a "normal" Linux system.
+
+Please feel free to resend this after 3.11-rc1 is out, for inclusion in
+3.12, after you have fixed the build problems.
+
+greg k-h
