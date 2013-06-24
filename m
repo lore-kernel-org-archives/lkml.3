@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab3FXP2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:28:41 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:60534 "EHLO extserv.mm-sol.com"
+	id S1752804Ab3FXPaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:30:08 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:60551 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab3FXP2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:28:37 -0400
+	id S1752246Ab3FXP2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 11:28:40 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: linux-arm-msm@vger.kernel.org
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] usb: phy: msm: Move mach dependent code to platform data
-Date: Mon, 24 Jun 2013 18:27:38 +0300
-Message-Id: <1372087664-26396-2-git-send-email-iivanov@mm-sol.com>
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/7] usb: phy: msm: Remove unnecessarily check for valid regulators.
+Date: Mon, 24 Jun 2013 18:27:41 +0300
+Message-Id: <1372087664-26396-5-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1372087664-26396-1-git-send-email-iivanov@mm-sol.com>
 References: <1372087664-26396-1-git-send-email-iivanov@mm-sol.com>
@@ -27,267 +23,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-This patch fix compilation error and is an intermediate step
-before the addition of DeviceTree support for newer targets.
-Fix suggested here: https://lkml.org/lkml/2013/6/19/381
+Whether regulators are available or not is checked at driver
+probe. If they are not available driver will refuse to load,
+so no need to check them again.
 
-Cc: David Brown <davidb@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Felipe Balbi <balbi@ti.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++
- arch/arm/mach-msm/board-qsd8x50.c |   34 +++++++++++++++++++++++
- drivers/usb/phy/phy-msm-usb.c     |   55 ++++++++++---------------------------
- include/linux/usb/msm_hsusb.h     |    2 ++
- 4 files changed, 85 insertions(+), 41 deletions(-)
+ drivers/usb/phy/phy-msm-usb.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
-index db3d8c0..4df7daa 100644
---- a/arch/arm/mach-msm/board-msm7x30.c
-+++ b/arch/arm/mach-msm/board-msm7x30.c
-@@ -31,6 +31,7 @@
- #include <asm/setup.h>
- 
- #include <mach/board.h>
-+#include <mach/clk.h>
- #include <mach/msm_iomap.h>
- #include <mach/dma.h>
- 
-@@ -61,10 +62,44 @@ static int hsusb_phy_init_seq[] = {
- 	-1
- };
- 
-+static int hsusb_phy_link_clk_reset(struct clk *link_clk, bool assert)
-+{
-+	int ret;
-+
-+	if (assert) {
-+		ret = clk_reset(link_clk, CLK_RESET_ASSERT);
-+		if (ret)
-+			pr_err("usb hs_clk assert failed\n");
-+	} else {
-+		ret = clk_reset(link_clk, CLK_RESET_DEASSERT);
-+		if (ret)
-+			pr_err("usb hs_clk deassert failed\n");
-+	}
-+	return ret;
-+}
-+
-+static int hsusb_phy_clk_reset(struct clk *phy_clk)
-+{
-+	int ret;
-+
-+	ret = clk_reset(phy_clk, CLK_RESET_ASSERT);
-+	if (ret) {
-+		pr_err("usb phy clk assert failed\n");
-+		return ret;
-+	}
-+	usleep_range(10000, 12000);
-+	ret = clk_reset(phy_clk, CLK_RESET_DEASSERT);
-+	if (ret)
-+		pr_err("usb phy clk deassert failed\n");
-+	return ret;
-+}
-+
- static struct msm_otg_platform_data msm_otg_pdata = {
- 	.phy_init_seq		= hsusb_phy_init_seq,
- 	.mode                   = USB_PERIPHERAL,
- 	.otg_control		= OTG_PHY_CONTROL,
-+	.phy_link_clk_reset	= hsusb_phy_link_clk_reset,
-+	.phy_phy_clk_reset	= hsusb_phy_clk_reset,
- };
- 
- struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
-diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
-index f14a73d..d3d92ab 100644
---- a/arch/arm/mach-msm/board-qsd8x50.c
-+++ b/arch/arm/mach-msm/board-qsd8x50.c
-@@ -82,10 +82,44 @@ static int hsusb_phy_init_seq[] = {
- 	-1
- };
- 
-+static int hsusb_phy_link_clk_reset(struct clk *link_clk, bool assert)
-+{
-+	int ret;
-+
-+	if (assert) {
-+		ret = clk_reset(link_clk, CLK_RESET_ASSERT);
-+		if (ret)
-+			pr_err("usb hs_clk assert failed\n");
-+	} else {
-+		ret = clk_reset(link_clk, CLK_RESET_DEASSERT);
-+		if (ret)
-+			pr_err("usb hs_clk deassert failed\n");
-+	}
-+	return ret;
-+}
-+
-+static int hsusb_phy_clk_reset(struct clk *phy_clk)
-+{
-+	int ret;
-+
-+	ret = clk_reset(phy_clk, CLK_RESET_ASSERT);
-+	if (ret) {
-+		pr_err("usb phy clk assert failed\n");
-+		return ret;
-+	}
-+	usleep_range(10000, 12000);
-+	ret = clk_reset(phy_clk, CLK_RESET_DEASSERT);
-+	if (ret)
-+		pr_err("usb phy clk deassert failed\n");
-+	return ret;
-+}
-+
- static struct msm_otg_platform_data msm_otg_pdata = {
- 	.phy_init_seq		= hsusb_phy_init_seq,
- 	.mode                   = USB_PERIPHERAL,
- 	.otg_control		= OTG_PHY_CONTROL,
-+	.phy_link_clk_reset	= hsusb_phy_link_clk_reset,
-+	.phy_phy_clk_reset	= hsusb_phy_clk_reset,
- };
- 
- static struct platform_device *devices[] __initdata = {
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index d08f334..ab1b880 100644
+index 8289270..0e7d7ab 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -40,8 +40,6 @@
- #include <linux/usb/msm_hsusb_hw.h>
- #include <linux/regulator/consumer.h>
- 
--#include <mach/clk.h>
--
- #define MSM_USB_BASE	(motg->regs)
- #define DRIVER_NAME	"msm_otg"
- 
-@@ -306,51 +304,20 @@ static void ulpi_init(struct msm_otg *motg)
- 	}
- }
- 
--static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
--{
--	int ret;
--
--	if (assert) {
--		ret = clk_reset(motg->clk, CLK_RESET_ASSERT);
--		if (ret)
--			dev_err(motg->phy.dev, "usb hs_clk assert failed\n");
--	} else {
--		ret = clk_reset(motg->clk, CLK_RESET_DEASSERT);
--		if (ret)
--			dev_err(motg->phy.dev, "usb hs_clk deassert failed\n");
--	}
--	return ret;
--}
--
--static int msm_otg_phy_clk_reset(struct msm_otg *motg)
--{
--	int ret;
--
--	ret = clk_reset(motg->phy_reset_clk, CLK_RESET_ASSERT);
--	if (ret) {
--		dev_err(motg->phy.dev, "usb phy clk assert failed\n");
--		return ret;
--	}
--	usleep_range(10000, 12000);
--	ret = clk_reset(motg->phy_reset_clk, CLK_RESET_DEASSERT);
--	if (ret)
--		dev_err(motg->phy.dev, "usb phy clk deassert failed\n");
--	return ret;
--}
--
- static int msm_otg_phy_reset(struct msm_otg *motg)
- {
-+	struct msm_otg_platform_data *pdata = motg->pdata;
- 	u32 val;
- 	int ret;
- 	int retries;
- 
--	ret = msm_otg_link_clk_reset(motg, 1);
-+	ret = pdata->phy_link_clk_reset(motg->clk, true);
- 	if (ret)
- 		return ret;
--	ret = msm_otg_phy_clk_reset(motg);
-+	ret = pdata->phy_clk_reset(motg->phy_reset_clk);
- 	if (ret)
- 		return ret;
--	ret = msm_otg_link_clk_reset(motg, 0);
-+	ret = pdata->phy_link_clk_reset(motg->clk, false);
- 	if (ret)
- 		return ret;
- 
-@@ -362,7 +329,7 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
- 				ULPI_CLR(ULPI_FUNC_CTRL));
- 		if (!ret)
- 			break;
--		ret = msm_otg_phy_clk_reset(motg);
-+		ret = pdata->phy_clk_reset(motg->phy_reset_clk);
- 		if (ret)
- 			return ret;
- 	}
-@@ -370,7 +337,7 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
- 		return -ETIMEDOUT;
- 
- 	/* This reset calibrates the phy, if the above write succeeded */
--	ret = msm_otg_phy_clk_reset(motg);
-+	ret = pdata->phy_clk_reset(motg->phy_reset_clk);
- 	if (ret)
- 		return ret;
- 
-@@ -378,7 +345,7 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
- 		ret = ulpi_read(&motg->phy, ULPI_DEBUG);
- 		if (ret != -ETIMEDOUT)
- 			break;
--		ret = msm_otg_phy_clk_reset(motg);
-+		ret = pdata->phy_clk_reset(motg->phy_reset_clk);
- 		if (ret)
- 			return ret;
- 	}
-@@ -1414,16 +1381,22 @@ static void msm_otg_debugfs_cleanup(void)
- static int __init msm_otg_probe(struct platform_device *pdev)
+@@ -159,16 +159,6 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
  {
  	int ret = 0;
-+	struct msm_otg_platform_data *pdata = pdev->dev.platform_data;
- 	struct resource *res;
- 	struct msm_otg *motg;
- 	struct usb_phy *phy;
  
- 	dev_info(&pdev->dev, "msm_otg probe\n");
--	if (!pdev->dev.platform_data) {
-+	if (!pdata) {
- 		dev_err(&pdev->dev, "No platform data given. Bailing out\n");
- 		return -ENODEV;
- 	}
- 
-+	if (!pdata->phy_clk_reset || !pdata->phy_link_clk_reset) {
-+		dev_err(&pdev->dev, "No phy or link clock reset methods\n");
-+		return -ENODEV;
-+	}
-+
- 	motg = kzalloc(sizeof(struct msm_otg), GFP_KERNEL);
- 	if (!motg) {
- 		dev_err(&pdev->dev, "unable to allocate msm_otg\n");
-diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
-index 22a396c..66081ed 100644
---- a/include/linux/usb/msm_hsusb.h
-+++ b/include/linux/usb/msm_hsusb.h
-@@ -135,6 +135,8 @@ struct msm_otg_platform_data {
- 	enum msm_usb_phy_type phy_type;
- 	void (*setup_gpio)(enum usb_otg_state state);
- 	char *pclk_src_name;
-+	int (*phy_link_clk_reset)(struct clk *link_clk, bool assert);
-+	int (*phy_clk_reset)(struct clk *phy_clk);
- };
- 
- /**
+-	if (!motg->v1p8 || IS_ERR(motg->v1p8)) {
+-		pr_err("%s: HSUSB_1p8 is not initialized\n", __func__);
+-		return -ENODEV;
+-	}
+-
+-	if (!motg->v3p3 || IS_ERR(motg->v3p3)) {
+-		pr_err("%s: HSUSB_3p3 is not initialized\n", __func__);
+-		return -ENODEV;
+-	}
+-
+ 	if (on) {
+ 		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_HPM_LOAD);
 -- 
 1.7.9.5
 
