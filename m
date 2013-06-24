@@ -1,90 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab3FXKRC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:17:02 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:43150 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3FXKRA (ORCPT
+	id S1752270Ab3FXKSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:18:14 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53948 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab3FXKSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:17:00 -0400
-X-Spam-Score: -100.6
-Message-ID: <51C81C68.5080101@asianux.com>
-Date: Mon, 24 Jun 2013 18:16:08 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 24 Jun 2013 06:18:12 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX198yB8lpdFBYawjIcI7UamL
+Date: Mon, 24 Jun 2013 03:17:56 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Joel A Fernandes <joelagnel@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v12 04/11] dmaengine: edma: enable build for AM33XX
+Message-ID: <20130624101756.GU5523@atomide.com>
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
+ <1371762407-24544-5-git-send-email-joelagnel@ti.com>
+ <51C427AA.6080601@ti.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: arm64: kernel: add '#ifdef CONFIG_COMPAT' for
- aarch32_break_handler()
-References: <51C53C06.7050205@asianux.com> <51C81115.4070803@asianux.com> <20130624101429.GF23779@mudshark.cambridge.arm.com>
-In-Reply-To: <20130624101429.GF23779@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C427AA.6080601@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 06:14 PM, Will Deacon wrote:
-> On Mon, Jun 24, 2013 at 10:27:49AM +0100, Chen Gang wrote:
->> > 
->> > If 'COMPAT' not defined, aarch32_break_handler() cannot pass compiling,
->> > and it can work independent with 'COMPAT', so remove dummy definition.
->> > 
->> > The related make:
->> > 
->> >   make ARCH=arm64 randconfig
->> >   make ARCH=arm64 menuconfig
->> >   make ARCH=arm64 V=1 EXTRA_CFLAGS=-W
-> This sequence isn't really very useful, so I wouldn't bother including it in
-> the commit message. You can trigger this issue just by disabling
-> CONFIG_COMPAT.
+* Sekhar Nori <nsekhar@ti.com> [130621 03:21]:
+> On 6/21/2013 2:36 AM, Joel A Fernandes wrote:
+> > From: Matt Porter <mporter@ti.com>
+> > 
+> > Enable TI EDMA option on OMAP and TI_PRIV_EDMA
+> > 
+> > Signed-off-by: Matt Porter <mporter@ti.com>
+> > Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
 > 
+> This will have to be taken by Tony.
 
-OK, thanks. Next time, I need notice about it.
+Sekhar, please go ahead and take this one. I'll reply
+to the header email of this series how it should be
+queued.
 
->> > The related error:
->> > 
->> >   arch/arm64/kernel/debug-monitors.c:249:5: error: redefinition of ‘aarch32_break_handler’
->> >   In file included from arch/arm64/kernel/debug-monitors.c:29:0:
->> >   /root/linux-next/arch/arm64/include/asm/debug-monitors.h:89:12: note: previous definition of ‘aarch32_break_handler’ was here
->> > 
->> > 
->> > 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> > ---
->> >  arch/arm64/include/asm/debug-monitors.h |    7 -------
->> >  1 files changed, 0 insertions(+), 7 deletions(-)
->> > 
->> > diff --git a/arch/arm64/include/asm/debug-monitors.h b/arch/arm64/include/asm/debug-monitors.h
->> > index ef8235c..a2232d0 100644
->> > --- a/arch/arm64/include/asm/debug-monitors.h
->> > +++ b/arch/arm64/include/asm/debug-monitors.h
->> > @@ -83,14 +83,7 @@ static inline int reinstall_suspended_bps(struct pt_regs *regs)
->> >  }
->> >  #endif
->> >  
->> > -#ifdef CONFIG_COMPAT
->> >  int aarch32_break_handler(struct pt_regs *regs);
->> > -#else
->> > -static int aarch32_break_handler(struct pt_regs *regs)
->> > -{
->> > -	return -EFAULT;
->> > -}
->> > -#endif
-> Code looks fine to me:
-> 
->   Acked-by: Will Deacon <will.deacon@arm.com>
+For the mach-omap2/Kconfig change:
 
-Thanks.
-
--- 
-Chen Gang
-
-Asianux Corporation
+Acked-by: Tony Lindgren <tony@atomide.com>
+ 
+> > ---
+> >  arch/arm/mach-omap2/Kconfig |    1 +
+> >  drivers/dma/Kconfig         |    2 +-
+> >  2 files changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> > index f49cd51..f91b07f 100644
+> > --- a/arch/arm/mach-omap2/Kconfig
+> > +++ b/arch/arm/mach-omap2/Kconfig
+> > @@ -17,6 +17,7 @@ config ARCH_OMAP2PLUS
+> >  	select PROC_DEVICETREE if PROC_FS
+> >  	select SOC_BUS
+> >  	select SPARSE_IRQ
+> > +	select TI_PRIV_EDMA
+> >  	select USE_OF
+> >  	help
+> >  	  Systems based on OMAP2, OMAP3, OMAP4 or OMAP5
+> > diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> > index e992489..3215a3c 100644
+> > --- a/drivers/dma/Kconfig
+> > +++ b/drivers/dma/Kconfig
+> > @@ -213,7 +213,7 @@ config SIRF_DMA
+> >  
+> >  config TI_EDMA
+> >  	tristate "TI EDMA support"
+> > -	depends on ARCH_DAVINCI
+> > +	depends on ARCH_DAVINCI || ARCH_OMAP
+> >  	select DMA_ENGINE
+> >  	select DMA_VIRTUAL_CHANNELS
+> >  	default n
+> > 
