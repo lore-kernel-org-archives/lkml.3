@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab3FXHhm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 03:37:42 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:52326 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585Ab3FXHhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 03:37:41 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH] ACPI / processor: Remove unused macros in processor_driver.c
-Date: Mon, 24 Jun 2013 15:36:33 +0800
-Message-Id: <1372059393-15996-1-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752904Ab3FXHlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 03:41:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36936 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752585Ab3FXHlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 03:41:21 -0400
+Date: Mon, 24 Jun 2013 09:41:17 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: suravee.suthikulpanit@amd.com, iommu@lists.linux-foundation.org,
+        ddutile@redhat.com, alex.williamson@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] iommu/amd: IOMMU Error Reporting/Handling/Filtering
+Message-ID: <20130624074117.GA26766@pd.tnic>
+References: <1369250155-12226-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20130621151459.GK11309@8bytes.org>
+ <20130621155933.GA24385@pd.tnic>
+ <20130621162455.GN11309@8bytes.org>
+ <20130621173625.GH22006@pd.tnic>
+ <20130624072648.GQ11309@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130624072648.GQ11309@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI_PROCESSOR_FILE_INFO, ACPI_PROCESSOR_FILE_THROTTLING and
-ACPI_PROCESSOR_FILE_LIMIT are used for procfs, but this feature was removed
-in commit d09fe555 (ACPI processor: remove deprecated ACPI procfs I/F) long
-ago. So, these macros should also be removed.
+On Mon, Jun 24, 2013 at 09:26:48AM +0200, Joerg Roedel wrote:
+> On Fri, Jun 21, 2013 at 07:36:25PM +0200, Borislav Petkov wrote:
+> 
+> > IOW, what specific functionality in EDAC are you actually thinking of?
+> 
+> Okay, my believe until yesterday was that EDAC provides a consistent way
+> to report hardware errors to userspace. That seems to be wrong. This in
+> mind I think having a trace-point for that makes sense.
+> 
+> But this trace-point must not be specific to a single IOMMU driver, I
+> want it generic enough so that it can be used by all common IOMMU
+> drivers to report hardware misbehaviors to userspace.
 
-ACPI_PROCESSOR_LIMIT_USER and ACPI_PROCESSOR_LIMIT_THERMAL are not used
-by any code, remove them too.
+Yep, either that or you define a TRACE_EVENT_CLASS which contains common
+error info which all iommu drivers report, and those which want to
+report more specific information pertaining only to them, then they need
+to define a tracepoint based on the iommu event class.
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- drivers/acpi/processor_driver.c |    6 ------
- 1 file changed, 6 deletions(-)
+Check the sources for examples.
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index d93963f..823be116 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -43,16 +43,10 @@
- 
- #define PREFIX "ACPI: "
- 
--#define ACPI_PROCESSOR_FILE_INFO	"info"
--#define ACPI_PROCESSOR_FILE_THROTTLING	"throttling"
--#define ACPI_PROCESSOR_FILE_LIMIT	"limit"
- #define ACPI_PROCESSOR_NOTIFY_PERFORMANCE 0x80
- #define ACPI_PROCESSOR_NOTIFY_POWER	0x81
- #define ACPI_PROCESSOR_NOTIFY_THROTTLING	0x82
- 
--#define ACPI_PROCESSOR_LIMIT_USER	0
--#define ACPI_PROCESSOR_LIMIT_THERMAL	1
--
- #define _COMPONENT		ACPI_PROCESSOR_COMPONENT
- ACPI_MODULE_NAME("processor_driver");
- 
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
