@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab3FXIID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:08:03 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53414 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab3FXIH4 (ORCPT
+	id S1753211Ab3FXIIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:08:51 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:55981 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753013Ab3FXIIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:07:56 -0400
-Date: Mon, 24 Jun 2013 10:07:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Wilcox <willy@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
-Message-ID: <20130624080750.GA21768@gmail.com>
-References: <20130620201713.GV8211@linux.intel.com>
- <20130623100920.GA19021@gmail.com>
- <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+	Mon, 24 Jun 2013 04:08:49 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsYPAM79x1F5LPX0/2dsb2JhbABbDoJ7gxa3dYUgBAF8F3SCIwEBBAE6HCgLCAMYCSUPBSUDIQESiAgFuRYWjhyBJINjA5dCkUWCUlAq
+Date: Mon, 24 Jun 2013 18:08:44 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Eric Sandeen <esandeen@redhat.com>,
+        Andreas Dilger <adilger@dilger.ca>, Namjae Jeon <linkinjeon@gmail.com>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "a.sangwan@samsung.com" <a.sangwan@samsung.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 0/3] ext4: introduce two new ioctls
+Message-ID: <20130624080844.GR29338@dastard>
+References: <1371967642-3116-1-git-send-email-linkinjeon@gmail.com>
+ <03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
+ <7D1878F6-0387-48F3-8724-4A8946AECF9E@redhat.com>
+ <20130624024459.GJ29376@dastard>
+ <20130624031235.GA6991@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+In-Reply-To: <20130624031235.GA6991@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Sun, Jun 23, 2013 at 12:09 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > The spinning approach you add has the disadvantage of actively wasting 
-> > CPU time, which could be used to run other tasks. In general it's much 
-> > better to make sure the completion IRQs are rate-limited and just 
-> > schedule. This (combined with a metric ton of fine details) is what 
-> > the networking code does in essence, and they have no trouble reaching 
-> > very high throughput.
+On Sun, Jun 23, 2013 at 11:12:35PM -0400, Theodore Ts'o wrote:
+> On Mon, Jun 24, 2013 at 12:44:59PM +1000, Dave Chinner wrote:
+> > 
+> > Hence, at minimum, this should be a fallocate() operation, not a ext4
+> > specific ioctl as it is relatively trivial to implement on most
+> > extent based filesystems.
 > 
-> It's not about throughput - it's about latency. Don't ever confuse the 
-> two, they have almost nothing in common. Networking very very seldom has 
-> the kind of "submit and wait for immediate result" issues that disk 
-> reads do.
+> The fallocate() uses a units of bytes for the offset and length; would
+> a FALLOC_FL_COLLAPSE_RANGE be guaranteed to work on any arbitrary
+> offset and length?  Or would it only work if the offset and length are
+> multiples of the file system blocksize?
 
-Yeah, indeed that's true, the dd measurement Matthew did issued IO at a 
-rate of one sector at a time and waiting for every sector to complete:
+There's nothing stopping us from restricting the offset/len to
+specific alignments if the operation cannot be done on arbitrary
+byte ranges. We do that for direct IO, and the sky hasn't fallen
+yet.
 
-    dd if=/dev/nvme0n1 of=/dev/null iflag=direct bs=512 count=1000000
+> The the EXT4_IOC_TRUNCATE_BLOCK_RANGE interface solves this problem by
+> using units of file system blocks (i.e., __u32 start_block), but that
+> raises another issue, which is it forces the user space program to
+> somehow figure out the file system block size, which seems a bit nasty.
 
-So my suggestions about batching and IRQ rate control are immaterial...
+Yeah, exactly. We can do that internally very easily, and EINVAL can
+be returned when the alignment is bad just like we do for direct
+IO...
 
-> That said, I dislike the patch intensely. I do not think it's at all a 
-> good idea to look at "need_resched" to say "I can spin now". You're 
-> still wasting CPU cycles.
-> 
-> So Willy, please do *not* mix this up with the scheduler, or at least 
-> not "need_resched". Instead, maybe we should introduce a notion of "if 
-> we are switching to the idle thread, let's see if we can try to do some 
-> IO synchronously".
-> 
-> You could try to do that either *in* the idle thread (which would take 
-> the context switch overhead - maybe negating some of the advantages), or 
-> alternatively hook into the scheduler idle logic before actually doing 
-> the switch.
-> 
-> But anything that starts polling when there are other runnable processes 
-> to be done sounds really debatable. Even if it's "only" 5us or so. 
-> There's a lot of real work that could be done in 5us.
+But, well, I pine for a generic XFS_IOC_DIOINFO interface so the
+filesystem can tell users about alignment restrictions....
 
-I'm wondering, how will this scheme work if the IO completion latency is a 
-lot more than the 5 usecs in the testcase? What if it takes 20 usecs or 
-100 usecs or more?
+Cheers,
 
-Will we still burn our CPU time, wasting power, inflating this CPU's load 
-which keeps other CPUs from balancing tasks over to this CPU, etc?
-
-In the 5 usecs case it looks beneficial to do. In the longer-latency cases 
-I'm not so sure.
-
-Thanks,
-
-	Ingo
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
