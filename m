@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab3FXMhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:37:20 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:35158 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3FXMhR (ORCPT
+	id S1751655Ab3FXMpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:45:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47571 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750829Ab3FXMpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:37:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130617180212.GU20992@atomide.com>
-References: <1370980749-15383-1-git-send-email-linus.walleij@stericsson.com>
-	<51BA1FE7.4000900@wwwdotorg.org>
-	<CACRpkdZV7R3MgbuvEMhs24YYv2hK8Kt9Kjmv_cpRQQ1NYviDQg@mail.gmail.com>
-	<51BB3A2C.608@wwwdotorg.org>
-	<20130617072021.GB4465@atomide.com>
-	<CACRpkdYwGHMznjoJqf5bX_74pmeKSiWtTwpNF1_4GSEk+KwrZA@mail.gmail.com>
-	<20130617180212.GU20992@atomide.com>
-Date: Mon, 24 Jun 2013 14:37:16 +0200
-Message-ID: <CACRpkdY7hF+9s0f64yc09DHLFQCjzzhPoS-ypBmgit=kFFD0Mg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: document the pinctrl PM states
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Jun 2013 08:45:53 -0400
+Message-ID: <1372077951.21189.16.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Per route MTU settings are broken in linux kernel 3.2
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Yura Pakhuchiy <pakhuchiy@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        stable@vger.kernel.org
+Date: Mon, 24 Jun 2013 13:45:51 +0100
+In-Reply-To: <1372063443.32157.10.camel@linux>
+References: <1372063443.32157.10.camel@linux>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-5a9ETWP2FVrqRFVVCqRK"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 8:02 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Linus Walleij <linus.walleij@linaro.org> [130617 09:11]:
 
->> Bear in mind that struct pinctl * forks effects in two paths,
->> one is muxing the other is config, like pull-ups etc.
->
-> I also thought the plan was to merge pinmux and pinconf and
-> do things based the named modes?
+--=-5a9ETWP2FVrqRFVVCqRK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-That is done from a consumer point of view.
-Consumers only care about pinctrl * handles
-and pinctrl_state * switches.
+On Mon, 2013-06-24 at 15:44 +0700, Yura Pakhuchiy wrote:
+> Hello Ben,
+>=20
+> Looks like setting per route MTU (as described in [1]) is broken in
+> Linux kernel 3.2. I tested with newer Ubuntu kernels 3.5 and 3.8 and it
+> looks like problem is fixed there. I filled Ubuntu bug report [2] with
+> more details and sample script which illustrates problem. But since this
+> problem is probably also present in stock kernel (not just in Ubuntu),
+> is it possible to backport fixes to stable 3.2 series?
+>=20
+> 1. http://lartc.org/howto/lartc.cookbook.mtu-discovery.html
+> 2. https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1177507
 
-> The last time I tried using the pinconf functions it involved
-> knowing the name of the pin in the consumer driver. The name
-> may not be very descriptive in the device tree cases at least
-> for the pinctrl-single. So I did not pay much attention to
-> the pinconf functions.
+Sure, what are the fixes?
 
-Consumers should not use that interface, i.e.:
+Ben.
 
-int pin_config_get(const char *dev_name, const char *name,
-                                unsigned long *config);
-int pin_config_set(const char *dev_name, const char *name,
-                                 unsigned long config)
+--=20
+Ben Hutchings
+Lowery's Law:
+             If it jams, force it. If it breaks, it needed replacing anyway=
+.
 
-This needs to be deleted from <linux/pinctrl/consumer.h>
-I'll see if I can get rid of it pronto to avoid any more confusion
-and sorry for leaving that in place for too long.
+--=-5a9ETWP2FVrqRFVVCqRK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-The proper way to use it is to use the states.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Yours,
-Linus Walleij
+iQIVAwUAUcg/f+e/yOyVhhEJAQrRVRAA1P9GysjIPkzLpyOPIe1EcnW2zMAzZOK1
+2au+Y1I7ZQ2vwplk3w474RR4qtBJqkz36r0MJvK8NNFg0PopEVM1XVv4QcCGsj+n
+xrrQjcJqp4TJW9wytfpcIbKzTBFQTEK4w0YP83rjDrtIJPwuYnJZEKKuWHk4Npxx
+0Wr7S34f1NiO77XqdJl6d7Hez1TaNTVjbyv6mxudmE2AF5IxezaAJyYTgTFIFn01
+4LEui7EqBkjoQORkI+oWPcbTAfxNdIH61fxeJcJTLdZsGzT9pqZqb07tu+QtCbmU
+JnWrh02HaOWCDAcm80Takp9l0RxURb9PIc1APv6el6SOWZQDDwrg/gV9kL4zjIKL
+OSHCtbl30YByVhXS+z8vBjA9SvhcGFhAuXkdEmsQnMsvOtyLGnv0yZJG2vx83a6+
+h4bh4d4yiFllM2XDtl7XdoVtQzuBlfVwsc4nInBDjdsUSMVHdCMREHmbMutyD5/y
+YhvKn4KDoetyfhmhIWoVdnpFtUoSm3NAyUCmTleWSjnbxRsPWG0cNRZaCThI9DTx
+fqw18RAZMrixr2Gj8gueDYfaKinT81jVt9D42iJcyHHCWYJEoRtDByFWGi310pC4
+dC6zqygQEOsspMD1d/sMjZtIL4ACJhbHWQCAYK0mu3ybF26/3f9Q2bGQPVaUrH3d
+IHSx9kQEV30=
+=2LJb
+-----END PGP SIGNATURE-----
+
+--=-5a9ETWP2FVrqRFVVCqRK--
