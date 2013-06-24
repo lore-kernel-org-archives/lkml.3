@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab3FXRrD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:47:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58227 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab3FXRrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:47:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,929,1363158000"; 
-   d="scan'208";a="358790517"
-Subject: Re: [PATCH 0/2] rwsem: performance enhancements for systems with
- many cores
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <1371861805.13136.23.camel@buesod1.americas.hpqcorp.net>
-References: <1371858691.22432.3.camel@schen9-DESK>
-	 <1371859222.13136.11.camel@buesod1.americas.hpqcorp.net>
-	 <CANN689G1hyV_+2DxOiLqHDLGGuCjAqn9GhV-g4A0Jfd6YRQupQ@mail.gmail.com>
-	 <1371861805.13136.23.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Jun 2013 10:47:02 -0700
-Message-ID: <1372096022.22432.49.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1752688Ab3FXRuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:50:12 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:33408 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3FXRuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 13:50:10 -0400
+Message-ID: <51C886CF.4010001@linaro.org>
+Date: Mon, 24 Jun 2013 10:50:07 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, xen-devel@lists.xen.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/4] time: add a notifier chain for when the system time
+ is stepped
+References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com> <1371755792-25962-3-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306210953480.4013@ionos.tec.linutronix.de> <51C44A09.9010402@citrix.com> <alpine.DEB.2.02.1306212328350.4013@ionos.tec.linutronix.de> <51C824A8.1080305@citrix.com> <alpine.DEB.2.02.1306241753080.4013@ionos.tec.linutronix.de> <51C87B26.3010904@citrix.com>
+In-Reply-To: <51C87B26.3010904@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 17:43 -0700, Davidlohr Bueso wrote:
-> On Fri, 2013-06-21 at 17:25 -0700, Michel Lespinasse wrote:
-> > On Fri, Jun 21, 2013 at 5:00 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> > > On Fri, 2013-06-21 at 16:51 -0700, Tim Chen wrote:
-> > >> In this patchset, we introduce two optimizations to read write semaphore.
-> > >> The first one reduces cache bouncing of the sem->count field
-> > >> by doing a pre-read of the sem->count and avoid cmpxchg if possible.
-> > >> The second patch introduces similar optimistic spining logic in
-> > >> the mutex code for the writer lock acquisition of rw-sem.
-> > >>
-> > >> Combining the two patches, in testing by Davidlohr Bueso on aim7 workloads
-> > >> on 8 socket 80 cores system, he saw improvements of
-> > >> alltests (+14.5%), custom (+17%), disk (+11%), high_systime
-> > >> (+5%), shared (+15%) and short (+4%), most of them after around 500
-> > >> users when i_mmap was implemented as rwsem.
-> > >>
-> > >> Feedbacks on the effectiveness of these tweaks on other workloads
-> > >> will be appreciated.
-> > >
-> > > Tim, I was really hoping to send all this in one big bundle. I was doing
-> > > some further testing (enabling hyperthreading and some Oracle runs),
-> > > fortunately everything looks ok and we are getting actual improvements
-> > > on large boxes.
-> > >
-> > > That said, how about I send you my i_mmap rwsem patchset for a v2 of
-> > > this patchset?
-> > 
-> > I'm a bit confused about the state of these patchsets - it looks like
-> > I'm only copied into half of the conversations. Should I wait for a v2
-> > here, or should I hunt down for Alex's version of things, or... ?
-> 
-> Except for some internal patch logistics, you haven't been left out on
-> any conversations :)
-> 
-> My original plan was to send out, in one patchset: 
-> 
-> - rwsem optimizations from Alex (patch 1/2 here, which should be
-> actually 4 patches) +
-> - rwsem optimistic spinning (patch 2/2 here) +
-> - i_mmap_mutex to rwsem conversion (5 more patches)
-> 
-> Now, I realize that the i_mmap stuff might not be welcomed in a
-> rwsem-specific optimizations patchset like this one, but I think it's
-> relevant to include everything in a single bundle as it really shows the
-> performance boosts and it's what I have been using and measuring the
-> original negative rwsem performance when compared to a mutex. 
-> 
-> If folks don't agree, I can always send it as a separate patchset.
+On 06/24/2013 10:00 AM, David Vrabel wrote:
+> On 24/06/13 17:30, Thomas Gleixner wrote:
+>> @@ -508,7 +509,7 @@ int do_settimeofday(const struct timespec *tv)
+>>   
+>>   	tk_set_xtime(tk, tv);
+>>   
+>> -	timekeeping_update(tk, true, true);
+>> +	timekeeping_update(tk, true, true, true);
+> These three booleans in a row is getting a bit opaque. How about I also
+> change it to a set of flags?  e.g.,
+>
+> timekeeping_updated(tk, TK_CLEAR_NTP | TK_MIRROR | TK_CLOCK_WAS_SET);
 
-I think the i_mmap_mutex conversion probably should be a separate
-patch set.  There are probably a lot of i_mmap specific considerations
-that need to be considered.
+Yea. I'm not a fan of the bool arguments to functions (which I have to 
+look up every time as which bool is which).
 
-I'll resend a version two of the patchset that restructure Alex's
-changes into 4 patches and incorporate review comments.
+The bitflag approach is nicer in my mind, since its a bit more explicit 
+when reading the code.
 
-Thanks.
+The other approach would be to have different function calls 
+(timekeeping_clear_ntp, timekeeping_mirror, timekeeping_clock_was_set), 
+which call into the same back end logic.
 
-Tim
-
-
+thanks
+-john
