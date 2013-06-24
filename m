@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab3FXMSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:18:37 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:43607 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab3FXMSe (ORCPT
+	id S1752963Ab3FXMS6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:18:58 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:34029 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab3FXMS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:18:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=sasl; b=O1qK1Z
-	1g5kg+jKrsHnxbe9s7I/DS+DTgP3aGZ/6f8L5Tn/91NvZBi1RI00qRwYuwfaoOpy
-	c60gYBRITSYqJOYhhNz/OxvocfkWzeOy0zm/D2ClrrLTDpNb3KmDNqqtPpZAYG+1
-	vv0HgyhC4NnjPCjb+QzSkJb4Tv+cFEPG7Io1U=
-Message-ID: <51C83907.2020202@pobox.com>
-Date: Mon, 24 Jun 2013 08:18:15 -0400
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 24 Jun 2013 08:18:57 -0400
 MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: Pavel Machek <pavel@ucw.cz>, Marcus Overhagen <marcus.overhagen@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        tj@kernel.org
-Subject: Re: SATA hdd refuses to reallocate a sector?
-References: <20130623101940.GA4448@amd.pavel.ucw.cz> <51C76858.4060906@pobox.com> <20130623215100.GA7414@amd.pavel.ucw.cz> <201306240914.29502.linux@rainbow-software.org>
-In-Reply-To: <201306240914.29502.linux@rainbow-software.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: 27287372-DCC8-11E2-9DD3-D5430E5B5709-82205200!a-pb-sasl-quonix.pobox.com
+In-Reply-To: <1371851554-4492-1-git-send-email-hanumant@codeaurora.org>
+References: <1371851554-4492-1-git-send-email-hanumant@codeaurora.org>
+Date: Mon, 24 Jun 2013 14:18:56 +0200
+Message-ID: <CACRpkdbcscJYRgTQv_4SdR3i3PJwWfYQu=OonABz3xyLO+3Ubg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Hanumant Singh <hanumant@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-06-24 03:14 AM, Ondrej Zary wrote:
-..
-> Being tired of using hdparm manually, I created a simple hdd_realloc utility
-> that reads the disk in big blocks (1 MB). When there's a read error, it reads
-> the failed block sector-by-sector and tries to rewrite the sectors that fail
-> to read. It work fine for disks with just a couple of pending sectors.
+On Fri, Jun 21, 2013 at 11:52 PM, Hanumant Singh
+<hanumant@codeaurora.org> wrote:
 
-Something like that would work very well if it used the hdparm approach
-(directly to the drive) for the sector-by-sector part.
+> Add a new device tree enabled pinctrl driver for
+> Qualcomm MSM SoC's. This driver provides an extensible
+> framework to interface all MSM's that use a TLMM pinmux,
+> with the pinctrl subsytem.
 
-Going through the block layer isn't always going to work,
-because the kernel likes to do I/O in PAGE_SIZE multiples.
+This is really nice.
 
-And the SCSI stack in Linux has rather atrocious error handling.
-It lumps multiple requests together, and can fail the entire lot even
-if only a single sector is bad.
+> +  The pin group node must additionally have a pin configuration node as its own
+> +  child node. There can be more then one such configuration node for a pin group
+> +  node. There can be one or more configurations within the configuration
+> +  node. These configurations are applied to all pins mentoned above using the
+> +  "qcom,pins" property. These configurations are specific to the pintype of the
+> +  pins. The following pin configuration properties are supported by general
+> +  purpose pins.
+> +
+> +  - qcom,gp-pull: Pull up/down configuration.
+> +  - qcom,gp-drv: Drive strength configuration.
+> +  - qcom,gp-dir: Pull up/down configuration in power down mode.
 
-Cheers
--- 
-Mark Lord
-Real-Time Remedies Inc.
-mlord@pobox.com
+Rebase this to use the generic pin config mappings and parsing
+code that can be found in the "devel" branch of the pinctrl tree.
+
+> +  The following pin configurations are properties are supported by SDC pins
+> +  - qcom,sdc1-clk-pull: Pull up/down configuration SDC1 clock pin.
+> +  - qcom,sdc1-clk-drv: Drive strength configuration for SDC1 clock pin.
+> +  - qcom,sdc1-cmd-pull: Pull up/down configuration for SDC1 command pin.
+> +  - qcom,sdc1-cmd-drv: Drive strength configuration for SDC1 command pin.
+> +  - qcom,sdc1-data-pull: Pull up/down configuration for SDC1 data pin.
+> +  - qcom,sdc1-data-drv: Drive strength configuration for SDC1 data pin.
+> +  - qcom,sdc2-clk-pull: Pull up/down configuration SDC2 clock pin.
+> +  - qcom,sdc2-clk-drv: Drive strength configuration for SDC2 clock pin.
+> +  - qcom,sdc2-cmd-pull: Pull up/down configuration for SDC2 command pin.
+> +  - qcom,sdc2-cmd-drv: Drive strength configuration for SDC2 command pin.
+> +  - qcom,sdc2-data-pull: Pull up/down configuration for SDC2 data pin.
+> +  - qcom,sdc2-data-drv: Drive strength configuration for SDC2 data pin.
+
+I don't understand why each sdc thing needs its own definition
+for everything. Please use the generic pin config bindings, call the
+generic parser function and then reject if someone tries to config
+something that is not supported.
+
+> +               spi-bus {
+> +                       /*
+> +                        * MOSI, MISO and CLK lines
+> +                        * all sharing same function and config
+> +                        * settings for each configuration node.
+> +                        */
+> +                       qcom,pins = <&gp 0>, <&gp 1>, <&gp 3>;
+> +                       qcom,pin-func = <1>;
+> +
+> +                       /* Active configuration of bus pins */
+> +                       spi-bus-active: spi-bus-active {
+> +                               qcom,gp-drv = <3>; /* 8 MA */
+> +                               qcom,gp-pull = <0>; /* No PULL */
+
+
+This would be:
+
+drive-strength = <8>;
+bias-disable;
+
+With the generic bindings I believe.
+
+> +Example 4: Set up the default pin state for spi controller.
+> +
+> +       static inline int msm_spi_request_pins{struct msm_spi *dd)
+> +       {
+> +               /* ... */
+> +               dd->pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> +       }
+
+Nowadays the device core will do this, so this is not any good
+advice. (See commit ab78029ecc347debbd737f06688d788bd9d60c1d)
+
+I will look closer at this when it uses generic pinconf and
+generic pinconf DT bindings, let's target v3.12.
+
+Yours,
+Linus Walleij
