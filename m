@@ -1,60 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab3FXKgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:36:35 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:49420 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab3FXKgd (ORCPT
+	id S1752389Ab3FXKhd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:37:33 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:35479 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab3FXKhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:36:33 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>, Bo Shen <voice.shen@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3/3] ARM: at91/DT: at91sam9n12: add SPI DMA client infos
-Date: Mon, 24 Jun 2013 12:35:18 +0200
-Message-ID: <0db25022e463d6be2111e5dc3505faaf63f9cdc9.1372069834.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <cover.1372069834.git.nicolas.ferre@atmel.com>
-References: <cover.1372069834.git.nicolas.ferre@atmel.com>
+	Mon, 24 Jun 2013 06:37:31 -0400
+Message-ID: <51C82169.1010203@free-electrons.com>
+Date: Mon, 24 Jun 2013 12:37:29 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
+        jimwall@q.com, brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCHv2 1/3] iio: Add Nuvoton NAU7802 ADC driver
+References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com> <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com> <51C7EA23.1040707@metafoo.de>
+In-Reply-To: <51C7EA23.1040707@metafoo.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/at91sam9n12.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+On 24/06/2013 08:41, Lars-Peter Clausen wrote:
+> On 06/20/2013 08:57 PM, Alexandre Belloni wrote:
+>> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
+>> gain and sampling rates.
+>>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>> ---
+>>  .../bindings/iio/adc/nuvoton-nau7802.txt           |  17 +
+>>  drivers/iio/adc/Kconfig                            |   9 +
+>>  drivers/iio/adc/Makefile                           |   1 +
+>>  drivers/iio/adc/nau7802.c                          | 603 +++++++++++++++++++++
+>>  4 files changed, 630 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
+>>  create mode 100644 drivers/iio/adc/nau7802.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt b/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
+>> new file mode 100644
+>> index 0000000..9bc4218
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
+>> @@ -0,0 +1,17 @@
+>> +* Nuvoton NAU7802 Analog to Digital Converter (ADC)use
+>> +
+>> +Required properties:
+>> +  - compatible: Should be "nuvoton,nau7802"
+>> +  - reg: Should contain the ADC I2C address
+>> +
+>> +Optional properties:
+>> +  - nuvoton,vldo: Reference voltage in millivolts (integer)
+>> +  - interrupts: IRQ line for the ADC. If not used the driver will use
+>> +    polling.
+>> +
+>> +Example:
+>> +adc2: nau7802@2a {
+>> +	compatible = "nuvoton,nau7802";
+>> +	reg = <0x2a>;
+>> +	nuvoton,vldo = <3000>;
+> We usually use the regulator framework for specifying the reference voltage.
 
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index 973bf5f..bb7f564 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -492,6 +492,9 @@
- 				compatible = "atmel,at91rm9200-spi";
- 				reg = <0xf0000000 0x100>;
- 				interrupts = <13 IRQ_TYPE_LEVEL_HIGH 3>;
-+				dmas = <&dma 1 AT91_DMA_CFG_PER_ID(1)>,
-+				       <&dma 1 AT91_DMA_CFG_PER_ID(2)>;
-+				dma-names = "tx", "rx";
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_spi0>;
- 				status = "disabled";
-@@ -503,6 +506,9 @@
- 				compatible = "atmel,at91rm9200-spi";
- 				reg = <0xf0004000 0x100>;
- 				interrupts = <14 IRQ_TYPE_LEVEL_HIGH 3>;
-+				dmas = <&dma 1 AT91_DMA_CFG_PER_ID(3)>,
-+				       <&dma 1 AT91_DMA_CFG_PER_ID(4)>;
-+				dma-names = "tx", "rx";
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_spi1>;
- 				status = "disabled";
+I followed what Jonathan said in his review of my first patch. Do we
+want to use the regulator framework to set the internal reference
+voltage of the ADC ? I agree that if you supply an external voltage, it
+will be necessary to use the regulator framework. Unfortunately, I can't
+test that here.
+
+>> +};
+> [...]
+>> diff --git a/drivers/iio/adc/nau7802.c b/drivers/iio/adc/nau7802.c
+>> new file mode 100644
+>> index 0000000..e1b6981
+>> --- /dev/null
+>> +++ b/drivers/iio/adc/nau7802.c
+>> @@ -0,0 +1,603 @@
+> [...]
+>> +static int nau7802_set_gain(struct nau7802_state *st, int gain)
+>> +{
+>> +	u8 data;
+>> +	int ret;
+>> +
+>> +	mutex_lock(&st->lock);
+>> +	st->conversion_count = 0;
+>> +
+>> +	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_CTRL1);
+>> +	if (data < 0)
+>> +		goto nau7802_sysfs_set_gain_out;
+> ret will be uninitialized if the goto above is taken
+
+Right, bigger issue, data is u8 so it will never be negative. I'm fixing
+that !
+
+
+>> +	ret = i2c_smbus_write_byte_data(st->client, NAU7802_REG_CTRL1,
+>> +					(data & (~NAU7802_CTRL1_GAINS_BITS)) |
+>> +					gain);
+>> +
+>> +nau7802_sysfs_set_gain_out:
+>> +	mutex_unlock(&st->lock);
+>> +
+>> +	return ret ? ret : 0;
+>> +}
+> [...]
+>> +static int nau7802_read_irq(struct iio_dev *indio_dev,
+>> +			struct iio_chan_spec const *chan,
+>> +			int *val)
+>> +{
+>> +	struct nau7802_state *st = iio_priv(indio_dev);
+>> +	int ret;
+>> +
+>> +	INIT_COMPLETION(st->value_ok);
+>> +	enable_irq(st->client->irq);
+> Is it really necessary to enable/disable the IRQ or could you keep it
+> enabled all the time?
+
+Fact is that the ADC doesn't really care if you are reading data or not
+so you will probably endd up in a situation were you will get 320 IRQ
+per second but not caring about the result. We have 3 ADCs on the board.
+so that amounts to 960 IRQ per second when we are only reading like once
+par second !
+
+
 -- 
-1.8.2.2
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
