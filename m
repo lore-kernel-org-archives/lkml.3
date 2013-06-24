@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab3FXSM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:12:26 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:55086 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab3FXSMW (ORCPT
+	id S1753537Ab3FXSOh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:14:37 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:44035 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297Ab3FXSMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:12:22 -0400
+	Mon, 24 Jun 2013 14:12:25 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Clement Chauplannaz <chauplac@gmail.com>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 08/15] scripts/config: replace hard-coded script name by a dynamic value
-Date: Mon, 24 Jun 2013 20:11:52 +0200
-Message-Id: <7387778510b7deaff866277877c5550c3a14f1fb.1372097219.git.yann.morin.1998@free.fr>
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Matthieu CASTET <matthieu.castet@parrot.com>,
+        Arnaud Lacombe <lacombar@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH 09/15] kconfig/conf: fix randconfig setting multiple symbols in a choice
+Date: Mon, 24 Jun 2013 20:11:53 +0200
+Message-Id: <e6abf12a77bc56dceeb4cba557b726268e71350e.1372097219.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1372097219.git.yann.morin.1998@free.fr>
 References: <cover.1372097219.git.yann.morin.1998@free.fr>
@@ -24,62 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Clement Chauplannaz <chauplac@gmail.com>
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-The script `config' prints its name in usage() function. It is currently
-hard-coded to value `config'. However, the script may be reused under
-a different name in contexts other than the Linux Kernel.
+Currently, randconfig may set more than one symbol in a given choice.
+Given this config file:
+    config A
+        bool "A"
+    if A
+    choice
+        bool "B/C/D"
+    config B
+        bool "B"
+    config C
+        bool "C"
+    config D
+        bool "D"
+    endchoice
+    endif # A
 
-Replace the hard-coded value `config' by the name of the script at runtime.
+Then randconfig generates such .config files (case where A is not set is not
+shown below for brevity), and where only the right-most .config is valid:
+  CONFIG_A=y                  CONFIG_A=y                  CONFIG_A=y
+  CONFIG_B=y                  CONFIG_B=y                  CONFIG_B=y
+  CONFIG_C=y                  # CONFIG_C is not set       # CONFIG_C is not set
+  # CONFIG_D is not set       CONFIG_D=y                  # CONFIG_D is not set
 
-Signed-off-by: Clement Chauplannaz <chauplac@gmail.com>
-Acked-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Yann E. MORIN <yann.morin.1998@free.fr>
+That is, in a randomised choice, the first symbol is always selected,
+and at most one other symbol may be selected.
+
+This is due to symbol randomised in a choice not being properly flagged
+as having a value.
+
+Fix that by flagging those symbols adequately: have a user-defined value,
+and be not valid (to force recalculation of the symbol).
+
+Note: if the choice is not conditional, then the randomisation is properly
+done.
+
+Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
+Signed-off-by: Matthieu CASTET <matthieu.castet@parrot.com>
+[yann.morin.1998@free.fr: independently re-done the same patch as Matthieu,
+                          as pointed out by Sedat]
+Cc: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 ---
- scripts/config | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ scripts/kconfig/confdata.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/scripts/config b/scripts/config
-index bb4d3de..6b3272e 100755
---- a/scripts/config
-+++ b/scripts/config
-@@ -1,6 +1,8 @@
- #!/bin/bash
- # Manipulate options in a .config file from the command line
- 
-+myname=${0##*/}
-+
- # If no prefix forced, use the default CONFIG_
- CONFIG_="${CONFIG_-CONFIG_}"
- 
-@@ -8,7 +10,7 @@ usage() {
- 	cat >&2 <<EOL
- Manipulate options in a .config file from the command line.
- Usage:
--config options command ...
-+$myname options command ...
- commands:
- 	--enable|-e option   Enable option
- 	--disable|-d option  Disable option
-@@ -33,14 +35,14 @@ options:
- 	--file config-file   .config file to change (default .config)
- 	--keep-case|-k       Keep next symbols' case (dont' upper-case it)
- 
--config doesn't check the validity of the .config file. This is done at next
-+$myname doesn't check the validity of the .config file. This is done at next
- make time.
- 
--By default, config will upper-case the given symbol. Use --keep-case to keep
-+By default, $myname will upper-case the given symbol. Use --keep-case to keep
- the case of all following symbols unchanged.
- 
--config uses 'CONFIG_' as the default symbol prefix. Set the environment
--variable CONFIG_ to the prefix to use. Eg.: CONFIG_="FOO_" config ...
-+$myname uses 'CONFIG_' as the default symbol prefix. Set the environment
-+variable CONFIG_ to the prefix to use. Eg.: CONFIG_="FOO_" $myname ...
- EOL
- 	exit 1
- }
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 35e0f16..d36bc1f 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -1077,6 +1077,9 @@ static void randomize_choice_values(struct symbol *csym)
+ 		else {
+ 			sym->def[S_DEF_USER].tri = no;
+ 		}
++		sym->flags |= SYMBOL_DEF_USER;
++		/* clear VALID to get value calculated */
++		sym->flags &= ~SYMBOL_VALID;
+ 	}
+ 	csym->flags |= SYMBOL_DEF_USER;
+ 	/* clear VALID to get value calculated */
 -- 
 1.8.1.2
 
