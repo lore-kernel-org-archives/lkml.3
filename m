@@ -1,184 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab3FXGl3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 02:41:29 -0400
-Received: from smtp-out-223.synserver.de ([212.40.185.223]:1101 "EHLO
-	smtp-out-223.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab3FXGl1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 02:41:27 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 20974
-Message-ID: <51C7EA23.1040707@metafoo.de>
-Date: Mon, 24 Jun 2013 08:41:39 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1752632Ab3FXGmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 02:42:05 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:57304 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab3FXGmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 02:42:03 -0400
+Date: Mon, 24 Jun 2013 08:41:56 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        linux-cris-kernel@axis.com
+Subject: Re: [PATCH 33/45] cris/smp: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+Message-ID: <20130624064156.GR23735@axis.com>
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
+ <20130623134536.19094.52797.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        jimwall@q.com, brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCHv2 1/3] iio: Add Nuvoton NAU7802 ADC driver
-References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com> <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130623134536.19094.52797.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 08:57 PM, Alexandre Belloni wrote:
-> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
-> gain and sampling rates.
+On Sun, Jun 23, 2013 at 07:15:39PM +0530, Srivatsa S. Bhat wrote:
+> Once stop_machine() is gone from the CPU offline path, we won't be able
+> to depend on disabling preemption to prevent CPUs from going offline
+> from under us.
 > 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
+> offline, while invoking from atomic context.
+> 
+> Cc: Mikael Starvik <starvik@axis.com>
+
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: linux-cris-kernel@axis.com
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > ---
->  .../bindings/iio/adc/nuvoton-nau7802.txt           |  17 +
->  drivers/iio/adc/Kconfig                            |   9 +
->  drivers/iio/adc/Makefile                           |   1 +
->  drivers/iio/adc/nau7802.c                          | 603 +++++++++++++++++++++
->  4 files changed, 630 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
->  create mode 100644 drivers/iio/adc/nau7802.c
 > 
-> diff --git a/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt b/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
-> new file mode 100644
-> index 0000000..9bc4218
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
-> @@ -0,0 +1,17 @@
-> +* Nuvoton NAU7802 Analog to Digital Converter (ADC)use
-> +
-> +Required properties:
-> +  - compatible: Should be "nuvoton,nau7802"
-> +  - reg: Should contain the ADC I2C address
-> +
-> +Optional properties:
-> +  - nuvoton,vldo: Reference voltage in millivolts (integer)
-> +  - interrupts: IRQ line for the ADC. If not used the driver will use
-> +    polling.
-> +
-> +Example:
-> +adc2: nau7802@2a {
-> +	compatible = "nuvoton,nau7802";
-> +	reg = <0x2a>;
-> +	nuvoton,vldo = <3000>;
+>  arch/cris/arch-v32/kernel/smp.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
+> index cdd1202..b2d4612 100644
+> --- a/arch/cris/arch-v32/kernel/smp.c
+> +++ b/arch/cris/arch-v32/kernel/smp.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/init.h>
+>  #include <linux/timex.h>
+>  #include <linux/sched.h>
+> +#include <linux/cpu.h>
+>  #include <linux/kernel.h>
+>  #include <linux/cpumask.h>
+>  #include <linux/interrupt.h>
+> @@ -222,6 +223,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
+>  	unsigned long flags;
+>  	cpumask_t cpu_mask;
+>  
+> +	get_online_cpus_atomic();
+>  	spin_lock_irqsave(&tlbstate_lock, flags);
+>  	cpu_mask = (mm == FLUSH_ALL ? cpu_all_mask : *mm_cpumask(mm));
+>  	cpumask_clear_cpu(smp_processor_id(), &cpu_mask);
+> @@ -230,6 +232,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
+>  	flush_addr = addr;
+>  	send_ipi(IPI_FLUSH_TLB, 1, cpu_mask);
+>  	spin_unlock_irqrestore(&tlbstate_lock, flags);
+> +	put_online_cpus_atomic();
+>  }
+>  
+>  void flush_tlb_all(void)
+> @@ -319,10 +322,12 @@ int smp_call_function(void (*func)(void *info), void *info, int wait)
+>  	data.info = info;
+>  	data.wait = wait;
+>  
+> +	get_online_cpus_atomic();
+>  	spin_lock(&call_lock);
+>  	call_data = &data;
+>  	ret = send_ipi(IPI_CALL, wait, cpu_mask);
+>  	spin_unlock(&call_lock);
+> +	put_online_cpus_atomic();
+>  
+>  	return ret;
+>  }
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-We usually use the regulator framework for specifying the reference voltage.
-
-> +};
-[...]
-> diff --git a/drivers/iio/adc/nau7802.c b/drivers/iio/adc/nau7802.c
-> new file mode 100644
-> index 0000000..e1b6981
-> --- /dev/null
-> +++ b/drivers/iio/adc/nau7802.c
-> @@ -0,0 +1,603 @@
-[...]
-> +static int nau7802_set_gain(struct nau7802_state *st, int gain)
-> +{
-> +	u8 data;
-> +	int ret;
-> +
-> +	mutex_lock(&st->lock);
-> +	st->conversion_count = 0;
-> +
-> +	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_CTRL1);
-> +	if (data < 0)
-> +		goto nau7802_sysfs_set_gain_out;
-
-ret will be uninitialized if the goto above is taken
-
-> +	ret = i2c_smbus_write_byte_data(st->client, NAU7802_REG_CTRL1,
-> +					(data & (~NAU7802_CTRL1_GAINS_BITS)) |
-> +					gain);
-> +
-> +nau7802_sysfs_set_gain_out:
-> +	mutex_unlock(&st->lock);
-> +
-> +	return ret ? ret : 0;
-> +}
-[...]
-> +static int nau7802_read_irq(struct iio_dev *indio_dev,
-> +			struct iio_chan_spec const *chan,
-> +			int *val)
-> +{
-> +	struct nau7802_state *st = iio_priv(indio_dev);
-> +	int ret;
-> +
-> +	INIT_COMPLETION(st->value_ok);
-> +	enable_irq(st->client->irq);
-
-Is it really necessary to enable/disable the IRQ or could you keep it
-enabled all the time?
-
-> +
-> +	nau7802_sync(st);
-> +
-> +	/* read registers to ensure we flush everything */
-> +	ret = nau7802_read_conversion(st);
-> +	if (ret < 0)
-> +		goto read_chan_info_failure;
-> +
-> +	/* Wait for a conversion to finish */
-> +	ret = wait_for_completion_interruptible_timeout(&st->value_ok,
-> +			msecs_to_jiffies(1000));
-> +	if (ret == 0)
-> +		ret = -ETIMEDOUT;
-> +
-> +	if (ret < 0)
-> +		goto read_chan_info_failure;
-> +
-> +	disable_irq(st->client->irq);
-> +
-> +	*val = st->last_value;
-> +
-> +	return IIO_VAL_INT;
-> +
-> +read_chan_info_failure:
-> +	disable_irq(st->client->irq);
-> +
-> +	return ret;
-> +}
-[...]
-
-[...]
-> +static int nau7802_probe(struct i2c_client *client,
-> +			const struct i2c_device_id *id)
-> +{
-> +	struct iio_dev *indio_dev;
-> +	struct nau7802_state *st;
-> +	struct device_node *np = client->dev.of_node;
-> +	int i, ret;
-> +	u8 data;
-> +	u32 tmp;
-> +
-> +	if (!client->dev.of_node) {
-> +		dev_err(&client->dev, "No device tree node available.\n");
-> +		return -EINVAL;
-> +	}
-
-Except for getting the vref the is no direct dependency on devicetree, if
-you switch to the regulator framework for the vref this check can be removed.
-
-[...]
-> +	/* Setup the ADC channels available on the board */
-> +	indio_dev->num_channels = 2;
-
-ARRAY_SIZE(nau7802_chan_array)
-
-> +	indio_dev->channels = nau7802_chan_array;
-> +
-> +	init_completion(&st->value_ok);
-
-You need to initialize the completion before requesting the IRQ handler.
-
-[...]
-> +}
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
