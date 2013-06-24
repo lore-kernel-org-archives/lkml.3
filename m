@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab3FXGeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 02:34:20 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:41720 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab3FXGeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 02:34:13 -0400
-From: Wedson Almeida Filho <wedsonaf@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Graf <tgraf@suug.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Wedson Almeida Filho <wedsonaf@gmail.com>
-Subject: [PATCH v2] [NET]: Unmap fragment page once iterator is done
-Date: Sun, 23 Jun 2013 23:33:48 -0700
-Message-Id: <1372055628-27044-1-git-send-email-wedsonaf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752501Ab3FXGiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 02:38:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47465 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab3FXGiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 02:38:15 -0400
+Message-ID: <51C7E91E.3030303@ti.com>
+Date: Mon, 24 Jun 2013 12:07:18 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+CC: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
+        <arnd@arndb.de>, <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <akpm@linux-foundation.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
+        <benoit.cousson@linaro.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
+        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
+        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>
+Subject: Re: [PATCH v7 1/9] drivers: phy: add generic PHY framework
+References: <1371113039-5784-1-git-send-email-kishon@ti.com> <1371113039-5784-2-git-send-email-kishon@ti.com> <51C0CFAC.9080606@gmail.com>
+In-Reply-To: <51C0CFAC.9080606@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Callers of skb_seq_read() are currently forced to call skb_abort_seq_read()
-even when consuming all the data because the last call to skb_seq_read (the
-one that returns 0 to indicate the end) fails to unmap the last fragment page.
+On Wednesday 19 June 2013 02:52 AM, Sylwester Nawrocki wrote:
+> Hi Kishon,
+>
+> I've noticed there is a little inconsistency between the code and documentation.
+>
+> On 06/13/2013 10:43 AM, Kishon Vijay Abraham I wrote:
+>> +3. Creating the PHY
+>> +
+>> +The PHY driver should create the PHY in order for other peripheral controllers
+>> +to make use of it. The PHY framework provides 2 APIs to create the PHY.
+>> +
+>> +struct phy *phy_create(struct device *dev, int id, const struct phy_ops *ops,
+>> +    void *priv);
+>> +struct phy *devm_phy_create(struct device *dev, int id,
+>> +    const struct phy_ops *ops, void *priv);
+>
+> The 'label' argument is missing in those function prototypes. It seems the
+> labels must be unique, I guess this needs to be documented. And do we allow
+> NULL labels ? If so, then there is probably a check for NULL label needed
+> in phy_lookup() and if not, then phy_create() should fail when NULL label
+> is passed ?
 
-With this patch callers will be allowed to traverse the SKB data by calling
-skb_prepare_seq_read() once and repeatedly calling skb_seq_read() as originally
-intended (and documented in the original commit 677e90eda), that is, only call
-skb_abort_seq_read() if the sequential read is actually aborted.
+Yeah. Label is used only for non-dt case so NULL should be allowed while 
+phy_create().
 
-Signed-off-by: Wedson Almeida Filho <wedsonaf@gmail.com>
----
- drivers/scsi/libiscsi_tcp.c |    1 -
- net/batman-adv/main.c       |    1 -
- net/core/skbuff.c           |    7 ++++++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/scsi/libiscsi_tcp.c b/drivers/scsi/libiscsi_tcp.c
-index 552e8a2..448eae8 100644
---- a/drivers/scsi/libiscsi_tcp.c
-+++ b/drivers/scsi/libiscsi_tcp.c
-@@ -906,7 +906,6 @@ int iscsi_tcp_recv_skb(struct iscsi_conn *conn, struct sk_buff *skb,
- 			ISCSI_DBG_TCP(conn, "no more data avail. Consumed %d\n",
- 				      consumed);
- 			*status = ISCSI_TCP_SKB_DONE;
--			skb_abort_seq_read(&seq);
- 			goto skb_done;
- 		}
- 		BUG_ON(segment->copied >= segment->size);
-diff --git a/net/batman-adv/main.c b/net/batman-adv/main.c
-index 51aafd6..08125f3 100644
---- a/net/batman-adv/main.c
-+++ b/net/batman-adv/main.c
-@@ -473,7 +473,6 @@ __be32 batadv_skb_crc32(struct sk_buff *skb, u8 *payload_ptr)
- 		crc = crc32c(crc, data, len);
- 		consumed += len;
- 	}
--	skb_abort_seq_read(&st);
- 
- 	return htonl(crc);
- }
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index cfd777b..26ea1cf 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2554,8 +2554,13 @@ unsigned int skb_seq_read(unsigned int consumed, const u8 **data,
- 	unsigned int block_limit, abs_offset = consumed + st->lower_offset;
- 	skb_frag_t *frag;
- 
--	if (unlikely(abs_offset >= st->upper_offset))
-+	if (unlikely(abs_offset >= st->upper_offset)) {
-+		if (st->frag_data) {
-+			kunmap_atomic(st->frag_data);
-+			st->frag_data = NULL;
-+		}
- 		return 0;
-+	}
- 
- next_skb:
- 	block_limit = skb_headlen(st->cur_skb) + st->stepped_offset;
--- 
-1.7.9.5
-
+Thanks
+Kishon
