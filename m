@@ -1,189 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab3FXP7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:59:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11625 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab3FXP7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:59:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,929,1363158000"; 
-   d="scan'208";a="321764122"
-Date: Mon, 24 Jun 2013 08:59:29 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Reilly Grant <grantr@vmware.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] xhci: Compute last_ctx from complete set of configured
- endpoints.
-Message-ID: <20130624155758.GB5290@xanatos>
-References: <1371589753-23277-1-git-send-email-grantr@vmware.com>
+	id S1752611Ab3FXQAc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 12:00:32 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:52030
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751784Ab3FXQAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 12:00:30 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
+Date: Mon, 24 Jun 2013 08:58:16 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet
+ muxes
+References: <1371509260-2340-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <1371589753-23277-1-git-send-email-grantr@vmware.com>
+In-Reply-To: <1371509260-2340-1-git-send-email-soren.brinkmann@xilinx.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <b79e12d1-dd4b-407c-b3c1-46d7d66292e8@CO1EHSMHS017.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 02:09:13PM -0700, Reilly Grant wrote:
-> The context entries field of the slot context must be set to one more
-> than the highest endpoint index currently active. The previous logic
-> only included the set of endpoints currently being added, meaning that
-> if an endpoint where dropped then the field would be reset to 1,
-> deactivating all configured endpoints.
+ping?
+
+On Mon, Jun 17, 2013 at 03:47:40PM -0700, Soren Brinkmann wrote:
+> Zynq's Ethernet clocks are created by the following hierarchy:
+> 	mux0 ---> div0 ---> div1 ---> mux1 ---> gate
+> Rate change requests on the gate have to propagate all the way up to
+> div0 to properly leverage all dividers. Mux1 was missing the
+> CLK_SET_RATE_PARENT flag, which is required to achieve this.
 > 
-> The xHCI spec is decidedly unclear on whether this field includes all
-> configured endpoints or only those being modified by a configure
-> endpoint command. My interpretation is the former as when the xHC writes
-> changes into the output device context array it must know how large it
-> is. It does not make sense for this field to only refer to the input
-> context.
-
-My interpretation of the spec is that the last valid context index in
-the input context was supposed to be used as the last endpoint context
-that is valid for this command, not for the output context.
-
-Looking at the spec revision from 08/2012, there is an amendment to
-section 4.6.6.1 that makes this even more clear.  The part of the
-section that talks about what the hardware must do in order to evaluate
-each endpoint and update the output context says:
-
-"Set the Context Entries field in the Output Slot Context to the index
-of the last valid Endpoint Context in its Output Device Context
-structure, which shall be greater to or equal to the value of the
-Context Entries field in the Input Slot Context."
-
-That makes it fairly clear that software needs to set the last valid
-endpoint context index based on what endpoints are added or dropped in
-the input context, not which endpoints are still valid in the output
-context.
-
-So, no, I can't accept this patch.  If this fixes a real problem in some
-hardware, we'll add a quirk for that hardware.
-
-Sarah Sharp
-
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 > ---
->  drivers/usb/host/xhci.c | 52 +++++++++++++++++--------------------------------
->  1 file changed, 18 insertions(+), 34 deletions(-)
+>  drivers/clk/zynq/clkc.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index d8f640b..aa117d1 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -1571,12 +1571,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  	struct xhci_hcd *xhci;
->  	struct xhci_container_ctx *in_ctx, *out_ctx;
->  	struct xhci_input_control_ctx *ctrl_ctx;
-> -	struct xhci_slot_ctx *slot_ctx;
-> -	unsigned int last_ctx;
->  	unsigned int ep_index;
->  	struct xhci_ep_ctx *ep_ctx;
->  	u32 drop_flag;
-> -	u32 new_add_flags, new_drop_flags, new_slot_info;
-> +	u32 new_add_flags, new_drop_flags;
->  	int ret;
->  
->  	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
-> @@ -1617,24 +1615,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  	ctrl_ctx->add_flags &= cpu_to_le32(~drop_flag);
->  	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
->  
-> -	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx->add_flags));
-> -	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
-> -	/* Update the last valid endpoint context, if we deleted the last one */
-> -	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) >
-> -	    LAST_CTX(last_ctx)) {
-> -		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-> -		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
-> -	}
-> -	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
-> -
->  	xhci_endpoint_zero(xhci, xhci->devs[udev->slot_id], ep);
->  
-> -	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-> +	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
->  			(unsigned int) ep->desc.bEndpointAddress,
->  			udev->slot_id,
->  			(unsigned int) new_drop_flags,
-> -			(unsigned int) new_add_flags,
-> -			(unsigned int) new_slot_info);
-> +			(unsigned int) new_add_flags);
->  	return 0;
->  }
->  
-> @@ -1657,11 +1644,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  	struct xhci_hcd *xhci;
->  	struct xhci_container_ctx *in_ctx, *out_ctx;
->  	unsigned int ep_index;
-> -	struct xhci_slot_ctx *slot_ctx;
->  	struct xhci_input_control_ctx *ctrl_ctx;
->  	u32 added_ctxs;
-> -	unsigned int last_ctx;
-> -	u32 new_add_flags, new_drop_flags, new_slot_info;
-> +	u32 new_add_flags, new_drop_flags;
->  	struct xhci_virt_device *virt_dev;
->  	int ret = 0;
->  
-> @@ -1676,7 +1661,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  		return -ENODEV;
->  
->  	added_ctxs = xhci_get_endpoint_flag(&ep->desc);
-> -	last_ctx = xhci_last_valid_endpoint(added_ctxs);
->  	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {
->  		/* FIXME when we have to issue an evaluate endpoint command to
->  		 * deal with ep0 max packet size changing once we get the
-> @@ -1737,24 +1721,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  	 */
->  	new_drop_flags = le32_to_cpu(ctrl_ctx->drop_flags);
->  
-> -	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
-> -	/* Update the last valid endpoint context, if we just added one past */
-> -	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) <
-> -	    LAST_CTX(last_ctx)) {
-> -		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-> -		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
-> -	}
-> -	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
-> -
->  	/* Store the usb_device pointer for later use */
->  	ep->hcpriv = udev;
->  
-> -	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-> +	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
->  			(unsigned int) ep->desc.bEndpointAddress,
->  			udev->slot_id,
->  			(unsigned int) new_drop_flags,
-> -			(unsigned int) new_add_flags,
-> -			(unsigned int) new_slot_info);
-> +			(unsigned int) new_add_flags);
->  	return 0;
->  }
->  
-> @@ -2698,10 +2672,20 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
->  			ctrl_ctx->drop_flags == 0)
->  		return 0;
->  
-> -	xhci_dbg(xhci, "New Input Control Context:\n");
-> +	/* Update the last valid endpoint context. */
->  	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
-> +	for (i = ARRAY_SIZE(virt_dev->eps) - 1; i >= 0; --i) {
-> +		if ((virt_dev->eps[i].ring &&
-> +		     !(le32_to_cpu(ctrl_ctx->drop_flags) & (1 << (i + 1)))) ||
-> +		    (le32_to_cpu(ctrl_ctx->add_flags) & (1 << (i + 1))))
-> +			break;
-> +	}
-> +	slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-> +	slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(i + 1));
-> +
-> +	xhci_dbg(xhci, "New Input Control Context:\n");
->  	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
-> -		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx->dev_info)));
-> +		     xhci_last_valid_endpoint(ctrl_ctx->add_flags));
->  
->  	ret = xhci_configure_endpoint(xhci, udev, NULL,
->  			false, false);
+> diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
+> index 515a573..089d3e3 100644
+> --- a/drivers/clk/zynq/clkc.c
+> +++ b/drivers/clk/zynq/clkc.c
+> @@ -365,8 +365,9 @@ static void __init zynq_clk_setup(struct device_node *np)
+>  			CLK_SET_RATE_PARENT, SLCR_GEM0_CLK_CTRL, 20, 6,
+>  			CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO,
+>  			&gem0clk_lock);
+> -	clk = clk_register_mux(NULL, "gem0_emio_mux", gem0_mux_parents, 2, 0,
+> -			SLCR_GEM0_CLK_CTRL, 6, 1, 0, &gem0clk_lock);
+> +	clk = clk_register_mux(NULL, "gem0_emio_mux", gem0_mux_parents, 2,
+> +			CLK_SET_RATE_PARENT, SLCR_GEM0_CLK_CTRL, 6, 1, 0,
+> +			&gem0clk_lock);
+>  	clks[gem0] = clk_register_gate(NULL, clk_output_name[gem0],
+>  			"gem0_emio_mux", CLK_SET_RATE_PARENT,
+>  			SLCR_GEM0_CLK_CTRL, 0, 0, &gem0clk_lock);
+> @@ -387,8 +388,9 @@ static void __init zynq_clk_setup(struct device_node *np)
+>  			CLK_SET_RATE_PARENT, SLCR_GEM1_CLK_CTRL, 20, 6,
+>  			CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO,
+>  			&gem1clk_lock);
+> -	clk = clk_register_mux(NULL, "gem1_emio_mux", gem1_mux_parents, 2, 0,
+> -			SLCR_GEM1_CLK_CTRL, 6, 1, 0, &gem1clk_lock);
+> +	clk = clk_register_mux(NULL, "gem1_emio_mux", gem1_mux_parents, 2,
+> +			CLK_SET_RATE_PARENT, SLCR_GEM1_CLK_CTRL, 6, 1, 0,
+> +			&gem1clk_lock);
+>  	clks[gem1] = clk_register_gate(NULL, clk_output_name[gem1],
+>  			"gem1_emio_mux", CLK_SET_RATE_PARENT,
+>  			SLCR_GEM1_CLK_CTRL, 0, 0, &gem1clk_lock);
 > -- 
-> 1.8.1.5
+> 1.8.3.1
+> 
+> 
+
+
