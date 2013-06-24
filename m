@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab3FXK5C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:57:02 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:64518 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab3FXKwR (ORCPT
+	id S1753035Ab3FXKv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:51:59 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:48971 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885Ab3FXKv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:52:17 -0400
+	Mon, 24 Jun 2013 06:51:56 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH V7 16/30] thermal: exynos: Make the zone handling use trip information
-Date: Mon, 24 Jun 2013 16:20:37 +0530
-Message-Id: <1372071051-3167-17-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V7 11/30] thermal: exynos: Support thermal tripping
+Date: Mon, 24 Jun 2013 16:20:32 +0530
+Message-Id: <1372071051-3167-12-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
 References: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
@@ -22,162 +22,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code simplifies the zone handling to use the trip information passed
-by the TMU driver and not the hardcoded macros. This also helps in adding
-more zone support.
+TMU urgently sends active-high signal (thermal trip) to PMU, and thermal
+tripping by hardware logic. Thermal tripping means that PMU cuts off the
+whole power of SoC by controlling external voltage regulator.
 
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_thermal_common.c |   67 ++++++++++++++---------
- drivers/thermal/samsung/exynos_thermal_common.h |    3 +-
- drivers/thermal/samsung/exynos_tmu.c            |    5 ++-
- 3 files changed, 47 insertions(+), 28 deletions(-)
+ drivers/thermal/samsung/exynos_tmu.c      |   45 +++++++++++++++++++++++++---
+ drivers/thermal/samsung/exynos_tmu_data.c |    2 +
+ drivers/thermal/samsung/exynos_tmu_data.h |    2 +
+ 3 files changed, 44 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
-index 99318e5..ecf95da 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.c
-+++ b/drivers/thermal/samsung/exynos_thermal_common.c
-@@ -79,17 +79,24 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
- static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
- 				 enum thermal_trip_type *type)
- {
--	switch (GET_ZONE(trip)) {
--	case MONITOR_ZONE:
--	case WARN_ZONE:
--		*type = THERMAL_TRIP_ACTIVE;
--		break;
--	case PANIC_ZONE:
-+	struct exynos_thermal_zone *th_zone = thermal->devdata;
-+	int max_trip = th_zone->sensor_conf->trip_data.trip_count;
-+	int trip_type;
-+
-+	if (trip < 0 || trip >= max_trip)
-+		return -EINVAL;
-+
-+	trip_type = th_zone->sensor_conf->trip_data.trip_type[trip];
-+
-+	if (trip_type == SW_TRIP)
- 		*type = THERMAL_TRIP_CRITICAL;
--		break;
--	default:
-+	else if (trip_type == THROTTLE_ACTIVE)
-+		*type = THERMAL_TRIP_ACTIVE;
-+	else if (trip_type == THROTTLE_PASSIVE)
-+		*type = THERMAL_TRIP_PASSIVE;
-+	else
- 		return -EINVAL;
--	}
-+
- 	return 0;
- }
- 
-@@ -98,8 +105,9 @@ static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
- 				unsigned long *temp)
- {
- 	struct exynos_thermal_zone *th_zone = thermal->devdata;
-+	int max_trip = th_zone->sensor_conf->trip_data.trip_count;
- 
--	if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
-+	if (trip < 0 || trip >= max_trip)
- 		return -EINVAL;
- 
- 	*temp = th_zone->sensor_conf->trip_data.trip_val[trip];
-@@ -113,10 +121,10 @@ static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
- static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
- 				unsigned long *temp)
- {
--	int ret;
--	/* Panic zone */
--	ret = exynos_get_trip_temp(thermal, GET_TRIP(PANIC_ZONE), temp);
--	return ret;
-+	struct exynos_thermal_zone *th_zone = thermal->devdata;
-+	int max_trip = th_zone->sensor_conf->trip_data.trip_count;
-+	/* Get the temp of highest trip*/
-+	return exynos_get_trip_temp(thermal, max_trip - 1, temp);
- }
- 
- /* Bind callback functions for thermal zone */
-@@ -348,19 +356,28 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
- 		return -ENOMEM;
- 
- 	th_zone->sensor_conf = sensor_conf;
--	cpumask_set_cpu(0, &mask_val);
--	th_zone->cool_dev[0] = cpufreq_cooling_register(&mask_val);
--	if (IS_ERR(th_zone->cool_dev[0])) {
--		pr_err("Failed to register cpufreq cooling device\n");
--		ret = -EINVAL;
--		goto err_unregister;
-+	/*
-+	 * TODO: 1) Handle multiple cooling devices in a thermal zone
-+	 *	 2) Add a flag/name in cooling info to map to specific
-+	 *	 sensor
-+	 */
-+	if (sensor_conf->cooling_data.freq_clip_count > 0) {
-+		cpumask_set_cpu(0, &mask_val);
-+		th_zone->cool_dev[th_zone->cool_dev_size] =
-+					cpufreq_cooling_register(&mask_val);
-+		if (IS_ERR(th_zone->cool_dev[0])) {
-+			pr_err("Failed to register cpufreq cooling device\n");
-+			ret = -EINVAL;
-+			goto err_unregister;
-+		}
-+		th_zone->cool_dev_size++;
- 	}
--	th_zone->cool_dev_size++;
- 
--	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
--			EXYNOS_ZONE_COUNT, 0, th_zone, &exynos_dev_ops, NULL, 0,
--			sensor_conf->trip_data.trigger_falling ?
--			0 : IDLE_INTERVAL);
-+	th_zone->therm_dev = thermal_zone_device_register(
-+			sensor_conf->name, sensor_conf->trip_data.trip_count,
-+			0, th_zone, &exynos_dev_ops, NULL, 0,
-+			sensor_conf->trip_data.trigger_falling ? 0 :
-+			IDLE_INTERVAL);
- 
- 	if (IS_ERR(th_zone->therm_dev)) {
- 		pr_err("Failed to register thermal zone device\n");
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
-index 6ca3096..bfcf69e 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.h
-+++ b/drivers/thermal/samsung/exynos_thermal_common.h
-@@ -42,8 +42,6 @@
- #define GET_ZONE(trip) (trip + 2)
- #define GET_TRIP(zone) (zone - 2)
- 
--#define EXYNOS_ZONE_COUNT	3
--
- enum trigger_type {
- 	THROTTLE_ACTIVE = 1,
- 	THROTTLE_PASSIVE,
-@@ -69,6 +67,7 @@ struct freq_clip_table {
- 
- struct	thermal_trip_point_conf {
- 	int trip_val[MAX_TRIP_COUNT];
-+	int trip_type[MAX_TRIP_COUNT];
- 	int trip_count;
- 	unsigned char trigger_falling;
- };
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 40e0cfd..acbd295 100644
+index 6fd776f..33f494e 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -509,9 +509,12 @@ static int exynos_tmu_probe(struct platform_device *pdev)
- 			pdata->trigger_enable[1] + pdata->trigger_enable[2]+
- 			pdata->trigger_enable[3];
+@@ -117,7 +117,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+ 	struct exynos_tmu_platform_data *pdata = data->pdata;
+ 	const struct exynos_tmu_registers *reg = pdata->registers;
+-	unsigned int status, trim_info;
++	unsigned int status, trim_info = 0, con;
+ 	unsigned int rising_threshold = 0, falling_threshold = 0;
+ 	int ret = 0, threshold_code, i, trigger_levs = 0;
  
--	for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++)
-+	for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++) {
- 		exynos_sensor_conf.trip_data.trip_val[i] =
- 			pdata->threshold + pdata->trigger_levels[i];
-+		exynos_sensor_conf.trip_data.trip_type[i] =
-+					pdata->trigger_type[i];
+@@ -144,10 +144,26 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 			(data->temp_error2 != 0))
+ 		data->temp_error1 = pdata->efuse_value;
+ 
+-	/* Count trigger levels to be enabled */
+-	for (i = 0; i < MAX_THRESHOLD_LEVS; i++)
+-		if (pdata->trigger_levels[i])
++	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
++		dev_err(&pdev->dev, "Invalid max trigger level\n");
++		goto out;
++	}
++
++	for (i = 0; i < pdata->max_trigger_level; i++) {
++		if (!pdata->trigger_levels[i])
++			continue;
++
++		if ((pdata->trigger_type[i] == HW_TRIP) &&
++		(!pdata->trigger_levels[pdata->max_trigger_level - 1])) {
++			dev_err(&pdev->dev, "Invalid hw trigger level\n");
++			ret = -EINVAL;
++			goto out;
++		}
++
++		/* Count trigger levels except the HW trip*/
++		if (!(pdata->trigger_type[i] == HW_TRIP))
+ 			trigger_levs++;
 +	}
  
- 	exynos_sensor_conf.trip_data.trigger_falling = pdata->threshold_falling;
+ 	if (data->soc == SOC_ARCH_EXYNOS4210) {
+ 		/* Write temperature code for threshold */
+@@ -165,7 +181,8 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 		writel(reg->inten_rise_mask, data->base + reg->tmu_intclear);
+ 	} else if (data->soc == SOC_ARCH_EXYNOS) {
+ 		/* Write temperature code for rising and falling threshold */
+-		for (i = 0; i < trigger_levs; i++) {
++		for (i = 0;
++		i < trigger_levs && i < EXYNOS_MAX_TRIGGER_PER_REG; i++) {
+ 			threshold_code = temp_to_code(data,
+ 						pdata->trigger_levels[i]);
+ 			if (threshold_code < 0) {
+@@ -191,6 +208,24 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
+ 			(reg->inten_fall_mask << reg->inten_fall_shift),
+ 				data->base + reg->tmu_intclear);
++
++		/* if last threshold limit is also present */
++		i = pdata->max_trigger_level - 1;
++		if (pdata->trigger_levels[i] &&
++				(pdata->trigger_type[i] == HW_TRIP)) {
++			threshold_code = temp_to_code(data,
++						pdata->trigger_levels[i]);
++			if (threshold_code < 0) {
++				ret = threshold_code;
++				goto out;
++			}
++			rising_threshold |= threshold_code << 8 * i;
++			writel(rising_threshold,
++				data->base + reg->threshold_th0);
++			con = readl(data->base + reg->tmu_ctrl);
++			con |= (1 << reg->therm_trip_en_shift);
++			writel(con, data->base + reg->tmu_ctrl);
++		}
+ 	}
+ out:
+ 	clk_disable(data->clk);
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 896aa2a..6cac393 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -123,6 +123,7 @@ struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
+ 	.trigger_levels[0] = 85,
+ 	.trigger_levels[1] = 103,
+ 	.trigger_levels[2] = 110,
++	.trigger_levels[3] = 120,
+ 	.trigger_enable[0] = true,
+ 	.trigger_enable[1] = true,
+ 	.trigger_enable[2] = true,
+@@ -130,6 +131,7 @@ struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
+ 	.trigger_type[0] = THROTTLE_ACTIVE,
+ 	.trigger_type[1] = THROTTLE_ACTIVE,
+ 	.trigger_type[2] = SW_TRIP,
++	.trigger_type[3] = HW_TRIP,
+ 	.max_trigger_level = 4,
+ 	.gain = 8,
+ 	.reference_voltage = 16,
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+index 0e2244f..4acf070 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.h
++++ b/drivers/thermal/samsung/exynos_tmu_data.h
+@@ -91,6 +91,8 @@
+ #define EXYNOS_EMUL_DATA_MASK	0xFF
+ #define EXYNOS_EMUL_ENABLE	0x1
  
++#define EXYNOS_MAX_TRIGGER_PER_REG	4
++
+ #if defined(CONFIG_CPU_EXYNOS4210)
+ extern struct exynos_tmu_platform_data const exynos4210_default_tmu_data;
+ #define EXYNOS4210_TMU_DRV_DATA (&exynos4210_default_tmu_data)
 -- 
 1.7.1
 
