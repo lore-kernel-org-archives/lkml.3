@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3FXGmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 02:42:05 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:57304 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922Ab3FXGmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 02:42:03 -0400
-Date: Mon, 24 Jun 2013 08:41:56 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
-        linux-cris-kernel@axis.com
-Subject: Re: [PATCH 33/45] cris/smp: Use get/put_online_cpus_atomic() to
- prevent CPU offline
-Message-ID: <20130624064156.GR23735@axis.com>
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
- <20130623134536.19094.52797.stgit@srivatsabhat.in.ibm.com>
+	id S1752593Ab3FXGns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 02:43:48 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:41278 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab3FXGnr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 02:43:47 -0400
+Message-ID: <51C7EA9C.60505@linux.vnet.ibm.com>
+Date: Mon, 24 Jun 2013 12:13:40 +0530
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130623134536.19094.52797.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michael Neuling <mikey@neuling.org>
+CC: mahesh@linux.vnet.ibm.com, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc/pseries: Enable PSTORE in pseries_defconfig
+References: <20130621083639.4039.27789.stgit@aruna-ThinkPad-T420> <7684.1372036896@ale.ozlabs.ibm.com>
+In-Reply-To: <7684.1372036896@ale.ozlabs.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062406-8256-0000-0000-0000080D24C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23, 2013 at 07:15:39PM +0530, Srivatsa S. Bhat wrote:
-> Once stop_machine() is gone from the CPU offline path, we won't be able
-> to depend on disabling preemption to prevent CPUs from going offline
-> from under us.
-> 
-> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
-> offline, while invoking from atomic context.
-> 
-> Cc: Mikael Starvik <starvik@axis.com>
+Hi Michael,
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+On Monday 24 June 2013 06:51 AM, Michael Neuling wrote:
+>> Enable PSTORE in pseries_defconfig
+> Please add a "why" to your changelogs eg. "Now we have pstore support for
+> nvram on pseries, enable it in the default config"
+>
+> "Why" you are changing something is more important than "what", since
+> you can always determine "what" is being changed, by looking at the diff.
+> The "why" will be long forgotten.
+>
+>> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+>> ---
+>>   arch/powerpc/configs/pseries_defconfig |    1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
+>> index c4dfbaf..9630a50 100644
+>> --- a/arch/powerpc/configs/pseries_defconfig
+>> +++ b/arch/powerpc/configs/pseries_defconfig
+>> @@ -347,3 +347,4 @@ CONFIG_VIRTUALIZATION=y
+>>   CONFIG_KVM_BOOK3S_64=m
+>>   CONFIG_KVM_BOOK3S_64_HV=y
+>>   CONFIG_VHOST_NET=m
+>> +CONFIG_PSTORE=y
+> This should really be added in the right location on the config, not
+> just at the end.   ie.
 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: linux-cris-kernel@axis.com
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  arch/cris/arch-v32/kernel/smp.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
-> index cdd1202..b2d4612 100644
-> --- a/arch/cris/arch-v32/kernel/smp.c
-> +++ b/arch/cris/arch-v32/kernel/smp.c
-> @@ -13,6 +13,7 @@
->  #include <linux/init.h>
->  #include <linux/timex.h>
->  #include <linux/sched.h>
-> +#include <linux/cpu.h>
->  #include <linux/kernel.h>
->  #include <linux/cpumask.h>
->  #include <linux/interrupt.h>
-> @@ -222,6 +223,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
->  	unsigned long flags;
->  	cpumask_t cpu_mask;
->  
-> +	get_online_cpus_atomic();
->  	spin_lock_irqsave(&tlbstate_lock, flags);
->  	cpu_mask = (mm == FLUSH_ALL ? cpu_all_mask : *mm_cpumask(mm));
->  	cpumask_clear_cpu(smp_processor_id(), &cpu_mask);
-> @@ -230,6 +232,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
->  	flush_addr = addr;
->  	send_ipi(IPI_FLUSH_TLB, 1, cpu_mask);
->  	spin_unlock_irqrestore(&tlbstate_lock, flags);
-> +	put_online_cpus_atomic();
->  }
->  
->  void flush_tlb_all(void)
-> @@ -319,10 +322,12 @@ int smp_call_function(void (*func)(void *info), void *info, int wait)
->  	data.info = info;
->  	data.wait = wait;
->  
-> +	get_online_cpus_atomic();
->  	spin_lock(&call_lock);
->  	call_data = &data;
->  	ret = send_ipi(IPI_CALL, wait, cpu_mask);
->  	spin_unlock(&call_lock);
-> +	put_online_cpus_atomic();
->  
->  	return ret;
->  }
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Sorry, I overlooked this commentin my v2 patch. Will resend.
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+> @@ -296,6 +293,7 @@
+>   CONFIG_SQUASHFS_XATTR=y
+>   CONFIG_SQUASHFS_LZO=y
+>   CONFIG_SQUASHFS_XZ=y
+> +CONFIG_PSTORE=y
+>   CONFIG_NFS_FS=y
+>   CONFIG_NFS_V3_ACL=y
+>   CONFIG_NFS_V4=y
+>
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+>
+
