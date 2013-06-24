@@ -1,104 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab3FXPsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:48:11 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22255 "EHLO
+	id S1752553Ab3FXPsa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:48:30 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22257 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab3FXPsI (ORCPT
+	with ESMTP id S1752774Ab3FXPsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:48:08 -0400
+	Mon, 24 Jun 2013 11:48:09 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: dri-devel@lists.freedesktop.org, chris@chris-wilson.co.uk,
         imre.deak@intel.com, daniel.vetter@ffwll.ch, airlied@linux.ie,
         airlied@gmail.com
-Cc: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] drm/i915: make compact dma scatter lists creation work with SWIOTLB backend.
-Date: Mon, 24 Jun 2013 11:47:48 -0400
-Message-Id: <1372088868-23477-2-git-send-email-konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Bootup regression of v3.10-rc6 + SWIOTLB + Intel 4000. 
+Date: Mon, 24 Jun 2013 11:47:47 -0400
+Message-Id: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
-References: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Git commit 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
-("drm/i915: create compact dma scatter lists for gem objects") makes
-certain assumptions about the under laying DMA API that are not always
-correct.
+Hey Dave, Chris, Imre, 
 
-On a ThinkPad X230 with an Intel HD 4000 with Xen during the bootup
-I see:
+Attached is a fix that makes v3.10-rc6 boot on Intel HD 4000 when SWIOTLB
+bounce buffer is in usage. The SWIOTLB can only handle up to 512KB swath
+of memory to create bounce buffers for and Imre's patch made it possible
+to provide more than to the DMA API which caused it to fail with dma_map_sg.
 
-[drm:intel_pipe_set_base] *ERROR* pin & fence failed
-[drm:intel_crtc_set_config] *ERROR* failed to set mode on [CRTC:3], err = -28
+Since this is rc7 time I did the less risky way of fixing it - by just
+doing what said code did before 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
+ ("drm/i915: create compact dma scatter lists for gem objects") was
+introduced by using a check to see if SWIOTLB is enabled.
 
-Bit of debugging traced it down to dma_map_sg failing (in
-i915_gem_gtt_prepare_object) as some of the SG entries were huge (3MB).
+It is not the best fix but I figured the less risky.
 
-That unfortunately are sizes that the SWIOTLB is incapable of handling -
-the maximum it can handle is a an entry of 512KB of virtual contiguous
-memory for its bounce buffer. (See IO_TLB_SEGSIZE).
-
-Previous to the above mention git commit the SG entries were of 4KB, and
-the code introduced by above git commit squashed the CPU contiguous PFNs
-in one big virtual address provided to DMA API.
-
-This patch is a simple semi-revert - were we emulate the old behavior
-if we detect that SWIOTLB is online. If it is not online then we continue
-on with the new compact scatter gather mechanism.
-
-An alternative solution would be for the the '.get_pages' and the
-i915_gem_gtt_prepare_object to retry with smaller max gap of the
-amount of PFNs that can be combined together - but with this issue
-discovered during rc7 that might be too risky.
-
-Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Chris Wilson <chris@chris-wilson.co.uk>
-CC: Imre Deak <imre.deak@intel.com>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: David Airlie <airlied@linux.ie>
-CC: <dri-devel@lists.freedesktop.org>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
  drivers/gpu/drm/i915/i915_gem.c | 15 ++++++++++++---
  1 file changed, 12 insertions(+), 3 deletions(-)
 
+
+I think that a better approach (in v3.11?) would be to do some form of
+retry mechanism: (not compile tested, not run at all):
+
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index b9d00dc..0f9079d 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1110,8 +1110,12 @@ struct drm_i915_gem_object_ops {
+ 	 * will therefore most likely be called when the object itself is
+ 	 * being released or under memory pressure (where we attempt to
+ 	 * reap pages for the shrinker).
++	 *
++	 * max is the maximum size an sg entry can be. Usually it is
++	 * PAGE_SIZE but if the backend (IOMMU) can deal with larger
++	 * then a larger value might be used as well.
+ 	 */
+-	int (*get_pages)(struct drm_i915_gem_object *);
++	int (*get_pages)(struct drm_i915_gem_object *, unsigned long max);
+ 	void (*put_pages)(struct drm_i915_gem_object *);
+ };
+ 
 diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 970ad17..7045f45 100644
+index 7045f45..a29e7db 100644
 --- a/drivers/gpu/drm/i915/i915_gem.c
 +++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1801,7 +1801,14 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
- 			gfp |= __GFP_NORETRY | __GFP_NOWARN | __GFP_NO_KSWAPD;
- 			gfp &= ~(__GFP_IO | __GFP_WAIT);
+@@ -1738,7 +1738,7 @@ i915_gem_shrink_all(struct drm_i915_private *dev_priv)
+ }
+ 
+ static int
+-i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
++i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj, unsigned long max)
+ {
+ 	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
+ 	int page_count, i;
+@@ -1809,7 +1809,7 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
+ 			continue;
  		}
--
-+#ifdef CONFIG_SWIOTLB
-+		if (swiotlb_nr_tbl()) {
-+			st->nents++;
-+			sg_set_page(sg, page, PAGE_SIZE, 0);
-+			sg = sg_next(sg);
-+			continue;
-+		}
-+#endif
- 		if (!i || page_to_pfn(page) != last_pfn + 1) {
+ #endif
+-		if (!i || page_to_pfn(page) != last_pfn + 1) {
++		if ((!i || (page_to_pfn(page) != last_pfn + 1)) && (sg->length < max)) {
  			if (i)
  				sg = sg_next(sg);
-@@ -1812,8 +1819,10 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
- 		}
- 		last_pfn = page_to_pfn(page);
+ 			st->nents++;
+@@ -1847,7 +1847,7 @@ err_pages:
+  * or as the object is itself released.
+  */
+ int
+-i915_gem_object_get_pages(struct drm_i915_gem_object *obj)
++i915_gem_object_get_pages(struct drm_i915_gem_object *obj, unsigned int max)
+ {
+ 	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
+ 	const struct drm_i915_gem_object_ops *ops = obj->ops;
+@@ -1863,7 +1863,7 @@ i915_gem_object_get_pages(struct drm_i915_gem_object *obj)
+ 
+ 	BUG_ON(obj->pages_pin_count);
+ 
+-	ret = ops->get_pages(obj);
++	ret = ops->get_pages(obj, max);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -2942,7 +2942,12 @@ i915_gem_object_bind_to_gtt(struct drm_i915_gem_object *obj,
+ 	u32 size, fence_size, fence_alignment, unfenced_alignment;
+ 	bool mappable, fenceable;
+ 	int ret;
++	static unsigned int max_size = 4 * 1024 * 1024; /* 4MB */
+ 
++#ifdef CONFIG_SWIOTLB
++	if (swiotlb_nr_tbl())
++		max_size = PAGE_SIZE;
++#endif
+ 	fence_size = i915_gem_get_gtt_size(dev,
+ 					   obj->base.size,
+ 					   obj->tiling_mode);
+@@ -2972,8 +2977,8 @@ i915_gem_object_bind_to_gtt(struct drm_i915_gem_object *obj,
+ 		DRM_ERROR("Attempting to bind an object larger than the aperture\n");
+ 		return -E2BIG;
  	}
 -
--	sg_mark_end(sg);
-+#ifdef CONFIG_SWIOTLB
-+	if (!swiotlb_nr_tbl())
-+#endif
-+		sg_mark_end(sg);
- 	obj->pages = st;
+-	ret = i915_gem_object_get_pages(obj);
++ retry:
++	ret = i915_gem_object_get_pages(obj, max_size);
+ 	if (ret)
+ 		return ret;
  
- 	if (i915_gem_object_needs_bit17_swizzle(obj))
--- 
-1.8.1.4
-
+@@ -3015,6 +3020,10 @@ i915_gem_object_bind_to_gtt(struct drm_i915_gem_object *obj,
+ 	if (ret) {
+ 		i915_gem_object_unpin_pages(obj);
+ 		drm_mm_put_block(node);
++		if (max_size > PAGE_SIZE) {
++			max_size >> 1;
++			goto retry;
++		}
+ 		return ret;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/i915/i915_gem_dmabuf.c b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
+index dc53a52..8101387 100644
+--- a/drivers/gpu/drm/i915/i915_gem_dmabuf.c
++++ b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
+@@ -230,7 +230,8 @@ struct dma_buf *i915_gem_prime_export(struct drm_device *dev,
+ 	return dma_buf_export(obj, &i915_dmabuf_ops, obj->base.size, flags);
+ }
+ 
+-static int i915_gem_object_get_pages_dmabuf(struct drm_i915_gem_object *obj)
++static int i915_gem_object_get_pages_dmabuf(struct drm_i915_gem_object *obj,
++					   unsigned long max)
+ {
+ 	struct sg_table *sg;
+ 
+diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
+index 130d1db..9077ea9 100644
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -231,7 +231,8 @@ i915_pages_create_for_stolen(struct drm_device *dev,
+ 	return st;
+ }
+ 
+-static int i915_gem_object_get_pages_stolen(struct drm_i915_gem_object *obj)
++static int i915_gem_object_get_pages_stolen(struct drm_i915_gem_object *obj,
++					    unsigned long max)
+ {
+ 	BUG();
+ 	return -EINVAL;
