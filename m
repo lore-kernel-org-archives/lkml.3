@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3FXJcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 05:32:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46673 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab3FXJcN (ORCPT
+	id S1751891Ab3FXJeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 05:34:08 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41624 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3FXJeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 05:32:13 -0400
-Date: Mon, 24 Jun 2013 11:32:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <rric@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@suse.de>,
-        Robert Richter <robert.richter@linaro.org>
-Subject: Re: [PATCH v2 03/14] perf: Add persistent event facilities
-Message-ID: <20130624093204.GN28407@twins.programming.kicks-ass.net>
-References: <1370968960-22527-1-git-send-email-rric@kernel.org>
- <1370968960-22527-4-git-send-email-rric@kernel.org>
+	Mon, 24 Jun 2013 05:34:06 -0400
+Date: Mon, 24 Jun 2013 10:34:03 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the vfs tree
+Message-ID: <20130624093403.GY4165@ZenIV.linux.org.uk>
+References: <20130624113540.dd2911f4d0a4732635eb2aa7@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370968960-22527-4-git-send-email-rric@kernel.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130624113540.dd2911f4d0a4732635eb2aa7@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 06:42:29PM +0200, Robert Richter wrote:
-> +static struct perf_event *
-> +add_persistent_event_on_cpu(unsigned int cpu, struct perf_event_attr *attr,
-> +			    unsigned nr_pages)
-> +{
-> +	struct perf_event *event = ERR_PTR(-ENOMEM);
-> +	struct pers_event_desc *desc;
-> +	struct ring_buffer *buf;
-> +
-> +	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-> +	if (!desc)
-> +		goto out;
-> +
-> +	buf = rb_alloc(nr_pages, 0, cpu, 0);
-> +	if (!buf)
-> +		goto err_rb;
-> +
-> +	event = perf_event_create_kernel_counter(attr, cpu, NULL, NULL, NULL);
-> +	if (IS_ERR(event))
-> +		goto err_event;
-> +
-> +	rcu_assign_pointer(event->rb, buf);
-> +
-> +	desc->event = event;
-> +	desc->attr  = attr;
-> +
-> +	INIT_LIST_HEAD(&desc->plist);
-> +	list_add_tail(&desc->plist, &per_cpu(pers_events, cpu));
-> +
-> +	/* All workie, enable event now */
-> +	perf_event_enable(event);
-> +
-> +	goto out;
-> +
-> + err_event:
-> +	rb_put(buf);
-> +
-> + err_rb:
-> +	kfree(desc);
-> +
-> + out:
-> +	return event;
-> +}
+On Mon, Jun 24, 2013 at 11:35:40AM +1000, Stephen Rothwell wrote:
+> Hi Al,
+> 
+> After merging the vfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> In file included from arch/powerpc/xmon/xmon.c:41:0:
+> arch/powerpc/include/asm/spu.h:245:43: error: 'struct coredump_params' declared inside parameter list [-Werror]
+>   int (*coredump_extra_notes_write)(struct coredump_params *cprm);
+>                                            ^
+> arch/powerpc/include/asm/spu.h:245:43: error: its scope is only this definition or declaration, which is probably not what you want [-Werror]
+> 
+> Caused by commit 27e58d7e7e6d ("[needs split] switch to saner coredump
+> primitives").  Presumably, arch/powerpc/include/asm/spu.h needs to
+> include linux/binfmts.h or just forward declare "struct coredump_params".
 
-I generally disapprove of indented labels. None of the perf code has
-that and the tools are easy to 'fix'.
-
-My quiltrc contains:
-
-QUILT_DIFF_OPTS="-F ^[[:alpha:]\$_].*[^:]\$"
-
-my .gitconfig contains:
-
-[diff "default"]
-                xfuncname = "^[[:alpha:]$_].*[^:]$"
-
-Both avoid diff thinking labels are function names.
+Mea culpa - it's missing forward + missing include of linux/coredump.h
+in spufs/coredump.c.  I've fixed that and moved that commit to the end
+of queue - it *does* need a splitup, so it'll get replaced with
+several commits anyway.
