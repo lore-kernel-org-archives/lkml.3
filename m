@@ -1,67 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3FXHR0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 03:17:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44144 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab3FXHRY (ORCPT
+	id S1752852Ab3FXHTn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 03:19:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44703 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab3FXHTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 03:17:24 -0400
-Date: Mon, 24 Jun 2013 09:17:18 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Matthew Wilcox <willy@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
-Message-ID: <20130624071718.GS9422@kernel.dk>
-References: <20130620201713.GV8211@linux.intel.com>
- <20130623100920.GA19021@gmail.com>
- <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+	Mon, 24 Jun 2013 03:19:42 -0400
+Message-ID: <51C7F2FE.3090803@oracle.com>
+Date: Mon, 24 Jun 2013 15:19:26 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Feng Jin <joe.jin@oracle.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chien Yen <chien.yen@oracle.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when driver
+ load first time
+References: <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com> <20130513182055.GC14177@phenom.dumpdata.com> <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com> <20130514142013.GA10173@konrad-lan.dumpdata.com> <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com> <5195944A.3050608@oracle.com> <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com> <20130520175706.GA27973@phenom.dumpdata.com> <20130520203855.GA30616@phenom.dumpdata.com> <519B474E.4000202@citrix.com> <20130521134059.GE492@phenom.dumpdata.com> <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com> <alpine.DEB.2.02.1305291850030.4799@kaball.uk.xensource.com> <51AECC3A.7060803@oracle.com> <alpine.DEB.2.02.1306051349380.4589@kaball.uk.xensource.com> <51C26F98.8070103@oracle.com> <alpine.DEB.2.02.1306201507010.4548@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1306201507010.4548@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23 2013, Linus Torvalds wrote:
->  nothing in common. Networking very very seldom
-> has the kind of "submit and wait for immediate result" issues that
-> disk reads do.
-> 
-> That said, I dislike the patch intensely. I do not think it's at all a
-> good idea to look at "need_resched" to say "I can spin now". You're
-> still wasting CPU cycles.
-> 
-> So Willy, please do *not* mix this up with the scheduler, or at least
-> not "need_resched". Instead, maybe we should introduce a notion of "if
-> we are switching to the idle thread, let's see if we can try to do
-> some IO synchronously".
-> 
-> You could try to do that either *in* the idle thread (which would take
-> the context switch overhead - maybe negating some of the advantages),
-> or alternatively hook into the scheduler idle logic before actually
-> doing the switch.
 
-It can't happen in the idle thread. If you need to take the context
-switch, then you've negated pretty much all of the gain of the polled
-approach.
+On 2013-06-20 22:21, Stefano Stabellini wrote:
+> On Thu, 20 Jun 2013, Zhenzhong Duan wrote:
+>> On 2013-06-05 20:50, Stefano Stabellini wrote:
+>>> On Wed, 5 Jun 2013, Zhenzhong Duan wrote:
+>>>> Stefano Stabellini wrote:
+>>>>
+>>>> On Tue, 21 May 2013, Stefano Stabellini wrote:
+>>>>     
+>>>> On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
+>>>>       
+>>>> Looking at the hypervisor code I couldn't see anything obviously wrong.
+>>>>           
+>>>> I think the culprit is "physdev_unmap_pirq":
+>>>>
+>>>>      if ( is_hvm_domain(d) )
+>>>>       {
+>>>>           spin_lock(&d->event_lock);
+>>>>           gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s, irq: %d\n",
+>>>>               d->domain_id, pirq, domain_pirq_to_emuirq(d, pirq),
+>>>>               domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ? "unbound" :
+>>>> "",
+>>>>               domain_pirq_to_irq(d, pirq));
+>>>>                                                                                            if
+>>>> ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )
+>>>>               ret = unmap_domain_pirq_emuirq(d, pirq);
+>>>>           spin_unlock(&d->event_lock);
+>>>>           if ( domid == DOMID_SELF || ret )
+>>>>               goto free_domain;
+>>>>
+>>>> It always tells me unbound:
+>>>>
+>>>> (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
+>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>> (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
+>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>> (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
+>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>> (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
+>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>> (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
+>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>> (a bit older debug code, so the 'unbound' does not show up here).
+>>>>
+>>>> Which means that the call to unmap_domain_pirq_emuirq does not happen.
+>>>> The checks in unmap_domain_pirq_emuirq also look to be depend
+>>>> on the code being IRQ_UNBOUND.
+>>>>
+>>>> In other words, all of that code looks to only clear things when
+>>>> they are !IRQ_UNBOUND.
+>>>>
+>>>> But the other logic (IRQ_UNBOUND) looks to be missing a removal
+>>>> in the radix tree:
+>>>>
+>>>>     if ( emuirq != IRQ_PT )
+>>>>           radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq, emuirq);
+>>>>                                                                           And
+>>>> I think that is what is causing the leak - the radix tree
+>>>> needs to be pruned? Or perhaps the allocate_pirq should check
+>>>> the radix tree for IRQ_UNBOUND ones and re-use them?
+>>>>         
+>>>> I think that you are looking in the wrong place.
+>>>> The issue is that QEMU doesn't call pt_msi_disable in
+>>>> pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
+>>>>
+>>>> The code above is correct as is because it is trying to handle emulated
+>>>> IRQs and MSIs, not real passthrough MSIs. They latter are not added to
+>>>> that radix tree, see physdev_hvm_map_pirq and physdev_map_pirq.
+>>>>       
+>>>>
+>>>> This patch fixes the issue, I have only tested MSI (MSI-X completely
+>>>> untested).
+>>>>
+>>>>
+>>>> diff --git a/hw/pass-through.c b/hw/pass-through.c
+>>>> index 304c438..079e465 100644
+>>>> --- a/hw/pass-through.c
+>>>> +++ b/hw/pass-through.c
+>>>> @@ -3866,7 +3866,11 @@ static int pt_msgctrl_reg_write(struct pt_dev
+>>>> *ptdev,
+>>>>            ptdev->msi->flags |= PCI_MSI_FLAGS_ENABLE;
+>>>>        }
+>>>>        else
+>>>> -        ptdev->msi->flags &= ~PCI_MSI_FLAGS_ENABLE;
+>>>> +    {
+>>>> +        if (ptdev->msi->flags & PT_MSI_MAPPED) {
+>>>> +            pt_msi_disable(ptdev);
+>>>> +        }
+>>>> +    }
+>>>>          /* pass through MSI_ENABLE bit when no MSI-INTx translation */
+>>>>        if (!ptdev->msi_trans_en) {
+>>>> @@ -4013,6 +4017,8 @@ static int pt_msixctrl_reg_write(struct pt_dev
+>>>> *ptdev,
+>>>>                pt_disable_msi_translate(ptdev);
+>>>>            }
+>>>>            pt_msix_update(ptdev);
+>>>> +    } else if (!(*value & PCI_MSIX_ENABLE) && ptdev->msix->enabled) {
+>>>> +        pt_msix_delete(ptdev);
+>>>>     
+>>>> Hi Stefano,
+>>>> I made a test with this patch, os reboot when driver reload. If use
+>>>> pt_msix_disable
+>>>> instead of pt_msix_delete, driver could be reloaded.
+>>>> But I still see some error in qemu.log and xen console. Seems four IRQs
+>>>> are not freed
+>>>> when unmap.
+>>>> --------------first load---------------------------
+>>>> pt_msix_update_one: pt_msix_update_one requested pirq = 103
+>>>> pt_msix_update_one: Update msix entry 0 with pirq 67 gvec 0
+>>>> pt_msix_update_one: pt_msix_update_one requested pirq = 102
+>>>> pt_msix_update_one: Update msix entry 1 with pirq 66 gvec 0
+>>>> pt_msix_update_one: pt_msix_update_one requested pirq = 101
+>>>> pt_msix_update_one: Update msix entry 2 with pirq 65 gvec 0
+>>>> pt_msix_update_one: pt_msix_update_one requested pirq = 100
+>>>> pt_msix_update_one: Update msix entry 3 with pirq 64 gvec 0
+>>>> ------------- first unload---------------------------
+>>>> pt_msix_disable: Unbind msix with pirq 67, gvec 0
+>>>> pt_msix_disable: Unmap msix with pirq 67
+>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>>> pt_msix_disable: Unbind msix with pirq 66, gvec 0
+>>>> pt_msix_disable: Unmap msix with pirq 66
+>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>>> pt_msix_disable: Unbind msix with pirq 65, gvec 0
+>>>> pt_msix_disable: Unmap msix with pirq 65
+>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>>> pt_msix_disable: Unbind msix with pirq 64, gvec 0
+>>>> pt_msix_disable: Unmap msix with pirq 64
+>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>> Can you add some printks in Xen (the hypercall name is
+>>> PHYSDEVOP_unmap_pirq) to figure out exactly why they are failing?
+>> Did some test, domain_pirq_to_emuirq(d, unmap->pirq) = IRQ_UNBOUND in
+>> physdev_unmap_pirq.
+> That means that Linux didn't call irq_enable on the MSI-X in question:
+>
+> irq_enable -> __startup_pirq -> EVTCHNOP_bind_pirq
+>
+> EVTCHNOP_bind_pirq is implemented by evtchn_bind_pirq in Xen and calls
+> map_domain_emuirq_pirq, so domain_pirq_to_emuirq(d, unmap->pirq) should
+> be IRQ_PT.
+>
+> I don't know if that's a normal condition, but in any case it should
+> not create any problems to physdev_unmap_pirq, in fact the folloing
+> check:
+>
+>      if ( domid == DOMID_SELF || ret )
+>              goto free_domain;
+>
+> should fail so Xen should continue and execute unmap_domain_pirq. That's
+> what we want.
+ From linux side, request_irq->  request_threaded_irq-> __setup_irq->  
+irq_startup->  startup_pirq-> EVTCHNOP_bind_pirq
+If irq_enable isn't called, how does the driver receive interrupt, I did 
+see four interrupts in /proc/interrupt and driver works ok.
 
-> But anything that starts polling when there are other runnable
-> processes to be done sounds really debatable. Even if it's "only" 5us
-> or so. There's a lot of real work that could be done in 5us.
+Could you have a look if there is something wrong in xen side of 
+clearing the mapping?
 
-IMHO that depends mostly on whether the app wants to give up those 5us
-of work time just spinning on the completion of important IO. You
-obviously can't steal the time of others.
-
--- 
-Jens Axboe
+zduan
 
