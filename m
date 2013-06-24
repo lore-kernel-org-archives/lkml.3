@@ -1,153 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035Ab3FXKv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:51:59 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:48971 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab3FXKv4 (ORCPT
+	id S1753501Ab3FXK5q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:57:46 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:29579 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab3FXK5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:51:56 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH V7 11/30] thermal: exynos: Support thermal tripping
-Date: Mon, 24 Jun 2013 16:20:32 +0530
-Message-Id: <1372071051-3167-12-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
-References: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
+	Mon, 24 Jun 2013 06:57:44 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Bo Shen <voice.shen@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Wenyou Yang <wenyou.yang@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91/PMC: fix at91sam9n12 USB FS init
+Date: Mon, 24 Jun 2013 12:57:42 +0200
+Message-ID: <1372071462-29063-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TMU urgently sends active-high signal (thermal trip) to PMU, and thermal
-tripping by hardware logic. Thermal tripping means that PMU cuts off the
-whole power of SoC by controlling external voltage regulator.
+at91sam9n12 has Full-speed only USB. So we should add
+it to the list in at91_pllb_usbfs_clock_init() function.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c      |   45 +++++++++++++++++++++++++---
- drivers/thermal/samsung/exynos_tmu_data.c |    2 +
- drivers/thermal/samsung/exynos_tmu_data.h |    2 +
- 3 files changed, 44 insertions(+), 5 deletions(-)
+ arch/arm/mach-at91/clock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 6fd776f..33f494e 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -117,7 +117,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	const struct exynos_tmu_registers *reg = pdata->registers;
--	unsigned int status, trim_info;
-+	unsigned int status, trim_info = 0, con;
- 	unsigned int rising_threshold = 0, falling_threshold = 0;
- 	int ret = 0, threshold_code, i, trigger_levs = 0;
- 
-@@ -144,10 +144,26 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 			(data->temp_error2 != 0))
- 		data->temp_error1 = pdata->efuse_value;
- 
--	/* Count trigger levels to be enabled */
--	for (i = 0; i < MAX_THRESHOLD_LEVS; i++)
--		if (pdata->trigger_levels[i])
-+	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
-+		dev_err(&pdev->dev, "Invalid max trigger level\n");
-+		goto out;
-+	}
-+
-+	for (i = 0; i < pdata->max_trigger_level; i++) {
-+		if (!pdata->trigger_levels[i])
-+			continue;
-+
-+		if ((pdata->trigger_type[i] == HW_TRIP) &&
-+		(!pdata->trigger_levels[pdata->max_trigger_level - 1])) {
-+			dev_err(&pdev->dev, "Invalid hw trigger level\n");
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+
-+		/* Count trigger levels except the HW trip*/
-+		if (!(pdata->trigger_type[i] == HW_TRIP))
- 			trigger_levs++;
-+	}
- 
- 	if (data->soc == SOC_ARCH_EXYNOS4210) {
- 		/* Write temperature code for threshold */
-@@ -165,7 +181,8 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 		writel(reg->inten_rise_mask, data->base + reg->tmu_intclear);
- 	} else if (data->soc == SOC_ARCH_EXYNOS) {
- 		/* Write temperature code for rising and falling threshold */
--		for (i = 0; i < trigger_levs; i++) {
-+		for (i = 0;
-+		i < trigger_levs && i < EXYNOS_MAX_TRIGGER_PER_REG; i++) {
- 			threshold_code = temp_to_code(data,
- 						pdata->trigger_levels[i]);
- 			if (threshold_code < 0) {
-@@ -191,6 +208,24 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
- 			(reg->inten_fall_mask << reg->inten_fall_shift),
- 				data->base + reg->tmu_intclear);
-+
-+		/* if last threshold limit is also present */
-+		i = pdata->max_trigger_level - 1;
-+		if (pdata->trigger_levels[i] &&
-+				(pdata->trigger_type[i] == HW_TRIP)) {
-+			threshold_code = temp_to_code(data,
-+						pdata->trigger_levels[i]);
-+			if (threshold_code < 0) {
-+				ret = threshold_code;
-+				goto out;
-+			}
-+			rising_threshold |= threshold_code << 8 * i;
-+			writel(rising_threshold,
-+				data->base + reg->threshold_th0);
-+			con = readl(data->base + reg->tmu_ctrl);
-+			con |= (1 << reg->therm_trip_en_shift);
-+			writel(con, data->base + reg->tmu_ctrl);
-+		}
+diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+index 978de42..2f732d9 100644
+--- a/arch/arm/mach-at91/clock.c
++++ b/arch/arm/mach-at91/clock.c
+@@ -699,7 +699,7 @@ static void __init at91_pllb_usbfs_clock_init(unsigned long main_clock)
+ 		at91_pmc_write(AT91_PMC_SCER, AT91RM9200_PMC_MCKUDP);
+ 	} else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() ||
+ 		   cpu_is_at91sam9263() || cpu_is_at91sam9g20() ||
+-		   cpu_is_at91sam9g10()) {
++		   cpu_is_at91sam9g10() || cpu_is_at91sam9n12()) {
+ 		uhpck.pmc_mask = AT91SAM926x_PMC_UHP;
+ 		udpck.pmc_mask = AT91SAM926x_PMC_UDP;
  	}
- out:
- 	clk_disable(data->clk);
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 896aa2a..6cac393 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -123,6 +123,7 @@ struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
- 	.trigger_levels[0] = 85,
- 	.trigger_levels[1] = 103,
- 	.trigger_levels[2] = 110,
-+	.trigger_levels[3] = 120,
- 	.trigger_enable[0] = true,
- 	.trigger_enable[1] = true,
- 	.trigger_enable[2] = true,
-@@ -130,6 +131,7 @@ struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
- 	.trigger_type[0] = THROTTLE_ACTIVE,
- 	.trigger_type[1] = THROTTLE_ACTIVE,
- 	.trigger_type[2] = SW_TRIP,
-+	.trigger_type[3] = HW_TRIP,
- 	.max_trigger_level = 4,
- 	.gain = 8,
- 	.reference_voltage = 16,
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-index 0e2244f..4acf070 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.h
-+++ b/drivers/thermal/samsung/exynos_tmu_data.h
-@@ -91,6 +91,8 @@
- #define EXYNOS_EMUL_DATA_MASK	0xFF
- #define EXYNOS_EMUL_ENABLE	0x1
- 
-+#define EXYNOS_MAX_TRIGGER_PER_REG	4
-+
- #if defined(CONFIG_CPU_EXYNOS4210)
- extern struct exynos_tmu_platform_data const exynos4210_default_tmu_data;
- #define EXYNOS4210_TMU_DRV_DATA (&exynos4210_default_tmu_data)
 -- 
-1.7.1
+1.8.2.2
 
