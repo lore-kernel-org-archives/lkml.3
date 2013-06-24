@@ -1,166 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab3FXJnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 05:43:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40297 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592Ab3FXJnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 05:43:16 -0400
-X-IronPort-AV: E=Sophos;i="4.87,927,1363104000"; 
-   d="scan'208";a="7660093"
-Message-ID: <51C813FA.9010000@cn.fujitsu.com>
-Date: Mon, 24 Jun 2013 17:40:10 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751949Ab3FXJnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 05:43:45 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:47739 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab3FXJno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 05:43:44 -0400
 MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
-        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
-In-Reply-To: <20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/24 17:41:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/24 17:42:02,
-	Serialize complete at 2013/06/24 17:42:02
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51C22985.50106@wwwdotorg.org>
+References: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<51C22985.50106@wwwdotorg.org>
+Date: Mon, 24 Jun 2013 11:43:43 +0200
+Message-ID: <CACRpkdaXv=5PNt4EZPbcWzHYE4XAYmALqyV7v51QA+s63ZvFiQ@mail.gmail.com>
+Subject: Re: [RFC] pinctrl: generic: Add DT bindings
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 01:10 AM, Vasilis Liaskovitis wrote:
+On Wed, Jun 19, 2013 at 11:58 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/11/2013 04:03 PM, Laurent Pinchart wrote:
 
-> Hi,
-> 
-> On Thu, Jun 13, 2013 at 09:02:47PM +0800, Tang Chen wrote:
->> From: Yinghai Lu <yinghai@kernel.org>
->>
->> No offence, just rebase and resend the patches from Yinghai to help
->> to push this functionality faster.
->> Also improve the comments in the patches' log.
->>
->>
->> One commit that tried to parse SRAT early get reverted before v3.9-rc1.
->>
->> | commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
->> | Author: Tang Chen <tangchen@cn.fujitsu.com>
->> | Date:   Fri Feb 22 16:33:44 2013 -0800
->> |
->> |    acpi, memory-hotplug: parse SRAT before memblock is ready
->>
->> It broke several things, like acpi override and fall back path etc.
->>
->> This patchset is clean implementation that will parse numa info early.
->> 1. keep the acpi table initrd override working by split finding with copying.
->>    finding is done at head_32.S and head64.c stage,
->>         in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
->>         in head64.c, initrd is accessed via kernel low mapping address
->>         with help of #PF set page table.
->>    copying is done with early_ioremap just after memblock is setup.
->> 2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
->>    seperate initmem_init to two stages.
->>    early_initmem_init will only extract numa info early into numa_meminfo.
->>    initmem_init will keep slit and emulation handling.
->> 3. keep other old code flow untouched like relocate_initrd and initmem_init.
->>    early_initmem_init will take old init_mem_mapping position.
->>    it call early_x86_numa_init and init_mem_mapping for every nodes.
->>    For 64bit, we avoid having size limit on initrd, as relocate_initrd
->>    is still after init_mem_mapping for all memory.
->> 4. last patch will try to put page table on local node, so that memory
->>    hotplug will be happy.
->>
->> In short, early_initmem_init will parse numa info early and call
->> init_mem_mapping to set page table for every nodes's mem.
->>
->> could be found at:
->>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
->>
->> and it is based on today's Linus tree.
->>
-> 
-> Has this patchset been tested on various numa configs?
-> I am using linux-next next-20130607 + part1 with qemu/kvm/seabios VMs. The kernel
-> boots successfully in many numa configs but while trying different memory sizes
-> for a 2 numa node VM, I noticed that booting does not complete in all cases
-> (bootup screen appears to hang but there is no output indicating an early panic)
-> 
-> node0   node1	 boots
-> 1G 	1G	 yes
-> 1G 	2G	 yes
-> 1G 	0.5G	 yes
-> 3G 	2.5G	 yes
-> 3G 	3G 	 yes
-> 4G 	0G	 yes
-> 4G 	4G	 yes
-> 1.5G	1G	 no
-> 2G 	1G	 no
-> 2G 	2G	 no
-> 2.5G 	2G	 no
-> 2.5G 	2.5G	 no
-> 
-> linux-next next-20130607 boots al of these configs fine.
-> 
-> Looks odd, perhaps I have something wrong in my setup or maybe there is a
-> seabios/qemu interaction with this patchset. I will update if I find something.
+>> +- tristate: A boolean, put the pin into high impedance state when set.
 
-Hi Vasilis,
-   This patchset can work well with all the numa config cases you mentioned in latest kernel tree (3.10-rc7) in our box.
+The other patch defines bias-high-impedance which is more likely
+to be the string used.
 
-Host OS: RHEL 6.4 Beta
-qemu-kvm: 0.12.1.2 (Released with RHEL 6.4 Beta)
-Guest OS: RHEL 6.3 
-Guest kernel:3.10-rc7 + [Part1 PATCH v5 ] x86, ACPI, numa: Parse numa info earlier
-Cmd:
+Anyway:
 
-/usr/libexec/qemu-kvm -name rhel_6.3 -S -M rhel6.4.0 -enable-kvm 
--m 5120 -smp 4,sockets=4,cores=1,threads=1 
--numa node,nodeid=0,cpus=0-1,mem=2560 
--numa node,nodeid=1,cpus=2-3,mem=2560 
--uuid fa11164c-1a09-280b-eae4-e2c40c631767 -nodefconfig -nodefaults -chardev 
-socket,id=charmonitor,path=/var/lib/libvirt/qemu/rhel_6.3.monitor,server,nowait 
--mon chardev=charmonitor,id=monitor,mode=control -rtc base=utc -no-shutdown 
--device piix3-usb-uhci,id=usb,bus=pci.0,addr=0x1.0x2 -drive file=/home/hut-rhel6.3.img,if=none,id=drive-virtio-disk0,format=qcow2,cache=none -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1 -netdev tap,fd=26,id=hostnet0,vhost=on,vhostfd=27 -device virtio-net-pci,netdev=hostnet0,id=net0,mac=52:54:00:28:6e:29,bus=pci.0,addr=0x3 -chardev pty,id=charserial0 -device isa-serial,chardev=charserial0,id=serial0 -device usb-tablet,id=input0 -vnc 127.0.0.1:0 -vga cirrus -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5
+> I don't think that a Boolean is appropriate here; it's really a tri-state:
+>
+> * Nothing is specified about the tristate value; don't touch that aspect
+> of HW.
+> * Turn tristate on.
+> * Turn tristate off.
 
+I was thinking more about using bias-disable; to explicitly turn that
+off.
 
-Result:
-node0   node1	 boots
-1G 	1G	 yes
-1G 	2G	 yes
-1G 	0.5G	 yes
-3G 	2.5G	 yes
-3G 	3G 	 yes
-4G 	0G	 yes
-4G 	4G	 yes
-1.5G	1G	 yes
-2G 	1G	 yes
-2G 	2G	 yes
-2.5G 	2G	 yes
-2.5G 	2.5G	 yes
+But maybe a specific disable option is needed, like for schmitt-trigger
+(see below).
 
-Thanks,
+> This can be a meaningful distinction when relying on e.g. the bootloader
+> having already set up the appropriate tristate value, or when
+> dynamically switching between different pinctrl states and not wanting
+> to affect tristate, or when piecing together multiple DT nodes that
+> describe part of a state, where one node covers just muxing and the
+> other just pin config (e.g. where the mux and pin config configuration
+> registers in HW affect different overlapping groups).
 
-Gu
+OK point taken... although when we're dealing with generic pin config
+the idea is not to cover everything but the majority of not-so-complicated
+cases.
 
+>> +- schmitt: An integer, enable or disable Schmitt trigger mode for the pins.
+>> +  Valid values are
+>> +    0: Schmitt trigger disabled (no hysteresis)
+>> +    1: Schmitt trigger enabled
+>
+> A similar comment applies here.
 
-> 
-> thanks,
-> 
-> - Vasilis
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+The other patch adds:
+input-schmitt-enable;
+input-schmitt-disable;
 
+So this is covered.
 
+>> +- slew-rate: An integer controlling the pin slew rate. Values are device-
+>> +  dependent.
+>> +
+>> +- drive-strength: An integer representing the drive strength of pins in mA.
+>> +  Valid values are device-dependent.
+>
+> I'm still not convinced that requiring this to be in mA is a good idea.
+> Different HW will use different units for documentation, or even specify
+> no units at all, so it might not always be possible to represent this in
+> terms of mA. Asking for the documentation to be re-written simply to
+> support the DT binding just isn't going to happen.
+
+We can add custom DT bindings for these. This is to cover those
+where we know enough about it to actually use this generic binding.
+If we don't really know what is happening we may as well call it
+vendor,foo = <?>;
+
+Yours,
+Linus Walleij
