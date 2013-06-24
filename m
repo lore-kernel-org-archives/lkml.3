@@ -1,140 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab3FXVqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 17:46:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60364 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab3FXVqQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 17:46:16 -0400
-Date: Mon, 24 Jun 2013 14:46:15 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Oliver Schinagl <oliver+list@schinagl.nl>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        andy.shevchenko@gmail.com, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org, linux-sunxi@googlegroups.com,
-        Oliver Schinagl <oliver@schinagl.nl>
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-Message-ID: <20130624214615.GA17604@kroah.com>
-References: <1371502778-15849-1-git-send-email-oliver+list@schinagl.nl>
- <1371502778-15849-2-git-send-email-oliver+list@schinagl.nl>
- <20130617225847.GA9494@kroah.com>
- <20130624092942.GG26008@lukather>
- <20130624160440.GA15201@kroah.com>
- <51C87DC7.50005@schinagl.nl>
- <20130624181509.GA8847@kroah.com>
- <51C8B84C.3020200@schinagl.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C8B84C.3020200@schinagl.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752008Ab3FXV6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 17:58:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6986 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958Ab3FXV6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 17:58:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,931,1363158000"; 
+   d="scan'208";a="334879529"
+Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock
+ acquisition
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Alex Shi <alex.shi@intel.com>, Michel Lespinasse <walken@google.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <51C558E2.1040108@hurleysoftware.com>
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com>
+	 <1371858700.22432.5.camel@schen9-DESK>
+	 <51C558E2.1040108@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Jun 2013 14:58:12 -0700
+Message-ID: <1372111092.22432.84.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 11:21:16PM +0200, Oliver Schinagl wrote:
-> On 06/24/13 20:15, Greg KH wrote:
-> >On Mon, Jun 24, 2013 at 07:11:35PM +0200, Oliver Schinagl wrote:
-> >>Hey Greg,
-> >>On 06/24/13 18:04, Greg KH wrote:
-> >>>On Mon, Jun 24, 2013 at 11:29:42AM +0200, Maxime Ripard wrote:
-> >>>>Hi Greg,
-> >>>>
-> >>>>On Mon, Jun 17, 2013 at 03:58:47PM -0700, Greg KH wrote:
-> >>>>>On Mon, Jun 17, 2013 at 10:59:37PM +0200, Oliver Schinagl wrote:
-> >>>>
-> >>>>[..]
-> >>>>
-> >>>>>>+static int __init sunxi_sid_probe(struct platform_device *pdev)
-> >>>>>>+{
-> >>>>>>+	u8 entropy[SID_SIZE];
-> >>>>>>+	unsigned int i;
-> >>>>>>+	struct resource *res;
-> >>>>>>+	void __iomem *sid_reg_base;
-> >>>>>>+	int ret;
-> >>>>>>+
-> >>>>>>+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >>>>>>+	sid_reg_base = devm_ioremap_resource(&pdev->dev, res);
-> >>>>>>+	if (IS_ERR(sid_reg_base))
-> >>>>>>+		return PTR_ERR(sid_reg_base);
-> >>>>>>+	platform_set_drvdata(pdev, sid_reg_base);
-> >>>>>>+
-> >>>>>>+	ret = device_create_bin_file(&pdev->dev, &sid_bin_attr);
-> >>>>>>+	if (ret)
-> >>>>>>+		return ret;
-> >>>>>
-> >>>>>You just raced with userspace, having the file show up after the device
-> >>>>>was announced to users that it was there.  Please use the proper device
-> >>>>>file api to add default attributes to prevent this from happening.
-> >>>>
-> >>>>Sorry if the question looks dumb, but what kind of race can we generate
-> >>>>here?
-> >>>
-> >>>Userspace gets told about the device from the driver core, udev runs and
-> >>>reads all of the attributes, then your probe function comes along and
-> >>>adds a new attribute.  Userspace will then not know about it at all.
-> >>>
-> >>>>The device_create_bin_file is the last call that we make (if we except
-> >>>>the entropy stuff, but it doesn't really matter here), so after we
-> >>>>created the file, we have everything properly initialised so that our
-> >>>>functions can be called, right?
-> >>>>
-> >>>>And another dumb question for you, what is the "proper device file API"
-> >>>>you are referring to ? :)
-> >>>
-> >>>Please read Documentation/driver_model/device.txt and see the section on
-> >>>Attributes for what to do.  If you have specific questions after reading
-> >>>that, please let me know.
-> >>Since Maxime kinda asked for me, I hope you don't mind me following up.
-> >>
-> >>That doc doesn't mention the binary interface at all. Initially I
-> >>had both devices up, the 'read' device as a textual representation
-> >>and added the binary one later. Maxime and I decided the binary one
-> >>made more sense, as the only textual user would be a human and they
-> >>don't poke that entry that often.
-> >>
-> >>So what default way exists for binary files or how would that be solved?
+On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
+> Will this spin for full scheduler value on a reader-owned lock?
+> 
+> > +		/* wait_lock will be acquired if write_lock is obtained */
+> > +		if (rwsem_try_write_lock(sem->count, true, sem)) {
+> > +			ret = 1;
+> > +			goto out;
+> > +		}
+> > +
+> > +		/*
+> > +		 * When there's no owner, we might have preempted between the
+>                                                          ^^^^^^^^
+> 
+> Isn't pre-emption disabled?
+> 
+
+Peter, on further review, this code is needed.  This code guard against 
+the case of this thread preempting another thread in the middle
+of setting the  owner field.  Disabling preemption does not prevent this
+thread from preempting others, even though others cannot preempt 
+this thread.
+
+
+> 
+> > +		 * owner acquiring the lock and setting the owner field. If
+> > +		 * we're an RT task that will live-lock because we won't let
+> > +		 * the owner complete.
+> > +		 */
+> > +		if (!owner && (need_resched() || rt_task(current)))
+> > +			break;
+> > +
+> > +		/*
+> > +		 * The cpu_relax() call is a compiler barrier which forces
+> > +		 * everything in this loop to be re-loaded. We don't need
+> > +		 * memory barriers as we'll eventually observe the right
+> > +		 * values at the cost of a few extra spins.
+> > +		 */
+> > +		arch_mutex_cpu_relax();
+> > +
+> > +	}
+> > +
+> > +out:
+> > +	preempt_enable();
+> > +	return ret;
+> > +}
+> > +#endif
+> > +
+> >   /*
+> >    * wait until we successfully acquire the write lock
+> >    */
+> > @@ -200,6 +326,9 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+> >   	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
+> >   	struct rwsem_waiter waiter;
+> >   	struct task_struct *tsk = current;
+> > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > +	bool try_optimistic_spin = true;
+> > +#endif
 > >
-> >The same interface should work just fine for binary files, have you
-> >tried it?
-> I'll just take the plunge and make myself look stupid ;)
+> >   	/* set up my own style of waitqueue */
+> >   	waiter.task = tsk;
+> > @@ -223,20 +352,17 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+> >   	/* wait until we successfully acquire the lock */
+> >   	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+> >   	while (true) {
+> > -		if (!(count & RWSEM_ACTIVE_MASK)) {
+> > -			/* Try acquiring the write lock. */
+> > -			count = RWSEM_ACTIVE_WRITE_BIAS;
+> > -			if (!list_is_singular(&sem->wait_list))
+> > -				count += RWSEM_WAITING_BIAS;
+> > -
+> > -			if (sem->count == RWSEM_WAITING_BIAS &&
+> > -			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
+> > -							RWSEM_WAITING_BIAS)
+> > -				break;
+> > -		}
+> > +		if (rwsem_try_write_lock(count, false, sem))
+> > +			break;
+> >
+> >   		raw_spin_unlock_irq(&sem->wait_lock);
+> >
+> > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > +		/* do optimistic spinning */
+> > +		if (try_optimistic_spin && rwsem_optimistic_spin(sem))
+> > +			break;
+> > +		try_optimistic_spin = false;
+> > +#endif
+> >   		/* Block until there are no active lockers. */
+> >   		do {
+> >   			schedule();
 > 
-> I tried to change things around, used DEVICE_ATTR(eeprom, S_IRUGO,
-> sid_read, NULL); So far so good I'd hope.
 
-Ick, no.
+Thanks.
 
-> Of course now I'll have to change the function's parameters from
-> 
-> static ssize_t sid_read(struct file *fd, struct kobject *kobj,
-> 			struct bin_attribute *attr, char *buf,
-> 			loff_t pos, size_t size)
-> 
-> to
-> 
-> static ssize_t sid_read(struct device *dev,
-> 			struct device_attribute *attr, char *buf)
+Tim
 
-Which is what do you do not want, as you find out:
-
-> But now, I'm missing things like 'pos' and 'size', both which
-> determine the requested bytes. True, in this specific driver we are
-> talking about 'only' 16 bytes, but what if it weren't but a few MiB
-> and in sysfs we want to read some random byte, will we have to put
-> the entire blok into the buffer?
-> 
-> So sorry for not understanding, but ... I don't understand :)
-
-Stick with a binary attribute, and attach that to the proper class
-structure and all should be fine.
-
-Ah crap, you're using a platform device.
-
-{sigh}
-
-Why?  Why not use a "real" device which has a "real" class, and then use
-the interfaces there?
-
-greg k-h
