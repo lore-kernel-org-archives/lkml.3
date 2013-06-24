@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab3FXOz2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 10:55:28 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:49592 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab3FXOzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 10:55:25 -0400
+	id S1752588Ab3FXO5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 10:57:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54009 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752181Ab3FXO5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 10:57:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,929,1363158000"; 
+   d="scan'208";a="359545705"
+Message-ID: <51C85E3A.5040609@intel.com>
+Date: Mon, 24 Jun 2013 22:56:58 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <51C83348.6040905@ti.com>
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
-	<201306212044.26677.arnd@arndb.de>
-	<CAD=GYpY4koXd9f6_ijQfDHsiULD4d53cdu=9X421WXSAit_YQg@mail.gmail.com>
-	<201306220014.16427.arnd@arndb.de>
-	<CAD=GYpabakChmN-TEJbLn6p=BwX2wsK5KWsc5gH9-cAA+yWcEA@mail.gmail.com>
-	<51C83348.6040905@ti.com>
-Date: Mon, 24 Jun 2013 09:48:37 -0500
-Message-ID: <CAD=GYpYrkE--Snc-MoEdJRkUy5TfMY992kd0L--E6yPpMoRaxQ@mail.gmail.com>
-Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
-From: Joel A Fernandes <agnel.joel@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+To: Paul Turner <pjt@google.com>
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, rafael.j.wysocki@intel.com,
+        jkosina@suse.cz, Clark Williams <clark.williams@gmail.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+Subject: Re: [Resend patch v8 06/13] sched: compute runnable load avg in cpu_load
+ and cpu_avg_load_per_task
+References: <1371694737-29336-1-git-send-email-alex.shi@intel.com> <1371694737-29336-7-git-send-email-alex.shi@intel.com> <51C80C33.4050606@intel.com> <CAKfTPtCz4bP05sqS7VBuZ_iDYBNGyb8sNUcoSTGbOkZoZU2D9g@mail.gmail.com> <CAPM31RKrvY4zVRQBKnaQjdH0ROO3nAvPn5biP0O3ogmfubuXbg@mail.gmail.com>
+In-Reply-To: <CAPM31RKrvY4zVRQBKnaQjdH0ROO3nAvPn5biP0O3ogmfubuXbg@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 6:53 AM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On 6/22/2013 8:23 AM, Joel A Fernandes wrote:
->>>>> config TI_EDMA
->>>>>         tristate "TI EDMA support"
->>>>>         default m if 'ARCH_DAVINCI || ARCH_OMAP1 || ARCH_OMAP2
->>>>>         select DMA_ENGINE
->>>>>         select DMA_VIRTUAL_CHANNELS
->>>>
->>>>
->>>> MMC depends on EDMA specially on AM33xx there's no PIO mode AFAIK. The
->>>> 'm' option will require some initramfs to load the module when needing
->>>> to MMC boot, I suggest lets leave it as y.
->>>>
->>>
->>> Ah, right: you still export a filter function from the edma driver
->>> and use it in slave drivers:
->>>
->>> drivers/mmc/host/davinci_mmc.c:         dma_request_slave_channel_compat(mask, edma_filter_fn,
->>> drivers/mmc/host/davinci_mmc.c:         dma_request_slave_channel_compat(mask, edma_filter_fn,
->>> drivers/spi/spi-davinci.c:      dspi->dma_rx = dma_request_channel(mask, edma_filter_fn,
->>> drivers/spi/spi-davinci.c:      dspi->dma_tx = dma_request_channel(mask, edma_filter_fn,
->>>
->>> As long as this is the case, you have to be careful with the dependencies
->>> to make sure that davinci_mmc and spi-davinci either depend on TI_EDMA, or
->>> edma_filter_fn gets defined to NULL when you are building for a DT-only platform.
+On 06/24/2013 07:06 PM, Paul Turner wrote:
+>> AFAICT, the RT tasks activity is already taken into account by
+>> decreasing the cpu_power that is used during load balance like in the
+>> find_busiest_queue where weighted_cpuload is divided by cpu_power.
 >>
->> Yes sure, right now they are defined  as follows in include/linux/edma.h:
->>
->> #if defined(CONFIG_TI_EDMA) || defined(CONFIG_TI_EDMA_MODULE)
->> bool edma_filter_fn(struct dma_chan *, void *);
->> #else
->> static inline bool edma_filter_fn(struct dma_chan *chan, void *param)
->> {
->> return false;
->> }
->> #endif
->>
->> This also has the side effect of causing DMA requests to fail if
->> TI_EDMA is not built, causing frustration for a lot of people some of
->> whom don't want to deal with DMA so I think it is OK to build the
->> driver in by default as it is (and will be) used by a lot of
->> OMAP2PLUS.
->
-> Solution for this is to enable TI_EDMA in relevant defconfigs. Most
-> folks who would get frustrated by such issues would be using defconfigs
-> and for those who are building their configuration from scratch this
-> will be pretty low in their list of worries.
+> 
+> Yes.  RT tasks used to be handled as having a very-large weight [e.g.
+> 2*nice(-20)] but now we just scale cpu-power for how much non-RT time
+> there is available.
+> 
 
-Yes, it is not in omap2plus_defconfig either. I will post a patch to
-add it to the same, and we can ignore the Kconfig defaults and select
-patches.
+yes. you're right. thanks Vincent&Paul for all clarifying!
 
-Thanks,
-Joel
+-- 
+Thanks
+    Alex
