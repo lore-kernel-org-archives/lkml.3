@@ -1,47 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab3FXJls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 05:41:48 -0400
-Received: from science.horizon.com ([71.41.210.146]:43130 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751325Ab3FXJlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 05:41:46 -0400
-Date: 24 Jun 2013 05:41:45 -0400
-Message-ID: <20130624094145.2576.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: gaofeng@cn.fujitsu.com, linux@horizon.com
-Subject: Re: v3.10-rc7 oops soon after boot
-Cc: bp@alien8.de, kaber@trash.net, linux-kernel@vger.kernel.org,
-        netfilter@vger.kernel.org, pablo@netfilter.org
-In-Reply-To: <51C80D6F.6070907@cn.fujitsu.com>
+	id S1751955Ab3FXJnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 05:43:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40297 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751592Ab3FXJnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 05:43:16 -0400
+X-IronPort-AV: E=Sophos;i="4.87,927,1363104000"; 
+   d="scan'208";a="7660093"
+Message-ID: <51C813FA.9010000@cn.fujitsu.com>
+Date: Mon, 24 Jun 2013 17:40:10 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
+In-Reply-To: <20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/24 17:41:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/24 17:42:02,
+	Serialize complete at 2013/06/24 17:42:02
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please try the patch below,
-> I think this bug is introduced by me :(
+On 06/19/2013 01:10 AM, Vasilis Liaskovitis wrote:
+
+> Hi,
 > 
-> Thanks!
+> On Thu, Jun 13, 2013 at 09:02:47PM +0800, Tang Chen wrote:
+>> From: Yinghai Lu <yinghai@kernel.org>
+>>
+>> No offence, just rebase and resend the patches from Yinghai to help
+>> to push this functionality faster.
+>> Also improve the comments in the patches' log.
+>>
+>>
+>> One commit that tried to parse SRAT early get reverted before v3.9-rc1.
+>>
+>> | commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+>> | Author: Tang Chen <tangchen@cn.fujitsu.com>
+>> | Date:   Fri Feb 22 16:33:44 2013 -0800
+>> |
+>> |    acpi, memory-hotplug: parse SRAT before memblock is ready
+>>
+>> It broke several things, like acpi override and fall back path etc.
+>>
+>> This patchset is clean implementation that will parse numa info early.
+>> 1. keep the acpi table initrd override working by split finding with copying.
+>>    finding is done at head_32.S and head64.c stage,
+>>         in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
+>>         in head64.c, initrd is accessed via kernel low mapping address
+>>         with help of #PF set page table.
+>>    copying is done with early_ioremap just after memblock is setup.
+>> 2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
+>>    seperate initmem_init to two stages.
+>>    early_initmem_init will only extract numa info early into numa_meminfo.
+>>    initmem_init will keep slit and emulation handling.
+>> 3. keep other old code flow untouched like relocate_initrd and initmem_init.
+>>    early_initmem_init will take old init_mem_mapping position.
+>>    it call early_x86_numa_init and init_mem_mapping for every nodes.
+>>    For 64bit, we avoid having size limit on initrd, as relocate_initrd
+>>    is still after init_mem_mapping for all memory.
+>> 4. last patch will try to put page table on local node, so that memory
+>>    hotplug will be happy.
+>>
+>> In short, early_initmem_init will parse numa info early and call
+>> init_mem_mapping to set page table for every nodes's mem.
+>>
+>> could be found at:
+>>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+>>
+>> and it is based on today's Linus tree.
+>>
+> 
+> Has this patchset been tested on various numa configs?
+> I am using linux-next next-20130607 + part1 with qemu/kvm/seabios VMs. The kernel
+> boots successfully in many numa configs but while trying different memory sizes
+> for a 2 numa node VM, I noticed that booting does not complete in all cases
+> (bootup screen appears to hang but there is no output indicating an early panic)
+> 
+> node0   node1	 boots
+> 1G 	1G	 yes
+> 1G 	2G	 yes
+> 1G 	0.5G	 yes
+> 3G 	2.5G	 yes
+> 3G 	3G 	 yes
+> 4G 	0G	 yes
+> 4G 	4G	 yes
+> 1.5G	1G	 no
+> 2G 	1G	 no
+> 2G 	2G	 no
+> 2.5G 	2G	 no
+> 2.5G 	2.5G	 no
+> 
+> linux-next next-20130607 boots al of these configs fine.
+> 
+> Looks odd, perhaps I have something wrong in my setup or maybe there is a
+> seabios/qemu interaction with this patchset. I will update if I find something.
 
-Well, you changed it, but it still crashes.
+Hi Vasilis,
+   This patchset can work well with all the numa config cases you mentioned in latest kernel tree (3.10-rc7) in our box.
 
-It's now at del_timer+0x9/0x58, with the code being:
+Host OS: RHEL 6.4 Beta
+qemu-kvm: 0.12.1.2 (Released with RHEL 6.4 Beta)
+Guest OS: RHEL 6.3 
+Guest kernel:3.10-rc7 + [Part1 PATCH v5 ] x86, ACPI, numa: Parse numa info earlier
+Cmd:
 
-3f 00 55 53 48 89 fb 48 83 ec 10 <48> 83 3f 00 48 c7 47
+/usr/libexec/qemu-kvm -name rhel_6.3 -S -M rhel6.4.0 -enable-kvm 
+-m 5120 -smp 4,sockets=4,cores=1,threads=1 
+-numa node,nodeid=0,cpus=0-1,mem=2560 
+-numa node,nodeid=1,cpus=2-3,mem=2560 
+-uuid fa11164c-1a09-280b-eae4-e2c40c631767 -nodefconfig -nodefaults -chardev 
+socket,id=charmonitor,path=/var/lib/libvirt/qemu/rhel_6.3.monitor,server,nowait 
+-mon chardev=charmonitor,id=monitor,mode=control -rtc base=utc -no-shutdown 
+-device piix3-usb-uhci,id=usb,bus=pci.0,addr=0x1.0x2 -drive file=/home/hut-rhel6.3.img,if=none,id=drive-virtio-disk0,format=qcow2,cache=none -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1 -netdev tap,fd=26,id=hostnet0,vhost=on,vhostfd=27 -device virtio-net-pci,netdev=hostnet0,id=net0,mac=52:54:00:28:6e:29,bus=pci.0,addr=0x3 -chardev pty,id=charserial0 -device isa-serial,chardev=charserial0,id=serial0 -device usb-tablet,id=input0 -vnc 127.0.0.1:0 -vga cirrus -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5
 
-The backtrace is
- <IRQ>
- ? ulog_send+0x21/0x76
- ? ulog_timer+0x2d/0x39
- ? ulog_send+0x76/0x76
- ? call_timer_fn.isra
- ? run_timer_softirq
- ? __do_softirq
- ? irq_exit
- ? do_IRQ
- ? common_interrupt
- <EOI>
 
-(To give a faster response, I just transcribed a few key
-sections.  Is that enough of a clue, or do you need more?)
+Result:
+node0   node1	 boots
+1G 	1G	 yes
+1G 	2G	 yes
+1G 	0.5G	 yes
+3G 	2.5G	 yes
+3G 	3G 	 yes
+4G 	0G	 yes
+4G 	4G	 yes
+1.5G	1G	 yes
+2G 	1G	 yes
+2G 	2G	 yes
+2.5G 	2G	 yes
+2.5G 	2.5G	 yes
+
+Thanks,
+
+Gu
+
+
+> 
+> thanks,
+> 
+> - Vasilis
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
