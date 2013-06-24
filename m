@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab3FXNKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 09:10:52 -0400
+	id S1751952Ab3FXNOp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 09:14:45 -0400
 Received: from mga14.intel.com ([143.182.124.37]:25371 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab3FXNKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 09:10:49 -0400
+	id S1750899Ab3FXNKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 09:10:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,928,1363158000"; 
-   d="scan'208";a="321686482"
+   d="scan'208";a="321686339"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 05/15] perf tools: fix new_term() missing free on error path
-Date: Mon, 24 Jun 2013 16:16:02 +0300
-Message-Id: <1372079772-20803-6-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 01/15] perf tools: remove unused parameter
+Date: Mon, 24 Jun 2013 16:15:58 +0300
+Message-Id: <1372079772-20803-2-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
 References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
@@ -29,25 +29,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the error path, newly allocated 'term' must be freed.
+'machine' is unused in 'perf_event__repipe_synth()' and some
+callers pass NULL anyway.  So remove it.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/parse-events.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/builtin-inject.c | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index d8dcb8d..995fc25 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1184,6 +1184,7 @@ static int new_term(struct parse_events_term **_term, int type_val,
- 		term->val.str = str;
- 		break;
- 	default:
-+		free(term);
- 		return -EINVAL;
- 	}
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 84ad6ab..f299ddf 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -38,8 +38,7 @@ struct event_entry {
+ };
  
+ static int perf_event__repipe_synth(struct perf_tool *tool,
+-				    union perf_event *event,
+-				    struct machine *machine __maybe_unused)
++				    union perf_event *event)
+ {
+ 	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
+ 	uint32_t size;
+@@ -65,20 +64,20 @@ static int perf_event__repipe_op2_synth(struct perf_tool *tool,
+ 					struct perf_session *session
+ 					__maybe_unused)
+ {
+-	return perf_event__repipe_synth(tool, event, NULL);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ static int perf_event__repipe_event_type_synth(struct perf_tool *tool,
+ 					       union perf_event *event)
+ {
+-	return perf_event__repipe_synth(tool, event, NULL);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ static int perf_event__repipe_tracing_data_synth(union perf_event *event,
+ 						 struct perf_session *session
+ 						 __maybe_unused)
+ {
+-	return perf_event__repipe_synth(NULL, event, NULL);
++	return perf_event__repipe_synth(NULL, event);
+ }
+ 
+ static int perf_event__repipe_attr(union perf_event *event,
+@@ -89,15 +88,15 @@ static int perf_event__repipe_attr(union perf_event *event,
+ 	if (ret)
+ 		return ret;
+ 
+-	return perf_event__repipe_synth(NULL, event, NULL);
++	return perf_event__repipe_synth(NULL, event);
+ }
+ 
+ static int perf_event__repipe(struct perf_tool *tool,
+ 			      union perf_event *event,
+ 			      struct perf_sample *sample __maybe_unused,
+-			      struct machine *machine)
++			      struct machine *machine __maybe_unused)
+ {
+-	return perf_event__repipe_synth(tool, event, machine);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ typedef int (*inject_handler)(struct perf_tool *tool,
+@@ -119,7 +118,7 @@ static int perf_event__repipe_sample(struct perf_tool *tool,
+ 
+ 	build_id__mark_dso_hit(tool, event, sample, evsel, machine);
+ 
+-	return perf_event__repipe_synth(tool, event, machine);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ static int perf_event__repipe_mmap(struct perf_tool *tool,
+@@ -153,7 +152,7 @@ static int perf_event__repipe_tracing_data(union perf_event *event,
+ {
+ 	int err;
+ 
+-	perf_event__repipe_synth(NULL, event, NULL);
++	perf_event__repipe_synth(NULL, event);
+ 	err = perf_event__process_tracing_data(event, session);
+ 
+ 	return err;
 -- 
 1.7.11.7
 
