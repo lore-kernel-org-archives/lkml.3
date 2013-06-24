@@ -1,96 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab3FXGXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 02:23:17 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:57813 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471Ab3FXGXP (ORCPT
+	id S1752559Ab3FXGXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 02:23:23 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36270 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310Ab3FXGXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 02:23:15 -0400
-Subject: [PATCH 1/3] Retreive header size from pstore
+	Mon, 24 Jun 2013 02:23:19 -0400
+Subject: [PATCH 2/3] powerpc/pseries: Re-organise the oops compression code
 To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
         benh@kernel.crashing.org
 From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
         mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
         cbouatmailru@gmail.com, keescook@chromium.org
-Date: Mon, 24 Jun 2013 11:52:56 +0530
-Message-ID: <20130624062255.12963.71137.stgit@aruna-ThinkPad-T420>
+Date: Mon, 24 Jun 2013 11:53:11 +0530
+Message-ID: <20130624062311.12963.26436.stgit@aruna-ThinkPad-T420>
 In-Reply-To: <20130624061936.12963.72529.stgit@aruna-ThinkPad-T420>
 References: <20130624061936.12963.72529.stgit@aruna-ThinkPad-T420>
 User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062406-5140-0000-0000-0000036B9066
+x-cbid: 13062406-5816-0000-0000-00000897B95E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pstore_get_header_size will return the size of the header added by pstore
-while logging messages to the registered buffer.
+nvram_compress() and zip_oops() is used by the nvram_pstore_write
+API to compress oops messages hence re-organise the functions
+accordingly to avoid forward declarations.
 
 Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 ---
- fs/pstore/platform.c   |    7 ++++++-
- include/linux/pstore.h |    6 ++++++
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ arch/powerpc/platforms/pseries/nvram.c |  104 ++++++++++++++++----------------
+ 1 file changed, 52 insertions(+), 52 deletions(-)
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 86d1038..e8260ea 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -49,6 +49,7 @@ MODULE_PARM_DESC(update_ms, "milliseconds before pstore updates its content "
- 		 "corruption on Oopses)");
+diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
+index 14cc486..0159d74 100644
+--- a/arch/powerpc/platforms/pseries/nvram.c
++++ b/arch/powerpc/platforms/pseries/nvram.c
+@@ -486,6 +486,58 @@ static int clobbering_unread_rtas_event(void)
+ 						NVRAM_RTAS_READ_TIMEOUT);
+ }
  
- static int pstore_new_entry;
-+static int hsize;
- 
- static void pstore_timefunc(unsigned long);
- static DEFINE_TIMER(pstore_timer, pstore_timefunc, 0, 0);
-@@ -68,6 +69,11 @@ static char *backend;
- /* How much of the console log to snapshot */
- static unsigned long kmsg_bytes = 10240;
- 
-+int pstore_get_header_size(void)
++/* Derived from logfs_compress() */
++static int nvram_compress(const void *in, void *out, size_t inlen,
++							size_t outlen)
 +{
-+	return hsize;
++	int err, ret;
++
++	ret = -EIO;
++	err = zlib_deflateInit2(&stream, COMPR_LEVEL, Z_DEFLATED, WINDOW_BITS,
++						MEM_LEVEL, Z_DEFAULT_STRATEGY);
++	if (err != Z_OK)
++		goto error;
++
++	stream.next_in = in;
++	stream.avail_in = inlen;
++	stream.total_in = 0;
++	stream.next_out = out;
++	stream.avail_out = outlen;
++	stream.total_out = 0;
++
++	err = zlib_deflate(&stream, Z_FINISH);
++	if (err != Z_STREAM_END)
++		goto error;
++
++	err = zlib_deflateEnd(&stream);
++	if (err != Z_OK)
++		goto error;
++
++	if (stream.total_out >= stream.total_in)
++		goto error;
++
++	ret = stream.total_out;
++error:
++	return ret;
 +}
 +
- void pstore_set_kmsg_bytes(int bytes)
- {
- 	kmsg_bytes = bytes;
-@@ -147,7 +153,6 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 	while (total < kmsg_bytes) {
- 		char *dst;
- 		unsigned long size;
--		int hsize;
- 		size_t len;
- 
- 		dst = psinfo->buf;
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index 656699f..f43b64f 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -73,6 +73,7 @@ struct pstore_info {
- #ifdef CONFIG_PSTORE
- extern int pstore_register(struct pstore_info *);
- extern bool pstore_cannot_block_path(enum kmsg_dump_reason reason);
-+extern int pstore_get_header_size(void);
- #else
- static inline int
- pstore_register(struct pstore_info *psi)
-@@ -84,6 +85,11 @@ pstore_cannot_block_path(enum kmsg_dump_reason reason)
- {
- 	return false;
- }
-+static inline int
-+pstore_get_header_size(void)
++/* Compress the text from big_oops_buf into oops_buf. */
++static int zip_oops(size_t text_len)
 +{
++	struct oops_log_info *oops_hdr = (struct oops_log_info *)oops_buf;
++	int zipped_len = nvram_compress(big_oops_buf, oops_data, text_len,
++								oops_data_sz);
++	if (zipped_len < 0) {
++		pr_err("nvram: compression failed; returned %d\n", zipped_len);
++		pr_err("nvram: logging uncompressed oops/panic report\n");
++		return -1;
++	}
++	oops_hdr->version = OOPS_HDR_VERSION;
++	oops_hdr->report_length = (u16) zipped_len;
++	oops_hdr->timestamp = get_seconds();
 +	return 0;
 +}
- #endif
++
+ #ifdef CONFIG_PSTORE
+ static int nvram_pstore_open(struct pstore_info *psi)
+ {
+@@ -757,58 +809,6 @@ int __init pSeries_nvram_init(void)
+ }
  
- #endif /*_LINUX_PSTORE_H*/
+ 
+-/* Derived from logfs_compress() */
+-static int nvram_compress(const void *in, void *out, size_t inlen,
+-							size_t outlen)
+-{
+-	int err, ret;
+-
+-	ret = -EIO;
+-	err = zlib_deflateInit2(&stream, COMPR_LEVEL, Z_DEFLATED, WINDOW_BITS,
+-						MEM_LEVEL, Z_DEFAULT_STRATEGY);
+-	if (err != Z_OK)
+-		goto error;
+-
+-	stream.next_in = in;
+-	stream.avail_in = inlen;
+-	stream.total_in = 0;
+-	stream.next_out = out;
+-	stream.avail_out = outlen;
+-	stream.total_out = 0;
+-
+-	err = zlib_deflate(&stream, Z_FINISH);
+-	if (err != Z_STREAM_END)
+-		goto error;
+-
+-	err = zlib_deflateEnd(&stream);
+-	if (err != Z_OK)
+-		goto error;
+-
+-	if (stream.total_out >= stream.total_in)
+-		goto error;
+-
+-	ret = stream.total_out;
+-error:
+-	return ret;
+-}
+-
+-/* Compress the text from big_oops_buf into oops_buf. */
+-static int zip_oops(size_t text_len)
+-{
+-	struct oops_log_info *oops_hdr = (struct oops_log_info *)oops_buf;
+-	int zipped_len = nvram_compress(big_oops_buf, oops_data, text_len,
+-								oops_data_sz);
+-	if (zipped_len < 0) {
+-		pr_err("nvram: compression failed; returned %d\n", zipped_len);
+-		pr_err("nvram: logging uncompressed oops/panic report\n");
+-		return -1;
+-	}
+-	oops_hdr->version = OOPS_HDR_VERSION;
+-	oops_hdr->report_length = (u16) zipped_len;
+-	oops_hdr->timestamp = get_seconds();
+-	return 0;
+-}
+-
+ /*
+  * This is our kmsg_dump callback, called after an oops or panic report
+  * has been written to the printk buffer.  We want to capture as much
 
