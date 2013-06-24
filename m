@@ -1,184 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab3FXQuw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 12:50:52 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:27518 "EHLO SMTP.CITRIX.COM"
+	id S1752520Ab3FXQv5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 12:51:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752520Ab3FXQuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 12:50:50 -0400
-X-IronPort-AV: E=Sophos;i="4.87,929,1363132800"; 
-   d="scan'208";a="33083380"
-Date: Mon, 24 Jun 2013 17:50:46 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Chen Gang <gang.chen@asianux.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Tony Lindgren <tony@atomide.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [Suggestion] arch: arm64: xen: "ln -s" the paravirt.h from
- arm.
-In-Reply-To: <alpine.DEB.2.02.1306241639260.4782@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1306241747360.4782@kaball.uk.xensource.com>
-References: <51C53C06.7050205@asianux.com> <51C81115.4070803@asianux.com> <51C81A39.5060909@asianux.com> <alpine.DEB.2.02.1306241639260.4782@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1750964Ab3FXQvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 12:51:55 -0400
+Date: Mon, 24 Jun 2013 12:51:40 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130624165140.GB8572@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Oleg Nesterov <oleg@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrey Vagin <avagin@openvz.org>
+References: <20130622173129.GA29375@redhat.com>
+ <20130622215905.GA28238@redhat.com>
+ <20130623143634.GA2000@redhat.com>
+ <20130623150603.GA32313@redhat.com>
+ <20130623160452.GA11740@redhat.com>
+ <20130624020014.GB12811@redhat.com>
+ <20130624143928.GA20659@redhat.com>
+ <1372085549.18733.162.camel@gandalf.local.home>
+ <20130624160012.GB5993@redhat.com>
+ <1372091079.18733.168.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372091079.18733.168.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jun 2013, Stefano Stabellini wrote:
-> On Mon, 24 Jun 2013, Chen Gang wrote:
-> > Hello Maintainers:
-> > 
-> > if 'CONFIG_XEN'
-> > 
-> >   CC      arch/arm64/xen/../../arm/xen/enlighten.o
-> > arch/arm64/xen/../../arm/xen/enlighten.c:19:26: fatal error: asm/paravirt.h: No such file or directory
-> > 
-> > The related .config file for next-20130624 is in attachment.
-> > 
-> > 
-> > If "ln -s ../../../arm/include/asm/paravirt.h paravirt.h", it can pass
-> > compiling, but I do not know how to make a patch for it ("ln -s ..."),
-> > Do we have another more suitable ways for it (or another fixing ways) ?
-> > 
-> > Welcome any suggestions or completions.
-> 
-> The problem is caused by:
-> 
-> commit 3a885582a366caf868b0782041c44854ff4c3568
-> Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Date:   Wed May 29 10:56:34 2013 +0000
-> 
->     xen/arm: account for stolen ticks
-> 
-> that is in my tree for linux-next (even though I have not received any
-> replies from the ARM maintainers so I don't know when and if it is going
-> to go upstream).
-> 
-> I think that the best thing to do would be to add a couple of ifdef
-> CONFIG_PARAVIRT in arch/arm/xen/enlighten.c. I'll add them to my tree.
+On Mon, Jun 24, 2013 at 12:24:39PM -0400, Steven Rostedt wrote:
 
-Actually now that we have XEN support under arm64, we can just introduce the
-same pv_time_op struct and paravirt header that this patch
+ > > Ah, this is the first victim of my new 'check sanity of nodes during list walks' patch.
+ > > It's doing the same prev->next next->prev checking as list_add and friends.
+ > > I'm looking at getting it into shape for a 3.12 merge after some other preparatory patches
+ > > go into 3.11
+ > 
+ > OK, and you may need to make an exception for the ring buffer. To do a
+ > lockless swap out of the reader page for one of the pages in the buffer,
+ > it uses the 2 LSB as flags. Notice the "next=ffff880243288001", that "1"
+ > is a flag that states the next page is the "header" page (next to be
+ > read). We use cmpxchg to update the pages to handle races between the
+ > reader and writer.
 
-http://marc.info/?l=linux-arm-kernel&m=136992435301890&w=2
+I just had a plumber come visit to replace my toilet.
+I think even he would say "dude, gross" about that hack.
 
-is introducing under arm.
-Any opinions?
+	Dave
 
----
-
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 19c1cde..47bd26b 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -207,6 +207,25 @@ config FORCE_MAX_ZONEORDER
- 	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
- 	default "11"
- 
-+config PARAVIRT
-+	bool "Enable paravirtualization code"
-+	---help---
-+	  This changes the kernel so it can modify itself when it is run
-+	  under a hypervisor, potentially improving performance significantly
-+	  over full virtualization.
-+
-+config PARAVIRT_TIME_ACCOUNTING
-+	bool "Paravirtual steal time accounting"
-+	select PARAVIRT
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task steal time
-+	  accounting. Time spent executing other tasks in parallel with
-+	  the current vCPU is discounted from the vCPU power. To account for
-+	  that, there can be a small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config XEN_DOM0
- 	def_bool y
- 	depends on XEN
-@@ -214,6 +233,7 @@ config XEN_DOM0
- config XEN
- 	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
- 	depends on ARM64 && OF
-+	select PARAVIRT
- 	help
- 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM64.
- 
-diff --git a/arch/arm64/include/asm/paravirt.h b/arch/arm64/include/asm/paravirt.h
-new file mode 100644
-index 0000000..54e895b
---- /dev/null
-+++ b/arch/arm64/include/asm/paravirt.h
-@@ -0,0 +1,19 @@
-+#ifndef _ASM_ARM64_PARAVIRT_H
-+#define _ASM_ARM64_PARAVIRT_H
-+
-+struct static_key;
-+extern struct static_key paravirt_steal_enabled;
-+extern struct static_key paravirt_steal_rq_enabled;
-+
-+struct pv_time_ops {
-+	unsigned long long (*steal_clock)(int cpu);
-+};
-+extern struct pv_time_ops pv_time_ops;
-+
-+static inline u64 paravirt_steal_clock(int cpu)
-+{
-+	return pv_time_ops.steal_clock(cpu);
-+}
-+
-+
-+#endif
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 7b4b564..17613ad 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o smp_psci.o
- arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
- arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
- arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-+arm64-obj-$(CONFIG_PARAVIRT)		+= paravirt.o
- 
- obj-y					+= $(arm64-obj-y) vdso/
- obj-m					+= $(arm64-obj-m)
-diff --git a/arch/arm64/kernel/paravirt.c b/arch/arm64/kernel/paravirt.c
-new file mode 100644
-index 0000000..53f371e
---- /dev/null
-+++ b/arch/arm64/kernel/paravirt.c
-@@ -0,0 +1,25 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Copyright (C) 2013 Citrix Systems
-+ *
-+ * Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/jump_label.h>
-+#include <linux/types.h>
-+#include <asm/paravirt.h>
-+
-+struct static_key paravirt_steal_enabled;
-+struct static_key paravirt_steal_rq_enabled;
-+
-+struct pv_time_ops pv_time_ops;
-+EXPORT_SYMBOL_GPL(pv_time_ops);
