@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3FXUpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 16:45:04 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:64669 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab3FXUpC (ORCPT
+	id S1751828Ab3FXUs5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 16:48:57 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:38718 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751072Ab3FXUs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 16:45:02 -0400
+	Mon, 24 Jun 2013 16:48:56 -0400
+Message-ID: <51C8B0AA.4070204@hurleysoftware.com>
+Date: Mon, 24 Jun 2013 16:48:42 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1372106517-19105-1-git-send-email-dianders@chromium.org>
-References: <1372106517-19105-1-git-send-email-dianders@chromium.org>
-Date: Mon, 24 Jun 2013 13:45:01 -0700
-Message-ID: <CAOesGMgqr6f1wwD5JWzMoQWkMpQDWXhadRtJMvKr1RC6RD9RgA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Fix dtb dependency to use order-only prerequisites
-From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, Alex Shi <alex.shi@intel.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock acquisition
+References: <cover.1371855277.git.tim.c.chen@linux.intel.com>  <1371858700.22432.5.camel@schen9-DESK>  <51C558E2.1040108@hurleysoftware.com>  <1372017836.1797.14.camel@buesod1.americas.hpqcorp.net>  <1372093876.22432.34.camel@schen9-DESK>  <51C894C3.4040407@hurleysoftware.com> <1372105065.22432.65.camel@schen9-DESK>
+In-Reply-To: <1372105065.22432.65.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 1:41 PM, Doug Anderson <dianders@chromium.org> wrote:
-> The %.dtb dependency is specified to depend on the PHONY "scripts".
-> That means that it'll build every time even if the underlying dtb file
-> hasn't been touched.  Use an order-only prerequisites to fix this.
-> Also mark "dtbs" as PHONY for correctness.
+On 06/24/2013 04:17 PM, Tim Chen wrote:
+> On Mon, 2013-06-24 at 14:49 -0400, Peter Hurley wrote:
+>> On 06/24/2013 01:11 PM, Tim Chen wrote:
+>>> On Sun, 2013-06-23 at 13:03 -0700, Davidlohr Bueso wrote:
+>>>> On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
+>>>>> On 06/21/2013 07:51 PM, Tim Chen wrote:
+>>>>>>
+>>>>>> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+>>>>>> +{
+>>>>>> +	int retval = true;
+>>>>>> +
+>>>>>> +	/* Spin only if active writer running */
+>>>>>> +	if (!sem->owner)
+>>>>>> +		return false;
+>>>>>> +
+>>>>>> +	rcu_read_lock();
+>>>>>> +	if (sem->owner)
+>>>>>> +		retval = sem->owner->on_cpu;
+>>>>>                             ^^^^^^^^^^^^^^^^^^
+>>>>>
+>>>>> Why is this a safe dereference? Could not another cpu have just
+>>>>> dropped the sem (and thus set sem->owner to NULL and oops)?
+>>>>>
+>>>
+>>> The rcu read lock should protect against sem->owner being NULL.
+>>
+>> It doesn't.
+>>
+>> Here's the comment from mutex_spin_on_owner():
+>>
+>>     /*
+>>      * Look out! "owner" is an entirely speculative pointer
+>>      * access and not reliable.
+>>      */
 >
-> This was broken in (70b0476 ARM: 7513/1: Make sure dtc is built before
-> running it).
+> On second thought, I agree with you.  I should change this to
+> something like
 >
-> Reported-by: Mike Frysinger <vapier@gentoo.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> 	int retval = true;
+> 	task_struct *sem_owner;
+>
+> 	/* Spin only if active writer running */
+> 	if (!sem->owner)
+> 		return false;
+>
+> 	rcu_read_lock();
+> 	sem_owner = sem->owner;
+> 	if (sem_owner)
+> 		retval = sem_owner->on_cpu;
+>
 
-Acked-by: Olof Johansson <olof@lixom.net>
+Our emails passed each other.
 
-Please send to Russell's patch tracker.
+Also, I haven't given a lot of thought to if preemption must be disabled
+before calling rwsem_can_spin_on_owner(). If so, wouldn't you just drop
+rwsem_can_spin_on_owner() (because the conditions tested in the loop are
+equivalent)?
+
+Regards,
+Peter Hurley
 
 
--Olof
