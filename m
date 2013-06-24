@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3FXXiP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 19:38:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33288 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3FXXiO (ORCPT
+	id S1752193Ab3FXXlC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 19:41:02 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39567 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab3FXXlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 19:38:14 -0400
-Date: Mon, 24 Jun 2013 16:38:13 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jiri Slaby <jslaby@suse.cz>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v5] serial:st-asc: Add ST ASC driver.
-Message-ID: <20130624233813.GA4108@kroah.com>
-References: <1372058503-30505-1-git-send-email-srinivas.kandagatla@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1372058503-30505-1-git-send-email-srinivas.kandagatla@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Jun 2013 19:41:00 -0400
+Date: Tue, 25 Jun 2013 09:40:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: Peng Tao <bergwolf@gmail.com>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (staging tree related)
+Message-Id: <20130625094051.b9cf8f8950eeeeed0dd266b2@canb.auug.org.au>
+In-Reply-To: <20130624224035.GD24099@kroah.com>
+References: <20130619181031.8b53acc44466ba70a47e1fcd@canb.auug.org.au>
+	<CA+a=Yy4z-ufq2GEtzC17TBbrNGWv6ZUzuVe=VLBH48Df=3HZxA@mail.gmail.com>
+	<20130624224035.GD24099@kroah.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Jun_2013_09_40_51_+1000_kwEhSuMHj_gi3Q4M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 08:21:43AM +0100, Srinivas KANDAGATLA wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> 
-> This patch adds support to ASC (asynchronous serial controller)
-> driver, which is basically a standard serial driver. This IP is common
-> across all the ST parts for settop box platforms.
-> 
-> ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
-> It support all industry standard baud rates.
-> 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> CC: Stephen Gallimore <stephen.gallimore@st.com>
-> CC: Stuart Menefy <stuart.menefy@st.com>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> ---
-> Hi Greg,
-> 
-> This patch is the part of the driver support for Stixxxx SOCs.
-> This patch undergone 3-4 cycles of review in arm-kernel mailing list.
-> As Arnd prefered to take only SOC support patches via arm-soc, Am 
-> sending this patch seperately.
-> 
-> If its not too late, can you consider this patch for 3.11 via tty tree?
+--Signature=_Tue__25_Jun_2013_09_40_51_+1000_kwEhSuMHj_gi3Q4M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I would have taken it, but it breaks the build on my machine:
+Hi Greg,
 
-drivers/tty/serial/st-asc.c: In function ‘asc_serial_resume’:
-drivers/tty/serial/st-asc.c:774:15: error: ‘struct device’ has no member named ‘pins’
-drivers/tty/serial/st-asc.c:775:3: error: implicit declaration of function ‘pinctrl_select_state’ [-Werror=implicit-function-declaration]
-drivers/tty/serial/st-asc.c:775:37: error: ‘struct device’ has no member named ‘pins’
-drivers/tty/serial/st-asc.c:776:16: error: ‘struct device’ has no member named ‘pins’
+On Mon, 24 Jun 2013 15:40:35 -0700 Greg KH <greg@kroah.com> wrote:
+>
+> We are running out of time, my tree is pretty much closed for 3.11 now,
+> should I just disable the build of this module for 3.11?
 
-Please test your patches out on a "normal" Linux system.
+That's what I've been doing - it has never been enabled in a final
+linux-next release.  So, it should probably just be disabled properly.
 
-Please feel free to resend this after 3.11-rc1 is out, for inclusion in
-3.12, after you have fixed the build problems.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-greg k-h
+--Signature=_Tue__25_Jun_2013_09_40_51_+1000_kwEhSuMHj_gi3Q4M
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRyNkHAAoJEECxmPOUX5FELywP/RoXUr9Kj0vf587TPzgUxeFk
+fJOy740UUs0MGZ7tqQclzIKCataAd0Tyx/u/c7fMJM1d01r80iPZDTZaaV1p6Ew0
+WNerHdbfaHEcT0ihsT4XPzFoN7ggUBLb4OaA2hhOQa+SaAr5y/zz9CqFw3c3PYrg
+VtT2s241alvgqkPAf3vt1RkuIeWcXL7nKyp01Gfw+s5bghyZ8z+YxwHigmnwkrrL
+nS+VbZAVTgykUZfiBFeckpFBUxCWxygCHJkPuvQvbWrwu53mAwo4Atkv4l013RNC
+5uHlNTlFhYOn2kh02u4vnSeMvWji36tlnze+2tusM4Z96ZWV4iHZnesDUeeYEGUd
+p0l+ysCl/t0ESyLFySEM38XMCACzJbyZAv+ckx4Xnk820nfwj4WkKRYMeLbG9qQF
+I3X9OB5WFW8MLshUl9g0V1A8+xDgW8b57WfCu7rWh3rO1zfhUPkv6qJbNmJdcypR
+1KiuonqvD+lNlGmcWQ8MTNtsG5x9uOUQPe4wVL4e10okj8+mgZalMY8mJH/BL0F2
+gf2PBMxwt7opWpoLEVLEBXrbebrqeEeovjJPopJoLsZmeS4cHibNpcAfWn6mf2Wz
+wcr0d17xPFtI3sKYbp/Z/tLQpxMpsAuQMc5doCmykUD9fU24E5uaEaGTcr6aODke
+pFUbIqdFwDCRHSl7dgiv
+=I1XW
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Jun_2013_09_40_51_+1000_kwEhSuMHj_gi3Q4M--
