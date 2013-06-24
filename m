@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab3FXUFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 16:05:24 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:48690 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3FXUFW (ORCPT
+	id S1751538Ab3FXUGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 16:06:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49340 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab3FXUGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 16:05:22 -0400
-Date: Mon, 24 Jun 2013 13:05:18 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org
-Subject: Re: bcache: order 7 allocation
-Message-ID: <20130624200518.GA2509@google.com>
-References: <20130622114745.GB8075@amd.pavel.ucw.cz>
+	Mon, 24 Jun 2013 16:06:34 -0400
+Message-ID: <51C8A6C8.8000009@codeaurora.org>
+Date: Mon, 24 Jun 2013 13:06:32 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130622114745.GB8075@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v5] clocksource:arm_global_timer: Add ARM global timer
+ support.
+References: <1372089195-29219-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1372089195-29219-1-git-send-email-srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 01:47:46PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> I'm trying to play with bcache, but first surprise was oom in syslog:
-> 
-> Order 7 alocation is pretty big, no?
+On 06/24/13 08:53, Srinivas KANDAGATLA wrote:
+> +
+> +static void gt_clockevents_stop(struct clock_event_device *clk)
+> +{
+> +	gt_clockevent_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
+> +	disable_percpu_irq(clk->irq);
+> +}
+> +
+> +static int __cpuinit gt_clockevents_setup(struct clock_event_device *clk)
+> +{
+> +	struct clock_event_device *evt = this_cpu_ptr(gt_evt);
+> +	return evt->name ? 0 : gt_clockevents_init(evt);
+> +}
 
-That's a btree node - and after it allocates the reserve at startup,
-allocation failures don't matter.
+How does this work? gt_clockevents_stop() is using the
+clock_event_device struct from the ARM local timer layer whereas
+gt_clockevents_setup() is using a driver private allocation. Please just
+don't use the local timer API at all and use cpu notifiers instead.
 
-I would just flip on CONFIG_COMPACTION - CONFIG_BCACHE used to select
-that but someone complained (probably I just shouldn't have listened).
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
