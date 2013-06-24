@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab3FXJ2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 05:28:44 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:37364 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab3FXJ2m (ORCPT
+	id S1752005Ab3FXJ3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 05:29:46 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:35076 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab3FXJ3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 05:28:42 -0400
-X-Spam-Score: -100.9
-Message-ID: <51C81115.4070803@asianux.com>
-Date: Mon, 24 Jun 2013 17:27:49 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 24 Jun 2013 05:29:45 -0400
+Date: Mon, 24 Jun 2013 11:29:42 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Oliver Schinagl <oliver+list@schinagl.nl>, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        andy.shevchenko@gmail.com, linux@arm.linux.org.uk,
+        linus.walleij@linaro.org, linux-sunxi@googlegroups.com,
+        Oliver Schinagl <oliver@schinagl.nl>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+Message-ID: <20130624092942.GG26008@lukather>
+References: <1371502778-15849-1-git-send-email-oliver+list@schinagl.nl>
+ <1371502778-15849-2-git-send-email-oliver+list@schinagl.nl>
+ <20130617225847.GA9494@kroah.com>
 MIME-Version: 1.0
-To: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-CC: Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH v2] arch: arm64: kernel: add '#ifdef CONFIG_COMPAT' for aarch32_break_handler()
-References: <51C53C06.7050205@asianux.com>
-In-Reply-To: <51C53C06.7050205@asianux.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5L6AZ1aJH5mDrqCQ"
+Content-Disposition: inline
+In-Reply-To: <20130617225847.GA9494@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-If 'COMPAT' not defined, aarch32_break_handler() cannot pass compiling,
-and it can work independent with 'COMPAT', so remove dummy definition.
+--5L6AZ1aJH5mDrqCQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The related make:
+Hi Greg,
 
-  make ARCH=arm64 randconfig
-  make ARCH=arm64 menuconfig
-  make ARCH=arm64 V=1 EXTRA_CFLAGS=-W
+On Mon, Jun 17, 2013 at 03:58:47PM -0700, Greg KH wrote:
+> On Mon, Jun 17, 2013 at 10:59:37PM +0200, Oliver Schinagl wrote:
 
-The related error:
+[..]
 
-  arch/arm64/kernel/debug-monitors.c:249:5: error: redefinition of ‘aarch32_break_handler’
-  In file included from arch/arm64/kernel/debug-monitors.c:29:0:
-  /root/linux-next/arch/arm64/include/asm/debug-monitors.h:89:12: note: previous definition of ‘aarch32_break_handler’ was here
+> > +static int __init sunxi_sid_probe(struct platform_device *pdev)
+> > +{
+> > +	u8 entropy[SID_SIZE];
+> > +	unsigned int i;
+> > +	struct resource *res;
+> > +	void __iomem *sid_reg_base;
+> > +	int ret;
+> > +
+> > +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	sid_reg_base =3D devm_ioremap_resource(&pdev->dev, res);
+> > +	if (IS_ERR(sid_reg_base))
+> > +		return PTR_ERR(sid_reg_base);
+> > +	platform_set_drvdata(pdev, sid_reg_base);
+> > +
+> > +	ret =3D device_create_bin_file(&pdev->dev, &sid_bin_attr);
+> > +	if (ret)
+> > +		return ret;
+>=20
+> You just raced with userspace, having the file show up after the device
+> was announced to users that it was there.  Please use the proper device
+> file api to add default attributes to prevent this from happening.
 
+Sorry if the question looks dumb, but what kind of race can we generate
+here?
 
+The device_create_bin_file is the last call that we make (if we except
+the entropy stuff, but it doesn't really matter here), so after we
+created the file, we have everything properly initialised so that our
+functions can be called, right?
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arm64/include/asm/debug-monitors.h |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+And another dumb question for you, what is the "proper device file API"
+you are referring to ? :)
 
-diff --git a/arch/arm64/include/asm/debug-monitors.h b/arch/arm64/include/asm/debug-monitors.h
-index ef8235c..a2232d0 100644
---- a/arch/arm64/include/asm/debug-monitors.h
-+++ b/arch/arm64/include/asm/debug-monitors.h
-@@ -83,14 +83,7 @@ static inline int reinstall_suspended_bps(struct pt_regs *regs)
- }
- #endif
- 
--#ifdef CONFIG_COMPAT
- int aarch32_break_handler(struct pt_regs *regs);
--#else
--static int aarch32_break_handler(struct pt_regs *regs)
--{
--	return -EFAULT;
--}
--#endif
- 
- #endif	/* __ASSEMBLY */
- #endif	/* __KERNEL__ */
--- 
-1.7.7.6
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--5L6AZ1aJH5mDrqCQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRyBGGAAoJEBx+YmzsjxAgYgoP/03lrJk7jnBbS5VB69ZvniFf
+vCRppuJmvZU/xtgVqrkjYWSCk8VuxBhyRpQTXJ2GSLUZloTbu0vtAgXSyjSCoLxd
+HR2nlHngPazITrS6GmVBd/5nziRTBrZtvS2TxydzUVW8Wl/h1YdDIUOPRIVHlsIL
+KLkEfCWeHpTOYbgeBvHUc+X8iWWSeU6wXzf+iFp2lXkKKlAfPi1JAhPM8w3uWBW8
+UI2t9+TmhW9mBF192thg6Dzj8cAzzfgXcnn2wrpP02ckMZfx+ZKWHQW0NBovMRgr
+0AGTlLx3a85s5G7rShQNi/B+RIbjEQAA0TMq8jJHZnzFPJlgLuRSge0jzhFGNkGv
+L1G8gr4ou7TXfel28/2ocQO45EmXPMgPj5OPZ5xU6rA8K+W5yNYY7ZFSdJQCPGEQ
+2rD0SLh2gRAoT2UVgma+opN01vdSvIfYsfBmDqvYUDye9AU+X0KbGLjE7ZwHmJtC
+b94HG6ILBJBffHvECJux4n+vtPSc4cp8Nov9rxWGY23WQjDYz/AAzE0fe25D7dN1
+wU3cKRoLpiajc8yr+MaC3xwj+dG8Hs9ZmCqiwKCgFo3y0vkRhDJVNJTwfZlAS/sL
+9/AoCFE5f4SbXeTiQadU5FXY3k5FefveLAPF3laBfm6Scyt38pw9iypj7pIQfA9Y
+7vsy7SGk44guJIKwocOP
+=vz44
+-----END PGP SIGNATURE-----
+
+--5L6AZ1aJH5mDrqCQ--
