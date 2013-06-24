@@ -1,117 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3FXXOj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 19:14:39 -0400
-Received: from dmz-mailsec-scanner-6.mit.edu ([18.7.68.35]:48959 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751110Ab3FXXOi (ORCPT
+	id S1751953Ab3FXXTT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 19:19:19 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33677 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110Ab3FXXTS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 19:14:38 -0400
-X-AuditID: 12074423-b7f168e00000095a-fc-51c8d2dd4e7b
-Date: Mon, 24 Jun 2013 19:14:27 -0400
-From: Greg Price <price@MIT.EDU>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH] perf report: Add option to collapse undesired parts of
- call graph
-Message-ID: <20130624231426.GY22203@biohazard-cafe.mit.edu>
-References: <20121207072726.GY22203@biohazard-cafe.mit.edu>
- <20130111052736.GG3054@ghostprotocols.net>
- <20130623031720.GW22203@biohazard-cafe.mit.edu>
- <20130623215327.GA995@krava.redhat.com>
- <20130624083253.GA28025@gmail.com>
+	Mon, 24 Jun 2013 19:19:18 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAPM=9tx2pquifzbSEE7DNZB1uLpWGRPqEmE3Dt-AOOcL_9FOng@mail.gmail.com>
+References: <1372088868-23477-1-git-send-email-konrad.wilk@oracle.com> <1372088868-23477-2-git-send-email-konrad.wilk@oracle.com> <20130624170912.GH5823@phenom.ffwll.local> <20130624173227.GA24626@phenom.dumpdata.com> <CAKMK7uGPeAXmm21KCK4ZfqrynykyKCjn5dZVTsBheQ4JnaoW=A@mail.gmail.com> <20130624183409.GA25015@phenom.dumpdata.com> <CAPM=9tx2pquifzbSEE7DNZB1uLpWGRPqEmE3Dt-AOOcL_9FOng@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624083253.GA28025@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsUixG6nrnv30olAg3dvFSwutl1kszjw+ACL
-	xda9b1gsjp79y2RxedccNovV/04xWlw6sIDJ4sHKbIumZVtZLNYcWcxu0fb5H6sDt8eVpxwe
-	p3v0PHbOusvusWlVJ5tH19srTB7v911l85i7q4/R4/MmuQCOKC6blNSczLLUIn27BK6M7kdv
-	2Qv+iFRcW/CSvYHxjEAXIyeHhICJxK95L9ggbDGJC/fWA9lcHEIC+xglds+ZCOVsZJS4dKSV
-	EcL5zChxftdOli5GDg4WAVWJ3ysEQbrZBBQkfsxfxwxiiwgoSSz+8pEdpJ5ZYCGzxJ2TDUwg
-	CWGBCInpm/+zgti8AtYS3X+OgjUICbxklNiw1wIiLihxcuYTFhCbWUBL4sa/l0wgu5gFpCWW
-	/+MACXMK6EucPXMDbKSogIrEtf3tbBMYBWch6Z6FpHsWQvcCRuZVjLIpuVW6uYmZOcWpybrF
-	yYl5ealFumZ6uZkleqkppZsYwdHkoryD8c9BpUOMAhyMSjy8H+JOBAqxJpYVV+YeYpTkYFIS
-	5V1wGijEl5SfUpmRWJwRX1Sak1p8iFGCg1lJhDdUBCjHm5JYWZValA+TkuZgURLnFbu1M1BI
-	ID2xJDU7NbUgtQgmK8PBoSTB6whMGkKCRanpqRVpmTklCGkmDk6Q4TxAw4VBaniLCxJzizPT
-	IfKnGBWlgEaDJARAEhmleXC9sGT3ilEc6BVhXl2QKh5gooTrfgU0mAlo8OTU4yCDSxIRUlIN
-	jNtWng7cyPwla4pLsvaEjhcrHuk8EX6W/Vx+qve0Y+13JIVWfN10U2ZL7KRZPLFL5mS4VK0N
-	NX4400n8Zsycb0cV3Po8GaP/rjw4Oe6wquVEm5Oa6/evEfgsfTyO9e7jrwlPtxyzVrjyO4qz
-	xlzT9up9Xuee7uPz69y3PJI360qNjWmTVln3NleJpTgj0VCLuag4EQDnJcGfUQMAAA==
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] drm/i915: make compact dma scatter lists creation work with SWIOTLB backend.
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 24 Jun 2013 19:18:54 -0400
+To: Dave Airlie <airlied@gmail.com>
+CC: Daniel Vetter <daniel@ffwll.ch>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Imre Deak <imre.deak@intel.com>, Dave Airlie <airlied@linux.ie>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <4f8c7d81-f0c4-41b7-a931-f84c190f806c@email.android.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 10:32:53AM +0200, Ingo Molnar wrote:
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> > It could also make sense to allow sorting on this
-> > the same way as we do for '-s parent' and report only
-> > '[other]' and 'blackbox' entries.
-> > 
-> > Also I dont like the 'blackbox' option name, it should
-> > complement the parent option somehow.. but no idea ;-)
-> 
-> Looks like a nice feature.
+Dave Airlie <airlied@gmail.com> wrote:
 
-Thanks, good to hear!
+>On Tue, Jun 25, 2013 at 4:34 AM, Konrad Rzeszutek Wilk
+><konrad.wilk@oracle.com> wrote:
+>> On Mon, Jun 24, 2013 at 08:26:18PM +0200, Daniel Vetter wrote:
+>>> On Mon, Jun 24, 2013 at 7:32 PM, Konrad Rzeszutek Wilk
+>>> <konrad.wilk@oracle.com> wrote:
+>>> > On Mon, Jun 24, 2013 at 07:09:12PM +0200, Daniel Vetter wrote:
+>>> >> On Mon, Jun 24, 2013 at 11:47:48AM -0400, Konrad Rzeszutek Wilk
+>wrote:
+>>> >> > Git commit 90797e6d1ec0dfde6ba62a48b9ee3803887d6ed4
+>>> >> > ("drm/i915: create compact dma scatter lists for gem objects")
+>makes
+>>> >> > certain assumptions about the under laying DMA API that are not
+>always
+>>> >> > correct.
+>>> >> >
+>>> >> > On a ThinkPad X230 with an Intel HD 4000 with Xen during the
+>bootup
+>>> >> > I see:
+>>> >> >
+>>> >> > [drm:intel_pipe_set_base] *ERROR* pin & fence failed
+>>> >> > [drm:intel_crtc_set_config] *ERROR* failed to set mode on
+>[CRTC:3], err = -28
+>>> >> >
+>>> >> > Bit of debugging traced it down to dma_map_sg failing (in
+>>> >> > i915_gem_gtt_prepare_object) as some of the SG entries were
+>huge (3MB).
+>>> >> >
+>>> >> > That unfortunately are sizes that the SWIOTLB is incapable of
+>handling -
+>>> >> > the maximum it can handle is a an entry of 512KB of virtual
+>contiguous
+>>> >> > memory for its bounce buffer. (See IO_TLB_SEGSIZE).
+>>> >> >
+>>> >> > Previous to the above mention git commit the SG entries were of
+>4KB, and
+>>> >> > the code introduced by above git commit squashed the CPU
+>contiguous PFNs
+>>> >> > in one big virtual address provided to DMA API.
+>>> >> >
+>>> >> > This patch is a simple semi-revert - were we emulate the old
+>behavior
+>>> >> > if we detect that SWIOTLB is online. If it is not online then
+>we continue
+>>> >> > on with the new compact scatter gather mechanism.
+>>> >> >
+>>> >> > An alternative solution would be for the the '.get_pages' and
+>the
+>>> >> > i915_gem_gtt_prepare_object to retry with smaller max gap of
+>the
+>>> >> > amount of PFNs that can be combined together - but with this
+>issue
+>>> >> > discovered during rc7 that might be too risky.
+>>> >> >
+>>> >> > Reported-and-Tested-by: Konrad Rzeszutek Wilk
+><konrad.wilk@oracle.com>
+>>> >> > CC: Chris Wilson <chris@chris-wilson.co.uk>
+>>> >> > CC: Imre Deak <imre.deak@intel.com>
+>>> >> > CC: Daniel Vetter <daniel.vetter@ffwll.ch>
+>>> >> > CC: David Airlie <airlied@linux.ie>
+>>> >> > CC: <dri-devel@lists.freedesktop.org>
+>>> >> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>> >>
+>>> >> Two things:
+>>> >
+>>> > Hey Daniel,
+>>> >
+>>> >>
+>>> >> - SWIOTLB usage should seriously blow up all over the place in
+>drm/i915.
+>>> >>   We really rely on the everywhere else true fact that the pages
+>and their
+>>> >>   dma mapping point at the same backing storage.
+>>> >
+>>> > It works. As in, it seems to work for just a normal desktop user.
+>I don't
+>>> > see much of dma_sync_* sprinkled around the drm/i915 so I would
+>think that
+>>> > there are some issues would be hit as well - but at the first
+>glance
+>>> > when using it on a laptop it looks OK.
+>>>
+>>> Yeah, we have a pretty serious case of "roll our own coherency
+>stuff".
+>>> The biggest reason is that for a long time i915.ko didn't care one
+>bit
+>>> about iommus, and the thing we care about (flushing cpu caches for
+>>> dma) isn't supported on x86 since x86 every dma is coherent (well,
+>not
+>>> quite, but we don't have support for it). I think longer-term it
+>would
+>>> make sense to move the clfushing we're doing into the dma layer.
+>>>
+>>> >> - How is this solved elsewhere when constructing sg tables? Or
+>are we
+>>> >>   really the only guys who try to construct such big sg entries?
+>I
+>>> >>   expected somewhat that the dma mapping backed would fill in the
+>segment
+>>> >>   limits accordingly, but I haven't found anything really on a
+>quick
+>>> >>   search.
+>>> >
+>>> > The TTM layer (so radeon, nouveau) uses pci_alloc_coherent which
+>will
+>>> > construct the dma mapped pages. That allows it to construct
+>"SWIOTLB-approved"
+>>> > pages that won't need to go through dma_map/dma_unmap as they are
+>>> > already mapped and ready to go.
+>>> >
+>>> > Coming back to your question - I think that i915 is the one that
+>I've
+>>> > encountered.
+>>>
+>>> That's a bit surprising. With dma_buf graphics people will use sg
+>>> tables much more (there's even a nice sg_alloc_table_from_pages
+>helper
+>>> to construct them), and those sg tables tend to have large segments.
+>I
+>>> guess we need some more generic solution here ...
+>>
+>> Yes. I don't grok the full picture yet so I am not sure how to help
+>with
+>> this right now. Is there a roadmap or Wiki on how this was
+>envisioned?
+>>>
+>>> For now I guess we can live with your CONFIG_SWIOTLB hack.
+>>> -Daniel
+>>
+>> OK, I read that as an Ack-ed-by. Should I send the patch to Dave
+>Airlie
+>> in a GIT PULL or some other way to make it on the v3.10-rc7 train?
+>
+>I don't like this at all, I'll accept the patch on the condition you
+>investigate further :-)
+>
+>If you are using swiotlb on i915 things should break, I know I've
+>investigated problems before where swiotlb was being incorrectly used
+>due to page masks or other issues. Shouldn't you be passing through
+>using the real iommu?
+>
+>Dave.
 
+Hey Dave
+Of course I will investigate. 
 
-> Maybe calling it '--collapse' would be a better name?
-> 
-> By default the call-graphs are all expanded to maximum. With this option 
-> certain function(s) and all their child chains can be collapsed.
+The SWIOTLB is unfortunately used because it is a fallback (and I am the maintainer of it) and if a real IOMMU is activated it can be mitigated differently. When you say 'passed through'  you mean in terms of an IOMMU in a guest? There are no IOMMU inside a guest when passing in a PCI device. 
 
-Maybe.  But what this does is actually a bit of an inverse of the
-collapsing one does in the front-end (with 'C' or with enter, etc.);
-unless we have --inverted/-G, the collapsing one can do interactively
-is of the various *callers*, recursively, of a function, whereas this
-collapses the recursive *callees*.  Or in other words, interactively
-one may collapse or expand a subtree of the display; with this option
-one collects together and merges all the subtrees that have a given
-symbol name at their respective roots.
+Let me start on a new thread on this when I have gotten my head wrapped around dma  buf. 
 
-So this is doing something that can't be achieved by just doing some
-grunt work in the front-end as a user, and it might be confusing to
-give it the same name as the interactive thing.
-
-If you're investigating the kind of question that --inverted/-G is
-good for answering, then this is the same thing one can do with that
-grunt work, but in that case the option is less interesting. :)  The
-example in my commit message, which comes from a real use case, is
-without -G.
-
-Perhaps --coalesce, but that's a little mysterious.  --trim-callees?
---ignore-callees?  --ignore-inside?  --strip-callees?  --trim-inside?
-
-
-> --parent filters the call-chains, excluding all others that don't include 
-> this parent. It might make sense to rename it to --filter?
-
-Sure, maybe so.  I don't have a firm opinion on the name or exact
-semantics of --parent.
-
-
-> It would also be nice if all these visualization variants were available 
-> in the GTK front-end.
-
-TBH I'm not really familiar with the GTK front-end, as I mainly use
-the TUI.  At a quick trial, it looks like --blackbox has the expected
-effect on the display there; though with or without --blackbox I can't
-seem to get the entries to expand to show me a call-graph profile, so
-it's hard to demonstrate it fully.  Not sure what I may have done
-wrong in building or running perf to make that not work (or is that
-expected?)
-
-What changes do you have in mind to make these available in the GTK
-front-end?
-
-
-Cheers,
-Greg
+Thanks and sorry for getting to this so late in the cycle.  New laptop and playing with it and that triggered me finding this. 
+-- 
+Sent from my Android phone. Please excuse my brevity.
