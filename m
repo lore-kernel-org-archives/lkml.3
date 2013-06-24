@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3FXRie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 13:38:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58213 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab3FXRid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 13:38:33 -0400
-Message-ID: <51C88400.7090907@zytor.com>
-Date: Mon, 24 Jun 2013 10:38:08 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752614Ab3FXRk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 13:40:26 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:51939 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3FXRkZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 13:40:25 -0400
+Message-ID: <51C8847E.5020101@atmel.com>
+Date: Mon, 24 Jun 2013 19:40:14 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Nathan Zimmer <nzimmer@sgi.com>, holt@sgi.com, travis@sgi.com,
-        rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
-        yinghai@kernel.org, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130623093250.GA13776@gmail.com>
-In-Reply-To: <20130623093250.GA13776@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Dan Williams <djbw@fb.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] at_hdmac: prepare clk before calling enable
+References: <1371640263-9268-1-git-send-email-b.brezillon@overkiz.com> <1371640494-9472-1-git-send-email-b.brezillon@overkiz.com> <51C2B2B8.2040104@atmel.com> <20130621024039.GA23141@intel.com>
+In-Reply-To: <20130621024039.GA23141@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2013 02:32 AM, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
->> Yet another thing to consider would be to implement an initialization 
->> speedup of 3 orders of magnitude: initialize on the large page (2MB) 
->> grandularity and on-demand delay the initialization of the 4K granular 
->> struct pages [but still allocating them] - which I suspect are a good 
->> chunk of the overhead? That way we could initialize in 2MB steps and speed 
->> up the 2 hours bootup of 32 TB of RAM to 14 seconds...
+On 21/06/2013 04:40, Vinod Koul :
+> On Thu, Jun 20, 2013 at 09:43:52AM +0200, Nicolas Ferre wrote:
+>> On 19/06/2013 13:14, Boris BREZILLON :
+>>> Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+>>> avoid common clk framework warnings.
+>>>
+>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 >>
->> [ The cost would be one more branch in the buddy allocator, to detect
->>   not-yet-initialized 2 MB chunks as we encounter them. Acceptable I 
->>   think. ]
-> 
-> One advantage of this scheme would be that we could use it on pretty much 
-> any box, it would provide instant boot time speedups everywhere [a couple 
-> of hundred msecs on a small 4GB box - significant I think] - and would 
-> spread out and parallelize initialization to later stages.
-> 
+>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>
+>> BTW Vinod, it seems that we have several slave-dma patches pending:
+>> do you want me to collect them and send you a pull-request for 3.11?
+> I think those are the DT binding one, right? Sorry have been quite busy and
+> travelling. I could use the help right now...
 
-Even better if we could start at the 1 GB level, which most of these
-really huge machines will have hardware support for.
+Vinod,
 
-	-hpa
+I have just sent the pull-request with all patches that you may take for 
+3.11 ([GIT PULL] dmaengine: at_hdmac: updates for 3.11). It is a signed 
+tag "at91-sdma" on our github space.
 
+I hope that it will be easy for you to take it in your slave-dma git 
+tree. If you have any question, please let me know.
 
+Best regards,
+-- 
+Nicolas Ferre
