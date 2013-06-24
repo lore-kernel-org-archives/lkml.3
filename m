@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab3FXPKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:10:37 -0400
-Received: from mail.us.es ([193.147.175.20]:50243 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829Ab3FXPKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:10:36 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.8/17406. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.8/7.5):. 
- Processed in 1.8104 secs); 24 Jun 2013 15:10:34 -0000
-X-Envelope-From: pneira@us.es
-Date: Mon, 24 Jun 2013 17:10:31 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: George Spelvin <linux@horizon.com>, bp@alien8.de, kaber@trash.net,
-        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: v3.10-rc7 oops soon after boot
-Message-ID: <20130624151031.GB3917@localhost>
-References: <20130624094145.2576.qmail@science.horizon.com>
- <51C816C8.4080709@cn.fujitsu.com>
- <20130624113441.GA2583@localhost>
+	id S1752616Ab3FXPLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:11:19 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:33994 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3FXPLR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 11:11:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624113441.GA2583@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1371720391-21825-5-git-send-email-james.hogan@imgtec.com>
+References: <1371720391-21825-1-git-send-email-james.hogan@imgtec.com>
+	<1371720391-21825-5-git-send-email-james.hogan@imgtec.com>
+Date: Mon, 24 Jun 2013 17:11:17 +0200
+Message-ID: <CACRpkda8Un0Y+LA-huFbpw0tkKML5RWT-=OCY3P+OXfd5b4Eaw@mail.gmail.com>
+Subject: Re: [PATCH v3 4/4] gpio-tz1090-pdc: add TZ1090 PDC gpio driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 01:34:41PM +0200, Pablo Neira Ayuso wrote:
-> On Mon, Jun 24, 2013 at 05:52:08PM +0800, Gao feng wrote:
-> > On 06/24/2013 05:41 PM, George Spelvin wrote:
-> > >> Please try the patch below,
-> > >> I think this bug is introduced by me :(
-> > >>
-> > >> Thanks!
-> > > 
-> > > Well, you changed it, but it still crashes.
-> > > 
-> > > It's now at del_timer+0x9/0x58, with the code being:
-> > 
-> > This one should work.
-> > 
-> > Thanks for your quickly reply.
-> 
-> I managed to crash it using a group != 1 (default) and enabling
-> batching:
-> 
-> iptables -I INPUT -j ULOG --ulog-nlgroup 2 --ulog-qthresh 50
-> 
-> It seems ulog->nlgroup[i] is always left unset.
-> 
-> I have mangled your patch, find it attached.
+On Thu, Jun 20, 2013 at 11:26 AM, James Hogan <james.hogan@imgtec.com> wrote:
 
-> From 79da8ea854c06ca9320decbb2f9d2e8d25b2f7e5 Mon Sep 17 00:00:00 2001
-> From: Gao feng <gaofeng@cn.fujitsu.com>
-> Date: Mon, 24 Jun 2013 17:04:02 +0800
-> Subject: [PATCH] netfilter: ipt_ULOG: fix incorrect setting of ulog timer
-> 
-> The parameter of setup_timer should be &ulog->nlgroup[i].
-> the incorrect parameter will cause kernel panic in
-> ulog_timer.
-> 
-> Bug introducted in commit 355430671ad93546b34b4e91bdf720f3a704efa4
-> "netfilter: ipt_ULOG: add net namespace support for ipt_ULOG"
-> 
-> ebt_ULOG doesn't have this problem.
-> 
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-> Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+> Add a GPIO driver for the low-power Powerdown Controller GPIOs in the
+> TZ1090 SoC.
+>
+> The driver is instantiated by device tree and supports interrupts for
+> the SysWake GPIOs only.
+>
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: linux-doc@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
+> ---
+> Changes in v3:
+>  - separated from irq-imgpdc and removed arch/metag changes to allow
+>    these patches to go upstream separately via the pinctrl[/gpio] trees
+>    (particularly the pinctrl drivers depend on the new pinconf DT
+>    bindings).
+>  - some s/unsigned/unsigned int/.
+>  - gpio-tz1090*: refer to <dt-bindings/gpio/gpio.h> and
+>    <dt-bindings/interrupt-controller/irq.h> flags in bindings.
+>  - gpio-tz1090*: move initcall from postcore to subsys.
 
-I have applied the patch that I sent you.
+I'll be happy to apply the GPIO patches to the pinctrl tree as well
+once you fixed the comments on patch 2 from Grant.
+
+Yours,
+Linus Walleij
