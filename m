@@ -1,121 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3FXDyl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 23:54:41 -0400
-Received: from ozlabs.org ([203.10.76.45]:48246 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab3FXDyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 23:54:37 -0400
-Date: Mon, 24 Jun 2013 13:52:49 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Graf <agraf@suse.de>, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>,
-        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-Message-ID: <20130624035249.GD25265@voom.fritz.box>
-References: <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>
- <1371653443.21896.291.camel@pasglop>
- <1371656989.22659.98.camel@ul30vt.home>
- <51C28BEA.8050501@ozlabs.ru>
- <20130620052822.GB3140@voom.redhat.com>
- <1371714449.3944.14.camel@pasglop>
- <51C2C1CC.9000003@ozlabs.ru>
- <1371740113.32709.22.camel@ul30vt.home>
- <20130622120304.GB25265@voom.fritz.box>
- <1371911286.30572.155.camel@ul30vt.home>
+	id S1752576Ab3FXD5i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 23:57:38 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:34904 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab3FXD5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 23:57:36 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iVCmgExH7+hIHJ1A"
-Content-Disposition: inline
-In-Reply-To: <1371911286.30572.155.camel@ul30vt.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C463B4.9070506@ti.com>
+References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com>
+	<1371451599-31035-9-git-send-email-amit.daniel@samsung.com>
+	<51C20CCC.3060502@ti.com>
+	<CADGdYn6FHXd2YELP1z9zbqnf3Yd0PG0svaz7V6w9NYO3xSW8PQ@mail.gmail.com>
+	<51C463B4.9070506@ti.com>
+Date: Mon, 24 Jun 2013 09:27:36 +0530
+X-Google-Sender-Auth: 8RnQ57pwUwvk9LBrQe2K2rzeBdE
+Message-ID: <CADGdYn5HHNxj=PzjejyJRW9zW=953HJQy67H=u=uhFbtpJyENA@mail.gmail.com>
+Subject: Re: [PATCH V6 08/30] thermal: exynos: Add missing definations and
+ code cleanup
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, jonghwa3.lee@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---iVCmgExH7+hIHJ1A
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sat, Jun 22, 2013 at 08:28:06AM -0600, Alex Williamson wrote:
-> On Sat, 2013-06-22 at 22:03 +1000, David Gibson wrote:
-> > On Thu, Jun 20, 2013 at 08:55:13AM -0600, Alex Williamson wrote:
-> > > On Thu, 2013-06-20 at 18:48 +1000, Alexey Kardashevskiy wrote:
-> > > > On 06/20/2013 05:47 PM, Benjamin Herrenschmidt wrote:
-> > > > > On Thu, 2013-06-20 at 15:28 +1000, David Gibson wrote:
-> > > > >>> Just out of curiosity - would not get_file() and fput_atomic() =
-on a
-> > > > >> group's
-> > > > >>> file* do the right job instead of vfio_group_add_external_user(=
-) and
-> > > > >>> vfio_group_del_external_user()?
-> > > > >>
-> > > > >> I was thinking that too.  Grabbing a file reference would certai=
-nly be
-> > > > >> the usual way of handling this sort of thing.
-> > > > >=20
-> > > > > But that wouldn't prevent the group ownership to be returned to
-> > > > > the kernel or another user would it ?
-> > > >=20
-> > > >=20
-> > > > Holding the file pointer does not let the group->container_users co=
-unter go
-> > > > to zero
-> > >=20
-> > > How so?  Holding the file pointer means the file won't go away, which
-> > > means the group release function won't be called.  That means the gro=
-up
-> > > won't go away, but that doesn't mean it's attached to an IOMMU.  A us=
-er
-> > > could call UNSET_CONTAINER.
-> >=20
-> > Uhh... *thinks*.  Ah, I see.
-> >=20
-> > I think the interface should not take the group fd, but the container
-> > fd.  Holding a reference to *that* would keep the necessary things
-> > around.  But more to the point, it's the right thing semantically:
-> >=20
-> > The container is essentially the handle on a host iommu address space,
-> > and so that's what should be bound by the KVM call to a particular
-> > guest iommu address space.  e.g. it would make no sense to bind two
-> > different groups to different guest iommu address spaces, if they were
-> > in the same container - the guest thinks they are different spaces,
-> > but if they're in the same container they must be the same space.
->=20
-> While the container is the gateway to the iommu, what empowers the
-> container to maintain an iommu is the group.  What happens to a
-> container when all the groups are disconnected or closed?  Groups are
-> the unit that indicates hardware access, not containers.  Thanks,
-
-Uh... huh?  I'm really not sure what you're getting at.
-
-The operation we're doing for KVM here is binding a guest iommu
-address space to a particular host iommu address space.  Why would we
-not want to use the obvious handle on the host iommu address space,
-which is the container fd?
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---iVCmgExH7+hIHJ1A
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iEYEARECAAYFAlHHwpEACgkQaILKxv3ab8ZAwgCggywnKG0cWdU1mGMrdiJET+bR
-lMIAnRkUHnjt+LBuM7e9uG37A20iGmNt
-=1XwX
------END PGP SIGNATURE-----
-
---iVCmgExH7+hIHJ1A--
+On Fri, Jun 21, 2013 at 8:01 PM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> On 20-06-2013 22:01, amit daniel kachhap wrote:
+>> Hi Eduardo,
+>>
+>> On Thu, Jun 20, 2013 at 1:25 AM, Eduardo Valentin
+>> <eduardo.valentin@ti.com> wrote:
+>>> On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
+>>>> This patch adds some extra register bitfield definations and cleans
+>>>> up the code to prepare for moving register macros and definations inside
+>>>> the TMU data section.
+>>>>
+>>>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>>>> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+>>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>>>> ---
+>>>>  drivers/thermal/samsung/exynos_tmu.c |   62 +++++++++++++++++++++++++---------
+>>>>  1 files changed, 46 insertions(+), 16 deletions(-)
+>>>>
+>>>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+>>>> index 5df04a1..fa33a48 100644
+>>>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>>>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>>>> @@ -43,9 +43,12 @@
+>>>>
+>>>>  #define EXYNOS_TMU_TRIM_TEMP_MASK    0xff
+>>>>  #define EXYNOS_TMU_GAIN_SHIFT                8
+>>>> +#define EXYNOS_TMU_GAIN_MASK         0xf
+>>>>  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT 24
+>>>> -#define EXYNOS_TMU_CORE_ON           3
+>>>> -#define EXYNOS_TMU_CORE_OFF          2
+>>>> +#define EXYNOS_TMU_REF_VOLTAGE_MASK  0x1f
+>>>> +#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK        0xf
+>>>> +#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT       8
+>>>> +#define EXYNOS_TMU_CORE_EN_SHIFT     0
+>>>>  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET   50
+>>>>
+>>>>  /* Exynos4210 specific registers */
+>>>> @@ -63,6 +66,7 @@
+>>>>  #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK      0x10
+>>>>  #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK      0x100
+>>>>  #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK      0x1000
+>>>> +#define EXYNOS4210_TMU_TRIG_LEVEL_MASK       0x1111
+>>>>  #define EXYNOS4210_TMU_INTCLEAR_VAL  0x1111
+>>>>
+>>>>  /* Exynos5250 and Exynos4412 specific registers */
+>>>> @@ -72,17 +76,30 @@
+>>>>  #define EXYNOS_EMUL_CON              0x80
+>>>>
+>>>>  #define EXYNOS_TRIMINFO_RELOAD               0x1
+>>>> +#define EXYNOS_TRIMINFO_SHIFT                0x0
+>>>> +#define EXYNOS_TMU_RISE_INT_MASK     0x111
+>>>> +#define EXYNOS_TMU_RISE_INT_SHIFT    0
+>>>> +#define EXYNOS_TMU_FALL_INT_MASK     0x111
+>>>> +#define EXYNOS_TMU_FALL_INT_SHIFT    12
+>>>>  #define EXYNOS_TMU_CLEAR_RISE_INT    0x111
+>>>>  #define EXYNOS_TMU_CLEAR_FALL_INT    (0x111 << 12)
+>>>> -#define EXYNOS_MUX_ADDR_VALUE                6
+>>>> -#define EXYNOS_MUX_ADDR_SHIFT                20
+>>>>  #define EXYNOS_TMU_TRIP_MODE_SHIFT   13
+>>>> +#define EXYNOS_TMU_TRIP_MODE_MASK    0x7
+>>>> +
+>>>> +#define EXYNOS_TMU_INTEN_RISE0_SHIFT 0
+>>>> +#define EXYNOS_TMU_INTEN_RISE1_SHIFT 4
+>>>> +#define EXYNOS_TMU_INTEN_RISE2_SHIFT 8
+>>>> +#define EXYNOS_TMU_INTEN_RISE3_SHIFT 12
+>>>> +#define EXYNOS_TMU_INTEN_FALL0_SHIFT 16
+>>>> +#define EXYNOS_TMU_INTEN_FALL1_SHIFT 20
+>>>> +#define EXYNOS_TMU_INTEN_FALL2_SHIFT 24
+>>>>
+>>>>  #define EFUSE_MIN_VALUE 40
+>>>>  #define EFUSE_MAX_VALUE 100
+>>>>
+>>>>  #ifdef CONFIG_THERMAL_EMULATION
+>>>>  #define EXYNOS_EMUL_TIME     0x57F0
+>>>> +#define EXYNOS_EMUL_TIME_MASK        0xffff
+>>>>  #define EXYNOS_EMUL_TIME_SHIFT       16
+>>>>  #define EXYNOS_EMUL_DATA_SHIFT       8
+>>>>  #define EXYNOS_EMUL_DATA_MASK        0xFF
+>>>> @@ -261,24 +278,37 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+>>>>       mutex_lock(&data->lock);
+>>>>       clk_enable(data->clk);
+>>>>
+>>>> -     con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
+>>>> -             pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
+>>>> +     con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
+>>>>
+>>>> -     if (data->soc == SOC_ARCH_EXYNOS) {
+>>>> -             con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
+>>>> -             con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
+>>>> +     if (pdata->reference_voltage) {
+>>>> +             con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
+>>>> +                             EXYNOS_TMU_REF_VOLTAGE_SHIFT);
+>>>> +             con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
+>>>> +     }
+>>>> +
+>>>> +     if (pdata->gain) {
+>>>> +             con &= ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
+>>>> +             con |= (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
+>>>> +     }
+>>>> +
+>>>> +     if (pdata->noise_cancel_mode) {
+>>>> +             con &= ~(EXYNOS_TMU_TRIP_MODE_MASK <<
+>>>> +                                     EXYNOS_TMU_TRIP_MODE_SHIFT);
+>>>> +             con |= (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
+>>>>       }
+>>>>
+>>>>       if (on) {
+>>>> -             con |= EXYNOS_TMU_CORE_ON;
+>>>
+>>>
+>>>
+>>> Before, in order to turn core on you had:
+>>>         con = con | 3;
+>>>
+>>> now you do:
+>>>         con = con | (1 << 0);
+>>>
+>>> To me, before you would set bit 1 and 0, now you set bit 0.
+>>>
+>>>
+>>>> -             interrupt_en = pdata->trigger_level3_en << 12 |
+>>>> -                     pdata->trigger_level2_en << 8 |
+>>>> -                     pdata->trigger_level1_en << 4 |
+>>>> -                     pdata->trigger_level0_en;
+>>>> +             con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
+>>>> +             interrupt_en =
+>>>> +             pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
+>>>> +             pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
+>>>> +             pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
+>>>> +             pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
+>>>>               if (pdata->threshold_falling)
+>>>> -                     interrupt_en |= interrupt_en << 16;
+>>>> +                     interrupt_en |=
+>>>> +                             interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
+>>>>       } else {
+>>>> -             con |= EXYNOS_TMU_CORE_OFF;
+>>>> +             con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
+>>>
+>>>
+>>> Before, in order to turno core off you had:
+>>>         con = con | 2;
+>>>
+>>> now you do:
+>>>         con = con & ~(1 << 0);
+>>>
+>>> To me, before you would set bit 2, now you clear bit 0.
+>>>
+>>> Using the approach on this patch looks correct to me if you have 1 bit
+>>> core_en for instance.
+>>>
+>>> so, Is this a fix?
+>>>
+>>> Just to be clear, is this what you want ?
+>> Yes you are right. Bit 0 is the actual enable bit. Bit 1 is the
+>> reserve bit and its default value is 1. Earlier both bits are used to
+>> turn on/off the controller which was wrong so this patch rectifies it.
+>
+> Care to mention this in your patch description? It is good for code history.
+Ok
+>
+>>
+>> Thanks,
+>> Amit
+>>>
+>>>>               interrupt_en = 0; /* Disable all interrupts */
+>>>>       }
+>>>>       writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
+>>>>
+>>>
+>>>
+>>> --
+>>> You have got to be excited about what you are doing. (L. Lamport)
+>>>
+>>> Eduardo Valentin
+>>>
+>>
+>>
+>
+>
+> --
+> You have got to be excited about what you are doing. (L. Lamport)
+>
+> Eduardo Valentin
+>
