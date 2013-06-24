@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab3FXLt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 07:49:59 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:59852 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab3FXLtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 07:49:55 -0400
+	id S1753194Ab3FXLva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 07:51:30 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48982 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750824Ab3FXLv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 07:51:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Rob Landley <rob@landley.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, linux-acpi@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2] Documentation / cpu hotplug: Rephrase the outdated description for MADT entries
+Date: Mon, 24 Jun 2013 14:00:53 +0200
+Message-ID: <2689985.7MvxW2GhJV@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1371805758-2841-1-git-send-email-hanjun.guo@linaro.org>
+References: <1371805758-2841-1-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20130621073301.GA19353@balto.lan>
-References: <1371719859-4600-1-git-send-email-fabio.baltieri@linaro.org>
-	<20130621031000.GB23141@intel.com>
-	<20130621073301.GA19353@balto.lan>
-Date: Mon, 24 Jun 2013 13:49:54 +0200
-Message-ID: <CACRpkdYRqY9yRutfwgEaRAUGiwV38fs=EVpSP1As8OB0piERiQ@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: ste_dma40: Declare memcpy config as static
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 9:33 AM, Fabio Baltieri
-<fabio.baltieri@linaro.org> wrote:
-> On Fri, Jun 21, 2013 at 08:40:00AM +0530, Vinod Koul wrote:
->> On Thu, Jun 20, 2013 at 11:17:39AM +0200, Fabio Baltieri wrote:
->> > Fix sparse warnings:
->> >
->> > drivers/dma/ste_dma40.c:81:26: warning: symbol 'dma40_memcpy_conf_phy' was not declared. Should it be static?
->> > drivers/dma/ste_dma40.c:95:26: warning: symbol 'dma40_memcpy_conf_log' was not declared. Should it be static?
->> >
->> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
->> Acked-by: Vinod Koul <vinod.koul@intel.com>
->>
->> I guess this would be dependent on recent ste_dma40 patches so best way is
->> Linus's tree, right?
->
-> Yes, but I'm not sure Linus is going to send a third pull request for
-> dma40 so maybe I should just resend my last two dma40 patches for
-> arm-soc directly.
+On Friday, June 21, 2013 05:09:18 PM Hanjun Guo wrote:
+> More than 256 entries in ACPI MADT is supported from ACPI 3.0, so the
+> information should be updated.
+> 
+> -v2: Rephrase the information instead of simply removing it according
+> to Rafael's advice.
 
-I've stacked it in my tree, I didn't plan to send another pull
-request but I guess I have to, or I'll send it as fixes, so I'm
-taking care of this.
+Queued up for 3.11.
 
-Yours,
-Linus Walleij
+Thanks,
+Rafael
+
+
+> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  Documentation/cpu-hotplug.txt |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
+> index 9f40135..67f733d 100644
+> --- a/Documentation/cpu-hotplug.txt
+> +++ b/Documentation/cpu-hotplug.txt
+> @@ -370,8 +370,10 @@ A: There is no clear spec defined way from ACPI that can give us that
+>     CPUs in MADT as hotpluggable CPUS.  In the case there are no disabled CPUS
+>     we assume 1/2 the number of CPUs currently present can be hotplugged.
+>  
+> -   Caveat: Today's ACPI MADT can only provide 256 entries since the apicid field
+> -   in MADT is only 8 bits.
+> +   Caveat: ACPI MADT can only provide 256 entries in systems with only ACPI 2.0c
+> +   or earlier ACPI version supported, because the apicid field in MADT is only
+> +   8 bits. From ACPI 3.0, this limitation was removed since the apicid field
+> +   was extended to 32 bits with x2APIC introduced.
+>  
+>  User Space Notification
+>  
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
