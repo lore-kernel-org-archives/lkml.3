@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab3FXMxf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:53:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53770 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab3FXMxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:53:33 -0400
-Date: Mon, 24 Jun 2013 15:54:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, netdev@vger.kernel.org,
-        Brad Hubbard <bhubbard@redhat.com>
-Subject: Re: [PATCH net] tun: fix recovery from gup errors
-Message-ID: <20130624125412.GA690@redhat.com>
-References: <20130623141903.GA21029@redhat.com>
- <51C715F5.2050300@cogentembedded.com>
+	id S1751323Ab3FXMyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:54:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48916 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab3FXMyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 08:54:44 -0400
+Date: Mon, 24 Jun 2013 14:54:43 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Kirill Tkhai <tkhai@yandex.ru>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] sched: Add schedule_(raw_)spin_unlock and
+ schedule_(raw_)spin_unlock_irq
+In-Reply-To: <1981131371569812@web20h.yandex.ru>
+Message-ID: <alpine.DEB.2.02.1306241441440.4013@ionos.tec.linutronix.de>
+References: <1981131371569812@web20h.yandex.ru>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C715F5.2050300@cogentembedded.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23, 2013 at 07:36:21PM +0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 23-06-2013 18:19, Michael S. Tsirkin wrote:
-> 
-> >get user pages might fail partially in tun zero copy
-> >mode. To recover we need to put all pages that we got,
-> >but code used a wrong index resulting in double-free
-> >errors.
-> 
-> >Reported-by: Brad Hubbard <bhubbard@redhat.com>
-> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >---
-> 
-> >I haven't figured out why do we get failures,
-> >but recovery is clearly wrong.
-> 
-> >This is also -stable material.
-> 
-> >  drivers/net/tun.c | 5 +++--
-> >  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> >diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> >index bfa9bb4..c098b1e 100644
-> >--- a/drivers/net/tun.c
-> >+++ b/drivers/net/tun.c
-> >@@ -1010,8 +1010,9 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
-> >  			return -EMSGSIZE;
-> >  		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
-> >  		if (num_pages != size) {
-> >-			for (i = 0; i < num_pages; i++)
-> >-				put_page(page[i]);
-> >+			int j;
-> 
->   Empty line wouldn't hurt here, after declaration.
-> 
-> >+			for (j = 0; j < num_pages; j++)
-> >+				put_page(page[i + j]);
+On Tue, 18 Jun 2013, Kirill Tkhai wrote:
+> +/*
+> + * schedule_raw_spin_unlock() -- should be used instead of pattern:
+> + *
+> + *     raw_spin_unlock(lock);
+> + *     schedule();
+> + *
+> + * It's the same, but prevents preempt_schedule() call during the unlocking.
+> + */
+> +static inline void schedule_raw_spin_unlock(raw_spinlock_t *lock)
 
-I think it's clearer without: this is the only code
-within this block, declaration is really part of
-the loop that comes after it.
-An empty line would break it up visually.
+This should be raw_spin_unlock_and_schedule().
 
+schedule_raw_spin_unlock() sounds like we schedule a raw_spin_unlock()
+for some point in the future.
+
+> +{
+> +	_raw_spin_unlock_no_resched(lock);
+
+No, please do not expose such an interface. Instead of that implement
+it as:
+
+raw_spin_unlock_and_schedule()
+{
+	spin_release(&lock->dep_map, 1, _RET_IP_);
+	do_raw_spin_unlock(lock);
+	preempt_enable_no_resched();
+	schedule();  
+}
+
+And this goes into the spinlock header and not into sched.h.
+
+Thanks,
+
+	tglx
