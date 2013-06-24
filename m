@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab3FXKLE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:11:04 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55672 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751271Ab3FXKLC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:11:02 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+H83ffayisGjfrHuwnQEnx
-Date: Mon, 24 Jun 2013 03:10:55 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] pinctrl: document the pinctrl PM states
-Message-ID: <20130624101055.GT5523@atomide.com>
-References: <1370980749-15383-1-git-send-email-linus.walleij@stericsson.com>
- <51BA1FE7.4000900@wwwdotorg.org>
- <CACRpkdZV7R3MgbuvEMhs24YYv2hK8Kt9Kjmv_cpRQQ1NYviDQg@mail.gmail.com>
- <51BB3A2C.608@wwwdotorg.org>
- <20130617072021.GB4465@atomide.com>
- <51C20E3A.8090304@wwwdotorg.org>
- <20130620063823.GD5523@atomide.com>
- <51C3577E.6040709@wwwdotorg.org>
- <20130621062552.GI5523@atomide.com>
- <51C4A593.6000900@wwwdotorg.org>
+	id S1752304Ab3FXKLb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:11:31 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48888 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071Ab3FXKLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 06:11:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show accumulated data of CPUs
+Date: Mon, 24 Jun 2013 12:20:57 +0200
+Message-ID: <3966081.PYqoVoQ0Wq@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpo=q+2ULzOSeipjb8xS6NZBJLbR8AMptVcufD1vzULJGGw@mail.gmail.com>
+References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com> <24083337.GLRAoa2hpo@vostro.rjw.lan> <CAKohpo=q+2ULzOSeipjb8xS6NZBJLbR8AMptVcufD1vzULJGGw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C4A593.6000900@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Warren <swarren@wwwdotorg.org> [130621 12:18]:
-> On 06/21/2013 12:25 AM, Tony Lindgren wrote:
-> > * Stephen Warren <swarren@wwwdotorg.org> [130620 12:32]:
+On Monday, June 24, 2013 03:11:15 PM Viresh Kumar wrote:
+> On 24 June 2013 15:09, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Monday, June 24, 2013 11:48:22 AM Viresh Kumar wrote:
+> >> On 21 June 2013 18:43, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > Well, to be honest, I don't like the whole thing.  The more changes you need
+> >> > to make to the common code to support it, the worse.
 > >>
-> >> I assume you mean there shouldn't be any issue *modifying* the pinctrl
-> >> API to allow multiple states to be active at once? And where you're
-> >> talking about having multiple sets active at once already, you're
-> >> talking about some other API?
-> > 
-> > Nope, the standard pinctrl API. At least I have not seen issues with
-> > having multiple states active the same time in a single driver.
+> >> You meant you didn't like this patch completely? Or the idea that
+> >> I gave?
+> >
+> > Well, kind of both ...
+> >
+> >> Getting the new frequency would be very useful IMHO. That would
+> >> give us a relation between old/new freq and load on each cpu at
+> >> that time. That's why I suggested it.
+> >
+> > Where "us" is user space or what?
 > 
-> Please take a look at the implementation of pinctrl_select_state(). It
-> very explicitly performs the following steps:
-> 
-> 1) Find all pins(groups) that are used in the current state but not the
-> new state, and execute pinctrl_disable_setting() on them. (For mux
-> settings only, not pin config, since the core doesn't have any idea how
-> to reverse config settings).
->
-> 2) For all settings in the new state, apply those settings.
-> 
-> So, it very explicitly only allows a single state to be set at a time.
-> Equally, p->state (the field which stores the currently selected state)
-> is a single item, not a set/list/array.
+> User space as well as the developers who are accessing this information.
 
-OK thanks I get now what you're saying. I did not see the p->state
-issue as the disable function won't do anything for the SoCs that I
-mostly deal with.
+My impression was that that new interface wouldn't be useful on all platforms
+supported by cpufreq.  If that's the case, I'd rather not make changes in the
+core code that are needed only to implement that new interface, at least to
+start with.
 
-> So, this code needs rework if you want the core to support the concept
-> of having multiple states active at once, since it needs separate
-> pinctrl_activate_state() and pinctrl_deactivate_state() APIs, in order
-> to avoid step (1) above. And of course, p->state would need to be a
-> set/list/array.
+Thanks,
+Rafael
 
-I'll think about it a bit and do a patch to fix this. It seems that
-that we need just two entries in the p->state array: static (default),
-and dynamic. Then the dynamic would be typically one of: active, idle,
-rx, tx.
 
-Regards,
-
-Tony
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
