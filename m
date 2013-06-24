@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab3FXTM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:12:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13569 "EHLO mga09.intel.com"
+	id S1751557Ab3FXTYM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:24:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58175 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522Ab3FXTM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:12:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,930,1363158000"; 
-   d="scan'208";a="334806657"
-Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock
- acquisition
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Alex Shi <alex.shi@intel.com>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <51C894C3.4040407@hurleysoftware.com>
-References: <cover.1371855277.git.tim.c.chen@linux.intel.com>
-	 <1371858700.22432.5.camel@schen9-DESK>
-	 <51C558E2.1040108@hurleysoftware.com>
-	 <1372017836.1797.14.camel@buesod1.americas.hpqcorp.net>
-	 <1372093876.22432.34.camel@schen9-DESK>
-	 <51C894C3.4040407@hurleysoftware.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Jun 2013 12:13:00 -0700
-Message-ID: <1372101180.22432.58.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1750936Ab3FXTYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 15:24:10 -0400
+Date: Mon, 24 Jun 2013 21:24:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <rric@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@suse.de>,
+        Robert Richter <robert.richter@linaro.org>
+Subject: Re: [PATCH v2 02/14] perf: Add persistent events
+Message-ID: <20130624192404.GA24827@pd.tnic>
+References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+ <1370968960-22527-3-git-send-email-rric@kernel.org>
+ <20130624092807.GM28407@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130624092807.GM28407@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-24 at 14:49 -0400, Peter Hurley wrote:
-> On 06/24/2013 01:11 PM, Tim Chen wrote:
-> > On Sun, 2013-06-23 at 13:03 -0700, Davidlohr Bueso wrote:
-> >> On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
-> >>> On 06/21/2013 07:51 PM, Tim Chen wrote:
-> >>>>
-> >>>> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-> >>>> +{
-> >>>> +	int retval = true;
-> >>>> +
-> >>>> +	/* Spin only if active writer running */
-> >>>> +	if (!sem->owner)
-> >>>> +		return false;
-> >>>> +
-> >>>> +	rcu_read_lock();
-> >>>> +	if (sem->owner)
-> >>>> +		retval = sem->owner->on_cpu;
-> >>>                            ^^^^^^^^^^^^^^^^^^
-> >>>
-> >>> Why is this a safe dereference? Could not another cpu have just
-> >>> dropped the sem (and thus set sem->owner to NULL and oops)?
-> >>>
-> >
-> > The rcu read lock should protect against sem->owner being NULL.
-> 
-> It doesn't.
-> 
-> Here's the comment from mutex_spin_on_owner():
-> 
->    /*
->     * Look out! "owner" is an entirely speculative pointer
->     * access and not reliable.
->     */
-> 
+On Mon, Jun 24, 2013 at 11:28:07AM +0200, Peter Zijlstra wrote:
+> I find this patch incomplete for its asymmetric; there a dec, but not an
+> implied inc.
 
-In mutex_spin_on_owner, after rcu_read_lock, the owner_running()
-function de-references the owner pointer.  The rcu_read_lock prevents
-owner from getting freed. The comment's intention is to warn that
-owner->on_cpu may not be reliable.
+There's one in perf_mmap_open.
 
-I'm using similar logic in rw-sem.
+Basically the idea was to pull up the ->mmap_count decrement (haha,
+sounds like excrement :-)) and not deallocate the ring buffers for a
+persistent event.
 
-Tim
+-- 
+Regards/Gruss,
+    Boris.
 
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
