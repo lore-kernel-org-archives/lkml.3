@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab3FXWkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 18:40:08 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:48598 "EHLO smtp.gentoo.org"
+	id S1751729Ab3FXWk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 18:40:29 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:26625 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab3FXWkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 18:40:06 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 11/32] blackfin: delete __cpuinit usage from all blackfin files
-Date: Mon, 24 Jun 2013 18:40:06 -0400
-User-Agent: KMail/1.13.7 (Linux/3.8.3; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        uclinux-dist-devel@blackfin.uclinux.org
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com> <1372102237-8757-12-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1372102237-8757-12-git-send-email-paul.gortmaker@windriver.com>
+	id S1751569Ab3FXWk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 18:40:27 -0400
+Message-ID: <51C8CA95.80008@imgtec.com>
+Date: Mon, 24 Jun 2013 17:39:17 -0500
+From: "Steven J. Hill" <Steven.Hill@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3507441.QoEVeF55po";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Huacai Chen <chenhc@lemote.com>
+CC: "Steven J. Hill" <sjhill@realitydiluted.com>,
+        Ralf Baechle <ralf@linux-mips.org>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Subject: Re: [PATCH V9 03/13] MIPS: Loongson: Introduce and use cpu_has_coherent_cache
+ feature
+References: <1359527106-22879-1-git-send-email-chenhc@lemote.com>        <1359527106-22879-4-git-send-email-chenhc@lemote.com>        <5166ED66.7020307@realitydiluted.com>        <CAAhV-H6s47NUHzbEX5UKYtkei7=s08PPXCMw39_fP_SV7Hv5Vg@mail.gmail.com> <CAAhV-H58Y_Rd8thj8MWXGCqqGtYJekDKrO-nXYjdp3214jnQ0A@mail.gmail.com>
+In-Reply-To: <CAAhV-H58Y_Rd8thj8MWXGCqqGtYJekDKrO-nXYjdp3214jnQ0A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306241840.08137.vapier@gentoo.org>
+X-Originating-IP: [192.168.150.47]
+X-SEF-Processed: 7_3_0_01192__2013_06_24_23_40_01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3507441.QoEVeF55po
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+On 06/22/2013 09:10 PM, Huacai Chen wrote:
+>
+> Is the 3rd patch of V10 is OK to be accepted now? If so, could the
+> patchset of V10 be merged into 3.11?
+>
+The merge window for 3.11 is closed at this point. You should get it 
+prepared for 3.12, so start tracking the 'mips-for-linux-next' branch 
+with your patches.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+Acked-by: Steven J. Hill <Steven.Hill@imgtec.com>
 
---nextPart3507441.QoEVeF55po
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJRyMrHAAoJEEFjO5/oN/WBscoP/joaasnBEabpVaEWNWwFkfr6
-nOqBr1NjLdFHTEecVlaJkXwZsiBlTfhM1FCzpBhLrGe9DwhfbJP26ng1IZ2jZ8RN
-8CML3mQ/xHgmdIxtWhaMnh++G1PGHV9aaSuDlsiXkS4AXJO2RgWZHBPM9v7J0Wym
-qXtVQHfILC4fVwW321Q8jvJdQNd1S2E5UELCktZECRnrymelF1rVrRuYv+ZYLQgl
-2j/AKv1wH98mILeWkxX0YokzL2O0RsukFrJdslVKPdiU6mGeFwNJgkEOLWhbA9en
-Qla7WRTiv/iQIP0do8KTfGHrNUVC9PT2525spfCjZ/JycDaYVus4lPQGyYST+XPt
-PwNrRITdaWSrGzPUDQfP6WQrKhmjSUvvKvSTj8q0YhtGR3kmKoAD+Rf7bi7D6YSX
-bsG+5ZCaJX524oYjfk0DpI7GBaWrjSV4GKi6jykLp+WMlEutDumjCRXvve8K2+Hh
-9MpDseURHTr2K19nLB+rLoJD11ksUaxX3hi4EiR93gflED8XVswiKMJU2Rl/PScB
-5EzObnr2zY/4UenoKoFmm4f5osvnfjO/bvEE8VOk2u8JxFzBzNq9QD0xmbAC/fdD
-eCYtpCb4JojueHutPnYbi+hEFXcSNVRWYgxjZju/V3OYtgBlkVzqUoB9W94hX8v+
-uW0HyMDU9sU9DaLe/RgU
-=tPFy
------END PGP SIGNATURE-----
-
---nextPart3507441.QoEVeF55po--
