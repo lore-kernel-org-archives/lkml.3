@@ -1,248 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab3FXGXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 02:23:30 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:36450 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab3FXGX0 (ORCPT
+	id S1752543Ab3FXGeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 02:34:03 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:56793 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455Ab3FXGeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 02:23:26 -0400
-Subject: [PATCH 3/3] powerpc/pseries: Support compression of oops text via
- pstore
-To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
-        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
-        cbouatmailru@gmail.com, keescook@chromium.org
-Date: Mon, 24 Jun 2013 11:53:16 +0530
-Message-ID: <20130624062316.12963.87911.stgit@aruna-ThinkPad-T420>
-In-Reply-To: <20130624061936.12963.72529.stgit@aruna-ThinkPad-T420>
-References: <20130624061936.12963.72529.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
+	Mon, 24 Jun 2013 02:34:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062406-5490-0000-0000-000003B2A0D8
+X-Originating-IP: [115.42.131.38]
+In-Reply-To: <CAMVG2sskpWgL4JLKZZs8YXqNoLt4gB-UgeeMPnb8bTDKyUeRng@mail.gmail.com>
+References: <CAMVG2sskpWgL4JLKZZs8YXqNoLt4gB-UgeeMPnb8bTDKyUeRng@mail.gmail.com>
+Date: Mon, 24 Jun 2013 14:34:00 +0800
+Message-ID: <CAMVG2ssG0PvedeuT6f3g=20Gv51f6gXWxxMFbtL4H=ngAJ9Gvg@mail.gmail.com>
+Subject: Re: 3.9-rc6 ext4: free_rb_tree_fname oops
+From: Daniel J Blueman <daniel@quora.org>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch set supports compression of oops messages while writing to NVRAM,
-this helps in capturing more of oops data to lnx,oops-log. The pstore file
-for oops messages will be in decompressed format making it readable.
+On 16 April 2013 15:37, Daniel J Blueman <daniel@quora.org> wrote:
+> When using e4defrag on a ext4 filesystem created a month ago, I ran
+> into this fatal page fault [1]
+>  while running e4defrag on 3.9-rc6 (Ubuntu mainline).
+>
+> e2fsdump output is at http://quora.org/2012/e2fsdump.txt ; let me know
+> if you need any more info.
 
-In case compression fails, the patch takes care of copying the header added
-by pstore and last oops_data_sz bytes of big_oops_buf to NVRAM so that we
-have recent oops messages in lnx,oops-log.
+With 3.9.6 mainline, I got the exact same protection fault at
+free_rb_tree_fname() from ext4_htree_free_dir_info() [1]. This
+suggests use-after-free, as there's no pagetable mapping.
 
-In case decompression fails, it will result in absence of oops file but still
-have files (in /dev/pstore) for other partitions.
+There is nothing special with my setups, so there is fair chance it's
+reproducible there with e4defrag on a few month old filesystem and
+recent kernels.
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
----
- arch/powerpc/platforms/pseries/nvram.c |  132 +++++++++++++++++++++++++++++---
- 1 file changed, 118 insertions(+), 14 deletions(-)
+Thanks,
+  Daniel
 
-diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index 0159d74..b5ba5e2 100644
---- a/arch/powerpc/platforms/pseries/nvram.c
-+++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -539,6 +539,65 @@ static int zip_oops(size_t text_len)
- }
- 
- #ifdef CONFIG_PSTORE
-+/* Derived from logfs_uncompress */
-+int nvram_decompress(void *in, void *out, size_t inlen, size_t outlen)
-+{
-+	int err, ret;
-+
-+	ret = -EIO;
-+	err = zlib_inflateInit(&stream);
-+	if (err != Z_OK)
-+		goto error;
-+
-+	stream.next_in = in;
-+	stream.avail_in = inlen;
-+	stream.total_in = 0;
-+	stream.next_out = out;
-+	stream.avail_out = outlen;
-+	stream.total_out = 0;
-+
-+	err = zlib_inflate(&stream, Z_FINISH);
-+	if (err != Z_STREAM_END)
-+		goto error;
-+
-+	err = zlib_inflateEnd(&stream);
-+	if (err != Z_OK)
-+		goto error;
-+
-+	ret = stream.total_out;
-+error:
-+	return ret;
-+}
-+
-+static int unzip_oops(char *oops_buf, char *big_buf)
-+{
-+	struct oops_log_info *oops_hdr = (struct oops_log_info *)oops_buf;
-+	u64 timestamp = oops_hdr->timestamp;
-+	char *big_oops_data = NULL;
-+	char *oops_data_buf = NULL;
-+	size_t big_oops_data_sz;
-+	int unzipped_len;
-+
-+	big_oops_data = big_buf + sizeof(struct oops_log_info);
-+	big_oops_data_sz = big_oops_buf_sz - sizeof(struct oops_log_info);
-+	oops_data_buf = oops_buf + sizeof(struct oops_log_info);
-+
-+	unzipped_len = nvram_decompress(oops_data_buf, big_oops_data,
-+					oops_hdr->report_length,
-+					big_oops_data_sz);
-+
-+	if (unzipped_len < 0) {
-+		pr_err("nvram: decompression failed; returned %d\n",
-+								unzipped_len);
-+		return -1;
-+	}
-+	oops_hdr = (struct oops_log_info *)big_buf;
-+	oops_hdr->version = OOPS_HDR_VERSION;
-+	oops_hdr->report_length = (u16) unzipped_len;
-+	oops_hdr->timestamp = timestamp;
-+	return 0;
-+}
-+
- static int nvram_pstore_open(struct pstore_info *psi)
- {
- 	/* Reset the iterator to start reading partitions again */
-@@ -567,6 +626,7 @@ static int nvram_pstore_write(enum pstore_type_id type,
- 				size_t size, struct pstore_info *psi)
- {
- 	int rc;
-+	unsigned int err_type = ERR_TYPE_KERNEL_PANIC;
- 	struct oops_log_info *oops_hdr = (struct oops_log_info *) oops_buf;
- 
- 	/* part 1 has the recent messages from printk buffer */
-@@ -577,8 +637,31 @@ static int nvram_pstore_write(enum pstore_type_id type,
- 	oops_hdr->version = OOPS_HDR_VERSION;
- 	oops_hdr->report_length = (u16) size;
- 	oops_hdr->timestamp = get_seconds();
-+
-+	if (big_oops_buf) {
-+		rc = zip_oops(size);
-+		/*
-+		 * If compression fails copy recent log messages from
-+		 * big_oops_buf to oops_data.
-+		 */
-+		if (rc != 0) {
-+			int hsize = pstore_get_header_size();
-+			size_t diff = size - oops_data_sz + hsize;
-+
-+			if (size > oops_data_sz) {
-+				memcpy(oops_data, big_oops_buf, hsize);
-+				memcpy(oops_data + hsize, big_oops_buf + diff,
-+					oops_data_sz - hsize);
-+
-+				oops_hdr->report_length = (u16) oops_data_sz;
-+			} else
-+				memcpy(oops_data, big_oops_buf, size);
-+		} else
-+			err_type = ERR_TYPE_KERNEL_PANIC_GZ;
-+	}
-+
- 	rc = nvram_write_os_partition(&oops_log_partition, oops_buf,
--		(int) (sizeof(*oops_hdr) + size), ERR_TYPE_KERNEL_PANIC,
-+		(int) (sizeof(*oops_hdr) + oops_hdr->report_length), err_type,
- 		count);
- 
- 	if (rc != 0)
-@@ -600,10 +683,11 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 	struct oops_log_info *oops_hdr;
- 	unsigned int err_type, id_no, size = 0;
- 	struct nvram_os_partition *part = NULL;
--	char *buff = NULL;
--	int sig = 0;
-+	char *buff = NULL, *big_buff = NULL;
-+	int rc, sig = 0;
- 	loff_t p;
- 
-+read_partition:
- 	read_type++;
- 
- 	switch (nvram_type_ids[read_type]) {
-@@ -666,6 +750,25 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 	if (nvram_type_ids[read_type] == PSTORE_TYPE_DMESG) {
- 		oops_hdr = (struct oops_log_info *)buff;
- 		*buf = buff + sizeof(*oops_hdr);
-+
-+		if (err_type == ERR_TYPE_KERNEL_PANIC_GZ) {
-+			big_buff = kmalloc(big_oops_buf_sz, GFP_KERNEL);
-+			if (!big_buff)
-+				return -ENOMEM;
-+
-+			rc = unzip_oops(buff, big_buff);
-+
-+			if (rc != 0) {
-+				kfree(buff);
-+				kfree(big_buff);
-+				goto read_partition;
-+			}
-+
-+			oops_hdr = (struct oops_log_info *)big_buff;
-+			*buf = big_buff + sizeof(*oops_hdr);
-+			kfree(buff);
-+		}
-+
- 		time->tv_sec = oops_hdr->timestamp;
- 		time->tv_nsec = 0;
- 		return oops_hdr->report_length;
-@@ -687,17 +790,18 @@ static int nvram_pstore_init(void)
- {
- 	int rc = 0;
- 
--	nvram_pstore_info.buf = oops_data;
--	nvram_pstore_info.bufsize = oops_data_sz;
-+	if (big_oops_buf) {
-+		nvram_pstore_info.buf = big_oops_buf;
-+		nvram_pstore_info.bufsize = big_oops_buf_sz;
-+	} else {
-+		nvram_pstore_info.buf = oops_data;
-+		nvram_pstore_info.bufsize = oops_data_sz;
-+	}
- 
- 	rc = pstore_register(&nvram_pstore_info);
- 	if (rc != 0)
- 		pr_err("nvram: pstore_register() failed, defaults to "
- 				"kmsg_dump; returned %d\n", rc);
--	else
--		/*TODO: Support compression when pstore is configured */
--		pr_info("nvram: Compression of oops text supported only when "
--				"pstore is not configured");
- 
- 	return rc;
- }
-@@ -731,11 +835,6 @@ static void __init nvram_init_oops_partition(int rtas_partition_exists)
- 	oops_data = oops_buf + sizeof(struct oops_log_info);
- 	oops_data_sz = oops_log_partition.size - sizeof(struct oops_log_info);
- 
--	rc = nvram_pstore_init();
--
--	if (!rc)
--		return;
--
- 	/*
- 	 * Figure compression (preceded by elimination of each line's <n>
- 	 * severity prefix) will reduce the oops/panic report to at most
-@@ -759,6 +858,11 @@ static void __init nvram_init_oops_partition(int rtas_partition_exists)
- 		stream.workspace = NULL;
- 	}
- 
-+	rc = nvram_pstore_init();
-+
-+	if (!rc)
-+		return;
-+
- 	rc = kmsg_dump_register(&nvram_kmsg_dumper);
- 	if (rc != 0) {
- 		pr_err("nvram: kmsg_dump_register() failed; returned %d\n", rc);
-
+> --- [1]
+>
+> general protection fault: 0000 [#1] SMP
+> Modules linked in: btrfs raid6_pq zlib_deflate xor ufs qnx4 hfsplus
+> hfs minix ntfs msdos jfs xfs libcrc32c reiserfs ext2 8021q garp
+> parport_pc ppdev rfcomm bnep nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
+> fscache snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel
+> kvm snd_hda_intel snd_hda_codec snd_hwdep ghash_clmulni_intel arc4
+> bridge iwldvm joydev i915 cryptd snd_pcm mac80211 stp llc
+> snd_page_alloc drm_kms_helper drm snd_seq_midi snd_seq_midi_event
+> snd_rawmidi snd_seq psmouse snd_seq_device btusb ir_sony_decoder
+> ir_rc5_decoder ir_lirc_codec lirc_dev ir_sanyo_decoder
+> ir_mce_kbd_decoder ir_jvc_decoder serio_raw ir_rc6_decoder iwlwifi
+> ir_nec_decoder snd_timer i2c_algo_bit rc_rc6_mce microcode nuvoton_cir
+> snd rc_core bluetooth soundcore mac_hid cfg80211 mei lpc_ich video lp
+> parport hid_generic usbhid hid r8169 ahci libahci
+> CPU 0
+> Pid: 18139, comm: e4defrag Not tainted 3.9.0-030900rc6-generic
+> #201304080035 ZOTAC XXXXXX/XXXXXX
+> RIP: 0010:[<ffffffff81238188>] [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
+> RSP: 0018:ffff8801134a9e28 EFLAGS: 00010202
+> RAX: 0036b44b00008001 RBX: ffff880080e09018 RCX: 0000000180400028
+> RDX: 0036b44b00008001 RSI: 0000000000000001 RDI: ffff88013b001700
+> RBP: ffff8801134a9e48 R08: 0000000000000000 R09: ffffea0000dbe380
+> R10: ffffffff812381bc R11: 0000000000000206 R12: 0000000000000000
+> R13: ffff880036f8ec80 R14: ffff880036f8ebc8 R15: ffff8800ade074c0
+> FS: 00007fd1923d7740(0000) GS:ffff88013fa00000(0000) knlGS:0000000000000000
+> CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00000000013974d8 CR3: 00000001352f2000 CR4: 00000000000407f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process e4defrag (pid: 18139, threadinfo ffff8801134a8000, task
+> ffff880138d9c5f0)
+> Stack:
+>  ffff880036f8ec80 0000000040000010 ffff880021a2f900 ffff8800ade074c0
+>  ffff8801134a9e68 ffffffff81238f36 0000000040000010 ffff88013890f000
+>  ffff8801134a9e78 ffffffff81238f6a ffff8801134a9ec8 ffffffff8119f57a
+> Call Trace:
+>  [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
+>  [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
+>  [<ffffffff8119f57a>] __fput+0xba/0x240
+>  [<ffffffff8119f70e>] ____fput+0xe/0x10
+>  [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
+>  [<ffffffff81014d7a>] do_notify_resume+0xaa/0xc0
+>  [<ffffffff8170d0da>] int_signal+0x12/0x17
+> Code: 90 90 90 66 66 66 66 90 55 48 89 e5 41 56 41 55 49 89 fd 41 54
+> 53 48 8b 1f 48 85 db 74 67 48 8b 43 10 eb 11 0f 1f 80 00 00 00 00 <48>
+> 8b 50 10 48 89 c3 48 89 d0 48 85 c0 75 f1 48 8b 43 08 48 85
+> RIP [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
+>  RSP <ffff8801134a9e28>
+> ---[ end trace 02741f61e6b3c24b ]---
+> general protection fault: 0000 [#2] SMP
+> Modules linked in: btrfs raid6_pq zlib_deflate xor ufs qnx4 hfsplus
+> hfs minix ntfs msdos jfs xfs libcrc32c reiserfs ext2 8021q garp
+> parport_pc ppdev rfcomm bnep nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
+> fscache snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel
+> kvm snd_hda_intel snd_hda_codec snd_hwdep ghash_clmulni_intel arc4
+> bridge iwldvm joydev i915 cryptd snd_pcm mac80211 stp llc
+> snd_page_alloc drm_kms_helper drm snd_seq_midi snd_seq_midi_event
+> snd_rawmidi snd_seq psmouse snd_seq_device btusb ir_sony_decoder
+> ir_rc5_decoder ir_lirc_codec lirc_dev ir_sanyo_decoder
+> ir_mce_kbd_decoder ir_jvc_decoder serio_raw ir_rc6_decoder iwlwifi
+> ir_nec_decoder snd_timer i2c_algo_bit rc_rc6_mce microcode nuvoton_cir
+> snd rc_core bluetooth soundcore mac_hid cfg80211 mei lpc_ich video lp
+> parport hid_generic usbhid hid r8169 ahci libahci
+> CPU 0
+> Pid: 18139, comm: e4defrag Tainted: G   D   3.9.0-030900rc6-generic
+> #201304080035 ZOTAC XXXXXX/XXXXXX
+> RIP: 0010:[<ffffffff81238188>] [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
+> RSP: 0018:ffff8801134a9b78 EFLAGS: 00010202
+> RAX: 0036b44b00008001 RBX: ffff880080e09018 RCX: 0000000000000001
+> RDX: 0036b44b00008001 RSI: ffff88013890fb00 RDI: ffff880036f8ef80
+> RBP: ffff8801134a9b98 R08: 0000000000000000 R09: 0000000000000000
+> R10: ffff88013890fb10 R11: 0000000000000000 R12: 0000000040000010
+> R13: ffff880036f8ef80 R14: ffff8800ade07108 R15: ffff8800ade07108
+> FS: 0000000000000000(0000) GS:ffff88013fa00000(0000) knlGS:0000000000000000
+> CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007f718650aed4 CR3: 0000000001c0d000 CR4: 00000000000407f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process e4defrag (pid: 18139, threadinfo ffff8801134a8000, task
+> ffff880138d9c5f0)
+> Stack:
+>  ffff880036f8ef80 0000000040000010 ffff880021a2fb40 ffff8800ade07108
+>  ffff8801134a9bb8 ffffffff81238f36 0000000040000010 ffff88013890fb00
+>  ffff8801134a9bc8 ffffffff81238f6a ffff8801134a9c18 ffffffff8119f57a
+> Call Trace:
+>  [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
+>  [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
+>  [<ffffffff8119f57a>] __fput+0xba/0x240
+>  [<ffffffff8119f70e>] ____fput+0xe/0x10
+>  [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
+>  [<ffffffff81060876>] do_exit+0x196/0x480
+>  [<ffffffff81705329>] oops_end+0xb9/0x100
+>  [<ffffffff81017d88>] die+0x58/0x90
+>  [<ffffffff81704d9c>] do_general_protection+0xdc/0x160
+>  [<ffffffff81704728>] general_protection+0x28/0x30
+>  [<ffffffff812381bc>] ? free_rb_tree_fname+0x5c/0xb0
+>  [<ffffffff81238188>] ? free_rb_tree_fname+0x28/0xb0
+>  [<ffffffff812381bc>] ? free_rb_tree_fname+0x5c/0xb0
+>  [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
+>  [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
+>  [<ffffffff8119f57a>] __fput+0xba/0x240
+>  [<ffffffff8119f70e>] ____fput+0xe/0x10
+>  [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
+>  [<ffffffff81014d7a>] do_notify_resume+0xaa/0xc0
+>  [<ffffffff8170d0da>] int_signal+0x12/0x17
+> Code: 90 90 90 66 66 66 66 90 55 48 89 e5 41 56 41 55 49 89 fd 41 54
+> 53 48 8b 1f 48 85 db 74 67 48 8b 43 10 eb 11 0f 1f 80 00 00 00 00 <48>
+> 8b 50 10 48 89 c3 48 89 d0 48 85 c0 75 f1 48 8b 43 08 48 85
+> RIP [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
+>  RSP <ffff8801134a9b78>
+> ---[ end trace 02741f61e6b3c24c ]---
+> Fixing recursive fault but reboot is needed!
+--
+Daniel J Blueman
