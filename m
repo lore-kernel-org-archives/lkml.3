@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab3FXKel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:34:41 -0400
-Received: from 8bytes.org ([85.214.48.195]:39164 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902Ab3FXKek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:34:40 -0400
-Date: Mon, 24 Jun 2013 12:34:35 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: alex.williamson@redhat.com, Varun Sethi <Varun.Sethi@freescale.com>
-Cc: iommu@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        galak@kernel.crashing.org, stuart.yoder@freescale.com,
-        scottwood@freescale.com, Timur Tabi <timur@tabi.org>
-Subject: Re: [PATCH 3/3 v16] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-Message-ID: <20130624103435.GB2778@8bytes.org>
-References: <1371744089-17780-1-git-send-email-Varun.Sethi@freescale.com>
- <1371744089-17780-2-git-send-email-Varun.Sethi@freescale.com>
+	id S1752136Ab3FXKfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:35:22 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:49118 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab3FXKfV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 06:35:21 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Wenyou Yang <wenyou.yang@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
+Date: Mon, 24 Jun 2013 12:35:15 +0200
+Message-ID: <cover.1372069834.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371744089-17780-2-git-send-email-Varun.Sethi@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon Jun 24 12:34:38 2013
-X-DSPAM-Confidence: 0.9993
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51c820be20864298916055
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 09:31:28PM +0530, Varun Sethi wrote:
-> This patch provides the PAMU driver (fsl_pamu.c) and the corresponding IOMMU
-> API implementation (fsl_pamu_domain.c). The PAMU hardware driver (fsl_pamu.c)
-> has been derived from the work done by Ashish Kalra and Timur Tabi.
+This little series is for enabling the support of SPI on at91sam9n12 and
+sama5d3 families.
 
-AlexW,
+Nicolas Ferre (3):
+  ARM: at91/DT: fix SPI compatibility string
+  ARM: at91/DT: sama5d3: add SPI DMA client infos
+  ARM: at91/DT: at91sam9n12: add SPI DMA client infos
 
-can you please have a look at the group-code again and ack the patch if
-it looks right to you?
+ arch/arm/boot/dts/at91sam9n12.dtsi |  6 ++++++
+ arch/arm/boot/dts/sama5d3.dtsi     | 10 ++++++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-Thanks,
-
-	Joerg
-
+-- 
+1.8.2.2
 
