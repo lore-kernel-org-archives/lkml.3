@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab3FXOy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 10:54:56 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56330 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab3FXOyz (ORCPT
+	id S1752597Ab3FXOz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 10:55:28 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:49592 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520Ab3FXOzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 10:54:55 -0400
-Date: Mon, 24 Jun 2013 15:54:29 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Grant Likely <grant.likely@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        rtc-linux@googlegroups.com, Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Message-ID: <20130624145429.GP27646@sirena.org.uk>
-References: <1372077594-17052-1-git-send-email-t.figa@samsung.com>
- <1372077594-17052-3-git-send-email-t.figa@samsung.com>
+	Mon, 24 Jun 2013 10:55:25 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dUQzTuC3g77BtMOt"
-Content-Disposition: inline
-In-Reply-To: <1372077594-17052-3-git-send-email-t.figa@samsung.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 2/3] regulator: max8998: Use arrays for specifying
- voltages in platform data
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <51C83348.6040905@ti.com>
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
+	<201306212044.26677.arnd@arndb.de>
+	<CAD=GYpY4koXd9f6_ijQfDHsiULD4d53cdu=9X421WXSAit_YQg@mail.gmail.com>
+	<201306220014.16427.arnd@arndb.de>
+	<CAD=GYpabakChmN-TEJbLn6p=BwX2wsK5KWsc5gH9-cAA+yWcEA@mail.gmail.com>
+	<51C83348.6040905@ti.com>
+Date: Mon, 24 Jun 2013 09:48:37 -0500
+Message-ID: <CAD=GYpYrkE--Snc-MoEdJRkUy5TfMY992kd0L--E6yPpMoRaxQ@mail.gmail.com>
+Subject: Re: [PATCH v12 05/11] edma: config: Enable config options for EDMA
+From: Joel A Fernandes <agnel.joel@gmail.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 24, 2013 at 6:53 AM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On 6/22/2013 8:23 AM, Joel A Fernandes wrote:
+>>>>> config TI_EDMA
+>>>>>         tristate "TI EDMA support"
+>>>>>         default m if 'ARCH_DAVINCI || ARCH_OMAP1 || ARCH_OMAP2
+>>>>>         select DMA_ENGINE
+>>>>>         select DMA_VIRTUAL_CHANNELS
+>>>>
+>>>>
+>>>> MMC depends on EDMA specially on AM33xx there's no PIO mode AFAIK. The
+>>>> 'm' option will require some initramfs to load the module when needing
+>>>> to MMC boot, I suggest lets leave it as y.
+>>>>
+>>>
+>>> Ah, right: you still export a filter function from the edma driver
+>>> and use it in slave drivers:
+>>>
+>>> drivers/mmc/host/davinci_mmc.c:         dma_request_slave_channel_compat(mask, edma_filter_fn,
+>>> drivers/mmc/host/davinci_mmc.c:         dma_request_slave_channel_compat(mask, edma_filter_fn,
+>>> drivers/spi/spi-davinci.c:      dspi->dma_rx = dma_request_channel(mask, edma_filter_fn,
+>>> drivers/spi/spi-davinci.c:      dspi->dma_tx = dma_request_channel(mask, edma_filter_fn,
+>>>
+>>> As long as this is the case, you have to be careful with the dependencies
+>>> to make sure that davinci_mmc and spi-davinci either depend on TI_EDMA, or
+>>> edma_filter_fn gets defined to NULL when you are building for a DT-only platform.
+>>
+>> Yes sure, right now they are defined  as follows in include/linux/edma.h:
+>>
+>> #if defined(CONFIG_TI_EDMA) || defined(CONFIG_TI_EDMA_MODULE)
+>> bool edma_filter_fn(struct dma_chan *, void *);
+>> #else
+>> static inline bool edma_filter_fn(struct dma_chan *chan, void *param)
+>> {
+>> return false;
+>> }
+>> #endif
+>>
+>> This also has the side effect of causing DMA requests to fail if
+>> TI_EDMA is not built, causing frustration for a lot of people some of
+>> whom don't want to deal with DMA so I think it is OK to build the
+>> driver in by default as it is (and will be) used by a lot of
+>> OMAP2PLUS.
+>
+> Solution for this is to enable TI_EDMA in relevant defconfigs. Most
+> folks who would get frustrated by such issues would be using defconfigs
+> and for those who are building their configuration from scratch this
+> will be pretty low in their list of worries.
 
---dUQzTuC3g77BtMOt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, it is not in omap2plus_defconfig either. I will post a patch to
+add it to the same, and we can ignore the Kconfig defaults and select
+patches.
 
-On Mon, Jun 24, 2013 at 02:39:53PM +0200, Tomasz Figa wrote:
-> This patch modifies the platform data of max8998 to use arrays for
-> specifying predefined voltages of buck1 and buck2 instead of separate
-> field for each voltage.
-
-Applied, thanks.
-
---dUQzTuC3g77BtMOt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRyF2iAAoJELSic+t+oim9ISUP/A63q66B/nINTYgi12ojJvef
-5LO4dFpSrY5pqw9k13e6zXBrtvkxsIER/ulS0g2ZXlXkhOwFFsBk1e4zKC+YYDR4
-yx+dda/KECmbLwip5Tu4T2G2CaWEap11UXTIdPlUEqWiyT49qd2JFPmWTcXcvORQ
-jm1gIztRYC/IHCeS5or3I3koyoAFs578dhkWfoZD4VWSPTEWHZmbKcxL1NVdIUnE
-oGBPJCe9ymqyVL6MHIr9vZLR2uFE1FewygwxJSauwpe0Euto5elb8kvvTlXJ9Ig0
-NUm7guC0LJ/9sBOXi1Ua04ORglIZmvQ4JnubnpT7+ieGU00n9Jv/yKktuTg8UYBL
-PzUEV5u2krNb4V/DCPvnmr8SpjsREK47gXI9pFPdWywiIG8AXTajG06zQTAr1F9Q
-Bdqa61yHZKsE4zsiqAepLUdSiwyFg5XS3kGyJI4jbDqge89GQiMNVdhKJKCHy+iF
-RB9S6z+uX9AyylpwgWO2agn45vmrY+bVLiLvjmWbIe7bcD57MBtXCwsp7uAOPCC1
-0T9bLyprBbLxIlWLZkKOrGEEjAu+6Og3qG6Z+Bm+/4CXV5qjfTtJlISbkWSjy37F
-oeVjghzZnd2UsQH3iy9AWo1JdSUIC7vQqWf38252lW6+dFFWbxNyXxzLOY3n10sf
-AjNOAK3Vlv0posVwtrzn
-=0NTq
------END PGP SIGNATURE-----
-
---dUQzTuC3g77BtMOt--
+Thanks,
+Joel
