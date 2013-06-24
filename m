@@ -1,1339 +1,911 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab3FXHDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 03:03:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47133 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab3FXHDe (ORCPT
+	id S1752773Ab3FXHDz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 03:03:55 -0400
+Received: from science.horizon.com ([71.41.210.146]:51476 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752365Ab3FXHDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 03:03:34 -0400
-Date: Mon, 24 Jun 2013 17:03:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Jun 24
-Message-Id: <20130624170325.3dcff6dd1684cd92a6fb21c0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Jun_2013_17_03_25_+1000_lD4UDozUgKYdeXyo"
+	Mon, 24 Jun 2013 03:03:54 -0400
+Date: 24 Jun 2013 03:03:51 -0400
+Message-ID: <20130624070351.6636.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: v3.10-rc7 oops soon after boot
+Cc: linux@horizon.com
+In-Reply-To: <20130624064934.24201.qmail@science.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Jun_2013_17_03_25_+1000_lD4UDozUgKYdeXyo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just to quiet worries, I compiled stock 3.10-rc7.  Booted single-user.
+Same oops.
 
-Hi all,
+Compiler is gcc (Debian 4.8.1-4) 4.8.1.  .config (comments stripped)
+is attached.  No changes since previous kernel except "make oldconfig".
 
-Changes since 20130621:
-
-Removed tree: mailbox (at maintainers request)
-
-The vfs tree gained a build failure so I used the version from
-next-20130621.
-
-The drm tree gained a conflict against Linus' tree.
-
-The leds tree lost its build failure.
-
-The staging tree still had its build failure for which I disabled some
-code.
-
-The clk tree gained a conflict against the samsung tree.
-
-The akpm tree lost a few patches that turned up elsewhere.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
-sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 228 trees (counting Linus' and 31 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (9e895ac Linux 3.10-rc7)
-Merging fixes/master (8177a9d lseek(fd, n, SEEK_END) does *not* go to eof -=
- n)
-Merging kbuild-current/rc-fixes (42a0940 Merge branch 'yem-kconfig-rc-fixes=
-' of git://gitorious.org/linux-kconfig/linux-kconfig into kbuild/rc-fixes)
-Merging arc-current/for-curr (6dd7410 ARC: [tlb-miss] Fix bug with CONFIG_A=
-RC_DBG_TLB_MISS_COUNT)
-Merging arm-current/fixes (19ab428 ARM: 7759/1: decouple CPU offlining from=
- reboot/shutdown)
-Merging m68k-current/for-linus (7d13205 Linux 3.10-rc6)
-Merging powerpc-merge/merge (8bbd9f0 powerpc: Fix bad pmd error with book3E=
- config)
-Merging sparc/master (c069114 mn10300: Fix include dependency in irqflags.h=
- et al.)
-Merging net/master (a7bf580 net: vlan: fix comment for vlan_ethhdr->h_vlan_=
-proto)
-Merging ipsec/master (01cb71d net_sched: restore "overhead xxx" handling)
-Merging sound-current/for-linus (e32aa85 ALSA: hda - Add models for Dell he=
-adset jacks)
-Merging pci-current/for-linus (65694c5 x86/PCI: Map PCI setup data with ior=
-emap() so it can be in highmem)
-Merging wireless/master (2f2a884 Merge branch 'for-john' of git://git.kerne=
-l.org/pub/scm/linux/kernel/git/jberg/mac80211)
-Merging driver-core.current/driver-core-linus (8759793 firmware loader: fix=
- use-after-free by double abort)
-Merging tty.current/tty-linus (7c61c3d tty: Fix transient pty write() EIO)
-Merging usb.current/usb-linus (35a2fbc USB: serial: ti_usb_3410_5052: new d=
-evice id for Abbot strip port cable)
-Merging staging.current/staging-linus (7d13205 Linux 3.10-rc6)
-Merging char-misc.current/char-misc-linus (7d13205 Linux 3.10-rc6)
-Merging input-current/for-linus (be66227 Input: xpad - fix for "Mad Catz St=
-reet Fighter IV FightPad" controllers)
-Merging md-current/for-linus (32f9f57 MD: ignore discard request for hard d=
-isks of hybid raid1/raid10 array)
-Merging audit-current/for-linus (c158a35 audit: no leading space in audit_l=
-og_d_path prefix)
-Merging crypto-current/master (fe6510b crypto: aesni_intel - fix accessing =
-of unaligned memory)
-Merging ide/master (bf6b438 ide: gayle: use module_platform_driver_probe())
-Merging dwmw2/master (5950f08 pcmcia: remove RPX board stuff)
-Merging sh-current/sh-fixes-for-linus (4403310 SH: Convert out[bwl] macros =
-to inline functions)
-Merging irqdomain-current/irqdomain/merge (d94ea3f irqchip: Return -EPERM f=
-or reserved IRQs)
-Merging devicetree-current/devicetree/merge (706b78f dtc: ensure #line dire=
-ctives don't consume data from the next line)
-Merging spi-current/spi/merge (0d2d0cc spi/davinci: fix module build error)
-Merging gpio-current/gpio/merge (e97f9b5 gpio/gpio-ich: fix ichx_gpio_check=
-_available() return what callers expect)
-Merging rr-fixes/fixes (6407d75 virtio_console: fix uapi header)
-Merging mfd-fixes/master (5649d8f mfd: ab8500-sysctrl: Let sysctrl driver w=
-ork without pdata)
-Merging vfio-fixes/for-linus (7d13205 Linux 3.10-rc6)
-Merging asm-generic/master (fb9de7e xtensa: Use generic asm/mmu.h for nommu)
-Merging arc/for-next (7d13205 Linux 3.10-rc6)
-Merging arm/for-next (7e74d1d Merge branch 'devel-stable' into for-next)
-Merging arm-mpidr/for-next (3fed6a1 ARM: kernel: implement stack pointer sa=
-ve array through MPIDR hashing)
-CONFLICT (content): Merge conflict in arch/arm/kernel/suspend.c
-Merging arm-perf/for-next/perf (642bd4e perf: ARM: Record the user-mode PC =
-in the call chain.)
-Merging davinci/davinci-next (fe0d422 Linux 3.0-rc6)
-Merging xilinx/arm-next (64e3fd3 arm: zynq: Add support for pmu)
-CONFLICT (content): Merge conflict in drivers/clocksource/tegra20_timer.c
-CONFLICT (content): Merge conflict in drivers/clocksource/Makefile
-CONFLICT (add/add): Merge conflict in arch/arm/mach-zynq/platsmp.c
-CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/v2m.c
-CONFLICT (content): Merge conflict in arch/arm/mach-spear/spear13xx.c
-CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-imx6q.c
-CONFLICT (content): Merge conflict in arch/arm/mach-highbank/highbank.c
-Merging arm64/upstream (ee877b5 arm64: Add initial DTS for APM X-Gene Storm=
- SOC and APM Mustang board)
-CONFLICT (content): Merge conflict in include/uapi/linux/kvm.h
-Merging blackfin/blackfin-linus (5ae89ee bfin cache: dcplb map: add 16M dcp=
-lb map for BF60x)
-Merging c6x/for-linux-next (f934af0 add memory barrier to arch_local_irq_re=
-store)
-Merging cris/for-next (32ade6a CRIS: Add kvm_para.h which includes generic =
-file)
-Merging hexagon/linux-next (de44443 HEXAGON: Remove non existent reference =
-to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD)
-Merging ia64/next (ef9f602 Merge branch 'root_bus_hotplug' into next. Eight=
- patch series to get IOH hot plug working on Itanium in much the same way a=
-s on X86.)
-Merging m68k/for-next (abfa4fb Merge branch 'exotic-arch-fixes' into for-ne=
-xt)
-CONFLICT (content): Merge conflict in arch/cris/arch-v32/drivers/Kconfig
-Merging m68knommu/for-next (e4aa937 Linux 3.10-rc3)
-Merging metag/for-next (1a5719a metag/.gitignore: Extend the *.dtb pattern =
-to match the dtb.S files)
-Merging microblaze/next (62bc82a microblaze: Use static inline functions in=
- cacheflush.h)
-Merging mips/mips-for-linux-next (2f62ae9 Merge branch '3.10-fixes' into mi=
-ps-for-linux-next)
-Merging openrisc/for-upstream (6af6095 openrisc: remove HAVE_VIRT_TO_BUS)
-Merging parisc/for-next (6c700d7 [PARISC] hpux: Remove obsolete regs parame=
-ter from do_execve() in hpux_execve())
-Merging parisc-hd/for-next (c069114 mn10300: Fix include dependency in irqf=
-lags.h et al.)
-Merging powerpc/next (b95cd2c powerpc/eeh: Allow to check fenced PHB proact=
-ively)
-Merging 4xx/next (2074b1d powerpc: Fix irq distribution)
-Merging mpc5xxx/next (a4f4124 powerpc/mpc512x: initialize board restart ear=
-lier)
-Merging galak/next (9e2ecdb powerpc/fsl-booke: add the reg prop for pci bri=
-dge device node for T4/B4)
-Merging s390/features (b2da721 s390/irq: store interrupt information in pt_=
-regs)
-Merging sh/sh-latest (37284bd Merge branches 'sh/hw-breakpoints' and 'sh/se=
-rial-of' into sh-latest)
-CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh2a/Makefile
-Merging sparc-next/master (f8ce1fa Merge tag 'modules-next-for-linus' of gi=
-t://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux)
-Merging tile/master (317ddd2 Linux 3.10-rc5)
-Merging unicore32/unicore32 (c284464 arch/unicore32: remove CONFIG_EXPERIME=
-NTAL)
-Merging xtensa/for_next (0756a12 xtensa: tell git to ignore copied zlib sou=
-rce files)
-Merging btrfs/next (667e7d9 Btrfs: allow superblock mismatch from older mkf=
-s)
-Merging ceph/master (07864ee ceph: avoid meaningless calling ceph_caps_revo=
-king if sync_mode =3D=3D WB_SYNC_ALL.)
-CONFLICT (content): Merge conflict in drivers/block/rbd.c
-Merging cifs/for-next (7f420ce [CIFS] Charge at least one credit, if server=
- says that it supports multicredit)
-Merging configfs/linux-next (b930c26 Merge branch 'for-linus' of git://git.=
-kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (0df5ed6 eCryptfs: Make extent and scatterlist crypt =
-function parameters similar)
-Merging ext3/for_next (e162b2f jbd: use kmem_cache_zalloc instead of kmem_c=
-ache_alloc/memset)
-Merging ext4/dev (7837994 ext4: optimize starting extent in ext4_ext_rm_lea=
-f())
-Merging f2fs/dev (fbc16bb f2fs: fix an endian conversion bug detected by sp=
-arse)
-Merging fscache/fscache (bbd645c FS-Cache: Don't use spin_is_locked() in as=
-sertions)
-Merging fuse/for-next (e5c5f05 fuse: fix alignment in short read optimizati=
-on for async_dio)
-Merging gfs2/master (6a98c33 GFS2: Fix fstrim boundary conditions)
-Merging jfs/jfs-next (eb8630d jfs: Update jfs_error)
-Merging logfs/master (3394661 Fix the call to BUG() caused by no free segme=
-nt found)
-Merging nfs/linux-next (0a8c08f Merge branch 'labeled-nfs' into linux-next)
-Merging nfsd/nfsd-next (1a9357f nfsd: avoid undefined signed overflow)
-Merging ocfs2/linux-next (4538df6 ocfs2: Don't spam on -EDQUOT.)
-Merging omfs/for-next (976d167 Linux 3.1-rc9)
-Merging squashfs/master (4b0180a Squashfs: add mount time sanity check for =
-block_size and block_log match)
-Merging v9fs/for-next (7a0d932 fs/9p: xattr: add trusted and security names=
-paces)
-Merging ubifs/linux-next (c1be5a5 Linux 3.9)
-Merging xfs/for-next (2fb8b50 xfs: Remove two dead transaction log reservai=
-on macros)
-Merging vfs/for-next (5e41e50 lseek_execute() doesn't need an inode passed =
-to it)
-$ git reset --hard HEAD^
-Merging next-20130621 version of vfs
-Merging pci/next (df58f46 Merge branch 'pci/jiang-bus-lock-v3' into next)
-CONFLICT (content): Merge conflict in include/linux/aer.h
-CONFLICT (content): Merge conflict in drivers/pci/probe.c
-CONFLICT (content): Merge conflict in drivers/acpi/pci_root.c
-CONFLICT (content): Merge conflict in arch/ia64/sn/kernel/io_init.c
-Merging hid/for-next (d196fb9 Merge branch 'for-3.11/upstream' into for-nex=
-t)
-Merging i2c/i2c/for-next (7a10f47 i2c-pxa: prepare clock before use)
-Merging jdelvare-hwmon/master (1aaf6d3 Merge git://git.kernel.org/pub/scm/l=
-inux/kernel/git/davem/net)
-Merging hwmon-staging/hwmon-next (f857a0b Add support for GMT G762/G763 PWM=
- fan controllers)
-Merging v4l-dvb/master (ce6a6d7 Merge /home/v4l/v4l/for_upstream)
-Merging kbuild/for-next (b305935 Merge branch 'kbuild/kbuild' into kbuild/f=
-or-next)
-Merging kconfig/for-next (4eae518 localmodconfig: Fix localyesconfig to set=
- to 'y' not 'm')
-Merging libata/for-next (8f12ed6 Merge branch 'for-3.10-fixes' into for-nex=
-t)
-Merging pstore/master (bd08ec3 pstore/ram: Restore ecc information block)
-Merging pm/linux-next (6667eac Merge branch 'pm-cpufreq-next' into linux-ne=
-xt)
-Merging idle/next (5c99726b Merge branch 'fspin' into next)
-Merging apm/for-next (fb9d78a Merge branch 'for-linus' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/jikos/apm)
-Merging cpuidle/cpuidle-next (817c876 Merge branch 'pm-fixes-next' into fix=
-es-next)
-CONFLICT (content): Merge conflict in drivers/base/power/qos.c
-CONFLICT (content): Merge conflict in drivers/acpi/processor_driver.c
-Merging cpupowerutils/master (f166033 cpupower tools: add install target to=
- the debug tools' makefiles)
-Merging thermal/next (9d1968f Merge branch 'cpu-package-thermal' of .git in=
-to next)
-Merging ieee1394/for-next (bcabcfd firewire: remove support of fw_driver.dr=
-iver.probe and .remove methods)
-Merging ubi/linux-next (584d462 UBI: fastmap break out of used PEB search)
-Merging dlm/next (06452eb dlm: remove duplicated include from lowcomms.c)
-Merging swiotlb/linux-next (af51a9f swiotlb: Do not export swiotlb_bounce s=
-ince there are no external consumers)
-Merging scsi/for-next (002edf2 Merge branch 'misc' into for-next)
-Merging target-updates/for-next (28027b5 iscsi-target: Add demo-mode TPG au=
-thentication context support)
-Merging target-merge/for-next-merge (317ddd2 Linux 3.10-rc5)
-Merging ibft/linux-next (935a9fe ibft: Fix finding IBFT ACPI table on UEFI)
-Merging isci/all (6734092 isci: add a couple __iomem annotations)
-Merging slave-dma/next (fdf3303 Merge branch 'for-linus' into next)
-Merging dmaengine/next (41ef2d5 Linux 3.9-rc7)
-Merging net-next/master (fedaf4f ndisc: Convert use of typedef ctl_table to=
- struct ctl_table)
-CONFLICT (content): Merge conflict in drivers/net/ethernet/freescale/fec_ma=
-in.c
-Merging ipsec-next/master (4c4d41f xfrm: add LINUX_MIB_XFRMACQUIREERROR sta=
-tistic counter)
-Merging wireless-next/master (b887664 mwifiex: channel switch handling for =
-station)
-CONFLICT (content): Merge conflict in net/wireless/nl80211.c
-Merging bluetooth/master (b8f4e06 Bluetooth: Improve comments on the HCI_De=
-lete_Store_Link_Key issue)
-Merging infiniband/for-next (dae0041 Merge branches 'af_ib', 'cxgb4', 'misc=
-', 'ocrdma' and 'qib' into for-next)
-Merging mtd/master (a637b0d Merge tag 'for-linus-20130509' of git://git.inf=
-radead.org/linux-mtd)
-Merging l2-mtd/master (449e74c mtd: tests: don't print error messages when =
-out-of-memory)
-Merging crypto/master (02c0241 Merge git://git.kernel.org/pub/scm/linux/ker=
-nel/git/herbert/crypto)
-Merging drm/drm-next (fdcdec0 drm_vm: drop explicit VM_IO setting)
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_sdvo.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/drm_prime.c
-Merging drm-intel/for-linux-next (1070e30 Fix PCH detect with multiple ISA =
-bridges in VM)
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_sdvo.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_fb.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_display.c
-Merging drm-tegra/drm/for-next (ebae30b gpu: host1x: Rework CPU syncpoint i=
-ncrement)
-Merging sound/for-next (04c9548 ASoC: samsung: Fix a typo of CONFIG_SND_SOC=
-_BT_SCO)
-Merging sound-asoc/for-next (c36269f Merge remote-tracking branch 'asoc/top=
-ic/x86' into asoc-next)
-Merging modules/modules-next (06df44e modpost.c: Add .text.unlikely to TEXT=
-_SECTIONS)
-Merging virtio/virtio-next (b3087e4 virtio: remove virtqueue_add_buf().)
-Merging input/next (8855f30 Input: wacom_i2c - implement hovering capabilit=
-y)
-Merging input-mt/for-next (257867d Input: MT - Specify that ABS_MT_SLOT mus=
-t have a minimum of 0)
-Merging cgroup/for-next (fd6aebb Merge branch 'for-3.11' into for-next)
-Merging block/for-next (c40a7a1 Merge branch 'for-3.11/drivers' into for-ne=
-xt)
-CONFLICT (content): Merge conflict in include/linux/cgroup.h
-Merging device-mapper/master (11531a4 Fix detection of the need to resize t=
-he dm thin metadata device.)
-Merging embedded/master (4744b43 embedded: fix vc_translate operator preced=
-ence)
-Merging firmware/master (6e03a20 firmware: speed up request_firmware(), v3)
-Merging pcmcia/master (80af9e6 pcmcia at91_cf: fix raw gpio number usage)
-Merging mmc/mmc-next (b9ec274 mmc: tmio: reset the controller after power-u=
-p)
-Merging kgdb/kgdb-next (6bedf31 kdb: Remove unhandled ssb command)
-Merging slab/for-next (c55d728 Merge branch 'slab/next' into for-next)
-Merging uclinux/for-next (6dbe51c Linux 3.9-rc1)
-Merging md/for-next (52c6ede raid5: make release_stripe lockless)
-Merging mfd/master (1ffb0be mfd: palmas: Add SMPS10_BOOST feature)
-Merging battery/master (b52eafc power/reset: Make the vexpress driver optio=
-nal on arm and arm64)
-Merging fbdev/for-next (8ea2c86 Merge branch 'fbdev-3.11' of git://gitoriou=
-s.org/linux-omap-dss2/linux into fbdev/for-next)
-CONFLICT (content): Merge conflict in drivers/video/of_display_timing.c
-Merging viafb/viafb-next (838ac78 viafb: avoid refresh and mode lookup in s=
-et_par)
-Merging omap_dss2/for-next (e72b753 fbdev/ps3fb: fix compile warning)
-Merging regulator/for-next (135eb8f Merge remote-tracking branch 'regulator=
-/topic/tps62360' into regulator-next)
-Merging security/next (1ca0072 Merge branch 'smack-for-3.11' of git://git.g=
-itorious.org/smack-next/kernel into ra-next)
-Merging selinux/master (c2d7b24 Merge tag 'v3.4' into 20120409)
-Merging lblnet/master (7e27d6e Linux 2.6.35-rc3)
-Merging watchdog/master (28b7e09 watchdog: wdrtas: don't use custom version=
- of print_hex_dump)
-Merging dwmw2-iommu/master (6491d4d intel-iommu: Free old page tables befor=
-e creating superpage)
-Merging iommu/next (784aa4f Merge branches 'x86/vt-d', 'arm/omap', 'core' a=
-nd 'x86/amd' into next)
-Merging vfio/next (b0e59b8 vfio: fix documentation)
-Merging osd/linux-next (861d666 exofs: don't leak io_state and pages on rea=
-d error)
-Merging jc_docs/docs-next (5c050fb docs: update the development process doc=
-ument)
-Merging trivial/for-next (ae58403 spinlock_api_smp.h: fix preprocessor comm=
-ents)
-CONFLICT (content): Merge conflict in Documentation/networking/netlink_mmap=
-.txt
-Merging audit/for-next (dcd6c92 Linux 3.3-rc1)
-Merging fsnotify/for-next (1ca39ab inotify: automatically restart syscalls)
-Merging edac/linux_next (de4772c edac: sb_edac.c should not require prescen=
-ce of IMC_DDRIO device)
-Merging edac-amd/for-next (aad19e5 EDAC, MCE, AMD: Add an MCE signature for=
- new Fam15h models)
-Merging devicetree/devicetree/next (ba166e9 of: remove CONFIG_OF_DEVICE)
-Merging dt-rh/for-next (d683b96 Linux 3.10-rc4)
-Merging spi/spi/next (00ab539 spi/s3c64xx: let device core setup the defaul=
-t pin configuration)
-Merging spi-mb/for-next (de7208e Merge remote-tracking branch 'spi/topic/xi=
-linx' into spi-next)
-Merging tip/auto-latest (50a79f9 Merge branch 'x86/uv')
-CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
-Merging ftrace/for-next (52d85d7 ftrace: Fix stddev calculation in function=
- profiler)
-Merging rcu/rcu/next (be77f87 Merge branches 'cbnum.2013.06.10a', 'doc.2013=
-.06.10a', 'fixes.2013.06.10a', 'srcu.2013.06.10a' and 'tiny.2013.06.10a' in=
-to HEAD)
-Merging cputime/cputime (c3e0ef9 [S390] fix cputime overflow in uptime_proc=
-_show)
-Merging uprobes/for-next (0326f5a uprobes/core: Handle breakpoint and singl=
-estep exceptions)
-Merging kvm/linux-next (87d41fb KVM: s390: Fixed priority of execution in S=
-TSI)
-CONFLICT (content): Merge conflict in arch/s390/include/asm/pgtable.h
-Merging kvm-arm/kvm-arm-next (6075daa ARM: kvm: don't include drivers/virti=
-o/Kconfig)
-Merging kvm-ppc/kvm-ppc-next (5975a2e KVM: PPC: Book3S: Add API for in-kern=
-el XICS emulation)
-Merging oprofile/for-next (f722406 Linux 3.10-rc1)
-Merging fw-nohz/nohz/next (74876a9 printk: Wake up klogd using irq_work)
-Merging xen/upstream/xen (af3a3ab Merge git://git.kernel.org/pub/scm/linux/=
-kernel/git/steve/gfs2-3.0-fixes)
-Merging xen-two/linux-next (6c63f3c Merge branch 'stable/pvh.v8' into linux=
--next)
-Merging xen-arm/linux-next (3a88558 xen/arm: account for stolen ticks)
-Merging percpu/for-next (a424445 percpu-refcount: use RCU-sched insted of n=
-ormal RCU)
-Merging workqueues/for-next (bbe2a23 Merge branch 'for-3.10-fixes' into for=
--next)
-Merging drivers-x86/linux-next (a1ec56e Add support for fan button on Ideap=
-ad Z580)
-Merging hwpoison/hwpoison (46e387b Merge branch 'hwpoison-hugepages' into h=
-wpoison)
-Merging sysctl/master (4e474a0 sysctl: protect poll() in entries that may g=
-o away)
-Merging regmap/for-next (467c1c5 Merge remote-tracking branch 'regmap/topic=
-/field' into regmap-next)
-Merging hsi/for-next (43139a6 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (73e1ab4 leds: Convert led class driver from legacy p=
-m ops to dev_pm_ops)
-Merging driver-core/driver-core-next (90f89081 firmware loader: fix compile=
- warning with PM_SLEEP set)
-CONFLICT (content): Merge conflict in include/linux/platform_device.h
-CONFLICT (content): Merge conflict in drivers/base/memory.c
-CONFLICT (content): Merge conflict in drivers/base/cpu.c
-Merging tty/tty-next (64e377d tty: Reset itty for other pty)
-Merging usb/usb-next (4134126 usb: check usb_hub_to_struct_hub() return val=
-ue)
-Merging usb-gadget/next (b1fd6cb usb: dwc3: omap: Adds dwc3_omap_readl/writ=
-el wrappers)
-Merging staging/staging-next (2eb226d staging: comedi: addi-data: remove un=
-used 'i_NbrTTLChannel' boardinfo)
-CONFLICT (content): Merge conflict in drivers/thermal/ti-soc-thermal/ti-the=
-rmal-common.c
-CONFLICT (content): Merge conflict in drivers/staging/silicom/bpctl_mod.c
-CONFLICT (content): Merge conflict in drivers/staging/serqt_usb2/serqt_usb2=
-.c
-CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/the=
-rmal/ti_soc_thermal.txt
-Applying: staging/lustre: fix for invalidatepage() API change
-$ git am -3 ../patches/0001-Revert-Revert-Revert-staging-lustre-drop-CONFIG=
-_BROK.patch
-Applying: Revert "Revert "Revert "staging/lustre: drop CONFIG_BROKEN depend=
-ency"""
-Merging char-misc/char-misc-next (c2955da fmc: avoid readl/writel namespace=
- conflict)
-Merging bcon/master (e284f34 netconsole: s/syslogd/cancd/ in documentation)
-CONFLICT (content): Merge conflict in drivers/block/Kconfig
-Merging tmem/linux-next (8f0d816 Linux 3.7-rc3)
-Merging writeback/writeback-for-next (ed84825 Negative (setpoint-dirty) in =
-bdi_position_ratio())
-Merging arm-dt/devicetree/arm-next (ede338f dt: add documentation of ARM dt=
- boot interface)
-Merging hwspinlock/linux-next (8b37fcf hwspinlock: add MAINTAINERS entries)
-Merging pinctrl/for-next (a5d811b pinctrl: add Intel BayTrail GPIO/pinctrl =
-support)
-CONFLICT (content): Merge conflict in drivers/net/ethernet/ti/davinci_mdio.c
-Merging vhost/linux-next (f722406 Linux 3.10-rc1)
-Merging memblock/memblock-kill-early_node_map (7bd0b0f memblock: Reimplemen=
-t memblock allocation using reverse free area iterator)
-Merging remoteproc/for-next (b977785 remoteproc: fix kconfig dependencies f=
-or VIRTIO)
-Merging rpmsg/for-next (397944d rpmsg: fix kconfig dependencies for VIRTIO)
-Merging irqdomain/irqdomain/next (b7ba09c irqdomain: Fix flubbed irq_domain=
-_associate_many refactoring)
-CONFLICT (content): Merge conflict in kernel/irq/irqdomain.c
-Merging gpio/gpio/next (644c8df gpio: sx150x: convert to use devm_* functio=
-ns)
-Merging gpio-lw/for-next (3bae481 gpiolib: remove warnning of allocations w=
-ith IRQs disabled)
-Merging arm-soc/for-next (e640a38 Merge branch 'testing/soc' into for-next)
-CONFLICT (content): Merge conflict in include/linux/mfd/davinci_voicecodec.h
-CONFLICT (content): Merge conflict in drivers/usb/phy/phy-rcar-usb.c
-CONFLICT (content): Merge conflict in drivers/usb/Kconfig
-CONFLICT (content): Merge conflict in drivers/tty/serial/xilinx_uartps.c
-CONFLICT (content): Merge conflict in drivers/clocksource/dw_apb_timer_of.c
-CONFLICT (content): Merge conflict in arch/arm/mach-u300/timer.c
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/clock-r8a7778.c
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/clock-r8a7740.c
-CONFLICT (content): Merge conflict in arch/arm/mach-integrator/integrator_a=
-p.c
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/sun4i-a10.dtsi
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/am33xx.dtsi
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/am335x-evmsk.dts
-Merging bcm2835/for-next (7d13205 Linux 3.10-rc6)
-Merging cortex/for-next (6fae9cd ARM: ARMv7-M: implement read_cpuid_ext)
-Merging ep93xx/ep93xx-for-next (7ec4429 Merge branch 'ep93xx-fixes' into ep=
-93xx-for-next)
-Merging imx-mxs/for-next (01ff97e Merge branch 'imx/dt' into for-next)
-Merging ixp4xx/next (19f949f Linux 3.8)
-Merging msm/for-next (30c42f2 Merge branch 'msm-clock' into for-next)
-Merging mvebu/for-next (04864c6 Merge branch 'mvebu/regmap' into for-next)
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/kirkwood-6281.dtsi
-Merging renesas/next (66f9db6 Merge branch 'heads/phy-rcar-usb' into next)
-CONFLICT (content): Merge conflict in include/uapi/linux/serial_core.h
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/include/mach/r=
-8a7778.h
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/clock-r8a7778.c
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/board-bockw.c
-Merging samsung/for-next (cf4dd43 Merge branch 'v3.11-next/samsung-pwm-wip'=
- into for-next)
-CONFLICT (content): Merge conflict in drivers/clk/samsung/clk-exynos5250.c
-CONFLICT (content): Merge conflict in arch/arm/Kconfig
-Merging tegra/for-next (7d13205 Linux 3.10-rc6)
-Merging dma-mapping/dma-mapping-next (5cc3ad7 ARM: DMA-mapping: mark all !D=
-MA_TO_DEVICE pages in unmapping as clean)
-Merging pwm/for-next (99b82ab pwm: Add Renesas TPU PWM driver)
-Merging dma-buf/for-next (844ce9f Merge tag 'mmc-fixes-for-3.10-rc5' of git=
-://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
-Merging userns/for-next (78008c4 proc: Restrict mounting the proc filesyste=
-m)
-Merging ktest/for-next (df5f7c6 ktest: Reset grub menu cache with different=
- machines)
-Merging signal/for-next (20b4fb4 Merge branch 'for-linus' of git://git.kern=
-el.org/pub/scm/linux/kernel/git/viro/vfs)
-Merging clk/clk-next (7064f6b clk: tegra: provide tegra_periph_reset_assert=
- alternative)
-CONFLICT (content): Merge conflict in drivers/clk/tegra/clk-tegra114.c
-CONFLICT (content): Merge conflict in drivers/clk/samsung/clk-exynos5250.c
-CONFLICT (content): Merge conflict in drivers/clk/samsung/clk-exynos4.c
-Merging random/dev (b980955 random: fix locking dependency with the tasklis=
-t_lock)
-Merging lzo-update/lzo-update (42b775a lib/lzo: huge LZO decompression spee=
-dup on ARM by using unaligned access)
-Merging arm64-hugepages/for-next/hugepages (af07484 ARM64: mm: THP support.)
-CONFLICT (content): Merge conflict in arch/arm64/include/asm/pgtable.h
-CONFLICT (content): Merge conflict in arch/arm64/include/asm/pgtable-hwdef.h
-CONFLICT (content): Merge conflict in arch/arm64/Kconfig
-Merging scsi-post-merge/merge-base:master (65112dc Merge git://git.samba.or=
-g/sfrench/cifs-2.6)
-Merging akpm-current/current (17858ca Merge tag 'please-pull-fixia64' of gi=
-t://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux)
-$ git checkout -b akpm remotes/origin/akpm/master
-Applying: fput-task_work_add-can-fail-if-the-caller-has-passed-exit_task_wo=
-rk-fix
-Applying: include/linux/smp.h:on_each_cpu(): switch back to a macro
-Applying: drivers/platform/x86/intel_ips.c: convert to module_pci_driver
-Applying: sound/soc/codecs/si476x.c: don't use 0bNNN
-Applying: x86: make 'mem=3D' option to work for efi platform
-Applying: audit: fix mq_open and mq_unlink to add the MQ root as a hidden p=
-arent audit_names record
-Applying: kernel/auditfilter.c: fixing build warning
-Applying: kernel/auditfilter.c: fix leak in audit_add_rule() error path
-Applying: drivers/pcmcia/pd6729.c: convert to module_pci_driver
-Applying: drivers/pcmcia/yenta_socket.c: convert to module_pci_driver
-Applying: drm/fb-helper: don't sleep for screen unblank when an oops is in =
-progress
-Applying: drm/cirrus: correct register values for 16bpp
-Applying: drm/nouveau: make vga_switcheroo code depend on VGA_SWITCHEROO
-Applying: drivers/video/smscufx.c: use NULL instead of 0
-Applying: drivers/video/udlfb.c: use NULL instead of 0
-Applying: drivers/video/udlfb.c: make local symbol static
-Applying: drivers/video/imxfb.c: make local symbols static
-Applying: drivers/video/acornfb.c: remove dead code
-Applying: cyber2000fb: avoid palette corruption at higher clocks
-Applying: fanotify: info leak in copy_event_to_user()
-Applying: fanotify: fix races when adding/removing marks
-Applying: fanotify: put duplicate code for adding vfsmount/inode marks into=
- an own function
-Applying: dnotify: replace dnotify_mark_mutex with mark mutex of dnotify_gr=
-oup
-Applying: inotify: fix race when adding a new watch
-Applying: fsnotify: update comments concerning locking scheme
-Applying: drivers/iommu/msm_iommu_dev.c: fix leak and clean up error paths
-Applying: drivers-iommu-msm_iommu_devc-fix-leak-and-clean-up-error-paths-fix
-Applying: posix_cpu_timer: consolidate expiry time type
-Applying: posix_cpu_timers: consolidate timer list cleanups
-Applying: posix_cpu_timers: consolidate expired timers check
-Applying: selftests: add basic posix timers selftests
-Applying: posix-timers: correctly get dying task time sample in posix_cpu_t=
-imer_schedule()
-Applying: posix_timers: fix racy timer delta caching on task exit
-Applying: kernel/timer.c: fix jiffies wrap behavior of round_jiffies*()
-Applying: hrtimer: one more expiry time overflow check in hrtimer_interrupt
-Applying: drivers/infiniband/core/cm.c: convert to using idr_alloc_cyclic()
-Applying: drivers/ide/delkin_cb.c: convert to module_pci_driver
-Applying: drivers/mtd/chips/gen_probe.c: refactor call to request_module()
-Applying: virtio_balloon: leak_balloon(): only tell host if we got pages de=
-flated
-Applying: configfs: use capped length for ->store_attribute()
-Applying: drivers/net/ethernet/ibm/ehea/ehea_main.c: add alias entry for po=
-rtN properties
-Applying: mISDN: add support for group membership check
-Applying: drivers/atm/he.c: convert to module_pci_driver
-Applying: isdn: clean up debug format string usage
-Applying: fs/ocfs2/dlm/dlmrecovery.c: remove duplicate declarations
-Applying: fs/ocfs2/dlm/dlmrecovery.c:dlm_request_all_locks(): ret should be=
- int instead of enum
-Applying: ocfs2: should not use le32_add_cpu to set ocfs2_dinode i_flags
-Applying: ocfs2: add missing dlm_put() in dlm_begin_reco_handler()
-Applying: ocfs2: remove unecessary variable needs_checkpoint
-Applying: ocfs2: fix mutex_unlock and possible memory leak in ocfs2_remove_=
-btree_range
-Applying: fs/ocfs2/journal.h: add bits_wanted while calculating credits in =
-ocfs2_calc_extend_credits
-Applying: fs/ocfs2/cluster/tcp.c: free sc->sc_page in sc_kref_release()
-Applying: softirq: use _RET_IP_
-Applying: include/linux/sched.h: don't use task->pid/tgid in same_thread_gr=
-oup/has_group_leader_pid
-Applying: lockdep: introduce lock_acquire_exclusive/shared helper macros
-Applying: lglock: update lockdep annotations to report recursive local locks
-Applying: drivers/scsi/a100u2w.c: convert to module_pci_driver
-Applying: drivers/scsi/dc395x.c: convert to module_pci_driver
-Applying: drivers/scsi/dmx3191d.c: convert to module_pci_driver
-Applying: drivers/scsi/initio.c: convert to module_pci_driver
-Applying: drivers/scsi/mvumi.c: convert to module_pci_driver
-Applying: drivers/net/irda/donauboe.c: convert to module_pci_driver
-Applying: drivers/cdrom/gdrom.c: fix device number leak
-Applying: block/compat_ioctl.c: do not leak info to user-space
-Applying: drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-Applying: block: do not pass disk names as format strings
-Applying: block: restore /proc/partitions to not display non-partitionable =
-removable devices
-Applying: fput: turn "list_head delayed_fput_list" into llist_head
-Applying: llist: fix/simplify llist_add() and llist_add_batch()
-Applying: llist: llist_add() can use llist_add_batch()
-Applying: watchdog: trigger all-cpu backtrace when locked up and going to p=
-anic
-Applying: crypto: sanitize argument for format string
-Applying: clear_refs: sanitize accepted commands declaration
-Applying: clear_refs: introduce private struct for mm_walk
-Applying: pagemap: introduce pagemap_entry_t without pmshift bits
-Applying: pagemap-introduce-pagemap_entry_t-without-pmshift-bits-v4
-Applying: mm: soft-dirty bits for user memory changes tracking
-Applying: soft-dirty: call mmu notifiers when write-protecting ptes
-Applying: pagemap: prepare to reuse constant bits with page-shift
-Applying: mm, memcg: don't take task_lock in task_in_mem_cgroup
-Applying: mm: remove free_area_cache
-Applying: mm: remove compressed copy from zram in-memory
-Applying: mm-remove-compressed-copy-from-zram-in-memory-fix
-Applying: non-swapcache pages in end_swap_bio_read()
-Applying: mm-remove-compressed-copy-from-zram-in-memory-fix-2-fix
-Applying: swap: add a simple detector for inappropriate swapin readahead
-Applying: swap: swapin_nr_pages() can be static
-Applying: mm: use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHIFT
-Applying: ncpfs: use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHI=
-FT
-Applying: uio: use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHIFT
-Applying: mm/page_alloc: factor out setting of pcp->high and pcp->batch
-Applying: mm/page_alloc: prevent concurrent updaters of pcp ->batch and ->h=
-igh
-Applying: mm/page_alloc: insert memory barriers to allow async update of pc=
-p batch and high
-Applying: mm/page_alloc: protect pcp->batch accesses with ACCESS_ONCE
-Applying: mm/page_alloc: convert zone_pcp_update() to rely on memory barrie=
-rs instead of stop_machine()
-Applying: mm/page_alloc: when handling percpu_pagelist_fraction, don't unne=
-edly recalulate high
-Applying: mm/page_alloc: factor setup_pageset() into pageset_init() and pag=
-eset_set_batch()
-Applying: mm/page_alloc: relocate comment to be directly above code it refe=
-rs to.
-Applying: mm/page_alloc: factor zone_pageset_init() out of setup_zone_pages=
-et()
-Applying: mm/page_alloc: in zone_pcp_update(), uze zone_pageset_init()
-Applying: mm/page_alloc: rename setup_pagelist_highmark() to match naming o=
-f pageset_set_batch()
-Applying: mm/page_alloc: don't re-init pageset in zone_pcp_update()
-Applying: thp: define HPAGE_PMD_* constants as BUILD_BUG() if !THP
-Applying: mm: vmscan: limit the number of pages kswapd reclaims at each pri=
-ority
-Applying: mm: vmscan: obey proportional scanning requirements for kswapd
-Applying: mm: vmscan: flatten kswapd priority loop
-Applying: mm: vmscan: decide whether to compact the pgdat based on reclaim =
-progress
-Applying: mm: vmscan: do not allow kswapd to scan at maximum priority
-Applying: mm: vmscan: have kswapd writeback pages based on dirty pages enco=
-untered, not priority
-Applying: mm: vmscan: block kswapd if it is encountering pages under writeb=
-ack
-Applying: mm-vmscan-block-kswapd-if-it-is-encountering-pages-under-writebac=
-k-fix
-Applying: mm-vmscan-block-kswapd-if-it-is-encountering-pages-under-writebac=
-k-fix-2
-Applying: mm: vmscan: check if kswapd should writepage once per pgdat scan
-Applying: mm: vmscan: move logic from balance_pgdat() to kswapd_shrink_zone=
-()
-Applying: mm: vmscan: stall page reclaim and writeback pages based on dirty=
-/writepage pages encountered
-Applying: mm: vmscan: stall page reclaim after a list of pages have been pr=
-ocessed
-Applying: mm: vmscan: set zone flags before blocking
-Applying: mm: vmscan: move direct reclaim wait_iff_congested into shrink_li=
-st
-Applying: mm: vmscan: treat pages marked for immediate reclaim as zone cong=
-estion
-Applying: mm: vmscan: take page buffers dirty and locked state into account
-Applying: fs: nfs: inform the VM about pages being committed or unstable
-Applying: mm: fix comment referring to non-existent size_seqlock, change to=
- span_seqlock
-Applying: mmzone: note that node_size_lock should be manipulated via pgdat_=
-resize_lock()
-Applying: memory_hotplug: use pgdat_resize_lock() in online_pages()
-Applying: memory_hotplug: use pgdat_resize_lock() in __offline_pages()
-Applying: memory_hotplug-use-pgdat_resize_lock-in-__offline_pages-fix
-Applying: include/linux/mm.h: add PAGE_ALIGNED() helper
-Applying: vmcore: clean up read_vmcore()
-Applying: vmcore: allocate buffer for ELF headers on page-size alignment
-Applying: vmcore-allocate-buffer-for-elf-headers-on-page-size-alignment-fix
-Applying: vmcore: treat memory chunks referenced by PT_LOAD program header =
-entries in page-size boundary in vmcore_list
-Applying: vmalloc: make find_vm_area check in range
-Applying: vmalloc: introduce remap_vmalloc_range_partial
-Applying: vmalloc-introduce-remap_vmalloc_range_partial-fix
-Applying: vmcore: allocate ELF note segment in the 2nd kernel vmalloc memory
-Applying: vmcore-allocate-elf-note-segment-in-the-2nd-kernel-vmalloc-memory=
--fix
-Applying: vmcore: allow user process to remap ELF note segment buffer
-Applying: vmcore-allow-user-process-to-remap-elf-note-segment-buffer-fix
-Applying: vmcore: calculate vmcore file size from buffer size and total siz=
-e of vmcore objects
-Applying: vmcore: support mmap() on /proc/vmcore
-Applying: vmcore-support-mmap-on-proc-vmcore-fix
-Applying: vmcore: disable mmap_vmcore() if CONFIG_MMU is not defined
-Applying: memcg: update TODO list in Documentation
-Applying: mm: add tracepoints for LRU activation and insertions
-Applying: mm: pagevec: defer deciding which LRU to add a page to until page=
-vec drain time
-Applying: mm: activate !PageLRU pages on mark_page_accessed if page is on l=
-ocal pagevec
-Applying: mm: remove lru parameter from __pagevec_lru_add and remove parts =
-of pagevec API
-Applying: mm: remove lru parameter from __lru_cache_add and lru_cache_add_l=
-ru
-Applying: mm: Clear page active before releasing pages
-Applying: mm/page_alloc.c: add additional checking and return value for the=
- 'table->data'
-Applying: mm/nommu.c: add additional check for vread() just like vwrite() h=
-as done
-Applying: mm/memory-failure.c: fix memory leak in successful soft offlining
-Applying: mm/memory_hotplug.c: change normal message to use pr_debug
-Applying: mm/memory-hotplug: fix lowmem count overflow when offline pages
-Applying: mm-memory-hotplug-fix-lowmem-count-overflow-when-offline-pages-fix
-Applying: mm/pageblock: remove get/set_pageblock_flags
-Applying: mm/hugetlb: remove hugetlb_prefault
-Applying: mm/hugetlb: use already existing interface huge_page_shift
-Applying: mm: tune vm_committed_as percpu_counter batching size
-Applying: mm-tune-vm_committed_as-percpu_counter-batching-size-fix
-Applying: swap: discard while swapping only if SWAP_FLAG_DISCARD_PAGES
-Applying: swap-discard-while-swapping-only-if-swap_flag_discard_pages-fix
-Applying: mm: change signature of free_reserved_area() to fix building warn=
-ings
-Applying: mm: enhance free_reserved_area() to support poisoning memory with=
- zero
-Applying: mm/ARM64: kill poison_init_mem()
-Applying: mm/x86: use free_reserved_area() to simplify code
-Applying: mm/tile: use common help functions to free reserved pages
-Applying: mm: fix some trivial typos in comments
-Applying: mm: use managed_pages to calculate default zonelist order
-Applying: mm: accurately calculate zone->managed_pages for highmem zones
-Applying: mm: use a dedicated lock to protect totalram_pages and zone->mana=
-ged_pages
-Applying: mm-use-a-dedicated-lock-to-protect-totalram_pages-and-zone-manage=
-d_pages-fix
-Applying: mm: make __free_pages_bootmem() only available at boot time
-Applying: mm: correctly update zone->managed_pages
-Applying: mm-correctly-update-zone-managed_pages-fix
-Applying: mm-correctly-update-zone-managed_pages-fix-fix
-Applying: mm-correctly-update-zone-managed_pages-fix-fix-fix
-Applying: mm: concentrate modification of totalram_pages into the mm core
-Applying: mm: report available pages as "MemTotal" for each NUMA node
-Applying: memcg: Kconfig info update
-Applying: mm: Fix the TLB range flushed when __tlb_remove_page() runs out o=
-f slots
-Applying: vmlinux.lds: add comments for global variables and clean up usele=
-ss declarations
-Applying: avr32: normalize global variables exported by vmlinux.lds
-Applying: c6x: normalize global variables exported by vmlinux.lds
-Applying: h8300: normalize global variables exported by vmlinux.lds
-Applying: score: normalize global variables exported by vmlinux.lds
-Applying: tile: normalize global variables exported by vmlinux.lds
-Applying: UML: normalize global variables exported by vmlinux.lds
-Applying: mm: introduce helper function mem_init_print_info() to simplify m=
-em_init()
-Applying: mm: use totalram_pages instead of num_physpages at runtime
-Applying: mm/hotplug: prepare for removing num_physpages
-Applying: mm/alpha: prepare for removing num_physpages and simplify mem_ini=
-t()
-Applying: mm/ARC: prepare for removing num_physpages and simplify mem_init()
-Applying: mm/ARM: prepare for removing num_physpages and simplify mem_init()
-Applying: mm/ARM64: prepare for removing num_physpages and simplify mem_ini=
-t()
-Applying: mm/AVR32: prepare for removing num_physpages and simplify mem_ini=
-t()
-Applying: mm/blackfin: prepare for removing num_physpages and simplify mem_=
-init()
-Applying: mm/c6x: prepare for removing num_physpages and simplify mem_init()
-Applying: mm/cris: prepare for removing num_physpages and simplify mem_init=
-()
-Applying: mm/frv: prepare for removing num_physpages and simplify mem_init()
-Applying: mm/h8300: prepare for removing num_physpages and simplify mem_ini=
-t()
-Applying: mm/hexagon: prepare for removing num_physpages and simplify mem_i=
-nit()
-Applying: mm/IA64: prepare for removing num_physpages and simplify mem_init=
-()
-Applying: mm/m32r: prepare for removing num_physpages and simplify mem_init=
-()
-Applying: mm/m68k: prepare for removing num_physpages and simplify mem_init=
-()
-Applying: mm/metag: prepare for removing num_physpages and simplify mem_ini=
-t()
-Applying: mm/microblaze: prepare for removing num_physpages and simplify me=
-m_init()
-Applying: mm, arch: fix two errors in calling mem_init_print_info()
-Applying: mm/MIPS: prepare for removing num_physpages and simplify mem_init=
-()
-Applying: mm/mn10300: prepare for removing num_physpages and simplify mem_i=
-nit()
-Applying: mm/openrisc: prepare for removing num_physpages and simplify mem_=
-init()
-Applying: mm/PARISC: prepare for removing num_physpages and simplify mem_in=
-it()
-Applying: mm/ppc: prepare for removing num_physpages and simplify mem_init()
-Applying: mm/s390: prepare for removing num_physpages and simplify mem_init=
-()
-Applying: mm/score: prepare for removing num_physpages and simplify mem_ini=
-t()
-Applying: mm/SH: prepare for removing num_physpages and simplify mem_init()
-Applying: mm/SPARC: prepare for removing num_physpages and simplify mem_ini=
-t()
-Applying: mm/tile: prepare for removing num_physpages and simplify mem_init=
-()
-Applying: mm/um: prepare for removing num_physpages and simplify mem_init()
-Applying: mm/unicore32: prepare for removing num_physpages and simplify mem=
-_init()
-Applying: mm/x86: prepare for removing num_physpages and simplify mem_init()
-Applying: mm/xtensa: prepare for removing num_physpages and simplify mem_in=
-it()
-Applying: mm: kill global variable num_physpages
-Applying: mm: introduce helper function set_max_mapnr()
-Applying: mm/AVR32: prepare for killing free_all_bootmem_node()
-Applying: mm/IA64: prepare for killing free_all_bootmem_node()
-Applying: mm/m32r: prepare for killing free_all_bootmem_node()
-Applying: mm/m68k: prepare for killing free_all_bootmem_node()
-Applying: mm/metag: prepare for killing free_all_bootmem_node()
-Applying: mm/MIPS: prepare for killing free_all_bootmem_node()
-Applying: mm/PARISC: prepare for killing free_all_bootmem_node()
-Applying: mm/PPC: prepare for killing free_all_bootmem_node()
-Applying: mm/SH: prepare for killing free_all_bootmem_node()
-Applying: mm: kill free_all_bootmem_node()
-Applying: mm/alpha: unify mem_init() for both UMA and NUMA architectures
-Applying: mm/m68k: fix build warning of unused variable
-Applying: mm/ALPHA: clean up unused VALID_PAGE()
-Applying: mm/ARM: fix stale comment about VALID_PAGE()
-Applying: mm/CRIS: clean up unused VALID_PAGE()
-Applying: mm/microblaze: clean up unused VALID_PAGE()
-Applying: mm/unicore32: fix stale comment about VALID_PAGE()
-Applying: sparsemem: add BUILD_BUG_ON when sizeof mem_section is non-power-=
-of-2
-Applying: documentation: update address_space_operations
-Applying: documentation: document the is_dirty_writeback aops callback
-Applying: fs/fs-writeback.c: : make wb_do_writeback() as static
-Applying: mm, vmalloc: only call setup_vmalloc_vm() only in __get_vm_area_n=
-ode()
-Applying: mm, vmalloc: call setup_vmalloc_vm() instead of insert_vmalloc_vm=
-()
-Applying: mm, vmalloc: remove insert_vmalloc_vm()
-Applying: mm, vmalloc: use clamp() to simplify code
-Applying: mm: memcontrol: factor out reclaim iterator loading and updating
-Applying: fs: bump inode and dentry counters to long
-Applying: super: fix calculation of shrinkable objects for small numbers
-Applying: dcache: convert dentry_stat.nr_unused to per-cpu counters
-Applying: dentry: move to per-sb LRU locks
-Applying: dcache: remove dentries from LRU before putting on dispose list
-Applying: mm: new shrinker API
-Applying: shrinker: convert superblock shrinkers to new API
-Applying: shrinker-convert-superblock-shrinkers-to-new-api-fix
-Applying: list: add a new LRU list type
-Applying: inode: convert inode lru list to generic lru list code.
-Applying: dcache: convert to use new lru list infrastructure
-Applying: list_lru: per-node list infrastructure
-Applying: list_lru: per-node API
-Applying: shrinker: add node awareness
-Applying: vmscan: per-node deferred work
-Applying: fs: convert inode and dentry shrinking to be node aware
-Applying: xfs: convert buftarg LRU to generic code
-Applying: xfs-convert-buftarg-lru-to-generic-code-fix
-Applying: xfs: rework buffer dispose list tracking
-Applying: xfs: convert dquot cache lru to list_lru
-Applying: xfs-convert-dquot-cache-lru-to-list_lru-fix
-Applying: fs: convert fs shrinkers to new scan/count API
-Applying: fs-convert-fs-shrinkers-to-new-scan-count-api-fix
-Applying: UBIFS: signedness bug in ubifs_shrink_count()
-Applying: drivers: convert shrinkers to new count/scan API
-Applying: drivers-convert-shrinkers-to-new-count-scan-api-fix
-Applying: drivers-convert-shrinkers-to-new-count-scan-api-fix-2
-Applying: i915: bail out earlier when shrinker cannot acquire mutex
-Applying: shrinker: convert remaining shrinkers to count/scan API
-Applying: shrinker-convert-remaining-shrinkers-to-count-scan-api-fix
-Applying: hugepage: convert huge zero page shrinker to new shrinker API
-Applying: hugepage-convert-huge-zero-page-shrinker-to-new-shrinker-api-fix
-Applying: shrinker: Kill old ->shrink API.
-Applying: shrinker-kill-old-shrink-api-fix
-Applying: list_lru: dynamically adjust node arrays
-Applying: mm: mremap: validate input before taking lock
-Applying: memcg: clean up memcg->nodeinfo
-Applying: mm: invoke oom-killer from remaining unconverted page fault handl=
-ers
-Applying: mm: remove duplicated call of get_pfn_range_for_nid
-Applying: mm-remove-duplicated-call-of-get_pfn_range_for_nid-v2
-Applying: mm-remove-duplicated-call-of-get_pfn_range_for_nid-v2-fix
-Applying: mm/vmalloc.c: unbreak __vunmap()
-Applying: mm/vmalloc.c: remove dead code in vb_alloc
-Applying: mm/vmalloc.c: remove unused purge_fragmented_blocks_thiscpu
-Applying: mm/vmalloc.c: remove alloc_map from vmap_block
-Applying: mm/vmalloc.c: emit the failure message before return
-Applying: mm/vmalloc.c: rename VM_UNLIST to VM_UNINITIALIZED
-Applying: mm/vmalloc.c: check VM_UNINITIALIZED flag in s_show instead of sh=
-ow_numa_info
-Applying: memcg: also test for skip accounting at the page allocation level
-Applying: memcg: do not account memory used for cache creation
-Applying: include/linux/gfp.h: fix the comment for GFP_ZONE_TABLE
-Applying: zbud: add to mm/
-Applying: zswap: init under_reclaim
-Applying: zswap: add to mm/
-Applying: zswap: add documentation
-Applying: MAINTAINERS: add zswap and zbud maintainer
-Applying: mm/page_alloc.c: remove zone_type argument of build_zonelists_node
-Applying: mm: remove unused functions is_{normal_idx, normal, dma32, dma}
-Applying: mm/page_alloc.c: remove unlikely() from the current_order test
-Applying: vfree: don't schedule free_work() if llist_add() returns false
-Applying: mm: remove unused __put_page()
-Applying: mm/sparse.c: put clear_hwpoisoned_pages within CONFIG_MEMORY_HOTR=
-EMOVE
-Applying: include/linux/mmzone.h: cleanups
-Applying: mm: memmap_init_zone() performance improvement
-Applying: drop_caches: add some documentation and info message
-Applying: drivers/usb/gadget/amd5536udc.c: avoid calling dma_pool_create() =
-with NULL dev
-Applying: mm/dmapool.c: fix null dev in dma_pool_create()
-Applying: mm: add vm event counters for balloon pages compaction
-Applying: arch/frv/kernel/traps.c: using vsnprintf() instead of vsprintf()
-Applying: arch/frv/kernel/setup.c: use strncmp() instead of memcmp()
-Applying: err.h: IS_ERR() can accept __user pointers
-Applying: clean up scary strncpy(dst, src, strlen(src)) uses
-Applying: clean-up-scary-strncpydst-src-strlensrc-uses-fix
-Applying: drivers: avoid format string in dev_set_name
-Applying: drivers: avoid format strings in names passed to alloc_workqueue()
-Applying: drivers: avoid parsing names as kthread_run() format strings
-Applying: dump_stack: serialize the output from dump_stack()
-Applying: dump_stack-serialize-the-output-from-dump_stack-fix
-Applying: panic: add cpu/pid to warn_slowpath_common in WARNING printk()s
-Applying: panic-add-cpu-pid-to-warn_slowpath_common-in-warning-printks-fix
-Applying: kernel/sys.c: sys_reboot(): fix malformed panic message
-Applying: kernel/sys.c:do_sysinfo(): use get_monotonic_boottime()
-Applying: dmi: add support for exact DMI matches in addition to substring m=
-atching
-Applying: drm/i915: quirk away phantom LVDS on Intel's D510MO mainboard
-Applying: drm/i915: quirk away phantom LVDS on Intel's D525MW mainboard
-Applying: smp: Give WARN()ing when calling smp_call_function_many()/single(=
-) in serving irq
-Applying: drivers/misc/sgi-gru/grufault.c: fix a sanity test in gru_set_con=
-text_option()
-Applying: MAINTAINERS: fix tape driver file mappings
-Applying: backlight: atmel-pwm-bl: remove unnecessary platform_set_drvdata()
-Applying: backlight: ep93xx: remove unnecessary platform_set_drvdata()
-Applying: backlight: lp8788: remove unnecessary platform_set_drvdata()
-Applying: backlight: pcf50633: remove unnecessary platform_set_drvdata()
-Applying: backlight: add devm_backlight_device_{register,unregister}()
-Applying: lcd: add devm_lcd_device_{register,unregister}()
-Applying: MAINTAINERS: add Backlight subsystem co-maintainer
-Applying: backlight: convert from legacy pm ops to dev_pm_ops
-Applying: backlight: add CONFIG_PM_SLEEP to suspend/resume functions
-Applying: rbtree: remove unneeded include
-Applying: rbtree-remove-unneeded-include-fix
-Applying: radeon: remove redundant __list_for_each definition from mkregtab=
-le.c
-Applying: ipw2200: convert __list_for_each usage to list_for_each
-Applying: list: remove __list_for_each()
-Applying: checkpatch: change CamelCase test and make it --strict
-Applying: checkpatch: warn when using gcc's binary constant ("0b") extension
-Applying: checkpatch: add --strict preference for p =3D kmalloc(sizeof(*p).=
-..
-Applying: checkpatch: remove quote from CamelCase test
-Applying: checkpatch: improve network block comment test and message
-Applying: checkpatch: warn when networking block comment lines don't start =
-with *
-Applying: checkpatch: warn on comparisons to jiffies
-Applying: checkpatch: warn on comparisons to get_jiffies_64()
-Applying: checkpatch: reduce false positive rate of "complex macros"
-Applying: checkpatch: add a placeholder to check blank lines before declara=
-tions
-Applying: checkpatch: don't warn on blank lines before/after braces as often
-Applying: checkpatch: add a --strict test for comparison to true/false
-Applying: checkpatch: improve "no space after cast" test
-Applying: checkpatch: create an EXPERIMENTAL --fix option to correct patches
-Applying: checkpatch: move test for space before semicolon after operator s=
-pacing
-Applying: checkpatch: ignore SI unit CamelCase variants like "_uV"
-Applying: binfmt_elf.c: use get_random_int() to fix entropy depleting
-Applying: init: remove permanent string buffer from do_one_initcall()
-Applying: insert missing space in printk line of root_delay
-Applying: kprobes: handle empty/invalid input to debugfs "enabled" file
-Applying: autofs4: allow autofs to work outside the initial PID namespace
-Applying: autofs4: translate pids to the right namespace for the daemon
-Applying: rtc: rtc-88pm80x: remove unnecessary platform_set_drvdata()
-Applying: drivers/rtc/rtc-v3020.c: remove redundant goto
-Applying: drivers/rtc/interface.c: fix checkpatch errors
-Applying: drivers/rtc/rtc-at32ap700x.c: fix checkpatch error
-Applying: drivers/rtc/rtc-at91rm9200.c: include <linux/uaccess.h>
-Applying: drivers/rtc/rtc-cmos.c: fix whitespace related errors
-Applying: drivers/rtc/rtc-davinci.c: fix whitespace warning
-Applying: drivers/rtc/rtc-ds1305.c: add missing braces around sizeof
-Applying: drivers/rtc/rtc-ds1374.c: fix spacing related issues
-Applying: drivers/rtc/rtc-ds1511.c: fix issues related to spaces and braces
-Applying: drivers/rtc/rtc-ds3234.c: fix whitespace issue
-Applying: drivers/rtc/rtc-fm3130.c: fix whitespace related issue
-Applying: drivers/rtc/rtc-m41t80.c: fix spacing related issue
-Applying: drivers/rtc/rtc-max6902.c: remove unwanted spaces
-Applying: drivers/rtc/rtc-max77686.c: remove space before semicolon
-Applying: drivers/rtc/rtc-max8997.c: remove space before semicolon
-Applying: drivers/rtc/rtc-mpc5121.c: remove space before tab
-Applying: drivers/rtc/rtc-msm6242.c: use pr_warn
-Applying: drivers/rtc/rtc-mxc.c: fix checkpatch error
-Applying: drivers/rtc/rtc-omap.c: include <linux/io.h> instead of <asm/io.h>
-Applying: drivers/rtc/rtc-pcf2123.c: remove space before tabs
-Applying: drivers/rtc/rtc-pcf8583.c: move assignment outside if condition
-Applying: drivers/rtc/rtc-rs5c313.c: include <linux/io.h> instead of <asm/i=
-o.h>
-Applying: drivers/rtc/rtc-rs5c313.c: fix spacing related issues
-Applying: drivers/rtc/rtc-v3020.c: fix spacing issues
-Applying: drivers/rtc/rtc-vr41xx.c: fix spacing issues
-Applying: drivers/rtc/rtc-x1205.c: fix checkpatch issues
-Applying: rtc: rtc-88pm860x: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-ab3100: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-ab8500: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-at32ap700x: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-at91rm9200: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-at91sam9: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-au1xxx: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-bfin: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-bq4802: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-coh901331: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-da9052: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-da9055: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-davinci: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-dm355evm: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-ds1302: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-ep93xx: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-jz4740: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-lp8788: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-lpc32xx: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-ls1x: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-m48t59: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-max8925: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-max8998: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-mc13xxx: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-msm6242: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-mxc: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-nuc900: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-pcap: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-pm8xxx: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-s3c: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-sa1100: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-sh: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-spear: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-stmp3xxx: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-twl: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-vr41xx: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-vt8500: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-m48t86: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-puv3: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-rp5c01: remove unnecessary platform_set_drvdata()
-Applying: rtc: rtc-tile: remove unnecessary platform_set_drvdata()
-Applying: drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
-Applying: drivers/rtc/rtc-m48t86.c: remove empty function
-Applying: drivers/rtc/rtc-tile.c: remove empty function
-Applying: drivers/rtc/rtc-nuc900.c: remove empty function
-Applying: drivers/rtc/rtc-msm6242.c: remove empty function
-Applying: drivers/rtc/rtc-max8998.c: remove empty function
-Applying: drivers/rtc/rtc-max8925.c: remove empty function
-Applying: drivers/rtc/rtc-ls1x.c: remove empty function
-Applying: drivers/rtc/rtc-lp8788.c: remove empty function
-Applying: drivers/rtc/rtc-ds1302.c: remove empty function
-Applying: drivers/rtc/rtc-dm355evm.c: remove empty function
-Applying: drivers/rtc/rtc-da9055.c: remove empty function
-Applying: drivers/rtc/rtc-da9052.c: remove empty function
-Applying: drivers/rtc/rtc-bq4802.c: remove empty function
-Applying: drivers/rtc/rtc-au1xxx.c: remove empty function
-Applying: drivers/rtc/rtc-ab3100.c: remove empty function
-Applying: rtc: rtc-hid-sensor-time: allow full years (16bit) in HID reports
-Applying: rtc: rtc-hid-sensor-time: allow 16 and 32 bit values for all attr=
-ibutes.
-Applying: rtc: add ability to push out an existing wakealarm using sysfs
-Applying: drivers/rtc/rtc-vr41xx.c: fix error return code in rtc_probe()
-Applying: rtc: rtc-ds1307: use devm_*() functions
-Applying: rtc: rtc-jz4740: use devm_*() functions
-Applying: rtc: rtc-mpc5121: use devm_*() functions
-Applying: rtc: rtc-m48t59: use devm_*() functions
-Applying: rtc: rtc-pm8xxx: use devm_*() functions
-Applying: rtc: rtc-pxa: use devm_*() functions
-Applying: rtc: rtc-rx8025: use devm_*() functions
-Applying: rtc: rtc-sh: use devm_*() functions
-Applying: rtc: rtc-coh901331: use platform_{get,set}_drvdata()
-Applying: rtc: rtc-rc5t583: use platform_{get,set}_drvdata()
-Applying: drivers/rtc/rtc-bq32k.c: remove empty function
-Applying: drivers/rtc/rtc-ds1216.c: remove empty function
-Applying: drivers/rtc/rtc-ds1286.c: remove empty function
-Applying: drivers/rtc/rtc-ds1672.c: remove empty function
-Applying: drivers/rtc/rtc-ds3234.c: remove empty function
-Applying: drivers/rtc/rtc-ds1390.c: remove empty function
-Applying: drivers/rtc/rtc-efi.c: remove empty function
-Applying: drivers/rtc/rtc-em3027.c: remove empty function
-Applying: drivers/rtc/rtc-fm3130.c: remove empty function
-Applying: drivers/rtc/rtc-isl12022.c: remove empty function
-Applying: drivers/rtc/rtc-m41t93.c: remove empty function
-Applying: drivers/rtc/rtc-m48t35.c: remove empty function
-Applying: drivers/rtc/rtc-generic.c: remove empty function
-Applying: drivers/rtc/rtc-m41t94.c: remove empty function
-Applying: drivers/rtc/rtc-max6902.c: remove empty function
-Applying: drivers/rtc/rtc-max6900.c: remove empty function
-Applying: drivers/rtc/rtc-max8907.c: remove empty function
-Applying: drivers/rtc/rtc-max77686.c: remove empty function
-Applying: drivers/rtc/rtc-max8997.c: remove empty function
-Applying: drivers/rtc/rtc-pcf8523.c: remove empty function
-Applying: drivers/rtc/rtc-pcf8563.c: remove empty function
-Applying: drivers/rtc/rtc-pcf8583.c: remove empty function
-Applying: drivers/rtc/rtc-ps3.c: remove empty function
-Applying: drivers/rtc/rtc-rs5c313.c: remove empty function
-Applying: drivers/rtc/rtc-rv3029c2.c: remove empty function
-Applying: drivers/rtc/rtc-rx4581.c: remove empty function
-Applying: drivers/rtc/rtc-rs5c348.c: remove empty function
-Applying: drivers/rtc/rtc-rx8581.c: remove empty function
-Applying: drivers/rtc/rtc-snvs.c: remove empty function
-Applying: drivers/rtc/rtc-starfire.c: remove empty function
-Applying: drivers/rtc/rtc-sun4v.c: remove empty function
-Applying: drivers/rtc/rtc-tps80031.c: remove empty function
-Applying: drivers/rtc/rtc-wm831x.c: remove empty function
-Applying: drivers/rtc/rtc-ab8500.c: add second resolution to rtc driver
-Applying: drivers/rtc/rtc-ds1302.c: handle write protection
-Applying: drivers/rtc/rtc-mpc5121.c: use platform_{get,set}_drvdata()
-Applying: drivers/rtc/rtc-da9052.c: use PTR_RET()
-Applying: drivers/rtc/rtc-isl12022.c: use PTR_RET()
-Applying: drivers/rtc/rtc-m48t35.c: use PTR_RET()
-Applying: drivers/rtc/rtc-pcf8563.c: use PTR_RET()
-Applying: drivers/rtc/rtc-pcf8583.c: use PTR_RET()
-Applying: drivers/rtc/rtc-twl.c: ensure IRQ is wakeup enabled
-Applying: drivers/rtc/rtc-cmos.c: work around bios clearing rtc control
-Applying: drivers/rtc/rtc-twl.c: fix rtc_reg_map initialization
-Applying: drivers/rtc/rtc-twl.c: cleanup with module_platform_driver() conv=
-ersion
-Applying: drivers/rtc/interface.c: return -EBUSY, not -EACCES when device i=
-s busy
-Applying: drivers/rtc/rtc-pcf2123.c: replace strict_strtoul() with kstrtoul=
-()
-Applying: drivers/rtc/class: convert from Legacy pm ops to dev_pm_ops
-Applying: minix: bug widening a binary "not" operation
-Applying: nilfs2: implement calculation of free inodes count
-Applying: ] nilfs2: use atomic64_t type for inodes_count and blocks_count f=
-ields in nilfs_root struct
-Applying: fs/fat: use fat_msg() to replace printk() in __fat_fs_error()
-Applying: fat: additions to support fat_fallocate
-Applying: fat-additions-to-support-fat_fallocate-fix
-Applying: Documentation/CodingStyle: allow multiple return statements per f=
-unction
-Applying: docbook: add futexes to kernel-locking docbook
-Applying: ptrace/x86: revert "hw_breakpoints: Fix racy access to ptrace bre=
-akpoints"
-Applying: ptrace/powerpc: revert "hw_breakpoints: Fix racy access to ptrace=
- breakpoints"
-Applying: ptrace/arm: revert "hw_breakpoints: Fix racy access to ptrace bre=
-akpoints"
-Applying: ptrace/sh: revert "hw_breakpoints: Fix racy access to ptrace brea=
-kpoints"
-Applying: ptrace: revert "Prepare to fix racy accesses on task breakpoints"
-Applying: ptrace/x86: simplify the "disable" logic in ptrace_write_dr7()
-Applying: ptrace/x86: dont delay "disable" till second pass in ptrace_write=
-_dr7()
-Applying: ptrace/x86: introduce ptrace_register_breakpoint()
-Applying: ptrace/x86: ptrace_write_dr7() should create bp if !disabled
-Applying: ptrace/x86: cleanup ptrace_set_debugreg()
-Applying: ptrace: PTRACE_DETACH should do flush_ptrace_hw_breakpoint(child)
-Applying: ptrace/x86: flush_ptrace_hw_breakpoint() shoule clear the virtual=
- debug registers
-Applying: x86: kill TIF_DEBUG
-Applying: ptrace: add ability to get/set signal-blocked mask
-Applying: ptrace-add-ability-to-get-set-signal-blocked-mask-fix
-Applying: usermodehelper: kill the sub_info->path[0] check
-Applying: coredump: format_corename() can leak cn->corename
-Applying: coredump: introduce cn_vprintf()
-Applying: coredump: cn_vprintf() has no reason to call vsnprintf() twice
-Applying: coredump: kill cn_escape(), introduce cn_esc_printf()
-Applying: coredump: kill call_count, add core_name_size
-Applying: coredump: '% at the end' shouldn't bypass core_uses_pid logic
-Applying: coredump: avoid the uninitialized cn->corename if core_pattern is=
- empty
-Applying: fs/exec.c:de_thread(): use change_pid() rather than detach_pid/at=
-tach_pid
-Applying: move-exit_task_namespaces-outside-of-exit_notify-fix
-Applying: exit.c: unexport __set_special_pids()
-Applying: fs/proc/uptime.c:uptime_proc_show(): use get_monotonic_boottime()
-Applying: fork: reorder permissions when violating number of processes limi=
-ts
-Applying: kernel/fork.c:copy_process(): unify CLONE_THREAD-or-thread_group_=
-leader code
-Applying: kernel/fork.c:copy_process(): don't add the uninitialized child t=
-o thread/task/pid lists
-Applying: kernel/fork.c:copy_process(): consolidate the lockless CLONE_THRE=
-AD checks
-Applying: fs/exec.c: do_execve_common(): use current_user()
-Applying: fs/exec.c:de_thread: mt-exec should update ->real_start_time
-Applying: /dev/oldmem: Remove the interface
-Applying: dev-oldmem-remove-the-interface-fix
-Applying: Documentation/kdump/kdump.txt: remove /dev/oldmem description
-Applying: mips: remove savemaxmem parameter setup
-Applying: powerpc: Remove savemaxmem parameter setup
-Applying: ia64: remove setting for saved_max_pfn
-Applying: s390: remove setting for saved_max_pfn
-Applying: idr: print a stack dump after ida_remove warning
-Applying: idr-print-a-stack-dump-after-ida_remove-warning-fix
-Applying: ipc/shmc.c: eliminate ugly 80-col tricks
-Applying: ipc: move rcu lock out of ipc_addid
-Applying: ipc: restore rcu locking in ipc_addid
-Applying: ipc: introduce ipc object locking helpers
-Applying: ipc: close open coded spin lock calls
-Applying: ipc: move locking out of ipcctl_pre_down_nolock
-Applying: ipc,msg: shorten critical region in msgctl_down
-Applying: ipc,msg: introduce msgctl_nolock
-Applying: ipc,msg: introduce lockless functions to obtain the ipc object
-Applying: ipc,msg: make msgctl_nolock lockless
-Applying: ipc,msg: shorten critical region in msgsnd
-Applying: ipc,msg: shorten critical region in msgrcv
-Applying: ipc: remove unused functions
-Applying: ipc/util.c, ipc_rcu_alloc: cacheline align allocation
-Applying: ipc-utilc-ipc_rcu_alloc-cacheline-align-allocation-checkpatch-fix=
-es
-Applying: ipc/sem.c: cacheline align the semaphore structures
-Applying: ipc/sem: separate wait-for-zero and alter tasks into seperate que=
-ues
-Applying: ipc/sem.c: scan complex wait-for-zero after undefined updates
-Applying: ipc/sem.c: always use only one queue for alter operations
-Applying: ipc/sem.c: replace shared sem_otime with per-semaphore value
-Applying: ipc/sem.c: rename try_atomic_semop() to perform_atomic_semop(), d=
-ocu update
-Applying: mwave: fix info leak in mwave_ioctl()
-Applying: partitions/msdos.c: end-of-line whitespace and semicolon cleanup
-Applying: partitions: add aix lvm partition support files
-Applying: partitions-add-aix-lvm-partition-support-files-v2
-Applying: partitions-add-aix-lvm-partition-support-files-checkpatch-fixes
-Applying: partitions-add-aix-lvm-partition-support-files: compile aix.c if =
-configured
-Applying: partitions-add-aix-lvm-partition-support-files: add the AIX_PARTI=
-TION entry
-Applying: partitions/msdos: enumerate also AIX LVM partitions
-Applying: rapidio/switches: remove tsi500 driver
-Applying: drivers/rapidio/rio-scan.c: make functions static
-Applying: kernel/pid.c: move statement
-Applying: nbd: remove bogus BUG_ON in NBD_CLEAR_QUE
-Applying: Documentation/accounting/getdelays.c: avoid strncpy in accounting=
- tool
-Applying: documentation-accounting-getdelaysc-avoid-strncpy-in-accounting-t=
-ool-fix
-Applying: drivers/parport/share.c: use kzalloc
-Applying: drivers/pps/clients/pps-gpio.c: convert to devm_* helpers
-Applying: drivers/pps/clients/pps-gpio.c: convert to module_platform_driver
-Applying: pps-gpio: add device-tree binding and support
-Applying: drivers/memstick/host/jmb38x_ms: convert to module_pci_driver
-Applying: drivers/memstick/host/r592.c: convert to module_pci_driver
-Applying: drivers/w1/slaves/w1_ds2408.c: add magic sequence to disable P0 t=
-est mode
-Applying: drivers-w1-slaves-w1_ds2408c-add-magic-sequence-to-disable-p0-tes=
-t-mode-fix
-Applying: relay: fix timer madness
-Applying: kernel/resource.c: remove the unneeded assignment in function __f=
-ind_resource
-Applying: reboot: remove -stable friendly PF_THREAD_BOUND define
-Applying: reboot: move shutdown/reboot related functions to kernel/reboot.c
-Applying: reboot: checkpatch.pl the new kernel/reboot.c file
-Applying: reboot: x86: prepare reboot_mode for moving to generic kernel code
-Applying: reboot: unicore32: prepare reboot_mode for moving to generic kern=
-el code
-Applying: reboot: arm: remove unused restart_mode fields from some arm suba=
-rchs
-Applying: reboot: arm: prepare reboot_mode for moving to generic kernel code
-Applying: reboot: arm: change reboot_mode to use enum reboot_mode
-Applying: reboot-arm-change-reboot_mode-to-use-enum-reboot_mode-fix
-Applying: reboot: move arch/x86 reboot=3D handling to generic kernel
-Applying: lib: add weak clz/ctz functions
-Applying: decompressor: add LZ4 decompressor module
-Applying: lib: add support for LZ4-compressed kernel
-Applying: kbuild: fix for updated LZ4 tool with the new streaming format
-Applying: arm: add support for LZ4-compressed kernel
-Applying: arm: Remove enforced Os flag for LZ4 decompressor
-Applying: x86: add support for LZ4-compressed kernel
-Applying: x86, doc: Add LZ4 magic number for the new compression
-Applying: lib: add lz4 compressor module
-Applying: lib-add-lz4-compressor-module-fix
-Applying: crypto: add lz4 Cryptographic API
-Applying: crypto-add-lz4-cryptographic-api-fix
-Applying: scripts/sortextable.c: fix building on non-Linux systems
-Applying: staging/lustre/ldlm: convert to shrinkers to count/scan API
-Applying: staging/lustre/obdclass: convert lu_object shrinker to count/scan=
- API
-Applying: staging/lustre/ptlrpc: convert to new shrinker API
-Applying: staging/lustre/libcfs: cleanup linux-mem.h
-Applying: staging/lustre: replace num_physpages with totalram_pages
-Merging akpm/master (4e0b996 staging/lustre: replace num_physpages with tot=
-alram_pages)
-
---Signature=_Mon__24_Jun_2013_17_03_25_+1000_lD4UDozUgKYdeXyo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRx+9CAAoJEECxmPOUX5FEYBQQAIJKwj/wa0njg9LCFmRfnXhZ
-px7N/W6TIg8/UkYDPLft2UqmJ9S4phaEPheRkEreb758XRcbnm3u727rOwqDjOn2
-uAgbeJAHSMca9ded9eysu9zDnuJuAejStdIfLaoPXOcGm2JT3qI45RU7xsQ0KGJD
-QD2ayDhzxdkot2pK9p67H2Xm50tlDa0Z8eVa1VRlFdUcpYFzoBIOs5v7SeCwRRrU
-BMmljVfVXPgPKr4IvOmMpmQRQ40ZWy6m73zqs2B/wST9qos5JXKoSECp/31+2jUw
-fFk52EpBCoYC+4fCgXzN+G7n0JAkWWmyyHSOcVrJCf2j0JyRDIpsKttBr0KpPuY0
-0UlJ4oXiL24XZxDCSqNNt04G4kPtbDZx4QOIumVVCCQNPrHUKiRodgcrRoZtG4+B
-taBr7JaewQ56w1hKWD00mIT+/2tie8WarNSEGPHvYJAH81+2ppn5KnSMbz56uGB5
-nCfydt0RUHZ4XyGJvrx+sWoJp4wUBLgrpwCjsTt7Vtv2fdFmjvB7MZBQMX71hJ8N
-aowj6XZ2QgGsqluL2yGLdIlUMtiF0GHz7xUOvNAJTENFQZ86x+hBAPDZ1j3Qfixs
-X2K/LxVJ+2IWq7PnEoCof/pe9PpCLw0HqkyIyVrEfbjT6dL7vkAuFysSFKgUyRdN
-QAIu6b1Qy+N6gWgjNQNX
-=U04H
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Jun_2013_17_03_25_+1000_lD4UDozUgKYdeXyo--
+CONFIG_64BIT=y
+CONFIG_X86_64=y
+CONFIG_X86=y
+CONFIG_INSTRUCTION_DECODER=y
+CONFIG_OUTPUT_FORMAT="elf64-x86-64"
+CONFIG_ARCH_DEFCONFIG="arch/x86/configs/x86_64_defconfig"
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_MMU=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_NEED_SG_DMA_LENGTH=y
+CONFIG_GENERIC_ISA_DMA=y
+CONFIG_GENERIC_BUG=y
+CONFIG_GENERIC_BUG_RELATIVE_POINTERS=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_ARCH_MAY_HAVE_PC_FDC=y
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_ARCH_HAS_CPU_RELAX=y
+CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
+CONFIG_ARCH_HAS_CPU_AUTOPROBE=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+CONFIG_ZONE_DMA32=y
+CONFIG_AUDIT_ARCH=y
+CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_X86_64_SMP=y
+CONFIG_X86_HT=y
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11"
+CONFIG_ARCH_SUPPORTS_UPROBES=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_IRQ_WORK=y
+CONFIG_BUILDTIME_EXTABLE_SORT=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+CONFIG_LOCALVERSION=""
+CONFIG_LOCALVERSION_AUTO=y
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_BZIP2=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_XZ=y
+CONFIG_HAVE_KERNEL_LZO=y
+CONFIG_KERNEL_GZIP=y
+CONFIG_DEFAULT_HOSTNAME="(none)"
+CONFIG_SWAP=y
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_HAVE_GENERIC_HARDIRQS=y
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_GENERIC_PENDING_IRQ=y
+CONFIG_IRQ_FORCED_THREADING=y
+CONFIG_SPARSE_IRQ=y
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_ARCH_CLOCKSOURCE_DATA=y
+CONFIG_GENERIC_TIME_VSYSCALL=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+CONFIG_GENERIC_CMOS_UPDATE=y
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ_COMMON=y
+CONFIG_NO_HZ_IDLE=y
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_TICK_CPU_ACCOUNTING=y
+CONFIG_TASKSTATS=y
+CONFIG_TASK_DELAY_ACCT=y
+CONFIG_TASK_XACCT=y
+CONFIG_TASK_IO_ACCOUNTING=y
+CONFIG_TREE_RCU=y
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=64
+CONFIG_RCU_FANOUT_LEAF=16
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+CONFIG_LOG_BUF_SHIFT=16
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+CONFIG_ARCH_WANTS_PROT_NUMA_PROT_NONE=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_SCHED=y
+CONFIG_FAIR_GROUP_SCHED=y
+CONFIG_NAMESPACES=y
+CONFIG_UIDGID_CONVERTED=y
+CONFIG_SCHED_AUTOGROUP=y
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_HAVE_UID16=y
+CONFIG_SYSCTL_EXCEPTION_TRACE=y
+CONFIG_HOTPLUG=y
+CONFIG_HAVE_PCSPKR_PLATFORM=y
+CONFIG_UID16=y
+CONFIG_KALLSYMS=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_PCSPKR_PLATFORM=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+CONFIG_PCI_QUIRKS=y
+CONFIG_HAVE_PERF_EVENTS=y
+CONFIG_PERF_EVENTS=y
+CONFIG_VM_EVENT_COUNTERS=y
+CONFIG_SLUB_DEBUG=y
+CONFIG_SLUB=y
+CONFIG_HAVE_OPROFILE=y
+CONFIG_OPROFILE_NMI_TIMER=y
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+CONFIG_ARCH_USE_BUILTIN_BSWAP=y
+CONFIG_HAVE_IOREMAP_PROT=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_OPTPROBES=y
+CONFIG_HAVE_KPROBES_ON_FTRACE=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_USE_GENERIC_SMP_HELPERS=y
+CONFIG_GENERIC_SMP_IDLE_THREAD=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+CONFIG_HAVE_HW_BREAKPOINT=y
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
+CONFIG_HAVE_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_PERF_EVENTS_NMI=y
+CONFIG_HAVE_PERF_REGS=y
+CONFIG_HAVE_PERF_USER_STACK_DUMP=y
+CONFIG_HAVE_ARCH_JUMP_LABEL=y
+CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
+CONFIG_HAVE_ALIGNED_STRUCT_PAGE=y
+CONFIG_HAVE_CMPXCHG_LOCAL=y
+CONFIG_HAVE_CMPXCHG_DOUBLE=y
+CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION=y
+CONFIG_ARCH_WANT_OLD_COMPAT_IPC=y
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_HAVE_CONTEXT_TRACKING=y
+CONFIG_HAVE_IRQ_TIME_ACCOUNTING=y
+CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+CONFIG_MODULES_USE_ELF_RELA=y
+CONFIG_OLD_SIGSUSPEND3=y
+CONFIG_COMPAT_OLD_SIGACTION=y
+CONFIG_SLABINFO=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+CONFIG_STOP_MACHINE=y
+CONFIG_BLOCK=y
+CONFIG_MSDOS_PARTITION=y
+CONFIG_EFI_PARTITION=y
+CONFIG_BLOCK_COMPAT=y
+CONFIG_IOSCHED_NOOP=y
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_DEFAULT_CFQ=y
+CONFIG_DEFAULT_IOSCHED="cfq"
+CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
+CONFIG_INLINE_READ_UNLOCK=y
+CONFIG_INLINE_READ_UNLOCK_IRQ=y
+CONFIG_INLINE_WRITE_UNLOCK=y
+CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
+CONFIG_MUTEX_SPIN_ON_OWNER=y
+CONFIG_ZONE_DMA=y
+CONFIG_SMP=y
+CONFIG_X86_MPPARSE=y
+CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_SCHED_OMIT_FRAME_POINTER=y
+CONFIG_NO_BOOTMEM=y
+CONFIG_MK8=y
+CONFIG_X86_INTERNODE_CACHE_SHIFT=6
+CONFIG_X86_L1_CACHE_SHIFT=6
+CONFIG_X86_INTEL_USERCOPY=y
+CONFIG_X86_USE_PPRO_CHECKSUM=y
+CONFIG_X86_TSC=y
+CONFIG_X86_CMPXCHG64=y
+CONFIG_X86_CMOV=y
+CONFIG_X86_MINIMUM_CPU_FAMILY=64
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_CPU_SUP_INTEL=y
+CONFIG_CPU_SUP_AMD=y
+CONFIG_CPU_SUP_CENTAUR=y
+CONFIG_HPET_TIMER=y
+CONFIG_HPET_EMULATE_RTC=y
+CONFIG_DMI=y
+CONFIG_GART_IOMMU=y
+CONFIG_SWIOTLB=y
+CONFIG_IOMMU_HELPER=y
+CONFIG_NR_CPUS=4
+CONFIG_PREEMPT_NONE=y
+CONFIG_X86_LOCAL_APIC=y
+CONFIG_X86_IO_APIC=y
+CONFIG_X86_MCE=y
+CONFIG_X86_MCE_AMD=y
+CONFIG_X86_MCE_THRESHOLD=y
+CONFIG_MICROCODE=y
+CONFIG_MICROCODE_AMD=y
+CONFIG_MICROCODE_OLD_INTERFACE=y
+CONFIG_X86_MSR=y
+CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+CONFIG_ARCH_DMA_ADDR_T_64BIT=y
+CONFIG_DIRECT_GBPAGES=y
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_DEFAULT=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ARCH_PROC_KCORE_TEXT=y
+CONFIG_ILLEGAL_POINTER_VALUE=0xdead000000000000
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_SPARSEMEM_MANUAL=y
+CONFIG_SPARSEMEM=y
+CONFIG_HAVE_MEMORY_PRESENT=y
+CONFIG_SPARSEMEM_EXTREME=y
+CONFIG_SPARSEMEM_VMEMMAP_ENABLE=y
+CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER=y
+CONFIG_SPARSEMEM_VMEMMAP=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_HAVE_MEMBLOCK_NODE_MAP=y
+CONFIG_ARCH_DISCARD_MEMBLOCK=y
+CONFIG_MEMORY_ISOLATION=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+CONFIG_COMPACTION=y
+CONFIG_MIGRATION=y
+CONFIG_PHYS_ADDR_T_64BIT=y
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_BOUNCE=y
+CONFIG_VIRT_TO_BUS=y
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_MEMORY_FAILURE=y
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
+CONFIG_X86_CHECK_BIOS_CORRUPTION=y
+CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
+CONFIG_X86_RESERVE_LOW=64
+CONFIG_MTRR=y
+CONFIG_X86_PAT=y
+CONFIG_ARCH_USES_PG_UNCACHED=y
+CONFIG_ARCH_RANDOM=y
+CONFIG_X86_SMAP=y
+CONFIG_SECCOMP=y
+CONFIG_HZ_300=y
+CONFIG_HZ=300
+CONFIG_SCHED_HRTICK=y
+CONFIG_PHYSICAL_START=0x1000000
+CONFIG_PHYSICAL_ALIGN=0x1000000
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+CONFIG_PM_RUNTIME=y
+CONFIG_PM=y
+CONFIG_ACPI=y
+CONFIG_ACPI_PROC_EVENT=y
+CONFIG_ACPI_DOCK=y
+CONFIG_ACPI_I2C=y
+CONFIG_ACPI_PROCESSOR=y
+CONFIG_ACPI_THERMAL=y
+CONFIG_ACPI_BLACKLIST_YEAR=0
+CONFIG_X86_PM_TIMER=y
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_TABLE=y
+CONFIG_CPU_FREQ_GOV_COMMON=y
+CONFIG_CPU_FREQ_STAT=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+CONFIG_CPU_IDLE=y
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_CPU_IDLE_GOV_MENU=y
+CONFIG_PCI=y
+CONFIG_PCI_DIRECT=y
+CONFIG_PCI_MMCONFIG=y
+CONFIG_PCI_DOMAINS=y
+CONFIG_ARCH_SUPPORTS_MSI=y
+CONFIG_PCI_MSI=y
+CONFIG_HT_IRQ=y
+CONFIG_PCI_ATS=y
+CONFIG_PCI_IOV=y
+CONFIG_PCI_PRI=y
+CONFIG_PCI_PASID=y
+CONFIG_PCI_IOAPIC=y
+CONFIG_PCI_LABEL=y
+CONFIG_ISA_DMA_API=y
+CONFIG_AMD_NB=y
+CONFIG_BINFMT_ELF=y
+CONFIG_COMPAT_BINFMT_ELF=y
+CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE=y
+CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+CONFIG_BINFMT_SCRIPT=y
+CONFIG_COREDUMP=y
+CONFIG_IA32_EMULATION=y
+CONFIG_X86_X32=y
+CONFIG_COMPAT=y
+CONFIG_COMPAT_FOR_U64_ALIGNMENT=y
+CONFIG_SYSVIPC_COMPAT=y
+CONFIG_HAVE_TEXT_POKE_SMP=y
+CONFIG_X86_DEV_DMA_OPS=y
+CONFIG_NET=y
+CONFIG_PACKET=y
+CONFIG_PACKET_DIAG=y
+CONFIG_UNIX=y
+CONFIG_UNIX_DIAG=y
+CONFIG_XFRM=y
+CONFIG_XFRM_ALGO=y
+CONFIG_XFRM_USER=y
+CONFIG_XFRM_IPCOMP=y
+CONFIG_NET_KEY=y
+CONFIG_INET=y
+CONFIG_IP_ADVANCED_ROUTER=y
+CONFIG_IP_MULTIPLE_TABLES=y
+CONFIG_IP_ROUTE_MULTIPATH=y
+CONFIG_IP_ROUTE_VERBOSE=y
+CONFIG_IP_ROUTE_CLASSID=y
+CONFIG_NET_IPIP=y
+CONFIG_NET_IP_TUNNEL=y
+CONFIG_SYN_COOKIES=y
+CONFIG_NET_IPVTI=y
+CONFIG_INET_AH=y
+CONFIG_INET_ESP=y
+CONFIG_INET_IPCOMP=y
+CONFIG_INET_XFRM_TUNNEL=y
+CONFIG_INET_TUNNEL=y
+CONFIG_INET_XFRM_MODE_TRANSPORT=y
+CONFIG_INET_XFRM_MODE_TUNNEL=y
+CONFIG_INET_XFRM_MODE_BEET=y
+CONFIG_INET_LRO=y
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y
+CONFIG_TCP_CONG_ADVANCED=y
+CONFIG_TCP_CONG_BIC=y
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_TCP_CONG_WESTWOOD=y
+CONFIG_TCP_CONG_HTCP=y
+CONFIG_TCP_CONG_HSTCP=y
+CONFIG_TCP_CONG_HYBLA=y
+CONFIG_TCP_CONG_VEGAS=y
+CONFIG_TCP_CONG_SCALABLE=y
+CONFIG_TCP_CONG_LP=y
+CONFIG_TCP_CONG_VENO=y
+CONFIG_TCP_CONG_YEAH=y
+CONFIG_TCP_CONG_ILLINOIS=y
+CONFIG_DEFAULT_CUBIC=y
+CONFIG_DEFAULT_TCP_CONG="cubic"
+CONFIG_TCP_MD5SIG=y
+CONFIG_IPV6=y
+CONFIG_INET6_AH=y
+CONFIG_INET6_ESP=y
+CONFIG_INET6_IPCOMP=y
+CONFIG_INET6_XFRM_TUNNEL=y
+CONFIG_INET6_TUNNEL=y
+CONFIG_INET6_XFRM_MODE_TRANSPORT=y
+CONFIG_INET6_XFRM_MODE_TUNNEL=y
+CONFIG_INET6_XFRM_MODE_BEET=y
+CONFIG_IPV6_SIT=y
+CONFIG_IPV6_SIT_6RD=y
+CONFIG_IPV6_NDISC_NODETYPE=y
+CONFIG_NETFILTER=y
+CONFIG_NETFILTER_ADVANCED=y
+CONFIG_BRIDGE_NETFILTER=y
+CONFIG_NETFILTER_NETLINK=y
+CONFIG_NETFILTER_NETLINK_QUEUE=y
+CONFIG_NETFILTER_NETLINK_LOG=y
+CONFIG_NF_CONNTRACK=y
+CONFIG_NF_CONNTRACK_MARK=y
+CONFIG_NF_CONNTRACK_TIMESTAMP=y
+CONFIG_NF_CONNTRACK_FTP=y
+CONFIG_NF_CONNTRACK_H323=y
+CONFIG_NF_CONNTRACK_IRC=y
+CONFIG_NF_CONNTRACK_SIP=y
+CONFIG_NF_CT_NETLINK=y
+CONFIG_NF_NAT=y
+CONFIG_NF_NAT_NEEDED=y
+CONFIG_NF_NAT_FTP=y
+CONFIG_NF_NAT_IRC=y
+CONFIG_NF_NAT_SIP=y
+CONFIG_NETFILTER_TPROXY=y
+CONFIG_NETFILTER_XTABLES=y
+CONFIG_NETFILTER_XT_MARK=y
+CONFIG_NETFILTER_XT_CONNMARK=y
+CONFIG_NETFILTER_XT_SET=y
+CONFIG_NETFILTER_XT_TARGET_CLASSIFY=y
+CONFIG_NETFILTER_XT_TARGET_CONNMARK=y
+CONFIG_NETFILTER_XT_TARGET_CT=y
+CONFIG_NETFILTER_XT_TARGET_DSCP=y
+CONFIG_NETFILTER_XT_TARGET_HL=y
+CONFIG_NETFILTER_XT_TARGET_MARK=y
+CONFIG_NETFILTER_XT_TARGET_NETMAP=y
+CONFIG_NETFILTER_XT_TARGET_NFLOG=y
+CONFIG_NETFILTER_XT_TARGET_NFQUEUE=y
+CONFIG_NETFILTER_XT_TARGET_RATEEST=y
+CONFIG_NETFILTER_XT_TARGET_REDIRECT=y
+CONFIG_NETFILTER_XT_TARGET_TPROXY=y
+CONFIG_NETFILTER_XT_TARGET_TRACE=y
+CONFIG_NETFILTER_XT_TARGET_TCPOPTSTRIP=y
+CONFIG_NETFILTER_XT_MATCH_CONNLIMIT=y
+CONFIG_NETFILTER_XT_MATCH_CONNMARK=y
+CONFIG_NETFILTER_XT_MATCH_CONNTRACK=y
+CONFIG_NETFILTER_XT_MATCH_DEVGROUP=y
+CONFIG_NETFILTER_XT_MATCH_DSCP=y
+CONFIG_NETFILTER_XT_MATCH_ECN=y
+CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=y
+CONFIG_NETFILTER_XT_MATCH_HELPER=y
+CONFIG_NETFILTER_XT_MATCH_HL=y
+CONFIG_NETFILTER_XT_MATCH_LENGTH=y
+CONFIG_NETFILTER_XT_MATCH_LIMIT=y
+CONFIG_NETFILTER_XT_MATCH_MAC=y
+CONFIG_NETFILTER_XT_MATCH_MARK=y
+CONFIG_NETFILTER_XT_MATCH_OSF=y
+CONFIG_NETFILTER_XT_MATCH_POLICY=y
+CONFIG_NETFILTER_XT_MATCH_PHYSDEV=y
+CONFIG_NETFILTER_XT_MATCH_PKTTYPE=y
+CONFIG_NETFILTER_XT_MATCH_RATEEST=y
+CONFIG_NETFILTER_XT_MATCH_RECENT=y
+CONFIG_NETFILTER_XT_MATCH_SOCKET=y
+CONFIG_NETFILTER_XT_MATCH_STATE=y
+CONFIG_NETFILTER_XT_MATCH_STATISTIC=y
+CONFIG_IP_SET=y
+CONFIG_IP_SET_MAX=256
+CONFIG_IP_SET_HASH_IP=y
+CONFIG_IP_SET_HASH_NET=y
+CONFIG_NF_DEFRAG_IPV4=y
+CONFIG_NF_CONNTRACK_IPV4=y
+CONFIG_IP_NF_IPTABLES=y
+CONFIG_IP_NF_MATCH_ECN=y
+CONFIG_IP_NF_MATCH_RPFILTER=y
+CONFIG_IP_NF_MATCH_TTL=y
+CONFIG_IP_NF_FILTER=y
+CONFIG_IP_NF_TARGET_REJECT=y
+CONFIG_IP_NF_TARGET_ULOG=y
+CONFIG_NF_NAT_IPV4=y
+CONFIG_IP_NF_TARGET_NETMAP=y
+CONFIG_IP_NF_TARGET_REDIRECT=y
+CONFIG_NF_NAT_H323=y
+CONFIG_IP_NF_MANGLE=y
+CONFIG_IP_NF_TARGET_ECN=y
+CONFIG_IP_NF_TARGET_TTL=y
+CONFIG_IP_NF_RAW=y
+CONFIG_NF_DEFRAG_IPV6=y
+CONFIG_NF_CONNTRACK_IPV6=y
+CONFIG_IP6_NF_IPTABLES=y
+CONFIG_IP6_NF_MATCH_OPTS=y
+CONFIG_IP6_NF_MATCH_HL=y
+CONFIG_IP6_NF_MATCH_RPFILTER=y
+CONFIG_IP6_NF_MATCH_RT=y
+CONFIG_IP6_NF_TARGET_HL=y
+CONFIG_IP6_NF_FILTER=y
+CONFIG_IP6_NF_TARGET_REJECT=y
+CONFIG_IP6_NF_MANGLE=y
+CONFIG_STP=y
+CONFIG_MRP=y
+CONFIG_BRIDGE=y
+CONFIG_BRIDGE_IGMP_SNOOPING=y
+CONFIG_BRIDGE_VLAN_FILTERING=y
+CONFIG_HAVE_NET_DSA=y
+CONFIG_VLAN_8021Q=y
+CONFIG_VLAN_8021Q_MVRP=y
+CONFIG_LLC=y
+CONFIG_NET_SCHED=y
+CONFIG_NET_SCH_CBQ=y
+CONFIG_NET_SCH_HTB=y
+CONFIG_NET_SCH_HFSC=y
+CONFIG_NET_SCH_PRIO=y
+CONFIG_NET_SCH_MULTIQ=y
+CONFIG_NET_SCH_RED=y
+CONFIG_NET_SCH_SFB=y
+CONFIG_NET_SCH_TBF=y
+CONFIG_NET_SCH_NETEM=y
+CONFIG_NET_SCH_CHOKE=y
+CONFIG_NET_SCH_QFQ=y
+CONFIG_NET_SCH_CODEL=y
+CONFIG_NET_SCH_FQ_CODEL=y
+CONFIG_NET_SCH_INGRESS=y
+CONFIG_NET_CLS=y
+CONFIG_NET_CLS_BASIC=y
+CONFIG_NET_CLS_TCINDEX=y
+CONFIG_NET_CLS_ROUTE4=y
+CONFIG_NET_CLS_FW=y
+CONFIG_NET_CLS_U32=y
+CONFIG_CLS_U32_MARK=y
+CONFIG_NET_EMATCH=y
+CONFIG_NET_EMATCH_STACK=32
+CONFIG_NET_EMATCH_CMP=y
+CONFIG_NET_EMATCH_U32=y
+CONFIG_NET_EMATCH_META=y
+CONFIG_NET_EMATCH_IPSET=y
+CONFIG_NET_CLS_ACT=y
+CONFIG_NET_ACT_POLICE=y
+CONFIG_NET_ACT_GACT=y
+CONFIG_GACT_PROB=y
+CONFIG_NET_ACT_IPT=y
+CONFIG_NET_SCH_FIFO=y
+CONFIG_NETLINK_DIAG=y
+CONFIG_RPS=y
+CONFIG_RFS_ACCEL=y
+CONFIG_XPS=y
+CONFIG_BQL=y
+CONFIG_FIB_RULES=y
+CONFIG_HAVE_BPF_JIT=y
+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+CONFIG_STANDALONE=y
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_FW_LOADER=y
+CONFIG_FIRMWARE_IN_KERNEL=y
+CONFIG_EXTRA_FIRMWARE=""
+CONFIG_FW_LOADER_USER_HELPER=y
+CONFIG_PARPORT=y
+CONFIG_PARPORT_PC=y
+CONFIG_PARPORT_PC_FIFO=y
+CONFIG_PARPORT_PC_SUPERIO=y
+CONFIG_PARPORT_1284=y
+CONFIG_PNP=y
+CONFIG_PNP_DEBUG_MESSAGES=y
+CONFIG_PNPACPI=y
+CONFIG_BLK_DEV=y
+CONFIG_BLK_DEV_FD=y
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
+CONFIG_BLK_DEV_CRYPTOLOOP=y
+CONFIG_EEPROM_LEGACY=y
+CONFIG_HAVE_IDE=y
+CONFIG_IDE=y
+CONFIG_IDE_XFER_MODE=y
+CONFIG_IDE_ATAPI=y
+CONFIG_IDE_GD=y
+CONFIG_IDE_GD_ATA=y
+CONFIG_BLK_DEV_IDECD=y
+CONFIG_BLK_DEV_IDECD_VERBOSE_ERRORS=y
+CONFIG_BLK_DEV_IDEACPI=y
+CONFIG_IDE_TASK_IOCTL=y
+CONFIG_IDE_GENERIC=y
+CONFIG_BLK_DEV_IDEDMA_SFF=y
+CONFIG_BLK_DEV_IDEPCI=y
+CONFIG_IDEPCI_PCIBUS_ORDER=y
+CONFIG_BLK_DEV_GENERIC=y
+CONFIG_BLK_DEV_IDEDMA_PCI=y
+CONFIG_BLK_DEV_ATIIXP=y
+CONFIG_BLK_DEV_PDC202XX_NEW=y
+CONFIG_BLK_DEV_IDEDMA=y
+CONFIG_SCSI_MOD=y
+CONFIG_SCSI=y
+CONFIG_SCSI_DMA=y
+CONFIG_SCSI_PROC_FS=y
+CONFIG_BLK_DEV_SD=y
+CONFIG_ATA=y
+CONFIG_ATA_VERBOSE_ERROR=y
+CONFIG_ATA_ACPI=y
+CONFIG_SATA_PMP=y
+CONFIG_SATA_AHCI=y
+CONFIG_ATA_SFF=y
+CONFIG_ATA_BMDMA=y
+CONFIG_MD=y
+CONFIG_BLK_DEV_MD=y
+CONFIG_MD_AUTODETECT=y
+CONFIG_MD_RAID0=y
+CONFIG_MD_RAID1=y
+CONFIG_MD_RAID10=y
+CONFIG_MD_RAID456=y
+CONFIG_NETDEVICES=y
+CONFIG_NET_CORE=y
+CONFIG_DUMMY=y
+CONFIG_MII=y
+CONFIG_ETHERNET=y
+CONFIG_NET_VENDOR_DEC=y
+CONFIG_NET_TULIP=y
+CONFIG_TULIP=y
+CONFIG_TULIP_MWI=y
+CONFIG_TULIP_MMIO=y
+CONFIG_TULIP_NAPI=y
+CONFIG_TULIP_NAPI_HW_MITIGATION=y
+CONFIG_NET_VENDOR_REALTEK=y
+CONFIG_R8169=y
+CONFIG_PHYLIB=y
+CONFIG_REALTEK_PHY=y
+CONFIG_INPUT=y
+CONFIG_INPUT_MOUSEDEV=y
+CONFIG_INPUT_MOUSEDEV_PSAUX=y
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_KEYBOARD_ATKBD=y
+CONFIG_INPUT_MOUSE=y
+CONFIG_MOUSE_PS2=y
+CONFIG_MOUSE_PS2_ALPS=y
+CONFIG_MOUSE_PS2_LOGIPS2PP=y
+CONFIG_MOUSE_PS2_SYNAPTICS=y
+CONFIG_MOUSE_PS2_CYPRESS=y
+CONFIG_MOUSE_PS2_LIFEBOOK=y
+CONFIG_MOUSE_PS2_TRACKPOINT=y
+CONFIG_MOUSE_PS2_ELANTECH=y
+CONFIG_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_SERIO_LIBPS2=y
+CONFIG_TTY=y
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_HW_CONSOLE=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_PNP=y
+CONFIG_FIX_EARLYCON_MEM=y
+CONFIG_SERIAL_8250_DMA=y
+CONFIG_SERIAL_8250_PCI=y
+CONFIG_SERIAL_8250_NR_UARTS=10
+CONFIG_SERIAL_8250_RUNTIME_UARTS=5
+CONFIG_SERIAL_8250_EXTENDED=y
+CONFIG_SERIAL_8250_SHARE_IRQ=y
+CONFIG_SERIAL_8250_DETECT_IRQ=y
+CONFIG_SERIAL_CORE=y
+CONFIG_PRINTER=y
+CONFIG_HPET=y
+CONFIG_HPET_MMAP=y
+CONFIG_DEVPORT=y
+CONFIG_I2C=y
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_COMPAT=y
+CONFIG_I2C_CHARDEV=y
+CONFIG_I2C_HELPER_AUTO=y
+CONFIG_I2C_PIIX4=y
+CONFIG_PPS=y
+CONFIG_PPS_CLIENT_LDISC=y
+CONFIG_PTP_1588_CLOCK=y
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+CONFIG_GPIO_DEVRES=y
+CONFIG_POWER_SUPPLY=y
+CONFIG_HWMON=y
+CONFIG_SENSORS_K10TEMP=y
+CONFIG_SENSORS_F71882FG=y
+CONFIG_THERMAL=y
+CONFIG_THERMAL_HWMON=y
+CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
+CONFIG_THERMAL_GOV_STEP_WISE=y
+CONFIG_SSB_POSSIBLE=y
+CONFIG_BCMA_POSSIBLE=y
+CONFIG_AGP=y
+CONFIG_AGP_AMD64=y
+CONFIG_AGP_INTEL=y
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=2
+CONFIG_VGA_CONSOLE=y
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_TIMER=y
+CONFIG_SND_PCM=y
+CONFIG_SND_VERBOSE_PROCFS=y
+CONFIG_SND_VMASTER=y
+CONFIG_SND_KCTL_JACK=y
+CONFIG_SND_DMA_SGBUF=y
+CONFIG_SND_PCI=y
+CONFIG_SND_HDA_INTEL=y
+CONFIG_SND_HDA_PREALLOC_SIZE=64
+CONFIG_SND_HDA_GENERIC=y
+CONFIG_SND_HDA_POWER_SAVE_DEFAULT=0
+CONFIG_HID=y
+CONFIG_HID_GENERIC=y
+CONFIG_HID_A4TECH=y
+CONFIG_HID_APPLE=y
+CONFIG_HID_BELKIN=y
+CONFIG_HID_CHERRY=y
+CONFIG_HID_CHICONY=y
+CONFIG_HID_CYPRESS=y
+CONFIG_HID_DRAGONRISE=y
+CONFIG_HID_EZKEY=y
+CONFIG_HID_KYE=y
+CONFIG_HID_GYRATION=y
+CONFIG_HID_TWINHAN=y
+CONFIG_HID_KENSINGTON=y
+CONFIG_HID_LOGITECH=y
+CONFIG_HID_MICROSOFT=y
+CONFIG_HID_MONTEREY=y
+CONFIG_HID_NTRIG=y
+CONFIG_HID_ORTEK=y
+CONFIG_HID_PANTHERLORD=y
+CONFIG_HID_PETALYNX=y
+CONFIG_HID_SAMSUNG=y
+CONFIG_HID_SONY=y
+CONFIG_HID_SUNPLUS=y
+CONFIG_HID_GREENASIA=y
+CONFIG_HID_SMARTJOYPLUS=y
+CONFIG_HID_TOPSEED=y
+CONFIG_HID_THRUSTMASTER=y
+CONFIG_HID_ZEROPLUS=y
+CONFIG_USB_HID=y
+CONFIG_USB_ARCH_HAS_OHCI=y
+CONFIG_USB_ARCH_HAS_EHCI=y
+CONFIG_USB_ARCH_HAS_XHCI=y
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_COMMON=y
+CONFIG_USB_ARCH_HAS_HCD=y
+CONFIG_USB=y
+CONFIG_USB_DEFAULT_PERSIST=y
+CONFIG_USB_MON=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_ROOT_HUB_TT=y
+CONFIG_USB_EHCI_PCI=y
+CONFIG_USB_OHCI_HCD=y
+CONFIG_USB_OHCI_LITTLE_ENDIAN=y
+CONFIG_USB_STORAGE=y
+CONFIG_USB_SERIAL=y
+CONFIG_USB_SERIAL_PL2303=y
+CONFIG_EDAC=y
+CONFIG_EDAC_DECODE_MCE=y
+CONFIG_EDAC_MM_EDAC=y
+CONFIG_EDAC_AMD64=y
+CONFIG_RTC_LIB=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_SYSTOHC=y
+CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+CONFIG_RTC_INTF_SYSFS=y
+CONFIG_RTC_INTF_PROC=y
+CONFIG_RTC_INTF_DEV=y
+CONFIG_RTC_DRV_CMOS=y
+CONFIG_DMADEVICES=y
+CONFIG_DMA_ACPI=y
+CONFIG_CLKEVT_I8253=y
+CONFIG_I8253_LOCK=y
+CONFIG_CLKBLD_I8253=y
+CONFIG_IOMMU_API=y
+CONFIG_IOMMU_SUPPORT=y
+CONFIG_AMD_IOMMU=y
+CONFIG_FIRMWARE_MEMMAP=y
+CONFIG_DMIID=y
+CONFIG_DCACHE_WORD_ACCESS=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_USE_FOR_EXT23=y
+CONFIG_JBD2=y
+CONFIG_FS_MBCACHE=y
+CONFIG_EXPORTFS=y
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+CONFIG_INOTIFY_USER=y
+CONFIG_FANOTIFY=y
+CONFIG_ISO9660_FS=y
+CONFIG_JOLIET=y
+CONFIG_UDF_FS=y
+CONFIG_UDF_NLS=y
+CONFIG_FAT_FS=y
+CONFIG_MSDOS_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
+CONFIG_PROC_FS=y
+CONFIG_PROC_KCORE=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_SYSFS=y
+CONFIG_TMPFS=y
+CONFIG_NETWORK_FILESYSTEMS=y
+CONFIG_NFS_FS=y
+CONFIG_NFS_V2=y
+CONFIG_NFS_V3=y
+CONFIG_NFSD=y
+CONFIG_NFSD_V3=y
+CONFIG_LOCKD=y
+CONFIG_LOCKD_V4=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="cp437"
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_ISO8859_1=y
+CONFIG_NLS_ISO8859_15=y
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+CONFIG_ENABLE_WARN_DEPRECATED=y
+CONFIG_FRAME_WARN=1024
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_STRIP_ASM_SYMS=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_LOCKUP_DETECTOR=y
+CONFIG_HARDLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=0
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
+CONFIG_PANIC_ON_OOPS_VALUE=0
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
+CONFIG_SCHEDSTATS=y
+CONFIG_TIMER_STATS=y
+CONFIG_HAVE_DEBUG_KMEMLEAK=y
+CONFIG_DEBUG_BUGVERBOSE=y
+CONFIG_DEBUG_MEMORY_INIT=y
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_RCU_CPU_STALL_TIMEOUT=60
+CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS=y
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_HAVE_FENTRY=y
+CONFIG_HAVE_C_RECORDMCOUNT=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_HAVE_ARCH_KGDB=y
+CONFIG_HAVE_ARCH_KMEMCHECK=y
+CONFIG_X86_VERBOSE_BOOTUP=y
+CONFIG_EARLY_PRINTK=y
+CONFIG_DEBUG_STACKOVERFLOW=y
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+CONFIG_IO_DELAY_TYPE_0X80=0
+CONFIG_IO_DELAY_TYPE_0XED=1
+CONFIG_IO_DELAY_TYPE_UDELAY=2
+CONFIG_IO_DELAY_TYPE_NONE=3
+CONFIG_IO_DELAY_NONE=y
+CONFIG_DEFAULT_IO_DELAY_TYPE=3
+CONFIG_OPTIMIZE_INLINING=y
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_DEFAULT_SECURITY=""
+CONFIG_XOR_BLOCKS=y
+CONFIG_ASYNC_CORE=y
+CONFIG_ASYNC_MEMCPY=y
+CONFIG_ASYNC_XOR=y
+CONFIG_ASYNC_PQ=y
+CONFIG_ASYNC_RAID6_RECOV=y
+CONFIG_CRYPTO=y
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_AEAD=y
+CONFIG_CRYPTO_AEAD2=y
+CONFIG_CRYPTO_BLKCIPHER=y
+CONFIG_CRYPTO_BLKCIPHER2=y
+CONFIG_CRYPTO_HASH=y
+CONFIG_CRYPTO_HASH2=y
+CONFIG_CRYPTO_RNG2=y
+CONFIG_CRYPTO_PCOMP2=y
+CONFIG_CRYPTO_MANAGER=y
+CONFIG_CRYPTO_MANAGER2=y
+CONFIG_CRYPTO_WORKQUEUE=y
+CONFIG_CRYPTO_AUTHENC=y
+CONFIG_CRYPTO_CBC=y
+CONFIG_CRYPTO_PCBC=y
+CONFIG_CRYPTO_HMAC=y
+CONFIG_CRYPTO_XCBC=y
+CONFIG_CRYPTO_CRC32C=y
+CONFIG_CRYPTO_MD5=y
+CONFIG_CRYPTO_SHA1=y
+CONFIG_CRYPTO_AES=y
+CONFIG_CRYPTO_AES_X86_64=y
+CONFIG_CRYPTO_DES=y
+CONFIG_CRYPTO_TEA=y
+CONFIG_CRYPTO_TWOFISH=y
+CONFIG_CRYPTO_TWOFISH_COMMON=y
+CONFIG_CRYPTO_TWOFISH_X86_64=y
+CONFIG_CRYPTO_DEFLATE=y
+CONFIG_HAVE_KVM=y
+CONFIG_RAID6_PQ=y
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_STRNCPY_FROM_USER=y
+CONFIG_GENERIC_STRNLEN_USER=y
+CONFIG_GENERIC_FIND_FIRST_BIT=y
+CONFIG_GENERIC_PCI_IOMAP=y
+CONFIG_GENERIC_IOMAP=y
+CONFIG_GENERIC_IO=y
+CONFIG_CRC_CCITT=y
+CONFIG_CRC16=y
+CONFIG_CRC_ITU_T=y
+CONFIG_CRC32=y
+CONFIG_CRC32_SLICEBY8=y
+CONFIG_ZLIB_INFLATE=y
+CONFIG_ZLIB_DEFLATE=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT=y
+CONFIG_HAS_DMA=y
+CONFIG_CPU_RMAP=y
+CONFIG_DQL=y
+CONFIG_NLATTR=y
+CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE=y
