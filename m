@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3FXSPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 14:15:50 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:50682 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab3FXSMT (ORCPT
+	id S1753227Ab3FXSMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 14:12:17 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:65361 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab3FXSMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 14:12:19 -0400
+	Mon, 24 Jun 2013 14:12:15 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
         Dirk Gouders <dirk@gouders.net>,
         "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 06/15] nconf: use function calls instead of ncurses' variables LINES and COLS
-Date: Mon, 24 Jun 2013 20:11:50 +0200
-Message-Id: <e0b42605e685a0833303e1d4dde277c99d9e17b5.1372097219.git.yann.morin.1998@free.fr>
+Subject: [PATCH 04/15] kconfig/lxdialog: handle newline characters in print_autowrap()
+Date: Mon, 24 Jun 2013 20:11:48 +0200
+Message-Id: <1376391621654cc369c5e8b60497f7c184f0ed47.1372097219.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1372097219.git.yann.morin.1998@free.fr>
 References: <cover.1372097219.git.yann.morin.1998@free.fr>
@@ -26,163 +26,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Gouders <dirk@gouders.net>
 
-According to the documentation [1], LINES and COLS are initialized by
-initscr(); it does not say anything about the behavior when windows are
-resized.
+When exiting menuconfig with unsaved changes, a dialog like
+the following is shown:
 
-Do not rely on the current implementation of ncurses that updates
-these variables on resize, but use the propper function calls or macros
-to get window dimensions.
+        Do you wish to save your new configuration ? <ESC><ESC>
+        to continue.
 
-The use of the variables in main() was OK, but for the sake of
-consistency it was modified to use the macro getmaxyx().
+The author of the dialog text specified a newline after the '?',
+and probably expected it to be processed, so let print_autowrap()
+handle newlines propperly.
 
-[1] ncurses(3X)
+Also, reword that dialog's second phrase with a real sentence.
 
 Signed-off-by: Dirk Gouders <dirk@gouders.net>
+Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-[yann.morin.1998@free.fr: declare 'lines' and 'columns' on a single line]
+[yann.morin.1998@free.fr: very slightly tweak the commit message]
 Signed-off-by: Yann E. MORIN <yann.morin.1998@free.fr>
 ---
- scripts/kconfig/nconf.c     | 21 ++++++++++++++-------
- scripts/kconfig/nconf.gui.c | 20 +++++++++++---------
- 2 files changed, 25 insertions(+), 16 deletions(-)
+ scripts/kconfig/lxdialog/util.c | 31 +++++++++++++++++--------------
+ scripts/kconfig/mconf.c         |  4 ++--
+ 2 files changed, 19 insertions(+), 16 deletions(-)
 
-diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
-index dbf31ed..aac85d3 100644
---- a/scripts/kconfig/nconf.c
-+++ b/scripts/kconfig/nconf.c
-@@ -365,15 +365,16 @@ static void print_function_line(void)
- 	int i;
- 	int offset = 1;
- 	const int skip = 1;
-+	int lines = getmaxy(stdscr);
- 
- 	for (i = 0; i < function_keys_num; i++) {
- 		(void) wattrset(main_window, attributes[FUNCTION_HIGHLIGHT]);
--		mvwprintw(main_window, LINES-3, offset,
-+		mvwprintw(main_window, lines-3, offset,
- 				"%s",
- 				function_keys[i].key_str);
- 		(void) wattrset(main_window, attributes[FUNCTION_TEXT]);
- 		offset += strlen(function_keys[i].key_str);
--		mvwprintw(main_window, LINES-3,
-+		mvwprintw(main_window, lines-3,
- 				offset, "%s",
- 				function_keys[i].func);
- 		offset += strlen(function_keys[i].func) + skip;
-@@ -954,7 +955,7 @@ static void show_menu(const char *prompt, const char *instructions,
- 
- 	clear();
- 	(void) wattrset(main_window, attributes[NORMAL]);
--	print_in_middle(stdscr, 1, 0, COLS,
-+	print_in_middle(stdscr, 1, 0, getmaxx(stdscr),
- 			menu_backtitle,
- 			attributes[MAIN_HEADING]);
- 
-@@ -1455,14 +1456,18 @@ static void conf_save(void)
- 
- void setup_windows(void)
+diff --git a/scripts/kconfig/lxdialog/util.c b/scripts/kconfig/lxdialog/util.c
+index 78fe4e9..0fa567e 100644
+--- a/scripts/kconfig/lxdialog/util.c
++++ b/scripts/kconfig/lxdialog/util.c
+@@ -371,27 +371,19 @@ void print_title(WINDOW *dialog, const char *title, int width)
+ /*
+  * Print a string of text in a window, automatically wrap around to the
+  * next line if the string is too long to fit on one line. Newline
+- * characters '\n' are replaced by spaces.  We start on a new line
++ * characters '\n' are propperly processed.  We start on a new line
+  * if there is no room for at least 4 nonblanks following a double-space.
+  */
+ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
  {
-+	int lines, columns;
+ 	int newl, cur_x, cur_y;
+-	int i, prompt_len, room, wlen;
+-	char tempstr[MAX_LEN + 1], *word, *sp, *sp2;
++	int prompt_len, room, wlen;
++	char tempstr[MAX_LEN + 1], *word, *sp, *sp2, *newline_separator = 0;
+ 
+ 	strcpy(tempstr, prompt);
+ 
+ 	prompt_len = strlen(tempstr);
+ 
+-	/*
+-	 * Remove newlines
+-	 */
+-	for (i = 0; i < prompt_len; i++) {
+-		if (tempstr[i] == '\n')
+-			tempstr[i] = ' ';
+-	}
+-
+ 	if (prompt_len <= width - x * 2) {	/* If prompt is short */
+ 		wmove(win, y, (width - prompt_len) / 2);
+ 		waddstr(win, tempstr);
+@@ -401,7 +393,10 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
+ 		newl = 1;
+ 		word = tempstr;
+ 		while (word && *word) {
+-			sp = strchr(word, ' ');
++			sp = strpbrk(word, "\n ");
++			if (sp && *sp == '\n')
++				newline_separator = sp;
 +
-+	getmaxyx(stdscr, lines, columns);
+ 			if (sp)
+ 				*sp++ = 0;
+ 
+@@ -413,7 +408,7 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
+ 			if (wlen > room ||
+ 			    (newl && wlen < 4 && sp
+ 			     && wlen + 1 + strlen(sp) > room
+-			     && (!(sp2 = strchr(sp, ' '))
++			     && (!(sp2 = strpbrk(sp, "\n "))
+ 				 || wlen + 1 + (sp2 - sp) > room))) {
+ 				cur_y++;
+ 				cur_x = x;
+@@ -421,7 +416,15 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
+ 			wmove(win, cur_y, cur_x);
+ 			waddstr(win, word);
+ 			getyx(win, cur_y, cur_x);
+-			cur_x++;
 +
- 	if (main_window != NULL)
- 		delwin(main_window);
- 
- 	/* set up the menu and menu window */
--	main_window = newwin(LINES-2, COLS-2, 2, 1);
-+	main_window = newwin(lines-2, columns-2, 2, 1);
- 	keypad(main_window, TRUE);
--	mwin_max_lines = LINES-7;
--	mwin_max_cols = COLS-6;
-+	mwin_max_lines = lines-7;
-+	mwin_max_cols = columns-6;
- 
- 	/* panels order is from bottom to top */
- 	new_panel(main_window);
-@@ -1470,6 +1475,7 @@ void setup_windows(void)
- 
- int main(int ac, char **av)
- {
-+	int lines, columns;
- 	char *mode;
- 
- 	setlocale(LC_ALL, "");
-@@ -1495,7 +1501,8 @@ int main(int ac, char **av)
- 	keypad(stdscr, TRUE);
- 	curs_set(0);
- 
--	if (COLS < 75 || LINES < 20) {
-+	getmaxyx(stdscr, lines, columns);
-+	if (columns < 75 || lines < 20) {
- 		endwin();
- 		printf("Your terminal should have at "
- 			"least 20 lines and 75 columns\n");
-diff --git a/scripts/kconfig/nconf.gui.c b/scripts/kconfig/nconf.gui.c
-index 9f8c44e..8275f0e5 100644
---- a/scripts/kconfig/nconf.gui.c
-+++ b/scripts/kconfig/nconf.gui.c
-@@ -276,8 +276,8 @@ int btn_dialog(WINDOW *main_window, const char *msg, int btn_num, ...)
- 
- 	total_width = max(msg_width, btns_width);
- 	/* place dialog in middle of screen */
--	y = (LINES-(msg_lines+4))/2;
--	x = (COLS-(total_width+4))/2;
-+	y = (getmaxy(stdscr)-(msg_lines+4))/2;
-+	x = (getmaxx(stdscr)-(total_width+4))/2;
- 
- 
- 	/* create the windows */
-@@ -387,8 +387,8 @@ int dialog_inputbox(WINDOW *main_window,
- 		prompt_width = max(prompt_width, strlen(title));
- 
- 	/* place dialog in middle of screen */
--	y = (LINES-(prompt_lines+4))/2;
--	x = (COLS-(prompt_width+4))/2;
-+	y = (getmaxy(stdscr)-(prompt_lines+4))/2;
-+	x = (getmaxx(stdscr)-(prompt_width+4))/2;
- 
- 	strncpy(result, init, *result_len);
- 
-@@ -545,7 +545,7 @@ void show_scroll_win(WINDOW *main_window,
- {
- 	int res;
- 	int total_lines = get_line_no(text);
--	int x, y;
-+	int x, y, lines, columns;
- 	int start_x = 0, start_y = 0;
- 	int text_lines = 0, text_cols = 0;
- 	int total_cols = 0;
-@@ -556,6 +556,8 @@ void show_scroll_win(WINDOW *main_window,
- 	WINDOW *pad;
- 	PANEL *panel;
- 
-+	getmaxyx(stdscr, lines, columns);
++			/* Move to the next line if the word separator was a newline */
++			if (newline_separator) {
++				cur_y++;
++				cur_x = x;
++				newline_separator = 0;
++			} else
++				cur_x++;
 +
- 	/* find the widest line of msg: */
- 	total_lines = get_line_no(text);
- 	for (i = 0; i < total_lines; i++) {
-@@ -569,14 +571,14 @@ void show_scroll_win(WINDOW *main_window,
- 	(void) wattrset(pad, attributes[SCROLLWIN_TEXT]);
- 	fill_window(pad, text);
- 
--	win_lines = min(total_lines+4, LINES-2);
--	win_cols = min(total_cols+2, COLS-2);
-+	win_lines = min(total_lines+4, lines-2);
-+	win_cols = min(total_cols+2, columns-2);
- 	text_lines = max(win_lines-4, 0);
- 	text_cols = max(win_cols-2, 0);
- 
- 	/* place window in middle of screen */
--	y = (LINES-win_lines)/2;
--	x = (COLS-win_cols)/2;
-+	y = (lines-win_lines)/2;
-+	x = (columns-win_cols)/2;
- 
- 	win = newwin(win_lines, win_cols, y, x);
- 	keypad(win, TRUE);
+ 			if (sp && *sp == ' ') {
+ 				cur_x++;	/* double space */
+ 				while (*++sp == ' ') ;
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 2396c5b..cb8cf4a 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -958,8 +958,8 @@ static int handle_exit(void)
+ 	dialog_clear();
+ 	if (conf_get_changed())
+ 		res = dialog_yesno(NULL,
+-				   _("Do you wish to save your new configuration ?\n"
+-				     "<ESC><ESC> to continue."),
++				   _("Do you wish to save your new configuration?\n"
++				     "(Press <ESC><ESC> to continue kernel configuration.)"),
+ 				   6, 60);
+ 	else
+ 		res = -1;
 -- 
 1.8.1.2
 
