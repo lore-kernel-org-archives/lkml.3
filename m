@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3FXT11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 15:27:27 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:22841 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab3FXT1Z (ORCPT
+	id S1751078Ab3FXTbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 15:31:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47165 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab3FXTbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 15:27:25 -0400
-X-AuditID: cbfec7f4-b7fd76d0000035e1-bc-51c89d9a4ac3
-Message-id: <51C89D98.1070806@samsung.com>
-Date: Mon, 24 Jun 2013 21:27:20 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: balbi@ti.com
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, grant.likely@linaro.org,
-        tony@atomide.com, arnd@arndb.de, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rob.herring@calxeda.com, rob@landley.net, b-cousson@ti.com,
-        linux@arm.linux.org.uk, benoit.cousson@linaro.org, mchehab@redhat.com,
-        cesarb@cesarb.net, davem@davemloft.net, rnayak@ti.com,
-        shawn.guo@linaro.org, santosh.shilimkar@ti.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        nsekhar@ti.com
-Subject: Re: [PATCH v7 0/9] Generic PHY Framework
-References: <1371113039-5784-1-git-send-email-kishon@ti.com>
- <51BEE203.6090103@samsung.com> <20130618094942.GY5461@arwen.pp.htv.fi>
-In-reply-to: <20130618094942.GY5461@arwen.pp.htv.fi>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t/xa7qz5p4INGjpVrGYs34Nm8XfScfY
-	Lb7d3sRscfB+vcXMTzfZLGZdC7KYc76FxeLA7IesFgf+7GC0aF68ns3iwtMeNotNj6+xWixs
-	W8JicXnXHDaL2Uv6WSwWLWtltrh9mddiz9HD7Bb7ezcwWTzr38NocXjFASaLdS+ns1i87lvD
-	bPF03RJmixvTW1gt9l/xcpDyaGnuYfP4/WsSo8e3r5NYPBZ8vsLuceT2DGaPLStvMnm8Wj2T
-	1ePOtT1sHidm/Gbx2D93DbvH5iX1HudnLGT06G1+x+bxft9VNo/jN7YzeXzeJBcgEMVlk5Ka
-	k1mWWqRvl8CVsWnGfLaCzewVuybcZ2tg/MvaxcjJISFgIrFl2llGCFtM4sK99WxdjFwcQgJL
-	GSUenHrNCOF8YpSYP+06G0gVr4CWRNerLWA2i4CqxM6pk5hBbDYBQ4neo31gk0QFAiQWLznH
-	DlEvKPFj8j0WEFtEQEBi/YtLYHFmgW8sEusP64PYwkC9Ny58YIJY1soo8bDpNth5nEDnbZt5
-	mBmiQUdif+s0NghbXmLzmrfMExgFZiHZMQtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al
-	6yXn525ihKSCLzsYFx+zOsQowMGoxMP7Me5EoBBrYllxZe4hRgkOZiUR3lARoBBvSmJlVWpR
-	fnxRaU5q8SFGJg5OqQbGDW8f+SXP0OtXXrNu4xWxwLX/OfasPF+zQEDL5FOSx6WmpdaXt79Z
-	8zay4t6KN0bnozk43dx3ey/pnBa82XjTjh9mP3c6O957e+Kv55+v8m36s5SalVq8tTXe6Bls
-	TzoetKhwzfJze0Qsv0je21dw3PZS2P5/4i6NktOLkz3WnfdT3tuyzTZfRYmlOCPRUIu5qDgR
-	AEYmcSPjAgAA
+	Mon, 24 Jun 2013 15:31:12 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 01/32] init.h: remove __cpuinit sections from the kernel
+Date: Mon, 24 Jun 2013 15:30:06 -0400
+Message-ID: <1372102237-8757-2-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The __cpuinit type of throwaway sections might have made sense
+some time ago when RAM was more constrained, but now the savings
+do not offset the cost and complications.  For example, the fix in
+commit 5e427ec2d0 ("x86: Fix bit corruption at CPU resume time")
+is a good example of the nasty type of bugs that can be created
+with improper use of the various __init prefixes.
 
-On 06/18/2013 11:49 AM, Felipe Balbi wrote:
-> On Mon, Jun 17, 2013 at 12:16:35PM +0200, Sylwester Nawrocki wrote:
->> I have already used this API for our MIPI CSI-2/DSIM DPHYs driver,
->> the RFC patch series can be found at [1].
->>
->> Thanks,
->> Sylwester
->>
->> [1] http://www.spinics.net/lists/arm-kernel/msg251666.html
-> 
-> one comment to that series:
-> 
-> let's make the phy names standardized, how about phy-exynos-video-mipi.c
-> or phy-mipi-csi-dsim.c ?
+After a discussion on LKML[1] it was decided that cpuinit should go
+the way of devinit and be phased out.  Once all the users are gone,
+we can then finally remove the macros themselves from linux/init.h.
 
-Yes, I have been thinking about that, wasn't sure exactly what pattern to
-chose. I would make it phy-exynos-mipi-video.c, phy-exynos-dsim-csis.c feels
-a bit odd. phy-mipi-csis-dsim.c might be to generic as MIPI CSIS stands for
-MIPI CSI Slave and MIPI DSIM - MIPI DSI Master. And there might be (actually
-are) IP blocks in an SoC that use the other MIPI Aliance standards.
-For the HDMI PHY I guess just phy-exynos-hdmi.c could be used.
+As an interim step, we can dummy out the macros to be no-ops, and
+this will allow us to avoid a giant tree-wide patch, and instead
+we can feed in smaller chunks mainly via the arch/ trees.  This
+is in keeping with commit 78d86c213f28193082b5d8a1a424044b7ba406f1
+("init.h: Remove __dev* sections from the kernel")
 
-Thanks,
-Sylwester
+We don't strictly need to dummy out the macros to do this, but if
+we don't then some harmless section mismatch warnings may temporarily
+result.  For example, notify_cpu_starting() and cpu_up() are arch
+independent (kernel/cpu.c) and are flagged as __cpuinit.  And hence
+the calling functions in the arch specific code are also expected
+to be __cpuinit -- if not, then we get the section mismatch warning.
+
+Two of the three __CPUINIT variants are not used whatsoever, and
+so they are simply removed directly at this point in time.
+
+[1] https://lkml.org/lkml/2013/5/20/589
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+
+[This commit is part of the __cpuinit removal work.  If you don't see
+ any problems with it, then you don't have to do anything ; it will be
+ submitted with all the rest of the __cpuinit removal work.  On the
+ other hand, if you want to carry this patch in with your other pending
+ changes so as to handle conflicts with other pending work yourself, then
+ that is fine too, as the commits can largely be treated independently.
+ For more information, please see: https://lkml.org/lkml/2013/6/20/513 ]
+
+ include/linux/init.h | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 8618147..e73f2b7 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -93,13 +93,13 @@
+ 
+ #define __exit          __section(.exit.text) __exitused __cold notrace
+ 
+-/* Used for HOTPLUG_CPU */
+-#define __cpuinit        __section(.cpuinit.text) __cold notrace
+-#define __cpuinitdata    __section(.cpuinit.data)
+-#define __cpuinitconst   __constsection(.cpuinit.rodata)
+-#define __cpuexit        __section(.cpuexit.text) __exitused __cold notrace
+-#define __cpuexitdata    __section(.cpuexit.data)
+-#define __cpuexitconst   __constsection(.cpuexit.rodata)
++/* temporary, until all users are removed */
++#define __cpuinit
++#define __cpuinitdata
++#define __cpuinitconst
++#define __cpuexit
++#define __cpuexitdata
++#define __cpuexitconst
+ 
+ /* Used for MEMORY_HOTPLUG */
+ #define __meminit        __section(.meminit.text) __cold notrace
+@@ -118,9 +118,8 @@
+ #define __INITRODATA	.section	".init.rodata","a",%progbits
+ #define __FINITDATA	.previous
+ 
+-#define __CPUINIT        .section	".cpuinit.text", "ax"
+-#define __CPUINITDATA    .section	".cpuinit.data", "aw"
+-#define __CPUINITRODATA  .section	".cpuinit.rodata", "a"
++/* temporary, until all users are removed */
++#define __CPUINIT
+ 
+ #define __MEMINIT        .section	".meminit.text", "ax"
+ #define __MEMINITDATA    .section	".meminit.data", "aw"
+-- 
+1.8.1.2
 
