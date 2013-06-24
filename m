@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab3FXUci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 16:32:38 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:52819 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750958Ab3FXUch (ORCPT
+	id S1751828Ab3FXUd2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 16:33:28 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:60918 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751049Ab3FXUd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 16:32:37 -0400
-Message-ID: <51C8ACDA.4080400@hurleysoftware.com>
-Date: Mon, 24 Jun 2013 16:32:26 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, Alex Shi <alex.shi@intel.com>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/2] rwsem: do optimistic spinning for writer lock acquisition
-References: <cover.1371855277.git.tim.c.chen@linux.intel.com>  <1371858700.22432.5.camel@schen9-DESK>  <51C558E2.1040108@hurleysoftware.com>  <1372017836.1797.14.camel@buesod1.americas.hpqcorp.net>  <1372093876.22432.34.camel@schen9-DESK>  <51C894C3.4040407@hurleysoftware.com> <1372101180.22432.58.camel@schen9-DESK>
-In-Reply-To: <1372101180.22432.58.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Mon, 24 Jun 2013 16:33:26 -0400
+From: Khalid Aziz <khalid.aziz@oracle.com>
+To: James.Bottomley@HansenPartnership.com
+Cc: Khalid Aziz <khalid.aziz@oracle.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND v2 0/2] scsi: Port buslogic driver to 64 bits
+Date: Mon, 24 Jun 2013 14:25:58 -0600
+Message-Id: <cover.1368754558.git.khalid.aziz@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 03:13 PM, Tim Chen wrote:
-> On Mon, 2013-06-24 at 14:49 -0400, Peter Hurley wrote:
->> On 06/24/2013 01:11 PM, Tim Chen wrote:
->>> On Sun, 2013-06-23 at 13:03 -0700, Davidlohr Bueso wrote:
->>>> On Sat, 2013-06-22 at 03:57 -0400, Peter Hurley wrote:
->>>>> On 06/21/2013 07:51 PM, Tim Chen wrote:
->>>>>>
->>>>>> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
->>>>>> +{
->>>>>> +	int retval = true;
->>>>>> +
->>>>>> +	/* Spin only if active writer running */
->>>>>> +	if (!sem->owner)
->>>>>> +		return false;
->>>>>> +
->>>>>> +	rcu_read_lock();
->>>>>> +	if (sem->owner)
->>>>>> +		retval = sem->owner->on_cpu;
->>>>>                             ^^^^^^^^^^^^^^^^^^
->>>>>
->>>>> Why is this a safe dereference? Could not another cpu have just
->>>>> dropped the sem (and thus set sem->owner to NULL and oops)?
->>>>>
->>>
->>> The rcu read lock should protect against sem->owner being NULL.
->>
->> It doesn't.
->>
->> Here's the comment from mutex_spin_on_owner():
->>
->>     /*
->>      * Look out! "owner" is an entirely speculative pointer
->>      * access and not reliable.
->>      */
->>
->
-> In mutex_spin_on_owner, after rcu_read_lock, the owner_running()
-> function de-references the owner pointer.
+This patchset ports buslogic driver to 64-bit.
 
-Only after establishing the following preconditions:
-1. snapshot of owner is non-NULL
-2. mutex->owner == snapshot owner
-3. memory holding mutex has not been freed (that's what the
-    rcu_read_lock() is for)
+Current buslogic driver is composed of two components - SCCB manager
+which communicates with adapter to execute SCSI commands (contained in
+FlashPoint.c), and Linux driver part that interfaces with rest of the
+kernel (contained in BusLogic.c). SCCB manager code came from the
+Mylex SDK. SCCB manager code is used by flashpoint adapters only.
+Multimaster adapters do not need SCCB manager since the SCSI state
+machine is implemented in firmware on these adapters. If the filenames
+alone did not give it away already, buslogic driver code is full of
+CamelCase, besides being full of very ling lines, and is just very
+difficult to read and understand. So the first step was to clean up
+the existing code. First patch in the set does just that. Second patch
+includes necessary code modifications to allow the driver to build and
+run on 64-bit kernel. Since SCCB manager code came from Mylex SDK, I
+have tried to touch it only when necessary which includes not fixing
+all CamelCase issues in FlashPoint.c. Many lines over 80 characters
+remain in BusLogic.c. These fall into two categories generally -
+(1) it prints a message and I didn't want to touch driver messages
+in case there are scripts out there that parse driver messages,
+(2) code is indented deeply and is hard to keep it under 80 characters.
+Such code could use refactoring at some point.
 
-Only then is the owner dereferenced and only through the snapshot
-(not the now-possibly-rewritten sem->owner).
+I have tested this patch with a flashpoint adapter on 64-bit and 
+32-bit kernels with fio running random read/write test while verifying
+data. I also measured performance for current buslogic driver and 
+buslogic driver with these patches with 32-bit and 64-bit kernel and
+ensured there was no degradation in performance.
 
-> I'm using similar logic in rw-sem.
+Changelog:
+v2:
+	- Updated to apply on top of current Linus' tree as of May 16, 2013. 
+	  No functional changes.
 
-With crucial details absent.
+Khalid Aziz (2):
+  Fix CamelCase and extra long lines in the buslogic driver.
+  Port buslogic driver to 64-bit.
 
-Regards,
-Peter Hurley
+ drivers/scsi/BusLogic.c   | 4452 ++++++++++++++++++++++++---------------------
+ drivers/scsi/BusLogic.h   | 1487 ++++++++-------
+ drivers/scsi/FlashPoint.c |  626 +++----
+ drivers/scsi/Kconfig      |    2 +-
+ 4 files changed, 3377 insertions(+), 3190 deletions(-)
 
+-- 
+1.7.10.4
 
