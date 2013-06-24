@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab3FXLss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 07:48:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43532 "EHLO arroyo.ext.ti.com"
+	id S1752917Ab3FXLtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 07:49:18 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48974 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402Ab3FXLsp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 07:48:45 -0400
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>
-CC: "Nori, Sekhar" <nsekhar@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "prabhakar.csengg@gmail.com" <prabhakar.csengg@gmail.com>,
-        "Ujfalusi, Peter" <peter.ujfalusi@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Subject: RE: [PATCH 3/3] ARM: davinci: da850: adopt to pinctrl-single driver
- to configure multiple pins
-Thread-Topic: [PATCH 3/3] ARM: davinci: da850: adopt to pinctrl-single
- driver to configure multiple pins
-Thread-Index: AQHOViyjPxkpN+2o00iG31qLF1FFYJlE42KA
-Date: Mon, 24 Jun 2013 11:48:01 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC3EA911E0@DBDE04.ent.ti.com>
-References: <1369145282-14419-1-git-send-email-prakash.pm@ti.com>
- <1369145282-14419-5-git-send-email-prakash.pm@ti.com>
-In-Reply-To: <1369145282-14419-5-git-send-email-prakash.pm@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752402Ab3FXLtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 07:49:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        dave.martin@arm.com
+Subject: Re: [PATCH 00/13] CPUFreq: Fix {PRE|POST}CHANGE notification sequence
+Date: Mon, 24 Jun 2013 13:58:43 +0200
+Message-ID: <19900521.4upM9YL2PZ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <cover.1371630975.git.viresh.kumar@linaro.org>
+References: <cover.1371630975.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
-
-On Tue, May 21, 2013 at 19:38:02, Manjunathappa, Prakash wrote:
-> function-mask property is a mask for a pin at each pin configure offset
-> in a pincontrol register.
+On Wednesday, June 19, 2013 02:22:54 PM Viresh Kumar wrote:
+> PRECHANGE and POSTCHANGE notifiers must be called in groups, i.e either both
+> should be called or both shouldn't be.
 > 
+> In case we have started PRECHANGE notifier and found an error, we must call
+> POSTCHANGE notifier with freqs.new = freqs.old to guarantee that sequence of
+> calling notifiers is complete.
+> 
+> This isn't obeyed by many of the drivers and core wasn't forcing it.
+> 
+> This patchset first fixes all the driver to follow it strictly and then adds
+> some protection against this. Now, we keep track of the last transaction and see
+> if something went wrong.
+> 
+> Last patch is intentionally kept towards the end, so that git bisect still works
+> well for all the faulty drivers.
+> 
+> This is pushed here and a pull request for 3.11 would be sent after few days.
+> 
+> git://git.linaro.org/people/vireshk/linux.git cpufreq-fix-notification
+> 
+> Viresh Kumar (13):
+>   cpufreq: acpi: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: arm-big-little: call CPUFREQ_POSTCHANGE notfier in error
+>     cases
+>   cpufreq: davinci: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: dbx500: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: e_powersave: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: exynos: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: imx6q: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: omap: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: pcc: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: powernow-k8: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: s3c64xx: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier in error cases
+>   cpufreq: make sure frequency transitions are serialized
 
-Got 1/3 and 2/3 accepted, I do not know if this gets merged via DaVinci tree or
-pincontrol tree. Could you please takecare of this?
+Patches [1,5,9-10/13] applied to bleeding-edge, the ARM ones I'm expecting
+to get from you and [13/13] can wait.
 
 Thanks,
-Prakash
-
-> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-> ---
->  arch/arm/boot/dts/da850.dtsi |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-> index 4d43046..9bec36c 100644
-> --- a/arch/arm/boot/dts/da850.dtsi
-> +++ b/arch/arm/boot/dts/da850.dtsi
-> @@ -37,7 +37,7 @@
->  			#size-cells = <0>;
->  			pinctrl-single,bit-per-mux;
->  			pinctrl-single,register-width = <32>;
-> -			pinctrl-single,function-mask = <0xffffffff>;
-> +			pinctrl-single,function-mask = <0xf>;
->  			status = "disabled";
->  
->  			nand_cs3_pins: pinmux_nand_pins {
-> -- 
-> 1.7.4.1
-> 
-> 
+Rafael
 
