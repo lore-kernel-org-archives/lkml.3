@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab3FXPLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:11:19 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:33994 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab3FXPLR (ORCPT
+	id S1752465Ab3FXPPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:15:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59779 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab3FXPPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:11:17 -0400
+	Mon, 24 Jun 2013 11:15:08 -0400
+Message-ID: <51C8627A.5000106@codeaurora.org>
+Date: Mon, 24 Jun 2013 11:15:06 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1371720391-21825-5-git-send-email-james.hogan@imgtec.com>
-References: <1371720391-21825-1-git-send-email-james.hogan@imgtec.com>
-	<1371720391-21825-5-git-send-email-james.hogan@imgtec.com>
-Date: Mon, 24 Jun 2013 17:11:17 +0200
-Message-ID: <CACRpkda8Un0Y+LA-huFbpw0tkKML5RWT-=OCY3P+OXfd5b4Eaw@mail.gmail.com>
-Subject: Re: [PATCH v3 4/4] gpio-tz1090-pdc: add TZ1090 PDC gpio driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Add support for LPAE style CONTEXTIDR
+References: <1372080405-13365-1-git-send-email-cov@codeaurora.org> <20130624140424.GA24861@mudshark.cambridge.arm.com> <51C85A0D.3070400@codeaurora.org> <20130624145303.GA25582@mudshark.cambridge.arm.com>
+In-Reply-To: <20130624145303.GA25582@mudshark.cambridge.arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 11:26 AM, James Hogan <james.hogan@imgtec.com> wrote:
+On 06/24/2013 10:53 AM, Will Deacon wrote:
+> On Mon, Jun 24, 2013 at 03:39:09PM +0100, Christopher Covington wrote:
+>> Hi Will,
+>>
+>> On 06/24/2013 10:04 AM, Will Deacon wrote:
+>> [...]
+>>
+>>> What's the advantage of this approach, other than you get an extra byte's
+>>> worth of PID?
+>>
+>> In my view, the real advantage is that the the PID is located where people
+>> reading ARM Architecture Reference Manual are told they can find it.
+> 
+> Perhaps, but I'd usually expect a debugger or trace tools to do something
+> with the PID, and they likely expect it to be shifted, so you can't really
+> win.
 
-> Add a GPIO driver for the low-power Powerdown Controller GPIOs in the
-> TZ1090 SoC.
->
-> The driver is instantiated by device tree and supports interrupts for
-> the SysWake GPIOs only.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: linux-doc@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> ---
-> Changes in v3:
->  - separated from irq-imgpdc and removed arch/metag changes to allow
->    these patches to go upstream separately via the pinctrl[/gpio] trees
->    (particularly the pinctrl drivers depend on the new pinconf DT
->    bindings).
->  - some s/unsigned/unsigned int/.
->  - gpio-tz1090*: refer to <dt-bindings/gpio/gpio.h> and
->    <dt-bindings/interrupt-controller/irq.h> flags in bindings.
->  - gpio-tz1090*: move initcall from postcore to subsys.
+But reading and implementing the architecture *is* winning! LOL. I'll file a
+ticket with the architecture folks and see what they think.
 
-I'll be happy to apply the GPIO patches to the pinctrl tree as well
-once you fixed the comments on patch 2 from Grant.
+Christopher
 
-Yours,
-Linus Walleij
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
