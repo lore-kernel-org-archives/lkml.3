@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab3FXNK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 09:10:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:25371 "EHLO mga14.intel.com"
+	id S1752115Ab3FXNNV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 09:13:21 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49090 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750807Ab3FXNK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751006Ab3FXNK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Jun 2013 09:10:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,928,1363158000"; 
-   d="scan'208";a="321686535"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 07/15] perf tools: add const specifier to perf_pmu__find name parameter
-Date: Mon, 24 Jun 2013 16:16:04 +0300
-Message-Id: <1372079772-20803-8-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
-References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [GIT PULL] ARM: CPUFreq updates for 3.11
+Date: Mon, 24 Jun 2013 15:20:23 +0200
+Message-ID: <2762325.xSxJKsi0Kg@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpo=3DHa0+3trrL7b1JVhxrXLtERX9kth5AjLGu7Tf6Adig@mail.gmail.com>
+References: <CAKohpo=v4qPDH32Y4ithr_p007nTn5AOUzkUCiHTGgQN6-=BEw@mail.gmail.com> <1662523.HdXbLYrd2q@vostro.rjw.lan> <CAKohpo=3DHa0+3trrL7b1JVhxrXLtERX9kth5AjLGu7Tf6Adig@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The name parameter is constant, declare it so.
+On Monday, June 24, 2013 06:20:35 PM Viresh Kumar wrote:
+> On 24 June 2013 17:15, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Well, it should go last.  Also I'd prefer to apply it directly.
+> 
+> Okay.. Below is pull request for ARM patches alone.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/pmu.c | 14 +++++++-------
- tools/perf/util/pmu.h |  2 +-
- 2 files changed, 8 insertions(+), 8 deletions(-)
+Pulled, thanks!
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index def64d4..98b993ee 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -73,7 +73,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head)
-  * located at:
-  * /sys/bus/event_source/devices/<dev>/format as sysfs group attributes.
-  */
--static int pmu_format(char *name, struct list_head *format)
-+static int pmu_format(const char *name, struct list_head *format)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
-@@ -162,7 +162,7 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
-  * Reading the pmu event aliases definition, which should be located at:
-  * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
-  */
--static int pmu_aliases(char *name, struct list_head *head)
-+static int pmu_aliases(const char *name, struct list_head *head)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
-@@ -209,7 +209,7 @@ static int pmu_alias_terms(struct perf_pmu_alias *alias,
-  * located at:
-  * /sys/bus/event_source/devices/<dev>/type as sysfs attribute.
-  */
--static int pmu_type(char *name, __u32 *type)
-+static int pmu_type(const char *name, __u32 *type)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
-@@ -267,7 +267,7 @@ static void pmu_read_sysfs(void)
- 	closedir(dir);
- }
- 
--static struct cpu_map *pmu_cpumask(char *name)
-+static struct cpu_map *pmu_cpumask(const char *name)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
-@@ -294,7 +294,7 @@ static struct cpu_map *pmu_cpumask(char *name)
- 	return cpus;
- }
- 
--static struct perf_pmu *pmu_lookup(char *name)
-+static struct perf_pmu *pmu_lookup(const char *name)
- {
- 	struct perf_pmu *pmu;
- 	LIST_HEAD(format);
-@@ -331,7 +331,7 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	return pmu;
- }
- 
--static struct perf_pmu *pmu_find(char *name)
-+static struct perf_pmu *pmu_find(const char *name)
- {
- 	struct perf_pmu *pmu;
- 
-@@ -357,7 +357,7 @@ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu)
- 	return NULL;
- }
- 
--struct perf_pmu *perf_pmu__find(char *name)
-+struct perf_pmu *perf_pmu__find(const char *name)
- {
- 	struct perf_pmu *pmu;
- 
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 32fe55b..d17b565 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -21,7 +21,7 @@ struct perf_pmu {
- 	struct list_head list;
- };
- 
--struct perf_pmu *perf_pmu__find(char *name);
-+struct perf_pmu *perf_pmu__find(const char *name);
- int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms);
- int perf_pmu__config_terms(struct list_head *formats,
+> The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
+> 
+>   Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
+> 
+> are available in the git repository at:
+> 
+>   git://git.linaro.org/people/vireshk/linux.git cpufreq-fix-notification-arm
+> 
+> for you to fetch changes up to f56cc99e3f189ce214408e9c0fdda9e664d83dc1:
+> 
+>   cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier in error cases
+> (2013-06-24 18:19:01 +0530)
+> 
+> ----------------------------------------------------------------
+> Viresh Kumar (8):
+>       cpufreq: arm-big-little: call CPUFREQ_POSTCHANGE notfier in error cases
+>       cpufreq: davinci: call CPUFREQ_POSTCHANGE notfier in error cases
+>       cpufreq: dbx500: call CPUFREQ_POSTCHANGE notfier in error cases
+>       cpufreq: exynos: call CPUFREQ_POSTCHANGE notfier in error cases
+>       cpufreq: imx6q: call CPUFREQ_POSTCHANGE notfier in error cases
+>       cpufreq: omap: call CPUFREQ_POSTCHANGE notfier in error cases
+>       cpufreq: s3c64xx: call CPUFREQ_POSTCHANGE notfier in error cases
+>       cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier in error cases
+> 
+>  drivers/cpufreq/arm_big_little.c  |  4 +---
+>  drivers/cpufreq/davinci-cpufreq.c |  3 +++
+>  drivers/cpufreq/dbx500-cpufreq.c  |  4 ++--
+>  drivers/cpufreq/exynos-cpufreq.c  | 10 ++++++++--
+>  drivers/cpufreq/imx6q-cpufreq.c   | 17 +++++++++++------
+>  drivers/cpufreq/omap-cpufreq.c    |  6 +++---
+>  drivers/cpufreq/s3c64xx-cpufreq.c |  8 ++++++--
+>  drivers/cpufreq/tegra-cpufreq.c   |  4 ++--
+>  8 files changed, 36 insertions(+), 20 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-1.7.11.7
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
