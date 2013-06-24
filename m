@@ -1,289 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab3FXOlc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 10:41:32 -0400
-Received: from mo5.mail-out.ovh.net ([178.32.228.5]:55462 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab3FXOlb (ORCPT
+	id S1752055Ab3FXOmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 10:42:09 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:50392 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab3FXOmH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 10:41:31 -0400
-Date: Mon, 24 Jun 2013 16:31:27 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: linux-fbdev@vger.kernel.org, jimwall@q.com, brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH 2/2] fb: backlight: HX8357: Add HX8369 support
-Message-ID: <20130624143127.GH305@game.jcrosoft.org>
-References: <1371839259-543-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1371839259-543-2-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 24 Jun 2013 10:42:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371839259-543-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 6420725695313521555
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <20130624142826.AA34E3E0A89@localhost>
+References: <51c3565e.4pKZ3AC1Ra7xI3K/%fengguang.wu@intel.com>
+ <20130621014637.GB16693@localhost> <CACRpkdYfNe0av3-U7KEiqOQNCkM=YTrgHTwq4oMkoCXQ1Y0Dgw@mail.gmail.com>
+ <20130624142826.AA34E3E0A89@localhost>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 24 Jun 2013 15:41:46 +0100
+X-Google-Sender-Auth: Ig6tyyVFXegsnhYQcJ2FNiDruE8
+Message-ID: <CACxGe6tHb4BKKi4XccM3RaJoippHygKtMyB4gf+p79Reg572pw@mail.gmail.com>
+Subject: Re: warning: PINCTRL_BAYTRAIL etc. selects IRQ_DOMAIN which has unmet
+ direct dependencies (HAVE_GENERIC_HARDIRQS)
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, kbuild-all@01.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20:27 Fri 21 Jun     , Alexandre Belloni wrote:
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  drivers/video/backlight/hx8357.c | 183 +++++++++++++++++++++++++++++++++++++--
->  1 file changed, 175 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/hx8357.c b/drivers/video/backlight/hx8357.c
-> index 69f5672..b1c4042 100644
-> --- a/drivers/video/backlight/hx8357.c
-> +++ b/drivers/video/backlight/hx8357.c
-> @@ -71,6 +71,18 @@
->  #define HX8357_SET_POWER_NORMAL		0xd2
->  #define HX8357_SET_PANEL_RELATED	0xe9
->  
-> +#define HX8369_SET_DISPLAY_BRIGHTNESS		0x51
-> +#define HX8369_WRITE_CABC_DISPLAY_VALUE		0x53
-> +#define HX8369_WRITE_CABC_BRIGHT_CTRL		0x55
-> +#define HX8369_WRITE_CABC_MIN_BRIGHTNESS	0x5e
-> +#define HX8369_SET_POWER			0xb1
-> +#define HX8369_SET_DISPLAY_MODE			0xb2
-> +#define HX8369_SET_DISPLAY_WAVEFORM_CYC		0xb4
-> +#define HX8369_SET_VCOM				0xb6
-> +#define HX8369_SET_EXTENSION_COMMAND		0xb9
-> +#define HX8369_SET_GIP				0xd5
-> +#define HX8369_SET_GAMMA_CURVE_RELATED		0xe0
-> +
->  struct hx8357_data {
->  	unsigned		im_pins[HX8357_NUM_IM_PINS];
->  	unsigned		reset;
-> @@ -144,6 +156,61 @@ static u8 hx8357_seq_display_mode[] = {
->  	HX8357_SET_DISPLAY_MODE_RGB_INTERFACE,
->  };
->  
-> +static u8 hx8369_seq_write_CABC_min_brightness[] = {
-> +	HX8369_WRITE_CABC_MIN_BRIGHTNESS, 0x00,
-> +};
-> +
-> +static u8 hx8369_seq_write_CABC_control[] = {
-> +	HX8369_WRITE_CABC_DISPLAY_VALUE, 0x24,
-> +};
-> +
-> +static u8 hx8369_seq_set_display_brightness[] = {
-> +	HX8369_SET_DISPLAY_BRIGHTNESS, 0xFF,
-> +};
-> +
-> +static u8 hx8369_seq_write_CABC_control_setting[] = {
-> +	HX8369_WRITE_CABC_BRIGHT_CTRL, 0x02,
-> +};
-> +
-> +static u8 hx8369_seq_extension_command[] = {
-> +	HX8369_SET_EXTENSION_COMMAND, 0xff, 0x83, 0x69,
-> +};
-> +
-> +static u8 hx8369_seq_display_related[] = {
-> +	HX8369_SET_DISPLAY_MODE, 0x00, 0x2b, 0x03, 0x03, 0x70, 0x00,
-> +	0xff, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03, 0x00,	0x01,
-> +};
-> +
-> +static u8 hx8369_seq_panel_waveform_cycle[] = {
-> +	HX8369_SET_DISPLAY_WAVEFORM_CYC, 0x0a, 0x1d, 0x80, 0x06, 0x02,
-> +};
-> +
-> +static u8 hx8369_seq_set_address_mode[] = {
-> +	HX8357_SET_ADDRESS_MODE, 0x00,
-> +};
-> +
-> +static u8 hx8369_seq_vcom[] = {
-> +	HX8369_SET_VCOM, 0x3e, 0x3e,
-> +};
-> +
-> +static u8 hx8369_seq_gip[] = {
-> +	HX8369_SET_GIP, 0x00, 0x01, 0x03, 0x25, 0x01, 0x02, 0x28, 0x70,
-> +	0x11, 0x13, 0x00, 0x00, 0x40, 0x26, 0x51, 0x37, 0x00, 0x00, 0x71,
-> +	0x35, 0x60, 0x24, 0x07, 0x0f, 0x04, 0x04,
-> +};
-> +
-> +static u8 hx8369_seq_power[] = {
-> +	HX8369_SET_POWER, 0x01, 0x00, 0x34, 0x03, 0x00, 0x11, 0x11, 0x32,
-> +	0x2f, 0x3f, 0x3f, 0x01, 0x3a, 0x01, 0xe6, 0xe6, 0xe6, 0xe6, 0xe6,
-> +};
-> +
-> +static u8 hx8369_seq_gamma_curve_related[] = {
-> +	HX8369_SET_GAMMA_CURVE_RELATED, 0x00, 0x0d, 0x19, 0x2f, 0x3b, 0x3d,
-> +	0x2e, 0x4a, 0x08, 0x0e, 0x0f, 0x14, 0x16, 0x14, 0x14, 0x14, 0x1e,
-> +	0x00, 0x0d, 0x19, 0x2f, 0x3b, 0x3d, 0x2e, 0x4a, 0x08, 0x0e, 0x0f,
-> +	0x14, 0x16, 0x14, 0x14, 0x14, 0x1e,
-> +};
-> +
->  static int hx8357_spi_write_then_read(struct lcd_device *lcdev,
->  				u8 *txbuf, u16 txlen,
->  				u8 *rxbuf, u16 rxlen)
-> @@ -242,6 +309,16 @@ static int hx8357_exit_standby(struct lcd_device *lcdev)
->  	return 0;
->  }
->  
-> +static void hx8357_lcd_reset(struct hx8357_data *lcd)
-> +{
-> +	gpio_set_value(lcd->reset, 1);
-> +	usleep_range(10000, 12000);
-> +	gpio_set_value(lcd->reset, 0);
-> +	usleep_range(10000, 12000);
-> +	gpio_set_value(lcd->reset, 1);
-> +	msleep(120);
-> +}
-> +
->  static int hx8357_lcd_init(struct lcd_device *lcdev)
->  {
->  	struct hx8357_data *lcd = lcd_get_data(lcdev);
-> @@ -257,13 +334,7 @@ static int hx8357_lcd_init(struct lcd_device *lcdev)
->  		gpio_set_value_cansleep(lcd->im_pins[2], 1);
->  	}
->  
-> -	/* Reset the screen */
-> -	gpio_set_value(lcd->reset, 1);
-> -	usleep_range(10000, 12000);
-> -	gpio_set_value(lcd->reset, 0);
-> -	usleep_range(10000, 12000);
-> -	gpio_set_value(lcd->reset, 1);
-> -	msleep(120);
-> +	hx8357_lcd_reset(lcd);
->  
->  	ret = hx8357_spi_write_array(lcdev, hx8357_seq_power,
->  				ARRAY_SIZE(hx8357_seq_power));
-> @@ -359,6 +430,97 @@ static int hx8357_lcd_init(struct lcd_device *lcdev)
->  	return 0;
->  }
->  
-> +static int hx8369_lcd_init(struct lcd_device *lcdev)
-> +{
-> +	struct hx8357_data *lcd = lcd_get_data(lcdev);
-> +	int ret;
-> +
-> +	hx8357_lcd_reset(lcd);
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_extension_command,
-> +				ARRAY_SIZE(hx8369_seq_extension_command));
-> +	if (ret < 0)
-> +		return ret;
-> +	usleep_range(10000, 12000);
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_display_related,
-> +				ARRAY_SIZE(hx8369_seq_display_related));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_panel_waveform_cycle,
-> +				ARRAY_SIZE(hx8369_seq_panel_waveform_cycle));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_set_address_mode,
-> +				ARRAY_SIZE(hx8369_seq_set_address_mode));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_vcom,
-> +				ARRAY_SIZE(hx8369_seq_vcom));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_gip,
-> +				ARRAY_SIZE(hx8369_seq_gip));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_power,
-> +				ARRAY_SIZE(hx8369_seq_power));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_EXIT_SLEEP_MODE);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	msleep(120);
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_gamma_curve_related,
-> +				ARRAY_SIZE(hx8369_seq_gamma_curve_related));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_EXIT_SLEEP_MODE);
-> +	if (ret < 0)
-> +		return ret;
-> +	usleep_range(1000, 1200);
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_write_CABC_control,
-> +				ARRAY_SIZE(hx8369_seq_write_CABC_control));
-> +	if (ret < 0)
-> +		return ret;
-> +	usleep_range(10000, 12000);
-> +
-> +	ret = hx8357_spi_write_array(lcdev,
-> +			hx8369_seq_write_CABC_control_setting,
-> +			ARRAY_SIZE(hx8369_seq_write_CABC_control_setting));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_array(lcdev,
-> +			hx8369_seq_write_CABC_min_brightness,
-> +			ARRAY_SIZE(hx8369_seq_write_CABC_min_brightness));
-> +	if (ret < 0)
-> +		return ret;
-> +	usleep_range(10000, 12000);
-> +
-> +	ret = hx8357_spi_write_array(lcdev, hx8369_seq_set_display_brightness,
-> +				ARRAY_SIZE(hx8369_seq_set_display_brightness));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = hx8357_spi_write_byte(lcdev, HX8357_SET_DISPLAY_ON);
-> +	if (ret < 0)
-> +		return ret;
-> +	msleep(100);
-> +
-> +	return 0;
-> +}
-> +
->  #define POWER_IS_ON(pwr)	((pwr) <= FB_BLANK_NORMAL)
->  
->  static int hx8357_set_power(struct lcd_device *lcdev, int power)
-> @@ -461,7 +623,11 @@ static int hx8357_probe(struct spi_device *spi)
->  	}
->  	spi_set_drvdata(spi, lcdev);
->  
-> -	ret = hx8357_lcd_init(lcdev);
-> +	ret = -ENODEV;
-> +	if (of_device_is_compatible(spi->dev.of_node, "himax,hx8357"))
-> +		ret = hx8357_lcd_init(lcdev);
-> +	else if (of_device_is_compatible(spi->dev.of_node, "himax,hx8369"))
-> +		ret = hx8369_lcd_init(lcdev);
-so use the data from the compatible to get the function pointer
-and does not have to do a list of if/else compatible
->  	if (ret) {
->  		dev_err(&spi->dev, "Couldn't initialize panel\n");
->  		goto init_error;
-> @@ -486,6 +652,7 @@ static int hx8357_remove(struct spi_device *spi)
->  
->  static const struct of_device_id hx8357_dt_ids[] = {
->  	{ .compatible = "himax,hx8357" },
-> +	{ .compatible = "himax,hx8369" },
->  	{},
->  };
->  MODULE_DEVICE_TABLE(of, hx8357_dt_ids);
-> -- 
-> 1.8.1.2
-> 
+On Mon, Jun 24, 2013 at 3:28 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Mon, 24 Jun 2013 13:44:34 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Fri, Jun 21, 2013 at 3:46 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>>
+>> config: make ARCH=s390 allmodconfig
+>> (...)
+>> > warning: (ARM_GIC && ARM_VIC && ORION_IRQCHIP && RENESAS_INTC_IRQPIN && RENESAS_IRQC && VERSATILE_FPGA_IRQ && REGMAP && PINCTRL_BAYTRAIL && GPIO_LYNXPOINT && GPIO_GRGPIO && GPIO_PCF857X && GPIO_LANGWELL && MFD_CORE && MFD_MAX77686 && MFD_MAX8997 && AB8500_CORE && MFD_LP8788 && MFD_TPS65910 && TWL4030_CORE && MFD_WM831X_I2C && MFD_WM831X_SPI && EXTCON_MAX77693) selects IRQ_DOMAIN which has unmet direct dependencies (HAVE_GENERIC_HARDIRQS)
+>>
+>> Hm I wonder how you actually fix this...
+>>
+>> This must be the offending Kconfig fragment:
+>>
+>> config PINCTRL_BAYTRAIL
+>>         bool "Intel Baytrail GPIO pin control"
+>>         depends on GPIOLIB && ACPI && X86
+>>         select IRQ_DOMAIN
+>
+> I get that warning on gpio/next which doesn't have the PINCTRL_BAYTRAIL
+> defined. I don't think this is caused by that hunk. The problem exists
+> in mainline (v3.10-rc7) also.
+>
+> g.
+
+It bisects down to the following commit, but reverting it doesn't
+solve the problem. I haven't looked deeper, but I expect that further
+patches have done something similar of pulling in IRQ_DOMAIN, quite
+possibly other MFD drivers, but not necessarily.
+
+g.
+
+commit 5a324acfce6f7f05ab2a044f7d0ece5f44e812c6
+Author: David Rientjes <rientjes@google.com>
+Date:   Thu Mar 21 12:08:33 2013 -0700
+
+    mfd: cros_ec: Add MFD_CORE dependency
+
+    CONFIG_MFD_CROS_EC requires CONFIG_MFD_CORE for a couple of functions that
+    are declared but not defined:
+
+        ERROR: "mfd_remove_devices" [drivers/mfd/cros_ec.ko] undefined!
+        ERROR: "mfd_add_devices" [drivers/mfd/cros_ec.ko] undefined!
+
+    Fix it by selecting CONFIG_MFD_CORE anytime CONFIG_MFD_CROS_EC is enabled.
+
+    Signed-off-by: David Rientjes <rientjes@google.com>
+    Acked-by: Simon Glass <sjg@chromium.org>
+    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 94b4547..67e56dc 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -23,6 +23,7 @@ config MFD_88PM860X
+
+ config MFD_CROS_EC
+        tristate "Support ChromeOS Embedded Controller"
++       select MFD_CORE
+        help
+          If you say Y here you get support for the ChromeOS Embedded
+          Controller (EC) providing keyboard, battery and power services.
