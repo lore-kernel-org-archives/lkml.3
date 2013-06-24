@@ -1,97 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab3FXF3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 01:29:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40438 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3FXF3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 01:29:46 -0400
-Date: Mon, 24 Jun 2013 15:29:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Suman Anna <s-anna@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the mailbox
- tree
-Message-Id: <20130624152930.4c6cef3c5a272d8ca82d94c6@canb.auug.org.au>
-In-Reply-To: <51C4703C.10206@ti.com>
-References: <20130621162656.bb94e0fa8b6813781b804a73@canb.auug.org.au>
-	<CAOesGMjszju75jo6Ej6C=0-rfdPLuEj0mwmU1zYvFvYw1dyQCA@mail.gmail.com>
-	<20130621071239.GM5523@atomide.com>
-	<201306210936.09593.arnd@arndb.de>
-	<51C4703C.10206@ti.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Jun_2013_15_29_30_+1000_7wTGWFdFiz4cQkT."
+	id S1752310Ab3FXFc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 01:32:59 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52190 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990Ab3FXFc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 01:32:57 -0400
+Message-ID: <51C7D9CC.8090901@ti.com>
+Date: Mon, 24 Jun 2013 11:01:56 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
+        <swarren@nvidia.com>, <sylvester.nawrocki@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
+        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
+        <rnayak@ti.com>, <shawn.guo@linaro.org>, <santosh.shilimkar@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <nsekhar@ti.com>
+Subject: Re: [PATCH v7 7/9] usb: musb: omap2430: use the new generic PHY framework
+References: <1371113039-5784-1-git-send-email-kishon@ti.com> <1371113039-5784-8-git-send-email-kishon@ti.com> <20130618094703.GV5461@arwen.pp.htv.fi>
+In-Reply-To: <20130618094703.GV5461@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Jun_2013_15_29_30_+1000_7wTGWFdFiz4cQkT.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi,
 
-On Fri, 21 Jun 2013 10:24:44 -0500 Suman Anna <s-anna@ti.com> wrote:
+On Tuesday 18 June 2013 03:17 PM, Felipe Balbi wrote:
+> Hi,
 >
-> On 06/21/2013 02:36 AM, Arnd Bergmann wrote:
-> > On Friday 21 June 2013, Tony Lindgren wrote:
-> >>> I wonder if this mess is caused by the fact that I did the revert
-> >>> instead of rebuilding our for-next and dropping the merge in the first
-> >>> place.
-> >>>
-> >>> I'll rebuild our for-next (or maybe Arnd will beat me to it) before
-> >>> next linux-next build, i.e. Sunday night my time.
-> >>
-> >> Could be, especially if some of the commits are the same in the revert=
-ed
-> >> branch and newly merged branch as git might think that some merges have
-> >> been already resolved the right way earlier.
->=20
-> Yes, please drop the particular mailbox branch that you were picking
-> into linux-next. It was the previous framework which was dropped at the
-> last minute during the 3.10 merge window in favor of new one still under
-> its final development steps, so we will not be using any commits from
-> that branch.  Sorry for the trouble on this one. The branch that Arnd
-> took has some of the OMAP patches reworked in preparation for the
-> newer one.
+> On Thu, Jun 13, 2013 at 02:13:57PM +0530, Kishon Vijay Abraham I wrote:
+>> Use the generic PHY framework API to get the PHY. The usb_phy_set_resume
+>> and usb_phy_set_suspend is replaced with power_on/get_sync and
+>> power_off/put_sync to align with the new PHY framework.
+>>
+>> musb->xceiv can't be removed as of now because musb core uses xceiv.state and
+>> xceiv.otg. Once there is a separate state machine to handle otg, these can be
+>> moved out of xceiv and then we can start using the generic PHY framework.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   drivers/usb/musb/musb_core.c |    1 +
+>>   drivers/usb/musb/musb_core.h |    3 +++
+>>   drivers/usb/musb/omap2430.c  |   29 +++++++++++++++++++++--------
+>>   3 files changed, 25 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+>> index 37a261a..f732bcc 100644
+>> --- a/drivers/usb/musb/musb_core.c
+>> +++ b/drivers/usb/musb/musb_core.c
+>> @@ -1864,6 +1864,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+>>   	musb->board_set_power = plat->set_power;
+>>   	musb->min_power = plat->min_power;
+>>   	musb->ops = plat->platform_ops;
+>> +	musb->phy_label = plat->phy_label;
+>>
+>>   	/* The musb_platform_init() call:
+>>   	 *   - adjusts musb->mregs
+>> diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+>> index 7fb4819..498ae21 100644
+>> --- a/drivers/usb/musb/musb_core.h
+>> +++ b/drivers/usb/musb/musb_core.h
+>> @@ -46,6 +46,7 @@
+>>   #include <linux/usb.h>
+>>   #include <linux/usb/otg.h>
+>>   #include <linux/usb/musb.h>
+>> +#include <linux/phy/phy.h>
+>>
+>>   struct musb;
+>>   struct musb_hw_ep;
+>> @@ -357,6 +358,7 @@ struct musb {
+>>   	u16			int_tx;
+>>
+>>   	struct usb_phy		*xceiv;
+>> +	struct phy		*phy;
+>>
+>>   	int nIrq;
+>>   	unsigned		irq_wake:1;
+>> @@ -434,6 +436,7 @@ struct musb {
+>>   	unsigned                double_buffer_not_ok:1;
+>>
+>>   	struct musb_hdrc_config	*config;
+>> +	const char		*phy_label;
+>>
+>>   #ifdef MUSB_CONFIG_PROC_FS
+>>   	struct proc_dir_entry *proc_entry;
+>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+>> index 628b93f..c62a004 100644
+>> --- a/drivers/usb/musb/omap2430.c
+>> +++ b/drivers/usb/musb/omap2430.c
+>> @@ -348,14 +348,24 @@ static int omap2430_musb_init(struct musb *musb)
+>>   	 * up through ULPI.  TWL4030-family PMICs include one,
+>>   	 * which needs a driver, drivers aren't always needed.
+>>   	 */
+>> -	if (dev->parent->of_node)
+>> +	if (dev->parent->of_node) {
+>> +		musb->phy = devm_phy_get(dev->parent, "usb2-phy");
+>> +
+>> +		/* We can't totally remove musb->xceiv as of now because
+>> +		 * musb core uses xceiv.state and xceiv.otg. Once we have
+>> +		 * a separate state machine to handle otg, these can be moved
+>> +		 * out of xceiv and then we can start using the generic PHY
+>> +		 * framework
+>> +		 */
+>>   		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
+>>   		    "usb-phy", 0);
+>> -	else
+>> +	} else {
+>>   		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
+>> +		musb->phy = devm_phy_get(dev, musb->phy_label);
+>> +	}
+>>
+>> -	if (IS_ERR(musb->xceiv)) {
+>> -		status = PTR_ERR(musb->xceiv);
+>> +	if (IS_ERR(musb->xceiv) || IS_ERR(musb->phy)) {
+>> +		status = PTR_ERR(musb->xceiv) | PTR_ERR(musb->phy);
+>>
+>>   		if (status == -ENXIO)
+>>   			return status;
+>> @@ -397,9 +407,10 @@ static int omap2430_musb_init(struct musb *musb)
+>>   	if (glue->status != OMAP_MUSB_UNKNOWN)
+>>   		omap_musb_set_mailbox(glue);
+>>
+>> -	usb_phy_init(musb->xceiv);
+>> +	phy_init(musb->phy);
+>>
+>>   	pm_runtime_put_noidle(musb->controller);
+>> +	phy_pm_runtime_put(musb->phy);
+>
+> see, weird unbalanced calls :-)
+>
+> Make it all explicit:
+>
+> phy_pm_runtime_get_sync(phy);
+> phy_init(phy);
+> phy_pm_runtime_put(phy);
 
-OK, I have removed the mailbox tree for now.  Let me know if you want it
-to be back in again.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I think then it makes sense to drop get_sync from phy_init()?
 
---Signature=_Mon__24_Jun_2013_15_29_30_+1000_7wTGWFdFiz4cQkT.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRx9k/AAoJEECxmPOUX5FECJMP/23ao125iilRUiraNJfn/lmB
-yjFrwZVVp1oCr0vtVnjFsPT+VYWFU0Xuq3h1cRfE/BtOi2tvWFziqAP3DgN1qtQR
-+v5Xo8qclGJuUcqXUm8LRwUxyZtr8SpNYq7caxoPGo6hs8RyRqcFXiXAcDKYE0Om
-pIyjV1hzAWSNkeRZSUh3yVHsgfjAZF7cNEhSMECCzqERyn0H3J+Wsb/o2wwLrAX4
-0RAGBLEv1LMxl2rXEiF/LR9F2TW/lXlarRJ9WWI85viJiYFL7+naN897r89CSDF7
-uShcjPCasKYBWk8RvLwjNYOL/Ynih97KrJaTBBesdT5gLuhBAgB3OkwuQ1j4utVO
-YW6pzsGr93FVs4GC1RTN9bRFF2ONE3HE16yAntZwTs/xXRsCtjM8ZgL+cvBeSOA6
-HJeYGZaBLKW7/H1U4Lq2nd3Ju/giwh5t4PtX0Gu5pVsfsuLzjyxb4gf49tPXVkGs
-jo+eDR8F0Exoc4dZKqsWd5GOKfycOfwp6bRCqf2KVJw6zmj9bDtk1+BM8+VRmKnh
-7TGooWWOQx9b050OPAnDP7wHKkWbod/CrvgqM6wPUE6zRo7rn5rtbtfHQt4O7jAP
-/eKurem28fXSTPIp9N5qDwn6zZMl/j3XlV9byS5AGgtZPlYIWn3GHX1nlJObd/Jg
-zInem8vdRxay4QZ4APcd
-=5kag
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Jun_2013_15_29_30_+1000_7wTGWFdFiz4cQkT.--
+Thanks
+Kishon
