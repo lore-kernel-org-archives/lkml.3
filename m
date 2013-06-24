@@ -1,141 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3FXPJl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:09:41 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55418 "EHLO arroyo.ext.ti.com"
+	id S1752566Ab3FXPKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:10:37 -0400
+Received: from mail.us.es ([193.147.175.20]:50243 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab3FXPJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:09:39 -0400
-Message-ID: <51C86113.1090902@ti.com>
-Date: Mon, 24 Jun 2013 18:09:07 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1750829Ab3FXPKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 11:10:36 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.8/17406. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-97.8/7.5):. 
+ Processed in 1.8104 secs); 24 Jun 2013 15:10:34 -0000
+X-Envelope-From: pneira@us.es
+Date: Mon, 24 Jun 2013 17:10:31 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: George Spelvin <linux@horizon.com>, bp@alien8.de, kaber@trash.net,
+        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: v3.10-rc7 oops soon after boot
+Message-ID: <20130624151031.GB3917@localhost>
+References: <20130624094145.2576.qmail@science.horizon.com>
+ <51C816C8.4080709@cn.fujitsu.com>
+ <20130624113441.GA2583@localhost>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: <balbi@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-References: <Pine.LNX.4.44L0.1306201326100.2063-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1306201326100.2063-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624113441.GA2583@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
-
-On 06/20/2013 08:33 PM, Alan Stern wrote:
-> On Thu, 20 Jun 2013, Roger Quadros wrote:
+On Mon, Jun 24, 2013 at 01:34:41PM +0200, Pablo Neira Ayuso wrote:
+> On Mon, Jun 24, 2013 at 05:52:08PM +0800, Gao feng wrote:
+> > On 06/24/2013 05:41 PM, George Spelvin wrote:
+> > >> Please try the patch below,
+> > >> I think this bug is introduced by me :(
+> > >>
+> > >> Thanks!
+> > > 
+> > > Well, you changed it, but it still crashes.
+> > > 
+> > > It's now at del_timer+0x9/0x58, with the code being:
+> > 
+> > This one should work.
+> > 
+> > Thanks for your quickly reply.
 > 
->>> runtime_resume(dev)
->>> {
->>> 	...
->>>
->>> 	if (omap->flags & OMAP_EHCI_IRQ_PENDING) {
->>> 		process_pending_irqs(omap);
->>
->> OK, thanks. 
->>
->> But I'm not sure if the generic ehci_irq handler is able to
->> run in a process context. Maybe if we replace spin_lock(&ehci->lock);
->> with spin_lock_irqsave() there, it will work.
->>
->> Alan is this a doable option?
+> I managed to crash it using a group != 1 (default) and enabling
+> batching:
 > 
-> ehci_irq() will work okay in process context, provided the caller 
-> disables interrupts.
+> iptables -I INPUT -j ULOG --ulog-nlgroup 2 --ulog-qthresh 50
 > 
-> But maybe none of this will be needed after Roger redesigns the
-> controller suspend to work at the right time.  Or if it is, we could
-> adopt a simpler alternative: the controller's resume routine could
-> always call usb_hcd_resume_root_hub().  After all, about the only
-> reason for doing a runtime resume of the controller is because the root
-> hub needs to do something.
+> It seems ulog->nlgroup[i] is always left unset.
 > 
+> I have mangled your patch, find it attached.
 
-OK I've tried to handle all this in an alternate way. Now the controller suspend/resume
-and runtime suspend/resume is independent of bus suspend.
+> From 79da8ea854c06ca9320decbb2f9d2e8d25b2f7e5 Mon Sep 17 00:00:00 2001
+> From: Gao feng <gaofeng@cn.fujitsu.com>
+> Date: Mon, 24 Jun 2013 17:04:02 +0800
+> Subject: [PATCH] netfilter: ipt_ULOG: fix incorrect setting of ulog timer
+> 
+> The parameter of setup_timer should be &ulog->nlgroup[i].
+> the incorrect parameter will cause kernel panic in
+> ulog_timer.
+> 
+> Bug introducted in commit 355430671ad93546b34b4e91bdf720f3a704efa4
+> "netfilter: ipt_ULOG: add net namespace support for ipt_ULOG"
+> 
+> ebt_ULOG doesn't have this problem.
+> 
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 
-The controller now runtime suspends when all devices on the bus have suspended and
-the hub auto suspends. NOTE: HW_ACCESSIBLE is still set on runtime_suspend.
-The challenge here is to process the interrupt in this state.
-
-I've tried to handle this state. (i.e. interrupt while controller is runtime suspended),
-by disabling the interrupt till we are ready and calling usb_hcd_resume_root_hub().
-We mark a flag (HW_IRQ_DISABLED) stating that the interrupt was disabled and based on
-that enable the IRQ and clear the flag in hcd_resume_work().
-
-Do let me know what you think of this approach.
-
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index d53547d..8879cd2 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2136,6 +2136,11 @@ static void hcd_resume_work(struct work_struct *work)
- 	usb_lock_device(udev);
- 	usb_remote_wakeup(udev);
- 	usb_unlock_device(udev);
-+	if (HCD_IRQ_DISABLED(hcd)) {
-+		/* Interrupt was disabled */
-+		clear_bit(HCD_FLAG_IRQ_DISABLED, &hcd->flags);
-+		enable_irq(hcd->irq);
-+	}
- }
- 
- /**
-@@ -2225,6 +2230,16 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
- 
- 	if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
- 		rc = IRQ_NONE;
-+	else if (pm_runtime_status_suspended(hcd->self.controller)) {
-+		/*
-+		 * We can't handle it yet so disable IRQ, make note of it
-+		 * and resume root hub (i.e. controller as well)
-+		 */
-+		disable_irq_nosync(hcd->irq);
-+		set_bit(HCD_FLAG_IRQ_DISABLED, &hcd->flags);
-+		usb_hcd_resume_root_hub(hcd);
-+		rc = IRQ_HANDLED;
-+	}
- 	else if (hcd->driver->irq(hcd) == IRQ_NONE)
- 		rc = IRQ_NONE;
- 	else
-
-diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-index f5f5c7d..6c6287e 100644
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -110,6 +110,7 @@ struct usb_hcd {
- #define HCD_FLAG_WAKEUP_PENDING		4	/* root hub is resuming? */
- #define HCD_FLAG_RH_RUNNING		5	/* root hub is running? */
- #define HCD_FLAG_DEAD			6	/* controller has died? */
-+#define HCD_FLAG_IRQ_DISABLED		7	/* Interrupt was disabled */
- 
- 	/* The flags can be tested using these macros; they are likely to
- 	 * be slightly faster than test_bit().
-@@ -120,6 +121,7 @@ struct usb_hcd {
- #define HCD_WAKEUP_PENDING(hcd)	((hcd)->flags & (1U << HCD_FLAG_WAKEUP_PENDING))
- #define HCD_RH_RUNNING(hcd)	((hcd)->flags & (1U << HCD_FLAG_RH_RUNNING))
- #define HCD_DEAD(hcd)		((hcd)->flags & (1U << HCD_FLAG_DEAD))
-+#define HCD_IRQ_DISABLED(hcd)	((hcd)->flags & (1U << HCD_FLAG_IRQ_DISABLED))
- 
- 	/* Flags that get set only during HCD registration or removal. */
- 	unsigned		rh_registered:1;/* is root hub registered? */
-
-diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-index 16d7150..c5320c7 100644
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -225,6 +225,8 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
- 		usb_phy_set_suspend(omap->phy[i], 0);
- 	}
- 
-+	pm_runtime_put_sync(dev);
-+
- 	return 0;
- 
- err_pm_runtime:
-
+I have applied the patch that I sent you.
