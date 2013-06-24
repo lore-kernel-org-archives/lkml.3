@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3FXKKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:10:30 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:58714 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751916Ab3FXKK3 (ORCPT
+	id S1752221Ab3FXKLE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:11:04 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55672 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751271Ab3FXKLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:10:29 -0400
-Date: Mon, 24 Jun 2013 11:07:32 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        David Lang <david@lang.hm>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "efault@gmx.de" <efault@gmx.de>,
+	Mon, 24 Jun 2013 06:11:02 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+H83ffayisGjfrHuwnQEnx
+Date: Mon, 24 Jun 2013 03:10:55 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "pjt@google.com" <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: power-efficient scheduling design
-Message-ID: <20130624100732.GB14982@arm.com>
-References: <51C07ABC.2080704@linux.intel.com>
- <alpine.DEB.2.02.1306181039340.9258@nftneq.ynat.uz>
- <51C1D0BB.3040705@linux.intel.com>
- <20130619170042.GH5460@e103034-lin>
- <51C1E58D.9000408@linux.intel.com>
- <20130621085002.GJ5460@e103034-lin>
- <51C47377.2000208@linux.intel.com>
- <CAHkRjk5G7XJxzjcWa4BqRxz0AtAAh_-Eomzk4+dQRaFk1=HQqA@mail.gmail.com>
- <51C4C6C8.1050008@linux.intel.com>
- <1372030320.3944.114.camel@pasglop>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] pinctrl: document the pinctrl PM states
+Message-ID: <20130624101055.GT5523@atomide.com>
+References: <1370980749-15383-1-git-send-email-linus.walleij@stericsson.com>
+ <51BA1FE7.4000900@wwwdotorg.org>
+ <CACRpkdZV7R3MgbuvEMhs24YYv2hK8Kt9Kjmv_cpRQQ1NYviDQg@mail.gmail.com>
+ <51BB3A2C.608@wwwdotorg.org>
+ <20130617072021.GB4465@atomide.com>
+ <51C20E3A.8090304@wwwdotorg.org>
+ <20130620063823.GD5523@atomide.com>
+ <51C3577E.6040709@wwwdotorg.org>
+ <20130621062552.GI5523@atomide.com>
+ <51C4A593.6000900@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372030320.3944.114.camel@pasglop>
+In-Reply-To: <51C4A593.6000900@wwwdotorg.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 12:32:00AM +0100, Benjamin Herrenschmidt wrote:
-> On Fri, 2013-06-21 at 14:34 -0700, Arjan van de Ven wrote:
-> > On 6/21/2013 2:23 PM, Catalin Marinas wrote:
-> > >>
-> > >> oops sorry I misread your mail (lack of early coffee I suppose)
-> > >>
-> > >> I can see your point of having a thing for "did we ask for all the performance
-> > >> we could ask for" prior to doing a load balance (although, for power efficiency,
-> > >> if you have two tasks that could run in parallel, it's usually better to
-> > >> run them in parallel... so likely we should balance anyway)
-> > >
-> > > Not necessarily, especially if parallel running implies powering up a
-> > > full cluster just for one CPU (it depends on the hardware but for
-> > > example a cluster may not be able to go in deeper sleep states unless
-> > > all the CPUs in that cluster are idle).
+* Stephen Warren <swarren@wwwdotorg.org> [130621 12:18]:
+> On 06/21/2013 12:25 AM, Tony Lindgren wrote:
+> > * Stephen Warren <swarren@wwwdotorg.org> [130620 12:32]:
+> >>
+> >> I assume you mean there shouldn't be any issue *modifying* the pinctrl
+> >> API to allow multiple states to be active at once? And where you're
+> >> talking about having multiple sets active at once already, you're
+> >> talking about some other API?
 > > 
-> > I guess it depends on the system
+> > Nope, the standard pinctrl API. At least I have not seen issues with
+> > having multiple states active the same time in a single driver.
 > 
-> Sort-of. We have something similar with threads on ppc. IE, the core can
-> only really stop if all threads are. From a Linux persepctive it's a
-> matter of how we define the scope of that 'cluster' Catalin is talking
-> about. I'm sure you do too.
+> Please take a look at the implementation of pinctrl_select_state(). It
+> very explicitly performs the following steps:
 > 
-> Then there is the package, which adds MC etc...
+> 1) Find all pins(groups) that are used in the current state but not the
+> new state, and execute pinctrl_disable_setting() on them. (For mux
+> settings only, not pin config, since the core doesn't have any idea how
+> to reverse config settings).
+>
+> 2) For all settings in the new state, apply those settings.
+> 
+> So, it very explicitly only allows a single state to be set at a time.
+> Equally, p->state (the field which stores the currently selected state)
+> is a single item, not a set/list/array.
 
-I think we can say cluster == package so that we use some common
-terminology. On a big.little configuration (TC2), we have 3xA7 in one
-package and 2xA15 in the other. So to efficiently stop an entire package
-(cluster, multi-core etc.) we need to stop all the CPUs it has.
+OK thanks I get now what you're saying. I did not see the p->state
+issue as the disable function won't do anything for the SoCs that I
+mostly deal with.
 
--- 
-Catalin
+> So, this code needs rework if you want the core to support the concept
+> of having multiple states active at once, since it needs separate
+> pinctrl_activate_state() and pinctrl_deactivate_state() APIs, in order
+> to avoid step (1) above. And of course, p->state would need to be a
+> set/list/array.
+
+I'll think about it a bit and do a patch to fix this. It seems that
+that we need just two entries in the p->state array: static (default),
+and dynamic. Then the dynamic would be typically one of: active, idle,
+rx, tx.
+
+Regards,
+
+Tony
