@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab3FXXvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 19:51:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47063 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab3FXXvS (ORCPT
+	id S1752392Ab3FXXxy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 19:53:54 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:35855 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab3FXXxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 19:51:18 -0400
-Date: Tue, 25 Jun 2013 09:51:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: error fetching the cifs tree
-Message-Id: <20130625095114.78375db24240f27af94a086f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Jun_2013_09_51_14_+1000_J1vFalXaNJ6Yi8zI"
+	Mon, 24 Jun 2013 19:53:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130625095114.78375db24240f27af94a086f@canb.auug.org.au>
+References: <20130625095114.78375db24240f27af94a086f@canb.auug.org.au>
+Date: Mon, 24 Jun 2013 18:53:52 -0500
+Message-ID: <CAH2r5msMBMmto-FtbT9nOAUFLAQBuWVnjVK-ajbdFCCnjH9svQ@mail.gmail.com>
+Subject: Re: linux-next: error fetching the cifs tree
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Jun_2013_09_51_14_+1000_J1vFalXaNJ6Yi8zI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes that is fine - am updating with two minor changes to the tree.
+will repost within three hours.
 
-Hi all,
+On Mon, Jun 24, 2013 at 6:51 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Attempting to fetch the cifs tree
+> (git://git.samba.org/sfrench/cifs-2.6.git#for-next) produces this error:
+>
+> fatal: Couldn't find remote ref refs/heads/for-next
+>
+> I am using whatever I have previously fetched.
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-Attempting to fetch the cifs tree
-(git://git.samba.org/sfrench/cifs-2.6.git#for-next) produces this error:
 
-fatal: Couldn't find remote ref refs/heads/for-next
 
-I am using whatever I have previously fetched.
+-- 
+Thanks,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__25_Jun_2013_09_51_14_+1000_J1vFalXaNJ6Yi8zI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRyNtyAAoJEECxmPOUX5FEcwsP/Ak0DGydHW+PtCi5bavlqhtz
-xpbXoYDW60l9vIvCE3I8owmOlmGrVd1m0e0Wp7hi9ooaHoQoYEPSCAOE44m5C0wV
-Shh8L1iegdZmeYG+F+n/5AEW5wJUOvBcttFMryggnhVWRbc/o5ZW3+vTYmgu9iA2
-hAE+pYMzCcRRIvVXYJxyjEYzCdcJlfJwjIMTmvtfbEdbeXc/ynXEi8M/3qMraDUg
-QlUn2gZ7mLeecrDYi3N506hBCLV68P45UFSH1txX6FETahZGZhPvRUxMcAvWISeP
-bY13JUUSWI+DTr9nbJAdyFY8JPuUfXxC/yPBljXVMXD6hi6LcRLOsVhKOcess9Ky
-u40dqurCw4oOKmwimfV3PQtUdTN5UlB5CayKeFwHItFPxDRPCUuth8uz8H2vPAyr
-7jfkWAHEVzK4DVc6sXCmKXGjh/hHUXz/gZ94zsHcn/jAzFSHVbpj8g5Pyfq1saDH
-OkPL1Wfi7PSleickia0rO0rSs2QOazIKANJPk+ssk4uNpIJWytMOtL7wzeP+ZTw4
-DYLce4C4ANOgFkxqzsNEqvpLUJ3TkpyrYYx3p+hBKDkJJMIwcwy5uc26IeTM5hni
-6Pnq/6boUhAVUa/ec9RHLH2NYb4ccLKCpJKqh+LrpBfIlMG07e/uMNrD51ywjzY8
-E+/FgOuh+cMJwie9EX2Y
-=YGT8
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Jun_2013_09_51_14_+1000_J1vFalXaNJ6Yi8zI--
+Steve
