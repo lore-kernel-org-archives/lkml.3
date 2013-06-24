@@ -1,150 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab3FXQlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 12:41:10 -0400
-Received: from smtp-out-228.synserver.de ([212.40.185.228]:1050 "EHLO
-	smtp-out-228.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3FXQlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 12:41:07 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22101
-Message-ID: <51C876B2.1050103@metafoo.de>
-Date: Mon, 24 Jun 2013 18:41:22 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1753020Ab3FXQlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 12:41:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21405 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687Ab3FXQlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 12:41:50 -0400
+Date: Mon, 24 Jun 2013 18:37:08 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130624163708.GA31664@redhat.com>
+References: <20130622013731.GA22918@redhat.com> <20130622173129.GA29375@redhat.com> <20130622215905.GA28238@redhat.com> <20130623143634.GA2000@redhat.com> <20130623150603.GA32313@redhat.com> <20130623160452.GA11740@redhat.com> <20130624020014.GB12811@redhat.com> <20130624143928.GA20659@redhat.com> <1372085549.18733.162.camel@gandalf.local.home> <20130624160012.GB5993@redhat.com>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        jimwall@q.com, brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCHv2 1/3] iio: Add Nuvoton NAU7802 ADC driver
-References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com> <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com> <51C7EA23.1040707@metafoo.de> <51C82169.1010203@free-electrons.com>
-In-Reply-To: <51C82169.1010203@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624160012.GB5993@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 12:37 PM, Alexandre Belloni wrote:
-> On 24/06/2013 08:41, Lars-Peter Clausen wrote:
->> On 06/20/2013 08:57 PM, Alexandre Belloni wrote:
->>> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
->>> gain and sampling rates.
->>>
->>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->>> ---
->>>  .../bindings/iio/adc/nuvoton-nau7802.txt           |  17 +
->>>  drivers/iio/adc/Kconfig                            |   9 +
->>>  drivers/iio/adc/Makefile                           |   1 +
->>>  drivers/iio/adc/nau7802.c                          | 603 +++++++++++++++++++++
->>>  4 files changed, 630 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
->>>  create mode 100644 drivers/iio/adc/nau7802.c
->>>
->>> diff --git a/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt b/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
->>> new file mode 100644
->>> index 0000000..9bc4218
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
->>> @@ -0,0 +1,17 @@
->>> +* Nuvoton NAU7802 Analog to Digital Converter (ADC)use
->>> +
->>> +Required properties:
->>> +  - compatible: Should be "nuvoton,nau7802"
->>> +  - reg: Should contain the ADC I2C address
->>> +
->>> +Optional properties:
->>> +  - nuvoton,vldo: Reference voltage in millivolts (integer)
->>> +  - interrupts: IRQ line for the ADC. If not used the driver will use
->>> +    polling.
->>> +
->>> +Example:
->>> +adc2: nau7802@2a {
->>> +	compatible = "nuvoton,nau7802";
->>> +	reg = <0x2a>;
->>> +	nuvoton,vldo = <3000>;
->> We usually use the regulator framework for specifying the reference voltage.
-> 
-> I followed what Jonathan said in his review of my first patch. Do we
-> want to use the regulator framework to set the internal reference
-> voltage of the ADC ? I agree that if you supply an external voltage, it
-> will be necessary to use the regulator framework. Unfortunately, I can't
-> test that here.
+On 06/24, Dave Jones wrote:
 >
+> On Mon, Jun 24, 2013 at 10:52:29AM -0400, Steven Rostedt wrote:
+>
+>  > > >  check_list_nodes corruption. next->prev should be prev (ffff88023b8a1a08), but was 00ffff88023b8a1a. (next=ffff880243288001).
+>  > >
+>  > > Can't find "check_list_nodes" in lib/list_debug.c or elsewhere...
+>  > >
+>  > > >   [<ffffffff816e467d>] dump_stack+0x19/0x1b
+>  > > >   [<ffffffff8104a0c1>] warn_slowpath_common+0x61/0x80
+>  > > >   [<ffffffff8104a12c>] warn_slowpath_fmt+0x4c/0x50
+>  > > >   [<ffffffff81112c61>] rb_head_page_deactivate.isra.39+0x61/0x80
+>  > >
+>  > > How? rb_list_head_clear() just modifies list->next directly.
+>  > >
+>  > > > hopefully despite that it'll actually function as intended.
+>  > >
+>  > > Yes ;)
+>  >
+>  > I'm curious to what happened.
+>
+> Ah, this is the first victim of my new 'check sanity of nodes during list walks' patch.
+> It's doing the same prev->next next->prev checking as list_add and friends.
+> I'm looking at getting it into shape for a 3.12 merge after some other preparatory patches
+> go into 3.11
 
-Ah, ok I missed that it is an internally generated voltage. It might makes
-sense to add that to the properties documentation.
+So you used the patched kernel when you hit the lockups ?
 
-I guess ideally you'd also register a regulator for the internal regulator
-and then use that. But I think that will unnecessarily complicate the code,
-so I guess the current solution is fine.
+What else was changed?
 
-There is one bug in probe though, if nuvoton,vldo is not set tmp will remain
-uninitialized.
-
-
->>> +};
->> [...]
->>> diff --git a/drivers/iio/adc/nau7802.c b/drivers/iio/adc/nau7802.c
->>> new file mode 100644
->>> index 0000000..e1b6981
->>> --- /dev/null
->>> +++ b/drivers/iio/adc/nau7802.c
->>> @@ -0,0 +1,603 @@
->> [...]
->>> +static int nau7802_set_gain(struct nau7802_state *st, int gain)
->>> +{
->>> +	u8 data;
->>> +	int ret;
->>> +
->>> +	mutex_lock(&st->lock);
->>> +	st->conversion_count = 0;
->>> +
->>> +	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_CTRL1);
->>> +	if (data < 0)
->>> +		goto nau7802_sysfs_set_gain_out;
->> ret will be uninitialized if the goto above is taken
-> 
-> Right, bigger issue, data is u8 so it will never be negative. I'm fixing
-> that !
-> 
-> 
->>> +	ret = i2c_smbus_write_byte_data(st->client, NAU7802_REG_CTRL1,
->>> +					(data & (~NAU7802_CTRL1_GAINS_BITS)) |
->>> +					gain);
->>> +
->>> +nau7802_sysfs_set_gain_out:
->>> +	mutex_unlock(&st->lock);
->>> +
->>> +	return ret ? ret : 0;
->>> +}
->> [...]
->>> +static int nau7802_read_irq(struct iio_dev *indio_dev,
->>> +			struct iio_chan_spec const *chan,
->>> +			int *val)
->>> +{
->>> +	struct nau7802_state *st = iio_priv(indio_dev);
->>> +	int ret;
->>> +
->>> +	INIT_COMPLETION(st->value_ok);
->>> +	enable_irq(st->client->irq);
->> Is it really necessary to enable/disable the IRQ or could you keep it
->> enabled all the time?
-> 
-> Fact is that the ADC doesn't really care if you are reading data or not
-> so you will probably endd up in a situation were you will get 320 IRQ
-> per second but not caring about the result. We have 3 ADCs on the board.
-> so that amounts to 960 IRQ per second when we are only reading like once
-> par second !
-
-Ah, ok, makes sense.
+Oleg.
 
