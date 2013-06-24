@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab3FWXdq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 19:33:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57898 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891Ab3FWXdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 19:33:45 -0400
-Message-ID: <1372030320.3944.114.camel@pasglop>
-Subject: Re: power-efficient scheduling design
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        David Lang <david@lang.hm>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "pjt@google.com" <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
-Date: Mon, 24 Jun 2013 09:32:00 +1000
-In-Reply-To: <51C4C6C8.1050008@linux.intel.com>
-References: <20130530134718.GB32728@e103034-lin>
-	 <20130531105204.GE30394@gmail.com> <20130614160522.GG32728@e103034-lin>
-	 <51C07ABC.2080704@linux.intel.com>
-	 <alpine.DEB.2.02.1306181039340.9258@nftneq.ynat.uz>
-	 <51C1D0BB.3040705@linux.intel.com> <20130619170042.GH5460@e103034-lin>
-	 <51C1E58D.9000408@linux.intel.com> <20130621085002.GJ5460@e103034-lin>
-	 <51C47377.2000208@linux.intel.com>
-	 <CAHkRjk5G7XJxzjcWa4BqRxz0AtAAh_-Eomzk4+dQRaFk1=HQqA@mail.gmail.com>
-	 <51C4C6C8.1050008@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1752002Ab3FXAAW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 20:00:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55856 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3FXAAV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 20:00:21 -0400
+Date: Mon, 24 Jun 2013 10:00:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.10-rc7
+Message-Id: <20130624100011.1f384d9c930aaa56ff0f72e1@canb.auug.org.au>
+In-Reply-To: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
+References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Jun_2013_10_00_11_+1000_VyIzaQ3t0FJhCesO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-21 at 14:34 -0700, Arjan van de Ven wrote:
-> On 6/21/2013 2:23 PM, Catalin Marinas wrote:
-> >>
-> >> oops sorry I misread your mail (lack of early coffee I suppose)
-> >>
-> >> I can see your point of having a thing for "did we ask for all the performance
-> >> we could ask for" prior to doing a load balance (although, for power efficiency,
-> >> if you have two tasks that could run in parallel, it's usually better to
-> >> run them in parallel... so likely we should balance anyway)
-> >
-> > Not necessarily, especially if parallel running implies powering up a
-> > full cluster just for one CPU (it depends on the hardware but for
-> > example a cluster may not be able to go in deeper sleep states unless
-> > all the CPUs in that cluster are idle).
-> 
-> I guess it depends on the system
+--Signature=_Mon__24_Jun_2013_10_00_11_+1000_VyIzaQ3t0FJhCesO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sort-of. We have something similar with threads on ppc. IE, the core can
-only really stop if all threads are. From a Linux persepctive it's a
-matter of how we define the scope of that 'cluster' Catalin is talking
-about. I'm sure you do too.
+On Sat, 22 Jun 2013 11:04:27 -1000 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+> So this is hopefully the last -rc in the series, and things have
+> indeed be calming down finally, so assuming that trend continues,
+> we're all good.
 
-Then there is the package, which adds MC etc...
+And you are all going to resist rebasing your trees (for no apparent
+reason) this close to the merge window, right?  Ah, I am too late for
+some of you, I see. :-(
 
-> the very first cpu needs to power on
-> * the core itself
-> * the "cluster" that you mention
-> * the memory controller
-> * the memory (out of self refresh)
-> 
-> while the second cpu needs
-> * the core itself
-> * maybe a second cluster
-> 
-> normally on Intel systems, the memory power delta is quite significant
-> which then means the efficiency of the second core is huge compared to
-> running things in sequence.
-
-What's your typical latency for bringing an MC back (and memory out of
-self refresh) ? IE. Basically bringing a package back up ?
-
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--Signature=_Mon__24_Jun_2013_10_00_11_+1000_VyIzaQ3t0FJhCesO
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRx4wPAAoJEECxmPOUX5FEzJEP/3a74NH4qcomjwWp3ntWr7cX
+ZY0FEcK8/3dTsauiIVgHppusHOsRdJrkM0D28pFXrMHSWq+Phnv/qPoCFXNzEBAW
+Dq4l+nGuqAqa+HE0SvemItCZNHGRvDtppY//EYyWkE0LUeBVj7jEgyQYsRY5KRZ9
+5Xus5epUT6uwNQ/kJWwaB/c3EydWvkuQdSsYlLIsFNs1LagxRhp8KasCgwxbYsd/
+reYtFb2hX5UWAecDBlui0WX3mUbYmcL2jX1lpxHfEbi7LXmpUGEbUdhtA/EU7IVu
+oYP9MnRGD6OhK75A5s/MfhvXovRi3b2h3KcDA9p6S4+w6/VGHB8TB1ArUO7Lvoox
+E425B8WNb0Sk8Ym6A05q8tVbbqte21xBQThA2cqEM5GEr12tu4F2tAgmCPHiEwcZ
+k3sXxJKigcND9uZ5ZqvfobhY1bCqXlsTfVCaUhXd8mD4wIB1/9WLpnAn/c1fkIhp
+if0uCokrppMgx8uaPRwn+ac6k4/coJgnvI2HmTCxuzwRC+b+AkIpolc7ljbGK12h
+zVu4vpHOogryIh/Xbxe8To5CaHhc18X3sNw7Gp1vxUXm31YMkEzmbNVuIq+oimSA
+EuL0OF9QKykO4Pqulpyn8nggwmQN6QHUZEh1SkQyloJX6C0hCJk0wVW1uMTzWJvE
+OjEbgQgA4a0yOaUX30ZX
+=KkPZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__24_Jun_2013_10_00_11_+1000_VyIzaQ3t0FJhCesO--
