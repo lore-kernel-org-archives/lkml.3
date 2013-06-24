@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab3FXLAg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 07:00:36 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48932 "EHLO hydra.sisk.pl"
+	id S1752565Ab3FXLBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 07:01:20 -0400
+Received: from mail.arrisi.com ([216.234.147.109]:36377 "EHLO mail.arrisi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922Ab3FXKvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:51:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show accumulated data of CPUs
-Date: Mon, 24 Jun 2013 13:00:41 +0200
-Message-ID: <4710866.fhlicB7Bsa@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohponJ7WZ9pc20653gj_bPEAC_ZCA43XgZVPmNBcBs7pLFAQ@mail.gmail.com>
-References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com> <3966081.PYqoVoQ0Wq@vostro.rjw.lan> <CAKohponJ7WZ9pc20653gj_bPEAC_ZCA43XgZVPmNBcBs7pLFAQ@mail.gmail.com>
+	id S1751922Ab3FXLBR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 07:01:17 -0400
+X-Greylist: delayed 1364 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jun 2013 07:01:17 EDT
+From: "Sidorov, Andrei" <Andrei.Sidorov@arrisi.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        Eric Sandeen <esandeen@redhat.com>, Andreas Dilger <adilger@dilger.ca>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "a.sangwan@samsung.com" <a.sangwan@samsung.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 0/3] ext4: introduce two new ioctls
+Thread-Topic: [PATCH 0/3] ext4: introduce two new ioctls
+Thread-Index: AQHOb9f7HUFqNhg8uk2pYvwWXeM+/g==
+Date: Mon, 24 Jun 2013 10:37:57 +0000
+Message-ID: <C0F0BC787567C848B2C90989451123DA2363CDB7@ATLEXMBX4.ARRS.ARRISI.com>
+References: <1371967642-3116-1-git-send-email-linkinjeon@gmail.com>
+ <03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
+ <7D1878F6-0387-48F3-8724-4A8946AECF9E@redhat.com>
+ <20130624024459.GJ29376@dastard> <20130624070656.GA20166@infradead.org>
+ <CAKYAXd-hJ71+zDn5c2ABb2J-zL=kb2M=GNzOWNHkS7-C4KXEzA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [216.234.147.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-24_01:2013-06-24,2013-06-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.0947299728168617 urlsuspect_oldscore=0.944009186409651
+ suspectscore=0 recipient_domain_to_sender_totalscore=290 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=33046
+ rbsscore=0.0947299728168617 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1306240056
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 24, 2013 04:03:15 PM Viresh Kumar wrote:
-> On 24 June 2013 15:50, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > My impression was that that new interface wouldn't be useful on all platforms
-> > supported by cpufreq.  If that's the case, I'd rather not make changes in the
-> > core code that are needed only to implement that new interface, at least to
-> > start with.
-> 
-> Every platform might not have userspace software that would do some
-> actions based on this. But, these are nice and useful stats to have.
-> 
-> They tell you a lot about how the hardware/governor/policies are
-> behaving with load. And so will eventually help getting performance based
-> on governor tunables for your platform. That's why I asked to put this in
-> core as this should be pretty much useful.
+On 24.06.2013 13:36, Namjae Jeon wrote:
+> Currently, we can try implementing dave's suggesstion of introducing a
+> new flag FALLOC_FL_COLLAPSE_RANGE for falloctae instead of individual
+> ioctls for both XFS and EXT4. Thanks.
 
-OK, let's see how the code will look like.
+Hi,
 
-Chanwoo, please prepare a v4 with the changes suggested by Viresh.
+Currently PUNCH_HOLE requires KEEP_SIZE to be set as well. I think there
+is no need to invent COLLAPSE_RANGE, but instead fallocate should
+support PUNCH_HOLE without KEEP_SIZE. However I'm not sure that putting
+block alignment restriction is a right way to go.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards,
+Andrey.
