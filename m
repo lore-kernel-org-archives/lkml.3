@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab3FXI4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 04:56:11 -0400
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:4790 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab3FXI4K (ORCPT
+	id S1751387Ab3FXI7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 04:59:41 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:32797 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab3FXI7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 04:56:10 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH] media: i2c: tvp514x: add support for asynchronous probing
-Date: Mon, 24 Jun 2013 10:55:38 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10.0-rc6-tschai; KDE/4.9.5; x86_64; ; )
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-References: <1371896189-5475-1-git-send-email-prabhakar.csengg@gmail.com> <201306241039.17147.hverkuil@xs4all.nl> <CA+V-a8vaOPcxxEqoXtia1O=bCpyWAWOrc_xj80O+LmmeLXigEw@mail.gmail.com>
-In-Reply-To: <CA+V-a8vaOPcxxEqoXtia1O=bCpyWAWOrc_xj80O+LmmeLXigEw@mail.gmail.com>
+	Mon, 24 Jun 2013 04:59:39 -0400
+Date: Mon, 24 Jun 2013 10:59:37 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: Build regressions/improvements in v3.10-rc7
+In-Reply-To: <alpine.DEB.2.00.1306241054001.10792@ayla.of.borg>
+Message-ID: <alpine.DEB.2.00.1306241057120.10868@ayla.of.borg>
+References: <alpine.DEB.2.00.1306241054001.10792@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306241055.38698.hverkuil@xs4all.nl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon June 24 2013 10:53:37 Prabhakar Lad wrote:
-> Hi Hans,
-> 
-> On Mon, Jun 24, 2013 at 2:09 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> > On Mon June 24 2013 10:24:02 Prabhakar Lad wrote:
-> >> Hi Hans,
-> >>
-> >> On Mon, Jun 24, 2013 at 12:41 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> >> > On Sun June 23 2013 17:48:20 Prabhakar Lad wrote:
-> >> >> Hi Guennadi,
-> >> >>
-> >> >> Thanks for the review.
-> >> >>
-> >> >> On Sun, Jun 23, 2013 at 8:49 PM, Guennadi Liakhovetski
-> >> >> <g.liakhovetski@gmx.de> wrote:
-> >> >> > On Sat, 22 Jun 2013, Prabhakar Lad wrote:
-> >> >> >
-> >> >> >> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> >> >> >>
-> >> >> >> Both synchronous and asynchronous tvp514x subdevice probing is supported by
-> >> >> >> this patch.
-> >> >> >>
-> >> >> >> Signed-off-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
-> >> >> >> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> >> >> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> >> >> >> Cc: Hans Verkuil <hverkuil@xs4all.nl>
-> >> >> >> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> >> >> >> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> >> >> >> ---
-> >> >> >>  drivers/media/i2c/tvp514x.c |   22 +++++++++++++++-------
-> >> >> >>  1 file changed, 15 insertions(+), 7 deletions(-)
-> >> >> >>
-> >> >> >> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-> >> >> >> index 864eb14..d090caf 100644
-> >> >> >> --- a/drivers/media/i2c/tvp514x.c
-> >> >> >> +++ b/drivers/media/i2c/tvp514x.c
-> >> >> >> @@ -36,6 +36,7 @@
-> >> >> >>  #include <linux/module.h>
-> >> >> >>  #include <linux/v4l2-mediabus.h>
-> >> >> >>
-> >> >> >> +#include <media/v4l2-async.h>
-> >> >> >>  #include <media/v4l2-device.h>
-> >> >> >>  #include <media/v4l2-common.h>
-> >> >> >>  #include <media/v4l2-mediabus.h>
-> >> >> >
-> >> >> > Ok, but this one really does too many things in one patch:
-> >> >> >
-> >> >> >> @@ -1148,9 +1149,9 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> >> >> >>       /* Register with V4L2 layer as slave device */
-> >> >> >>       sd = &decoder->sd;
-> >> >> >>       v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
-> >> >> >> -     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
-> >> >> >>
-> >> >> >>  #if defined(CONFIG_MEDIA_CONTROLLER)
-> >> >> >> +     strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
-> >> >> >
-> >> >> > This is unrelated
-> >> >> >
-> >> >> OK I'll split the patch or may be a line in a commit message can do ?
-> >> >
-> >> > Please split it up in two patches.
-> >> >
-> >> > Why is sd->name set anyway? And why is it moved under CONFIG_MEDIA_CONTROLLER?
-> >> > It's not obvious to me.
-> >> >
-> >> while using tvp514x subdev with media controller based drivers, when we
-> >> enumerate entities (MEDIA_IOC_ENUM_ENTITIES) to get the index id
-> >> of the entity we compare the entity name with "tvp514x", So I moved it
-> >> under CONFIG_MEDIA_CONTROLLER config. I hope you are OK with
-> >> moving this in a separate patch.
-> >
-> > Sorry, but this approach is wrong. sd->name must be a unique name, so manually
-> > setting sd->name will fail if you have two tvp514x devices.
-> >
-> > There is no reason to override sd->name here, and it is actually a bug. I see
-> > that tvp7002 has the same problem (and a bunch of others as well).
-> >
-> > When trying to find a tvp514x you can just use strstr() in your application.
-> > That will work all the time as long as there is only one tvp514x.
-> 
-> OK, then I will send out a cleanup patch removing sd->name from this driver
-> and others too.
+On Mon, 24 Jun 2013, Geert Uytterhoeven wrote:
+> JFYI, when comparing v3.10-rc7 to v3.10-rc6[3], the summaries are:
+>   - build errors: +51/-11
 
-Thanks. I see that it is in tvp7002 as well. Also ov9650 and some Samsung devices,
-but I will deal with those.
+After filtering out false-positives (v3.10-rc6 had only 72% build coverage):
 
-	Hans
+  + arch/powerpc/kernel/fadump.c: error: 'KEXEC_CORE_NOTE_NAME' undeclared (first use in this function):  => 521:36
+  + arch/powerpc/kernel/fadump.c: error: 'crashing_cpu' undeclared (first use in this function):  => 408:2
+  + arch/powerpc/kernel/fadump.c: error: 'note_buf_t' undeclared (first use in this function):  => 624:49
+  + arch/powerpc/kernel/fadump.c: error: 'vmcoreinfo_max_size' undeclared (first use in this function):  => 874:18
+  + arch/powerpc/kernel/fadump.c: error: implicit declaration of function 'crash_save_vmcoreinfo' [-Werror=implicit-function-declaration]:  => 410:2
+  + arch/powerpc/kernel/fadump.c: error: implicit declaration of function 'elf_core_copy_kernel_regs' [-Werror=implicit-function-declaration]:  => 520:2
+  + arch/powerpc/kernel/fadump.c: error: implicit declaration of function 'paddr_vmcoreinfo_note' [-Werror=implicit-function-declaration]:  => 872:2
+  + arch/powerpc/kernel/fadump.c: error: storage size of 'prstatus' isn't known:  => 513:22
+  + arch/powerpc/kernel/fadump.c: error: unused variable 'prstatus' [-Werror=unused-variable]:  => 513:22
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ANDCOND' undeclared (first use in this function):  => 161:17, 86:16
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_AVPN' undeclared (first use in this function):  => 160:17, 85:16, 192:16
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_BULK_REMOVE' undeclared (first use in this function):  => 246:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CEDE' undeclared (first use in this function):  => 250:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CPPR' undeclared (first use in this function):  => 257:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ENTER' undeclared (first use in this function):  => 240:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EOI' undeclared (first use in this function):  => 258:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EXACT' undeclared (first use in this function):  => 50:6
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPI' undeclared (first use in this function):  => 259:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPOLL' undeclared (first use in this function):  => 260:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_NOT_FOUND' undeclared (first use in this function):  => 193:27, 87:27
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PARAMETER' undeclared (first use in this function):  => 138:10
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PROTECT' undeclared (first use in this function):  => 244:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PTEG_FULL' undeclared (first use in this function):  => 54:12
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PUT_TCE' undeclared (first use in this function):  => 248:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_REMOVE' undeclared (first use in this function):  => 242:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_RTAS' undeclared (first use in this function):  => 265:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_SUCCESS' undeclared (first use in this function):  => 67:26, 96:26, 211:26, 125:12
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_TOO_HARD' undeclared (first use in this function):  => 224:12
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR' undeclared (first use in this function):  => 256:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR_X' undeclared (first use in this function):  => 261:7
+
+All from the powerpc-randconfig police.
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/6349/ (all 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/6325/ (86 out of 120 configs)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
