@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab3FXKfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 06:35:22 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:49118 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab3FXKfV (ORCPT
+	id S1752356Ab3FXKf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 06:35:26 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:63181 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab3FXKfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 06:35:21 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>, Bo Shen <voice.shen@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
-Date: Mon, 24 Jun 2013 12:35:15 +0200
-Message-ID: <cover.1372069834.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
+	Mon, 24 Jun 2013 06:35:24 -0400
+Message-ID: <51C820E7.6040004@cogentembedded.com>
+Date: Mon, 24 Jun 2013 14:35:19 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wedson Almeida Filho <wedsonaf@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [NET]: Unmap fragment page once iterator is done
+References: <1372055628-27044-1-git-send-email-wedsonaf@gmail.com>
+In-Reply-To: <1372055628-27044-1-git-send-email-wedsonaf@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This little series is for enabling the support of SPI on at91sam9n12 and
-sama5d3 families.
+Hello.
 
-Nicolas Ferre (3):
-  ARM: at91/DT: fix SPI compatibility string
-  ARM: at91/DT: sama5d3: add SPI DMA client infos
-  ARM: at91/DT: at91sam9n12: add SPI DMA client infos
+On 24-06-2013 10:33, Wedson Almeida Filho wrote:
 
- arch/arm/boot/dts/at91sam9n12.dtsi |  6 ++++++
- arch/arm/boot/dts/sama5d3.dtsi     | 10 ++++++++--
- 2 files changed, 14 insertions(+), 2 deletions(-)
+> Callers of skb_seq_read() are currently forced to call skb_abort_seq_read()
+> even when consuming all the data because the last call to skb_seq_read (the
+> one that returns 0 to indicate the end) fails to unmap the last fragment page.
 
--- 
-1.8.2.2
+> With this patch callers will be allowed to traverse the SKB data by calling
+> skb_prepare_seq_read() once and repeatedly calling skb_seq_read() as originally
+> intended (and documented in the original commit 677e90eda), that is, only call
+
+    Please also specify the summary line of that commit.
+
+> skb_abort_seq_read() if the sequential read is actually aborted.
+
+> Signed-off-by: Wedson Almeida Filho <wedsonaf@gmail.com>
+
+WBR, Sergei
 
