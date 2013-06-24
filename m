@@ -1,69 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab3FXLBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 07:01:20 -0400
-Received: from mail.arrisi.com ([216.234.147.109]:36377 "EHLO mail.arrisi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922Ab3FXLBR convert rfc822-to-8bit (ORCPT
+	id S1752524Ab3FXLE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 07:04:26 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64453 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab3FXLEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 07:01:17 -0400
-X-Greylist: delayed 1364 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jun 2013 07:01:17 EDT
-From: "Sidorov, Andrei" <Andrei.Sidorov@arrisi.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        Eric Sandeen <esandeen@redhat.com>, Andreas Dilger <adilger@dilger.ca>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "a.sangwan@samsung.com" <a.sangwan@samsung.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 0/3] ext4: introduce two new ioctls
-Thread-Topic: [PATCH 0/3] ext4: introduce two new ioctls
-Thread-Index: AQHOb9f7HUFqNhg8uk2pYvwWXeM+/g==
-Date: Mon, 24 Jun 2013 10:37:57 +0000
-Message-ID: <C0F0BC787567C848B2C90989451123DA2363CDB7@ATLEXMBX4.ARRS.ARRISI.com>
-References: <1371967642-3116-1-git-send-email-linkinjeon@gmail.com>
- <03D226D6-9598-473F-90FC-03A389E2A625@dilger.ca>
- <7D1878F6-0387-48F3-8724-4A8946AECF9E@redhat.com>
- <20130624024459.GJ29376@dastard> <20130624070656.GA20166@infradead.org>
- <CAKYAXd-hJ71+zDn5c2ABb2J-zL=kb2M=GNzOWNHkS7-C4KXEzA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [216.234.147.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 24 Jun 2013 07:04:25 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-06-24_01:2013-06-24,2013-06-24,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=0
- compositescore=0.0947299728168617 urlsuspect_oldscore=0.944009186409651
- suspectscore=0 recipient_domain_to_sender_totalscore=290 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=33046
- rbsscore=0.0947299728168617 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
- definitions=main-1306240056
+In-Reply-To: <51C80C33.4050606@intel.com>
+References: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
+	<1371694737-29336-7-git-send-email-alex.shi@intel.com>
+	<51C80C33.4050606@intel.com>
+Date: Mon, 24 Jun 2013 13:04:24 +0200
+Message-ID: <CAKfTPtCz4bP05sqS7VBuZ_iDYBNGyb8sNUcoSTGbOkZoZU2D9g@mail.gmail.com>
+Subject: Re: [Resend patch v8 06/13] sched: compute runnable load avg in
+ cpu_load and cpu_avg_load_per_task
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, rafael.j.wysocki@intel.com,
+        jkosina@suse.cz, Clark Williams <clark.williams@gmail.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
+        Mel Gorman <mgorman@suse.de>, riel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.06.2013 13:36, Namjae Jeon wrote:
-> Currently, we can try implementing dave's suggesstion of introducing a
-> new flag FALLOC_FL_COLLAPSE_RANGE for falloctae instead of individual
-> ioctls for both XFS and EXT4. Thanks.
+On 24 June 2013 11:06, Alex Shi <alex.shi@intel.com> wrote:
+> On 06/20/2013 10:18 AM, Alex Shi wrote:
+>> They are the base values in load balance, update them with rq runnable
+>> load average, then the load balance will consider runnable load avg
+>> naturally.
+>>
+>> We also try to include the blocked_load_avg as cpu load in balancing,
+>> but that cause kbuild performance drop 6% on every Intel machine, and
+>> aim7/oltp drop on some of 4 CPU sockets machines.
+>> Or only add blocked_load_avg into get_rq_runable_load, hackbench still
+>> drop a little on NHM EX.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>
+>
+> I am sorry for still having some swing on cfs and rt task load consideration.
+> So give extra RFC patch to consider RT load in balance.
+> With or without this patch, my test result has no change, since there is no
+> much RT tasks in my testing.
+>
+> I am not familiar with RT scheduler, just rely on PeterZ who is experts on this. :)
+>
+> ---
+>
+> From b9ed5363b0a579a87256b589278c8c66500c7db3 Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Mon, 24 Jun 2013 16:12:29 +0800
+> Subject: [PATCH 08/16] sched: recover to whole rq load include rt tasks'
+>
+> patch 'sched: compute runnable load avg in cpu_load and
+> cpu_avg_load_per_task' weight rq's load on cfs.runnable_load_avg instead
+> of rq->load.weight. That is fine when system has no much RT load.
+>
+> But if there are lots of RT load on rq, that code will just
+> weight the cfs tasks in load balance without consideration of RT, that
 
-Hi,
+AFAICT, the RT tasks activity is already taken into account by
+decreasing the cpu_power that is used during load balance like in the
+find_busiest_queue where weighted_cpuload is divided by cpu_power.
 
-Currently PUNCH_HOLE requires KEEP_SIZE to be set as well. I think there
-is no need to invent COLLAPSE_RANGE, but instead fallocate should
-support PUNCH_HOLE without KEEP_SIZE. However I'm not sure that putting
-block alignment restriction is a right way to go.
+Vincent
 
-Regards,
-Andrey.
+> may cause load imbalance if much RT load isn't imbalanced among cpu.
+> Using rq->avg.load_avg_contrib can resolve this problem and keep the
+> advantages from runnable load balance.
+>
+> BTW, this patch may increase the balance failed times, if move_tasks can
+> not balance loads between CPUs, like there is only RT load in CPUs.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 4 ++--
+>  kernel/sched/proc.c | 2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 37a5720..6979906 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2968,7 +2968,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  /* Used instead of source_load when we know the type == 0 */
+>  static unsigned long weighted_cpuload(const int cpu)
+>  {
+> -       return cpu_rq(cpu)->cfs.runnable_load_avg;
+> +       return cpu_rq(cpu)->avg.load_avg_contrib;
+>  }
+>
+>  /*
+> @@ -3013,7 +3013,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+>  {
+>         struct rq *rq = cpu_rq(cpu);
+>         unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+> -       unsigned long load_avg = rq->cfs.runnable_load_avg;
+> +       unsigned long load_avg = rq->avg.load_avg_contrib;
+>
+>         if (nr_running)
+>                 return load_avg / nr_running;
+> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+> index ce5cd48..4f2490c 100644
+> --- a/kernel/sched/proc.c
+> +++ b/kernel/sched/proc.c
+> @@ -504,7 +504,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>  #ifdef CONFIG_SMP
+>  unsigned long get_rq_runnable_load(struct rq *rq)
+>  {
+> -       return rq->cfs.runnable_load_avg;
+> +       return rq->avg.load_avg_contrib;
+>  }
+>  #else
+>  unsigned long get_rq_runnable_load(struct rq *rq)
+> --
+> 1.7.12
+>
+>
