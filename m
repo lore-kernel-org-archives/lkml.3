@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab3FXPtA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 11:49:00 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:38710 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab3FXPsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 11:48:07 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Subject: [PATCH 2/2] media: i2c: tvp514x: remove manual setting of subdev name
-Date: Mon, 24 Jun 2013 21:17:26 +0530
-Message-Id: <1372088846-26263-3-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372088846-26263-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1372088846-26263-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1752168Ab3FXPu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 11:50:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12880 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006Ab3FXPu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 11:50:27 -0400
+Date: Mon, 24 Jun 2013 17:43:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Imre Deak <imre.deak@intel.com>,
+        Julian Anastasov <ja@ssi.bg>, Lukas Czerner <lczerner@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Samuel Ortiz <samuel@sortiz.org>,
+        Simon Horman <horms@verge.net.au>, Tejun Heo <tj@kernel.org>,
+        Wensong Zhang <wensong@linux-vs.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] introduce wait_event_common()
+Message-ID: <20130624154356.GA29728@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Hello.
 
-This patch removes manual setting of subdev name in the
-probe, ideally subdev names must be unique.
+The changes in include/linux/wait.h are the same.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>
----
- drivers/media/i2c/tvp514x.c |    1 -
- 1 file changed, 1 deletion(-)
+However 1/2 has to update the callers of __wait_event_interruptible().
+The fix is very simple:
 
-diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-index 864eb14..6578976 100644
---- a/drivers/media/i2c/tvp514x.c
-+++ b/drivers/media/i2c/tvp514x.c
-@@ -1148,7 +1148,6 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	/* Register with V4L2 layer as slave device */
- 	sd = &decoder->sd;
- 	v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
--	strlcpy(sd->name, TVP514X_MODULE_NAME, sizeof(sd->name));
- 
- #if defined(CONFIG_MEDIA_CONTROLLER)
- 	decoder->pad.flags = MEDIA_PAD_FL_SOURCE;
--- 
-1.7.9.5
+	-	__wait_event_interruptible(wq, cond, ret);
+	+	ret = __wait_event_interruptible(wq, cond);
+
+but obviously untested.
+
+Oleg.
+
+ arch/mips/kernel/rtlx.c         |   17 ++--
+ include/linux/wait.h            |  183 +++++++++++++++------------------------
+ kernel/wait.c                   |   13 +++
+ net/irda/af_irda.c              |    5 +-
+ net/netfilter/ipvs/ip_vs_sync.c |    5 +-
+ 5 files changed, 95 insertions(+), 128 deletions(-)
 
