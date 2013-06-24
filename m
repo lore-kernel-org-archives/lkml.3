@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab3FXDXd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jun 2013 23:23:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48787 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752417Ab3FXDXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jun 2013 23:23:25 -0400
-Message-ID: <51C7BBA3.1050300@redhat.com>
-Date: Mon, 24 Jun 2013 11:23:15 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752570Ab3FXDaG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jun 2013 23:30:06 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:52781 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455Ab3FXDaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jun 2013 23:30:04 -0400
+Date: Sun, 23 Jun 2013 20:30:03 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: majianpeng <majianpeng@gmail.com>
+cc: davem <davem@davemloft.net>, ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] libceph: Call con->ops->put(con) if cancel_delayed_work(&con->work)
+ worked.
+In-Reply-To: <201306240921544358210@gmail.com>
+Message-ID: <alpine.DEB.2.00.1306232029480.20076@cobra.newdream.net>
+References: <201306240921544358210@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        Brad Hubbard <bhubbard@redhat.com>
-Subject: Re: [PATCH net] macvtap: fix recovery from gup errors
-References: <20130623142658.GA21141@redhat.com>
-In-Reply-To: <20130623142658.GA21141@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2013 10:26 PM, Michael S. Tsirkin wrote:
-> get user pages might fail partially in macvtap zero copy
-> mode. To recover we need to put all pages that we got,
-> but code used a wrong index resulting in double-free
-> errors.
->
-> Reported-by: Brad Hubbard <bhubbard@redhat.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+On Mon, 24 Jun 2013, majianpeng wrote:
+> Because in func queue_con_delay, it will call con->ops->get(con).
+> So if we cancel the work successfully,we must call con->ops->put(con).
+> Otherwise some resource can't free like 'struct ceph_mds_session'.
+> 
+> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+
+Looks good, applied to the testing branch.
+
+Thanks!
+sage
+
 > ---
->
-> Same as the tun patch really. Also stable material.
-
-Acked-by: Jason Wang <jasowang@redhat.com>
->
->  drivers/net/macvtap.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 59e9605..4ddd108 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -524,8 +524,9 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
->  			return -EMSGSIZE;
->  		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
->  		if (num_pages != size) {
-> -			for (i = 0; i < num_pages; i++)
-> -				put_page(page[i]);
-> +			int j;
-> +			for (j = 0; j < num_pages; j++)
-> +				put_page(page[i + j]);
->  			return -EFAULT;
->  		}
->  		truesize = size * PAGE_SIZE;
-
+>  net/ceph/messenger.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+> index eb0a46a..8207b37 100644
+> --- a/net/ceph/messenger.c
+> +++ b/net/ceph/messenger.c
+> @@ -661,7 +661,8 @@ void ceph_con_close(struct ceph_connection *con)
+>  
+>  	reset_connection(con);
+>  	con->peer_global_seq = 0;
+> -	cancel_delayed_work(&con->work);
+> +	if (cancel_delayed_work(&con->work))
+> +		con->ops->put(con);
+>  	con_close_socket(con);
+>  	mutex_unlock(&con->mutex);
+>  }
+> -- 
+> 1.8.1.2
+> 
