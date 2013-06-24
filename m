@@ -1,205 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab3FXMGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 08:06:00 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:21448
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751138Ab3FXMF6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 08:05:58 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zzbb2dI98dI9371I1dbaI1432I1418Id799hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah5eeeK8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <51C83613.2000201@freescale.com>
-Date: Mon, 24 Jun 2013 17:35:39 +0530
-From: pankaj chauhan <pankaj.chauhan@freescale.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752972Ab3FXMHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 08:07:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21039 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751952Ab3FXMHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 08:07:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,928,1363158000"; 
+   d="scan'208";a="358624966"
+Date: Mon, 24 Jun 2013 14:06:50 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Kevin Strasser <kevin.strasser@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Kevin Strasser <strassek@engr.orst.edu>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Michael Brunner <Michael.Brunner@kontron.com>,
+        Michael Brunner <mibru@gmx.de>, Chris Healy <chealy@imsco-us.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dirk Hohndel <Dirk.Hohndel@intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-i2c@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] Kontron PLD drivers
+Message-ID: <20130624120650.GC30838@zurbaran>
+References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
+ <1372046406-3127-1-git-send-email-kevin.strasser@linux.intel.com>
 MIME-Version: 1.0
-To: "Getz, Robin" <robin.getz@analog.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Goyal Akhil-B35197 <B35197@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chauhan Pankaj-B32944 <B32944@freescale.com>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Lars-Peter Clausen <lars-peter.clausen@analog.com>
-Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for
- Radio phy
-References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com> <51C1AAC4.3010605@metafoo.de> <51C2DAE8.2040100@freescale.com> <201306240419.33004.robin.getz@analog.com>
-In-Reply-To: <201306240419.33004.robin.getz@analog.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372046406-3127-1-git-send-email-kevin.strasser@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/24/2013 1:49 PM, Getz, Robin wrote:
-> On Thu 20 Jun 2013 06:35, pankaj chauhan pondered:
->> On 6/19/2013 6:27 PM, Lars-Peter Clausen wrote:
->>> On 06/17/2013 10:09 AM, akhil.goyal@freescale.com wrote:
->>>> From: Akhil Goyal <akhil.goyal@freescale.com>
->>>>
->>>> AD9361 is a radio phy(RFIC) for radio networks. This phy
->>>> can support LTE-FDD/LTE-TDD and WCDMA networks. The RFIC
->>>> can convert the analog radio signals from air to digital
->>>> IQ samples.
->>>>
->>>> AD9361 is controlled via an SPI bus and all the register
->>>> read/ write can be performed via SPI transactions.
->
-> The AD9361 datasheet still hasn't been posted for public consumption yet (as
-> of today), but for those interested, here is something similar - just not
-> exactly - but it gets the idea across.
->
-> http://www.analog.com/static/imported-files/data_sheets/AD9357.pdf
->
->>>> Driver provides various operations for configuring and
->>>> controlling the AD PHY. These can be controlled from the
->>>> user space via the rfdev framework.
->>>>
->>>> Driver also binds itself to one of AIC lane using RF framework.
->>>> The combination of AIC lane and PHY connected to it works
->>>> as one RF device.
->>>>
->>>> Signed-off-by: Shaveta Leekha <shaveta@freescale.com>
->>>> Signed-off-by: Pankaj Chauhan <pankaj.chauhan@freescale.com>
->>>> Signed-off-by: Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>
->>>> Signed-off-by: Akhil Goyal <akhil.goyal@freescale.com>
->>>
->>> Hi,
->>>
->>> This is interesting. We at Analog Devices are currently also working on a
->>> driver for this part. We are using the Linux Industrial IO (IIO)
->>> framework though, since the AD9361 is more or less a multifunction device
->>> implementing different functions already covered by the IIO framework,
->>> like ADCs, DACs, clock chips and so on.
->>
->> Yes i agree AD9361 is more of a multifunction device and it can fit in
->> IIO framework. This patch (ad9361: AD9361 device driver for Radio phy)
->> implements:
->>
->> 1. Programming of AD9361 :
->>
->> Most of initialization is done by parsing Low level script generated by
->> ADI tool, and sending the SPIwrite/read/wait calibration commands to the
->> driver. This is more of a raw write interface to device.
->
-> The "ADI GUI tool", is a proprietary, closed source, Windows only application.
-> I think that for a Linux driver - we would want to be completely independent
-> of that, and that the driver should be (a) standalone, or (b) useable with
-> Linux based tools.
->
+Hi Kevin,
 
-Agreed. We also would like to integrate with standalone driver instead 
-of a driver which is dependent on 'ADI GUI tool'. since we had limited 
-access to internals AD9361, we choose script generated by ADI tool as 
-our configuration path for AD9361.
+On Sun, Jun 23, 2013 at 09:00:02PM -0700, Kevin Strasser wrote:
+> Changes since v2:
+> -Change Michael's "Signed-off-by" to "Originally-From" in all patches
+> -Add "From: Guenter Roeck <linux@roeck-us.net>" to gpio patch
+> 
+> Guenter Roeck (1):
+>   gpio: Kontron PLD gpio driver
+> 
+> Kevin Strasser (3):
+>   mfd: Kontron PLD mfd driver
+>   i2c: Kontron PLD i2c bus driver
+>   watchdog: Kontron PLD watchdog timer driver
+I just applied (after a warning fix) and pushed the MFD driver, thanks.
 
-One your standalone driver is available we can discard AD9361 driver in 
-this patch set and integrate our antenna controller driver with the 
-standalone driver.
+I am happy to take the sub devices driver as well, although the
+respective maintainers can safely carry them as they all have a Kconfig
+dependency on MFD_KEMPLD. So it's up to them.
+If I have to take them, I'd need Wolfram's ACK for the i2c one and Wim's
+for the watchdog one. Linus already ACKed the GPIO one.
 
->> 2. Adding utility function APIs for higher layers:
->>
->> We have LTE/WCDMA stacks running in user space. They have requirement of
->> monitoring RSSI, changing Attenuation, reading/changing Rx gain,
->> disable/enable of tx/rx antennas, changing LO frequency etc. This patch
->> exposes APIs which can be accessed through RF device layer user space
->> interface (explained later in the email).
->
-> Wow - LTE in userspace?
->
+Cheers,
+Samuel.
 
-Yes we run both LTE and WCDMA stacks in user space. Reason is that most 
-of commercial LTE/WCDMA  stack vendors implement their stacks in user space.
-
-Here is how it works:
-
-1. Layer1 stack runs on a DSP core running non Linux RTOS.
-2. Layer2/3 stacks run in Linux user space on a application core.
-3. Both cores use hardware based communication mechanisms for 
-communication between L1 <-> L2/L3.
-
-> What's your requirements for real-timeness of the system? Bandwidth? Are you
-> running a stock kernel for this? If you are monitoring RSSI, and changing
-> attenuation (an AGC loop) - how quickly does this loop need to run? What
-> speed are you running the ADC/DACs into userspace?
->
-
-Since L2/L3 stacks are in user space, we can not run it on stock kernel. 
-We run it on sock kernel + PREEMT_RT patch. The Real time requirement 
-varies from protocol to protocol, for example for LTE we have to perform 
-'few operations' in a TTI (1 milli second, with error margin of 30 micro 
-seconds). 'Few operations' again depends on use case and data path which 
-we are running on system, some examples are:
-
-1. Reading RSSI values.
-2. Updating gain.
-3. Reading IQ data of last subframe (1 ms), radio frame (10 ms), or 
-multiple radio frames (N * 10ms).
-
-updating attenuation isn't currently in real time path.
-
-We are running at maximum of 30.72 MSPS (million samples per second, 
-with 16 bit samples). but Speed of IQ transfer wont' matter much for 
-Linux drivers because IQ data doesn't pass through Linux drivers (except 
-for sniffing).
->
->> 3. Control of Radio card (which has AD9361): We have radio card which
->> contains AD9361 and there are different set of PA/LNAs (Power
->> amplifier/Low Noise Amplifier). Each set caters a set of frequency
->> bands. This patch also exports functions to enable/disable a Tx/Rx path
->> (PA/LNAs) which are external to AD9361.
->
-> Isn't this just normal GPIO control? (like Arnd suggested - if you need GPIO -
-> make things a MFD - and use the existing GPIO infrastructure - at least that
-> is how I thought the GPO would be handled, and maybe even the CNTRL IN/OUT).
->
-
-Agreed on this. so radio card part of driver can very well be in MFD.
->
->> May be we can spit this driver in two parts :
->>
->> 1. AD9361 driver: which covers #1 and #2 as mentioned as above. And this
->> can be merged with the driver you have in IIO framework.
->>
->> 2. Radio card driver: which covers #3 and uses AD9361 driver's exported
->> APIs to program AD9361 OR may be we can program AD9361 from user space
->> using IIO interface.
->>
->> pls let me know what do you think is best approach.
->
-> I don't know if we have all the answers yet either. We aren't running LTE - so
-> having a real world userspace consumer might help direct us down a workable
-> path for everyone.
->
-
-We are using AD9361 for LTE and WCDMA, so we are real world users :) 
-only problem is that the vendors for L2/L3 stacks are in user space (and 
-their stacks are not open source). I can document the user space 
-interface that we have, and then we can discuss on the interface for 
-additions/deletions/modifications.
-
-> It sounds like all the internal filters (which require floating point to
-> calculate the coefficients) - you are letting the GUI tool handle all this?
-> This is part of the issue we have been looking at - how to split things, so
-> no floating point in the driver...
->
-
-Yes, what we are doing is that we generate script for a particular 
-bandwidth/Lo frequency combination and initialize AD9361 with this 
-script. Later if we have to change LO frequency, gain tables, 
-synthesizer tables we do floating point in user space and pass fixed 
-point data in driver. This makes programming interface of AD9361 much 
-simpler for us to use.
-
-We can adopt the full fledged standalone driver that you are developing 
-and integrate with our controller drivers as long as our requirements 
-(functionality for function pointers in phy_ops structure) are met.
-
-  >
-
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
