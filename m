@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab3FYRVK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:21:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30099 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab3FYRVH (ORCPT
+	id S1751829Ab3FYRVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:21:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27744 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab3FYRVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:21:07 -0400
-Message-ID: <51C9D17B.5090208@oracle.com>
-Date: Tue, 25 Jun 2013 13:20:59 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: lizefan@huawei.com, tj@kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        trinity@vger.kernel.org
-Subject: cgroup: kernel BUG at kernel/cgroup.c:1038!
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 25 Jun 2013 13:21:32 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XqNnylozy48A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pkicDPhlfI0A:10 a=YXVxBQmCVOTLb6hAWYYA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1372180890.18733.217.camel@gandalf.local.home>
+Subject: Re: frequent softlockups with 3.10rc6.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Date: Tue, 25 Jun 2013 13:21:30 -0400
+In-Reply-To: <20130625165556.GA16170@redhat.com>
+References: <20130623143634.GA2000@redhat.com>
+	 <20130623150603.GA32313@redhat.com> <20130623160452.GA11740@redhat.com>
+	 <20130624020014.GB12811@redhat.com> <20130624143928.GA20659@redhat.com>
+	 <1372085549.18733.162.camel@gandalf.local.home>
+	 <20130624160012.GB5993@redhat.com>
+	 <1372091079.18733.168.camel@gandalf.local.home>
+	 <20130624165140.GB8572@redhat.com>
+	 <1372093476.18733.170.camel@gandalf.local.home>
+	 <20130625165556.GA16170@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, 2013-06-25 at 12:55 -0400, Dave Jones wrote:
 
-While fuzzing with trinity on a KVM tools guest running latest -next kernel, I've
-stumbled on the following spew:
+> While I've been spinning wheels trying to reproduce that softlockup bug,
+> On another machine I've been refining my list-walk debug patch.
+> I added an ugly "ok, the ringbuffer is playing games with lower two bits" special case.
+> 
+> But what the hell is going on here ?
+> 
+> next->prev should be prev (ffff88023c6cdd18), but was 00ffff88023c6cdd. (next=ffff880243288001).
+> 
+> (trace comes from the same ringbuffer code)
 
-[   88.247018] kernel BUG at kernel/cgroup.c:1038!
-[   88.250738] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   88.251169] Dumping ftrace buffer:
-[   88.251169]    (ftrace buffer empty)
-[   88.251169] CPU: 1 PID: 7973 Comm: mount Tainted: G        W    3.10.0-rc7-next-2013
-0625-sasha-00011-g1c1dc0e #1105
-[   88.251169] task: ffff880fc0ae8000 ti: ffff880fc0b9a000 task.ti: ffff880fc0b9a000
-[   88.251437] RIP: 0010:[<ffffffff81249b29>]  [<ffffffff81249b29>] rebind_subsystems+0
-x409/0x5f0
-[   88.252442] RSP: 0018:ffff880fc0b9bba8  EFLAGS: 00010202
-[   88.252994] RAX: 0000000000000001 RBX: ffff880fc0b8a148 RCX: 0000000000000001
-[   88.253839] RDX: 0000000000000003 RSI: 0000000000000001 RDI: ffffffff8860eec0
-[   88.254695] RBP: ffff880fc0b9bc28 R08: ffff880fc0b8a170 R09: ffffffff889e64f8
-[   88.255325] R10: ffffffff889e64d0 R11: ffffffff8a28b600 R12: 0000000000000001
-[   88.255325] R13: 0000000000000000 R14: ffff880fc0b8a170 R15: ffffffff87a6f060
-[   88.255325] FS:  00007f1289eba7e0(0000) GS:ffff880fe5800000(0000) knlGS:000000000000
-0000
-[   88.255325] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   88.255325] CR2: 00007f12894382f0 CR3: 0000000fc01e0000 CR4: 00000000000006e0
-[   88.255325] Stack:
-[   88.255325]  ffffffff87a6e4d8 ffffffff87a6e468 2222222222222222 2222222222222222
-[   88.255325]  2222222222222222 2222222200000001 0000000000000000 0000000187a6e460
-[   88.255325]  ffff880fc0b8a160 0000000000000000 ffff880fcc2f8b88 ffff880fc0b8a148
-[   88.255325] Call Trace:
-[   88.255325]  [<ffffffff8124bd4f>] cgroup_kill_sb+0xff/0x210
-[   88.255325]  [<ffffffff813d21af>] deactivate_locked_super+0x4f/0x90
-[   88.255325]  [<ffffffff8124f3b3>] cgroup_mount+0x673/0x6e0
-[   88.255325]  [<ffffffff81401a6d>] ? get_fs_type+0x7d/0xd0
-[   88.255325]  [<ffffffff854e95ec>] ? _raw_read_unlock+0x5c/0x80
-[   88.255325]  [<ffffffff81257169>] cpuset_mount+0xd9/0x110
-[   88.255325]  [<ffffffff81337908>] ? pcpu_alloc+0x4e8/0x5f0
-[   88.255325]  [<ffffffff813d2580>] mount_fs+0xb0/0x2d0
-[   88.255325]  [<ffffffff81404afd>] vfs_kern_mount+0xbd/0x180
-[   88.255325]  [<ffffffff814070b5>] do_new_mount+0x145/0x2c0
-[   88.255325]  [<ffffffff81de79b8>] ? security_capable+0x18/0x20
-[   88.255325]  [<ffffffff814085d6>] do_mount+0x356/0x3c0
-[   88.255325]  [<ffffffff8140873d>] SyS_mount+0xfd/0x140
-[   88.255325]  [<ffffffff854eb600>] tracesys+0xdd/0xe2
-[   88.255325] Code: 89 c6 89 45 a8 e8 28 b7 07 00 8b 45 a8 48 63 d0 48 83 c2 02 48 8b 0c d5 48 63 
-9e 88 48 ff c1 85 c0 48 89 0c d5 48 63 9e 88 74 04 <0f> 0b eb fe 4a 8b 84 2b 88 00 00 00 48 c7 c7 98 
-ee 60 88 4c 39
-[   88.255325] RIP  [<ffffffff81249b29>] rebind_subsystems+0x409/0x5f0
-[   88.255325]  RSP <ffff880fc0b9bba8>
+What's the above saying?  ffff880243288000->prev == 00ffff88023c6cdd but
+it should have been ffff88023c6cdd18? That is: ffff88023c6cdd18->next ==
+ffff880243288001?
+
+Not sure how that would mess up. The ring-buffer code has lots of
+integrity checks to make sure nothing like this breaks.
+
+-- Steve
 
 
-Thanks,
-Sasha
