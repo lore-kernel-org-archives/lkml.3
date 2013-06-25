@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab3FYKTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 06:19:50 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:51085 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab3FYKTt (ORCPT
+	id S1752855Ab3FYKVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 06:21:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45236 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873Ab3FYKVu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 06:19:49 -0400
-Message-ID: <51C96EC3.4040104@hitachi.com>
-Date: Tue, 25 Jun 2013 19:19:47 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+	Tue, 25 Jun 2013 06:21:50 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: "sameo@linux.intel.com" <sameo@linux.intel.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 2/2 v3] tracing/uprobes: Support soft-mode disabling
-References: <51C90ED1.5070209@huawei.com>
-In-Reply-To: <51C90ED1.5070209@huawei.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH 4/4] regulator: Palmas: Add TPS659038 support
+Thread-Topic: [PATCH 4/4] regulator: Palmas: Add TPS659038 support
+Thread-Index: AQHObaXOcBDbRKATXEyyLvcmOHJ1Xpk/4kGAgAZdviA=
+Date: Tue, 25 Jun 2013 10:21:26 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EF8A7@DBDE04.ent.ti.com>
+References: <1371726135-9891-1-git-send-email-j-keerthy@ti.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/25 12:30), zhangwei(Jovi) wrote:
-> Support soft-mode disabling on uprobe-based dynamic events.
-> Soft-disabling is just ignoring recording if the soft disabled
-> flag is set.
+Hi Samuel,
+
+> -----Original Message-----
+> From: J, KEERTHY
+> Sent: Friday, June 21, 2013 2:38 PM
+> To: sameo@linux.intel.com
+> Cc: broonie@kernel.org; ldewangan@nvidia.com;
+> grant.likely@secretlab.ca; swarren@nvidia.com; linux-
+> kernel@vger.kernel.org; linux-doc@vger.kernel.org; gg@slimlogic.co.uk;
+> linux-omap@vger.kernel.org
+> Subject: RE: [PATCH 4/4] regulator: Palmas: Add TPS659038 support
 > 
-> Signed-off-by: zhangwei(Jovi) <jovi.zhangwe@huawei.com>
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you!
-
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  kernel/trace/trace_uprobe.c |    3 +++
->  1 file changed, 3 insertions(+)
+> Hi Samuel,
 > 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index dbbb4a9..d2da3ea 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -530,6 +530,9 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+> > -----Original Message-----
+> > From: J, KEERTHY
+> > Sent: Thursday, June 20, 2013 4:32 PM
+> > To: linux-omap@vger.kernel.org; sameo@linux.intel.com
+> > Cc: broonie@kernel.org; J, KEERTHY; ldewangan@nvidia.com;
+> > grant.likely@secretlab.ca; swarren@nvidia.com; linux-
+> > kernel@vger.kernel.org; linux-doc@vger.kernel.org; gg@slimlogic.co.uk
+> > Subject: [PATCH 4/4] regulator: Palmas: Add TPS659038 support
+> >
+> > Add TPS659038 support.
+> >
 > 
->  	WARN_ON(call != ftrace_file->event_call);
+> Could you pull this one too?
+
+A gentle ping on this.
+
 > 
-> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-> +		return;
-> +
->  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
->  	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
->  						call->event.type,
+> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> > Acked-by: Mark Brown <broonie@linaro.org>
+> > ---
+> >  drivers/regulator/palmas-regulator.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/regulator/palmas-regulator.c
+> > b/drivers/regulator/palmas-regulator.c
+> > index 1ae1e83..d0c8785 100644
+> > --- a/drivers/regulator/palmas-regulator.c
+> > +++ b/drivers/regulator/palmas-regulator.c
+> > @@ -1054,6 +1054,7 @@ static struct of_device_id
+> of_palmas_match_tbl[]
+> > = {
+> >  	{ .compatible = "ti,tps65913-pmic", },
+> >  	{ .compatible = "ti,tps65914-pmic", },
+> >  	{ .compatible = "ti,tps80036-pmic", },
+> > +	{ .compatible = "ti,tps659038-pmic", },
+> >  	{ /* end */ }
+> >  };
+> >
+> > --
+> > 1.7.5.4
 > 
+> Regards,
+> Keerthy
 
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Regards,
+Keerthy
