@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab3FYF7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 01:59:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42866 "EHLO comal.ext.ti.com"
+	id S1751527Ab3FYGAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 02:00:18 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60513 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820Ab3FYF7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 01:59:50 -0400
+	id S1751380Ab3FYF76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 01:59:58 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
         <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
@@ -19,157 +19,131 @@ CC: <rob.herring@calxeda.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
         <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <nsekhar@ti.com>, <balajitk@ti.com>,
         <george.cherian@ti.com>
-Subject: [PATCH v8 0/8] Generic PHY Framework
-Date: Tue, 25 Jun 2013 11:28:38 +0530
-Message-ID: <1372139926-3719-1-git-send-email-kishon@ti.com>
+Subject: [PATCH v8 2/8] usb: phy: omap-usb2: use the new generic PHY framework
+Date: Tue, 25 Jun 2013 11:28:40 +0530
+Message-ID: <1372139926-3719-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1372139926-3719-1-git-send-email-kishon@ti.com>
+References: <1372139926-3719-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a generic PHY framework that provides a set of APIs for the PHY drivers
-to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-the PHY with or without using phandle.
+Used the generic PHY framework API to create the PHY. Now the power off and
+power on are done in omap_usb_power_off and omap_usb_power_on respectively.
 
-This framework will be of use only to devices that uses external PHY (PHY
-functionality is not embedded within the controller).
+However using the old USB PHY library cannot be completely removed
+because OTG is intertwined with PHY and moving to the new framework
+will break OTG. Once we have a separate OTG state machine, we
+can get rid of the USB PHY library.
 
-The intention of creating this framework is to bring the phy drivers spread
-all over the Linux kernel to drivers/phy to increase code re-use and to
-increase code maintainability.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+---
+ drivers/usb/phy/Kconfig         |    1 +
+ drivers/usb/phy/phy-omap-usb2.c |   43 +++++++++++++++++++++++++++++++++++----
+ 2 files changed, 40 insertions(+), 4 deletions(-)
 
-Comments to make PHY as bus wasn't done because PHY devices can be part of
-other bus and making a same device attached to multiple bus leads to bad
-design.
-
-If the PHY driver has to send notification on connect/disconnect, the PHY
-driver should make use of the extcon framework. Using this susbsystem 
-to use extcon framwork will have to be analysed.
-
-Making omap-usb2 and twl4030 to use this framework is provided as a sample.
-
-This patch series is developed on linux mainline tree.
-
-This framework is already being used by display PHYs
-http://www.spinics.net/lists/arm-kernel/msg251666.html
-
-These patches are hosted in git://gitorious.org/linuxphy/linuxphy.git testing
-
-Changes from v7:
-* Fixed Documentation
-* Added to_phy, of_phy_provider_register and devm_of_phy_provider_register
-* modified runtime_pm usage in phy_init, phy_exit, phy_power_on and
-phy_power_off. Now phy_power_on will enable the clocks and phy_power_off will
-disable the clocks.
-* pm_runtime_no_callbacks() is added so that pm_runtime_get_sync doesn't fail
-* modified other patches to adhere to the changes in the PHY framework
-* removed usb: phy: twl4030: twl4030 shouldn't be subsys_initcall as it will
-be merged separately.
-* reference counting has been added to protect phy ops when the PHY is shared
-by multiple consumers.
-
-Changes from v6
-* corrected few typos in Documentation
-* Changed PHY Subsystem to *bool* in Kconfig (to avoid compilation errors when
-  PHY Subsystem is kept as module and the dependent modules are built-in)
-* Added if pm_runtime_enabled check before runtime pm calls.
-
-Changes from v5:
-* removed the new sysfs entries as it dint have any new information other than
-  what is already there in /sys/devices/...
-* removed a bunch of APIs added to get the PHY and now only phy_get and
-  devm_phy_get are used.
-* Added new APIs to register/unregister the PHY provider. This is needed for
-  dt boot case.
-* Enabled pm runtime and incorporated the comments given by Alan Stern in a
-  different patch series by Gautam.
-* Removed the *phy_bind* API. Now the phy binding information should be passed
-  using the platform data to the controller devices.
-* Fixed a few typos.
-
-Changes from v4:
-* removed of_phy_get_with_args/devm_of_phy_get_with_args. Now the *phy providers*
-  should use their custom implementation of of_xlate or use of_phy_xlate to get
-  *phy instance* from *phy providers*.
-* Added of_phy_xlate to be used by *phy providers* if it provides only one PHY.
-* changed phy_core from having subsys_initcall to module_init.
-* other minor fixes.
-
-Changes from v3:
-* Changed the return value of PHY APIs to ENOSYS
-* Added APIs of_phy_get_with_args/devm_of_phy_get_with_args to support getting
-  PHYs if the same IP implements multiple PHYs.
-* modified phy_bind API so that the binding information can now be _updated_.
-  In effect of this removed the binding information added in board files and
-  added only in usb-musb.c. If a particular board uses a different phy binding,
-  it can update it in board file after usb_musb_init().
-* Added Documentation/devicetree/bindings/phy/phy-bindings.txt for dt binding
-  information.
-
-Changes from v2:
-* removed phy_descriptor structure completely so changed the APIs which were
-  taking phy_descriptor as parameters
-* Added 2 more APIs *of_phy_get_byname* and *devm_of_phy_get_byname* to be used
-  by PHY user drivers which has *phy* and *phy-names* binding in the dt data
-* Fixed a few typos
-* Removed phy_list and we now use class_dev_iter_init, class_dev_iter_next and
-  class_dev_iter_exit for traversing through the phy list. (Note we still need
-  phy_bind list and phy_bind_mutex).
-* Changed the sysfs entry name from *bind* to *phy_bind*.
-
-Changes from v1:
-* Added Documentation for the PHY framework
-* Added few more APIs mostly w.r.t devres
-* Modified omap-usb2 and twl4030 to make use of the new framework
-
-Did USB enumeration testing in panda and beagle.
-
-
-Kishon Vijay Abraham I (8):
-  drivers: phy: add generic PHY framework
-  usb: phy: omap-usb2: use the new generic PHY framework
-  usb: phy: twl4030: use the new generic PHY framework
-  ARM: OMAP: USB: Add phy binding information
-  ARM: dts: omap: update usb_otg_hs data
-  usb: musb: omap2430: use the new generic PHY framework
-  usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2
-  usb: phy: twl4030-usb: remove *set_suspend* and *phy_init* ops
-
- .../devicetree/bindings/phy/phy-bindings.txt       |   66 +++
- Documentation/devicetree/bindings/usb/omap-usb.txt |    5 +
- Documentation/devicetree/bindings/usb/usb-phy.txt  |    6 +
- Documentation/phy.txt                              |  125 +++++
- MAINTAINERS                                        |    7 +
- arch/arm/boot/dts/omap3-beagle-xm.dts              |    2 +
- arch/arm/boot/dts/omap3-evm.dts                    |    2 +
- arch/arm/boot/dts/omap3-overo.dtsi                 |    2 +
- arch/arm/boot/dts/omap4.dtsi                       |    3 +
- arch/arm/boot/dts/twl4030.dtsi                     |    1 +
- arch/arm/mach-omap2/usb-musb.c                     |    6 +-
- drivers/Kconfig                                    |    2 +
- drivers/Makefile                                   |    2 +
- drivers/phy/Kconfig                                |   13 +
- drivers/phy/Makefile                               |    5 +
- drivers/phy/phy-core.c                             |  548 ++++++++++++++++++++
- drivers/usb/musb/Kconfig                           |    1 +
- drivers/usb/musb/musb_core.c                       |    1 +
- drivers/usb/musb/musb_core.h                       |    3 +
- drivers/usb/musb/omap2430.c                        |   26 +-
- drivers/usb/phy/Kconfig                            |    1 +
- drivers/usb/phy/phy-omap-usb2.c                    |   58 ++-
- drivers/usb/phy/phy-twl4030-usb.c                  |   61 ++-
- include/linux/phy/phy.h                            |  334 ++++++++++++
- include/linux/usb/musb.h                           |    3 +
- 25 files changed, 1229 insertions(+), 54 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-bindings.txt
- create mode 100644 Documentation/phy.txt
- create mode 100644 drivers/phy/Kconfig
- create mode 100644 drivers/phy/Makefile
- create mode 100644 drivers/phy/phy-core.c
- create mode 100644 include/linux/phy/phy.h
-
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index 7ef3eb8..5caeafd 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -69,6 +69,7 @@ config OMAP_CONTROL_USB
+ config OMAP_USB2
+ 	tristate "OMAP USB2 PHY Driver"
+ 	depends on ARCH_OMAP2PLUS
++	depends on GENERIC_PHY
+ 	select OMAP_CONTROL_USB
+ 	help
+ 	  Enable this to support the transceiver that is part of SOC. This
+diff --git a/drivers/usb/phy/phy-omap-usb2.c b/drivers/usb/phy/phy-omap-usb2.c
+index 844ab68..ecdf1ac 100644
+--- a/drivers/usb/phy/phy-omap-usb2.c
++++ b/drivers/usb/phy/phy-omap-usb2.c
+@@ -28,6 +28,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/delay.h>
+ #include <linux/usb/omap_control_usb.h>
++#include <linux/phy/phy.h>
+ 
+ /**
+  * omap_usb2_set_comparator - links the comparator present in the sytem with
+@@ -119,10 +120,36 @@ static int omap_usb2_suspend(struct usb_phy *x, int suspend)
+ 	return 0;
+ }
+ 
++static int omap_usb_power_off(struct phy *x)
++{
++	struct omap_usb *phy = dev_get_drvdata(&x->dev);
++
++	omap_control_usb_phy_power(phy->control_dev, 0);
++
++	return 0;
++}
++
++static int omap_usb_power_on(struct phy *x)
++{
++	struct omap_usb *phy = dev_get_drvdata(&x->dev);
++
++	omap_control_usb_phy_power(phy->control_dev, 1);
++
++	return 0;
++}
++
++static struct phy_ops ops = {
++	.power_on	= omap_usb_power_on,
++	.power_off	= omap_usb_power_off,
++	.owner		= THIS_MODULE,
++};
++
+ static int omap_usb2_probe(struct platform_device *pdev)
+ {
+ 	struct omap_usb			*phy;
++	struct phy			*generic_phy;
+ 	struct usb_otg			*otg;
++	struct phy_provider		*phy_provider;
+ 
+ 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+ 	if (!phy) {
+@@ -144,6 +171,11 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	phy->phy.otg		= otg;
+ 	phy->phy.type		= USB_PHY_TYPE_USB2;
+ 
++	phy_provider = devm_of_phy_provider_register(phy->dev,
++			of_phy_simple_xlate);
++	if (IS_ERR(phy_provider))
++		return PTR_ERR(phy_provider);
++
+ 	phy->control_dev = omap_get_control_dev();
+ 	if (IS_ERR(phy->control_dev)) {
+ 		dev_dbg(&pdev->dev, "Failed to get control device\n");
+@@ -159,6 +191,13 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	otg->start_srp		= omap_usb_start_srp;
+ 	otg->phy		= &phy->phy;
+ 
++	platform_set_drvdata(pdev, phy);
++	pm_runtime_enable(phy->dev);
++
++	generic_phy = devm_phy_create(phy->dev, 0, &ops, "omap-usb2", phy);
++	if (IS_ERR(generic_phy))
++		return PTR_ERR(generic_phy);
++
+ 	phy->wkupclk = devm_clk_get(phy->dev, "usb_phy_cm_clk32k");
+ 	if (IS_ERR(phy->wkupclk)) {
+ 		dev_err(&pdev->dev, "unable to get usb_phy_cm_clk32k\n");
+@@ -174,10 +213,6 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 
+ 	usb_add_phy_dev(&phy->phy);
+ 
+-	platform_set_drvdata(pdev, phy);
+-
+-	pm_runtime_enable(phy->dev);
+-
+ 	return 0;
+ }
+ 
 -- 
 1.7.10.4
 
