@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3FYTE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:04:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40956 "EHLO
+	id S1753815Ab3FYTE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:04:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40962 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab3FYSdx (ORCPT
+	with ESMTP id S1752456Ab3FYSdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:53 -0400
+	Tue, 25 Jun 2013 14:33:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frank Li <Frank.Li@freescale.com>,
-        Lucas Stach <l.stach@pengutronix.de>,
+        Matt Schnall <mischnal@google.com>, Eric Dumazet <edumazet@google.com>,
+        Bernhard Beck <bbeck@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 43/95] net: fec: fix kernel oops when plug/unplug cable many times
-Date: Tue, 25 Jun 2013 11:32:30 -0700
-Message-Id: <20130625182158.517071140@linuxfoundation.org>
+Subject: [ 44/95] tcp: fix tcp_md5_hash_skb_data()
+Date: Tue, 25 Jun 2013 11:32:31 -0700
+Message-Id: <20130625182158.625713478@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,174 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frank Li <Frank.Li@freescale.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commits 54309fa60b5f57b90c1842176f6045e665d21142 and
-  3169134478a9638baf0dbb4fdca5a0718cbe8e27 ]
+[ Upstream commit 54d27fcb338bd9c42d1dfc5a39e18f6f9d373c2e ]
 
-reproduce steps
- 1. flood ping from other machine
- 	ping -f -s 41000 IP
- 2. run below script
-    while [ 1 ]; do ethtool -s eth0 autoneg off;
-    sleep 3;ethtool -s eth0 autoneg on; sleep 4; done;
+TCP md5 communications fail [1] for some devices, because sg/crypto code
+assume page offsets are below PAGE_SIZE.
 
-You can see oops in one hour.
+This was discovered using mlx4 driver [2], but I suspect loopback
+might trigger the same bug now we use order-3 pages in tcp_sendmsg()
 
-The reason is fec_restart clear BD but NAPI may use it.
-The solution is disable NAPI and stop xmit when reset BD.
-disable NAPI may sleep, so fec_restart can't be call in
-atomic context.
+[1] Failure is giving following messages.
 
-Signed-off-by: Frank Li <Frank.Li@freescale.com>
-Reviewed-by: Lucas Stach <l.stach@pengutronix.de>
-Tested-by: Lucas Stach <l.stach@pengutronix.de>
+huh, entered softirq 3 NET_RX ffffffff806ad230 preempt_count 00000100,
+exited with 00000101?
+
+[2] mlx4 driver uses order-2 pages to allocate RX frags
+
+Reported-by: Matt Schnall <mischnal@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Bernhard Beck <bbeck@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/freescale/fec.c |   44 ++++++++++++++++++++++++++---------
- drivers/net/ethernet/freescale/fec.h |   10 ++++---
- 2 files changed, 39 insertions(+), 15 deletions(-)
+ net/ipv4/tcp.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/freescale/fec.c
-+++ b/drivers/net/ethernet/freescale/fec.c
-@@ -407,6 +407,13 @@ fec_restart(struct net_device *ndev, int
- 	u32 rcntl = OPT_FRAME_SIZE | 0x04;
- 	u32 ecntl = 0x2; /* ETHEREN */
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3383,8 +3383,11 @@ int tcp_md5_hash_skb_data(struct tcp_md5
  
-+	if (netif_running(ndev)) {
-+		netif_device_detach(ndev);
-+		napi_disable(&fep->napi);
-+		netif_stop_queue(ndev);
-+		netif_tx_lock_bh(ndev);
-+	}
+ 	for (i = 0; i < shi->nr_frags; ++i) {
+ 		const struct skb_frag_struct *f = &shi->frags[i];
+-		struct page *page = skb_frag_page(f);
+-		sg_set_page(&sg, page, skb_frag_size(f), f->page_offset);
++		unsigned int offset = f->page_offset;
++		struct page *page = skb_frag_page(f) + (offset >> PAGE_SHIFT);
 +
- 	/* Whack a reset.  We should wait for this. */
- 	writel(1, fep->hwp + FEC_ECNTRL);
- 	udelay(10);
-@@ -559,6 +566,13 @@ fec_restart(struct net_device *ndev, int
- 
- 	/* Enable interrupts we wish to service */
- 	writel(FEC_DEFAULT_IMASK, fep->hwp + FEC_IMASK);
-+
-+	if (netif_running(ndev)) {
-+		netif_device_attach(ndev);
-+		napi_enable(&fep->napi);
-+		netif_wake_queue(ndev);
-+		netif_tx_unlock_bh(ndev);
-+	}
- }
- 
- static void
-@@ -598,8 +612,22 @@ fec_timeout(struct net_device *ndev)
- 
- 	ndev->stats.tx_errors++;
- 
--	fec_restart(ndev, fep->full_duplex);
--	netif_wake_queue(ndev);
-+	fep->delay_work.timeout = true;
-+	schedule_delayed_work(&(fep->delay_work.delay_work), 0);
-+}
-+
-+static void fec_enet_work(struct work_struct *work)
-+{
-+	struct fec_enet_private *fep =
-+		container_of(work,
-+			     struct fec_enet_private,
-+			     delay_work.delay_work.work);
-+
-+	if (fep->delay_work.timeout) {
-+		fep->delay_work.timeout = false;
-+		fec_restart(fep->netdev, fep->full_duplex);
-+		netif_wake_queue(fep->netdev);
-+	}
- }
- 
- static void
-@@ -970,16 +998,12 @@ static void fec_enet_adjust_link(struct
- {
- 	struct fec_enet_private *fep = netdev_priv(ndev);
- 	struct phy_device *phy_dev = fep->phy_dev;
--	unsigned long flags;
--
- 	int status_change = 0;
- 
--	spin_lock_irqsave(&fep->hw_lock, flags);
--
- 	/* Prevent a state halted on mii error */
- 	if (fep->mii_timeout && phy_dev->state == PHY_HALTED) {
- 		phy_dev->state = PHY_RESUMING;
--		goto spin_unlock;
-+		return;
++		sg_set_page(&sg, page, skb_frag_size(f),
++			    offset_in_page(offset));
+ 		if (crypto_hash_update(desc, &sg, skb_frag_size(f)))
+ 			return 1;
  	}
- 
- 	if (phy_dev->link) {
-@@ -1007,9 +1031,6 @@ static void fec_enet_adjust_link(struct
- 		}
- 	}
- 
--spin_unlock:
--	spin_unlock_irqrestore(&fep->hw_lock, flags);
--
- 	if (status_change)
- 		phy_print_status(phy_dev);
- }
-@@ -1656,7 +1677,6 @@ static int fec_enet_init(struct net_devi
- 	}
- 
- 	memset(cbd_base, 0, PAGE_SIZE);
--	spin_lock_init(&fep->hw_lock);
- 
- 	fep->netdev = ndev;
- 
-@@ -1882,6 +1902,7 @@ fec_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto failed_register;
- 
-+	INIT_DELAYED_WORK(&(fep->delay_work.delay_work), fec_enet_work);
- 	return 0;
- 
- failed_register:
-@@ -1918,6 +1939,7 @@ fec_drv_remove(struct platform_device *p
- 	struct resource *r;
- 	int i;
- 
-+	cancel_delayed_work_sync(&(fep->delay_work.delay_work));
- 	unregister_netdev(ndev);
- 	fec_enet_mii_remove(fep);
- 	del_timer_sync(&fep->time_keep);
---- a/drivers/net/ethernet/freescale/fec.h
-+++ b/drivers/net/ethernet/freescale/fec.h
-@@ -191,6 +191,11 @@ struct bufdesc_ex {
- #define BD_ENET_RX_INT          0x00800000
- #define BD_ENET_RX_PTP          ((ushort)0x0400)
- 
-+struct fec_enet_delayed_work {
-+	struct delayed_work delay_work;
-+	bool timeout;
-+};
-+
- /* The FEC buffer descriptors track the ring buffers.  The rx_bd_base and
-  * tx_bd_base always point to the base of the buffer descriptors.  The
-  * cur_rx and cur_tx point to the currently available buffer.
-@@ -224,9 +229,6 @@ struct fec_enet_private {
- 	/* The ring entries to be free()ed */
- 	struct bufdesc	*dirty_tx;
- 
--	/* hold while accessing the HW like ringbuffer for tx/rx but not MAC */
--	spinlock_t hw_lock;
--
- 	struct	platform_device *pdev;
- 
- 	int	opened;
-@@ -260,7 +262,7 @@ struct fec_enet_private {
- 	int hwts_rx_en;
- 	int hwts_tx_en;
- 	struct timer_list time_keep;
--
-+	struct fec_enet_delayed_work delay_work;
- };
- 
- void fec_ptp_init(struct net_device *ndev, struct platform_device *pdev);
 
 
