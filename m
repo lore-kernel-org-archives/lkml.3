@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab3FYTLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:11:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40869 "EHLO
+	id S1753874Ab3FYTLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:11:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab3FYSdi (ORCPT
+	with ESMTP id S1752069Ab3FYSdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:38 -0400
+	Tue, 25 Jun 2013 14:33:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [ 20/95] parisc: fix irq stack on UP and SMP
-Date: Tue, 25 Jun 2013 11:32:07 -0700
-Message-Id: <20130625182155.919056807@linuxfoundation.org>
+        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
+Subject: [ 19/95] parisc: make interrupt and interruption stack allocation reentrant
+Date: Tue, 25 Jun 2013 11:32:06 -0700
+Message-Id: <20130625182155.825009429@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,181 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: John David Anglin <dave.anglin@bell.net>
 
-commit d96b51ec14650b490ab98e738bcc02309396e5bc upstream.
+commit b63a2bbc0b9b106a93e11952ab057e2408f2eb02 upstream.
 
-The logic to detect if the irq stack was already in use with
-raw_spin_trylock() is wrong, because it will generate a "trylock failure
-on UP" error message with CONFIG_SMP=n and CONFIG_DEBUG_SPINLOCK=y.
+The get_stack_use_cr30 and get_stack_use_r30 macros allocate a stack
+frame for external interrupts and interruptions requiring a stack frame.
+They are currently not reentrant in that they save register context
+before the stack is set or adjusted.
 
-arch_spin_trylock() can't be used either since in the CONFIG_SMP=n case
-no atomic protection is given and we are reentrant here. A mutex didn't
-worked either and brings more overhead by turning off interrupts.
+I have observed a number of system crashes where there was clear
+evidence of stack corruption during interrupt processing, and as a
+result register corruption. Some interruptions can still occur during
+interruption processing, however external interrupts are disabled and
+data TLB misses don't occur for absolute accesses. So, it's not entirely
+clear what triggers this issue. Also, if an interruption occurs when
+Q=0, it is generally not possible to recover as the shadowed registers
+are not copied.
 
-So, let's use the fastest path for parisc which is the ldcw instruction.
+The attached patch reworks the get_stack_use_cr30 and get_stack_use_r30
+macros to allocate stack before doing register saves. The new code is a
+couple of instructions shorter than the old implementation. Thus, it's
+an improvement even if it doesn't fully resolve the stack corruption
+issue. Based on limited testing, it improves SMP system stability.
 
-Counting how often the irq stack was used is pretty useless, so just
-drop this piece of code.
-
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
 Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/hardirq.h   |    5 ----
- arch/parisc/include/asm/processor.h |   21 ------------------
- arch/parisc/kernel/irq.c            |   41 ++++++++++++++++++++++--------------
- 3 files changed, 26 insertions(+), 41 deletions(-)
+ arch/parisc/include/asm/assembly.h |    1 -
+ arch/parisc/kernel/entry.S         |   19 ++++++++++---------
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
---- a/arch/parisc/include/asm/hardirq.h
-+++ b/arch/parisc/include/asm/hardirq.h
-@@ -17,13 +17,8 @@
+--- a/arch/parisc/include/asm/assembly.h
++++ b/arch/parisc/include/asm/assembly.h
+@@ -438,7 +438,6 @@
+ 	SAVE_SP  (%sr4, PT_SR4 (\regs))
+ 	SAVE_SP  (%sr5, PT_SR5 (\regs))
+ 	SAVE_SP  (%sr6, PT_SR6 (\regs))
+-	SAVE_SP  (%sr7, PT_SR7 (\regs))
  
- typedef struct {
- 	unsigned int __softirq_pending;
--#ifdef CONFIG_DEBUG_STACKOVERFLOW
- 	unsigned int kernel_stack_usage;
--#ifdef CONFIG_IRQSTACKS
- 	unsigned int irq_stack_usage;
--	unsigned int irq_stack_counter;
--#endif
--#endif
- #ifdef CONFIG_SMP
- 	unsigned int irq_resched_count;
- 	unsigned int irq_call_count;
---- a/arch/parisc/include/asm/processor.h
-+++ b/arch/parisc/include/asm/processor.h
-@@ -17,7 +17,6 @@
- #include <asm/ptrace.h>
- #include <asm/types.h>
- #include <asm/percpu.h>
--
- #endif /* __ASSEMBLY__ */
+ 	SAVE_CR  (%cr17, PT_IASQ0(\regs))
+ 	mtctl	 %r0,	%cr17
+--- a/arch/parisc/kernel/entry.S
++++ b/arch/parisc/kernel/entry.S
+@@ -65,15 +65,11 @@
+ 	rsm	PSW_SM_I, %r0	/* barrier for "Relied upon Translation */
+ 	mtsp	%r0, %sr4
+ 	mtsp	%r0, %sr5
+-	mfsp	%sr7, %r1
+-	or,=    %r0,%r1,%r0	/* Only save sr7 in sr3 if sr7 != 0 */
+-	mtsp	%r1, %sr3
++	mtsp	%r0, %sr6
+ 	tovirt_r1 %r29
+ 	load32	KERNEL_PSW, %r1
  
- /*
-@@ -59,26 +58,6 @@
- #ifndef __ASSEMBLY__
+ 	rsm     PSW_SM_QUIET,%r0	/* second "heavy weight" ctl op */
+-	mtsp	%r0, %sr6
+-	mtsp	%r0, %sr7
+ 	mtctl	%r0, %cr17	/* Clear IIASQ tail */
+ 	mtctl	%r0, %cr17	/* Clear IIASQ head */
+ 	mtctl	%r1, %ipsw
+@@ -119,17 +115,20 @@
  
- /*
-- * IRQ STACK - used for irq handler
-- */
--#ifdef __KERNEL__
--
--#include <linux/spinlock_types.h>
--
--#define IRQ_STACK_SIZE      (4096 << 2) /* 16k irq stack size */
--
--union irq_stack_union {
--	unsigned long stack[IRQ_STACK_SIZE/sizeof(unsigned long)];
--	raw_spinlock_t lock;
--};
--
--DECLARE_PER_CPU(union irq_stack_union, irq_stack_union);
--
--void call_on_stack(unsigned long p1, void *func, unsigned long new_stack);
--
--#endif /* __KERNEL__ */
--
--/*
-  * Data detected about CPUs at boot time which is the same for all CPU's.
-  * HP boxes are SMP - ie identical processors.
-  *
---- a/arch/parisc/kernel/irq.c
-+++ b/arch/parisc/kernel/irq.c
-@@ -27,11 +27,11 @@
- #include <linux/interrupt.h>
- #include <linux/kernel_stat.h>
- #include <linux/seq_file.h>
--#include <linux/spinlock.h>
- #include <linux/types.h>
- #include <asm/io.h>
+ 	/* we save the registers in the task struct */
  
- #include <asm/smp.h>
-+#include <asm/ldcw.h>
++	copy	%r30, %r17
+ 	mfctl   %cr30, %r1
++	ldo	THREAD_SZ_ALGN(%r1), %r30
++	mtsp	%r0,%sr7
++	mtsp	%r16,%sr3
+ 	tophys  %r1,%r9
+ 	LDREG	TI_TASK(%r9), %r1	/* thread_info -> task_struct */
+ 	tophys  %r1,%r9
+ 	ldo     TASK_REGS(%r9),%r9
+-	STREG   %r30, PT_GR30(%r9)
++	STREG   %r17,PT_GR30(%r9)
+ 	STREG   %r29,PT_GR29(%r9)
+ 	STREG   %r26,PT_GR26(%r9)
++	STREG	%r16,PT_SR7(%r9)
+ 	copy    %r9,%r29
+-	mfctl   %cr30, %r1
+-	ldo	THREAD_SZ_ALGN(%r1), %r30
+ 	.endm
  
- #undef PARISC_IRQ_CR16_COUNTS
+ 	.macro  get_stack_use_r30
+@@ -137,10 +136,12 @@
+ 	/* we put a struct pt_regs on the stack and save the registers there */
  
-@@ -172,10 +172,6 @@ int arch_show_interrupts(struct seq_file
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_stack_usage);
- 	seq_puts(p, "  Interrupt stack usage\n");
--	seq_printf(p, "%*s: ", prec, "ISC");
--	for_each_online_cpu(j)
--		seq_printf(p, "%10u ", irq_stats(j)->irq_stack_counter);
--	seq_puts(p, "  Interrupt stack usage counter\n");
- # endif
- #endif
- #ifdef CONFIG_SMP
-@@ -384,6 +380,24 @@ static inline int eirr_to_irq(unsigned l
- 	return (BITS_PER_LONG - bit) + TIMER_IRQ;
- }
+ 	tophys  %r30,%r9
+-	STREG   %r30,PT_GR30(%r9)
++	copy	%r30,%r1
+ 	ldo	PT_SZ_ALGN(%r30),%r30
++	STREG   %r1,PT_GR30(%r9)
+ 	STREG   %r29,PT_GR29(%r9)
+ 	STREG   %r26,PT_GR26(%r9)
++	STREG	%r16,PT_SR7(%r9)
+ 	copy    %r9,%r29
+ 	.endm
  
-+#ifdef CONFIG_IRQSTACKS
-+/*
-+ * IRQ STACK - used for irq handler
-+ */
-+#define IRQ_STACK_SIZE      (4096 << 2) /* 16k irq stack size */
-+
-+union irq_stack_union {
-+	unsigned long stack[IRQ_STACK_SIZE/sizeof(unsigned long)];
-+	volatile unsigned int slock[4];
-+	volatile unsigned int lock[1];
-+};
-+
-+DEFINE_PER_CPU(union irq_stack_union, irq_stack_union) = {
-+		.slock = { 1,1,1,1 },
-+	};
-+#endif
-+
-+
- int sysctl_panic_on_stackoverflow = 1;
- 
- static inline void stack_overflow_check(struct pt_regs *regs)
-@@ -450,27 +464,26 @@ panic_check:
- }
- 
- #ifdef CONFIG_IRQSTACKS
--DEFINE_PER_CPU(union irq_stack_union, irq_stack_union) = {
--		.lock = __RAW_SPIN_LOCK_UNLOCKED((irq_stack_union).lock)
--	};
-+/* in entry.S: */
-+void call_on_stack(unsigned long p1, void *func, unsigned long new_stack);
- 
- static void execute_on_irq_stack(void *func, unsigned long param1)
- {
- 	union irq_stack_union *union_ptr;
- 	unsigned long irq_stack;
--	raw_spinlock_t *irq_stack_in_use;
-+	volatile unsigned int *irq_stack_in_use;
- 
- 	union_ptr = &per_cpu(irq_stack_union, smp_processor_id());
- 	irq_stack = (unsigned long) &union_ptr->stack;
--	irq_stack = ALIGN(irq_stack + sizeof(irq_stack_union.lock),
-+	irq_stack = ALIGN(irq_stack + sizeof(irq_stack_union.slock),
- 			 64); /* align for stack frame usage */
- 
- 	/* We may be called recursive. If we are already using the irq stack,
- 	 * just continue to use it. Use spinlocks to serialize
- 	 * the irq stack usage.
- 	 */
--	irq_stack_in_use = &union_ptr->lock;
--	if (!raw_spin_trylock(irq_stack_in_use)) {
-+	irq_stack_in_use = (volatile unsigned int *)__ldcw_align(union_ptr);
-+	if (!__ldcw(irq_stack_in_use)) {
- 		void (*direct_call)(unsigned long p1) = func;
- 
- 		/* We are using the IRQ stack already.
-@@ -482,10 +495,8 @@ static void execute_on_irq_stack(void *f
- 	/* This is where we switch to the IRQ stack. */
- 	call_on_stack(param1, func, irq_stack);
- 
--	__inc_irq_stat(irq_stack_counter);
--
- 	/* free up irq stack usage. */
--	do_raw_spin_unlock(irq_stack_in_use);
-+	*irq_stack_in_use = 1;
- }
- 
- asmlinkage void do_softirq(void)
 
 
