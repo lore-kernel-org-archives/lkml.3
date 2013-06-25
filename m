@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab3FYSpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:45:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41339 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab3FYSje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:39:34 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeremy Rosen <jeremy.rosen@openwide.fr>,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 01/17] ALSA: usb-audio: work around Android accessory firmware bug
-Date: Tue, 25 Jun 2013 11:39:16 -0700
-Message-Id: <20130625183915.616233338@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130625183915.443950649@linuxfoundation.org>
-References: <20130625183915.443950649@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1753603Ab3FYSpQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:45:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45546 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753269Ab3FYSpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:45:12 -0400
+Message-ID: <51C9E523.7000803@zytor.com>
+Date: Tue, 25 Jun 2013 11:44:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Mike Travis <travis@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com> <20130621185056.GA23473@kroah.com> <51C4C5F3.3050800@sgi.com> <CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com> <51C9D4ED.5070805@sgi.com> <51C9DEC1.6030602@zytor.com> <CAE9FiQV5z+3AXy5c=aaU3vq1V3fibJ6PhhA4VW5H8BWVzhxXPA@mail.gmail.com>
+In-Reply-To: <CAE9FiQV5z+3AXy5c=aaU3vq1V3fibJ6PhhA4VW5H8BWVzhxXPA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 06/25/2013 11:40 AM, Yinghai Lu wrote:
+> On Tue, Jun 25, 2013 at 11:17 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 06/25/2013 10:35 AM, Mike Travis wrote:
+> 
+>> However, please consider Ingo's counterproposal of doing this via the
+>> buddy allocator, i.e. hugepages being broken on demand.  That is a
+>> *very* powerful model, although would require more infrastructure.
+> 
+> Can you or Ingo elaborate more about the buddy allocator proposal?
+> 
 
-------------------
+Start by initializing 1G hyperpages only, but mark them so that the
+allocator knows that if it needs to break them apart it has to
+initialize the page structures for the 2M subpages.
 
-From: Clemens Ladisch <clemens@ladisch.de>
+Same thing with 2M -> 4K.
 
-commit 342cda29343a6272c630f94ed56810a76740251b upstream.
-
-When the Android firmware enables the audio interfaces in accessory
-mode, it always declares in the control interface's baInterfaceNr array
-that interfaces 0 and 1 belong to the audio function.  However, the
-accessory interface itself, if also enabled, already is at index 0 and
-shifts the actual audio interface numbers to 1 and 2, which prevents the
-PCM streaming interface from being seen by the host driver.
-
-To get the PCM interface interface to work, detect when the descriptors
-point to the (for this driver useless) accessory interface, and redirect
-to the correct one.
-
-Reported-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
-Tested-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/usb/card.c |   22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
-
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -148,14 +148,32 @@ static int snd_usb_create_stream(struct
- 		return -EINVAL;
- 	}
- 
-+	alts = &iface->altsetting[0];
-+	altsd = get_iface_desc(alts);
-+
-+	/*
-+	 * Android with both accessory and audio interfaces enabled gets the
-+	 * interface numbers wrong.
-+	 */
-+	if ((chip->usb_id == USB_ID(0x18d1, 0x2d04) ||
-+	     chip->usb_id == USB_ID(0x18d1, 0x2d05)) &&
-+	    interface == 0 &&
-+	    altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC &&
-+	    altsd->bInterfaceSubClass == USB_SUBCLASS_VENDOR_SPEC) {
-+		interface = 2;
-+		iface = usb_ifnum_to_if(dev, interface);
-+		if (!iface)
-+			return -EINVAL;
-+		alts = &iface->altsetting[0];
-+		altsd = get_iface_desc(alts);
-+	}
-+
- 	if (usb_interface_claimed(iface)) {
- 		snd_printdd(KERN_INFO "%d:%d:%d: skipping, already claimed\n",
- 						dev->devnum, ctrlif, interface);
- 		return -EINVAL;
- 	}
- 
--	alts = &iface->altsetting[0];
--	altsd = get_iface_desc(alts);
- 	if ((altsd->bInterfaceClass == USB_CLASS_AUDIO ||
- 	     altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC) &&
- 	    altsd->bInterfaceSubClass == USB_SUBCLASS_MIDISTREAMING) {
+	-hpa
 
 
