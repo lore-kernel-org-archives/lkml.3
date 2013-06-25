@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3FYTK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:10:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40875 "EHLO
+	id S1753917Ab3FYTK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:10:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40878 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab3FYSdj (ORCPT
+	with ESMTP id S1752124Ab3FYSdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:33:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [ 22/95] parisc: fix kernel BUG at arch/parisc/include/asm/mmzone.h:50
-Date: Tue, 25 Jun 2013 11:32:09 -0700
-Message-Id: <20130625182156.160754876@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>, Helge Deller <deller@gmx.de>
+Subject: [ 23/95] parisc: rename "CONFIG_PA7100" to "CONFIG_PA7000"
+Date: Tue, 25 Jun 2013 11:32:10 -0700
+Message-Id: <20130625182156.260633202@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,56 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit ae249b5fa27f9fba25aa59664d4338efc2dd2394 upstream.
+commit 766039022a480ede847659daaa78772bdcc598ae upstream.
 
-With CONFIG_DISCONTIGMEM=y and multiple physical memory areas,
-cat /proc/kpageflags triggers this kernel bug:
+There's a Makefile line setting cflags for CONFIG_PA7100. But that
+Kconfig macro doesn't exist. There is a Kconfig symbol PA7000, which
+covers both PA7000 and PA7100 processors. So let's use the corresponding
+Kconfig macro.
 
-kernel BUG at arch/parisc/include/asm/mmzone.h:50!
-CPU: 2 PID: 7848 Comm: cat Tainted: G      D W 3.10.0-rc3-64bit #44
- IAOQ[0]: kpageflags_read0x128/0x238
- IAOQ[1]: kpageflags_read0x12c/0x238
- RP(r2): proc_reg_read0xbc/0x130
-Backtrace:
- [<00000000402ca2d4>] proc_reg_read0xbc/0x130
- [<0000000040235bcc>] vfs_read0xc4/0x1d0
- [<0000000040235f0c>] SyS_read0x94/0xf0
- [<0000000040105fc0>] syscall_exit0x0/0x14
-
-kpageflags_read() walks through the whole memory, even if some memory
-areas are physically not available. So, we should better not BUG on an
-unavailable pfn in pfn_to_nid() but just return the expected value -1 or
-0.
-
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/mmzone.h |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ arch/parisc/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/parisc/include/asm/mmzone.h
-+++ b/arch/parisc/include/asm/mmzone.h
-@@ -39,17 +39,14 @@ extern unsigned char pfnnid_map[PFNNID_M
- static inline int pfn_to_nid(unsigned long pfn)
- {
- 	unsigned int i;
--	unsigned char r;
+--- a/arch/parisc/Makefile
++++ b/arch/parisc/Makefile
+@@ -66,7 +66,7 @@ KBUILD_CFLAGS_KERNEL += -mlong-calls
+ endif
  
- 	if (unlikely(pfn_is_io(pfn)))
- 		return 0;
- 
- 	i = pfn >> PFNNID_SHIFT;
- 	BUG_ON(i >= ARRAY_SIZE(pfnnid_map));
--	r = pfnnid_map[i];
--	BUG_ON(r == 0xff);
- 
--	return (int)r;
-+	return (int)pfnnid_map[i];
- }
- 
- static inline int pfn_valid(int pfn)
+ # select which processor to optimise for
+-cflags-$(CONFIG_PA7100)		+= -march=1.1 -mschedule=7100
++cflags-$(CONFIG_PA7000)		+= -march=1.1 -mschedule=7100
+ cflags-$(CONFIG_PA7200)		+= -march=1.1 -mschedule=7200
+ cflags-$(CONFIG_PA7100LC)	+= -march=1.1 -mschedule=7100LC
+ cflags-$(CONFIG_PA7300LC)	+= -march=1.1 -mschedule=7300
 
 
