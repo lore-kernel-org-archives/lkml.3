@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab3FYHHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 03:07:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54120 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab3FYHHK (ORCPT
+	id S1752053Ab3FYHHi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 03:07:38 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:57682 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab3FYHHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 03:07:10 -0400
-Date: Tue, 25 Jun 2013 09:07:06 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-sh@vger.kernel.org
-cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: [PATCH] regulator: max8973: fix a typo in documentation
-Message-ID: <Pine.LNX.4.64.1306250905050.30321@axis700.grange>
+	Tue, 25 Jun 2013 03:07:37 -0400
+Message-ID: <51C941B1.6000305@acm.org>
+Date: Tue, 25 Jun 2013 09:07:29 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:4+Vj/UTu+ZYpTVlcaCxurD0oHt5xCkOWpQSFWXTvNLZ
- mFfYLdPg9tQPoGU9OWq2EXv8CqDLH6zfsSS6OtuHZ7h6LcwTIa
- f5XNYsdPWZQAzL/UAJz21zNCAXGhtHM6CXu5tg/Bludme3VDaE
- BiOLevuGe6uy7jP0WALemQ5xYUNuo3S/XnThiJLxl3gn5Zgdxr
- p5t99SheCQ6pnH1tDyziEOK18drQVEXfm0S1jKq0tDLsWZbT7G
- vSIBDrnmBw7dweRzNWYEmE084l4l4Jtfjno3Vc6NTKiO/MAlm/
- uyuEPP/aFjq77pLLA6phQgnA0yIghJWPgzI+mD5S5/elA7UzUO
- jkFTS+sPgnc0iHe/6j4tb1jpwxlhj/P/fpHcoNLz0aN5+kL4gG
- OL+mO+OI5XquA==
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nvme@lists.infradead.org,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
+References: <20130620201713.GV8211@linux.intel.com> <20130623100920.GA19021@gmail.com> <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com> <20130624080750.GA21768@gmail.com> <20130625031809.GB8211@linux.intel.com>
+In-Reply-To: <20130625031809.GB8211@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a s/maxium/maxim/ typo in DT binding documentation.
+On 06/25/13 05:18, Matthew Wilcox wrote:
+> On Mon, Jun 24, 2013 at 10:07:51AM +0200, Ingo Molnar wrote:
+>> I'm wondering, how will this scheme work if the IO completion latency is a
+>> lot more than the 5 usecs in the testcase? What if it takes 20 usecs or
+>> 100 usecs or more?
+>
+> There's clearly a threshold at which it stops making sense, and our
+> current NAND-based SSDs are almost certainly on the wrong side of that
+> threshold!  I can't wait for one of the "post-NAND" technologies to make
+> it to market in some form that makes it economical to use in an SSD.
+>
+> The problem is that some of the people who are looking at those
+> technologies are crazy.  They want to "bypass the kernel" and "do user
+> space I/O" because "the kernel is too slow".  This patch is part of an
+> effort to show them how crazy they are.  And even if it doesn't convince
+> them, at least users who refuse to rewrite their applications to take
+> advantage of magical userspace I/O libraries will see real performance
+> benefits.
 
-Reported-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
+Recently I attended an interesting talk about this subject in which it 
+was proposed not only to bypass the kernel for access to high-IOPS 
+devices but also to allow byte-addressability for block devices. The 
+slides that accompanied that talk can be found here (includes a 
+performance comparison with the traditional block driver API):
 
-Mark, if still possible, feel free to merge this with the original patch.
-Thanks
-Guennadi
+Bernard Metzler, On Suitability of High-Performance Networking API for 
+Storage, OFA Int'l Developer Workshop, April 24, 2013 
+(http://www.openfabrics.org/ofa-documents/presentations/doc_download/559-on-suitability-of-high-performance-networking-api-for-storage.html).
 
- .../bindings/regulator/max8973-regulator.txt       |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+This approach leaves the choice of whether to use polling or an 
+interrupt-based completion notification to the user of the new API, 
+something the Linux InfiniBand RDMA verbs API already allows today.
 
-diff --git a/Documentation/devicetree/bindings/regulator/max8973-regulator.txt b/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-index 8d38ab2..4f15d8a 100644
---- a/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
-@@ -2,7 +2,7 @@
- 
- Required properties:
- 
--- compatible:	must be "maxium,max8973"
-+- compatible:	must be "maxim,max8973"
- - reg:		the i2c slave address of the regulator. It should be 0x1b.
- 
- Any standard regulator properties can be used to configure the single max8973
-@@ -11,7 +11,7 @@ DCDC.
- Example:
- 
- 	max8973@1b {
--		compatible = "maxium,max8973";
-+		compatible = "maxim,max8973";
- 		reg = <0x1b>;
- 
- 		regulator-min-microvolt = <935000>;
--- 
-1.7.2.5
-
+Bart.
