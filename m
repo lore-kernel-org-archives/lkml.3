@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab3FYIKO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:10:14 -0400
-Received: from 19.mo1.mail-out.ovh.net ([178.32.97.206]:45982 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751856Ab3FYIKL (ORCPT
+	id S1752231Ab3FYIKu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:10:50 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:41497 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab3FYIKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:10:11 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v2 1/4] ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare.
-Date: Tue, 25 Jun 2013 10:10:05 +0200
-Message-Id: <1372147805-4184-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
-References: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 5816961869772650604
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 25 Jun 2013 04:10:45 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <201306251001.12430.yann.morin.1998@free.fr>
+References: <cover.1372097219.git.yann.morin.1998@free.fr>
+	<8357b48549e17b3e4e402c7f977b65708922e60f.1372097219.git.yann.morin.1998@free.fr>
+	<201306251001.12430.yann.morin.1998@free.fr>
+Date: Tue, 25 Jun 2013 10:10:44 +0200
+Message-ID: <CA+icZUW69zkZice9K4Q2Fr=nuC3KCOr2ZXRZFymYadsxCvB1tA@mail.gmail.com>
+Subject: Re: [PATCH 15/15] kconfig: fix randomising choice entries in presence
+ of KCONFIG_ALLCONFIG
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Alexander Kriegisch <Alexander@kriegisch.name>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+On Tue, Jun 25, 2013 at 10:01 AM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
+> Michal, All,
+>
+> On Monday 24 June 2013 20:11:59 Yann E. MORIN wrote:
+>> Currently, randconfig does randomise choice entries, unless KCONFIG_ALLCONFIG
+>> is specified.
+> [--SNIP--]
+>> This patch defers setting that a choice has a value until a symbol for
+>> that choice is indeed set, so that choices are properly randomised when
+>> KCONFIG_ALLCONFIG is set, but not if a symbol for that choice is set.
+>
+> I've just been informed by Fengguang that this patch breaks yet another
+> use-case of his, but this time KCONFIG_ALLCONFIG is not involved.
+>
+> I'll investigate this issue when I'm back home tonight (ie. ~16:00 UTC).
+> Sorry for the breakage (again...). :-(
+>
+> We really need a known, shared test-suite for kconfig... :-/
+>
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clocksource/tcb_clksrc.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+[ CC Alexander ]
 
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 8a61872..229c019 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
- 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
- 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
--		clk_disable(tcd->clk);
-+		clk_disable_unprepare(tcd->clk);
- 	}
- 
- 	switch (m) {
-@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	 * of oneshot, we get lower overhead and improved accuracy.
- 	 */
- 	case CLOCK_EVT_MODE_PERIODIC:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and restart */
- 		__raw_writel(timer_clock
-@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 		break;
- 
- 	case CLOCK_EVT_MODE_ONESHOT:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and stop */
- 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
-@@ -275,7 +275,7 @@ static int __init tcb_clksrc_init(void)
- 	pdev = tc->pdev;
- 
- 	t0_clk = tc->clk[0];
--	clk_enable(t0_clk);
-+	clk_prepare_enable(t0_clk);
- 
- 	/* How fast will we be counting?  Pick something over 5 MHz.  */
- 	rate = (u32) clk_get_rate(t0_clk);
-@@ -313,7 +313,7 @@ static int __init tcb_clksrc_init(void)
- 		/* tclib will give us three clocks no matter what the
- 		 * underlying platform supports.
- 		 */
--		clk_enable(tc->clk[1]);
-+		clk_prepare_enable(tc->clk[1]);
- 		/* setup both channel 0 & 1 */
- 		tcb_setup_dual_chan(tc, best_divisor_idx);
- 	}
--- 
-1.7.9.5
+A-propos, "testing Kconfig" I recommended to take into account the
+script of Alexander.
+In PM we discussed on where to place such scripts and that Alexander's
+patch needs some refreshing in your eyes.
+Maybe, Alexander can/will help as he is the original author.
+As said, this script helped in the Freetz router project to eliminate
+dozens of (logically) wrong Kconfig settings.
+IMHO there exist a lot of more, as there are "double/triple" checks in
+the Freetz-buildsystem, but hey noone is perfect :-).
 
+- Sedat -
+
+[1] http://freetz.org/browser/trunk/tools/developer/create-kconfig-warnings
+
+> Regards,
+> Yann E. MORIN.
+>
+> --
+> .-----------------.--------------------.------------------.--------------------.
+> |  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+> | +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
+> | --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
+> | http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
+> '------------------------------'-------'------------------'--------------------'
