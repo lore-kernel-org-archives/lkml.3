@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab3FYTXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:23:31 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45512 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3FYTXY (ORCPT
+	id S1751492Ab3FYT2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:28:40 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:33947 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab3FYT2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 15:23:24 -0400
-Message-ID: <51C9ED61.1060306@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 00:50:01 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 25 Jun 2013 15:28:39 -0400
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Michael Ellerman <michael@ellerman.id.au>, tglx@linutronix.de,
-        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ian Munsie <imunsie@au1.ibm.com>
-Subject: Re: [PATCH 40/45] powerpc, irq: Use GFP_ATOMIC allocations in atomic
- context
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com> <20130623134657.19094.93687.stgit@srivatsabhat.in.ibm.com> <20130625020842.GD14051@concordia> <1372126384.3944.177.camel@pasglop> <20130625025858.GE14051@concordia> <1372130007.3944.185.camel@pasglop>
-In-Reply-To: <1372130007.3944.185.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062519-9574-0000-0000-000008759AF9
+In-Reply-To: <51C9EADD.5000904@zytor.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
+	<20130621165142.GA32125@kroah.com>
+	<51C48745.9030304@zytor.com>
+	<CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com>
+	<20130621185056.GA23473@kroah.com>
+	<51C4C5F3.3050800@sgi.com>
+	<CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com>
+	<51C9D4ED.5070805@sgi.com>
+	<51C9DEC1.6030602@zytor.com>
+	<CAE9FiQV5z+3AXy5c=aaU3vq1V3fibJ6PhhA4VW5H8BWVzhxXPA@mail.gmail.com>
+	<51C9E523.7000803@zytor.com>
+	<51C9E83A.8070700@sgi.com>
+	<CAE9FiQUckP6m-HTdzdAJt0P_1bok-QHrxqm3RUTx=v_C=ufFCg@mail.gmail.com>
+	<51C9EADD.5000904@zytor.com>
+Date: Tue, 25 Jun 2013 12:28:38 -0700
+X-Google-Sender-Auth: dAESfGFP0UAhO8qRXEeLaZSX3YE
+Message-ID: <CAE9FiQU1kGVNYZ+XUFDG=OaPSZskSOHP8mf0f=pQGEGFd7Yfbw@mail.gmail.com>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Nathan Zimmer <nzimmer@sgi.com>,
+        Robin Holt <holt@sgi.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 08:43 AM, Benjamin Herrenschmidt wrote:
-> On Tue, 2013-06-25 at 12:58 +1000, Michael Ellerman wrote:
->> On Tue, Jun 25, 2013 at 12:13:04PM +1000, Benjamin Herrenschmidt wrote:
->>> On Tue, 2013-06-25 at 12:08 +1000, Michael Ellerman wrote:
->>>> We're not checking for allocation failure, which we should be.
->>>>
->>>> But this code is only used on powermac and 85xx, so it should probably
->>>> just be a TODO to fix this up to handle the failure.
->>>
->>> And what can we do if they fail ?
+On Tue, Jun 25, 2013 at 12:09 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> According to Intel SDM, CPU could support 52bits physical addressing.
 >>
->> Fail up the chain and not unplug the CPU presumably.
-> 
-> BTW. Isn't Srivatsa series removing the need to stop_machine() for
-> unplug ? 
+>> So how linux kernel will handle it? as we only have 48bits virtual addressing.
+>>
+>
+> The Linux kernel will not support more than V-2 bits of physical address
+> space for any number V of virtual address bits.
 
-Yes.
+ok, then will need cpu support 57bits virtual addressing, and level 5
+page table?
 
-That should mean we should be able to use GFP_KERNEL no ?
-
-No, because whatever code was being executed in stop_machine() context
-would still be executed with interrupts disabled. So allocations that
-can sleep would continue to be forbidden in this path.
-
-In the CPU unplug sequence, the CPU_DYING notifications (and the surrounding
-code) is guaranteed to be run:
-a. _on_ the CPU going offline
-b. with interrupts disabled on that CPU.
-
-My patchset will retain these guarantees even after removing stop_machine().
-And these are required for the correct execution of the code in this path,
-since they rely on these semantics.
-
-So I guess I'll retain the patch as it is. Thank you!
-
-Regards,
-Srivatsa S. Bhat
-
+Yinghai
