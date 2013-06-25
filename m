@@ -1,105 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab3FYQEa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:04:30 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:43767 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab3FYQE0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:04:26 -0400
-Date: Tue, 25 Jun 2013 09:03:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Rojhalat Ibrahim <imr@rtschenk.de>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: Regression in RCU subsystem in latest mainline kernel
-Message-ID: <20130625160332.GA3828@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1626500.7WAVXjfS9F@pcimr>
- <20130614122800.GL5146@linux.vnet.ibm.com>
- <1645938.As0LR1yeVd@pcimr>
- <1371243967.9844.338.camel@gandalf.local.home>
- <1371261741.21896.20.camel@pasglop>
- <20130617074213.GA3589@concordia>
- <20130619040906.GA5146@linux.vnet.ibm.com>
- <20130625071914.GA29957@concordia>
- <20130625074422.GB29957@concordia>
+	id S1752123Ab3FYQFb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:05:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490Ab3FYQFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:05:30 -0400
+Date: Tue, 25 Jun 2013 18:04:33 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
+Message-ID: <20130625160433.GA507@krava.brq.redhat.com>
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
+ <1372079772-20803-13-git-send-email-adrian.hunter@intel.com>
+ <CABPqkBRoRgHUM5ahHmvYXJ1BkHncm9Z2GZkzuRFbsNfh4=HJ6g@mail.gmail.com>
+ <51C98969.40401@intel.com>
+ <20130625144529.GL23329@krava.brq.redhat.com>
+ <51C9BA7D.1040106@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130625074422.GB29957@concordia>
+In-Reply-To: <51C9BA7D.1040106@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062516-3620-0000-0000-000003477C32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 05:44:23PM +1000, Michael Ellerman wrote:
-> On Tue, Jun 25, 2013 at 05:19:14PM +1000, Michael Ellerman wrote:
-> > 
-> > Here's another trace from 3.10-rc7 plus a few local patches.
+On Tue, Jun 25, 2013 at 09:42:53AM -0600, David Ahern wrote:
+> On 6/25/13 8:45 AM, Jiri Olsa wrote:
+> >AFAICS PERF_SAMPLE_STREAM_ID holds same id value as PERF_SAMPLE_ID,
+> >but I guess it has some other meaning.. if not for now, maybe meant
+> >something else for the future;-)  not sure
 > 
-> And here's another with CONFIG_RCU_CPU_STALL_INFO=y in case that's useful:
-> 
-> PASS running test_pmc5_6_overuse()
-> INFO: rcu_sched self-detected stall on CPU
-> 	8: (1 GPs behind) idle=8eb/140000000000002/0 softirq=215/220 
+> See 7f453c24.
 
-So this CPU has been out of action since before the beginning of the
-current grace period ("1 GPs behind").  It is not idle, having taken
-a pair of nested interrupts from process context (matching the stack
-below).  This CPU has take five softirqs since the last grace period
-that it noticed, which makes it likely that the loop is within the
-softirq handler.
+thanks, 
 
-> 	 (t=2100 jiffies g=18446744073709551583 c=18446744073709551582 q=13)
+hm.. I think I overlooked 'idx = 1' initialization in
+__perf_evsel__calc_is_pos and the code IS actually using
+PERF_SAMPLE_ID data.
 
-Assuming HZ=100, this stall has been going on  for 21 seconds.  There
-is a grace period in progress according to RCU's global state (which
-this CPU is not yet aware of).  There are a total of 13 RCU callbacks
-queued across the entire system.
-
-If the system is at all responsive, I suggest using ftrace (either from
-the boot command line or at runtime) to trace __do_softirq() and
-hrtimer_interrupt().
-
-							Thanx, Paul
-
-> cpu 0x8: Vector: 0  at [c0000003ea03eae0]
->     pc: c00000000011d9b0: .rcu_check_callbacks+0x450/0x910
->     lr: c00000000011d9b0: .rcu_check_callbacks+0x450/0x910
->     sp: c0000003ea03ec40
->    msr: 9000000000009032
->   current = 0xc0000003ebf9f4a0
->   paca    = 0xc00000000fdc2400	 softe: 0	 irq_happened: 0x00
->     pid   = 2444, comm = power8-events
-> enter ? for help
-> [c0000003ea03ed70] c000000000094cd0 .update_process_times+0x40/0x90
-> [c0000003ea03ee00] c0000000000df050 .tick_sched_handle.isra.13+0x20/0xa0
-> [c0000003ea03ee80] c0000000000df2bc .tick_sched_timer+0x5c/0xa0
-> [c0000003ea03ef20] c0000000000b3728 .__run_hrtimer+0x98/0x260
-> [c0000003ea03efc0] c0000000000b4738 .hrtimer_interrupt+0x138/0x3c0
-> [c0000003ea03f0d0] c00000000001cd34 .timer_interrupt+0x124/0x2f0
-> [c0000003ea03f180] c00000000000a4f4 restore_check_irq_replay+0x68/0xa8
-> --- Exception: 901 (Decrementer) at c000000000093ad4 .run_timer_softirq+0x74/0x360
-> [c0000003ea03f580] c000000000089ac4 .__do_softirq+0x174/0x350
-> [c0000003ea03f6a0] c000000000089ea8 .irq_exit+0xb8/0x100
-> [c0000003ea03f720] c00000000001cd68 .timer_interrupt+0x158/0x2f0
-> [c0000003ea03f7d0] c00000000000a4f4 restore_check_irq_replay+0x68/0xa8
-> --- Exception: 901 (Decrementer) at c00000000014a520 .task_function_call+0x60/0x70
-> [c0000003ea03fac0] c00000000014a634 .perf_event_enable+0x104/0x1c0 (unreliable)
-> [c0000003ea03fb70] c0000000001495ec .perf_event_for_each_child+0x5c/0xf0
-> [c0000003ea03fc00] c00000000014cd78 .perf_ioctl+0x108/0x400
-> [c0000003ea03fca0] c0000000001d9aa0 .do_vfs_ioctl+0xb0/0x740
-> [c0000003ea03fd80] c0000000001da188 .SyS_ioctl+0x58/0xb0
-> [c0000003ea03fe30] c000000000009d54 syscall_exit+0x0/0x98
-> --- Exception: c01 (System Call) at 00001fffffee03d0
-> SP (3ffff5e7cc90) is in userspace
-> 
-> 
-> cheers
-> 
-
+jirka
