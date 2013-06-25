@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab3FYQDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:03:12 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:55066 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab3FYQDI (ORCPT
+	id S1752043Ab3FYQET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:04:19 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:37265 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586Ab3FYQES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:03:08 -0400
+	Tue, 25 Jun 2013 12:04:18 -0400
+Message-ID: <51C9BF7E.2000000@gmail.com>
+Date: Tue, 25 Jun 2013 10:04:14 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <51C9BDB2.7060905@gmail.com>
-References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
-	<1372079772-20803-13-git-send-email-adrian.hunter@intel.com>
-	<51C9BDB2.7060905@gmail.com>
-Date: Tue, 25 Jun 2013 18:03:08 +0200
-Message-ID: <CABPqkBQK5PdcULwtAefsVKvV+Ne6kaaH2_jeoba8kz3Ui_EqAw@mail.gmail.com>
-Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 15/15] perf tools: fix ppid in thread__fork()
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-16-git-send-email-adrian.hunter@intel.com> <51C9BEA1.5000205@gmail.com>
+In-Reply-To: <51C9BEA1.5000205@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 5:56 PM, David Ahern <dsahern@gmail.com> wrote:
+On 6/25/13 10:00 AM, David Ahern wrote:
 > On 6/24/13 7:16 AM, Adrian Hunter wrote:
+>> ppid should be assigned to the parents pid.  Note
+>> 'thread__fork()'s only caller 'machine__process_fork_event()'
+>> ensures that the parents pid is set.
 >>
->> Sample types need not be identical to determine
->> the sample id from the event.  Only the position
->> of the sample id needs to be the same.
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>   tools/perf/util/thread.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
 >>
->> Compatible sample types are ones in which the bits
->> defined by PERF_COMPAT_MASK are the same.
->> 'perf_evlist__config()' forces sample types to be
->> compatible on that basis.
+>> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+>> index e3d4a55..93f3eab 100644
+>> --- a/tools/perf/util/thread.c
+>> +++ b/tools/perf/util/thread.c
+>> @@ -85,7 +85,7 @@ int thread__fork(struct thread *self, struct thread
+>> *parent)
+>>           if (map_groups__clone(&self->mg, &parent->mg, i) < 0)
+>>               return -ENOMEM;
+>>
+>> -    self->ppid = parent->tid;
+>> +    self->ppid = parent->pid_;
 >
->
-> Something is still missing to support different sample_types for events.
-> Consider the case (S/W event + tracepoint):
->   perf record -e cs -c1 -e sched:sched_switch -a -- sleep 1
->   perf script
->
-> This patch addresses the sample_type mismatch error message, but I get no
-> event samples in the output. Besides the usual header I get:
->
->   No trace sample to read. Did you call 'perf record -R'?
->
-> It's a 16-cpu box with 5 VMs running. I know there should be at least a few
-> samples in 1 second.
->
-> Stephane: are you looking at allowing sample_types per event?
->
-Yes, this is what I need. I have a kernel patch to do this. I don't
-know how to update perf to handle it correctly. So maybe you can
-help. My patch is useful to drastically reduce the size of the perf.data
-file in case we use the branch-stack with lots of events which is
-what our Gooda tool would like to do.
+> Confused. My patch uses parent->pid and that it what I see in acme's
+> perf/core branch. When did this become parent->tid?
+
+Never mind. Scanned the patch subjects too quickly and jumped over 2 to 
+get to this one.
+
+David
+
