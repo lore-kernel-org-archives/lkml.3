@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3FYVLt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:11:49 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:48956 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756Ab3FYVLr convert rfc822-to-8bit (ORCPT
+	id S1752566Ab3FYVN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:13:57 -0400
+Received: from oproxy13-pub.unifiedlayer.com ([69.89.16.30]:56697 "HELO
+	oproxy13-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751756Ab3FYVNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:11:47 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-8a-51ca0792c73f
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Dave Airlie <airlied@redhat.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: Linux 3.10-rc7
-Thread-topic: Linux 3.10-rc7
-Thread-index: AQHOcO9Wy94BEELWoUiZdIX6E3dp1w==
-Date: Tue, 25 Jun 2013 21:11:45 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E6173079B@sisaex02sj>
-References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
- <B8EFE96D1287C24090BAD9D858E15E6172FFB9@sisaex02sj>
- <CA+55aFxuB_nx8fZ_kN8U=fMFOq43cKZC_HJbj=6vKo7-fDqNuw@mail.gmail.com>
- <CAKMK7uH0q1vSaVRigtZD2pf5ZeVLEv1sn+tsiO7ZWjJdt=DwBA@mail.gmail.com>
- <20130625125437.6e7bb2d4@jbarnes-desktop>
- <B8EFE96D1287C24090BAD9D858E15E617305B4@sisaex02sj>
- <20130625130816.55e6cb80@jbarnes-desktop>
- <B8EFE96D1287C24090BAD9D858E15E617306DD@sisaex02sj>
- <CA+i0qc64MqeZd3y2E4YOtxwxyWRPXqofJep1BGCeEHCdkJuxQg@mail.gmail.com>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t9hP91J7KcCDfpPy1tcvbWAyeLmw7Os
-	Fgsf3mW2mD1hM5PFozMn2S0u75rDZvH1p4PFh546i0d9b9kdOD1WftDy2PttAYvHzll32T0W
-	73nJ5HFixm8Wj/vdx5k83u+7yubxeZOcx7eve5kCOKO4bFJSczLLUov07RK4Mt5v+MRcMIOn
-	YvvkjywNjH85uxg5OSQETCRmTp3BAmGLSVy4t56ti5GLQ0hgGaPEq56prBBOL5PEogttTBDO
-	fEaJlsc9zCAtbALqEp9f72AHsUUEtCVmvfwO1sEsMJFZYsLXfUBzOTiEBaQlXh6SgaiRkZjZ
-	+pEVwtaTOPXvHJjNIqAq8fHyU7AzeAXsJRbf6oRatpBF4vrhQ2DLGIHu+35qDROIzSwgLtHc
-	ehPqbgGJJXvOM0PYohIvH/9jBdkrIaAosX21FUS5lsT6ncehWrUlnry7wAqxS1Dix+R7LBMY
-	xWYhmToLScssJC2zkLQsYGRZxShWWpxcUJyUnlphpFecmFtcmpeul5yfu4kREsnVOxjvfrU5
-	xCjAwajEw3ti08lAIdbEsuLK3EOMEhzMSiK8+TeAQrwpiZVVqUX58UWlOanFhxiZODilGhgL
-	Eg1fCzifm9ejtDNjvt4xyZOaCVkXE3Zc3pr48sQjbvkrkdu+9Bh3Kk/unqyVeU05Ut1I6NzV
-	P4w6k9fdkEzc9+KfUHen4z6hkO8tn8SiEjarnvqyKOj6uj0aUVsWJTA492xxTWrsqpPpThAP
-	NfK0vWHDKhuRwGVW9Od47t2Y7+WVl8+scFFiKc5INNRiLipOBACMsdljwgIAAA==
+	Tue, 25 Jun 2013 17:13:55 -0400
+Date: Tue, 25 Jun 2013 14:15:56 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
+Message-ID: <20130625141556.2f9de7b1@jbarnes-desktop>
+In-Reply-To: <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 02:57 PM, Tomas Winkler wrote:
-> On Tue, Jun 25, 2013 at 11:51 PM, Shuah Khan <shuah.kh@samsung.com> wrote:
->>
+On Tue, 25 Jun 2013 19:22:10 +0300
+Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
 
->> With this patch warn_on went away. Resume worked. I started seeing:
->>
->> [   78.733062] mei_me 0000:00:16.0: unexpected reset: dev_state =
->> RESETTING
->> [   78.733079] mei_me 0000:00:16.0: reset: wrong host start response
->> [   78.733082] mei_me 0000:00:16.0: unexpected reset: dev_state =
->> RESETTING
->>
->> over and over again after resume from reboot mode suspend. dmesg filled
->> up with these messages.
->
-> Can you please send me the log part when this starts?
->
-> Thanks
->
+> +	if (!(pci_probe & PCI_NOASSIGN_ROMS)) {
+> +		pr_info("Thunderbolt host router detected disabling ROMs\n");
+> +		pci_probe |= PCI_NOASSIGN_ROMS;
+> +	}
 
-It rolled over and I don't have prior messages. I tried reproducing 
-twice and didn't see it again. I will try a few more times and see if I 
-can get it to happen again.
+I wonder if this should just be the default on x86?  Or do we allocate
+ROM space to address some other platform where we need it and the BIOS
+doesn't do it for the devices we care about?
 
-This is what I could save before dmesg rolled over:
-
-[   78.709014] mei_me 0000:00:16.0: reset: wrong host start response
-[   78.709016] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[   78.709029] mei_me 0000:00:16.0: reset: unexpected enumeration 
-response hbm.
-[   78.709031] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[   78.709069] mei_me 0000:00:16.0: reset: wrong host start response
-
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+-- 
+Jesse Barnes, Intel Open Source Technology Center
