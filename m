@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab3FYGxY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 02:53:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50013 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab3FYGxW (ORCPT
+	id S1751865Ab3FYGzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 02:55:07 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53794 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab3FYGzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 02:53:22 -0400
-Date: Tue, 25 Jun 2013 16:53:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
+	Tue, 25 Jun 2013 02:55:04 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19u2yz1PfZUhIcRW2+PfshG
+Date: Mon, 24 Jun 2013 23:54:50 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Joel A Fernandes <joelagnel@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Matt Porter <matt@ohporter.com>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: linux-next: manual merge of the usb tree with the devicetree tree
-Message-Id: <20130625165310.161dafbc62ab505ecbfc3cd3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Jun_2013_16_53_10_+1000_lgSrwy+IObQI2sdG"
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v12 00/11] DMA Engine support for AM33XX
+Message-ID: <20130625065450.GY5523@atomide.com>
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
+ <20130624101903.GV5523@atomide.com>
+ <51C85958.9030502@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C85958.9030502@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Jun_2013_16_53_10_+1000_lgSrwy+IObQI2sdG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Benoit Cousson <b-cousson@ti.com> [130624 07:42]:
+> Hi Tony,
+> 
+> On 06/24/2013 12:19 PM, Tony Lindgren wrote:
+> > Hi,
+> > 
+> > For merging this series, I suggest the following sets:
+> > 
+> > * Joel A Fernandes <joelagnel@ti.com> [130620 14:13]:
+> >>
+> >> Joel A Fernandes (3):
+> >>   edma: config: Enable config options for EDMA
+> >>   da8xx: config: Enable MMC and FS options
+> >>   ARM: davinci: Fix compiler warnings in devices-da8xx
+> >>
+> >> Matt Porter (8):
+> >>   dmaengine: edma: Add TI EDMA device tree binding
+> >>   ARM: edma: Add DT and runtime PM support to the private EDMA API
+> >>   ARM: edma: Add EDMA crossbar event mux support
+> >>   dmaengine: edma: enable build for AM33XX
+> > 
+> > Sekhar should queue the above patches, I've acked the
+> > mach-omap2/Kconfig change.
+> > 
+> >>   spi: omap2-mcspi: add generic DMA request support to the DT binding
+> >>   spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
+> > 
+> > 
+> > The spi changes should get merged via the driver list.
+> > 
+> >>   ARM: dts: add AM33XX EDMA support
+> >>   ARM: dts: add AM33XX SPI DMA support
+> > 
+> > Benoit should queue the .dts changes.
+> 
+> I'll do that, but do you consider them for 3.11?
 
-Hi Greg,
+Yes right after -rc1 if it makes the DMA work. We almost
+certainly need to send few branches of fixes after -rc1 once
+we find out what might have broken by the removal of the
+hwmod data..
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/chipidea/Makefile between commit 8973ba8b325f ("usb:
-chipidea: depend on CONFIG_OF instead of CONFIG_OF_DEVICE") from the
-devicetree tree and commit 8e22978c5708 ("usb: chipidea: drop "13xxx"
-infix") from the usb tree.
+But let's stick to minimal changes for the -rc series
+naturally.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Regards,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/usb/chipidea/Makefile
-index 4113feb,3bbbcba..0000000
---- a/drivers/usb/chipidea/Makefile
-+++ b/drivers/usb/chipidea/Makefile
-@@@ -13,9 -13,9 +13,9 @@@ obj-$(CONFIG_USB_CHIPIDEA)	+=3D ci_hdrc_m
- =20
-  # PCI doesn't provide stubs, need to check
-  ifneq ($(CONFIG_PCI),)
-- 	obj-$(CONFIG_USB_CHIPIDEA)	+=3D ci13xxx_pci.o
-+ 	obj-$(CONFIG_USB_CHIPIDEA)	+=3D ci_hdrc_pci.o
-  endif
- =20
- -ifneq ($(CONFIG_OF_DEVICE),)
- +ifneq ($(CONFIG_OF),)
-- 	obj-$(CONFIG_USB_CHIPIDEA)	+=3D ci13xxx_imx.o usbmisc_imx.o
-+ 	obj-$(CONFIG_USB_CHIPIDEA)	+=3D ci_hdrc_imx.o usbmisc_imx.o
-  endif
-
---Signature=_Tue__25_Jun_2013_16_53_10_+1000_lgSrwy+IObQI2sdG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRyT5bAAoJEECxmPOUX5FET2sP/3KfhrT+LvvUz0dXUNkJfqB5
-J4Wzr81x0Pfkj9WtQdEtAclyeZpAm5p3r4T2WwsySuXWxd9SnXCYue0IdKQXpda8
-IY5s1Gk1wo2jN9jsKTLbUZphHN2HLU2LZ31eUtmQGMqRtKKYJ1HWh/gCkEb2F4AH
-N3w2gqmNYadCoAy2hQ/fjyZe3KzWUSP7uY7IyQ3UiiMqMv4VmwPxOyafDs66Dcqp
-9sp8c8TzGNdzJQgwFwnVwUhLP8msTC4bB7bCu0MhtVO1hW4D68QM03IYI/dvRl9Y
-Z+X+0PGiSbQkbceBg+uIQLdQpOCQ/269X+DtJuJE037peDrup2O9OUMuCZcPssmy
-9qH/vxVAaqfbQ+NZ5yIPK6wKJLot2l4zb8TnlqZyk+RWcIMDFwnFCqET0XTt+QjK
-PvtqfA4DTUj07u1Rvk8rwhqJkdAVqJxLqRQmxhGwNaywchWeu0pRXDIheHcB/IFn
-qU4Kt/47xUG9tEZFEOKZebv22GiY94QFat+jN+mFN/Haqvbdm8/vpifNrrocEdf3
-Kn/QojNsN9/YJk7JiFSTCQabmsiVl3u+NIHyepuBHx3TzumDoUmMoNhVpV+Ggp+M
-L3/fqwbNYejRIqzg1d/B7GWg8cmabJQvbwBRqh1kiPNO73nUqErPV6LNFSStnDix
-Vk2uLBwzwh4A3tKfyzkM
-=eBac
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Jun_2013_16_53_10_+1000_lgSrwy+IObQI2sdG--
+Tony
