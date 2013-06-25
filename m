@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3FYPTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:19:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43858 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab3FYPTV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:19:21 -0400
-Date: Tue, 25 Jun 2013 18:18:34 +0300
+	id S1752559Ab3FYPT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:19:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60815 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752231Ab3FYPT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 11:19:56 -0400
+Date: Tue, 25 Jun 2013 18:19:06 +0300
 From: Felipe Balbi <balbi@ti.com>
 To: Kishon Vijay Abraham I <kishon@ti.com>
 CC: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
@@ -21,66 +20,69 @@ CC: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
         <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <nsekhar@ti.com>, <balajitk@ti.com>,
         <george.cherian@ti.com>
-Subject: Re: [PATCH v8 2/8] usb: phy: omap-usb2: use the new generic PHY
+Subject: Re: [PATCH v8 3/8] usb: phy: twl4030: use the new generic PHY
  framework
-Message-ID: <20130625151834.GG21334@arwen.pp.htv.fi>
+Message-ID: <20130625151906.GH21334@arwen.pp.htv.fi>
 Reply-To: <balbi@ti.com>
 References: <1372139926-3719-1-git-send-email-kishon@ti.com>
- <1372139926-3719-3-git-send-email-kishon@ti.com>
+ <1372139926-3719-4-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nhYGnrYv1PEJ5gA2"
+	protocol="application/pgp-signature"; boundary="pfTAc8Cvt8L6I27a"
 Content-Disposition: inline
-In-Reply-To: <1372139926-3719-3-git-send-email-kishon@ti.com>
+In-Reply-To: <1372139926-3719-4-git-send-email-kishon@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nhYGnrYv1PEJ5gA2
+--pfTAc8Cvt8L6I27a
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 25, 2013 at 11:28:40AM +0530, Kishon Vijay Abraham I wrote:
-> Used the generic PHY framework API to create the PHY. Now the power off a=
-nd
-> power on are done in omap_usb_power_off and omap_usb_power_on respectivel=
-y.
+On Tue, Jun 25, 2013 at 11:28:41AM +0530, Kishon Vijay Abraham I wrote:
+> Used the generic PHY framework API to create the PHY. For powering on
+> and powering off the PHY, power_on and power_off ops are used. Once the
+> MUSB OMAP glue is adapted to the new framework, the suspend and resume
+> ops of usb phy library will be removed.
 >=20
-> However using the old USB PHY library cannot be completely removed
-> because OTG is intertwined with PHY and moving to the new framework
-> will break OTG. Once we have a separate OTG state machine, we
-> can get rid of the USB PHY library.
+> However using the old usb phy library cannot be completely removed
+> because otg is intertwined with phy and moving to the new
+> framework completely will break otg. Once we have a separate otg state ma=
+chine,
+> we can get rid of the usb phy library.
 >=20
 > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+I'll add an Acked-by here:
 
 Acked-by: Felipe Balbi <balbi@ti.com>
 
 --=20
 balbi
 
---nhYGnrYv1PEJ5gA2
+--pfTAc8Cvt8L6I27a
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRybTKAAoJEIaOsuA1yqREXrwQAKNV7K3cgLiQnugHivCwxqnZ
-wZo9YsTm+a8SkRCXjOaNd5YV1Ky6GwB1nUl4dDCWKXxrFAD3p8/eKAE+Zqzmuyh1
-fQcKk7JcYYE+hyOrUSExNfS1y/P1yDmbH84YMYUoLwVV2hrrthQb/uNHzrCWzbOF
-kE9i0otmyQflWx8Dum64ZlWcbE3dem/pO2x5sNmbOEtrnQg32fLjf43vr2jZWUVJ
-BgMftSccdY3fu5Xl2+HOZhaIYFioTrtP4wPuEHK8OGXJZKl83Rj3WBXqXJ82k2R8
-ER7sosZsO1/YcewPFf+Nid/Y13wTmuUiLJFudoG4XcDVaWJ/dXLgr6LThTMtbgAs
-HpUD3F2uqbzPGRanaHjDRB9BtEMhX7aKtQIXiCpBj8Bfrxx1TSdC0khHuDLm3GSG
-gd1RWItv7/4I9OmbeWGDVe4Kw8FRklkVyDwNMF+zEOAxoo5keUsy8VZVQf1aLDy/
-r8eK8ooBMmaYlVmo0IlOojdKpMUi3skKvUUiJ9OUHD9YLoYUgeEkAEKpoC4//3Mu
-OP1hvjyO05Y5yPOrdxOSLg7BxAlVhGKmcdL5g/ogCH/iDC6x4j7grC51wCFZHKiH
-qDgfwWcMtjUs86GNUCtw3Qt6onlFGrBVfDiZB+8uQjaaRm6ieQMAq3xoQDu6uOUT
-paEYiTTFMbEoocV+BelQ
-=lRHp
+iQIcBAEBAgAGBQJRybTqAAoJEIaOsuA1yqREOvUP/Rh6ZvVzuIYVTCyb/xyvgXnH
+IHJgnPd0E+hi0UlwEm567Tqi05pyL1izH03b6tI/QtRiNReqIbU6PuS34n1ZG/qJ
+b09U76RkaR5cCQC42gacuIb/fWN0VTEA/oZyEPJ/jMgr/XqpIIGaVLf/RAKHfV4p
+q7UyeJXmN/FC/sXNDBYZc2UqWcZmx7sn+dIsOdbu2TqqgsoA81GfORRQUBCk5IeX
+MncHjbvMwZlTfNqFUtLKlW1LS+3YNAd4+uLDhO4ROBS81BA7QHcrDbLf4e9s0y91
+kEQZhXzQu0tZcC81R38WnybNMgTJKa6IupTWDS3qN0zNsTUYZexYlu72+/WYQXaL
+Ias2xL0HPTaDGQYXsDkKp3tfJw0B3cmrAzDhjbX0Tr+hZ5Fpv8nJEUzafSUnHFiJ
+PmGc42UrbMFw3HjZ8HUHxsWj177lv+8l15IMiG7Q7G1E2w4khPOpdV3XujDrerhn
+Sq2jjc1oisY6BLN5YoVBxzAiIuU6pkzoWvX7NSAXeG/+0bR/9eQ/Jz9RObSUlKrL
+vMjlJYR9GUFdziaKqz8y/bHbokL3YmB2Xm98ShoRcFMWYmH1R9RQoa3TYsr6tw3N
+gvDNNAebRyLZbaejwD8xTEV/X/98oKCGPfi9V5nMk4FO16SPSmH/Ti8LFimk8NHw
+7TC/7lqGIFOowNyfklHu
+=lHYp
 -----END PGP SIGNATURE-----
 
---nhYGnrYv1PEJ5gA2--
+--pfTAc8Cvt8L6I27a--
