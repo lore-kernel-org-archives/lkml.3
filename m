@@ -1,420 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab3FYIrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:47:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47567 "EHLO mga02.intel.com"
+	id S1752884Ab3FYIt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:49:29 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:58312 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752773Ab3FYIrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:47:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,935,1363158000"; 
-   d="scan'208";a="359143540"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
-        andi@firstfloor.org, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 6/7] perf, x86: Use LBR call stack to get user callchain
-Date: Tue, 25 Jun 2013 16:47:18 +0800
-Message-Id: <1372150039-15151-7-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
-References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
+	id S1752183Ab3FYItW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 04:49:22 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v2 6/6] ARM: rockchip: add smp bringup code
+Date: Tue, 25 Jun 2013 10:49:09 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <201306251046.04873.heiko@sntech.de>
+In-Reply-To: <201306251046.04873.heiko@sntech.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306251049.10065.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+This adds the necessary smp-operations and startup code to use
+additional cores on Rockchip SoCs.
 
-Try enabling the LBR call stack feature if event request recording
-callchain. Try utilizing the LBR call stack to get user callchain
-in case of there is no frame pointer.
+We currently hog the power management unit in the smp code, as it is
+necessary to control the power to the cpu core and nothing else is
+currently using it, so a generic implementation can be done later.
 
-This patch also adds a cpu pmu attribute to enable/disable this
-feature.
-
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 ---
- arch/x86/kernel/cpu/perf_event.c           | 128 +++++++++++++++++++++--------
- arch/x86/kernel/cpu/perf_event.h           |   7 ++
- arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
- include/linux/perf_event.h                 |   6 ++
- kernel/events/core.c                       |  11 ++-
- 6 files changed, 126 insertions(+), 49 deletions(-)
+ arch/arm/mach-rockchip/Makefile   |    1 +
+ arch/arm/mach-rockchip/core.h     |   22 ++++
+ arch/arm/mach-rockchip/headsmp.S  |   32 ++++++
+ arch/arm/mach-rockchip/platsmp.c  |  203 +++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-rockchip/rockchip.c |    2 +
+ 5 files changed, 260 insertions(+)
+ create mode 100644 arch/arm/mach-rockchip/core.h
+ create mode 100644 arch/arm/mach-rockchip/headsmp.S
+ create mode 100644 arch/arm/mach-rockchip/platsmp.c
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 639aa4d..a07eb03 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -399,37 +399,49 @@ int x86_pmu_hw_config(struct perf_event *event)
- 
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
+diff --git a/arch/arm/mach-rockchip/Makefile b/arch/arm/mach-rockchip/Makefile
+index 1547d4f..4377a14 100644
+--- a/arch/arm/mach-rockchip/Makefile
++++ b/arch/arm/mach-rockchip/Makefile
+@@ -1 +1,2 @@
+ obj-$(CONFIG_ARCH_ROCKCHIP) += rockchip.o
++obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+diff --git a/arch/arm/mach-rockchip/core.h b/arch/arm/mach-rockchip/core.h
+new file mode 100644
+index 0000000..e2e7c9d
+--- /dev/null
++++ b/arch/arm/mach-rockchip/core.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright (c) 2013 MundoReader S.L.
++ * Author: Heiko Stuebner <heiko@sntech.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++extern char rockchip_secondary_trampoline;
++extern char rockchip_secondary_trampoline_end;
++
++extern unsigned long rockchip_boot_fn;
++extern void rockchip_secondary_startup(void);
++
++extern struct smp_operations rockchip_smp_ops;
+diff --git a/arch/arm/mach-rockchip/headsmp.S b/arch/arm/mach-rockchip/headsmp.S
+new file mode 100644
+index 0000000..3dd72f7
+--- /dev/null
++++ b/arch/arm/mach-rockchip/headsmp.S
+@@ -0,0 +1,32 @@
++/*
++ * Copyright (c) 2013 MundoReader S.L.
++ * Author: Heiko Stuebner <heiko@sntech.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/linkage.h>
++#include <linux/init.h>
++
++	__CPUINIT
++
++ENTRY(rockchip_secondary_startup)
++	bl	v7_invalidate_l1
++	b	secondary_startup
++ENDPROC(rockchip_secondary_startup)
++
++ENTRY(rockchip_secondary_trampoline)
++	ldr	pc, 1f
++ENDPROC(rockchip_secondary_trampoline)
++	.globl	rockchip_boot_fn
++rockchip_boot_fn:
++1:	.space	4
++
++ENTRY(rockchip_secondary_trampoline_end)
+diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
+new file mode 100644
+index 0000000..4b8fadc
+--- /dev/null
++++ b/arch/arm/mach-rockchip/platsmp.c
+@@ -0,0 +1,203 @@
++/*
++ * Copyright (c) 2013 MundoReader S.L.
++ * Author: Heiko Stuebner <heiko@sntech.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/smp.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++
++#include <asm/cacheflush.h>
++#include <asm/smp_scu.h>
++#include <asm/smp_plat.h>
++#include <asm/mach/map.h>
++
++#include "core.h"
++
++static void __iomem *scu_base_addr;
++static void __iomem *sram_base_addr;
++static int ncores;
++
++/*
++ * temporary PMU handling
++ */
++
++#define PMU_PWRDN_CON		0x08
++#define PMU_PWRDN_ST		0x0c
++
++static void __iomem *pmu_base_addr;
++
++static inline bool pmu_power_domain_is_on(int pd)
++{
++	return !(readl_relaxed(pmu_base_addr + PMU_PWRDN_ST) & BIT(pd));
++}
++
++static void pmu_set_power_domain(int pd, bool on)
++{
++	u32 val = readl_relaxed(pmu_base_addr + PMU_PWRDN_CON);
++	if (on)
++		val &= ~BIT(pd);
++	else
++		val |=  BIT(pd);
++	writel(val, pmu_base_addr + PMU_PWRDN_CON);
++
++	while (pmu_power_domain_is_on(pd) != on) { }
++}
++
++/*
++ * Handling of CPU cores
++ */
++
++static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
++					     struct task_struct *idle)
++{
++	if (!sram_base_addr || !pmu_base_addr) {
++		pr_err("%s: sram or pmu missing for cpu boot\n", __func__);
++		return -ENXIO;
 +	}
++
++	if (cpu >= ncores) {
++		pr_err("%s: cpu %d outside maximum number of cpus %d\n",
++							__func__, cpu, ncores);
++		return -ENXIO;
++	}
++
++	/* start the core */
++	pmu_set_power_domain(0 + cpu, true);
++
++	return 0;
++}
++
++/**
++ * rockchip_smp_prepare_sram - populate necessary sram block
++ * Starting cores execute the code residing at the start of the on-chip sram
++ * after powe-on. Therefore make sure, this sram region is reserved and
++ * big enough. After this check, copy the trampoline code that directs the
++ * core to the real startup code in ram into the sram-region.
++ * @node: mmio-sram device node
++ */
++static int __init rockchip_smp_prepare_sram(struct device_node *node)
++{
++	unsigned int trampoline_sz = &rockchip_secondary_trampoline_end -
++					    &rockchip_secondary_trampoline;
++	const __be32 *reserved_list = NULL;
++	int reserved_size;
++	int rstart = -1;
++	unsigned int rsize;
++	unsigned int i;
++
++	reserved_list = of_get_property(node, "mmio-sram-reserved",
++					&reserved_size);
++	if (!reserved_list) {
++		pr_err("%s: wrong number of arguments in mmio-sram-reserved\n",
++		       __func__);
++		return -ENOENT;
++	}
++
++	reserved_size /= sizeof(*reserved_list);
++	if (!reserved_size || reserved_size % 2) {
++		pr_err("%s: wrong number of arguments in mmio-sram-reserved\n",
++		       __func__);
++		return -EINVAL;
++	}
++
++	for (i = 0; i < reserved_size; i += 2) {
++		/* get the next reserved block */
++		rstart = be32_to_cpu(*reserved_list++);
++		rsize = be32_to_cpu(*reserved_list++);
++
++		if (!rstart)
++			break;
++	}
++
++	if (rstart) {
++		pr_err("%s: start of sram is not reserved from mmio-sram\n",
++		       __func__);
++		return -EINVAL;
++	}
++
++	if (rsize < trampoline_sz) {
++		pr_err("%s: reserved block with size 0x%x is to small for trampoline size 0x%x\n",
++		       __func__, rsize, trampoline_sz);
++		return -EINVAL;
++	}
++
++	sram_base_addr = of_iomap(node, 0);
++
++	/* set the boot function for the sram code */
++	rockchip_boot_fn = virt_to_phys(rockchip_secondary_startup);
++
++	/* copy the trampoline to sram, that runs during startup of the core */
++	memcpy(sram_base_addr, &rockchip_secondary_trampoline, trampoline_sz);
++	flush_cache_all();
++	outer_clean_range(0, trampoline_sz);
++
++	dsb_sev();
++
++	return 0;
++}
++
++static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
++{
++	struct device_node *node;
++	unsigned int i;
++
++	node = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
++	if (!node) {
++		pr_err("%s: missing scu\n", __func__);
++		return;
++	}
++
++	scu_base_addr = of_iomap(node, 0);
++	if (!scu_base_addr) {
++		pr_err("%s: could not map scu registers\n", __func__);
++		return;
++	}
++
++	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-sram");
++	if (!node) {
++		pr_err("%s: could not find sram dt node\n", __func__);
++		return;
++	}
++
++	if (rockchip_smp_prepare_sram(node))
++		return;
++
++	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
++	if (!node) {
++		pr_err("%s: could not find sram dt node\n", __func__);
++		return;
++	}
++
++	pmu_base_addr = of_iomap(node, 0);
++
 +	/*
-+	 * check that PEBS LBR correction does not conflict with
-+	 * whatever the user is asking with attr->branch_sample_type
++	 * While the number of cpus is gathered from dt, also get the number
++	 * of cores from the scu to verify this value when booting the cores.
 +	 */
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
-+		u64 *br_type = &event->attr.branch_sample_type;
++	ncores = scu_get_core_count(scu_base_addr);
 +
-+		if (has_branch_stack(event)) {
-+			if (!precise_br_compat(event))
-+				return -EOPNOTSUPP;
++	scu_enable(scu_base_addr);
 +
-+			/* branch_sample_type is compatible */
-+
-+		} else {
-+			/*
-+			 * user did not specify  branch_sample_type
-+			 *
-+			 * For PEBS fixups, we capture all
-+			 * the branches at the priv level of the
-+			 * event.
-+			 */
-+			*br_type = PERF_SAMPLE_BRANCH_ANY;
-+
-+			if (!event->attr.exclude_user)
-+				*br_type |= PERF_SAMPLE_BRANCH_USER;
-+
-+			if (!event->attr.exclude_kernel)
-+				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
-+		}
-+	} else if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+		   !has_branch_stack(event) &&
-+		   x86_pmu.attr_lbr_callstack &&
-+		   !event->attr.exclude_user &&
-+		   (event->attach_state & PERF_ATTACH_TASK)) {
- 		/*
--		 * check that PEBS LBR correction does not conflict with
--		 * whatever the user is asking with attr->branch_sample_type
-+		 * user did not specify branch_sample_type,
-+		 * try using the LBR call stack facility to
-+		 * record call chains of user program.
- 		 */
--		if (event->attr.precise_ip > 1 &&
--		    x86_pmu.intel_cap.pebs_format < 2) {
--			u64 *br_type = &event->attr.branch_sample_type;
--
--			if (has_branch_stack(event)) {
--				if (!precise_br_compat(event))
--					return -EOPNOTSUPP;
--
--				/* branch_sample_type is compatible */
--
--			} else {
--				/*
--				 * user did not specify  branch_sample_type
--				 *
--				 * For PEBS fixups, we capture all
--				 * the branches at the priv level of the
--				 * event.
--				 */
--				*br_type = PERF_SAMPLE_BRANCH_ANY;
--
--				if (!event->attr.exclude_user)
--					*br_type |= PERF_SAMPLE_BRANCH_USER;
--
--				if (!event->attr.exclude_kernel)
--					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
--			}
--		}
-+		event->attr.branch_sample_type =
-+			PERF_SAMPLE_BRANCH_USER |
-+			PERF_SAMPLE_BRANCH_CALL_STACK;
- 	}
- 
- 	/*
-@@ -1825,10 +1837,34 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- 	return count;
- }
- 
-+static ssize_t get_attr_lbr_callstack(struct device *cdev,
-+				      struct device_attribute *attr, char *buf)
-+{
-+	return snprintf(buf, 40, "%d\n", x86_pmu.attr_lbr_callstack);
++	/* Make sure that all cores except the first are really off */
++	for (i = 1; i < ncores; i++)
++		pmu_set_power_domain(0 + i, false);
 +}
 +
-+static ssize_t set_attr_lbr_callstack(struct device *cdev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count)
-+{
-+	unsigned long val = simple_strtoul(buf, NULL, 0);
-+
-+	if (x86_pmu.attr_lbr_callstack != !!val) {
-+		if (val && !x86_pmu_has_lbr_callstack())
-+			return -EOPNOTSUPP;
-+		x86_pmu.attr_lbr_callstack = !!val;
-+	}
-+	return count;
-+}
-+
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_ATTR(lbr_callstack, S_IRUSR | S_IWUSR,
-+		   get_attr_lbr_callstack, set_attr_lbr_callstack);
-+
++struct smp_operations rockchip_smp_ops __initdata = {
++	.smp_prepare_cpus	= rockchip_smp_prepare_cpus,
++	.smp_boot_secondary	= rockchip_boot_secondary,
++};
+diff --git a/arch/arm/mach-rockchip/rockchip.c b/arch/arm/mach-rockchip/rockchip.c
+index 724d2d8..a0c1f19 100644
+--- a/arch/arm/mach-rockchip/rockchip.c
++++ b/arch/arm/mach-rockchip/rockchip.c
+@@ -24,6 +24,7 @@
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/hardware/cache-l2x0.h>
++#include "core.h"
  
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_lbr_callstack.attr,
- 	NULL,
+ static void __init rockchip_timer_init(void)
+ {
+@@ -46,6 +47,7 @@ static const char * const rockchip_board_dt_compat[] = {
  };
  
-@@ -1955,12 +1991,29 @@ static unsigned long get_segment_base(unsigned int segment)
- 	return get_desc_base(desc + idx);
- }
- 
-+static inline void
-+perf_callchain_lbr_callstack(struct perf_callchain_entry *entry,
-+			     struct perf_sample_data *data)
-+{
-+	struct perf_branch_stack *br_stack = data->br_stack;
-+
-+	if (br_stack && br_stack->user_callstack &&
-+	    x86_pmu.attr_lbr_callstack) {
-+		int i = 0;
-+		while (i < br_stack->nr && entry->nr < PERF_MAX_STACK_DEPTH) {
-+			perf_callchain_store(entry, br_stack->entries[i].from);
-+			i++;
-+		}
-+	}
-+}
-+
- #ifdef CONFIG_COMPAT
- 
- #include <asm/compat.h>
- 
- static inline int
--perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
-+perf_callchain_user32(struct perf_callchain_entry *entry,
-+		      struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	/* 32-bit process in 64-bit kernel. */
- 	unsigned long ss_base, cs_base;
-@@ -1989,11 +2042,16 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- 		perf_callchain_store(entry, cs_base + frame.return_address);
- 		fp = compat_ptr(ss_base + frame.next_frame);
- 	}
-+
-+	if (fp == compat_ptr(regs->bp))
-+		perf_callchain_lbr_callstack(entry, data);
-+
- 	return 1;
- }
- #else
- static inline int
--perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
-+perf_callchain_user32(struct perf_callchain_entry *entry,
-+		      struct pt_regs *regs, struct perf_sample_data *data)
- {
-     return 0;
- }
-@@ -2023,12 +2081,12 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- 	if (!current->mm)
- 		return;
- 
--	if (perf_callchain_user32(regs, entry))
-+	if (perf_callchain_user32(entry, regs, data))
- 		return;
- 
- 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
- 		unsigned long bytes;
--		frame.next_frame	     = NULL;
-+		frame.next_frame = NULL;
- 		frame.return_address = 0;
- 
- 		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
-@@ -2041,6 +2099,10 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- 		perf_callchain_store(entry, frame.return_address);
- 		fp = frame.next_frame;
- 	}
-+
-+	/* try LBR callstack if there is no frame pointer */
-+	if (fp == (void __user *)regs->bp)
-+		perf_callchain_lbr_callstack(entry, data);
- }
- 
- /*
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 0116970..536470d 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -390,6 +390,7 @@ struct x86_pmu {
- 	 * sysfs attrs
- 	 */
- 	int		attr_rdpmc;
-+	int		attr_lbr_callstack;
- 	struct attribute **format_attrs;
- 	struct attribute **event_attrs;
- 
-@@ -496,6 +497,12 @@ static struct perf_pmu_events_attr event_attr_##v = {			\
- 
- extern struct x86_pmu x86_pmu __read_mostly;
- 
-+static inline bool x86_pmu_has_lbr_callstack(void)
-+{
-+	return  x86_pmu.lbr_sel_map &&
-+		x86_pmu.lbr_sel_map[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT] > 0;
-+}
-+
- DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
- 
- int x86_perf_event_set_period(struct perf_event *event);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index f59b46e..baa8384 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -882,15 +882,10 @@ static __initconst const u64 atom_hw_cache_event_ids
-  },
- };
- 
--static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
-+static inline bool intel_pmu_needs_lbr_callstack(struct perf_event *event)
- {
--	/* user explicitly requested branch sampling */
--	if (has_branch_stack(event))
--		return true;
--
--	/* implicit branch sampling to correct PEBS skid */
--	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
--	    x86_pmu.intel_cap.pebs_format < 2)
-+	if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+	    (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK))
- 		return true;
- 
- 	return false;
-@@ -1054,7 +1049,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
- 	 * must disable before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_disable(event);
- 
- 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
-@@ -1115,7 +1110,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	 * must enabled before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_enable(event);
- 
- 	if (event->attr.exclude_host)
-@@ -1237,7 +1232,8 @@ again:
- 
- 		perf_sample_data_init(&data, 0, event->hw.last_period);
- 
--		if (has_branch_stack(event))
-+		if (has_branch_stack(event) ||
-+		    (event->ctx->task && intel_pmu_needs_lbr_callstack(event)))
- 			data.br_stack = &cpuc->lbr_stack;
- 
- 		if (perf_event_overflow(event, &data, regs))
-@@ -1568,7 +1564,7 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
- 		x86_pmu.pebs_aliases(event);
- 
--	if (intel_pmu_needs_lbr_smpl(event)) {
-+	if (needs_branch_stack(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
- 		if (ret)
- 			return ret;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 43b16b4..3be2d7b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -709,6 +709,8 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- 	int i, j, type;
- 	bool compress = false;
- 
-+	cpuc->lbr_stack.user_callstack = branch_user_callstack(br_sel);
-+
- 	/* if sampling all branches, then nothing to filter */
- 	if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
- 		return;
-@@ -861,6 +863,7 @@ void intel_pmu_lbr_init_hsw(void)
- 
- 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
- 	x86_pmu.lbr_sel_map  = hsw_lbr_sel_map;
-+	x86_pmu.attr_lbr_callstack = 1;
- 
- 	pr_cont("16-deep LBR, ");
- }
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index fa4c1bf..168e66e 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -97,6 +97,7 @@ struct perf_branch_entry {
-  * recent branch.
-  */
- struct perf_branch_stack {
-+	unsigned			user_callstack:1;
- 	__u64				nr;
- 	struct perf_branch_entry	entries[0];
- };
-@@ -759,6 +760,11 @@ static inline bool has_branch_stack(struct perf_event *event)
- 	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
- }
- 
-+static inline bool needs_branch_stack(struct perf_event *event)
-+{
-+	return event->attr.branch_sample_type != 0;
-+}
-+
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
- extern void perf_output_end(struct perf_output_handle *handle);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 4aad901..38eaa2b 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1117,7 +1117,7 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 	if (is_cgroup_event(event))
- 		ctx->nr_cgroups++;
- 
--	if (has_branch_stack(event))
-+	if (needs_branch_stack(event))
- 		ctx->nr_branch_stack++;
- 
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
-@@ -1274,7 +1274,7 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 			cpuctx->cgrp = NULL;
- 	}
- 
--	if (has_branch_stack(event)) {
-+	if (needs_branch_stack(event)) {
- 		if (ctx->is_active)
- 			__get_cpu_var(perf_branch_stack_events)--;
- 		ctx->nr_branch_stack--;
-@@ -3155,7 +3155,7 @@ static void free_event(struct perf_event *event)
- 			static_key_slow_dec_deferred(&perf_sched_events);
- 		}
- 
--		if (has_branch_stack(event))
-+		if (needs_branch_stack(event))
- 			static_key_slow_dec_deferred(&perf_sched_events);
- 	}
- 
-@@ -6545,6 +6545,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
- 		goto done;
- 
-+	if (!has_branch_stack(event))
-+		event->attr.branch_sample_type = 0;
-+
- 	pmu = perf_init_event(event);
- 
- done:
-@@ -6577,7 +6580,7 @@ done:
- 				return ERR_PTR(err);
- 			}
- 		}
--		if (has_branch_stack(event))
-+		if (needs_branch_stack(event))
- 			static_key_slow_inc(&perf_sched_events.key);
- 	}
- 
+ DT_MACHINE_START(ROCKCHIP_DT, "Rockchip Cortex-A9 (Device Tree)")
++	.smp		= smp_ops(rockchip_smp_ops),
+ 	.init_machine	= rockchip_dt_init,
+ 	.init_time	= rockchip_timer_init,
+ 	.dt_compat	= rockchip_board_dt_compat,
 -- 
-1.8.1.4
+1.7.10.4
 
