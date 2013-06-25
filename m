@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751044Ab3FYFHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 01:07:44 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:53532 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3FYFHn (ORCPT
+	id S1751308Ab3FYFIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 01:08:05 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:35124 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab3FYFIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 01:07:43 -0400
-Message-ID: <51C92537.2070304@atmel.com>
-Date: Tue, 25 Jun 2013 13:05:59 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 25 Jun 2013 01:08:00 -0400
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Wenyou Yang <wenyou.yang@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: at91/PMC: fix at91sam9n12 USB FS init
-References: <1372091879-28459-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1372091879-28459-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+In-Reply-To: <1372136569-551-1-git-send-email-jonghwa3.lee@samsung.com>
+References: <1372136569-551-1-git-send-email-jonghwa3.lee@samsung.com>
+Date: Tue, 25 Jun 2013 10:37:57 +0530
+Message-ID: <CAK9yfHxLDiu7tagRhPEK1aCCTYnMH7i2yKrtqquAwnfxHnZxSg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] power: charger-manager: regulator_get() never returns NULL.
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: anton.vorontsov@linaro.org, linux-kernel@vger.kernel.org,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
-
-On 06/25/2013 12:37 AM, Nicolas Ferre wrote:
-> at91sam9n12 has Full-speed only USB. So we should add
-> it to the list in at91_pllb_usbfs_clock_init() function.
-> Moreover, at91sam9n12 has an unusual PMC in the sense that it
-> has a PLLB but also has a USB clock register.
+On 25 June 2013 10:32, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
+> This patch fixes return value checking of regulator_get() in charger-manager
+> driver. The API, regulator_get(), returns ERR_PTR() when it fails to get
+> regulator with given name, not NULL.
 >
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 > ---
->   arch/arm/mach-at91/clock.c                 | 25 +++++++++++++++++++++----
->   arch/arm/mach-at91/include/mach/at91_pmc.h |  3 +++
->   2 files changed, 24 insertions(+), 4 deletions(-)
+>  drivers/power/charger-manager.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+> index ba42029..7d1bcde 100644
+> --- a/drivers/power/charger-manager.c
+> +++ b/drivers/power/charger-manager.c
+> @@ -1239,7 +1239,7 @@ static int charger_manager_register_extcon(struct charger_manager *cm)
+>
+>                 charger->consumer = regulator_get(cm->dev,
+>                                         charger->regulator_name);
+> -               if (charger->consumer == NULL) {
+> +               if (IS_ERR(charger->consumer)) {
+>                         dev_err(cm->dev, "Cannot find charger(%s)\n",
+>                                 charger->regulator_name);
+>                         ret = -EINVAL;
 
-For this series, test on at91sam9n12ek board, all are OK.
+ You can as well make this ret = PTR_ERR(charger->consumer).
 
-Tested-by: Bo Shen <voice.shen@atmel.com>
-
-Best Regards,
-Bo Shen
-
+---
+With warm regards,
+Sachin
