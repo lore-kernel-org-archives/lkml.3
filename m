@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3FYSlv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:41:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41394 "EHLO
+	id S1753462Ab3FYSjm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:39:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab3FYSjo (ORCPT
+	with ESMTP id S1753411Ab3FYSji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:39:44 -0400
+	Tue, 25 Jun 2013 14:39:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 14/17] packet: packet_getname_spkt: make sure string is always 0-terminated
-Date: Tue, 25 Jun 2013 11:39:29 -0700
-Message-Id: <20130625183917.020464188@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Neal Cardwell <ncardwell@google.com>
+Subject: [ 06/17] ipv6: fix possible crashes in ip6_cork_release()
+Date: Tue, 25 Jun 2013 11:39:21 -0700
+Message-Id: <20130625183916.189791213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183915.443950649@linuxfoundation.org>
 References: <20130625183915.443950649@linuxfoundation.org>
@@ -27,41 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2dc85bf323515e59e15dfa858d1472bb25cad0fe ]
+[ Upstream commit 284041ef21fdf2e0d216ab6b787bc9072b4eb58a ]
 
-uaddr->sa_data is exactly of size 14, which is hard-coded here and
-passed as a size argument to strncpy(). A device name can be of size
-IFNAMSIZ (== 16), meaning we might leave the destination string
-unterminated. Thus, use strlcpy() and also sizeof() while we're
-at it. We need to memset the data area beforehand, since strlcpy
-does not padd the remaining buffer with zeroes for user space, so
-that we do not possibly leak anything.
+commit 0178b695fd6b4 ("ipv6: Copy cork options in ip6_append_data")
+added some code duplication and bad error recovery, leading to potential
+crash in ip6_cork_release() as kfree() could be called with garbage.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+use kzalloc() to make sure this wont happen.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ net/ipv6/ip6_output.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1767,12 +1767,11 @@ static int packet_getname_spkt(struct so
- 		return -EOPNOTSUPP;
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1248,7 +1248,7 @@ int ip6_append_data(struct sock *sk, int
+ 			if (WARN_ON(np->cork.opt))
+ 				return -EINVAL;
  
- 	uaddr->sa_family = AF_PACKET;
-+	memset(uaddr->sa_data, 0, sizeof(uaddr->sa_data));
- 	rcu_read_lock();
- 	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
- 	if (dev)
--		strncpy(uaddr->sa_data, dev->name, 14);
--	else
--		memset(uaddr->sa_data, 0, 14);
-+		strlcpy(uaddr->sa_data, dev->name, sizeof(uaddr->sa_data));
- 	rcu_read_unlock();
- 	*uaddr_len = sizeof(*uaddr);
+-			np->cork.opt = kmalloc(opt->tot_len, sk->sk_allocation);
++			np->cork.opt = kzalloc(opt->tot_len, sk->sk_allocation);
+ 			if (unlikely(np->cork.opt == NULL))
+ 				return -ENOBUFS;
  
 
 
