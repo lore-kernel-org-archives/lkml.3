@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab3FYHlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 03:41:08 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:17718 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab3FYHlF (ORCPT
+	id S1752110Ab3FYHmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 03:42:08 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34868 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3FYHmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 03:41:05 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19rG/aSkAFcLq/JCTIyAFd0
-Date: Tue, 25 Jun 2013 00:41:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: rip out the direct pinconf API
-Message-ID: <20130625074102.GG5523@atomide.com>
-References: <1372079700-16580-1-git-send-email-linus.walleij@stericsson.com>
- <51C86524.8020708@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C86524.8020708@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 25 Jun 2013 03:42:05 -0400
+Date: Tue, 25 Jun 2013 17:41:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chen Gang <gang.chen@asianux.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: linux-next: manual merge of the msm tree with the arm-soc tree
+Message-Id: <20130625174152.d776ac051f6f19dfbf876634@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Jun_2013_17_41_52_+1000_Suul0g1m2A08o__k"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Warren <swarren@wwwdotorg.org> [130624 08:32]:
-> On 06/24/2013 07:15 AM, Linus Walleij wrote:
-> > From: Linus Walleij <linus.walleij@linaro.org>
-> > 
-> > From the inception ot the pin config API there has been the
-> > possibility to get a handle at a pin directly and configure
-> > its electrical characteristics. For this reason we had:
-> > 
-> > int pin_config_get(const char *dev_name, const char *name,
-> >                unsigned long *config);
-> > int pin_config_set(const char *dev_name, const char *name,
-> >                unsigned long config);
-> > int pin_config_group_get(const char *dev_name,
-> >                const char *pin_group,
-> >                unsigned long *config);
-> > int pin_config_group_set(const char *dev_name,
-> >                const char *pin_group,
-> >                unsigned long config);
-> > 
-> > After the intruction of the pin control states that will
-> > control pins associated with devices, and its subsequent
-> > introduction to the device core, as well as the
-> > introduction of pin control hogs that can set up states on
-> > boot and optionally also at sleep, this direct pin control
-> > API is a thing of the past.
-> > 
-> > As could be expected, it has zero in-kernel users.
-> > Let's delete this API and make our world simpler.
-> 
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+--Signature=_Tue__25_Jun_2013_17_41_52_+1000_Suul0g1m2A08o__k
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Hi David,
+
+Today's linux-next merge of the msm tree got a conflict in
+arch/arm/mach-msm/clock-debug.c between commit ad8c373c9aa3 ("arch: arm:
+mach-msm: using strlcpy instead of strncpy") from the arm-soc tree and
+commit 8cc7f5338e72 ("ARM: msm: Migrate to common clock framework") from
+the msm tree.
+
+The latter removed the file, so I did that, and can carry the fix as
+necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__25_Jun_2013_17_41_52_+1000_Suul0g1m2A08o__k
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRyUnFAAoJEECxmPOUX5FE6voP/3R6JCI8pjfgnqmqbGy67m+p
+OS3h36Mk5lQWpMjj7s65Ub2EP3BW5Y9OuWkU5uofx02kFuTb7X0zzpGFRp5FWOo4
+PhC5Qya4ni57XLjnZHI/l91mjt6HDV8vx5wIEEJXFn3mBE/UNVZ2/5b3q9ObH/iw
+9To+dBriirfQeDZdr2PCmsF09KVP7wrEHNJiXHyI72wK/LhvyodZ9Nsey83frTVb
+Z023V5oBDIWoTuSwc1iQTwrvKtVfcqN7mfo735ebDzcjyl58wvNE4GEjMlI8LvtO
+FqppGxzn4BL6dKQwQ0087GHkiixZ5Z3G8hlyPfSX2GR35d/gzzV5ael8VxwdNsTH
+6lCXKZvS/7tHPgUM1x+g6sfaOWqFafmY4uTomRVqhJ93O/T/ft5QQZzb3t6ygBoR
+iY1DiHuhsCWKMMA+6RCelME/jC1upA5FpQAnxkKONwW2bZNWPNVCtHl0tMHDqNuh
+TR8wdGhx6I791Dw4kArWW9GM+kxRjYH2AtX/+78QaGnts3woJdJrA924af9/3xfr
+iuD+iS3UcAlxgRTr9Yzja5OOsQYo8yyrG/W+Yzm+XmnKAdanFT+3SQfo0FC5pbf+
+oWjJ7PFEXw3bkhiVu6/Z24KqsLZM0AlmzCcUQdsDeyMZo/NUx5Mh9EuXM/FSbZx+
+W01HWshSUrz91RlC24kq
+=p5Ex
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Jun_2013_17_41_52_+1000_Suul0g1m2A08o__k--
