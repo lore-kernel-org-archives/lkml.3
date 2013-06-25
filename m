@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab3FYSby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:31:54 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:63157 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059Ab3FYSbw (ORCPT
+	id S1751907Ab3FYSda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:33:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40802 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3FYSdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:31:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130625183123.GJ9294@intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
-	<CAHp75Vd2Torku6zy2awLHRTed9mx94a6RAu+oHJYb+rVgZKBDQ@mail.gmail.com>
-	<20130625183123.GJ9294@intel.com>
-Date: Tue, 25 Jun 2013 21:31:52 +0300
-Message-ID: <CAHp75Vc8BauuBJcfqBzu_+6nUwEC-uD3z_RF5gT-3YhV0fjTqw@mail.gmail.com>
-Subject: Re: [PATCH 5/6] PCI: acpiphp: look _RMV method a bit deeper in the hierarhcy
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 25 Jun 2013 14:33:25 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 01/95] ARM: 7752/1: errata: LoUIS bit field in CLIDR register is incorrect
+Date: Tue, 25 Jun 2013 11:31:48 -0700
+Message-Id: <20130625182153.805097639@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
+References: <20130625182153.605455184@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 9:31 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Tue, Jun 25, 2013 at 09:15:47PM +0300, Andy Shevchenko wrote:
->> On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-[]
+------------------
 
->> > +static acpi_status pcihp_evaluate_rmv(acpi_handle handle, u32 lvl,
->> > +                                     void *context, void **return_not_used)
->> > +{
->> > +       unsigned long long *removable = context;
->> > +       unsigned long long value;
->> > +       acpi_status status;
->> > +
->> > +       status = acpi_evaluate_integer(handle, "_RMV", NULL, &value);
->> > +       if (ACPI_SUCCESS(status) && value) {
->>
->> So, there is a chance the caller gets back uninitialized *context.
->> Let's assume that is by design.
->>
->> > +               *removable = value;
->> > +               return AE_CTRL_TERMINATE;
->> > +       }
->> > +       return AE_OK;
->> > +}
->>
->>
->> > +static bool pcihp_is_removable(acpi_handle handle, size_t depth)
->> > +{
->> > +       unsigned long long removable = 0;
->> > +       acpi_status status;
->> > +
->> > +       status = pcihp_evaluate_rmv(handle, 0, &removable, NULL);
->> > +       if ((status == AE_CTRL_TERMINATE) && removable)
->>
->> Here you already have removable not equal zero.
->
-> Hmm, removable is initialized to zero just few lines above... Did I miss
-> something obvious?
+From: Jon Medhurst <tixy@linaro.org>
 
-Yes, that's correct, however, you already did this check when you call
-evaluate_rmv. Thus, second check '&& removable' is not needed.
+commit 691557941af4c12bd307ad81a4d9fa9c7743ac28 upstream.
 
---
-With Best Regards,
-Andy Shevchenko
+On Cortex-A9 before version r1p0, the LoUIS bit field of the CLIDR
+register returns zero when it should return one. This leads to cache
+maintenance operations which rely on this value to not function as
+intended, causing data corruption.
+
+The workaround for this errata is to detect affected CPUs and correct
+the LoUIS value read.
+
+Acked-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/Kconfig       |   10 ++++++++++
+ arch/arm/mm/cache-v7.S |    8 ++++++++
+ 2 files changed, 18 insertions(+)
+
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1306,6 +1306,16 @@ config PL310_ERRATA_588369
+ 	   is not correctly implemented in PL310 as clean lines are not
+ 	   invalidated as a result of these operations.
+ 
++config ARM_ERRATA_643719
++	bool "ARM errata: LoUIS bit field in CLIDR register is incorrect"
++	depends on CPU_V7 && SMP
++	help
++	  This option enables the workaround for the 643719 Cortex-A9 (prior to
++	  r1p0) erratum. On affected cores the LoUIS bit field of the CLIDR
++	  register returns zero when it should return one. The workaround
++	  corrects this value, ensuring cache maintenance operations which use
++	  it behave as intended and avoiding data corruption.
++
+ config ARM_ERRATA_720789
+ 	bool "ARM errata: TLBIASIDIS and TLBIMVAIS operations can broadcast a faulty ASID"
+ 	depends on CPU_V7
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -92,6 +92,14 @@ ENTRY(v7_flush_dcache_louis)
+ 	mrc	p15, 1, r0, c0, c0, 1		@ read clidr, r0 = clidr
+ 	ALT_SMP(ands	r3, r0, #(7 << 21))	@ extract LoUIS from clidr
+ 	ALT_UP(ands	r3, r0, #(7 << 27))	@ extract LoUU from clidr
++#ifdef CONFIG_ARM_ERRATA_643719
++	ALT_SMP(mrceq	p15, 0, r2, c0, c0, 0)	@ read main ID register
++	ALT_UP(moveq	pc, lr)			@ LoUU is zero, so nothing to do
++	ldreq	r1, =0x410fc090                 @ ID of ARM Cortex A9 r0p?
++	biceq	r2, r2, #0x0000000f             @ clear minor revision number
++	teqeq	r2, r1                          @ test for errata affected core and if so...
++	orreqs	r3, #(1 << 21)			@   fix LoUIS value (and set flags state to 'ne')
++#endif
+ 	ALT_SMP(mov	r3, r3, lsr #20)	@ r3 = LoUIS * 2
+ 	ALT_UP(mov	r3, r3, lsr #26)	@ r3 = LoUU * 2
+ 	moveq	pc, lr				@ return if level == 0
+
+
