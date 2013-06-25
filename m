@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab3FYKQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 06:16:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48171 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab3FYKQR (ORCPT
+	id S1752729Ab3FYKRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 06:17:04 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56168 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab3FYKRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 06:16:17 -0400
-Date: Tue, 25 Jun 2013 11:15:53 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Girish K S <girishks2000@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20130625101553.GZ27646@sirena.org.uk>
-References: <1371794173-27266-1-git-send-email-ks.giri@samsung.com>
- <1371794173-27266-2-git-send-email-ks.giri@samsung.com>
+	Tue, 25 Jun 2013 06:17:02 -0400
+X-AuditID: 85900ec0-d2ec7b900000151e-8e-51c96e1a5531
+Subject: [PATCH] [BUGFIX] Fix build error caused by an undefinition of the
+ kvm_write_tsc_offset tracepoint for x86_32
+To: Gleb Natapov <gleb@redhat.com>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Sharp <dhsharp@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>
+Date: Tue, 25 Jun 2013 19:16:41 +0900
+Message-ID: <20130625101641.29672.13013.stgit@yunodevel>
+In-Reply-To: <20130623075848.GO5832@redhat.com>
+References: <20130623075848.GO5832@redhat.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dlFvqfizQ5ooaSx9"
-Content-Disposition: inline
-In-Reply-To: <1371794173-27266-2-git-send-email-ks.giri@samsung.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] spi: s3c64xx: Added provision for dedicated cs pin
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix build error caused by an undefinition of the kvm_write_tsc_offset
+tracepoint for x86_32.
+Since the tracepoint in trace.h was defined for CONFIG_X86_64, kernel build
+on i386 was failed.
 
---dlFvqfizQ5ooaSx9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/kvm/trace.h |   42 +++++++++++++++++++++---------------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
 
-On Fri, Jun 21, 2013 at 11:26:12AM +0530, Girish K S wrote:
-> From: Girish K S <girishks2000@gmail.com>
->=20
-> The existing driver supports gpio based /cs signal.
-> For controller's that have one device per controller,
+diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+index 6c82cf1..545245d 100644
+--- a/arch/x86/kvm/trace.h
++++ b/arch/x86/kvm/trace.h
+@@ -756,6 +756,27 @@ TRACE_EVENT(
+ 		  __entry->gpa_match ? "GPA" : "GVA")
+ );
+ 
++TRACE_EVENT(kvm_write_tsc_offset,
++	TP_PROTO(unsigned int vcpu_id, __u64 previous_tsc_offset,
++		 __u64 next_tsc_offset),
++	TP_ARGS(vcpu_id, previous_tsc_offset, next_tsc_offset),
++
++	TP_STRUCT__entry(
++		__field( unsigned int,	vcpu_id				)
++		__field(	__u64,	previous_tsc_offset		)
++		__field(	__u64,	next_tsc_offset			)
++	),
++
++	TP_fast_assign(
++		__entry->vcpu_id		= vcpu_id;
++		__entry->previous_tsc_offset	= previous_tsc_offset;
++		__entry->next_tsc_offset	= next_tsc_offset;
++	),
++
++	TP_printk("vcpu=%u prev=%llu next=%llu", __entry->vcpu_id,
++		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
++);
++
+ #ifdef CONFIG_X86_64
+ 
+ #define host_clocks					\
+@@ -815,27 +836,6 @@ TRACE_EVENT(kvm_track_tsc,
+ 		  __print_symbolic(__entry->host_clock, host_clocks))
+ );
+ 
+-TRACE_EVENT(kvm_write_tsc_offset,
+-	TP_PROTO(unsigned int vcpu_id, __u64 previous_tsc_offset,
+-		 __u64 next_tsc_offset),
+-	TP_ARGS(vcpu_id, previous_tsc_offset, next_tsc_offset),
+-
+-	TP_STRUCT__entry(
+-		__field( unsigned int,	vcpu_id				)
+-		__field(	__u64,	previous_tsc_offset		)
+-		__field(	__u64,	next_tsc_offset			)
+-	),
+-
+-	TP_fast_assign(
+-		__entry->vcpu_id		= vcpu_id;
+-		__entry->previous_tsc_offset	= previous_tsc_offset;
+-		__entry->next_tsc_offset	= next_tsc_offset;
+-	),
+-
+-	TP_printk("vcpu=%u prev=%llu next=%llu", __entry->vcpu_id,
+-		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
+-);
+-
+ #endif /* CONFIG_X86_64 */
+ 
+ #endif /* _TRACE_KVM_H */
 
-Applied both, thanks.
-
---dlFvqfizQ5ooaSx9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRyW3QAAoJELSic+t+oim90fEP/2y46wbntcSs+GkQcLR4ffvo
-KGIDHJr612D7U5iD79yUSpGaV3WSmNyXVN0TpF8oXmUq+/Y+kmmXjICUr083+P0Y
-Cf4msopAlojPet3PbQTWLl4qRr9u4VqNrwRucPCRYTirc+EVmpL0a1iCm8K1Zk3i
-X0R7B+RH0oVWIh5d3a6YRqD4i0G8ILnzOnCQDM7BkzAm5hMerDHGSOoai37I/Vw2
-VGAQkvB92febpzzWzea+Y8ou8Qdp0rdMah7f9jnG1PA9nmjHlszrWPoEACfBY2X0
-Ctf+X0xKnnySQOZmGirXAhu1W5l9TtA+W2HlLHZX+julk3J3fpKkV6vXfB+1b+oA
-jfS2MPV3xfMGsHfMNfy0kRu9+bRRTYBYR9xesnJmE5XqYsn6gNc2zoTbUgFm3kL6
-RWnUaubRDo5vEJHEF9u/H7meVHnulwZNJ3Gtz4/2nzSjsGTDzVeZKV0knWFbC9j9
-zfBNnhIAxqD89yJ7HBnJAJEfoF/n27apr0VJkCHm98uHgy/LafpDNGd5/KWojONR
-lUt0u9eg4S3IhzCqgpvqUGhtY0I3ADLThhhrHS/tN9t8dE8MBlkkYrijRTN0nyL4
-Y4SN53TMy82FmRIEYUAZkNqGpQIa84BTsadV8t/ue4wyaEQ5+xp7HzLe1j0lmvBS
-SyeQW6Jl+x3xy4C5D95B
-=rfNh
------END PGP SIGNATURE-----
-
---dlFvqfizQ5ooaSx9--
