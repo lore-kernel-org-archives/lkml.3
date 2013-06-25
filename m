@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446Ab3FYQuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:50:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47002 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751029Ab3FYQun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:50:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="322388355"
-Date: Tue, 25 Jun 2013 21:40:04 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        alsa-devel@alsa-project.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Dan Williams <djbw@fb.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Padmavathi Venna <padma.v@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: Re: [RFC PATCH v2 05/12] dmaengine: PL08x: Add support for
- different maximum transfer size
-Message-ID: <20130625161003.GQ23141@intel.com>
-References: <1371933764-24875-1-git-send-email-tomasz.figa@gmail.com>
- <1371933764-24875-6-git-send-email-tomasz.figa@gmail.com>
+	id S1751380Ab3FYQyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:54:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52461 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab3FYQyB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:54:01 -0400
+Message-ID: <51C9CB27.3010405@codeaurora.org>
+Date: Tue, 25 Jun 2013 09:53:59 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371933764-24875-6-git-send-email-tomasz.figa@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Fabio Estevam <festevam@gmail.com>
+CC: john.stultz@linaro.org, tglx@linutronix.de, shc_work@mail.ru,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] ARM: mach-clps711x: common: Use linux/sched_clock.h
+References: <1372118615-14805-1-git-send-email-festevam@gmail.com> <51C8E637.2060106@codeaurora.org> <CAOMZO5CzphELkwr8gGP1LfA3HJ02CZpnzneETaZcn9YXws=ieQ@mail.gmail.com>
+In-Reply-To: <CAOMZO5CzphELkwr8gGP1LfA3HJ02CZpnzneETaZcn9YXws=ieQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 22, 2013 at 10:42:37PM +0200, Tomasz Figa wrote:
-> PL080S has separate register to store transfer size in, allowing single
-> transfer to be much larger than in standard PL080.
-> 
-> This patch makes the amba-pl08x driver aware of this and removes writing
-> transfer size to reserved bits of CH_CONTROL register on PL080S, which
-> was not a problem witn transfer sizes fitting the original bitfield
-> of PL080, but now would overwrite other fields.
-> 
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-Acked by: Vinod Koul <vinod.koul@intel.com>
+On 06/24/13 19:44, Fabio Estevam wrote:
+> On Mon, Jun 24, 2013 at 9:37 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>
+>> Is this one in the arm-soc tree? I plan to make a sweep after 3.11-rc1
+> I haven't see a fix for this in the linux-arm-kernel list.
 
---
-~Vinod
+http://article.gmane.org/gmane.linux.kernel/1513390 was posted a few
+days ago and was merged to the tip tree just before your patch. That
+patch looks good because that sched_clock user is going through timers/core.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
