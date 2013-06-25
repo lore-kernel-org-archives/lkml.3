@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3FYTIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:08:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40910 "EHLO
+	id S1753880Ab3FYTIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:08:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab3FYSdr (ORCPT
+	with ESMTP id S1752317Ab3FYSdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:33:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 33/95] ACPI / resources: call acpi_get_override_irq() only for legacy IRQ resources
-Date: Tue, 25 Jun 2013 11:32:20 -0700
-Message-Id: <20130625182157.377668058@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [ 34/95] ACPI / dock: Take ACPI scan lock in write_undock()
+Date: Tue, 25 Jun 2013 11:32:21 -0700
+Message-Id: <20130625182157.479248242@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,111 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 204ebc0aa30a7115f300cac39fbb7eeb66524881 upstream.
+commit 8112006f41fd76ddf4988f8ddd904563db85613c upstream.
 
-acpi_get_override_irq() was added because there was a problem with
-buggy BIOSes passing wrong IRQ() resource for the RTC IRQ.  The
-commit that added the workaround was 61fd47e0c8476 (ACPI: fix two
-IRQ8 issues in IOAPIC mode).
+Since commit 3757b94 (ACPI / hotplug: Fix concurrency issues and
+memory leaks) acpi_bus_scan() and acpi_bus_trim() must always be
+called under acpi_scan_lock, but currently the following scenario
+violating that requirement is possible:
 
-With ACPI 5 enumerated devices there are typically one or more
-extended IRQ resources per device (and these IRQs can be shared).
-However, the acpi_get_override_irq() workaround forces all IRQs in
-range 0 - 15 (the legacy ISA IRQs) to be edge triggered, active high
-as can be seen from the dmesg below:
+ write_undock()
+  handle_eject_request()
+   hotplug_dock_devices()
+    dock_remove_acpi_device()
+     acpi_bus_trim()
 
-	ACPI: IRQ 6 override to edge, high
-	ACPI: IRQ 7 override to edge, high
-	ACPI: IRQ 7 override to edge, high
-	ACPI: IRQ 13 override to edge, high
+Fix that by making write_undock() acquire acpi_scan_lock before
+calling handle_eject_request() as appropriate (begin_undock() is
+under the lock too in analogy with acpi_dock_deferred_cb()).
 
-Also /proc/interrupts for the I2C controllers (INT33C2 and INT33C3) shows
-the same thing:
-
-	7:          4          0          0          0   IO-APIC-edge INT33C2:00, INT33C3:00
-
-The _CSR method for INT33C2 (and INT33C3) device returns following
-resource:
-
-	Interrupt (ResourceConsumer, Level, ActiveLow, Shared,,, )
-	{
-		0x00000007,
-	}
-
-which states that this is supposed to be level triggered, active low,
-shared IRQ instead.
-
-Fix this by making sure that acpi_get_override_irq() gets only called
-when we are dealing with legacy IRQ() or IRQNoFlags() descriptors.
-
-While we are there, correct pr_warning() to print the right triggering
-value.
-
-This change turns out to be necessary to make DMA work correctly on
-systems based on the Intel Lynxpoint PCH (Platform Controller Hub).
-
-[rjw: Changelog]
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/resource.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/acpi/dock.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -304,7 +304,8 @@ static void acpi_dev_irqresource_disable
+--- a/drivers/acpi/dock.c
++++ b/drivers/acpi/dock.c
+@@ -868,8 +868,10 @@ static ssize_t write_undock(struct devic
+ 	if (!count)
+ 		return -EINVAL;
+ 
++	acpi_scan_lock_acquire();
+ 	begin_undock(dock_station);
+ 	ret = handle_eject_request(dock_station, ACPI_NOTIFY_EJECT_REQUEST);
++	acpi_scan_lock_release();
+ 	return ret ? ret: count;
  }
- 
- static void acpi_dev_get_irqresource(struct resource *res, u32 gsi,
--				     u8 triggering, u8 polarity, u8 shareable)
-+				     u8 triggering, u8 polarity, u8 shareable,
-+				     bool legacy)
- {
- 	int irq, p, t;
- 
-@@ -317,14 +318,19 @@ static void acpi_dev_get_irqresource(str
- 	 * In IO-APIC mode, use overrided attribute. Two reasons:
- 	 * 1. BIOS bug in DSDT
- 	 * 2. BIOS uses IO-APIC mode Interrupt Source Override
-+	 *
-+	 * We do this only if we are dealing with IRQ() or IRQNoFlags()
-+	 * resource (the legacy ISA resources). With modern ACPI 5 devices
-+	 * using extended IRQ descriptors we take the IRQ configuration
-+	 * from _CRS directly.
- 	 */
--	if (!acpi_get_override_irq(gsi, &t, &p)) {
-+	if (legacy && !acpi_get_override_irq(gsi, &t, &p)) {
- 		u8 trig = t ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
- 		u8 pol = p ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
- 
- 		if (triggering != trig || polarity != pol) {
- 			pr_warning("ACPI: IRQ %d override to %s, %s\n", gsi,
--				   t ? "edge" : "level", p ? "low" : "high");
-+				   t ? "level" : "edge", p ? "low" : "high");
- 			triggering = trig;
- 			polarity = pol;
- 		}
-@@ -373,7 +379,7 @@ bool acpi_dev_resource_interrupt(struct
- 		}
- 		acpi_dev_get_irqresource(res, irq->interrupts[index],
- 					 irq->triggering, irq->polarity,
--					 irq->sharable);
-+					 irq->sharable, true);
- 		break;
- 	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
- 		ext_irq = &ares->data.extended_irq;
-@@ -383,7 +389,7 @@ bool acpi_dev_resource_interrupt(struct
- 		}
- 		acpi_dev_get_irqresource(res, ext_irq->interrupts[index],
- 					 ext_irq->triggering, ext_irq->polarity,
--					 ext_irq->sharable);
-+					 ext_irq->sharable, false);
- 		break;
- 	default:
- 		return false;
+ static DEVICE_ATTR(undock, S_IWUSR, NULL, write_undock);
 
 
