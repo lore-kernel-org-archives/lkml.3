@@ -1,116 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab3FYQLs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:11:48 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:36378 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab3FYQLr (ORCPT
+	id S1751799Ab3FYQNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:13:09 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:8155 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750708Ab3FYQNG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:11:47 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>
-Cc: Mike Frysinger <vapier@gentoo.org>, Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: Avoid extra calls to the C compiler
-Date: Tue, 25 Jun 2013 09:11:36 -0700
-Message-Id: <1372176696-5104-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
+	Tue, 25 Jun 2013 12:13:06 -0400
+X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
+   d="scan'208";a="68695012"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Subject: Re: [PATCH v3 2/4] SUNRPC: fix races on PipeFS UMOUNT notifications
+Thread-Topic: [PATCH v3 2/4] SUNRPC: fix races on PipeFS UMOUNT notifications
+Thread-Index: AQHOcK/UX0SLm7oWX0eEtHloKJh9K5lHEbAA
+Date: Tue, 25 Jun 2013 16:13:05 +0000
+Message-ID: <1372176778.5968.29.camel@leira.trondhjem.org>
+References: <20130624075131.17104.55399.stgit@localhost.localdomain>
+	 <20130624075245.17104.6279.stgit@localhost.localdomain>
+In-Reply-To: <20130624075245.17104.6279.stgit@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.117]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <10DDBE5443F9D94EA0FA5BDE54A67390@hq.netapp.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting up the C compiler can be a slow operation on some systems.
-Though these calls don't individually take a lot of time, they add up.
-Rearrange the ARM Makefile a bit to avoid extra calls to the compiler
-when they can be easily avoided.
+On Mon, 2013-06-24 at 11:52 +0400, Stanislav Kinsbursky wrote:
+> CPU#0                                   CPU#1
+> -----------------------------           -----------------------------
+> rpc_kill_sb
+> sn->pipefs_sb = NULL                    rpc_release_client
+> (UMOUNT_EVENT)                          rpc_free_auth
+> rpc_pipefs_event
+> rpc_get_client_for_event
+> !atomic_inc_not_zero(cl_count)
+> <skip the client>
+>                                         atomic_inc(cl_count)
+>                                         rpc_free_client
+>                                         rpc_clnt_remove_pipedir
+>                                         <skip client dir removing>
+> 
+> To fix this, this patch does the following:
+> 
+> 1) Calls RPC_PIPEFS_UMOUNT notification with sn->pipefs_sb_lock being held.
+> 2) Removes SUNRPC client from the list AFTER pipes destroying.
+> 3) Doesn't hold RPC client on notification: if client in the list, then it
+> can't be destroyed while sn->pipefs_sb_lock in hold by notification caller.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  net/sunrpc/clnt.c     |    5 +----
+>  net/sunrpc/rpc_pipe.c |    2 +-
+>  2 files changed, 2 insertions(+), 5 deletions(-)
 
-When running with the Chrome OS ARM cross compiler
-"armv7a-cros-linux-gnueabi-", this shaved .55 seconds (from 5.31
-seconds to 4.76 seconds) off an incremental build of the kernel:
-  time make -j32 ARCH=arm CROSS_COMPILE=armv7a-cros-linux-gnueabi-
+<snip>
 
-Thanks to Mike Frysinger for the clean trick to make this work.
+> diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+> index c512448..efca2f7 100644
+> --- a/net/sunrpc/rpc_pipe.c
+> +++ b/net/sunrpc/rpc_pipe.c
+> @@ -1165,7 +1165,6 @@ static void rpc_kill_sb(struct super_block *sb)
+>  		goto out;
+>  	}
+>  	sn->pipefs_sb = NULL;
+> -	mutex_unlock(&sn->pipefs_sb_lock);
+>  	dprintk("RPC:       sending pipefs UMOUNT notification for net %p%s\n",
+>  		net, NET_NAME(net));
+>  	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+> @@ -1173,6 +1172,7 @@ static void rpc_kill_sb(struct super_block *sb)
+>  					   sb);
+>  	put_net(net);
+>  out:
+> +	mutex_unlock(&sn->pipefs_sb_lock);
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/Makefile | 56 ++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 31 insertions(+), 25 deletions(-)
+Is this safe to do after the put_net()?
 
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 1ba358b..49f0c7e 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -59,37 +59,43 @@ comma = ,
- # Note that GCC does not numerically define an architecture version
- # macro, but instead defines a whole series of macros which makes
- # testing for a specific architecture or later rather impossible.
--arch-$(CONFIG_CPU_32v7)		:=-D__LINUX_ARM_ARCH__=7 $(call cc-option,-march=armv7-a,-march=armv5t -Wa$(comma)-march=armv7-a)
--arch-$(CONFIG_CPU_32v6)		:=-D__LINUX_ARM_ARCH__=6 $(call cc-option,-march=armv6,-march=armv5t -Wa$(comma)-march=armv6)
-+arch-$(CONFIG_CPU_32v7)		=-D__LINUX_ARM_ARCH__=7 $(call cc-option,-march=armv7-a,-march=armv5t -Wa$(comma)-march=armv7-a)
-+arch-$(CONFIG_CPU_32v6)		=-D__LINUX_ARM_ARCH__=6 $(call cc-option,-march=armv6,-march=armv5t -Wa$(comma)-march=armv6)
- # Only override the compiler option if ARMv6. The ARMv6K extensions are
- # always available in ARMv7
- ifeq ($(CONFIG_CPU_32v6),y)
--arch-$(CONFIG_CPU_32v6K)	:=-D__LINUX_ARM_ARCH__=6 $(call cc-option,-march=armv6k,-march=armv5t -Wa$(comma)-march=armv6k)
-+arch-$(CONFIG_CPU_32v6K)	=-D__LINUX_ARM_ARCH__=6 $(call cc-option,-march=armv6k,-march=armv5t -Wa$(comma)-march=armv6k)
- endif
--arch-$(CONFIG_CPU_32v5)		:=-D__LINUX_ARM_ARCH__=5 $(call cc-option,-march=armv5te,-march=armv4t)
--arch-$(CONFIG_CPU_32v4T)	:=-D__LINUX_ARM_ARCH__=4 -march=armv4t
--arch-$(CONFIG_CPU_32v4)		:=-D__LINUX_ARM_ARCH__=4 -march=armv4
--arch-$(CONFIG_CPU_32v3)		:=-D__LINUX_ARM_ARCH__=3 -march=armv3
-+arch-$(CONFIG_CPU_32v5)		=-D__LINUX_ARM_ARCH__=5 $(call cc-option,-march=armv5te,-march=armv4t)
-+arch-$(CONFIG_CPU_32v4T)	=-D__LINUX_ARM_ARCH__=4 -march=armv4t
-+arch-$(CONFIG_CPU_32v4)		=-D__LINUX_ARM_ARCH__=4 -march=armv4
-+arch-$(CONFIG_CPU_32v3)		=-D__LINUX_ARM_ARCH__=3 -march=armv3
-+
-+# Evaluate arch cc-option calls now
-+arch-y := $(arch-y)
- 
- # This selects how we optimise for the processor.
--tune-$(CONFIG_CPU_ARM7TDMI)	:=-mtune=arm7tdmi
--tune-$(CONFIG_CPU_ARM720T)	:=-mtune=arm7tdmi
--tune-$(CONFIG_CPU_ARM740T)	:=-mtune=arm7tdmi
--tune-$(CONFIG_CPU_ARM9TDMI)	:=-mtune=arm9tdmi
--tune-$(CONFIG_CPU_ARM940T)	:=-mtune=arm9tdmi
--tune-$(CONFIG_CPU_ARM946E)	:=$(call cc-option,-mtune=arm9e,-mtune=arm9tdmi)
--tune-$(CONFIG_CPU_ARM920T)	:=-mtune=arm9tdmi
--tune-$(CONFIG_CPU_ARM922T)	:=-mtune=arm9tdmi
--tune-$(CONFIG_CPU_ARM925T)	:=-mtune=arm9tdmi
--tune-$(CONFIG_CPU_ARM926T)	:=-mtune=arm9tdmi
--tune-$(CONFIG_CPU_FA526)	:=-mtune=arm9tdmi
--tune-$(CONFIG_CPU_SA110)	:=-mtune=strongarm110
--tune-$(CONFIG_CPU_SA1100)	:=-mtune=strongarm1100
--tune-$(CONFIG_CPU_XSCALE)	:=$(call cc-option,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
--tune-$(CONFIG_CPU_XSC3)		:=$(call cc-option,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
--tune-$(CONFIG_CPU_FEROCEON)	:=$(call cc-option,-mtune=marvell-f,-mtune=xscale)
--tune-$(CONFIG_CPU_V6)		:=$(call cc-option,-mtune=arm1136j-s,-mtune=strongarm)
--tune-$(CONFIG_CPU_V6K)		:=$(call cc-option,-mtune=arm1136j-s,-mtune=strongarm)
-+tune-$(CONFIG_CPU_ARM7TDMI)	=-mtune=arm7tdmi
-+tune-$(CONFIG_CPU_ARM720T)	=-mtune=arm7tdmi
-+tune-$(CONFIG_CPU_ARM740T)	=-mtune=arm7tdmi
-+tune-$(CONFIG_CPU_ARM9TDMI)	=-mtune=arm9tdmi
-+tune-$(CONFIG_CPU_ARM940T)	=-mtune=arm9tdmi
-+tune-$(CONFIG_CPU_ARM946E)	=$(call cc-option,-mtune=arm9e,-mtune=arm9tdmi)
-+tune-$(CONFIG_CPU_ARM920T)	=-mtune=arm9tdmi
-+tune-$(CONFIG_CPU_ARM922T)	=-mtune=arm9tdmi
-+tune-$(CONFIG_CPU_ARM925T)	=-mtune=arm9tdmi
-+tune-$(CONFIG_CPU_ARM926T)	=-mtune=arm9tdmi
-+tune-$(CONFIG_CPU_FA526)	=-mtune=arm9tdmi
-+tune-$(CONFIG_CPU_SA110)	=-mtune=strongarm110
-+tune-$(CONFIG_CPU_SA1100)	=-mtune=strongarm1100
-+tune-$(CONFIG_CPU_XSCALE)	=$(call cc-option,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
-+tune-$(CONFIG_CPU_XSC3)		=$(call cc-option,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
-+tune-$(CONFIG_CPU_FEROCEON)	=$(call cc-option,-mtune=marvell-f,-mtune=xscale)
-+tune-$(CONFIG_CPU_V6)		=$(call cc-option,-mtune=arm1136j-s,-mtune=strongarm)
-+tune-$(CONFIG_CPU_V6K)		=$(call cc-option,-mtune=arm1136j-s,-mtune=strongarm)
-+
-+# Evaluate tune cc-option calls now
-+tune-y := $(tune-y)
- 
- ifeq ($(CONFIG_AEABI),y)
- CFLAGS_ABI	:=-mabi=aapcs-linux -mno-thumb-interwork
+>  	kill_litter_super(sb);
+>  }
+>  
+> 
+
+
 -- 
-1.8.3
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
