@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445Ab3FYSSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:18:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45296 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab3FYSSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:18:07 -0400
-Message-ID: <51C9DEC1.6030602@zytor.com>
-Date: Tue, 25 Jun 2013 11:17:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751469Ab3FYSUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:20:33 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56040 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab3FYSUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:20:31 -0400
+Date: Tue, 25 Jun 2013 19:20:21 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, hpa@linux.intel.com, tglx@linutronix.de,
+        matt.fleming@intel.com
+Subject: Re: [PATCH 3/4] arm: Add [U]EFI runtime services support
+Message-ID: <20130625182021.GA29955@srcf.ucam.org>
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
+ <1372183863-11333-4-git-send-email-leif.lindholm@linaro.org>
 MIME-Version: 1.0
-To: Mike Travis <travis@sgi.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com> <20130621185056.GA23473@kroah.com> <51C4C5F3.3050800@sgi.com> <CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com> <51C9D4ED.5070805@sgi.com>
-In-Reply-To: <51C9D4ED.5070805@sgi.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372183863-11333-4-git-send-email-leif.lindholm@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 10:35 AM, Mike Travis wrote:
+On Tue, Jun 25, 2013 at 07:11:02PM +0100, Leif Lindholm wrote:
+> This patch implements basic support for UEFI runtime services in the
+> ARM architecture - a requirement for using efibootmgr to read and update
+> the system boot configuration.
 > 
-> The two params that I couldn't figure out how to provide except via kernel
-> param option was the memory block size (128M or 2G) and the physical
-> address space per node.  The other 3 params can be automatically
-> setup by a script when the total system size is known.  As soon as we
-> verify on the 32TB system and surmise what will be needed for 64TB,
-> then those 3 params can probably disappear.
-> 
+> It also locates any presented SMBIOS configuration table and stores it
+> for potential later use by DMI.
 
-"Setup by script" is a no-go.  You *have* the total system size already,
-it is in the e820 tables (anything which isn't in e820 is hotplug, that
-automagically gets deferred.)
+This appears to duplicate code that's already duplicated between x86 and 
+ia64. We made a mistake there originally - let's not do it again. Having 
+this code in three places is inevitably going to lead to skew and missed 
+bugfixes.
 
-However, please consider Ingo's counterproposal of doing this via the
-buddy allocator, i.e. hugepages being broken on demand.  That is a
-*very* powerful model, although would require more infrastructure.
-
-	-hpa
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
