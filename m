@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab3FYPxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:53:48 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:38010 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab3FYPxq (ORCPT
+	id S1752607Ab3FYPzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:55:01 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:41017 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab3FYPy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:53:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <51C9B9AB.2010403@wwwdotorg.org>
-References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com>
-	<1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
-	<51BA3BC1.3090109@wwwdotorg.org>
-	<20130614091241.GA23745@ab42.lan>
-	<51C1F42E.5090107@wwwdotorg.org>
-	<51C1F82C.4020502@wwwdotorg.org>
-	<20130620115710.GB942@ab42.lan>
-	<51C4C2ED.5090505@wwwdotorg.org>
-	<CACRpkdZQ=G=K6g25gwGKfS1dCrDS35XepaOs38N-ymEuR0+x=g@mail.gmail.com>
-	<51C9B9AB.2010403@wwwdotorg.org>
-Date: Tue, 25 Jun 2013 17:53:45 +0200
-Message-ID: <CACRpkdYoK7x0RJH3eR-gCTT6cfCD2sas3E_O_j4ALS6gHoxw+A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Christian Ruppert <christian.ruppert@abilis.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
+	Tue, 25 Jun 2013 11:54:58 -0400
+X-IronPort-AV: E=Sophos;i="4.87,938,1363132800"; 
+   d="scan'208";a="31725955"
+Date: Tue, 25 Jun 2013 16:54:53 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Chen Gang <gang.chen@asianux.com>, Will Deacon <Will.Deacon@arm.com>,
+        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [Suggestion] arch: arm64: xen: "ln -s" the paravirt.h from
+ arm.
+In-Reply-To: <20130625132519.GA7222@arm.com>
+Message-ID: <alpine.DEB.2.02.1306251645260.4782@kaball.uk.xensource.com>
+References: <51C53C06.7050205@asianux.com> <51C81115.4070803@asianux.com> <51C81A39.5060909@asianux.com> <alpine.DEB.2.02.1306241639260.4782@kaball.uk.xensource.com> <alpine.DEB.2.02.1306241747360.4782@kaball.uk.xensource.com>
+ <20130625132519.GA7222@arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 5:39 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/25/2013 09:28 AM, Linus Walleij wrote:
+On Tue, 25 Jun 2013, Catalin Marinas wrote:
+> On Mon, Jun 24, 2013 at 05:50:46PM +0100, Stefano Stabellini wrote:
+> > On Mon, 24 Jun 2013, Stefano Stabellini wrote:
+> > > On Mon, 24 Jun 2013, Chen Gang wrote:
+> > > > Hello Maintainers:
+> > > > 
+> > > > if 'CONFIG_XEN'
+> > > > 
+> > > >   CC      arch/arm64/xen/../../arm/xen/enlighten.o
+> > > > arch/arm64/xen/../../arm/xen/enlighten.c:19:26: fatal error: asm/paravirt.h: No such file or directory
+> > > > 
+> > > > The related .config file for next-20130624 is in attachment.
+> > > > 
+> > > > 
+> > > > If "ln -s ../../../arm/include/asm/paravirt.h paravirt.h", it can pass
+> > > > compiling, but I do not know how to make a patch for it ("ln -s ..."),
+> > > > Do we have another more suitable ways for it (or another fixing ways) ?
+> > > > 
+> > > > Welcome any suggestions or completions.
+> > > 
+> > > The problem is caused by:
+> > > 
+> > > commit 3a885582a366caf868b0782041c44854ff4c3568
+> > > Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > Date:   Wed May 29 10:56:34 2013 +0000
+> > > 
+> > >     xen/arm: account for stolen ticks
+> > > 
+> > > that is in my tree for linux-next (even though I have not received any
+> > > replies from the ARM maintainers so I don't know when and if it is going
+> > > to go upstream).
+> > > 
+> > > I think that the best thing to do would be to add a couple of ifdef
+> > > CONFIG_PARAVIRT in arch/arm/xen/enlighten.c. I'll add them to my tree.
+> > 
+> > Actually now that we have XEN support under arm64, we can just introduce the
+> > same pv_time_op struct and paravirt header that this patch
+> > 
+> > http://marc.info/?l=linux-arm-kernel&m=136992435301890&w=2
+> > 
+> > is introducing under arm.
+> 
+> I'm not sure whether I replied to your Xen pull request but the patches
+> have been merged into my 'upstream' branch on git.kernel.org and they'll
+> be going in for 3.11-rc1.
 
->> But I do seem to recall some endless discussions about this,
->> I think we need to agree to disagree.
->
-> But the whole point of a subsystem is to provide clear common semantics
-> across all the different drivers that comprise it.
+Great, thanks!
 
-I guess we simply disagree on how deeply these semantics
-should go.
 
-> IMHO, it's a great
-> failing of pinctrl that it doesn't clearly define its data model at all,
-> and just leaves individual driver authors to use groups in whatever
-> random fashion they want.
+> > diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> > index 19c1cde..47bd26b 100644
+> > --- a/arch/arm64/Kconfig
+> > +++ b/arch/arm64/Kconfig
+> > @@ -207,6 +207,25 @@ config FORCE_MAX_ZONEORDER
+> >  	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
+> >  	default "11"
+> >  
+> > +config PARAVIRT
+> > +	bool "Enable paravirtualization code"
+> > +	---help---
+> > +	  This changes the kernel so it can modify itself when it is run
+> > +	  under a hypervisor, potentially improving performance significantly
+> > +	  over full virtualization.
+> > +
+> > +config PARAVIRT_TIME_ACCOUNTING
+> > +	bool "Paravirtual steal time accounting"
+> > +	select PARAVIRT
+> > +	default n
+> 
+> No need for "default n".
+> 
+> If you want, I can apply this patch on top (or send me another pull
+> request but don't rebase your original Xen branch which I merged).
 
-I do not think any driver is using it in a "random" fashion.
-I would agree if the authors just stuck any pins into some
-random groups named after colors or rock bands.
-
-Obviously there is a mental model of the uses somewhere
-behind the code.
-
-> We really should have different entries in the
-> pinctrl data model for these different concepts (real HW groups, and
-> logical/virtual/SW groups) since they're entirely different things with
-> different semantics.
-
-That's what the tongue-in-cheek patch tried to convey, in some
-kind of humorous manner. I was just trying to lighten up the
-discussion a bit.
-
-> Perhaps it's simplest if I just step out of pinctrl and let it exist as
-> it is.
-
-No not at all. Your work on defining and reviewing the pinctrl
-drivers and DT bindings is much appreciated. However all
-comittee work tend to lead to a few compromises. I don't
-think this one compromise is especially hard to live with.
-
-Yours,
-Linus Walleij
+Thanks, but unfortunately the corresponding arm part of this patch
+(linked above) didn't manage to get enough reviews and acks.
+I might as well send another iteration of "CONFIG_PARAVIRT and stolen
+ticks accounting" with this change in it.
