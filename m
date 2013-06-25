@@ -1,137 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab3FYNTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 09:19:50 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:45373 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab3FYNTt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 09:19:49 -0400
-From: "Zhang Yi" <wetpzy@gmail.com>
-To: "'Darren Hart'" <dvhart@linux.intel.com>
-Cc: <linux-kernel@vger.kernel.org>, "'Mel Gorman'" <mgorman@suse.de>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>, <zhang.yi20@zte.com.cn>
-References: <000101ce5174$1962bac0$4c283040$@com>	 <20130515142035.GD11497@suse.de>	 <OF1450163D.E6FBE6A2-ON48257B6D.00048ADD-48257B6D.00070A58@zte.com.cn>	 <519436B7.2050101@linux.intel.com>	 <OF7A810108.AA9BB6C1-ON48257B6D.000A1424-48257B6D.000B1EC6@zte.com.cn> <1372107737.7914.27.camel@envy.home>
-In-Reply-To: <1372107737.7914.27.camel@envy.home>
-Subject: RE: Re: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
-Date: Tue, 25 Jun 2013 21:19:31 +0800
-Message-ID: <000101ce71a6$a83c5880$f8b50980$@com>
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac5xHiEu46cnRIH5QbiaXih9jspA6gAh5kCQ
-Content-Language: zh-cn
+	id S1751716Ab3FYNWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 09:22:00 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:60572 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750830Ab3FYNV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 09:21:59 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: James Hogan <james.hogan@imgtec.com>
+Subject: Re: [PATCH 3/4] pinctrl: remove slew-rate parameter from tz1090
+Date: Tue, 25 Jun 2013 15:21:55 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+References: <201306251455.01540.heiko@sntech.de> <201306251456.36499.heiko@sntech.de> <51C99581.2010403@imgtec.com>
+In-Reply-To: <51C99581.2010403@imgtec.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201306251521.55634.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The futex-keys of processes share futex determined by page-offset,
-mapping-host, and mapping-index of the user space address. User
-appications using hugepage for futex may lead to futex-key conflict.
+Am Dienstag, 25. Juni 2013, 15:05:05 schrieb James Hogan:
+> Hi Heiko,
+> 
+> On 25/06/13 13:56, Heiko Stübner wrote:
+> > As the binding for slew-rate is under discussion and seems to need
+> > more tought it will get removed for now, so it doesn't get an offical
+> 
+> s/tought/thought/
+> s/offical/official/
+> 
+> > release.
+> > 
+> > Therefore remove it again from the only current user, tz1090.
+> > 
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > ---
+> 
+> <snip>
+> 
+> > diff --git a/drivers/pinctrl/pinctrl-tz1090-pdc.c
+> > b/drivers/pinctrl/pinctrl-tz1090-pdc.c index 12e4808..d4f12cc 100644
+> > --- a/drivers/pinctrl/pinctrl-tz1090-pdc.c
+> > +++ b/drivers/pinctrl/pinctrl-tz1090-pdc.c
+> > @@ -809,11 +809,6 @@ static int tz1090_pdc_pinconf_group_reg(struct
+> > pinctrl_dev *pctldev,
+> > 
+> >  		*width = 1;
+> >  		*map = tz1090_pdc_boolean_map;
+> >  		break;
+> > 
+> > -	case PIN_CONFIG_SLEW_RATE:
+> > -		*shift = REG_GPIO_CONTROL2_PDC_SR_S;
+> > -		*width = 1;
+> > -		*map = tz1090_pdc_boolean_map;
+> > -		break;
+> > 
+> >  	case PIN_CONFIG_DRIVE_STRENGTH:
+> >  		*shift = REG_GPIO_CONTROL2_PDC_DR_S;
+> >  		*width = 2;
+> > 
+> > diff --git a/drivers/pinctrl/pinctrl-tz1090.c
+> > b/drivers/pinctrl/pinctrl-tz1090.c index 02ff3a2..4edae08 100644
+> > --- a/drivers/pinctrl/pinctrl-tz1090.c
+> > +++ b/drivers/pinctrl/pinctrl-tz1090.c
+> > @@ -1834,11 +1834,6 @@ static int tz1090_pinconf_group_reg(struct
+> > pinctrl_dev *pctldev,
+> > 
+> >  		*width = 1;
+> >  		*map = tz1090_boolean_map;
+> >  		break;
+> > 
+> > -	case PIN_CONFIG_SLEW_RATE:
+> > -		*reg = REG_PINCTRL_SR;
+> > -		*width = 1;
+> > -		*map = tz1090_boolean_map;
+> > -		break;
+> > 
+> >  	case PIN_CONFIG_DRIVE_STRENGTH:
+> >  		*reg = REG_PINCTRL_DR;
+> >  		*width = 2;
+> 
+> I don't see the harm in keeping the handling of PIN_CONFIG_SLEW_RATE,
+> since PIN_CONFIG_SLEW_RATE is still present and you only seem to be
+> removing the device tree bindings (which is the only important bit from
+> the DT ABI point of view).
 
-Assume there are two or more futexes in diffrent normal pages of the
-hugepage, and each futex has the same offset in its normal page,
-causing all the futexes have the same futex-key.
+I'm partial to this :-)
 
-This patch adds the normal page index in the compound page into
-the pgoff of futex-key.
+My thoughts were that this code would never be reached when the parsing was 
+removed and to not cause confusion to the driver when an acceptable binding 
+was found for slew-rate.
 
-Steps to reproduce the bug:
-1. The 1st thread map a file of hugetlbfs, and use the return address
-as the 1st mutex's address, and use the return address with PAGE_SIZE
-added as the 2nd mutex's address.
-2. The 1st thread initialize the two mutexes with pshared attribute,
-and lock the two mutexes.
-3. The 1st thread create the 2nd thread, and the 2nd thread block on
-the 1st mutex.
-4. The 1st thread create the 3rd thread, and the 3rd thread block on
-the 2nd mutex.
-5. The 1st thread unlock the 2nd mutex, the 3rd thread cannot take
-the 2nd mutex, and may block forever.
-
-Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
-Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
-
-diff -uprN linux-3.10-rc7.org/include/linux/hugetlb.h linux-3.10-rc7/include/linux/hugetlb.h
---- linux-3.10-rc7.org/include/linux/hugetlb.h	2013-06-22 19:47:31.000000000 +0000
-+++ linux-3.10-rc7/include/linux/hugetlb.h	2013-06-25 09:40:06.256556000 +0000
-@@ -358,6 +358,17 @@ static inline int hstate_index(struct hs
- 	return h - hstates;
- }
-
-+pgoff_t __basepage_index(struct page *page);
-+
-+/* Return page->index in PAGE_SIZE units */
-+static inline pgoff_t basepage_index(struct page *page)
-+{
-+	if (!PageCompound(page))
-+		return page->index;
-+
-+	return __basepage_index(page);
-+}
-+
- #else	/* CONFIG_HUGETLB_PAGE */
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-@@ -378,6 +389,11 @@ static inline unsigned int pages_per_hug
- }
- #define hstate_index_to_shift(index) 0
- #define hstate_index(h) 0
-+
-+static inline pgoff_t basepage_index(struct page *page)
-+{
-+	return page->index;
-+}
- #endif	/* CONFIG_HUGETLB_PAGE */
-
- #endif /* _LINUX_HUGETLB_H */
-diff -uprN linux-3.10-rc7.org/kernel/futex.c linux-3.10-rc7/kernel/futex.c
---- linux-3.10-rc7.org/kernel/futex.c	2013-06-22 19:47:31.000000000 +0000
-+++ linux-3.10-rc7/kernel/futex.c	2013-06-25 09:35:59.615425000 +0000
-@@ -61,6 +61,7 @@
- #include <linux/nsproxy.h>
- #include <linux/ptrace.h>
- #include <linux/sched/rt.h>
-+#include <linux/hugetlb.h>
-
- #include <asm/futex.h>
-
-@@ -365,7 +366,7 @@ again:
- 	} else {
- 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
- 		key->shared.inode = page_head->mapping->host;
--		key->shared.pgoff = page_head->index;
-+		key->shared.pgoff = basepage_index(page);
- 	}
-
- 	get_futex_key_refs(key);
-diff -uprN linux-3.10-rc7.org/mm/hugetlb.c linux-3.10-rc7/mm/hugetlb.c
---- linux-3.10-rc7.org/mm/hugetlb.c	2013-06-25 09:38:53.435151000 +0000
-+++ linux-3.10-rc7/mm/hugetlb.c	2013-06-25 09:39:30.375701000 +0000
-@@ -690,6 +690,23 @@ int PageHuge(struct page *page)
- }
- EXPORT_SYMBOL_GPL(PageHuge);
-
-+pgoff_t __basepage_index(struct page *page)
-+{
-+	struct page *page_head = compound_head(page);
-+	pgoff_t index = page_index(page_head);
-+	unsigned long compound_idx;
-+
-+	if (!PageHuge(page_head))
-+		return page_index(page);
-+
-+	if (compound_order(page_head) >= MAX_ORDER)
-+		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
-+	else
-+		compound_idx = page - page_head;
-+
-+	return (index << compound_order(page_head)) + compound_idx;
-+}
-+
- static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
- {
- 	struct page *page;
+But it of course also doesn't hurt to stay in.
 
 
+Heiko
