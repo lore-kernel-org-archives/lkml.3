@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab3FYTMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:12:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40843 "EHLO
+	id S1752091Ab3FYTNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:13:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab3FYSdf (ORCPT
+	with ESMTP id S1751913Ab3FYSdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:35 -0400
+	Tue, 25 Jun 2013 14:33:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [ 16/95] parisc: implement irq stacks - part 2 (v2)
-Date: Tue, 25 Jun 2013 11:32:03 -0700
-Message-Id: <20130625182155.487598533@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
+Subject: [ 12/95] parisc: implement irq stacks
+Date: Tue, 25 Jun 2013 11:31:59 -0700
+Message-Id: <20130625182155.028449581@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,267 +28,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Helge Deller <deller@gmx.de>
 
-commit 416821d3d68164909b2cbcf398e4ba0797f5f8a2 upstream.
+commit 200c880420a2c02a0899120ce52d801fad705b90 upstream.
 
-This patch fixes few build issues which were introduced with the last
-irq stack patch, e.g. the combination of stack overflow check and irq
-stack.
+Default kernel stack size on parisc is 16k.  During tests we found that the
+kernel stack can easily grow beyond 13k, which leaves 3k left for irq
+processing.
 
-Furthermore we now do proper locking and change the irq bh handler
-to use the irq stack as well.
+This patch adds the possibility to activate an additional stack of 16k per CPU
+which is being used during irq processing.  This implementation does not yet
+uses this irq stack for the irq bh handler.
 
-In /proc/interrupts one now can monitor how huge the irq stack has grown
-and how often it was preferred over the kernel stack.
-
-IRQ stacks are now enabled by default just to make sure that we not
-overflow the kernel stack by accident.
+The assembler code for call_on_stack was heavily cleaned up by John
+David Anglin.
 
 Signed-off-by: Helge Deller <deller@gmx.de>
+CC: John David Anglin <dave.anglin@bell.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/Kconfig                 |    2 
- arch/parisc/include/asm/hardirq.h   |    9 +++
- arch/parisc/include/asm/processor.h |    3 +
- arch/parisc/kernel/irq.c            |  103 ++++++++++++++++++++++++++++++------
- arch/parisc/mm/init.c               |    4 -
- 5 files changed, 103 insertions(+), 18 deletions(-)
+ arch/parisc/Kconfig                 |    8 +++++++
+ arch/parisc/include/asm/processor.h |   19 ++++++++++++++--
+ arch/parisc/kernel/entry.S          |   41 ++++++++++++++++++++++++++++++++++++
+ arch/parisc/kernel/irq.c            |   28 ++++++++++++++++++++++++
+ 4 files changed, 94 insertions(+), 2 deletions(-)
 
 --- a/arch/parisc/Kconfig
 +++ b/arch/parisc/Kconfig
-@@ -243,7 +243,7 @@ config SMP
+@@ -241,6 +241,14 @@ config SMP
  
- config IRQSTACKS
- 	bool "Use separate kernel stacks when processing interrupts"
--	default n
-+	default y
- 	help
- 	  If you say Y here the kernel will use separate kernel stacks
- 	  for handling hard and soft interrupts.  This can help avoid
---- a/arch/parisc/include/asm/hardirq.h
-+++ b/arch/parisc/include/asm/hardirq.h
-@@ -11,10 +11,18 @@
- #include <linux/threads.h>
- #include <linux/irq.h>
+ 	  If you don't know what to do here, say N.
  
-+#ifdef CONFIG_IRQSTACKS
-+#define __ARCH_HAS_DO_SOFTIRQ
-+#endif
++config IRQSTACKS
++	bool "Use separate kernel stacks when processing interrupts"
++	default n
++	help
++	  If you say Y here the kernel will use separate kernel stacks
++	  for handling hard and soft interrupts.  This can help avoid
++	  overflowing the process kernel stacks.
 +
- typedef struct {
- 	unsigned int __softirq_pending;
- #ifdef CONFIG_DEBUG_STACKOVERFLOW
- 	unsigned int kernel_stack_usage;
-+#ifdef CONFIG_IRQSTACKS
-+	unsigned int irq_stack_usage;
-+	unsigned int irq_stack_counter;
-+#endif
- #endif
- #ifdef CONFIG_SMP
- 	unsigned int irq_resched_count;
-@@ -28,6 +36,7 @@ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpust
- #define __ARCH_IRQ_STAT
- #define __IRQ_STAT(cpu, member) (irq_stat[cpu].member)
- #define inc_irq_stat(member)	this_cpu_inc(irq_stat.member)
-+#define __inc_irq_stat(member)	__this_cpu_inc(irq_stat.member)
- #define local_softirq_pending()	this_cpu_read(irq_stat.__softirq_pending)
- 
- #define __ARCH_SET_SOFTIRQ_PENDING
+ config HOTPLUG_CPU
+ 	bool
+ 	default y if SMP
 --- a/arch/parisc/include/asm/processor.h
 +++ b/arch/parisc/include/asm/processor.h
-@@ -63,10 +63,13 @@
-  */
- #ifdef __KERNEL__
+@@ -20,8 +20,6 @@
  
-+#include <linux/spinlock_types.h>
+ #endif /* __ASSEMBLY__ */
+ 
+-#define KERNEL_STACK_SIZE 	(4*PAGE_SIZE)
+-
+ /*
+  * Default implementation of macro that returns current
+  * instruction pointer ("program counter").
+@@ -61,6 +59,23 @@
+ #ifndef __ASSEMBLY__
+ 
+ /*
++ * IRQ STACK - used for irq handler
++ */
++#ifdef __KERNEL__
 +
- #define IRQ_STACK_SIZE      (4096 << 2) /* 16k irq stack size */
++#define IRQ_STACK_SIZE      (4096 << 2) /* 16k irq stack size */
++
++union irq_stack_union {
++	unsigned long stack[IRQ_STACK_SIZE/sizeof(unsigned long)];
++};
++
++DECLARE_PER_CPU(union irq_stack_union, irq_stack_union);
++
++void call_on_stack(unsigned long p1, void *func, unsigned long new_stack);
++
++#endif /* __KERNEL__ */
++
++/*
+  * Data detected about CPUs at boot time which is the same for all CPU's.
+  * HP boxes are SMP - ie identical processors.
+  *
+--- a/arch/parisc/kernel/entry.S
++++ b/arch/parisc/kernel/entry.S
+@@ -2013,6 +2013,47 @@ ftrace_stub:
+ ENDPROC(return_to_handler)
+ #endif	/* CONFIG_FUNCTION_TRACER */
  
- union irq_stack_union {
- 	unsigned long stack[IRQ_STACK_SIZE/sizeof(unsigned long)];
-+	raw_spinlock_t lock;
- };
++#ifdef CONFIG_IRQSTACKS
++/* void call_on_stack(unsigned long param1, void *func,
++		      unsigned long new_stack) */
++ENTRY(call_on_stack)
++	copy	%sp, %r1
++
++	/* Regarding the HPPA calling conventions for function pointers,
++	   we assume the PIC register is not changed across call.  For
++	   CONFIG_64BIT, the argument pointer is left to point at the
++	   argument region allocated for the call to call_on_stack. */
++# ifdef CONFIG_64BIT
++	/* Switch to new stack.  We allocate two 128 byte frames.  */
++	ldo	256(%arg2), %sp
++	/* Save previous stack pointer and return pointer in frame marker */
++	STREG	%rp, -144(%sp)
++	/* Calls always use function descriptor */
++	LDREG	16(%arg1), %arg1
++	bve,l	(%arg1), %rp
++	STREG	%r1, -136(%sp)
++	LDREG	-144(%sp), %rp
++	bve	(%rp)
++	LDREG	-136(%sp), %sp
++# else
++	/* Switch to new stack.  We allocate two 64 byte frames.  */
++	ldo	128(%arg2), %sp
++	/* Save previous stack pointer and return pointer in frame marker */
++	STREG	%r1, -68(%sp)
++	STREG	%rp, -84(%sp)
++	/* Calls use function descriptor if PLABEL bit is set */
++	bb,>=,n	%arg1, 30, 1f
++	depwi	0,31,2, %arg1
++	LDREG	0(%arg1), %arg1
++1:
++	be,l	0(%sr4,%arg1), %sr0, %r31
++	copy	%r31, %rp
++	LDREG	-84(%sp), %rp
++	bv	(%rp)
++	LDREG	-68(%sp), %sp
++# endif /* CONFIG_64BIT */
++ENDPROC(call_on_stack)
++#endif /* CONFIG_IRQSTACKS */
  
- DECLARE_PER_CPU(union irq_stack_union, irq_stack_union);
+ get_register:
+ 	/*
 --- a/arch/parisc/kernel/irq.c
 +++ b/arch/parisc/kernel/irq.c
-@@ -166,22 +166,32 @@ int arch_show_interrupts(struct seq_file
- 	seq_printf(p, "%*s: ", prec, "STK");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->kernel_stack_usage);
--	seq_printf(p, "  Kernel stack usage\n");
-+	seq_puts(p, "  Kernel stack usage\n");
-+# ifdef CONFIG_IRQSTACKS
-+	seq_printf(p, "%*s: ", prec, "IST");
-+	for_each_online_cpu(j)
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_stack_usage);
-+	seq_puts(p, "  Interrupt stack usage\n");
-+	seq_printf(p, "%*s: ", prec, "ISC");
-+	for_each_online_cpu(j)
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_stack_counter);
-+	seq_puts(p, "  Interrupt stack usage counter\n");
-+# endif
- #endif
- #ifdef CONFIG_SMP
- 	seq_printf(p, "%*s: ", prec, "RES");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_resched_count);
--	seq_printf(p, "  Rescheduling interrupts\n");
-+	seq_puts(p, "  Rescheduling interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "CAL");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
--	seq_printf(p, "  Function call interrupts\n");
-+	seq_puts(p, "  Function call interrupts\n");
- #endif
- 	seq_printf(p, "%*s: ", prec, "TLB");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
--	seq_printf(p, "  TLB shootdowns\n");
-+	seq_puts(p, "  TLB shootdowns\n");
- 	return 0;
- }
- 
-@@ -378,6 +388,7 @@ static inline void stack_overflow_check(
- 	unsigned long sp = regs->gr[30];
- 	unsigned long stack_usage;
- 	unsigned int *last_usage;
-+	int cpu = smp_processor_id();
- 
- 	/* if sr7 != 0, we interrupted a userspace process which we do not want
- 	 * to check for stack overflow. We will only check the kernel stack. */
-@@ -386,7 +397,31 @@ static inline void stack_overflow_check(
- 
- 	/* calculate kernel stack usage */
- 	stack_usage = sp - stack_start;
--	last_usage = &per_cpu(irq_stat.kernel_stack_usage, smp_processor_id());
-+#ifdef CONFIG_IRQSTACKS
-+	if (likely(stack_usage <= THREAD_SIZE))
-+		goto check_kernel_stack; /* found kernel stack */
-+
-+	/* check irq stack usage */
-+	stack_start = (unsigned long) &per_cpu(irq_stack_union, cpu).stack;
-+	stack_usage = sp - stack_start;
-+
-+	last_usage = &per_cpu(irq_stat.irq_stack_usage, cpu);
-+	if (unlikely(stack_usage > *last_usage))
-+		*last_usage = stack_usage;
-+
-+	if (likely(stack_usage < (IRQ_STACK_SIZE - STACK_MARGIN)))
-+		return;
-+
-+	pr_emerg("stackcheck: %s will most likely overflow irq stack "
-+		 "(sp:%lx, stk bottom-top:%lx-%lx)\n",
-+		current->comm, sp, stack_start, stack_start + IRQ_STACK_SIZE);
-+	goto panic_check;
-+
-+check_kernel_stack:
-+#endif
-+
-+	/* check kernel stack usage */
-+	last_usage = &per_cpu(irq_stat.kernel_stack_usage, cpu);
- 
- 	if (unlikely(stack_usage > *last_usage))
- 		*last_usage = stack_usage;
-@@ -398,31 +433,69 @@ static inline void stack_overflow_check(
- 		 "(sp:%lx, stk bottom-top:%lx-%lx)\n",
- 		current->comm, sp, stack_start, stack_start + THREAD_SIZE);
- 
-+#ifdef CONFIG_IRQSTACKS
-+panic_check:
-+#endif
- 	if (sysctl_panic_on_stackoverflow)
- 		panic("low stack detected by irq handler - check messages\n");
+@@ -358,6 +358,29 @@ static inline void stack_overflow_check(
  #endif
  }
  
- #ifdef CONFIG_IRQSTACKS
--DEFINE_PER_CPU(union irq_stack_union, irq_stack_union);
-+DEFINE_PER_CPU(union irq_stack_union, irq_stack_union) = {
-+		.lock = __RAW_SPIN_LOCK_UNLOCKED((irq_stack_union).lock)
-+	};
- 
- static void execute_on_irq_stack(void *func, unsigned long param1)
- {
--	unsigned long *irq_stack_start;
-+	union irq_stack_union *union_ptr;
- 	unsigned long irq_stack;
--	int cpu = smp_processor_id();
-+	raw_spinlock_t *irq_stack_in_use;
- 
--	irq_stack_start = &per_cpu(irq_stack_union, cpu).stack[0];
--	irq_stack = (unsigned long) irq_stack_start;
--	irq_stack = ALIGN(irq_stack, 16); /* align for stack frame usage */
--
--	BUG_ON(*irq_stack_start); /* report bug if we were called recursive. */
--	*irq_stack_start = 1;
-+	union_ptr = &per_cpu(irq_stack_union, smp_processor_id());
-+	irq_stack = (unsigned long) &union_ptr->stack;
-+	irq_stack = ALIGN(irq_stack + sizeof(irq_stack_union.lock),
-+			 64); /* align for stack frame usage */
++#ifdef CONFIG_IRQSTACKS
++DEFINE_PER_CPU(union irq_stack_union, irq_stack_union);
 +
-+	/* We may be called recursive. If we are already using the irq stack,
-+	 * just continue to use it. Use spinlocks to serialize
-+	 * the irq stack usage.
-+	 */
-+	irq_stack_in_use = &union_ptr->lock;
-+	if (!raw_spin_trylock(irq_stack_in_use)) {
-+		void (*direct_call)(unsigned long p1) = func;
-+
-+		/* We are using the IRQ stack already.
-+		 * Do direct call on current stack. */
-+		direct_call(param1);
-+		return;
-+	}
- 
- 	/* This is where we switch to the IRQ stack. */
- 	call_on_stack(param1, func, irq_stack);
- 
--	*irq_stack_start = 0;
-+	__inc_irq_stat(irq_stack_counter);
-+
-+	/* free up irq stack usage. */
-+	do_raw_spin_unlock(irq_stack_in_use);
-+}
-+
-+asmlinkage void do_softirq(void)
++static void execute_on_irq_stack(void *func, unsigned long param1)
 +{
-+	__u32 pending;
-+	unsigned long flags;
++	unsigned long *irq_stack_start;
++	unsigned long irq_stack;
++	int cpu = smp_processor_id();
 +
-+	if (in_interrupt())
-+		return;
++	irq_stack_start = &per_cpu(irq_stack_union, cpu).stack[0];
++	irq_stack = (unsigned long) irq_stack_start;
++	irq_stack = ALIGN(irq_stack, 16); /* align for stack frame usage */
 +
-+	local_irq_save(flags);
++	BUG_ON(*irq_stack_start); /* report bug if we were called recursive. */
++	*irq_stack_start = 1;
 +
-+	pending = local_softirq_pending();
++	/* This is where we switch to the IRQ stack. */
++	call_on_stack(param1, func, irq_stack);
 +
-+	if (pending)
-+		execute_on_irq_stack(__do_softirq, 0);
++	*irq_stack_start = 0;
++}
++#endif /* CONFIG_IRQSTACKS */
 +
-+	local_irq_restore(flags);
- }
- #endif /* CONFIG_IRQSTACKS */
- 
---- a/arch/parisc/mm/init.c
-+++ b/arch/parisc/mm/init.c
-@@ -1077,7 +1077,7 @@ void flush_tlb_all(void)
+ /* ONLY called from entry.S:intr_extint() */
+ void do_cpu_irq_mask(struct pt_regs *regs)
  {
- 	int do_recycle;
+@@ -393,7 +416,12 @@ void do_cpu_irq_mask(struct pt_regs *reg
+ 	}
+ #endif
+ 	stack_overflow_check(regs);
++
++#ifdef CONFIG_IRQSTACKS
++	execute_on_irq_stack(&generic_handle_irq, irq);
++#else
+ 	generic_handle_irq(irq);
++#endif /* CONFIG_IRQSTACKS */
  
--	inc_irq_stat(irq_tlb_count);
-+	__inc_irq_stat(irq_tlb_count);
- 	do_recycle = 0;
- 	spin_lock(&sid_lock);
- 	if (dirty_space_ids > RECYCLE_THRESHOLD) {
-@@ -1098,7 +1098,7 @@ void flush_tlb_all(void)
- #else
- void flush_tlb_all(void)
- {
--	inc_irq_stat(irq_tlb_count);
-+	__inc_irq_stat(irq_tlb_count);
- 	spin_lock(&sid_lock);
- 	flush_tlb_all_local(NULL);
- 	recycle_sids();
+  out:
+ 	irq_exit();
 
 
