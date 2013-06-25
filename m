@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab3FYPix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:38:53 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51260 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab3FYPiv (ORCPT
+	id S1752755Ab3FYPjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:39:12 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:54345 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752665Ab3FYPjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:38:51 -0400
-Date: Tue, 25 Jun 2013 16:38:43 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, alsa-devel@alsa-project.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Padmavathi Venna <padma.v@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Message-ID: <20130625153843.GF27646@sirena.org.uk>
-References: <1371933764-24875-1-git-send-email-tomasz.figa@gmail.com>
- <20130625102818.GA27646@sirena.org.uk>
- <6520269.XdaOpEg0Ud@amdc1227>
+	Tue, 25 Jun 2013 11:39:10 -0400
+Date: Tue, 25 Jun 2013 11:39:06 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org
+Subject: [CFP] Tracing Summit 2013, October 23rd, 2013, Edinburgh, UK
+Message-ID: <20130625153906.GC7304@Krystal>
+Reply-To: submission@tracingsummit.org
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qPhbOctOI3h5o759"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6520269.XdaOpEg0Ud@amdc1227>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH v2 00/12] ARM: s3c64xx: Let amba-pl08x driver handle
- DMA
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---qPhbOctOI3h5o759
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We are organizing a tracing summit taking place October 23rd in
+Edinburgh, UK, co-located with LinuxCon Europe. Our objective is to
+gather people involved in development and users of tracing tools and
+trace analysis tools to allow discussing the latest developments, allow
+users to express their needs, and generally ensure that developers and
+end users understand each other.
 
-On Tue, Jun 25, 2013 at 01:22:20PM +0200, Tomasz Figa wrote:
-> On Tuesday 25 of June 2013 11:28:18 Mark Brown wrote:
+If you are interested to present, please submit a proposal to
+submission@tracingsummit.org before August 21, 2013, at 23:59 EST.
 
-> > On my non-DT s3c64xx system I get this when trying to use SPI for the
-> > first time:
+We are welcoming presentations from both end users and developers, on
+topics covering, but not limited to:
 
-> Could you clarify first time? Does it work on further retries?
+ * Trace collection and extraction,
+ * Trace filtering,
+ * Trace aggregation,
+ * Trace formats,
+ * Tracing multi-core systems,
+ * Trace abstraction,
+ * Trace modeling,
+ * Automated trace analysis (e.g. dependency analysis),
+ * Tracing large clusters and distributed systems,
+ * Hardware-level tracing (e.g. DSP, GPU, bare-metal),
+ * Trace visualisation,
+ * Interaction between debugging and tracing,
+ * Tracing remote control,
+ * Analysis of large trace datasets,
+ * Cloud trace collection and analysis,
+ * Integration between trace tools,
+ * Live tracing & monitoring.
 
-No, the system appears to lock up fairly solidly - I suspect poor error
-handling in the SPI driver.
+Those can cover recently available technologies, ongoing work, and yet
+non-existing technologies (which are compellingly interesting to
+end-users).
 
-> > [    1.739385] s3c64xx-spi s3c6410-spi.0: Failed to get RX DMA channel
-> > [    1.743437] spi_master spi0: failed to prepare transfer hardware
+There will be a single track, containing presentations between 30 and 45
+minutes per subject with discussion.
 
-> > though I haven't yet tried your clock patches (there were some conficts
-> > that I didn't get round to picking up yet).
+For those interested to attend, registration to LinuxCon Europe 2013 or
+Registration to CloudOpen Europe 2013 is required in order to register
+to the Tracing Summit 2013. See the Tracing Summit 2013 wiki at
+http://www.tracingsummit.org/wiki/TracingSummit2013 for details.
 
-> This shouldn't really matter, as long as the pl080 drivers probes=20
-> correctly.
+Thank you,
 
-Indeed, I was wondering if it was failing to probe due to not getting
-its clocks though since that's another area you've been actively working
-on.
+Dominique Toupin & Mathieu Desnoyers
 
---qPhbOctOI3h5o759
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRybmAAAoJELSic+t+oim913QP/juMt3TkCGQjjxdjvuMq43df
-qSp98jXUvmvlCtiGXei/uV3RcIj98fYj5y7KP8CqSqMVoqbdURSTZojkFEOilp1c
-Rd6fhfUJLQ5h5xFBfdSYqBnphXp/DqX7z754SeAgH21xjD8w4fDTqxObAqLQ+6B7
-G27WceaFLTkQfpiGekL1KZWIT6N/f20bcfkiVGU8ek20xytwF+5GMrB/FF1apCvA
-bK6a69QUAkHnPNBIr3XA53G+Yz9xmvNkC8fH0Ygii9qEyQ8io2oWCfrZ3MErUq5n
-Bi5jxNX1+ILF4sdXyhr6Ugz4KzZ4EuuHkollwLSD96QTT0rV27NGRH3L31unfWIN
-VaLAKPMPMLybN6nwUIdjw3J58oV85AdbJvwTrsGC4NIv0hyvPs52NVcxya3Ykynm
-sG+vJquEPzgyA+CdE6ql10oET7OCvCcxqgwodZjn2VVv+iOzT8hZkrp/yZv/N+BE
-QzWq+43OUV5kORwRCvJ3mldwlsmbTYPFL8PMdXNj4CeV8Yw5arxfBDrTrd/TtUYw
-Z6dF5AClNYmrPd0DcVdS/IllVGMXBHA26l8MbokYjCzdkDzpKKXxW5/exI+Mn1LR
-pDezJ3H3tRmu4CV11NWOOELin0taPewrxpBw/K9qR+RtzAVHhe4jESUn1zMjSTCM
-hErhd6oowRnGVSeK55pW
-=CVWt
------END PGP SIGNATURE-----
-
---qPhbOctOI3h5o759--
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
