@@ -1,60 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab3FYDa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 23:30:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:26288 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab3FYDa4 (ORCPT
+	id S1752411Ab3FYDbz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 23:31:55 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:56672 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3FYDbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 23:30:56 -0400
-Message-ID: <51C90ED1.5070209@huawei.com>
-Date: Tue, 25 Jun 2013 11:30:25 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 24 Jun 2013 23:31:53 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2 v3] tracing/uprobes: Support soft-mode disabling
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1372102237-8757-26-git-send-email-paul.gortmaker@windriver.com>
+References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
+	<1372102237-8757-26-git-send-email-paul.gortmaker@windriver.com>
+Date: Tue, 25 Jun 2013 09:01:53 +0530
+Message-ID: <CAKohponpsJBqbj_8u8MUiu7sCEpeg5bcztWJAZdn9uxL5taVZQ@mail.gmail.com>
+Subject: Re: [PATCH 25/32] cpufreq: delete __cpuinit usage from all cpufreq files
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support soft-mode disabling on uprobe-based dynamic events.
-Soft-disabling is just ignoring recording if the soft disabled
-flag is set.
+On 25 June 2013 01:00, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwe@huawei.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- kernel/trace/trace_uprobe.c |    3 +++
- 1 file changed, 3 insertions(+)
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index f8c2860..5687d28 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1900,8 +1900,8 @@ no_policy:
+>  }
+>  EXPORT_SYMBOL(cpufreq_update_policy);
+>
+> -static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+> -                                       unsigned long action, void *hcpu)
+> +static int cpufreq_cpu_callback(struct notifier_block *nfb,
+> +                               unsigned long action, void *hcpu)
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index dbbb4a9..d2da3ea 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -530,6 +530,9 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+You were not required to change second line here and also don't
+change its indentation level. Check this everywhere.
 
- 	WARN_ON(call != ftrace_file->event_call);
+>  {
+>         unsigned int cpu = (unsigned long)hcpu;
+>         struct device *dev;
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index fb65dec..ff50b0c 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -306,7 +306,7 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
+>  }
+>
+>  static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
+> -               unsigned long val, void *data)
+> +                                      unsigned long val, void *data)
 
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-+		return;
-+
- 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
- 	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
- 						call->event.type,
--- 
-1.7.9.7
+See.. unnecessary change.
 
+>  {
+>         struct cpufreq_freqs *freq = data;
+>         struct cpufreq_stats *stat;
+> @@ -341,7 +341,7 @@ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
+>         return 0;
+>  }
+>
+> -static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+> +static int cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+>                                                unsigned long action,
+>                                                void *hcpu)
+>  {
+> diff --git a/drivers/cpufreq/dbx500-cpufreq.c b/drivers/cpufreq/dbx500-cpufreq.c
+> index 6ec6539..8c005ac 100644
+> --- a/drivers/cpufreq/dbx500-cpufreq.c
+> +++ b/drivers/cpufreq/dbx500-cpufreq.c
+> @@ -82,7 +82,7 @@ static unsigned int dbx500_cpufreq_getspeed(unsigned int cpu)
+>         return freq_table[i].frequency;
+>  }
+>
+> -static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
+> +static int dbx500_cpufreq_init(struct cpufreq_policy *policy)
+>  {
+>         int res;
+>
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 07f2840..b012d76 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -617,7 +617,7 @@ static int intel_pstate_verify_policy(struct cpufreq_policy *policy)
+>         return 0;
+>  }
+>
+> -static int __cpuinit intel_pstate_cpu_exit(struct cpufreq_policy *policy)
+> +static int intel_pstate_cpu_exit(struct cpufreq_policy *policy)
+>  {
+>         int cpu = policy->cpu;
+>
+> @@ -627,7 +627,7 @@ static int __cpuinit intel_pstate_cpu_exit(struct cpufreq_policy *policy)
+>         return 0;
+>  }
+>
+> -static int __cpuinit intel_pstate_cpu_init(struct cpufreq_policy *policy)
+> +static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+>  {
+>         int rc, min_pstate, max_pstate;
+>         struct cpudata *cpu;
+> diff --git a/drivers/cpufreq/longhaul.c b/drivers/cpufreq/longhaul.c
+> index b6a0a7a..8c49261 100644
+> --- a/drivers/cpufreq/longhaul.c
+> +++ b/drivers/cpufreq/longhaul.c
+> @@ -422,7 +422,7 @@ static int guess_fsb(int mult)
+>  }
+>
+>
+> -static int __cpuinit longhaul_get_ranges(void)
+> +static int longhaul_get_ranges(void)
+>  {
+>         unsigned int i, j, k = 0;
+>         unsigned int ratio;
+> @@ -526,7 +526,7 @@ static int __cpuinit longhaul_get_ranges(void)
+>  }
+>
+>
+> -static void __cpuinit longhaul_setup_voltagescaling(void)
+> +static void longhaul_setup_voltagescaling(void)
+>  {
+>         union msr_longhaul longhaul;
+>         struct mV_pos minvid, maxvid, vid;
+> @@ -780,7 +780,7 @@ static int longhaul_setup_southbridge(void)
+>         return 0;
+>  }
+>
+> -static int __cpuinit longhaul_cpu_init(struct cpufreq_policy *policy)
+> +static int longhaul_cpu_init(struct cpufreq_policy *policy)
+>  {
+>         struct cpuinfo_x86 *c = &cpu_data(0);
+>         char *cpuname = NULL;
+> diff --git a/drivers/cpufreq/longhaul.h b/drivers/cpufreq/longhaul.h
+> index e2dc436..1928b92 100644
+> --- a/drivers/cpufreq/longhaul.h
+> +++ b/drivers/cpufreq/longhaul.h
+> @@ -56,7 +56,7 @@ union msr_longhaul {
+>  /*
+>   * VIA C3 Samuel 1  & Samuel 2 (stepping 0)
+>   */
+> -static const int __cpuinitconst samuel1_mults[16] = {
+> +static const int samuel1_mults[16] = {
+>         -1, /* 0000 -> RESERVED */
+>         30, /* 0001 ->  3.0x */
+>         40, /* 0010 ->  4.0x */
+> @@ -75,7 +75,7 @@ static const int __cpuinitconst samuel1_mults[16] = {
+>         -1, /* 1111 -> RESERVED */
+>  };
+>
+> -static const int __cpuinitconst samuel1_eblcr[16] = {
+> +static const int samuel1_eblcr[16] = {
+>         50, /* 0000 -> RESERVED */
+>         30, /* 0001 ->  3.0x */
+>         40, /* 0010 ->  4.0x */
+> @@ -97,7 +97,7 @@ static const int __cpuinitconst samuel1_eblcr[16] = {
+>  /*
+>   * VIA C3 Samuel2 Stepping 1->15
+>   */
+> -static const int __cpuinitconst samuel2_eblcr[16] = {
+> +static const int samuel2_eblcr[16] = {
+>         50,  /* 0000 ->  5.0x */
+>         30,  /* 0001 ->  3.0x */
+>         40,  /* 0010 ->  4.0x */
+> @@ -119,7 +119,7 @@ static const int __cpuinitconst samuel2_eblcr[16] = {
+>  /*
+>   * VIA C3 Ezra
+>   */
+> -static const int __cpuinitconst ezra_mults[16] = {
+> +static const int ezra_mults[16] = {
+>         100, /* 0000 -> 10.0x */
+>         30,  /* 0001 ->  3.0x */
+>         40,  /* 0010 ->  4.0x */
+> @@ -138,7 +138,7 @@ static const int __cpuinitconst ezra_mults[16] = {
+>         120, /* 1111 -> 12.0x */
+>  };
+>
+> -static const int __cpuinitconst ezra_eblcr[16] = {
+> +static const int ezra_eblcr[16] = {
+>         50,  /* 0000 ->  5.0x */
+>         30,  /* 0001 ->  3.0x */
+>         40,  /* 0010 ->  4.0x */
+> @@ -160,7 +160,7 @@ static const int __cpuinitconst ezra_eblcr[16] = {
+>  /*
+>   * VIA C3 (Ezra-T) [C5M].
+>   */
+> -static const int __cpuinitconst ezrat_mults[32] = {
+> +static const int ezrat_mults[32] = {
+>         100, /* 0000 -> 10.0x */
+>         30,  /* 0001 ->  3.0x */
+>         40,  /* 0010 ->  4.0x */
+> @@ -196,7 +196,7 @@ static const int __cpuinitconst ezrat_mults[32] = {
+>         -1,  /* 1111 -> RESERVED (12.0x) */
+>  };
+>
+> -static const int __cpuinitconst ezrat_eblcr[32] = {
+> +static const int ezrat_eblcr[32] = {
+>         50,  /* 0000 ->  5.0x */
+>         30,  /* 0001 ->  3.0x */
+>         40,  /* 0010 ->  4.0x */
+> @@ -235,7 +235,7 @@ static const int __cpuinitconst ezrat_eblcr[32] = {
+>  /*
+>   * VIA C3 Nehemiah */
+>
+> -static const int __cpuinitconst nehemiah_mults[32] = {
+> +static const int nehemiah_mults[32] = {
+>         100, /* 0000 -> 10.0x */
+>         -1, /* 0001 -> 16.0x */
+>         40,  /* 0010 ->  4.0x */
+> @@ -270,7 +270,7 @@ static const int __cpuinitconst nehemiah_mults[32] = {
+>         -1, /* 1111 -> 12.0x */
+>  };
+>
+> -static const int __cpuinitconst nehemiah_eblcr[32] = {
+> +static const int nehemiah_eblcr[32] = {
+>         50,  /* 0000 ->  5.0x */
+>         160, /* 0001 -> 16.0x */
+>         40,  /* 0010 ->  4.0x */
+> @@ -315,7 +315,7 @@ struct mV_pos {
+>         unsigned short pos;
+>  };
+>
+> -static const struct mV_pos __cpuinitconst vrm85_mV[32] = {
+> +static const struct mV_pos vrm85_mV[32] = {
+>         {1250, 8},      {1200, 6},      {1150, 4},      {1100, 2},
+>         {1050, 0},      {1800, 30},     {1750, 28},     {1700, 26},
+>         {1650, 24},     {1600, 22},     {1550, 20},     {1500, 18},
+> @@ -326,14 +326,14 @@ static const struct mV_pos __cpuinitconst vrm85_mV[32] = {
+>         {1475, 17},     {1425, 15},     {1375, 13},     {1325, 11}
+>  };
+>
+> -static const unsigned char __cpuinitconst mV_vrm85[32] = {
+> +static const unsigned char mV_vrm85[32] = {
+>         0x04,   0x14,   0x03,   0x13,   0x02,   0x12,   0x01,   0x11,
+>         0x00,   0x10,   0x0f,   0x1f,   0x0e,   0x1e,   0x0d,   0x1d,
+>         0x0c,   0x1c,   0x0b,   0x1b,   0x0a,   0x1a,   0x09,   0x19,
+>         0x08,   0x18,   0x07,   0x17,   0x06,   0x16,   0x05,   0x15
+>  };
+>
+> -static const struct mV_pos __cpuinitconst mobilevrm_mV[32] = {
+> +static const struct mV_pos mobilevrm_mV[32] = {
+>         {1750, 31},     {1700, 30},     {1650, 29},     {1600, 28},
+>         {1550, 27},     {1500, 26},     {1450, 25},     {1400, 24},
+>         {1350, 23},     {1300, 22},     {1250, 21},     {1200, 20},
+> @@ -344,7 +344,7 @@ static const struct mV_pos __cpuinitconst mobilevrm_mV[32] = {
+>         {675, 3},       {650, 2},       {625, 1},       {600, 0}
+>  };
+>
+> -static const unsigned char __cpuinitconst mV_mobilevrm[32] = {
+> +static const unsigned char mV_mobilevrm[32] = {
+>         0x1f,   0x1e,   0x1d,   0x1c,   0x1b,   0x1a,   0x19,   0x18,
+>         0x17,   0x16,   0x15,   0x14,   0x13,   0x12,   0x11,   0x10,
+>         0x0f,   0x0e,   0x0d,   0x0c,   0x0b,   0x0a,   0x09,   0x08,
+> diff --git a/drivers/cpufreq/longrun.c b/drivers/cpufreq/longrun.c
+> index 8bc9f5f..7ad792d 100644
+> --- a/drivers/cpufreq/longrun.c
+> +++ b/drivers/cpufreq/longrun.c
+> @@ -33,7 +33,7 @@ static unsigned int longrun_low_freq, longrun_high_freq;
+>   * Reads the current LongRun policy by access to MSR_TMTA_LONGRUN_FLAGS
+>   * and MSR_TMTA_LONGRUN_CTRL
+>   */
+> -static void __cpuinit longrun_get_policy(struct cpufreq_policy *policy)
+> +static void longrun_get_policy(struct cpufreq_policy *policy)
+>  {
+>         u32 msr_lo, msr_hi;
+>
+> @@ -163,8 +163,8 @@ static unsigned int longrun_get(unsigned int cpu)
+>   * TMTA rules:
+>   * performance_pctg = (target_freq - low_freq)/(high_freq - low_freq)
+>   */
+> -static int __cpuinit longrun_determine_freqs(unsigned int *low_freq,
+> -                                                     unsigned int *high_freq)
+> +static int longrun_determine_freqs(unsigned int *low_freq,
+> +                                  unsigned int *high_freq)
 
+again
+
+>  {
+>         u32 msr_lo, msr_hi;
+>         u32 save_lo, save_hi;
+> @@ -256,7 +256,7 @@ static int __cpuinit longrun_determine_freqs(unsigned int *low_freq,
+>  }
+>
+>
+> -static int __cpuinit longrun_cpu_init(struct cpufreq_policy *policy)
+> +static int longrun_cpu_init(struct cpufreq_policy *policy)
+>  {
+>         int result = 0;
+>
+> diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
+> index 0279d18..4b81d3e 100644
+> --- a/drivers/cpufreq/omap-cpufreq.c
+> +++ b/drivers/cpufreq/omap-cpufreq.c
+> @@ -165,7 +165,7 @@ static inline void freq_table_free(void)
+>                 opp_free_cpufreq_table(mpu_dev, &freq_table);
+>  }
+>
+> -static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
+> +static int omap_cpu_init(struct cpufreq_policy *policy)
+>  {
+>         int result = 0;
+>
+> diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
+> index b9f80b7..9558708 100644
+> --- a/drivers/cpufreq/powernow-k7.c
+> +++ b/drivers/cpufreq/powernow-k7.c
+> @@ -563,7 +563,7 @@ static int powernow_verify(struct cpufreq_policy *policy)
+>   * We will then get the same kind of behaviour already tested under
+>   * the "well-known" other OS.
+>   */
+> -static int __cpuinit fixup_sgtc(void)
+> +static int fixup_sgtc(void)
+>  {
+>         unsigned int sgtc;
+>         unsigned int m;
+> @@ -597,7 +597,7 @@ static unsigned int powernow_get(unsigned int cpu)
+>  }
+>
+>
+> -static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
+> +static int acer_cpufreq_pst(const struct dmi_system_id *d)
+>  {
+>         printk(KERN_WARNING PFX
+>                 "%s laptop with broken PST tables in BIOS detected.\n",
+> @@ -615,7 +615,7 @@ static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
+>   * A BIOS update is all that can save them.
+>   * Mention this, and disable cpufreq.
+>   */
+> -static struct dmi_system_id __cpuinitdata powernow_dmi_table[] = {
+> +static struct dmi_system_id powernow_dmi_table[] = {
+>         {
+>                 .callback = acer_cpufreq_pst,
+>                 .ident = "Acer Aspire",
+> @@ -627,7 +627,7 @@ static struct dmi_system_id __cpuinitdata powernow_dmi_table[] = {
+>         { }
+>  };
+>
+> -static int __cpuinit powernow_cpu_init(struct cpufreq_policy *policy)
+> +static int powernow_cpu_init(struct cpufreq_policy *policy)
+>  {
+>         union msr_fidvidstatus fidvidstatus;
+>         int result;
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index 51343a1..c71907f 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -1069,7 +1069,7 @@ struct init_on_cpu {
+>         int rc;
+>  };
+>
+> -static void __cpuinit powernowk8_cpu_init_on_cpu(void *_init_on_cpu)
+> +static void powernowk8_cpu_init_on_cpu(void *_init_on_cpu)
+>  {
+>         struct init_on_cpu *init_on_cpu = _init_on_cpu;
+>
+> @@ -1096,7 +1096,7 @@ static const char missing_pss_msg[] =
+>         FW_BUG PFX "If that doesn't help, try upgrading your BIOS.\n";
+>
+>  /* per CPU init entry point to the driver */
+> -static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
+> +static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+>  {
+>         struct powernow_k8_data *data;
+>         struct init_on_cpu init_on_cpu;
+> @@ -1263,7 +1263,7 @@ static void __request_acpi_cpufreq(void)
+>  }
+>
+>  /* driver entry point for init */
+> -static int __cpuinit powernowk8_init(void)
+> +static int powernowk8_init(void)
+>  {
+>         unsigned int i, supported_cpus = 0;
+>         int ret;
+
+Fix these and add my
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+Probably this can go through Rafael's pm tree. So, you can take it
+out of this series if you want.
