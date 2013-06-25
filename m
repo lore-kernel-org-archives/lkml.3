@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3FYJEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 05:04:09 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33310 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab3FYJEF (ORCPT
+	id S1751816Ab3FYJFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 05:05:17 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51305 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab3FYJFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 05:04:05 -0400
-Subject: [PATCH v2] pstore: Fail to unlink if a driver has not defined
- pstore_erase
-To: tony.luck@intel.com, linux-kernel@vger.kernel.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: jkenisto@linux.vnet.ibm.com, ananth@in.ibm.com, mahesh@linux.vnet.ibm.com,
-        cbouatmailru@gmail.com, ccross@android.com, keescook@chromium.org
-Date: Tue, 25 Jun 2013 14:33:56 +0530
-Message-ID: <20130625090253.26584.65072.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062508-5564-0000-0000-000008815226
+	Tue, 25 Jun 2013 05:05:15 -0400
+Message-ID: <1372151074.3981.21.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v2 1/6] misc: sram: fix error path in sram_probe
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Tue, 25 Jun 2013 11:04:34 +0200
+In-Reply-To: <201306251046.38993.heiko@sntech.de>
+References: <201306251046.04873.heiko@sntech.de>
+	 <201306251046.38993.heiko@sntech.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pstore_erase is used to erase the record from the persistent store.
-So if a driver has not defined pstore_erase callback return
--EPERM instead of unlinking a file as deleting the file without
-erasing its record in persistent store will give a wrong impression
-to customers.
+Hi Heiko,
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
----
-Changes from v1:
-	Fix error return value
+Am Dienstag, den 25.06.2013, 10:46 +0200 schrieb Heiko Stübner:
+> The pool is created thru devm_gen_pool_create, so the call to
+> gen_pool_destroy is not necessary.
+> Instead the sram-clock must be turned off again if it exists.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+>  drivers/misc/sram.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
+> index d87cc91..afe66571 100644
+> --- a/drivers/misc/sram.c
+> +++ b/drivers/misc/sram.c
+> @@ -68,7 +68,8 @@ static int sram_probe(struct platform_device *pdev)
+>  	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
+>  				res->start, size, -1);
+>  	if (ret < 0) {
+> -		gen_pool_destroy(sram->pool);
 
- fs/pstore/inode.c |    2 ++
- 1 file changed, 2 insertions(+)
+Right, thanks.
 
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index e4bcb2c..bfd95bf 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -178,6 +178,8 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
- 	if (p->psi->erase)
- 		p->psi->erase(p->type, p->id, p->count,
- 			      dentry->d_inode->i_ctime, p->psi);
-+	else
-+		return -EPERM;
- 
- 	return simple_unlink(dir, dentry);
- }
+> +		if (sram->clk)
+> +			clk_disable_unprepare(sram->clk);
+>  		return ret;
+>  	}
+>  
+
+In light of the following patch, I'd rather move the
+clk_prepare_enable() call after gen_pool_add_virt() and its error path.
+
+regards
+Philipp
 
