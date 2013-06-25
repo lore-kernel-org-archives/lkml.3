@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab3FYNPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 09:15:40 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:37368 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab3FYNPj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 09:15:39 -0400
+	id S1751595Ab3FYNRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 09:17:37 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:25467 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab3FYNRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 09:17:36 -0400
+Message-ID: <51C99823.1060503@imgtec.com>
+Date: Tue, 25 Jun 2013 14:16:19 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <201306251456.12150.heiko@sntech.de>
-References: <201306251455.01540.heiko@sntech.de>
-	<201306251456.12150.heiko@sntech.de>
-Date: Tue, 25 Jun 2013 15:15:38 +0200
-Message-ID: <CACRpkdb8C=hR3JP9cpo4Hvj176AwGJ16M9o9Wd40AjTfP+9aEA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] pinctrl: set unit for debounce time pinconfig to usec
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 0/4] Fix more issues with generic pinconf bindings
+References: <201306251455.01540.heiko@sntech.de>
+In-Reply-To: <201306251455.01540.heiko@sntech.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_06_25_14_17_35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 2:56 PM, Heiko Stübner <heiko@sntech.de> wrote:
+On 25/06/13 13:55, Heiko StÃ¼bner wrote:
+> As Stephen Warren pointed out, some pinconf bindings had deficits
+> either in documentation or in the whole thought process.
+> 
+> Therefore this series tries to fix these issues by improving
+> documentation and removing the real controversial bindings for now.
+> 
+> Of the changed pinconf bindings only the slew-rate had an acutal
+> current user (since yesterday). James I hope it's ok to simply
+> remove the slew-rate handling from the tz1090 driver until we can
+> handle it correctly in dt.
 
-> Currently the debounce time pinconfig option uses an unspecified
-> "time units" unit. As pinconfig options should use SI units and a
-> real unit is also necessary for generic dt bindings, change it
-> to usec. Currently no driver is using the generic pinconfig option
-> for this, so the unit change is safe to do.
->
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Other than my comment about patch 3 (which since it's the only case I
+don't mind too much, it can easily be added back again in the future):
 
-Patch applied.
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
 
-Yours,
-Linus Walleij
+Cheers
+James
+
