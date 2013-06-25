@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab3FYIDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:03:43 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:13760 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab3FYIDj (ORCPT
+	id S1752122Ab3FYID7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:03:59 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59000 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab3FYIDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:03:39 -0400
-X-IronPort-AV: E=Sophos;i="4.87,934,1363132800"; 
-   d="scan'208";a="6017013"
-Message-ID: <51C94ED7.30006@citrix.com>
-Date: Tue, 25 Jun 2013 10:03:35 +0200
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 25 Jun 2013 04:03:54 -0400
+Date: Tue, 25 Jun 2013 13:33:36 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, pjt@google.com, mingo@kernel.org,
+        kamalesh@linux.vnet.ibm.com
+Subject: [PATCH] sched/debug: Add load-tracking statistics to task
+Message-ID: <20130625080336.GA20175@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/4] xen-blkback: check the number of iovecs before
- allocating a bios
-References: <1371812216-17093-4-git-send-email-roger.pau@citrix.com> <1371887957-18301-1-git-send-email-roger.pau@citrix.com> <20130624132841.GA21144@phenom.dumpdata.com>
-In-Reply-To: <20130624132841.GA21144@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062507-5816-0000-0000-0000089DA165
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/06/13 15:28, Konrad Rzeszutek Wilk wrote:
-> On Sat, Jun 22, 2013 at 09:59:17AM +0200, Roger Pau Monne wrote:
->> With the introduction of indirect segments we can receive requests
->> with a number of segments bigger than the maximum number of allowed
->> iovecs in a bios, so make sure that blkback doesn't try to allocate a
->> bios with more iovecs than BIO_MAX_PAGES
-> 
-> Shouldn't we just gate the feature-indirect-descriptor value to
-> take this into account?
-> 
-> What happens if the nseg is > BIO_MAX_PAGES? Do we "lose" the request
-> for the remaining segments?
+At present we print per-entity load-tracking statistics for
+cfs_rq of cgroups/runqueues. Given that per task statistics
+is maintained, it can be used to know the contribution made
+by the task to its parenting cfs_rq level.
 
-No, we just allocate several bios in order to send the request to the
-underlying device.
+This patch adds per-task load-tracking statistics to
+/proc/<PID>/sched.
+
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+---
+ kernel/sched/debug.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index d1c0c81..375225b 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -567,6 +567,12 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+ 		   "nr_involuntary_switches", (long long)p->nivcsw);
+
+ 	P(se.load.weight);
++#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++	P(se.avg.runnable_avg_sum);
++	P(se.avg.runnable_avg_period);
++	P(se.avg.load_avg_contrib);
++	P(se.avg.decay_count);
++#endif
+ 	P(policy);
+ 	P(prio);
+ #undef PN
+--
+1.7.11.6
+
