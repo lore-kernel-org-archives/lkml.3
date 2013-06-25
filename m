@@ -1,92 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab3FYVaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:30:46 -0400
-Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:41774 "EHLO
-	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab3FYVap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:30:45 -0400
-Message-ID: <1372195837.8189.42.camel@scapa>
-Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
-From: Yves-Alexis Perez <corsac@debian.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
-        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
-        Henrique de Moraes Holschuh <hmh@debian.org>
-Date: Tue, 25 Jun 2013 23:30:37 +0200
-In-Reply-To: <20130625211415.GA2899@srcf.ucam.org>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-	 <1371937599.17761.19.camel@scapa> <20130625160848.GA27123@srcf.ucam.org>
-	 <1372193037.8189.24.camel@scapa> <20130625205430.GA2438@srcf.ucam.org>
-	 <1372194611.8189.31.camel@scapa> <20130625211415.GA2899@srcf.ucam.org>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-iYRDbqWaQgPY60HgG8kx"
-X-Mailer: Evolution 3.8.2-1 
-Mime-Version: 1.0
+	id S1751756Ab3FYVbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:31:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab3FYVbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 17:31:14 -0400
+Date: Tue, 25 Jun 2013 22:50:05 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Joe Lawrence <Joe.Lawrence@stratus.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] PCI: avoid NULL deref in alloc_pcie_link_state
+Message-ID: <20130625205005.GA1716@hpx.cz>
+References: <1371668174-32115-1-git-send-email-rkrcmar@redhat.com>
+ <CAErSpo7O2YUUq-Ninu+BdmnrDGcU_h5=h=v1MBCoLorSDZW=Ow@mail.gmail.com>
+ <20130625112348.GA13722@redhat.com>
+ <CAErSpo7sH_TsN73LZWRFgO+RqAhzgdiTXR86xJ7Ojmno6QTY5w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAErSpo7sH_TsN73LZWRFgO+RqAhzgdiTXR86xJ7Ojmno6QTY5w@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013-06-25 11:17-0600, Bjorn Helgaas:
+> On Tue, Jun 25, 2013 at 5:23 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > On Mon, Jun 24, 2013 at 07:38:45PM -0600, Bjorn Helgaas wrote:
+> >> [+cc Michael, Alex, Isaku]
+> >>
+> >> On Wed, Jun 19, 2013 at 12:56 PM, Radim Krčmář <rkrcmar@redhat.com> wrote:
+> >> > PCIe switch upstream port can be connected directly to the PCIe root bus
+> >> > in QEMU; ASPM does not expect this topology and dereferences NULL pointer
+> >> > when initializing.
+> >> >
+> >> > I have not confirmed this can happen on real hardware, but it is presented
+> >> > as a feature in QEMU, so there is no reason to panic if we can recover.
+> >>
+> >> This doesn't seem like a valid hardware topology to me.  If this *can*
+> >> occur on real hardware, we should fix it in Linux.  If not, maybe QEMU
+> >> should be changed to disallow it.
+> >
+> > I don't think it's a spec compliant topology either.
+> >
+> > Anything connected to an RC is either an integrated endpoint
+> > or a root port.
+> > There's no way to have an upstream port that is also
+> > an integrated endpoint or a root port - these are distinct
+> > device types.
+> >
+> > So I don't think Linux needs to support it.
+> >
+> > Having said that, there's all kind of broken hardware
+> > out there - crashing is not a friendly way to tell users
+> > that their hardware is not spec compliant.
+> > Maybe linux can print a friendly warning and ignore
+> > this port?
+> 
+> Indeed, that would be nicer.  I booted Win7 on the same config, and it
+> came up fine.  It did complain that it couldn't start the PCI-to-PCI
+> bridge driver on 00:03.0, the upstream port.
 
---=-iYRDbqWaQgPY60HgG8kx
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+True, would something like
 
-On mar., 2013-06-25 at 22:14 +0100, Matthew Garrett wrote:
-> On Tue, Jun 25, 2013 at 11:10:11PM +0200, Yves-Alexis Perez wrote:
-> > On mar., 2013-06-25 at 21:54 +0100, Matthew Garrett wrote:
-> > > I agree, we should standardise the behaviour. And the only way we can=
-=20
-> > > standardise the behaviour is to leave it up to userspace.
-> > >=20
-> > It's pretty clear we disagree on this and that my opinion won't really
-> > matter here. But letting userspace handle that just means broken
-> > functionality for those who have the chance (apparently) to have an ACP=
-I
-> > backlight interface.
->=20
-> Which, as we've already established, you don't - Lenovo broke it. Your=
-=20
-> Thinkpad claims to have 100 available levels, and most of them don't=20
-> work. The kernel has no way of knowing which levels work and which=20
-> don't, so leaving this up to the kernel won't actually fix your system=
-=20
-> either.
+  printk(KERN_WARNING "pcie: %s connected directly to root bus[complex?]:"
+                      " aspm disabled\n", dev_name(pdev));
 
-I was referring to =E2=80=9Cstandardize the behaviour by leaving up to
-userspace=E2=80=9D. A lot of thinkpads (for example) (all the pre-windows 8
-ones) have a perfectly working ACPI backlight interface.
+be enough?
 
-Also, if the kernel has no way of knowing which levels work, I fail to
-see how userspace can do better.
+> I'd like it if Linux could similarly tolerate that.  But since this is
+> a relatively low-priority issue, I'm going to hold out for a more
+> straightforward solution.  Checking for a null
+> "pdev->bus->parent->self" pointer is not very obvious.  I think we can
+> probably come up with a more direct check that reads better and
+> possibly even detects the issue at the upstream port, not the
+> downstream port.
 
-I understand that switching to intel_backlight instead of acpi_video0
-follows what Windows 8 recommends but for me it looks orthogonal to the
-fact ACPI methods now have some awkward (Lenovo) or broken (Dell). I
-mean, it's not the first time firmware people break some kernel
-behavior. I know it's usually not easy to contact them, but shouldn't
-those methods be fixed, instead of somehow blindly switching to graphic
-drivers?
---=20
-Yves-Alexis
+The check could be in pcie_aspm_init_link_state, where a "strange" VIA
+chipset is already being detected and using "pci_is_root_bus()" instead
+of "->self" is probably clearer as well.
 
---=-iYRDbqWaQgPY60HgG8kx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+  	/* QEMU can connect upstream port directly to the root complex */
+  	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM &&
+  	    !pci_is_root_bus(pdev->bus->parent))
+  		return;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+If we were to check for the, even worse, downstream<->root complex,
+it would be "!pci_is_root_bus(pdev->bus)".
 
-iQEcBAABCAAGBQJRygv9AAoJEG3bU/KmdcClmbkH/3YF65kIl72TTk+5m3EbkYMP
-ICKVC4ag5Sb0J/GVzSjo5o2TdDUG3pJUNCeqpsA7z9ummsApzHBuxSNh+IAwF0bK
-/2rTagXSB1zM7/TiQDNNg/vA3jZuJQYNS/CKYAQ34CLtigJwU6XDehUU0+DWkglS
-2dMAGimCl/OrmCtL2y3C2c+cNdQL4EtdBKU8iA5OGKiUVcJ0uS8FzTdE+UNbh7O7
-7V39weyumzFveZHq70hrIzOK/bO+6bOk0qW4oCBhlmAw76l/ZyymaBtxaTVw7i2M
-4BHSqCtHsz8WTc5bE/PTPVhkJWXc4+g66LL8W5++RLPpxF01mS04knMconaRAuI=
-=8vBi
------END PGP SIGNATURE-----
+Upstream port is a bit neglected in our aspm implementation, so
+refactoring might be required to get detection in it.
 
---=-iYRDbqWaQgPY60HgG8kx--
+> I opened a bugzilla for this issue:
+> https://bugzilla.kernel.org/show_bug.cgi?id=60111
+> 
+> Radim, can you please attach a complete dmesg log showing the oops,
+> i.e., console output with "ignore_loglevel" and lspci -vv output (have
+> to use your patch so it boots, I guess)?  I tried to reproduce it and
+> I know the problem is there, but I haven't quite found the right
+> recipe yet.
+
+Sorry, I have not mentioned that device must be connected to the switch,
+so "pci_scan_slot" does not end with "nr == 0", skipping the link setup.
+I connected the root disk; whole command for qemu-kvm 1.5:
+
+  qemu-kvm -m 2048 -M q35 -serial stdio -vnc :0 \
+  	-device x3130-upstream,bus=pcie.0,id=upstream \
+  	-device xio3130-downstream,bus=upstream,id=downstream,chassis=1 \
+  	-drive file=fc19.img,id=disk1,if=none,format=raw,media=disk,cache=none \
+  	-device virtio-blk-pci,bus=downstream,id=virtio-disk1,drive=disk1
+
+"pcie_aspm=off" should do exactly the same as patch.
+
+Both logs attached in bugzilla.
