@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab3FYSrV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:47:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43549 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753634Ab3FYSrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:47:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="260027999"
-Date: Tue, 25 Jun 2013 21:51:11 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 5/6] PCI: acpiphp: look _RMV method a bit deeper in the
- hierarhcy
-Message-ID: <20130625185111.GL9294@intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
- <CAHp75Vd2Torku6zy2awLHRTed9mx94a6RAu+oHJYb+rVgZKBDQ@mail.gmail.com>
- <20130625183123.GJ9294@intel.com>
- <CAHp75Vc8BauuBJcfqBzu_+6nUwEC-uD3z_RF5gT-3YhV0fjTqw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHp75Vc8BauuBJcfqBzu_+6nUwEC-uD3z_RF5gT-3YhV0fjTqw@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753688Ab3FYSro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:47:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41259 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab3FYSf7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:35:59 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Petre <daniel.petre@rcs-rds.ro>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 14/27] ip_tunnel: fix kernel panic with icmp_dest_unreach
+Date: Tue, 25 Jun 2013 11:35:33 -0700
+Message-Id: <20130625183519.310606948@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
+References: <20130625183517.651770593@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 09:31:52PM +0300, Andy Shevchenko wrote:
-> On Tue, Jun 25, 2013 at 9:31 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > On Tue, Jun 25, 2013 at 09:15:47PM +0300, Andy Shevchenko wrote:
-> >> On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
-> >> <mika.westerberg@linux.intel.com> wrote:
-> 
-> []
-> 
-> >> > +static acpi_status pcihp_evaluate_rmv(acpi_handle handle, u32 lvl,
-> >> > +                                     void *context, void **return_not_used)
-> >> > +{
-> >> > +       unsigned long long *removable = context;
-> >> > +       unsigned long long value;
-> >> > +       acpi_status status;
-> >> > +
-> >> > +       status = acpi_evaluate_integer(handle, "_RMV", NULL, &value);
-> >> > +       if (ACPI_SUCCESS(status) && value) {
-> >>
-> >> So, there is a chance the caller gets back uninitialized *context.
-> >> Let's assume that is by design.
-> >>
-> >> > +               *removable = value;
-> >> > +               return AE_CTRL_TERMINATE;
-> >> > +       }
-> >> > +       return AE_OK;
-> >> > +}
-> >>
-> >>
-> >> > +static bool pcihp_is_removable(acpi_handle handle, size_t depth)
-> >> > +{
-> >> > +       unsigned long long removable = 0;
-> >> > +       acpi_status status;
-> >> > +
-> >> > +       status = pcihp_evaluate_rmv(handle, 0, &removable, NULL);
-> >> > +       if ((status == AE_CTRL_TERMINATE) && removable)
-> >>
-> >> Here you already have removable not equal zero.
-> >
-> > Hmm, removable is initialized to zero just few lines above... Did I miss
-> > something obvious?
-> 
-> Yes, that's correct, however, you already did this check when you call
-> evaluate_rmv. Thus, second check '&& removable' is not needed.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Ah, right. Got it now :-)
+------------------
 
-I think it is better to remove the first value check from the
-pcihp_evaluate_rmv() and keep the check here.
+From: Eric Dumazet <edumazet@google.com>
 
-I'll fix that in the next revision as well.
+[ Upstream commit a622260254ee481747cceaaa8609985b29a31565 ]
+
+Daniel Petre reported crashes in icmp_dst_unreach() with following call
+graph:
+
+Daniel found a similar problem mentioned in
+ http://lkml.indiana.edu/hypermail/linux/kernel/1007.0/00961.html
+
+And indeed this is the root cause : skb->cb[] contains data fooling IP
+stack.
+
+We must clear IPCB in ip_tunnel_xmit() sooner in case dst_link_failure()
+is called. Or else skb->cb[] might contain garbage from GSO segmentation
+layer.
+
+A similar fix was tested on linux-3.9, but gre code was refactored in
+linux-3.10. I'll send patches for stable kernels as well.
+
+Many thanks to Daniel for providing reports, patches and testing !
+
+Reported-by: Daniel Petre <daniel.petre@rcs-rds.ro>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/ip_gre.c |    2 +-
+ net/ipv4/ipip.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -722,6 +722,7 @@ static netdev_tx_t ipgre_tunnel_xmit(str
+ 		tiph = &tunnel->parms.iph;
+ 	}
+ 
++	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	if ((dst = tiph->daddr) == 0) {
+ 		/* NBMA tunnel */
+ 
+@@ -865,7 +866,6 @@ static netdev_tx_t ipgre_tunnel_xmit(str
+ 	skb_reset_transport_header(skb);
+ 	skb_push(skb, gre_hlen);
+ 	skb_reset_network_header(skb);
+-	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
+ 			      IPSKB_REROUTED);
+ 	skb_dst_drop(skb);
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -448,6 +448,7 @@ static netdev_tx_t ipip_tunnel_xmit(stru
+ 	if (tos & 1)
+ 		tos = old_iph->tos;
+ 
++	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	if (!dst) {
+ 		/* NBMA tunnel */
+ 		if ((rt = skb_rtable(skb)) == NULL) {
+@@ -530,7 +531,6 @@ static netdev_tx_t ipip_tunnel_xmit(stru
+ 	skb->transport_header = skb->network_header;
+ 	skb_push(skb, sizeof(struct iphdr));
+ 	skb_reset_network_header(skb);
+-	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
+ 			      IPSKB_REROUTED);
+ 	skb_dst_drop(skb);
+
+
