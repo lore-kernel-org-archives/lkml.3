@@ -1,68 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab3FYC3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 22:29:25 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:22590 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751092Ab3FYC3Y (ORCPT
+	id S1751992Ab3FYCom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 22:44:42 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:44163 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3FYCol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 22:29:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnQOABEAyVF5LPX0/2dsb2JhbABagwmDFrdqhSsEAYEEF3SCIwEBBScTHCMQCAMOCgklDwUlAyETiA27BxaOHIEdB4NjA5dCih+HJoMiKg
-Date: Tue, 25 Jun 2013 12:29:21 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130625022921.GQ29376@dastard>
-References: <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
- <20130618062623.GA20528@localhost.localdomain>
- <20130619071346.GA9545@dhcp22.suse.cz>
- <20130619142801.GA21483@dhcp22.suse.cz>
- <20130620141136.GA3351@localhost.localdomain>
- <20130620151201.GD27196@dhcp22.suse.cz>
- <20130621090021.GB12424@dhcp22.suse.cz>
- <20130623115127.GA7986@localhost.localdomain>
+	Mon, 24 Jun 2013 22:44:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130623115127.GA7986@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C8E637.2060106@codeaurora.org>
+References: <1372118615-14805-1-git-send-email-festevam@gmail.com>
+	<51C8E637.2060106@codeaurora.org>
+Date: Mon, 24 Jun 2013 23:44:40 -0300
+Message-ID: <CAOMZO5CzphELkwr8gGP1LfA3HJ02CZpnzneETaZcn9YXws=ieQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mach-clps711x: common: Use linux/sched_clock.h
+From: Fabio Estevam <festevam@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: john.stultz@linaro.org, tglx@linutronix.de, shc_work@mail.ru,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 23, 2013 at 03:51:29PM +0400, Glauber Costa wrote:
-> On Fri, Jun 21, 2013 at 11:00:21AM +0200, Michal Hocko wrote:
-> > On Thu 20-06-13 17:12:01, Michal Hocko wrote:
-> > > I am bisecting it again. It is quite tedious, though, because good case
-> > > is hard to be sure about.
-> > 
-> > OK, so now I converged to 2d4fc052 (inode: convert inode lru list to generic lru
-> > list code.) in my tree and I have double checked it matches what is in
-> > the linux-next. This doesn't help much to pin point the issue I am
-> > afraid :/
-> > 
-> Can you revert this patch (easiest way ATM is to rewind your tree to a point
-> right before it) and apply the following patch?
-> 
-> As Dave has mentioned, it is very likely that this bug was already there, we
-> were just not ever checking imbalances. The attached patch would tell us at
-> least if the imbalance was there before. If this is the case, I would suggest
-> turning the BUG condition into a WARN_ON_ONCE since we would be officially
-> not introducing any regression. It is no less of a bug, though, and we should
-> keep looking for it.
+On Mon, Jun 24, 2013 at 9:37 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-We probably should do that BUG->WARN change anyway. BUG_ON is pretty
-obnoxious in places where we can probably continue on without much
-impact....
+> Is this one in the arm-soc tree? I plan to make a sweep after 3.11-rc1
 
-Cheers,
+I haven't see a fix for this in the linux-arm-kernel list.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> and fix up all the stragglers (looks like just this one) and remove the
+> dummy asm header that just got merged into the tip tree.
+
+There was another one and Thomas has already applied it:
+http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=2699339361a9bacb3fa663e6b8981a040cfca4ee
