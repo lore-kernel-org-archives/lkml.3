@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab3FYUfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:35:43 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:32988 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab3FYUfj (ORCPT
+	id S1754042Ab3FYUgU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:36:20 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42983 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab3FYUgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:35:39 -0400
+	Tue, 25 Jun 2013 16:36:15 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 35/45] ia64: irq,
- perfmon: Use get/put_online_cpus_atomic() to prevent CPU offline
+Subject: [PATCH v2 37/45] m32r: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
@@ -20,13 +20,11 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-ia64@vger.kernel.org,
+        Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 02:02:11 +0530
-Message-ID: <20130625203211.16593.71188.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 26 Jun 2013 02:02:37 +0530
+Message-ID: <20130625203237.16593.75941.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
 References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -34,7 +32,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062520-0260-0000-0000-00000337C3B4
+x-cbid: 13062607-3568-0000-0000-000003D4B24B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -46,159 +44,86 @@ from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
 offline, while invoking from atomic context.
 
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-ia64@vger.kernel.org
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Cc: linux-m32r@ml.linux-m32r.org
+Cc: linux-m32r-ja@ml.linux-m32r.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/ia64/kernel/irq_ia64.c |   15 +++++++++++++++
- arch/ia64/kernel/perfmon.c  |    8 +++++++-
- 2 files changed, 22 insertions(+), 1 deletion(-)
+ arch/m32r/kernel/smp.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
-index 1034884..f58b162 100644
---- a/arch/ia64/kernel/irq_ia64.c
-+++ b/arch/ia64/kernel/irq_ia64.c
-@@ -25,6 +25,7 @@
- #include <linux/ptrace.h>
- #include <linux/signal.h>
- #include <linux/smp.h>
-+#include <linux/cpu.h>
- #include <linux/threads.h>
- #include <linux/bitops.h>
- #include <linux/irq.h>
-@@ -160,9 +161,11 @@ int bind_irq_vector(int irq, int vector, cpumask_t domain)
- 	unsigned long flags;
- 	int ret;
+diff --git a/arch/m32r/kernel/smp.c b/arch/m32r/kernel/smp.c
+index ce7aea3..ffafdba 100644
+--- a/arch/m32r/kernel/smp.c
++++ b/arch/m32r/kernel/smp.c
+@@ -151,7 +151,7 @@ void smp_flush_cache_all(void)
+ 	cpumask_t cpumask;
+ 	unsigned long *mask;
  
+-	preempt_disable();
 +	get_online_cpus_atomic();
- 	spin_lock_irqsave(&vector_lock, flags);
- 	ret = __bind_irq_vector(irq, vector, domain);
- 	spin_unlock_irqrestore(&vector_lock, flags);
+ 	cpumask_copy(&cpumask, cpu_online_mask);
+ 	cpumask_clear_cpu(smp_processor_id(), &cpumask);
+ 	spin_lock(&flushcache_lock);
+@@ -162,7 +162,7 @@ void smp_flush_cache_all(void)
+ 	while (flushcache_cpumask)
+ 		mb();
+ 	spin_unlock(&flushcache_lock);
+-	preempt_enable();
 +	put_online_cpus_atomic();
- 	return ret;
  }
  
-@@ -190,9 +193,11 @@ static void clear_irq_vector(int irq)
+ void smp_flush_cache_all_interrupt(void)
+@@ -197,12 +197,12 @@ void smp_flush_tlb_all(void)
  {
  	unsigned long flags;
  
+-	preempt_disable();
 +	get_online_cpus_atomic();
- 	spin_lock_irqsave(&vector_lock, flags);
- 	__clear_irq_vector(irq);
- 	spin_unlock_irqrestore(&vector_lock, flags);
+ 	local_irq_save(flags);
+ 	__flush_tlb_all();
+ 	local_irq_restore(flags);
+ 	smp_call_function(flush_tlb_all_ipi, NULL, 1);
+-	preempt_enable();
 +	put_online_cpus_atomic();
  }
  
- int
-@@ -204,6 +209,7 @@ ia64_native_assign_irq_vector (int irq)
- 
- 	vector = -ENOSPC;
- 
-+	get_online_cpus_atomic();
- 	spin_lock_irqsave(&vector_lock, flags);
- 	for_each_online_cpu(cpu) {
- 		domain = vector_allocation_domain(cpu);
-@@ -218,6 +224,7 @@ ia64_native_assign_irq_vector (int irq)
- 	BUG_ON(__bind_irq_vector(irq, vector, domain));
-  out:
- 	spin_unlock_irqrestore(&vector_lock, flags);
-+	put_online_cpus_atomic();
- 	return vector;
- }
- 
-@@ -302,9 +309,11 @@ int irq_prepare_move(int irq, int cpu)
+ /*==========================================================================*
+@@ -250,7 +250,7 @@ void smp_flush_tlb_mm(struct mm_struct *mm)
+ 	unsigned long *mmc;
  	unsigned long flags;
- 	int ret;
  
+-	preempt_disable();
 +	get_online_cpus_atomic();
- 	spin_lock_irqsave(&vector_lock, flags);
- 	ret = __irq_prepare_move(irq, cpu);
- 	spin_unlock_irqrestore(&vector_lock, flags);
-+	put_online_cpus_atomic();
- 	return ret;
- }
+ 	cpu_id = smp_processor_id();
+ 	mmc = &mm->context[cpu_id];
+ 	cpumask_copy(&cpu_mask, mm_cpumask(mm));
+@@ -268,7 +268,7 @@ void smp_flush_tlb_mm(struct mm_struct *mm)
+ 	if (!cpumask_empty(&cpu_mask))
+ 		flush_tlb_others(cpu_mask, mm, NULL, FLUSH_ALL);
  
-@@ -320,11 +329,13 @@ void irq_complete_move(unsigned irq)
- 	if (unlikely(cpu_isset(smp_processor_id(), cfg->old_domain)))
- 		return;
- 
-+	get_online_cpus_atomic();
- 	cpumask_and(&cleanup_mask, &cfg->old_domain, cpu_online_mask);
- 	cfg->move_cleanup_count = cpus_weight(cleanup_mask);
- 	for_each_cpu_mask(i, cleanup_mask)
- 		platform_send_ipi(i, IA64_IRQ_MOVE_VECTOR, IA64_IPI_DM_INT, 0);
- 	cfg->move_in_progress = 0;
+-	preempt_enable();
 +	put_online_cpus_atomic();
  }
  
- static irqreturn_t smp_irq_move_cleanup_interrupt(int irq, void *dev_id)
-@@ -393,10 +404,12 @@ void destroy_and_reserve_irq(unsigned int irq)
+ /*==========================================================================*
+@@ -320,7 +320,7 @@ void smp_flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
+ 	unsigned long *mmc;
+ 	unsigned long flags;
  
- 	dynamic_irq_cleanup(irq);
- 
+-	preempt_disable();
 +	get_online_cpus_atomic();
- 	spin_lock_irqsave(&vector_lock, flags);
- 	__clear_irq_vector(irq);
- 	irq_status[irq] = IRQ_RSVD;
- 	spin_unlock_irqrestore(&vector_lock, flags);
+ 	cpu_id = smp_processor_id();
+ 	mmc = &mm->context[cpu_id];
+ 	cpumask_copy(&cpu_mask, mm_cpumask(mm));
+@@ -341,7 +341,7 @@ void smp_flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
+ 	if (!cpumask_empty(&cpu_mask))
+ 		flush_tlb_others(cpu_mask, mm, vma, va);
+ 
+-	preempt_enable();
 +	put_online_cpus_atomic();
  }
  
- /*
-@@ -409,6 +422,7 @@ int create_irq(void)
- 	cpumask_t domain = CPU_MASK_NONE;
- 
- 	irq = vector = -ENOSPC;
-+	get_online_cpus_atomic();
- 	spin_lock_irqsave(&vector_lock, flags);
- 	for_each_online_cpu(cpu) {
- 		domain = vector_allocation_domain(cpu);
-@@ -424,6 +438,7 @@ int create_irq(void)
- 	BUG_ON(__bind_irq_vector(irq, vector, domain));
-  out:
- 	spin_unlock_irqrestore(&vector_lock, flags);
-+	put_online_cpus_atomic();
- 	if (irq >= 0)
- 		dynamic_irq_init(irq);
- 	return irq;
-diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-index 9ea25fc..16c8303 100644
---- a/arch/ia64/kernel/perfmon.c
-+++ b/arch/ia64/kernel/perfmon.c
-@@ -6476,9 +6476,12 @@ pfm_install_alt_pmu_interrupt(pfm_intr_handler_desc_t *hdl)
- 	/* do the easy test first */
- 	if (pfm_alt_intr_handler) return -EBUSY;
- 
-+	get_online_cpus_atomic();
-+
- 	/* one at a time in the install or remove, just fail the others */
- 	if (!spin_trylock(&pfm_alt_install_check)) {
--		return -EBUSY;
-+		ret = -EBUSY;
-+		goto out;
- 	}
- 
- 	/* reserve our session */
-@@ -6498,6 +6501,7 @@ pfm_install_alt_pmu_interrupt(pfm_intr_handler_desc_t *hdl)
- 	pfm_alt_intr_handler = hdl;
- 
- 	spin_unlock(&pfm_alt_install_check);
-+	put_online_cpus_atomic();
- 
- 	return 0;
- 
-@@ -6510,6 +6514,8 @@ cleanup_reserve:
- 	}
- 
- 	spin_unlock(&pfm_alt_install_check);
-+out:
-+	put_online_cpus_atomic();
- 
- 	return ret;
- }
+ /*==========================================================================*
 
