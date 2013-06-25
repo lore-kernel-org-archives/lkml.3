@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab3FYIp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:45:28 -0400
-Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:32899 "EHLO
-	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752643Ab3FYIpE (ORCPT
+	id S1752691Ab3FYIpu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:45:50 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:56669 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752559Ab3FYIpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:45:04 -0400
-Message-ID: <51C95774.9060709@st.com>
-Date: Tue, 25 Jun 2013 09:40:20 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 25 Jun 2013 04:45:45 -0400
+Date: Tue, 25 Jun 2013 09:45:39 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH 09/32] arm64: delete __cpuinit usage from all users
+Message-ID: <20130625084539.GA2939@arm.com>
+References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
+ <1372102237-8757-10-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v5] clocksource:arm_global_timer: Add ARM global timer
- support.
-References: <1372089195-29219-1-git-send-email-srinivas.kandagatla@st.com> <51C8A6C8.8000009@codeaurora.org> <51C8B551.9080203@st.com> <51C8C172.8020207@codeaurora.org>
-In-Reply-To: <51C8C172.8020207@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372102237-8757-10-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thankyou for the comments,
-On 24/06/13 23:00, Stephen Boyd wrote:
-> On 06/24/13 14:08, Srinivas KANDAGATLA wrote:
->> On 24/06/13 21:06, Stephen Boyd wrote:
->>> On 06/24/13 08:53, Srinivas KANDAGATLA wrote:
->
+On Mon, Jun 24, 2013 at 08:30:14PM +0100, Paul Gortmaker wrote:
+> The __cpuinit type of throwaway sections might have made sense
+> some time ago when RAM was more constrained, but now the savings
+> do not offset the cost and complications.  For example, the fix in
+> commit 5e427ec2d0 ("x86: Fix bit corruption at CPU resume time")
+> is a good example of the nasty type of bugs that can be created
+> with improper use of the various __init prefixes.
 > 
-> I think the problem is your clockevent has no rating. Please give it a
-> rating (300?) so that it prevents the dummy from taking over. You don't
-> need to worry about disabling the local timer API, it will register a
-> harmless clockevent with a low rating (100) that should be ignored.
+> After a discussion on LKML[1] it was decided that cpuinit should go
+> the way of devinit and be phased out.  Once all the users are gone,
+> we can then finally remove the macros themselves from linux/init.h.
 > 
-I think I forgot to add rating in my last attempt to use cpu notifier.
-With rating set to 300, the driver works fine with cpu notifiers.
-Will send a new patch.
+> Note that some harmless section mismatch warnings may result, since
+> notify_cpu_starting() and cpu_up() are arch independent (kernel/cpu.c)
+> are flagged as __cpuinit  -- so if we remove the __cpuinit from
+> arch specific callers, we will also get section mismatch warnings.
+> As an intermediate step, we intend to turn the linux/init.h cpuinit
+> content into no-ops as early as possible, since that will get rid
+> of these warnings.  In any case, they are temporary and harmless.
+> 
+> This removes all the arch/arm64 uses of the __cpuinit macros from
+> all C files.  Currently arm64 does not have any __CPUINIT used in
+> assembly files.
+> 
+> [1] https://lkml.org/lkml/2013/5/20/589
+> 
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Thanks,
-srini
-
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
