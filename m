@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab3FYSsZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:48:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41248 "EHLO
+	id S1753686Ab3FYSsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:48:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41230 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab3FYSf5 (ORCPT
+	with ESMTP id S1753136Ab3FYSfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:35:57 -0400
+	Tue, 25 Jun 2013 14:35:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        =?UTF-8?q?Holger=20Hoffst=C3=A4tte?= 
-	<holger.hoffstaette@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/27] r8169: fix offloaded tx checksum for small packets.
-Date: Tue, 25 Jun 2013 11:35:29 -0700
-Message-Id: <20130625183518.886049430@linuxfoundation.org>
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [ 03/27] clk: remove notifier from list before freeing it
+Date: Tue, 25 Jun 2013 11:35:22 -0700
+Message-Id: <20130625183518.069165159@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
@@ -32,108 +31,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-[ Upstream commit b423e9ae49d78ea3f53b131c8d5a6087aed16fd6 ]
+commit 72b5322f11ff0abf6a52b3007486656578d2c982 upstream.
 
-8168evl offloaded checksums are wrong since commit
-e5195c1f31f399289347e043d6abf3ffa80f0005 ("r8169: fix 8168evl frame padding.")
-pads small packets to 60 bytes (without ethernet checksum). Typical symptoms
-appear as UDP checksums which are wrong by the count of added bytes.
+The @cn is stay in @clk_notifier_list after it is freed, it cause
+memory corruption.
 
-It isn't worth compensating. Let the driver checksum.
+Example, if @clk is registered(first), unregistered(first),
+registered(second), unregistered(second).
 
-Due to the skb length changes, TSO code is moved before the Tx descriptor gets
-written.
+The freed @cn will be used when @clk is registered(second),
+and the bug will be happened when @clk is unregistered(second):
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Tested-by: Holger Hoffstätte <holger.hoffstaette@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[  517.040000] clk_notif_dbg clk_notif_dbg.1: clk_notifier_unregister()
+[  517.040000] Unable to handle kernel paging request at virtual address 00df3008
+[  517.050000] pgd = ed858000
+[  517.050000] [00df3008] *pgd=00000000
+[  517.060000] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+[  517.060000] Modules linked in: clk_notif_dbg(O-) [last unloaded: clk_notif_dbg]
+[  517.060000] CPU: 1 PID: 499 Comm: modprobe Tainted: G           O 3.10.0-rc3-00119-ga93cb29-dirty #85
+[  517.060000] task: ee1e0180 ti: ee3e6000 task.ti: ee3e6000
+[  517.060000] PC is at srcu_readers_seq_idx+0x48/0x84
+[  517.060000] LR is at srcu_readers_seq_idx+0x60/0x84
+[  517.060000] pc : [<c0052720>]    lr : [<c0052738>]    psr: 80070013
+[  517.060000] sp : ee3e7d48  ip : 00000000  fp : ee3e7d6c
+[  517.060000] r10: 00000000  r9 : ee3e6000  r8 : 00000000
+[  517.060000] r7 : ed84fe4c  r6 : c068ec90  r5 : c068e430  r4 : 00000000
+[  517.060000] r3 : 00df3000  r2 : 00000000  r1 : 00000002  r0 : 00000000
+[  517.060000] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[  517.060000] Control: 18c5387d  Table: 2d85804a  DAC: 00000015
+[  517.060000] Process modprobe (pid: 499, stack limit = 0xee3e6238)
+[  517.060000] Stack: (0xee3e7d48 to 0xee3e8000)
+....
+[  517.060000] [<c0052720>] (srcu_readers_seq_idx+0x48/0x84) from [<c0052790>] (try_check_zero+0x34/0xfc)
+[  517.060000] [<c0052790>] (try_check_zero+0x34/0xfc) from [<c00528b0>] (srcu_advance_batches+0x58/0x114)
+[  517.060000] [<c00528b0>] (srcu_advance_batches+0x58/0x114) from [<c0052c30>] (__synchronize_srcu+0x114/0x1ac)
+[  517.060000] [<c0052c30>] (__synchronize_srcu+0x114/0x1ac) from [<c0052d14>] (synchronize_srcu+0x2c/0x34)
+[  517.060000] [<c0052d14>] (synchronize_srcu+0x2c/0x34) from [<c0053a08>] (srcu_notifier_chain_unregister+0x68/0x74)
+[  517.060000] [<c0053a08>] (srcu_notifier_chain_unregister+0x68/0x74) from [<c0375a78>] (clk_notifier_unregister+0x7c/0xc0)
+[  517.060000] [<c0375a78>] (clk_notifier_unregister+0x7c/0xc0) from [<bf008034>] (clk_notif_dbg_remove+0x34/0x9c [clk_notif_dbg])
+[  517.060000] [<bf008034>] (clk_notif_dbg_remove+0x34/0x9c [clk_notif_dbg]) from [<c02bb974>] (platform_drv_remove+0x24/0x28)
+[  517.060000] [<c02bb974>] (platform_drv_remove+0x24/0x28) from [<c02b9bf8>] (__device_release_driver+0x8c/0xd4)
+[  517.060000] [<c02b9bf8>] (__device_release_driver+0x8c/0xd4) from [<c02ba680>] (driver_detach+0x9c/0xc4)
+[  517.060000] [<c02ba680>] (driver_detach+0x9c/0xc4) from [<c02b99c4>] (bus_remove_driver+0xcc/0xfc)
+[  517.060000] [<c02b99c4>] (bus_remove_driver+0xcc/0xfc) from [<c02bace4>] (driver_unregister+0x54/0x78)
+[  517.060000] [<c02bace4>] (driver_unregister+0x54/0x78) from [<c02bbb44>] (platform_driver_unregister+0x1c/0x20)
+[  517.060000] [<c02bbb44>] (platform_driver_unregister+0x1c/0x20) from [<bf0081f8>] (clk_notif_dbg_driver_exit+0x14/0x1c [clk_notif_dbg])
+[  517.060000] [<bf0081f8>] (clk_notif_dbg_driver_exit+0x14/0x1c [clk_notif_dbg]) from [<c00835e4>] (SyS_delete_module+0x200/0x28c)
+[  517.060000] [<c00835e4>] (SyS_delete_module+0x200/0x28c) from [<c000edc0>] (ret_fast_syscall+0x0/0x48)
+[  517.060000] Code: e5973004 e7911102 e0833001 e2881002 (e7933101)
+
+Reported-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Tested-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+[mturquette@linaro.org: shortened $SUBJECT]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/realtek/r8169.c |   41 +++++++++++++++++++++++------------
- 1 file changed, 27 insertions(+), 14 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5126,7 +5126,20 @@ err_out:
- 	return -EIO;
- }
+---
+ drivers/clk/clk.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1453,6 +1453,7 @@ int clk_notifier_unregister(struct clk *
+ 		/* XXX the notifier code should handle this better */
+ 		if (!cn->notifier_head.head) {
+ 			srcu_cleanup_notifier_head(&cn->notifier_head);
++			list_del(&cn->node);
+ 			kfree(cn);
+ 		}
  
--static inline void rtl8169_tso_csum(struct rtl8169_private *tp,
-+static bool rtl_skb_pad(struct sk_buff *skb)
-+{
-+	if (skb_padto(skb, ETH_ZLEN))
-+		return false;
-+	skb_put(skb, ETH_ZLEN - skb->len);
-+	return true;
-+}
-+
-+static bool rtl_test_hw_pad_bug(struct rtl8169_private *tp, struct sk_buff *skb)
-+{
-+	return skb->len < ETH_ZLEN && tp->mac_version == RTL_GIGA_MAC_VER_34;
-+}
-+
-+static inline bool rtl8169_tso_csum(struct rtl8169_private *tp,
- 				    struct sk_buff *skb, u32 *opts)
- {
- 	const struct rtl_tx_desc_info *info = tx_desc_info + tp->txd_version;
-@@ -5139,13 +5152,20 @@ static inline void rtl8169_tso_csum(stru
- 	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 		const struct iphdr *ip = ip_hdr(skb);
- 
-+		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
-+			return skb_checksum_help(skb) == 0 && rtl_skb_pad(skb);
-+
- 		if (ip->protocol == IPPROTO_TCP)
- 			opts[offset] |= info->checksum.tcp;
- 		else if (ip->protocol == IPPROTO_UDP)
- 			opts[offset] |= info->checksum.udp;
- 		else
- 			WARN_ON_ONCE(1);
-+	} else {
-+		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
-+			return rtl_skb_pad(skb);
- 	}
-+	return true;
- }
- 
- static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
-@@ -5166,17 +5186,15 @@ static netdev_tx_t rtl8169_start_xmit(st
- 		goto err_stop_0;
- 	}
- 
--	/* 8168evl does not automatically pad to minimum length. */
--	if (unlikely(tp->mac_version == RTL_GIGA_MAC_VER_34 &&
--		     skb->len < ETH_ZLEN)) {
--		if (skb_padto(skb, ETH_ZLEN))
--			goto err_update_stats;
--		skb_put(skb, ETH_ZLEN - skb->len);
--	}
--
- 	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
- 		goto err_stop_0;
- 
-+	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(tp, skb));
-+	opts[0] = DescOwn;
-+
-+	if (!rtl8169_tso_csum(tp, skb, opts))
-+		goto err_update_stats;
-+
- 	len = skb_headlen(skb);
- 	mapping = dma_map_single(d, skb->data, len, DMA_TO_DEVICE);
- 	if (unlikely(dma_mapping_error(d, mapping))) {
-@@ -5188,11 +5206,6 @@ static netdev_tx_t rtl8169_start_xmit(st
- 	tp->tx_skb[entry].len = len;
- 	txd->addr = cpu_to_le64(mapping);
- 
--	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(tp, skb));
--	opts[0] = DescOwn;
--
--	rtl8169_tso_csum(tp, skb, opts);
--
- 	frags = rtl8169_xmit_frags(tp, skb, opts);
- 	if (frags < 0)
- 		goto err_dma_1;
 
 
