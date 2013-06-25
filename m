@@ -1,58 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab3FYOfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:35:45 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:35194 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab3FYOfn (ORCPT
+	id S1751887Ab3FYOfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:35:50 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:36066 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab3FYOfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:35:43 -0400
+	Tue, 25 Jun 2013 10:35:48 -0400
 From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Cc: michael@ellerman.id.au, paulus@samba.org, acme@redhat.com,
         sukadev@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
         Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH v2 0/2] perf tools: Power7 events name available for perf 
-Date: Tue, 25 Jun 2013 22:35:31 +0800
-Message-Id: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com>
+Subject: [PATCH v3 1/2] perf tools: fix a typo of a Power7 event name
+Date: Tue, 25 Jun 2013 22:35:32 +0800
+Message-Id: <1372170933-4538-2-git-send-email-runzhen@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com>
+References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062514-7014-0000-0000-0000033A47D6
+x-cbid: 13062514-8256-0000-0000-000008139899
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank for Sukadev Bhattip and Xiao Guangrong's help.
-Thank for Michael Ellerman's review. 
+In the Power7 PMU guide:
+https://www.power.org/documentation/commonly-used-metrics-for-performance-analysis/
+PM_BRU_MPRED is referred to as PM_BR_MPRED.
 
-There is the Change Log for v2:
+It fixed the typo by changing the name of the event in kernel
+and documentation accordingly.
 
-1. As Michael Ellerman suggested, I added runtime overhead information 
-   in the 0002 patch's description.
+This patch changes the ABI, there are some reasons I think it's ok:
 
-2. Put the events name in a new head file which is named "power7-events-list.h",
-   and use several macros, such as, 
- 
-   #define EVENT(_name, _code)     POWER_EVENT_ATTR(_name, _code)
-   #include "power7-events-list.h"
-   #undef EVENT
-  
-   to generate different outputs.
- 
-Thanks
-Runzhen Wang
+- It is relatively new interface, specific to the Power7 platform.
 
-Runzhen Wang (2):
-  perf tools: fix a typo of a Power7 event name
-  perf tools: Make Power7 events available for perf
+- No tools that we know of actually use this interface at this point
+ (none are listed near the interface).
 
+- Users of this interface (eg oprofile users migrating to perf)
+  would be more used to the "PM_BR_MPRED" rather than "PM_BRU_MPRED".
+
+- These are in the ABI/testing at this point rather than ABI/stable,
+  so hoping we have some wiggle room.
+
+Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+---
  .../testing/sysfs-bus-event_source-devices-events  |    2 +-
- arch/powerpc/include/asm/perf_event_server.h       |    4 +-
- arch/powerpc/perf/power7-events-list.h             |  548 ++++++++++++++++++++
- arch/powerpc/perf/power7-pmu.c                     |  150 ++----
- 4 files changed, 584 insertions(+), 120 deletions(-)
- create mode 100644 arch/powerpc/perf/power7-events-list.h
+ arch/powerpc/perf/power7-pmu.c                     |   12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+index 8b25ffb..3c1cc24 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -29,7 +29,7 @@ Description:	Generic performance monitoring events
+ 
+ What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
+ 		/sys/devices/cpu/events/PM_BRU_FIN
+-		/sys/devices/cpu/events/PM_BRU_MPRED
++		/sys/devices/cpu/events/PM_BR_MPRED
+ 		/sys/devices/cpu/events/PM_CMPLU_STALL
+ 		/sys/devices/cpu/events/PM_CMPLU_STALL_BRU
+ 		/sys/devices/cpu/events/PM_CMPLU_STALL_DCACHE_MISS
+diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
+index 13c3f0e..d1821b8 100644
+--- a/arch/powerpc/perf/power7-pmu.c
++++ b/arch/powerpc/perf/power7-pmu.c
+@@ -60,7 +60,7 @@
+ #define	PME_PM_LD_REF_L1		0xc880
+ #define	PME_PM_LD_MISS_L1		0x400f0
+ #define	PME_PM_BRU_FIN			0x10068
+-#define	PME_PM_BRU_MPRED		0x400f6
++#define	PME_PM_BR_MPRED			0x400f6
+ 
+ #define PME_PM_CMPLU_STALL_FXU			0x20014
+ #define PME_PM_CMPLU_STALL_DIV			0x40014
+@@ -349,7 +349,7 @@ static int power7_generic_events[] = {
+ 	[PERF_COUNT_HW_CACHE_REFERENCES] =		PME_PM_LD_REF_L1,
+ 	[PERF_COUNT_HW_CACHE_MISSES] =			PME_PM_LD_MISS_L1,
+ 	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] =		PME_PM_BRU_FIN,
+-	[PERF_COUNT_HW_BRANCH_MISSES] =			PME_PM_BRU_MPRED,
++	[PERF_COUNT_HW_BRANCH_MISSES] =			PME_PM_BR_MPRED,
+ };
+ 
+ #define C(x)	PERF_COUNT_HW_CACHE_##x
+@@ -405,7 +405,7 @@ GENERIC_EVENT_ATTR(instructions,		INST_CMPL);
+ GENERIC_EVENT_ATTR(cache-references,		LD_REF_L1);
+ GENERIC_EVENT_ATTR(cache-misses,		LD_MISS_L1);
+ GENERIC_EVENT_ATTR(branch-instructions,		BRU_FIN);
+-GENERIC_EVENT_ATTR(branch-misses,		BRU_MPRED);
++GENERIC_EVENT_ATTR(branch-misses,		BR_MPRED);
+ 
+ POWER_EVENT_ATTR(CYC,				CYC);
+ POWER_EVENT_ATTR(GCT_NOSLOT_CYC,		GCT_NOSLOT_CYC);
+@@ -414,7 +414,7 @@ POWER_EVENT_ATTR(INST_CMPL,			INST_CMPL);
+ POWER_EVENT_ATTR(LD_REF_L1,			LD_REF_L1);
+ POWER_EVENT_ATTR(LD_MISS_L1,			LD_MISS_L1);
+ POWER_EVENT_ATTR(BRU_FIN,			BRU_FIN)
+-POWER_EVENT_ATTR(BRU_MPRED,			BRU_MPRED);
++POWER_EVENT_ATTR(BR_MPRED,			BR_MPRED);
+ 
+ POWER_EVENT_ATTR(CMPLU_STALL_FXU,		CMPLU_STALL_FXU);
+ POWER_EVENT_ATTR(CMPLU_STALL_DIV,		CMPLU_STALL_DIV);
+@@ -449,7 +449,7 @@ static struct attribute *power7_events_attr[] = {
+ 	GENERIC_EVENT_PTR(LD_REF_L1),
+ 	GENERIC_EVENT_PTR(LD_MISS_L1),
+ 	GENERIC_EVENT_PTR(BRU_FIN),
+-	GENERIC_EVENT_PTR(BRU_MPRED),
++	GENERIC_EVENT_PTR(BR_MPRED),
+ 
+ 	POWER_EVENT_PTR(CYC),
+ 	POWER_EVENT_PTR(GCT_NOSLOT_CYC),
+@@ -458,7 +458,7 @@ static struct attribute *power7_events_attr[] = {
+ 	POWER_EVENT_PTR(LD_REF_L1),
+ 	POWER_EVENT_PTR(LD_MISS_L1),
+ 	POWER_EVENT_PTR(BRU_FIN),
+-	POWER_EVENT_PTR(BRU_MPRED),
++	POWER_EVENT_PTR(BR_MPRED),
+ 
+ 	POWER_EVENT_PTR(CMPLU_STALL_FXU),
+ 	POWER_EVENT_PTR(CMPLU_STALL_DIV),
 -- 
 1.7.9.5
 
