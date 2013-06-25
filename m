@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab3FYO0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:26:06 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:56094 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3FYO0E (ORCPT
+	id S1751711Ab3FYO1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:27:39 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:50769 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab3FYO1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:26:04 -0400
+	Tue, 25 Jun 2013 10:27:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <51C1993C.9030204@linux.intel.com>
-References: <20130619100421.22132.99447.stgit@ladj378.jer.intel.com>
-	<51C1993C.9030204@linux.intel.com>
-Date: Tue, 25 Jun 2013 17:26:02 +0300
-Message-ID: <CALuTh9E5CvV1sfjMJRs7mWwfTm2HpaFFMJWEP10sbSpA8qBMsg@mail.gmail.com>
-Subject: Re: [PATCH RFC] net: lls epoll support
-From: yaniv saar <yaniv.mellanox@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
+In-Reply-To: <51C4C2ED.5090505@wwwdotorg.org>
+References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com>
+	<1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
+	<51BA3BC1.3090109@wwwdotorg.org>
+	<20130614091241.GA23745@ab42.lan>
+	<51C1F42E.5090107@wwwdotorg.org>
+	<51C1F82C.4020502@wwwdotorg.org>
+	<20130620115710.GB942@ab42.lan>
+	<51C4C2ED.5090505@wwwdotorg.org>
+Date: Tue, 25 Jun 2013 16:27:37 +0200
+Message-ID: <CACRpkdbnXmJnPd6akeEVuU9dwAe+FOvm6boDt8=zjG_D3ZLTGg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Christian Ruppert <christian.ruppert@abilis.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 2:42 PM, Eliezer Tamir
-<eliezer.tamir@linux.intel.com> wrote:
-> This is a wild hack, just as a POC to show the power or LLS with epoll.
->
-> We assume that we only ever need to poll on one device queue,
-> so the first FD that reports POLL_LL gets saved aside so we can poll on.
->
-> While this assumption is wrong in so many ways, it's very easy to satisfy
-> with a micro-benchmark.
->
-> [this patch needs the poll patch to be applied first]
-> with sockperf doing epoll on 1000 sockets I see an avg latency of 6us
->
+On Fri, Jun 21, 2013 at 11:17 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-hi eliezer,
+> When I pushed for the concept of groups, I intended it to mean precisely
+> one single thing. The points below describe this.
+>
+> 1) A pin is a single pin/ball/pad on the package.
+>
+> 2) Some register fields affect just a single pin. For example, there may
+> be a register field that affects pin A8's mux setting only.
+>
+> 3) Some register fields affect multiple pins at once. For example,
+> perhaps one register field affects both pin A8's an pin A7's mux setting
+> at once.
+>
+> 4) Depending on HW design, all register fields might be of type
+> described at (2) above, or all of the type described at (3) above, or a
+> mixture of both. Tegra is a mixture.
+>
+> 5) I expect the concept of a pin group to solely represent the various
+> groups of pins affected by each register field; in (2) above one pin per
+> group, in (3) above many pins per group.
+>
+> Thus, to my mind, a pin group is purely a HW concept, and dictated
+> purely by HW design.
 
-please consider the following solution for epoll that is based on
-polling dev+queue.
-instead of looping over the socket as in LLS, maintain in eventpool
-struct a list of device+queues (qdlist).
-the dqlist must be unique w.r.t. device+queue, (no two identical
-device+queues items in qdlist).
-each device+queues item (qditem) holds:
-* device (id)
-* queue (id)
-* list of epi (epilist) that created this qditem
-- I think it won't be possible to extend epitem (breaks cache aligned
-to 128)... instead you can have a simple ll_usec list.
-* ll_usec, the maximum time to poll from all the referring epi items.
-finally, polling should iterate over the qdlist once, and then check for events.
+This we can discuss perpetually it seems.
 
-----
-as far as coding this sketch involves:
-1) adjust eventpoll struct.
-2) initialize on creation (epoll_create)
-3) update the list on modification (epoll_ctl)
-3.1) ep_insert->add this epi/ll_usec in relevant qditem (or create new
-one), and update qditem->ll_usec
-3.2) ep_remove->remove this epi/ll_usec from relevant qditem (MUST be
-existing -- sort of ref counting), and update qditem->ll_usec
-3.3) ep_modify->...
-4) on polling event (epoll_wait)
-ep_poll->if qdlist is not empty, then find the maximum ll_usec (could
-be done while maintaining...)
-... and just before going into wait ...
-if max ll_usec!=0
-    poll once on all device+queues in the qdlist.
-    continue to the next iteration (check events).
-5) to support this flow we also need to implement API for
-5.1) given a file/fd/epi, if is a sock then get the device+queue.
-5.2) poll over a given device+queue (dq_poll_ll) once.
+For Nomadik, as I've pointed out in the past it is actually:
+
+(6): it is one register/set if bits per pin, BUT the register settings
+ pertain to physical lines having electrical settings which postulate
+ that they be handled in batch or wreak havoc.
+
+I.e. it is a HW limitation in the *silicon* of *all* implementations,
+but that is *not* expressed in the register map.
+
+For the practical consequences see __nmk_config_pins if (glitch)
+runpath. Handling this as a group makes perfect sense from
+a hardware point of view.
+
+Yours,
+Linus Walleij
