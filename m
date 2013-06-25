@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab3FYRVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:21:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27744 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3FYRVc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:21:32 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XqNnylozy48A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pkicDPhlfI0A:10 a=YXVxBQmCVOTLb6hAWYYA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1372180890.18733.217.camel@gandalf.local.home>
-Subject: Re: frequent softlockups with 3.10rc6.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
+	id S1751763Ab3FYRWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:22:35 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:49757 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751191Ab3FYRWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 13:22:34 -0400
+Message-ID: <51C9D1D6.20405@sgi.com>
+Date: Tue, 25 Jun 2013 10:22:30 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Nathan Zimmer <nzimmer@sgi.com>, holt@sgi.com, rob@landley.net,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        yinghai@kernel.org, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Date: Tue, 25 Jun 2013 13:21:30 -0400
-In-Reply-To: <20130625165556.GA16170@redhat.com>
-References: <20130623143634.GA2000@redhat.com>
-	 <20130623150603.GA32313@redhat.com> <20130623160452.GA11740@redhat.com>
-	 <20130624020014.GB12811@redhat.com> <20130624143928.GA20659@redhat.com>
-	 <1372085549.18733.162.camel@gandalf.local.home>
-	 <20130624160012.GB5993@redhat.com>
-	 <1372091079.18733.168.camel@gandalf.local.home>
-	 <20130624165140.GB8572@redhat.com>
-	 <1372093476.18733.170.camel@gandalf.local.home>
-	 <20130625165556.GA16170@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130625073819.GC11420@gmail.com>
+In-Reply-To: <20130625073819.GC11420@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-25 at 12:55 -0400, Dave Jones wrote:
 
-> While I've been spinning wheels trying to reproduce that softlockup bug,
-> On another machine I've been refining my list-walk debug patch.
-> I added an ugly "ok, the ringbuffer is playing games with lower two bits" special case.
+
+On 6/25/2013 12:38 AM, Ingo Molnar wrote:
 > 
-> But what the hell is going on here ?
+> * Nathan Zimmer <nzimmer@sgi.com> wrote:
 > 
-> next->prev should be prev (ffff88023c6cdd18), but was 00ffff88023c6cdd. (next=ffff880243288001).
+>> On Sun, Jun 23, 2013 at 11:28:40AM +0200, Ingo Molnar wrote:
+>>>
+>>> That's 4.5 GB/sec initialization speed - that feels a bit slow and the 
+>>> boot time effect should be felt on smaller 'a couple of gigabytes' 
+>>> desktop boxes as well. Do we know exactly where the 2 hours of boot 
+>>> time on a 32 TB system is spent?
+>>
+>> There are other several spots that could be improved on a large system 
+>> but memory initialization is by far the biggest.
 > 
-> (trace comes from the same ringbuffer code)
+> My feeling is that deferred/on-demand initialization triggered from the 
+> buddy allocator is the better long term solution.
 
-What's the above saying?  ffff880243288000->prev == 00ffff88023c6cdd but
-it should have been ffff88023c6cdd18? That is: ffff88023c6cdd18->next ==
-ffff880243288001?
+I haven't caught up with all of Nathan's changes yet (just
+got back from vacation), but there was an option to either
+start the memory insertion on boot, or trigger it later
+using the /sys/.../memory interface.  There is also a monitor
+program that calculates the memory insertion rate.  This was
+extremely useful to determine how changes in the kernel
+affected the rate.
 
-Not sure how that would mess up. The ring-buffer code has lots of
-integrity checks to make sure nothing like this breaks.
-
--- Steve
-
-
+> 
+> That will also make it much easier to profile/test memory init 
+> performance: boot up a large system and run a simple testprogram that 
+> allocates a lot of RAM.
+> 
+> ( It will also make people want to optimize the initialization sequence 
+>   better, as it will be part of any freshly booted system's memory 
+>   allocation overhead. )
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
