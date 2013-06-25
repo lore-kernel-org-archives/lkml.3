@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab3FYSda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:33:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40802 "EHLO
+	id S1751993Ab3FYSdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:33:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40829 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab3FYSdZ (ORCPT
+	with ESMTP id S1751887Ab3FYSda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:25 -0400
+	Tue, 25 Jun 2013 14:33:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 01/95] ARM: 7752/1: errata: LoUIS bit field in CLIDR register is incorrect
-Date: Tue, 25 Jun 2013 11:31:48 -0700
-Message-Id: <20130625182153.805097639@linuxfoundation.org>
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 08/95] tilepro: work around module link error with gcc 4.7
+Date: Tue, 25 Jun 2013 11:31:55 -0700
+Message-Id: <20130625182154.574915575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,64 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Medhurst <tixy@linaro.org>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 691557941af4c12bd307ad81a4d9fa9c7743ac28 upstream.
+commit 3cb3f839d306443f3d1e79b0bde1a2ad2c12b555 upstream.
 
-On Cortex-A9 before version r1p0, the LoUIS bit field of the CLIDR
-register returns zero when it should return one. This leads to cache
-maintenance operations which rely on this value to not function as
-intended, causing data corruption.
+gcc 4.7.x is emitting calls to __ffsdi2 where previously
+it used to inline the appropriate ctz instructions.
+While this needs to be fixed in gcc, it's also easy to avoid
+having it cause build failures when building with those
+compilers by exporting __ffsdi2 to modules.
 
-The workaround for this errata is to detect affected CPUs and correct
-the LoUIS value read.
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/Kconfig       |   10 ++++++++++
- arch/arm/mm/cache-v7.S |    8 ++++++++
- 2 files changed, 18 insertions(+)
+ arch/tile/lib/exports.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1306,6 +1306,16 @@ config PL310_ERRATA_588369
- 	   is not correctly implemented in PL310 as clean lines are not
- 	   invalidated as a result of these operations.
- 
-+config ARM_ERRATA_643719
-+	bool "ARM errata: LoUIS bit field in CLIDR register is incorrect"
-+	depends on CPU_V7 && SMP
-+	help
-+	  This option enables the workaround for the 643719 Cortex-A9 (prior to
-+	  r1p0) erratum. On affected cores the LoUIS bit field of the CLIDR
-+	  register returns zero when it should return one. The workaround
-+	  corrects this value, ensuring cache maintenance operations which use
-+	  it behave as intended and avoiding data corruption.
-+
- config ARM_ERRATA_720789
- 	bool "ARM errata: TLBIASIDIS and TLBIMVAIS operations can broadcast a faulty ASID"
- 	depends on CPU_V7
---- a/arch/arm/mm/cache-v7.S
-+++ b/arch/arm/mm/cache-v7.S
-@@ -92,6 +92,14 @@ ENTRY(v7_flush_dcache_louis)
- 	mrc	p15, 1, r0, c0, c0, 1		@ read clidr, r0 = clidr
- 	ALT_SMP(ands	r3, r0, #(7 << 21))	@ extract LoUIS from clidr
- 	ALT_UP(ands	r3, r0, #(7 << 27))	@ extract LoUU from clidr
-+#ifdef CONFIG_ARM_ERRATA_643719
-+	ALT_SMP(mrceq	p15, 0, r2, c0, c0, 0)	@ read main ID register
-+	ALT_UP(moveq	pc, lr)			@ LoUU is zero, so nothing to do
-+	ldreq	r1, =0x410fc090                 @ ID of ARM Cortex A9 r0p?
-+	biceq	r2, r2, #0x0000000f             @ clear minor revision number
-+	teqeq	r2, r1                          @ test for errata affected core and if so...
-+	orreqs	r3, #(1 << 21)			@   fix LoUIS value (and set flags state to 'ne')
-+#endif
- 	ALT_SMP(mov	r3, r3, lsr #20)	@ r3 = LoUIS * 2
- 	ALT_UP(mov	r3, r3, lsr #26)	@ r3 = LoUU * 2
- 	moveq	pc, lr				@ return if level == 0
+--- a/arch/tile/lib/exports.c
++++ b/arch/tile/lib/exports.c
+@@ -84,4 +84,6 @@ uint64_t __ashrdi3(uint64_t, unsigned in
+ EXPORT_SYMBOL(__ashrdi3);
+ uint64_t __ashldi3(uint64_t, unsigned int);
+ EXPORT_SYMBOL(__ashldi3);
++int __ffsdi2(uint64_t);
++EXPORT_SYMBOL(__ffsdi2);
+ #endif
 
 
