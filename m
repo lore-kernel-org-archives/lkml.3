@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab3FYV3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:29:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59171 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab3FYV3i (ORCPT
+	id S1751655Ab3FYVaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:30:46 -0400
+Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:41774 "EHLO
+	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab3FYVap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:29:38 -0400
-Date: Tue, 25 Jun 2013 23:29:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v4] irqchip: Add support for ARMv7-M's NVIC
-In-Reply-To: <1371073835-10639-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1306252316470.4013@ionos.tec.linutronix.de>
-References: <1371073835-10639-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-569184648-1372195778=:4013"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 25 Jun 2013 17:30:45 -0400
+Message-ID: <1372195837.8189.42.camel@scapa>
+Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+From: Yves-Alexis Perez <corsac@debian.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
+        Henrique de Moraes Holschuh <hmh@debian.org>
+Date: Tue, 25 Jun 2013 23:30:37 +0200
+In-Reply-To: <20130625211415.GA2899@srcf.ucam.org>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+	 <1371937599.17761.19.camel@scapa> <20130625160848.GA27123@srcf.ucam.org>
+	 <1372193037.8189.24.camel@scapa> <20130625205430.GA2438@srcf.ucam.org>
+	 <1372194611.8189.31.camel@scapa> <20130625211415.GA2899@srcf.ucam.org>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-iYRDbqWaQgPY60HgG8kx"
+X-Mailer: Evolution 3.8.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323329-569184648-1372195778=:4013
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+--=-iYRDbqWaQgPY60HgG8kx
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, 12 Jun 2013, Uwe Kleine-König wrote:
+On mar., 2013-06-25 at 22:14 +0100, Matthew Garrett wrote:
+> On Tue, Jun 25, 2013 at 11:10:11PM +0200, Yves-Alexis Perez wrote:
+> > On mar., 2013-06-25 at 21:54 +0100, Matthew Garrett wrote:
+> > > I agree, we should standardise the behaviour. And the only way we can=
+=20
+> > > standardise the behaviour is to leave it up to userspace.
+> > >=20
+> > It's pretty clear we disagree on this and that my opinion won't really
+> > matter here. But letting userspace handle that just means broken
+> > functionality for those who have the chance (apparently) to have an ACP=
+I
+> > backlight interface.
+>=20
+> Which, as we've already established, you don't - Lenovo broke it. Your=
+=20
+> Thinkpad claims to have 100 available levels, and most of them don't=20
+> work. The kernel has no way of knowing which levels work and which=20
+> don't, so leaving this up to the kernel won't actually fix your system=
+=20
+> either.
 
-> This interrupt controller is found on Cortex-M3 and Cortex-M4 machines.
+I was referring to =E2=80=9Cstandardize the behaviour by leaving up to
+userspace=E2=80=9D. A lot of thinkpads (for example) (all the pre-windows 8
+ones) have a perfectly working ACPI backlight interface.
 
-I don't think that anyone is searching for interrupt controllers as
-they are simply an essential part of the M3/4 SoCs.
- 
->     
->     This depends on the stuff currently in tip/irq/for-arm
-> 
->  arch/arm/kernel/entry-v7m.S |   2 +-
+Also, if the kernel has no way of knowing which levels work, I fail to
+see how userspace can do better.
 
-This is not depending on my tree. I can take the patch if
+I understand that switching to intel_backlight instead of acpi_video0
+follows what Windows 8 recommends but for me it looks orthogonal to the
+fact ACPI methods now have some awkward (Lenovo) or broken (Dell). I
+mean, it's not the first time firmware people break some kernel
+behavior. I know it's usually not easy to contact them, but shouldn't
+those methods be fixed, instead of somehow blindly switching to graphic
+drivers?
+--=20
+Yves-Alexis
 
- - you drop the arm related change and do that cleanup later
+--=-iYRDbqWaQgPY60HgG8kx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-or
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
- - the relevant maintainers provide their ACK.
+iQEcBAABCAAGBQJRygv9AAoJEG3bU/KmdcClmbkH/3YF65kIl72TTk+5m3EbkYMP
+ICKVC4ag5Sb0J/GVzSjo5o2TdDUG3pJUNCeqpsA7z9ummsApzHBuxSNh+IAwF0bK
+/2rTagXSB1zM7/TiQDNNg/vA3jZuJQYNS/CKYAQ34CLtigJwU6XDehUU0+DWkglS
+2dMAGimCl/OrmCtL2y3C2c+cNdQL4EtdBKU8iA5OGKiUVcJ0uS8FzTdE+UNbh7O7
+7V39weyumzFveZHq70hrIzOK/bO+6bOk0qW4oCBhlmAw76l/ZyymaBtxaTVw7i2M
+4BHSqCtHsz8WTc5bE/PTPVhkJWXc4+g66LL8W5++RLPpxF01mS04knMconaRAuI=
+=8vBi
+-----END PGP SIGNATURE-----
 
-> +	for (i = 0; i < numbanks; ++i) {
-> +		struct irq_chip_generic *gc =
-> +			irq_get_domain_generic_chip(nvic_irq_domain, 32 * i);
-> +		gc->reg_base = nvic_base + 4 * i;
-> +		gc->chip_types[0].regs.enable = NVIC_ISER;
-> +		gc->chip_types[0].regs.disable = NVIC_ICER;
-> +		gc->chip_types[0].chip.irq_mask = irq_gc_mask_disable_reg;
-> +		gc->chip_types[0].chip.irq_unmask = irq_gc_unmask_enable_reg;
-> +		gc->chip_types[0].chip.irq_eoi = nvic_eoi;
-> +	}
-> +
-> +	/* Disable all interrupts */
-> +	for (i = 0; i < irqs; i += 32)
-> +		writel_relaxed(~0, nvic_base + NVIC_ICER + i * 4 / 32);
-
-So this is another, slightly different loop than the previous one
-
-> +	for (i = 0; i < numbanks; ++i) {
-
-This time based on irqs and increasing the irq number per loop by a
-full bank. Why not doing this in the above loop which does exaclty the
-same and you don't have to do the odd register base math. A simple
-
-	writel_relaxed(~0, gc->reg_base + NVIC_ICER);
-
-in the banks loop is sufficient, right?
-
-Thanks,
-
-	tglx
---8323329-569184648-1372195778=:4013--
+--=-iYRDbqWaQgPY60HgG8kx--
