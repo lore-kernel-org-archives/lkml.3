@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab3FYWPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 18:15:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25453 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab3FYWPM (ORCPT
+	id S1751908Ab3FYWQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 18:16:23 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51741 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab3FYWQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 18:15:12 -0400
-Message-ID: <51CA1648.50706@oracle.com>
-Date: Tue, 25 Jun 2013 18:14:32 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 25 Jun 2013 18:16:22 -0400
+Date: Tue, 25 Jun 2013 15:01:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 0/8] Provide infrastructure for full-system
+ idle
+Message-ID: <20130625220152.GH3828@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130625213721.GA19452@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1306252345210.4013@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: mingo@kernel.org, peterz@infradead.org
-CC: LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Subject: lockdep: WARNING: CPU: 28 PID: 10552 at kernel/lockdep.c:3539
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306252345210.4013@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062522-4834-0000-0000-000008679212
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Jun 25, 2013 at 11:49:47PM +0200, Thomas Gleixner wrote:
+> On Tue, 25 Jun 2013, Paul E. McKenney wrote:
+> > Note that this version pays attention to CPUs that have taken an NMI
+> > from idle.  It is not clear to me that NMI handlers can safely access
+> > the time on a system that is long-term idle.  Unless someone tells me
+> > that it is somehow safe to access time from an NMI from idle, I will
+> > remove NMI support in the next version.
+> 
+> NMI cannot access any time related functions independent of NOHZ, long
+> term idle or whatever you come up with:
+> 
+>        write_seqcount_begin(&timekeeper_seq);
+> 
+> ---> NMI
+> 	...
+> 	do {
+> 	   seq = read_seqcount_begin(&timekeeper_seq);
+> 	} while (read_seqcount_retry(&timekeeper_seq, seq));
+> 
+> Guess how well that works ....
 
-While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
-I've stumbled on the following:
+Woo-hoo!!!  I will yank the NMI support on the next version.  Thank
+you for the info!
 
-[  263.899081] ------------[ cut here ]------------
-[  263.900321] WARNING: CPU: 28 PID: 10552 at kernel/lockdep.c:3539 check_flags+0xe0/0x
-220()
-[  263.906199] DEBUG_LOCKS_WARN_ON(!current->hardirqs_enabled)
-[  263.906199] CPU: 28 PID: 10552 Comm: trinity-child28 Tainted: G        W    3.10.0-r
-c7-next-20130625-sasha-00011-g7725abd #1124
-[  263.906199]  0000000000000dd3 ffff880f4d105d78 ffffffff841214dc ffff880f4d105d78
-[  263.906199]  ffff880f4d105dc8 ffff880f4d105db8 ffffffff8111bfd7 ffff880f4d105db8
-[  263.906199]  ffff880f6a480000 0000000000000000 0000000000000002 0000000000000000
-[  263.906199] Call Trace:
-[  263.906199]  [<ffffffff841214dc>] dump_stack+0x52/0x87
-[  263.906199]  [<ffffffff8111bfd7>] warn_slowpath_common+0x87/0xb0
-[  263.906199]  [<ffffffff8111c0b6>] warn_slowpath_fmt+0x46/0x50
-[  263.906199]  [<ffffffff81194020>] check_flags+0xe0/0x220
-[  263.906199]  [<ffffffff8119b6a8>] lock_acquire+0x88/0x1e0
-[  263.906199]  [<ffffffff8124e013>] ? might_fault+0x53/0xb0
-[  263.906199]  [<ffffffff84125d40>] _raw_spin_lock+0x40/0x80
-[  263.906199]  [<ffffffff812c6306>] ? __fd_install+0x36/0x100
-[  263.906199]  [<ffffffff812c6306>] __fd_install+0x36/0x100
-[  263.906199]  [<ffffffff812c63f5>] fd_install+0x25/0x30
-[  263.906199]  [<ffffffff812b19bc>] SyS_pipe2+0x8c/0xb0
-[  263.906199]  [<ffffffff84127ee1>] ? tracesys+0x7e/0xe2
-[  263.906199]  [<ffffffff812b05b0>] SyS_pipe+0x10/0x20
-[  263.906199]  [<ffffffff84127f40>] tracesys+0xdd/0xe2
-[  263.906199] ---[ end trace d5eed34e44345976 ]---
-[  263.906199] possible reason: unannotated irqs-on.
-[  263.906199] irq event stamp: 45016
-[  263.906199] hardirqs last  enabled at (45015): [<ffffffff8412750a>] paranoid_restore+0x15/0x70
-[  263.906199] hardirqs last disabled at (45016): [<ffffffff8107ab14>] debug_stack_reset+0x94/0x1c0
-[  263.906199] softirqs last  enabled at (44514): [<ffffffff81126de7>] __do_softirq+0x447/0x4d0
-[  263.906199] softirqs last disabled at (44509): [<ffffffff81126fb6>] irq_exit+0x86/0x120
+							Thanx, Paul
 
-I've started seeing those after I switched the guest to use 128 vcpus (same as the host).
-
-
-Thanks,
-Sasha
