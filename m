@@ -1,218 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327Ab3FYE5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 00:57:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4916 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798Ab3FYE5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 00:57:07 -0400
-Message-ID: <1372136211.30572.377.camel@ul30vt.home>
-Subject: Re: [PATCH 3/3 v16] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Varun Sethi <Varun.Sethi@freescale.com>
-Cc: joro@8bytes.org, iommu@lists.linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, galak@kernel.crashing.org,
-        stuart.yoder@freescale.com, scottwood@freescale.com,
-        Timur Tabi <timur@tabi.org>
-Date: Mon, 24 Jun 2013 22:56:51 -0600
-In-Reply-To: <1371744089-17780-2-git-send-email-Varun.Sethi@freescale.com>
-References: <1371744089-17780-1-git-send-email-Varun.Sethi@freescale.com>
-	 <1371744089-17780-2-git-send-email-Varun.Sethi@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751394Ab3FYFC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 01:02:59 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:18203 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab3FYFC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 01:02:58 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-42-51c9247f154b
+From: Jonghwa Lee <jonghwa3.lee@samsung.com>
+To: anton.vorontsov@linaro.org
+Cc: linux-kernel@vger.kernel.org, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH 1/2] power: charger-manager: regulator_get() never returns NULL.
+Date: Tue, 25 Jun 2013 14:02:48 +0900
+Message-id: <1372136569-551-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsWyRsSkWLde5WSgwZFnNhYXW2+zWHSefcJs
+	cXnXHDaL240r2BxYPO5c28Pm0bdlFaPH501yAcxRXDYpqTmZZalF+nYJXBlfFi1jLDjIXjH7
+	5iamBsaVbF2MnBwSAiYS658/ZIWwxSQu3FsPFOfiEBJYyiix5OktVpiiKzNugNlCAosYJR4v
+	9YEoamGS6Nn/jBEkwSagI/F/3012EFtEQE7i9dq/TCA2s0CxxOdri8GahQUCJBau2Qq2mUVA
+	VWLv/6lgNbwCbhK7dz8BmsMBtExBYs4kG5D5EgK32SQmtT2CqheQ+Db5EAtEjazEpgPMELdJ
+	ShxccYNlAqPgAkaGVYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxiBIXj637OJOxjvH7A+xJgM
+	NG4is5Rocj4whPNK4g2NzYwsTE1MjY3MLc1IE1YS51VvsQ4UEkhPLEnNTk0tSC2KLyrNSS0+
+	xMjEwSnVwBh1xZzTRqlH7djN5J2bv09qmfiU3dFWM/G8bParhuDsp5yfhbrezD5T45a9c/rj
+	qwe8maXYVugdzJP6eTzuPItCgaQHW4mJyT5338Zn52rjV/Wv/PySX1y6TlNKqHPz9j9fJErO
+	SWlffylYc/L0Z2Xp2vTI7sTjyvov82b5NUt0qcq/d+dUVmIpzkg01GIuKk4EAKzbqrdXAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd16lZOBBidWmVlcbL3NYtF59gmz
+	xeVdc9gsbjeuYHNg8bhzbQ+bR9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7
+	x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
+	GxIE12NkgAYS1jBmfFm0jLHgIHvF7JubmBoYV7J1MXJySAiYSFyZcYMVwhaTuHBvPVhcSGAR
+	o8TjpT5djFxAdguTRM/+Z4wgCTYBHYn/+26yg9giAnISr9f+ZQKxmQWKJT5fWww2SFggQGLh
+	mq1gg1gEVCX2/p8KVsMr4Caxe/cToDkcQMsUJOZMspnAyL2AkWEVo2hqQXJBcVJ6rpFecWJu
+	cWleul5yfu4mRnCAP5PewbiqweIQowAHoxIP74e4E4FCrIllxZW5hxglOJiVRHhDRYBCvCmJ
+	lVWpRfnxRaU5qcWHGJOBlk9klhJNzgdGX15JvKGxiZmRpZG5oYWRsTlpwkrivAdbrQOFBNIT
+	S1KzU1MLUotgtjBxcEo1MHquWFc1NeXdl7wXcve//TgmLJo6q+ZDy3yr4LkHvy9VZ9ZZZ5Nv
+	yyS5WaRuXSlr0dbbPivEhWcYqOxLK/y7XUpBSqCn6UaosSBHXPWBfhX9h8FxWq4znxrtuugW
+	dk1toYC6s9+V+9v3bf4uFpN4+pm2UkP7AX+FNylr/qSUuW+P/nt3m6vhRSWW4oxEQy3mouJE
+	ACWV8c20AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 21:31 +0530, Varun Sethi wrote:
+This patch fixes return value checking of regulator_get() in charger-manager
+driver. The API, regulator_get(), returns ERR_PTR() when it fails to get
+regulator with given name, not NULL.
 
-> +#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
-> +
-> +static struct iommu_group *get_device_iommu_group(struct device *dev)
-> +{
-> +	struct iommu_group *group;
-> +
-> +	group = iommu_group_get(dev);
-> +	if (!group)
-> +		group = iommu_group_alloc();
-> +
-> +	return group;
-> +}
-> +
-[snip]
-> +
+Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+---
+ drivers/power/charger-manager.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This really gets parent or peer, right?
-
-> +static struct iommu_group *get_peer_pci_device_group(struct pci_dev *pdev)
-> +{
-> +	struct iommu_group *group = NULL;
-> +
-> +	/* check if this is the first device on the bus*/
-> +	if (pdev->bus_list.next == pdev->bus_list.prev) {
-
-It's a list_head, use list functions.  The list implementation should be
-treated as opaque.
-
-if (list_is_singular(&pdev->bus_list))
-
-> +		struct pci_bus *bus = pdev->bus->parent;
-> +		/* Traverese the parent bus list to get
-> +		 * pdev & dev for the sibling device.
-> +		 */
-> +		while (bus) {
-> +			if (!list_empty(&bus->devices)) {
-> +				pdev = container_of(bus->devices.next,
-> +					            struct pci_dev, bus_list);
-
-pdev = list_first_entry(&bus->devices, struct pci_dev, bus_list);
-
-> +				group = iommu_group_get(&pdev->dev);
-> +				break;
-> +			} else
-> +				bus = bus->parent;
-
-Is this ever reached?  Don't you always have bus->self?
-
-> +		}
-> +	} else {
-> +		/*
-> +		 * Get the pdev & dev for the sibling device
-> +		 */
-> +		pdev = container_of(pdev->bus_list.prev,
-> +				    struct pci_dev, bus_list);
-
-How do you know if you're at the head or tail of the list?
-
-struct pci_dev *tmp;
-list_for_each_entry(tmp, &pdev->bus_list, bus_list) {
-	if (tmp == pdev)
-		continue;
-
-	group = iommu_group_get(&tmp->dev);
-	break;
-}
-
-> +		group = iommu_group_get(&pdev->dev);
-> +	}
-> +
-> +	return group;
-> +}
-> +
-> +static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
-> +{
-> +	struct iommu_group *group = NULL;
-> +	struct pci_dev *bridge, *dma_pdev = NULL;
-> +	struct pci_controller *pci_ctl;
-> +	bool pci_endpt_partioning;
-> +
-> +	pci_ctl = pci_bus_to_host(pdev->bus);
-> +	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
-> +	/* We can partition PCIe devices so assign device group to the device */
-> +	if (pci_endpt_partioning) {
-> +		bridge = pci_find_upstream_pcie_bridge(pdev);
-> +		if (bridge) {
-> +			if (pci_is_pcie(bridge))
-> +				dma_pdev = pci_get_domain_bus_and_slot(
-> +						pci_domain_nr(pdev->bus),
-> +						bridge->subordinate->number, 0);
-> +			if (!dma_pdev)
-> +				dma_pdev = pci_dev_get(bridge);
-> +		} else
-> +			dma_pdev = pci_dev_get(pdev);
-> +
-> +		/* Account for quirked devices */
-> +		swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
-> +
-> +		/*
-> +		 * If it's a multifunction device that does not support our
-> +		 * required ACS flags, add to the same group as function 0.
-> +		 */
-
-See c14d2690 in Joerg's next tree, using function 0 was a poor
-assumption.
-
-> +		if (dma_pdev->multifunction &&
-> +		    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
-> +			swap_pci_ref(&dma_pdev,
-> +				     pci_get_slot(dma_pdev->bus,
-> +						  PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
-> +						  0)));
-> +
-> +		group = get_device_iommu_group(&pdev->dev);
-> +		pci_dev_put(pdev);
-
-What was the point of all the above if we use pdev here instead of
-dma_pdev?  Wrong device and broken reference counting.  This also isn't
-testing ACS all the way up to the root complex or controller.
-
-> +		/*
-> +		 * PCIe controller is not a paritionable entity
-> +		 * free the controller device iommu_group.
-> +		 */
-> +		if (pci_ctl->parent->iommu_group)
-> +			iommu_group_remove_device(pci_ctl->parent);
-> +	} else {
-> +		/*
-> +		 * All devices connected to the controller will share the
-> +		 * PCI controllers device group. If this is the first
-> +		 * device to be probed for the pci controller, copy the
-> +		 * device group information from the PCI controller device
-> +		 * node and remove the PCI controller iommu group.
-> +		 * For subsequent devices, the iommu group information can
-> +		 * be obtained from sibling devices (i.e. from the bus_devices
-> +		 * link list).
-> +		 */
-> +		if (pci_ctl->parent->iommu_group) {
-> +			group = get_device_iommu_group(pci_ctl->parent);
-> +			iommu_group_remove_device(pci_ctl->parent);
-> +		} else
-> +			group = get_peer_pci_device_group(pdev);
-> +	}
-> +
-> +	return group;
-> +}
-> +
-> +static int fsl_pamu_add_device(struct device *dev)
-> +{
-> +	struct iommu_group *group = NULL;
-> +	struct pci_dev *pdev;
-> +	const u32 *prop;
-> +	int ret, len;
-> +
-> +	/*
-> +	 * For platform devices we allocate a separate group for
-> +	 * each of the devices.
-> +	 */
-> +	if (dev->bus == &pci_bus_type) {
-> +		pdev = to_pci_dev(dev);
-> +		/* Don't create device groups for virtual PCI bridges */
-> +		if (pdev->subordinate)
-> +			return 0;
-> +
-> +		group = get_pci_device_group(pdev);
-> +
-> +	} else {
-> +		prop = of_get_property(dev->of_node, "fsl,liodn", &len);
-> +		if (prop)
-> +			group = get_device_iommu_group(dev);
-> +	}
-> +
-> +	if (!group || IS_ERR(group))
-> +		return PTR_ERR(group);
-> +
-> +	ret = iommu_group_add_device(group, dev);
-> +
-> +	iommu_group_put(group);
-> +	return ret;
-> +}
-> +
-> +static void fsl_pamu_remove_device(struct device *dev)
-> +{
-> +	iommu_group_remove_device(dev);
-> +}
-
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index ba42029..7d1bcde 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -1239,7 +1239,7 @@ static int charger_manager_register_extcon(struct charger_manager *cm)
+ 
+ 		charger->consumer = regulator_get(cm->dev,
+ 					charger->regulator_name);
+-		if (charger->consumer == NULL) {
++		if (IS_ERR(charger->consumer)) {
+ 			dev_err(cm->dev, "Cannot find charger(%s)\n",
+ 				charger->regulator_name);
+ 			ret = -EINVAL;
+-- 
+1.7.9.5
 
