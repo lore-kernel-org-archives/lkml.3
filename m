@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab3FYALX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 20:11:23 -0400
-Received: from mail-ye0-f171.google.com ([209.85.213.171]:54088 "EHLO
-	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab3FYALV (ORCPT
+	id S1752444Ab3FYAVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 20:21:49 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:46926 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab3FYAVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 20:11:21 -0400
-X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jun 2013 20:11:20 EDT
-From: Fabio Estevam <festevam@gmail.com>
-To: john.stultz@linaro.org
-Cc: tglx@linutronix.de, shc_work@mail.ru, linux-kernel@vger.kernel.org,
-        sboyd@codeaurora.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] ARM: mach-clps711x: common: Use linux/sched_clock.h
-Date: Mon, 24 Jun 2013 21:03:35 -0300
-Message-Id: <1372118615-14805-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 24 Jun 2013 20:21:47 -0400
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: mingo@kernel.org, akpm@linux-foundation.org
+Cc: walken@google.com, alex.shi@intel.com, tim.c.chen@linux.intel.com,
+        a.p.zijlstra@chello.nl, riel@redhat.com, peter@hurleysoftware.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+Subject: [PATCH 0/5] mm: i_mmap_mutex to rwsem
+Date: Mon, 24 Jun 2013 17:21:33 -0700
+Message-Id: <1372119698-13147-1-git-send-email-davidlohr.bueso@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+This patchset extends the work started by Ingo Molnar in late 2012,
+optimizing the anon-vma mutex lock, converting it from a exclusive mutex
+to a rwsem, and sharing the lock for read-only paths when walking the
+the vma-interval tree. More specifically commits 5a505085 and 4fc3f1d6.
 
-Commit 38ff87f7 (sched_clock: Make ARM's sched_clock generic for all 
-architectures) changed the header to <linux/sched_clock.h>, so adapt it in order
-to fix the following build error:
+The i_mmap mutex has similar responsibilities with the anon-vma, protecting
+file backed pages. Therefore we can use similar locking techniques: covert
+the mutex to a rwsem and share the lock when possible.
 
-arch/arm/mach-clps711x/common.c:37:29: fatal error: asm/sched_clock.h: No such file or directory
+With these changes, and the rwsem optimizations discussed in
+http://lkml.org/lkml/2013/6/16/38 we can see performance improvements.
+For instance, on a 8 socket, 80 core DL980, when compared to a vanilla 3.10-rc5, 
+aim7 benefits in throughput, with the following workloads (beyond 500 users):
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- arch/arm/mach-clps711x/common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+- alltests (+14.5%)
+- custom (+17%)
+- disk (+11%)
+- high_systime (+5%)
+- shared (+15%)
+- short (+4%)
 
-diff --git a/arch/arm/mach-clps711x/common.c b/arch/arm/mach-clps711x/common.c
-index 4ca2f3c..134641d 100644
---- a/arch/arm/mach-clps711x/common.c
-+++ b/arch/arm/mach-clps711x/common.c
-@@ -29,12 +29,12 @@
- #include <linux/clockchips.h>
- #include <linux/clocksource.h>
- #include <linux/clk-provider.h>
-+#include <linux/sched_clock.h>
- 
- #include <asm/exception.h>
- #include <asm/mach/irq.h>
- #include <asm/mach/map.h>
- #include <asm/mach/time.h>
--#include <asm/sched_clock.h>
- #include <asm/system_misc.h>
- 
- #include <mach/hardware.h>
+For lower amounts of users, there are no significant differences as all numbers
+are within the 0-2% noise range.
+
+Davidlohr Bueso (5):
+  mm,fs: introduce helpers around i_mmap_mutex
+  mm: use new helper functions around the i_mmap_mutex
+  mm: convert i_mmap_mutex to rwsem
+  mm/rmap: share the i_mmap_rwsem
+  mm: rename leftover i_mmap_mutex
+
+ Documentation/lockstat.txt   |  2 +-
+ Documentation/vm/locking     |  2 +-
+ arch/x86/mm/hugetlbpage.c    |  6 +++---
+ fs/hugetlbfs/inode.c         |  4 ++--
+ fs/inode.c                   |  2 +-
+ include/linux/fs.h           | 22 +++++++++++++++++++++-
+ include/linux/mmu_notifier.h |  2 +-
+ kernel/events/uprobes.c      |  6 +++---
+ kernel/fork.c                |  4 ++--
+ mm/filemap.c                 | 10 +++++-----
+ mm/filemap_xip.c             |  4 ++--
+ mm/fremap.c                  |  4 ++--
+ mm/hugetlb.c                 | 16 ++++++++--------
+ mm/memory-failure.c          |  7 +++----
+ mm/memory.c                  |  8 ++++----
+ mm/mmap.c                    | 22 +++++++++++-----------
+ mm/mremap.c                  |  6 +++---
+ mm/nommu.c                   | 14 +++++++-------
+ mm/rmap.c                    | 24 ++++++++++++------------
+ 19 files changed, 92 insertions(+), 73 deletions(-)
+
 -- 
-1.8.1.2
+1.7.11.7
 
