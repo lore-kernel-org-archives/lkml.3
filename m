@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab3FYTct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:32:49 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:49486 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3FYTcs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 15:32:48 -0400
-Date: Tue, 25 Jun 2013 12:32:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@freedesktop.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH 29/32] rcu: delete __cpuinit usage from all rcu files
-Message-ID: <20130625193237.GF3828@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
- <1372102237-8757-30-git-send-email-paul.gortmaker@windriver.com>
- <20130625011045.GA2912@leaf>
+	id S1751873Ab3FYTfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:35:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47943 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751269Ab3FYTfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 15:35:11 -0400
+Message-ID: <1372188900.18889.18.camel@cumari.coelho.fi>
+Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
+From: Luciano Coelho <coelho@ti.com>
+To: <grant.likely@linaro.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>
+CC: <tony@atomide.com>, <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@vger.kernel.org>
+Date: Tue, 25 Jun 2013 22:35:00 +0300
+In-Reply-To: <1372149330-24335-1-git-send-email-coelho@ti.com>
+References: <1372149330-24335-1-git-send-email-coelho@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130625011045.GA2912@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062519-7408-0000-0000-0000118153AC
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 06:10:46PM -0700, Josh Triplett wrote:
-> On Mon, Jun 24, 2013 at 03:30:34PM -0400, Paul Gortmaker wrote:
-> > The __cpuinit type of throwaway sections might have made sense
-> > some time ago when RAM was more constrained, but now the savings
-> > do not offset the cost and complications.  For example, the fix in
-> > commit 5e427ec2d0 ("x86: Fix bit corruption at CPU resume time")
-> > is a good example of the nasty type of bugs that can be created
-> > with improper use of the various __init prefixes.
-> > 
-> > After a discussion on LKML[1] it was decided that cpuinit should go
-> > the way of devinit and be phased out.  Once all the users are gone,
-> > we can then finally remove the macros themselves from linux/init.h.
-> > 
-> > This removes all the drivers/rcu uses of the __cpuinit macros
-> > from all C files.
-> > 
-> > [1] https://lkml.org/lkml/2013/5/20/589
-> > 
-> > Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > Cc: Josh Triplett <josh@freedesktop.org>
-> > Cc: Dipankar Sarma <dipankar@in.ibm.com>
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > ---
+(fixed the ARM mailing list address)
+
+On Tue, 2013-06-25 at 11:35 +0300, Luciano Coelho wrote:
+> Add device tree bindings documentation for the TI WiLink modules.
+> Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
+> modules is supported.
 > 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Luciano Coelho <coelho@ti.com>
+> ---
+> 
+> I created a new directory under net to contain wireless bindings documentation.
+> 
+> The actual implementation in the driver will follow separately.
+> 
+>  .../devicetree/bindings/net/wireless/ti-wilink.txt |   46 ++++++++++++++++++++
+>  1 file changed, 46 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> new file mode 100644
+> index 0000000..d8e8bfbb
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> @@ -0,0 +1,46 @@
+> +TI WiLink Wireless Modules Device Tree Bindings
+> +===============================================
+> +
+> +The WiLink modules provide wireless connectivity, such as WLAN,
+> +Bluetooth, FM and NFC.
+> +
+> +There are several different modules available, which can be grouped by
+> +their generation: WiLink6, WiLink7 and WiLink8.  WiLink4 is not
+> +currently supported with device tree.
+> +
+> +Currently, only the WLAN portion of the modules is supported with
+> +device tree.
+> +
+> +Required properties:
+> +--------------------
+> +
+> +- compatible: should be "ti,wilink6", "ti,wilink7" or "ti,wilink8"
+> +- interrupt-parent: the interrupt controller
+> +- interrupts: out-of-band WLAN interrupt
+> +	See the interrupt controller's bindings documentation for
+> +	detailed definition.
+> +
+> +Optional properties:
+> +--------------------
+> +
+> +- refclock: the internal WLAN reference clock frequency (required for
+> +  WiLink6 and WiLink7; not used for WiLink8).  Must be one of the
+> +  following:
+> +	0 = 19.2 MHz
+> +	1 = 26.0 MHz
+> +	2 = 38.4 MHz
+> +	3 = 52.0 MHz
+> +	4 = 38.4 MHz, XTAL
+> +	5 = 26.0 MHz, XTAL
+> +
+> +- tcxoclock: the internal WLAN TCXO clock frequency (required for
+> +  WiLink7 not used for WiLink6 and WiLink8).  Must be one of the
+> +  following:
+> +	0 = 19.200 MHz
+> +	1 = 26.000 MHz
+> +	2 = 38.400 MHz
+> +	3 = 52.000 MHz
+> +	4 = 16.368 MHz
+> +	5 = 32.736 MHz
+> +	6 = 16.800 MHz
+> +	7 = 33.600 MHz
 
-Queued for 3.12 with Josh's Reviewed-by.  Thank you both!
+If this is okay for everyone, can I push this via my tree (which goes to
+linux-wireless->net->linus)? I think it makes more sense to send the
+documentation together with the patch that actually implements the DT
+node parsing in the driver.
 
-							Thanx, Paul
+--
+Luca.
 
