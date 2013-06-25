@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab3FYTLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:11:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40866 "EHLO
+	id S1752055Ab3FYSdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:33:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40843 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab3FYSdh (ORCPT
+	with ESMTP id S1751957Ab3FYSdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:37 -0400
+	Tue, 25 Jun 2013 14:33:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
-Subject: [ 19/95] parisc: make interrupt and interruption stack allocation reentrant
-Date: Tue, 25 Jun 2013 11:32:06 -0700
-Message-Id: <20130625182155.825009429@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [ 13/95] parisc: more irq statistics in /proc/interrupts
+Date: Tue, 25 Jun 2013 11:32:00 -0700
+Message-Id: <20130625182155.161236127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,105 +26,196 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Helge Deller <deller@gmx.de>
 
-commit b63a2bbc0b9b106a93e11952ab057e2408f2eb02 upstream.
+commit cd85d5514d5c4d7e78abac923fc032457d0c5091 upstream.
 
-The get_stack_use_cr30 and get_stack_use_r30 macros allocate a stack
-frame for external interrupts and interruptions requiring a stack frame.
-They are currently not reentrant in that they save register context
-before the stack is set or adjusted.
+Add framework and initial values for more fine grained statistics in
+/proc/interrupts.
 
-I have observed a number of system crashes where there was clear
-evidence of stack corruption during interrupt processing, and as a
-result register corruption. Some interruptions can still occur during
-interruption processing, however external interrupts are disabled and
-data TLB misses don't occur for absolute accesses. So, it's not entirely
-clear what triggers this issue. Also, if an interruption occurs when
-Q=0, it is generally not possible to recover as the shadowed registers
-are not copied.
-
-The attached patch reworks the get_stack_use_cr30 and get_stack_use_r30
-macros to allocate stack before doing register saves. The new code is a
-couple of instructions shorter than the old implementation. Thus, it's
-an improvement even if it doesn't fully resolve the stack corruption
-issue. Based on limited testing, it improves SMP system stability.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
 Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/assembly.h |    1 -
- arch/parisc/kernel/entry.S         |   19 ++++++++++---------
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ arch/parisc/include/asm/hardirq.h   |   36 ++++++++++++++++++++++++++-
+ arch/parisc/include/asm/processor.h |    1 
+ arch/parisc/kernel/irq.c            |   48 +++++++++++++++++++++++++++++++++++-
+ arch/parisc/kernel/smp.c            |    3 +-
+ arch/parisc/mm/init.c               |    2 +
+ 5 files changed, 86 insertions(+), 4 deletions(-)
 
---- a/arch/parisc/include/asm/assembly.h
-+++ b/arch/parisc/include/asm/assembly.h
-@@ -438,7 +438,6 @@
- 	SAVE_SP  (%sr4, PT_SR4 (\regs))
- 	SAVE_SP  (%sr5, PT_SR5 (\regs))
- 	SAVE_SP  (%sr6, PT_SR6 (\regs))
--	SAVE_SP  (%sr7, PT_SR7 (\regs))
+--- a/arch/parisc/include/asm/hardirq.h
++++ b/arch/parisc/include/asm/hardirq.h
+@@ -1,11 +1,45 @@
+ /* hardirq.h: PA-RISC hard IRQ support.
+  *
+  * Copyright (C) 2001 Matthew Wilcox <matthew@wil.cx>
++ * Copyright (C) 2013 Helge Deller <deller@gmx.de>
+  */
  
- 	SAVE_CR  (%cr17, PT_IASQ0(\regs))
- 	mtctl	 %r0,	%cr17
---- a/arch/parisc/kernel/entry.S
-+++ b/arch/parisc/kernel/entry.S
-@@ -65,15 +65,11 @@
- 	rsm	PSW_SM_I, %r0	/* barrier for "Relied upon Translation */
- 	mtsp	%r0, %sr4
- 	mtsp	%r0, %sr5
--	mfsp	%sr7, %r1
--	or,=    %r0,%r1,%r0	/* Only save sr7 in sr3 if sr7 != 0 */
--	mtsp	%r1, %sr3
-+	mtsp	%r0, %sr6
- 	tovirt_r1 %r29
- 	load32	KERNEL_PSW, %r1
+ #ifndef _PARISC_HARDIRQ_H
+ #define _PARISC_HARDIRQ_H
  
- 	rsm     PSW_SM_QUIET,%r0	/* second "heavy weight" ctl op */
--	mtsp	%r0, %sr6
--	mtsp	%r0, %sr7
- 	mtctl	%r0, %cr17	/* Clear IIASQ tail */
- 	mtctl	%r0, %cr17	/* Clear IIASQ head */
- 	mtctl	%r1, %ipsw
-@@ -119,17 +115,20 @@
+-#include <asm-generic/hardirq.h>
++#include <linux/cache.h>
++#include <linux/threads.h>
++#include <linux/irq.h>
++
++typedef struct {
++	unsigned int __softirq_pending;
++#ifdef CONFIG_DEBUG_STACKOVERFLOW
++	unsigned int kernel_stack_usage;
++#endif
++#ifdef CONFIG_SMP
++	unsigned int irq_resched_count;
++	unsigned int irq_call_count;
++	/*
++	 * irq_tlb_count is double-counted in irq_call_count, so it must be
++	 * subtracted from irq_call_count when displaying irq_call_count
++	 */
++	unsigned int irq_tlb_count;
++#endif
++} ____cacheline_aligned irq_cpustat_t;
++
++DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
++
++#define __ARCH_IRQ_STAT
++#define __IRQ_STAT(cpu, member) (irq_stat[cpu].member)
++#define inc_irq_stat(member)	this_cpu_inc(irq_stat.member)
++#define local_softirq_pending()	this_cpu_read(irq_stat.__softirq_pending)
++
++#define __ARCH_SET_SOFTIRQ_PENDING
++
++#define set_softirq_pending(x)	\
++		this_cpu_write(irq_stat.__softirq_pending, (x))
++#define or_softirq_pending(x)	this_cpu_or(irq_stat.__softirq_pending, (x))
++
++#define ack_bad_irq(irq) WARN(1, "unexpected IRQ trap at vector %02x\n", irq)
  
- 	/* we save the registers in the task struct */
+ #endif /* _PARISC_HARDIRQ_H */
+--- a/arch/parisc/include/asm/processor.h
++++ b/arch/parisc/include/asm/processor.h
+@@ -112,7 +112,6 @@ struct cpuinfo_parisc {
+ 	unsigned long txn_addr;     /* MMIO addr of EIR or id_eid */
+ #ifdef CONFIG_SMP
+ 	unsigned long pending_ipi;  /* bitmap of type ipi_message_type */
+-	unsigned long ipi_count;    /* number ipi Interrupts */
+ #endif
+ 	unsigned long bh_count;     /* number of times bh was invoked */
+ 	unsigned long prof_counter; /* per CPU profiling support */
+--- a/arch/parisc/kernel/irq.c
++++ b/arch/parisc/kernel/irq.c
+@@ -152,6 +152,40 @@ static struct irq_chip cpu_interrupt_typ
+ 	.irq_retrigger	= NULL,
+ };
  
-+	copy	%r30, %r17
- 	mfctl   %cr30, %r1
-+	ldo	THREAD_SZ_ALGN(%r1), %r30
-+	mtsp	%r0,%sr7
-+	mtsp	%r16,%sr3
- 	tophys  %r1,%r9
- 	LDREG	TI_TASK(%r9), %r1	/* thread_info -> task_struct */
- 	tophys  %r1,%r9
- 	ldo     TASK_REGS(%r9),%r9
--	STREG   %r30, PT_GR30(%r9)
-+	STREG   %r17,PT_GR30(%r9)
- 	STREG   %r29,PT_GR29(%r9)
- 	STREG   %r26,PT_GR26(%r9)
-+	STREG	%r16,PT_SR7(%r9)
- 	copy    %r9,%r29
--	mfctl   %cr30, %r1
--	ldo	THREAD_SZ_ALGN(%r1), %r30
- 	.endm
++DEFINE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
++#define irq_stats(x)		(&per_cpu(irq_stat, x))
++
++/*
++ * /proc/interrupts printing for arch specific interrupts
++ */
++int arch_show_interrupts(struct seq_file *p, int prec)
++{
++	int j;
++
++#ifdef CONFIG_DEBUG_STACKOVERFLOW
++	seq_printf(p, "%*s: ", prec, "STK");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->kernel_stack_usage);
++	seq_printf(p, "  Kernel stack usage\n");
++#endif
++#ifdef CONFIG_SMP
++	seq_printf(p, "%*s: ", prec, "RES");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_resched_count);
++	seq_printf(p, "  Rescheduling interrupts\n");
++	seq_printf(p, "%*s: ", prec, "CAL");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count -
++					irq_stats(j)->irq_tlb_count);
++	seq_printf(p, "  Function call interrupts\n");
++	seq_printf(p, "%*s: ", prec, "TLB");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
++	seq_printf(p, "  TLB shootdowns\n");
++#endif
++	return 0;
++}
++
+ int show_interrupts(struct seq_file *p, void *v)
+ {
+ 	int i = *(loff_t *) v, j;
+@@ -219,6 +253,9 @@ int show_interrupts(struct seq_file *p,
+ 		raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	}
  
- 	.macro  get_stack_use_r30
-@@ -137,10 +136,12 @@
- 	/* we put a struct pt_regs on the stack and save the registers there */
++	if (i == NR_IRQS)
++		arch_show_interrupts(p, 3);
++
+ 	return 0;
+ }
  
- 	tophys  %r30,%r9
--	STREG   %r30,PT_GR30(%r9)
-+	copy	%r30,%r1
- 	ldo	PT_SZ_ALGN(%r30),%r30
-+	STREG   %r1,PT_GR30(%r9)
- 	STREG   %r29,PT_GR29(%r9)
- 	STREG   %r26,PT_GR26(%r9)
-+	STREG	%r16,PT_SR7(%r9)
- 	copy    %r9,%r29
- 	.endm
+@@ -340,13 +377,22 @@ static inline void stack_overflow_check(
+ 	/* Our stack starts directly behind the thread_info struct. */
+ 	unsigned long stack_start = (unsigned long) current_thread_info();
+ 	unsigned long sp = regs->gr[30];
++	unsigned long stack_usage;
++	unsigned int *last_usage;
  
+ 	/* if sr7 != 0, we interrupted a userspace process which we do not want
+ 	 * to check for stack overflow. We will only check the kernel stack. */
+ 	if (regs->sr[7])
+ 		return;
+ 
+-	if (likely((sp - stack_start) < (THREAD_SIZE - STACK_MARGIN)))
++	/* calculate kernel stack usage */
++	stack_usage = sp - stack_start;
++	last_usage = &per_cpu(irq_stat.kernel_stack_usage, smp_processor_id());
++
++	if (unlikely(stack_usage > *last_usage))
++		*last_usage = stack_usage;
++
++	if (likely(stack_usage < (THREAD_SIZE - STACK_MARGIN)))
+ 		return;
+ 
+ 	pr_emerg("stackcheck: %s will most likely overflow kernel stack "
+--- a/arch/parisc/kernel/smp.c
++++ b/arch/parisc/kernel/smp.c
+@@ -127,7 +127,7 @@ ipi_interrupt(int irq, void *dev_id)
+ 	unsigned long flags;
+ 
+ 	/* Count this now; we may make a call that never returns. */
+-	p->ipi_count++;
++	inc_irq_stat(irq_call_count);
+ 
+ 	mb();	/* Order interrupt and bit testing. */
+ 
+@@ -155,6 +155,7 @@ ipi_interrupt(int irq, void *dev_id)
+ 				
+ 			case IPI_RESCHEDULE:
+ 				smp_debug(100, KERN_DEBUG "CPU%d IPI_RESCHEDULE\n", this_cpu);
++				inc_irq_stat(irq_resched_count);
+ 				scheduler_ipi();
+ 				break;
+ 
+--- a/arch/parisc/mm/init.c
++++ b/arch/parisc/mm/init.c
+@@ -1077,6 +1077,7 @@ void flush_tlb_all(void)
+ {
+ 	int do_recycle;
+ 
++	inc_irq_stat(irq_tlb_count);
+ 	do_recycle = 0;
+ 	spin_lock(&sid_lock);
+ 	if (dirty_space_ids > RECYCLE_THRESHOLD) {
+@@ -1097,6 +1098,7 @@ void flush_tlb_all(void)
+ #else
+ void flush_tlb_all(void)
+ {
++	inc_irq_stat(irq_tlb_count);
+ 	spin_lock(&sid_lock);
+ 	flush_tlb_all_local(NULL);
+ 	recycle_sids();
 
 
