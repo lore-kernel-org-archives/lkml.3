@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab3FYQ4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:56:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19833 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab3FYQ4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:56:12 -0400
-Date: Tue, 25 Jun 2013 12:55:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130625165556.GA16170@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Oleg Nesterov <oleg@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrey Vagin <avagin@openvz.org>
-References: <20130623143634.GA2000@redhat.com>
- <20130623150603.GA32313@redhat.com>
- <20130623160452.GA11740@redhat.com>
- <20130624020014.GB12811@redhat.com>
- <20130624143928.GA20659@redhat.com>
- <1372085549.18733.162.camel@gandalf.local.home>
- <20130624160012.GB5993@redhat.com>
- <1372091079.18733.168.camel@gandalf.local.home>
- <20130624165140.GB8572@redhat.com>
- <1372093476.18733.170.camel@gandalf.local.home>
+	id S1752023Ab3FYQ4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:56:46 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:49006 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab3FYQ4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:56:45 -0400
+Date: Tue, 25 Jun 2013 18:56:39 +0200
+From: Robert Richter <rric@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/14] perf, persistent: Kernel updates for perf tool
+ integration
+Message-ID: <20130625165639.GH21579@rric.localhost>
+References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+ <20130624102200.GR28407@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372093476.18733.170.camel@gandalf.local.home>
+In-Reply-To: <20130624102200.GR28407@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 01:04:36PM -0400, Steven Rostedt wrote:
- > On Mon, 2013-06-24 at 12:51 -0400, Dave Jones wrote:
- > > On Mon, Jun 24, 2013 at 12:24:39PM -0400, Steven Rostedt wrote:
- > > 
- > >  > > Ah, this is the first victim of my new 'check sanity of nodes during list walks' patch.
- > >  > > It's doing the same prev->next next->prev checking as list_add and friends.
- > >  > > I'm looking at getting it into shape for a 3.12 merge after some other preparatory patches
- > >  > > go into 3.11
- > >  > 
- > >  > OK, and you may need to make an exception for the ring buffer. To do a
- > >  > lockless swap out of the reader page for one of the pages in the buffer,
- > >  > it uses the 2 LSB as flags. Notice the "next=ffff880243288001", that "1"
- > >  > is a flag that states the next page is the "header" page (next to be
- > >  > read). We use cmpxchg to update the pages to handle races between the
- > >  > reader and writer.
- > > 
- > > I just had a plumber come visit to replace my toilet.
- > > I think even he would say "dude, gross" about that hack.
- > 
- > Wow, that hack made you so sick you needed to replace your toilet?
- > 
- > Note, the idea of using the 2 LSB bits of pointers came from -rt. Where
- > we do the same with the rt_mutex owner.
+On 24.06.13 12:22:00, Peter Zijlstra wrote:
+> On Tue, Jun 11, 2013 at 06:42:26PM +0200, Robert Richter wrote:
+> > Note that perf tools need to support the 'attr<num>' syntax that is
+> > added in a separate patch set. With it we are able to run perf tool
+> > commands to read persistent events, e.g.:
+> 
+> where is this patch? I can't find it.
 
-While I've been spinning wheels trying to reproduce that softlockup bug,
-On another machine I've been refining my list-walk debug patch.
-I added an ugly "ok, the ringbuffer is playing games with lower two bits" special case.
+I posted it with that subject:
 
-But what the hell is going on here ?
+ [PATCH 0/4] perf tools: Persistent events, changes for perf tool integration
 
-next->prev should be prev (ffff88023c6cdd18), but was 00ffff88023c6cdd. (next=ffff880243288001).
+> I also find attr<num>:<bit> a bit weird. So far we've used
+> <perf_event_attr::fieldname>:<bits>, so while initializing anonymous
+> unions is a bit difficult with 'older' GCCs and we cannot actually do:
+> 
+> struct perf_event_attr {
+> 	...
+> 	union {
+> 		u64 flags;
+> 		u64 disabled : 1,
+> 		    ...
+> 		    __reserved_1 : X;
+> 	}
+> 	...
+> };
+> 
+> We could fake it in userspace by allowing things like: flags:23. It
+> would not be a much worse hack than attr<num>:<bit> I suppose.
 
-(trace comes from the same ringbuffer code)
+A goal is to be able to entirely describe the complete attr structure
+with sysfs. perf tools should work out-of-the-box for every kind of
+event. For this particular case a 'flags' syntax would be ok, but not
+if you like to fill in other attr members.
 
-	Dave
+With attr<num>:<bit> you are flexible to put in *everything* into
+attr. And for better readability there are abstractions as formats
+like:
 
+ /sys/bus/event_source/devices/persistent/format/persistent:attr5:23
+
+Not sure if the event parser handles recursion already, but we could
+also support the 'flag' format you describe that way:
+
+ /sys/bus/event_source/devices/persistent/format/flags:attr5:0-63
+ /sys/bus/event_source/devices/persistent/format/persistent:flags:23
+
+We could even list events for other pmus with small changes in the
+kernel, e.g:
+
+ /sys/bus/event_source/devices/persistent/format/type:attr0:0-31
+ /sys/bus/event_source/devices/persistent/events/some_tracepoint:type=2,config=<tp_id>
+
+The example is a bit weird. But in general we can translate struct
+perf_event_attr to a string and vice versa. And perf tools understand
+how to set up every bit of the event attr structure.
+
+-Robert
