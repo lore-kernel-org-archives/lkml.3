@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab3FYII6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:08:58 -0400
-Received: from p-mail2.rd.orange.com ([195.101.245.16]:58556 "EHLO
-	p-mail2.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab3FYIIr (ORCPT
+	id S1752159Ab3FYIKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:10:14 -0400
+Received: from 19.mo1.mail-out.ovh.net ([178.32.97.206]:45982 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751856Ab3FYIKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:08:47 -0400
-X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jun 2013 04:08:46 EDT
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH 15/15] kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
-Date: Tue, 25 Jun 2013 10:01:12 +0200
-User-Agent: KMail/1.13.5 (Linux/3.9.3-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Fengguang Wu <fengguang.wu@intel.com>
-References: <cover.1372097219.git.yann.morin.1998@free.fr> <8357b48549e17b3e4e402c7f977b65708922e60f.1372097219.git.yann.morin.1998@free.fr>
-In-Reply-To: <8357b48549e17b3e4e402c7f977b65708922e60f.1372097219.git.yann.morin.1998@free.fr>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306251001.12430.yann.morin.1998@free.fr>
-X-OriginalArrivalTime: 25 Jun 2013 08:01:12.0885 (UTC) FILETIME=[290ADE50:01CE717A]
+	Tue, 25 Jun 2013 04:10:11 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH v2 1/4] ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare.
+Date: Tue, 25 Jun 2013 10:10:05 +0200
+Message-Id: <1372147805-4184-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
+References: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 5816961869772650604
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal, All,
+Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+avoid common clk framework warnings.
 
-On Monday 24 June 2013 20:11:59 Yann E. MORIN wrote:
-> Currently, randconfig does randomise choice entries, unless KCONFIG_ALLCONFIG
-> is specified.
-[--SNIP--]
-> This patch defers setting that a choice has a value until a symbol for
-> that choice is indeed set, so that choices are properly randomised when
-> KCONFIG_ALLCONFIG is set, but not if a symbol for that choice is set.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ drivers/clocksource/tcb_clksrc.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-I've just been informed by Fengguang that this patch breaks yet another
-use-case of his, but this time KCONFIG_ALLCONFIG is not involved.
-
-I'll investigate this issue when I'm back home tonight (ie. ~16:00 UTC).
-Sorry for the breakage (again...). :-(
-
-We really need a known, shared test-suite for kconfig... :-/
-
-Regards,
-Yann E. MORIN.
-
+diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+index 8a61872..229c019 100644
+--- a/drivers/clocksource/tcb_clksrc.c
++++ b/drivers/clocksource/tcb_clksrc.c
+@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+ 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
+ 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
+ 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
+-		clk_disable(tcd->clk);
++		clk_disable_unprepare(tcd->clk);
+ 	}
+ 
+ 	switch (m) {
+@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+ 	 * of oneshot, we get lower overhead and improved accuracy.
+ 	 */
+ 	case CLOCK_EVT_MODE_PERIODIC:
+-		clk_enable(tcd->clk);
++		clk_prepare_enable(tcd->clk);
+ 
+ 		/* slow clock, count up to RC, then irq and restart */
+ 		__raw_writel(timer_clock
+@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+ 		break;
+ 
+ 	case CLOCK_EVT_MODE_ONESHOT:
+-		clk_enable(tcd->clk);
++		clk_prepare_enable(tcd->clk);
+ 
+ 		/* slow clock, count up to RC, then irq and stop */
+ 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
+@@ -275,7 +275,7 @@ static int __init tcb_clksrc_init(void)
+ 	pdev = tc->pdev;
+ 
+ 	t0_clk = tc->clk[0];
+-	clk_enable(t0_clk);
++	clk_prepare_enable(t0_clk);
+ 
+ 	/* How fast will we be counting?  Pick something over 5 MHz.  */
+ 	rate = (u32) clk_get_rate(t0_clk);
+@@ -313,7 +313,7 @@ static int __init tcb_clksrc_init(void)
+ 		/* tclib will give us three clocks no matter what the
+ 		 * underlying platform supports.
+ 		 */
+-		clk_enable(tc->clk[1]);
++		clk_prepare_enable(tc->clk[1]);
+ 		/* setup both channel 0 & 1 */
+ 		tcb_setup_dual_chan(tc, best_divisor_idx);
+ 	}
 -- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
-| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
-| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
-'------------------------------'-------'------------------'--------------------'
+1.7.9.5
+
