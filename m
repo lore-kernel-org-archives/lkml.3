@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab3FYKfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 06:35:48 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52539 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab3FYKfr (ORCPT
+	id S1752365Ab3FYKjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 06:39:22 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:35037 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3FYKjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 06:35:47 -0400
-Date: Tue, 25 Jun 2013 11:35:43 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Message-ID: <20130625103543.GC27646@sirena.org.uk>
-References: <Pine.LNX.4.64.1306210825040.27277@axis700.grange>
- <Pine.LNX.4.64.1306210827090.27277@axis700.grange>
- <20130621144423.GX27646@sirena.org.uk>
- <Pine.LNX.4.64.1306211651120.27277@axis700.grange>
+	Tue, 25 Jun 2013 06:39:21 -0400
+Message-ID: <51C97305.3090406@huawei.com>
+Date: Tue, 25 Jun 2013 18:37:57 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ddcd+dsiJrvLd0CP"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1306211651120.27277@axis700.grange>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulators: max8973: initial DT support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 1/2] tracing/kprobes: move free_trace_probe into unregister_trace_probe
+References: <51C951BF.1090509@huawei.com> <51C96C89.6080207@hitachi.com>
+In-Reply-To: <51C96C89.6080207@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013/6/25 18:10, Masami Hiramatsu wrote:
+> (2013/06/25 17:15), zhangwei(Jovi) wrote:
+>> There have no good reason to call free_trace_probe
+>> every time when unregister_trace_probe return 0.
+>>
+>> Move free_trace_probe into unregister_trace_probe,
+>> make code simpler.
+> 
+> Sorry, nack. For the symmetrical coding reason, I don't like
+> involving "free" and "alloc" into "unregister"/"register"
+> functions. I think those should be just another actions.
+> 
+> Thank you,
 
---ddcd+dsiJrvLd0CP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That's fine, I just saw there have a little inconsistent between
+trace_kprobe.c and trace_uprobe.c.
 
-On Fri, Jun 21, 2013 at 04:52:28PM +0200, Guennadi Liakhovetski wrote:
-> On Fri, 21 Jun 2013, Mark Brown wrote:
+Please ignore this patch if you don't like. :)
+Thanks.
 
-> > A common approach here is just to embed the platform data in the
-> > driver data then copy actual platform data in there or parse the device
-> > tree bindings (when added) into the structure.  This means that most of
-> > the driver can just assume there's platform data which makes life a bit
-> > simpler.
+> 
+>>
+>> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Oleg Nesterov <oleg@redhat.com>
+>> ---
+>>  kernel/trace/trace_kprobe.c |    5 +----
+>>  1 file changed, 1 insertion(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+>> index 9f46e98..f193c38 100644
+>> --- a/kernel/trace/trace_kprobe.c
+>> +++ b/kernel/trace/trace_kprobe.c
+>> @@ -401,6 +401,7 @@ static int unregister_trace_probe(struct trace_probe *tp)
+>>  	__unregister_trace_probe(tp);
+>>  	list_del(&tp->list);
+>>  	unregister_probe_event(tp);
+>> +	free_trace_probe(tp);
+>>
+>>  	return 0;
+>>  }
+>> @@ -419,7 +420,6 @@ static int register_trace_probe(struct trace_probe *tp)
+>>  		ret = unregister_trace_probe(old_tp);
+>>  		if (ret < 0)
+>>  			goto end;
+>> -		free_trace_probe(old_tp);
+>>  	}
+>>
+>>  	/* Register new event */
+>> @@ -550,8 +550,6 @@ static int create_trace_probe(int argc, char **argv)
+>>  		}
+>>  		/* delete an event */
+>>  		ret = unregister_trace_probe(tp);
+>> -		if (ret == 0)
+>> -			free_trace_probe(tp);
+>>  		mutex_unlock(&probe_lock);
+>>  		return ret;
+>>  	}
+>> @@ -680,7 +678,6 @@ static int release_all_trace_probes(void)
+>>  	while (!list_empty(&probe_list)) {
+>>  		tp = list_entry(probe_list.next, struct trace_probe, list);
+>>  		unregister_trace_probe(tp);
+>> -		free_trace_probe(tp);
+>>  	}
+>>
+>>  end:
+>>
+> 
+> 
 
-> But we can do this later, when we add DT support for those parameters,=20
-> right?
 
-Sure, but it does make sense to structure the code that way from the
-start since it provides simplification.
-
---ddcd+dsiJrvLd0CP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRyXJ8AAoJELSic+t+oim9RUAP/2GjlMq75wMmvlCJnA7z4rt3
-HRkeGxxcG2mSQs/YnHlrEHVk7ApriF+VE+89zCAFF/jGgJusFNHZt5XLH6at7QUU
-r5KZpkP+LHYJip8SKd7XlbeGeVJ5k1y3IithYquW5+xFIYN73jPKeVBcH5JVCqUi
-nlxAOr5T6XQleRcHUzKKPRtteGet+l8+b4IlORkHp/cm1dw4LYbdc+LOqbnQW82y
-QzQZF6TYYh1IiW9DK1dIXzA+qCkQiBb2VljdgFuuVLJQT/nroC2OThAr/ISS0JpQ
-NjCJC3lz1SfNBCw7w9YNvDLECwb070LputeCfYc2rjSRaB+xfi1mMV62u1HROZsH
-9X9Mzg/uT+IIldLoM2gAqikWr8AFQfuRYFnnMy/cimKzN2vwZaTDcRVlqCB+yhth
-fqO82ZqHi08z+Vdn8L4VPRgQes1M2bbaK9pz2oYqX4AoN0BvTiXw7AGuzKHLu2xM
-+1xd5DMAnxBDCbpACT3jmhiymx9Ot2hETcgjL/rv9tYu8LxzsQa11Uq7abRkf3/i
-WpiW+TOdJc967Za8KUxJxlnGf2oo4bMc8mlk6Bu//xu7pabPyJ1aa5JfILj+XAHg
-oSA3Z/FU+/k2+fbck6NgM7YYBwVX7NoU1ueypkP2WDD0Zuuxsxsyx5N2v1Gg9TAt
-P4FjPL9blGHEaBPOrhK0
-=RCRD
------END PGP SIGNATURE-----
-
---ddcd+dsiJrvLd0CP--
