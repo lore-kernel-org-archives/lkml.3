@@ -1,175 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab3FYTJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:09:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40889 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab3FYSdm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:42 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
-        Helge Deller <deller@gmx.de>
-Subject: [ 27/95] parisc: fix serial ports on C8000 workstation
-Date: Tue, 25 Jun 2013 11:32:14 -0700
-Message-Id: <20130625182156.715306743@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
-References: <20130625182153.605455184@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1753923Ab3FYTJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:09:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45907 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752067Ab3FYTJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 15:09:32 -0400
+Message-ID: <51C9EADD.5000904@zytor.com>
+Date: Tue, 25 Jun 2013 12:09:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Nathan Zimmer <nzimmer@sgi.com>,
+        Robin Holt <holt@sgi.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com> <20130621185056.GA23473@kroah.com> <51C4C5F3.3050800@sgi.com> <CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com> <51C9D4ED.5070805@sgi.com> <51C9DEC1.6030602@zytor.com> <CAE9FiQV5z+3AXy5c=aaU3vq1V3fibJ6PhhA4VW5H8BWVzhxXPA@mail.gmail.com> <51C9E523.7000803@zytor.com> <51C9E83A.8070700@sgi.com> <CAE9FiQUckP6m-HTdzdAJt0P_1bok-QHrxqm3RUTx=v_C=ufFCg@mail.gmail.com>
+In-Reply-To: <CAE9FiQUckP6m-HTdzdAJt0P_1bok-QHrxqm3RUTx=v_C=ufFCg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On 06/25/2013 12:03 PM, Yinghai Lu wrote:
+>> It is worth experimenting with but the big question would be,
+>> if it still avoids the very expensive "memmap_init_zone" and
+>> it's sub-functions using huge expanses of memory.  I'll do some
+>> experimenting as soon as I can.  Our 32TB system is being
+>> brought back to 16TB (we found a number of problems as we
+>> get closer and closer to the 64TB limit), but that's still
+>> a significant size.
+> 
+> According to Intel SDM, CPU could support 52bits physical addressing.
+> 
+> So how linux kernel will handle it? as we only have 48bits virtual addressing.
+> 
 
-------------------
+The Linux kernel will not support more than V-2 bits of physical address
+space for any number V of virtual address bits.
 
-From: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-
-commit 9a66d1869d90f13fbaf83dcce5b1aeec86fbc699 upstream.
-
-The C8000 workstation (64 bit kernel only) has a somewhat different
-serial port configuration than other models.
-Thomas Bogendoerfer sent a patch to fix this in September 2010, which
-was now minimally modified by me.
-
-Signed-off-by: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/parisc/kernel/hardware.c      |    1 
- drivers/parisc/iosapic.c           |   66 +++++++++++++++++++++++++++++++++++++
- drivers/tty/serial/8250/8250_gsc.c |   10 +++++
- 3 files changed, 76 insertions(+), 1 deletion(-)
-
---- a/arch/parisc/kernel/hardware.c
-+++ b/arch/parisc/kernel/hardware.c
-@@ -1205,6 +1205,7 @@ static struct hp_hardware hp_hardware_li
- 	{HPHW_FIO, 0x004, 0x00320, 0x0, "Metheus Frame Buffer"}, 
- 	{HPHW_FIO, 0x004, 0x00340, 0x0, "BARCO CX4500 VME Grphx Cnsl"}, 
- 	{HPHW_FIO, 0x004, 0x00360, 0x0, "Hughes TOG VME FDDI"}, 
-+	{HPHW_FIO, 0x076, 0x000AD, 0x00, "Crestone Peak RS-232"},
- 	{HPHW_IOA, 0x185, 0x0000B, 0x00, "Java BC Summit Port"}, 
- 	{HPHW_IOA, 0x1FF, 0x0000B, 0x00, "Hitachi Ghostview Summit Port"}, 
- 	{HPHW_IOA, 0x580, 0x0000B, 0x10, "U2-IOA BC Runway Port"}, 
---- a/drivers/parisc/iosapic.c
-+++ b/drivers/parisc/iosapic.c
-@@ -811,6 +811,70 @@ int iosapic_fixup_irq(void *isi_obj, str
- 	return pcidev->irq;
- }
- 
-+static struct iosapic_info *first_isi = NULL;
-+
-+#ifdef CONFIG_64BIT
-+int iosapic_serial_irq(int num)
-+{
-+	struct iosapic_info *isi = first_isi;
-+	struct irt_entry *irte = NULL;  /* only used if PAT PDC */
-+	struct vector_info *vi;
-+	int isi_line;	/* line used by device */
-+
-+	/* lookup IRT entry for isi/slot/pin set */
-+	irte = &irt_cell[num];
-+
-+	DBG_IRT("iosapic_serial_irq(): irte %p %x %x %x %x %x %x %x %x\n",
-+		irte,
-+		irte->entry_type,
-+		irte->entry_length,
-+		irte->polarity_trigger,
-+		irte->src_bus_irq_devno,
-+		irte->src_bus_id,
-+		irte->src_seg_id,
-+		irte->dest_iosapic_intin,
-+		(u32) irte->dest_iosapic_addr);
-+	isi_line = irte->dest_iosapic_intin;
-+
-+	/* get vector info for this input line */
-+	vi = isi->isi_vector + isi_line;
-+	DBG_IRT("iosapic_serial_irq:  line %d vi 0x%p\n", isi_line, vi);
-+
-+	/* If this IRQ line has already been setup, skip it */
-+	if (vi->irte)
-+		goto out;
-+
-+	vi->irte = irte;
-+
-+	/*
-+	 * Allocate processor IRQ
-+	 *
-+	 * XXX/FIXME The txn_alloc_irq() code and related code should be
-+	 * moved to enable_irq(). That way we only allocate processor IRQ
-+	 * bits for devices that actually have drivers claiming them.
-+	 * Right now we assign an IRQ to every PCI device present,
-+	 * regardless of whether it's used or not.
-+	 */
-+	vi->txn_irq = txn_alloc_irq(8);
-+
-+	if (vi->txn_irq < 0)
-+		panic("I/O sapic: couldn't get TXN IRQ\n");
-+
-+	/* enable_irq() will use txn_* to program IRdT */
-+	vi->txn_addr = txn_alloc_addr(vi->txn_irq);
-+	vi->txn_data = txn_alloc_data(vi->txn_irq);
-+
-+	vi->eoi_addr = isi->addr + IOSAPIC_REG_EOI;
-+	vi->eoi_data = cpu_to_le32(vi->txn_data);
-+
-+	cpu_claim_irq(vi->txn_irq, &iosapic_interrupt_type, vi);
-+
-+ out:
-+
-+	return vi->txn_irq;
-+}
-+#endif
-+
- 
- /*
- ** squirrel away the I/O Sapic Version
-@@ -877,6 +941,8 @@ void *iosapic_register(unsigned long hpa
- 		vip->irqline = (unsigned char) cnt;
- 		vip->iosapic = isi;
- 	}
-+	if (!first_isi)
-+		first_isi = isi;
- 	return isi;
- }
- 
---- a/drivers/tty/serial/8250/8250_gsc.c
-+++ b/drivers/tty/serial/8250/8250_gsc.c
-@@ -30,6 +30,12 @@ static int __init serial_init_chip(struc
- 	unsigned long address;
- 	int err;
- 
-+#ifdef CONFIG_64BIT
-+	extern int iosapic_serial_irq(int cellnum);
-+	if (!dev->irq && (dev->id.sversion == 0xad))
-+		dev->irq = iosapic_serial_irq(dev->mod_index-1);
-+#endif
-+
- 	if (!dev->irq) {
- 		/* We find some unattached serial ports by walking native
- 		 * busses.  These should be silently ignored.  Otherwise,
-@@ -51,7 +57,8 @@ static int __init serial_init_chip(struc
- 	memset(&uart, 0, sizeof(uart));
- 	uart.port.iotype	= UPIO_MEM;
- 	/* 7.272727MHz on Lasi.  Assumed the same for Dino, Wax and Timi. */
--	uart.port.uartclk	= 7272727;
-+	uart.port.uartclk	= (dev->id.sversion != 0xad) ?
-+					7272727 : 1843200;
- 	uart.port.mapbase	= address;
- 	uart.port.membase	= ioremap_nocache(address, 16);
- 	uart.port.irq	= dev->irq;
-@@ -73,6 +80,7 @@ static struct parisc_device_id serial_tb
- 	{ HPHW_FIO, HVERSION_REV_ANY_ID, HVERSION_ANY_ID, 0x00075 },
- 	{ HPHW_FIO, HVERSION_REV_ANY_ID, HVERSION_ANY_ID, 0x0008c },
- 	{ HPHW_FIO, HVERSION_REV_ANY_ID, HVERSION_ANY_ID, 0x0008d },
-+	{ HPHW_FIO, HVERSION_REV_ANY_ID, HVERSION_ANY_ID, 0x000ad },
- 	{ 0 }
- };
- 
+	-hpa
 
 
