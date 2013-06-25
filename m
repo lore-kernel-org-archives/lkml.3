@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3FYIIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:08:32 -0400
-Received: from 5.mo1.mail-out.ovh.net ([178.33.45.107]:58764 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751292Ab3FYII3 (ORCPT
+	id S1752186Ab3FYII6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:08:58 -0400
+Received: from p-mail2.rd.orange.com ([195.101.245.16]:58556 "EHLO
+	p-mail2.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab3FYIIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:08:29 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v2 0/4] ARM: at91: prepare transition to common clk framework
-Date: Tue, 25 Jun 2013 10:08:22 +0200
-Message-Id: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 5787688471848646764
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 25 Jun 2013 04:08:47 -0400
+X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jun 2013 04:08:46 EDT
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH 15/15] kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+Date: Tue, 25 Jun 2013 10:01:12 +0200
+User-Agent: KMail/1.13.5 (Linux/3.9.3-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Fengguang Wu <fengguang.wu@intel.com>
+References: <cover.1372097219.git.yann.morin.1998@free.fr> <8357b48549e17b3e4e402c7f977b65708922e60f.1372097219.git.yann.morin.1998@free.fr>
+In-Reply-To: <8357b48549e17b3e4e402c7f977b65708922e60f.1372097219.git.yann.morin.1998@free.fr>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306251001.12430.yann.morin.1998@free.fr>
+X-OriginalArrivalTime: 25 Jun 2013 08:01:12.0885 (UTC) FILETIME=[290ADE50:01CE717A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Michal, All,
 
-This patch series prepares the transition to common clk framework by
-replacing all the clk_enable and clk_disable calls by clk_prepare_unable and
-clk_disable_unprepare to avoid common clock framework warnings.
+On Monday 24 June 2013 20:11:59 Yann E. MORIN wrote:
+> Currently, randconfig does randomise choice entries, unless KCONFIG_ALLCONFIG
+> is specified.
+[--SNIP--]
+> This patch defers setting that a choice has a value until a symbol for
+> that choice is indeed set, so that choices are properly randomised when
+> KCONFIG_ALLCONFIG is set, but not if a symbol for that choice is set.
 
-Best Regards,
-Boris
+I've just been informed by Fengguang that this patch breaks yet another
+use-case of his, but this time KCONFIG_ALLCONFIG is not involved.
 
-Changes since v1:
- - remove unneeded clk_unprepare in mci driver
- - remove already applied patches (ehci, ohci, dma and serial)
+I'll investigate this issue when I'm back home tonight (ie. ~16:00 UTC).
+Sorry for the breakage (again...). :-(
 
-Changes since common clk patch series:
- - add clk_prepare_enable return check
- - fix a deadlock in atmel-mci (missing spin_unlock)
- - remove already applied patches (atmel-ssc and pwm-atmel-tcb)
+We really need a known, shared test-suite for kconfig... :-/
 
-Boris BREZILLON (4):
-  ARM: at91/tc/clocksource: replace clk_enable/disable with
-    clk_prepare_enable/disable_unprepare.
-  mmc: atmel-mci: prepare clk before calling enable
-  usb: gadget: at91_udc: prepare clk before calling enable
-  at91/avr32/atmel_lcdfb: prepare clk before calling enable
-
- drivers/clocksource/tcb_clksrc.c |   10 +++++-----
- drivers/mmc/host/atmel-mci.c     |   27 ++++++++++++++++++---------
- drivers/usb/gadget/at91_udc.c    |   14 ++++++++------
- drivers/video/atmel_lcdfb.c      |    8 ++++----
- 4 files changed, 35 insertions(+), 24 deletions(-)
+Regards,
+Yann E. MORIN.
 
 -- 
-1.7.9.5
-
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
+| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
+| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
+'------------------------------'-------'------------------'--------------------'
