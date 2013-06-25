@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab3FYKv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 06:51:27 -0400
-Received: from anubis.se.axis.com ([195.60.68.12]:46515 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab3FYKv0 (ORCPT
+	id S1752841Ab3FYKvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 06:51:32 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:37800 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab3FYKv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 06:51:26 -0400
-X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jun 2013 06:51:25 EDT
-Date: Tue, 25 Jun 2013 12:42:37 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH 16/32] cris: delete __cpuinit usage from all cris files
-Message-ID: <20130625104236.GA23735@axis.com>
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
- <1372102237-8757-17-git-send-email-paul.gortmaker@windriver.com>
+	Tue, 25 Jun 2013 06:51:28 -0400
+Date: Tue, 25 Jun 2013 12:51:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 0/8] perf: add ability to sample physical data addresses
+Message-ID: <20130625105123.GA13649@gmail.com>
+References: <1371824448-7306-1-git-send-email-eranian@google.com>
+ <20130624084338.GI28407@twins.programming.kicks-ass.net>
+ <CABPqkBRqiNVZnioV_R4sfam1QwHwXZgo36Gixxg5ALPbLbiXfw@mail.gmail.com>
+ <20130625104700.GZ28407@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372102237-8757-17-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130625104700.GZ28407@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 09:30:21PM +0200, Paul Gortmaker wrote:
-> The __cpuinit type of throwaway sections might have made sense
-> some time ago when RAM was more constrained, but now the savings
-> do not offset the cost and complications.  For example, the fix in
-> commit 5e427ec2d0 ("x86: Fix bit corruption at CPU resume time")
-> is a good example of the nasty type of bugs that can be created
-> with improper use of the various __init prefixes.
-> 
-> After a discussion on LKML[1] it was decided that cpuinit should go
-> the way of devinit and be phased out.  Once all the users are gone,
-> we can then finally remove the macros themselves from linux/init.h.
-> 
-> Note that some harmless section mismatch warnings may result, since
-> notify_cpu_starting() and cpu_up() are arch independent (kernel/cpu.c)
-> are flagged as __cpuinit  -- so if we remove the __cpuinit from
-> arch specific callers, we will also get section mismatch warnings.
-> As an intermediate step, we intend to turn the linux/init.h cpuinit
-> content into no-ops as early as possible, since that will get rid
-> of these warnings.  In any case, they are temporary and harmless.
-> 
-> This removes all the arch/cris uses of the __cpuinit macros from
-> all C files.  Currently cris does not have any __CPUINIT used in
-> assembly files.
-> 
-> [1] https://lkml.org/lkml/2013/5/20/589
-> 
-> Cc: Mikael Starvik <starvik@axis.com>
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> Cc: linux-cris-kernel@axis.com
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
+> On Tue, Jun 25, 2013 at 11:59:09AM +0200, Stephane Eranian wrote:
+> > One guarantee we have is that the physical does correspond to the virtual
+> > address at the time of the interrupt.
 > 
-> [This commit is part of the __cpuinit removal work.  If you don't see
->  any problems with it, then you don't have to do anything ; it will be
->  submitted with all the rest of the __cpuinit removal work.  On the
->  other hand, if you want to carry this patch in with your other pending
->  changes so as to handle conflicts with other pending work yourself, then
->  that is fine too, as the commits can largely be treated independently.
->  For more information, please see: https://lkml.org/lkml/2013/6/20/513 ]
+> That might not be much of a guarantee depending on the circumstances.
 > 
->  arch/cris/arch-v32/kernel/smp.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> > But yeah, if physical pages are swapped during the run, then things become
+> > a lot more complicated. I am not trying to address this.
+> > 
+> > Can page move for shared memory segments?
 > 
-> diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
-> index cdd1202..fe8e603 100644
-> --- a/arch/cris/arch-v32/kernel/smp.c
-> +++ b/arch/cris/arch-v32/kernel/smp.c
-> @@ -197,7 +197,7 @@ int setup_profiling_timer(unsigned int multiplier)
->   */
->  unsigned long cache_decay_ticks = 1;
->  
-> -int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
-> +int __cpu_up(unsigned int cpu, struct task_struct *tidle)
->  {
->  	smp_boot_one_cpu(cpu, tidle);
->  	return cpu_online(cpu) ? 0 : -ENOSYS;
-> -- 
-> 1.8.1.2
+> Yep..
+> 
+> > > Such would completely shatter physical page relations.
+> > >
+> > > If the shared memory thing is really the issue, doesn't perf already
+> > > have the process memory layout (/proc/$PID/maps and aux stream mmap
+> > > updates) with which it can compute map relative offsets and compare
+> > > thusly?
+> > 
+> > Not sure I understand this.
+> > suppose the same shared memory segment is mapped at two different
+> > addresses by shmat(). First, I don't know if those show up in /proc/maps.
+> 
+> They should; IIRC maps is a full vma list.. /me prods about in
+> fs/proc/task_mmu.c.. yes it prints all vmas.
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+A syscall (ioctl?) to dump all current vmas into the mmap update stream 
+(to form a starting point) might be handy - that would remove the 
+fragility and overhead of parsing /proc/ details.
+
+Thanks,
+
+	Ingo
