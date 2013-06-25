@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319Ab3FYVi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:38:29 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54436 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3FYVi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:38:26 -0400
-Message-ID: <1372196295.3944.221.camel@pasglop>
-Subject: Re: [PATCH v5 3/7] PCI: Use pci_walk_bus to detect unassigned
- resources
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 26 Jun 2013 07:38:15 +1000
-In-Reply-To: <20130625211516.GA8494@google.com>
-References: <1370066593-22736-1-git-send-email-yinghai@kernel.org>
-	 <1370066593-22736-3-git-send-email-yinghai@kernel.org>
-	 <20130625211516.GA8494@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752523Ab3FYVjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:39:13 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:47441 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab3FYViF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 17:38:05 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC nohz_full 1/8] nohz_full: Add Kconfig parameter for scalable detection of all-idle state
+Date: Tue, 25 Jun 2013 14:37:44 -0700
+Message-Id: <1372196271-20393-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130625213721.GA19452@linux.vnet.ibm.com>
+References: <20130625213721.GA19452@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062521-5518-0000-0000-00000FDE7A70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-25 at 15:15 -0600, Bjorn Helgaas wrote:
-> -     for_each_pci_dev(dev) {
-> > -             int i;
-> > +             /* Not assigned, or rejected by kernel ? */
-> > +             if (r->flags && !r->start) {
-> > +                     (*unassigned)++;
-> > +                     return 1; /* return early from pci_walk_bus */
-> > +             }
-> > +     }
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-BTW. I'm aware you didn't change that logic but ... it's somewhat broken
-in the case where the aperture has an offset. You should compare
-r->start with the offset, not with 0.
+At least one CPU must keep the scheduling-clock tick running for
+timekeeping purposes whenever there is a non-idle CPU.  However, with
+the new nohz_full adaptive-idle machinery, it is difficult to distinguish
+between all CPUs really being idle as opposed to all non-idle CPUs being
+in adaptive-ticks mode.  This commit therefore adds a Kconfig parameter
+as a first step towards enabling a scalable detection of full-system
+idle state.
 
-Cheers,
-Ben.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/time/Kconfig | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 70f27e8..a613c2a 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -134,6 +134,29 @@ config NO_HZ_FULL_ALL
+ 	 Note the boot CPU will still be kept outside the range to
+ 	 handle the timekeeping duty.
+ 
++config NO_HZ_FULL_SYSIDLE
++	bool "Detect full-system idle state for full dynticks system"
++	depends on NO_HZ_FULL
++	default n
++	help
++	 At least one CPU must keep the scheduling-clock tick running
++	 for timekeeping purposes whenever there is a non-idle CPU,
++	 where "non-idle" includes CPUs with a single runnable task
++	 in adaptive-idle mode.  Because the underlying adaptive-tick
++	 support cannot distinguish between all CPUs being idle and
++	 all CPUs each running a single task in adaptive-idle mode,
++	 the underlying support simply ensures that there is always
++	 a CPU handling the scheduling-clock tick, whether or not all
++	 CPUs are idle.  This Kconfig option enables scalable detection
++	 of the all-CPUs-idle state, thus allowing the scheduling-clock
++	 tick to be disabled when all CPUs are idle.  Note that scalable
++	 detection of the all-CPUs-idle state means that larger systems
++	 will be slower to declare the all-CPUs-idle state.
++
++	 Say Y if you would like to help debug all-CPUs-idle detection.
++
++	 Say N if you are unsure.
++
+ config NO_HZ
+ 	bool "Old Idle dynticks config"
+ 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
+-- 
+1.8.1.5
 
