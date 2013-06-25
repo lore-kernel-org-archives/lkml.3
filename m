@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab3FYIQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:16:11 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:40929 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab3FYIQI (ORCPT
+	id S1752537Ab3FYIQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:16:20 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:5852 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3FYIQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:16:08 -0400
-Message-ID: <51C951C2.8090901@atmel.com>
-Date: Tue, 25 Jun 2013 10:16:02 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 25 Jun 2013 04:16:16 -0400
+Message-ID: <51C951AB.5050201@huawei.com>
+Date: Tue, 25 Jun 2013 16:15:39 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] at91/avr32/atmel_lcdfb: prepare clk before calling
- enable
-References: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com> <1372148053-4477-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1372148053-4477-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 0/2] tracing/kprobes&uprobes: some change on unregister logic
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/2013 10:14, Boris BREZILLON :
-> Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-> avoid common clk framework warnings.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Hi,
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+This patchset change some logic on events unregistering of kprobes/uprobes
 
-Jean-Christophe, can you take this one?
+patch 1: kprobes event unregister cleanup
+patch 2: fix a bug when calling unregister trace_uprobe
 
-Thanks, best regards,
+zhangwei(Jovi) (2):
+  tracing/kprobes: move free_trace_probe into unregister_trace_probe
+  tracing/uprobes: disallow unregister trace_uprobe when trace_uprobe
+    is in use
 
-> ---
->   drivers/video/atmel_lcdfb.c |    8 ++++----
->   1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
-> index 540909d..8525457 100644
-> --- a/drivers/video/atmel_lcdfb.c
-> +++ b/drivers/video/atmel_lcdfb.c
-> @@ -893,14 +893,14 @@ static int __init atmel_lcdfb_init_fbinfo(struct atmel_lcdfb_info *sinfo)
->
->   static void atmel_lcdfb_start_clock(struct atmel_lcdfb_info *sinfo)
->   {
-> -	clk_enable(sinfo->bus_clk);
-> -	clk_enable(sinfo->lcdc_clk);
-> +	clk_prepare_enable(sinfo->bus_clk);
-> +	clk_prepare_enable(sinfo->lcdc_clk);
->   }
->
->   static void atmel_lcdfb_stop_clock(struct atmel_lcdfb_info *sinfo)
->   {
-> -	clk_disable(sinfo->bus_clk);
-> -	clk_disable(sinfo->lcdc_clk);
-> +	clk_disable_unprepare(sinfo->bus_clk);
-> +	clk_disable_unprepare(sinfo->lcdc_clk);
->   }
->
->
->
-
+ kernel/trace/trace_kprobe.c |    5 +----
+ kernel/trace/trace_uprobe.c |   51 ++++++++++++++++++++++++++++++++-----------
+ 2 files changed, 39 insertions(+), 17 deletions(-)
 
 -- 
-Nicolas Ferre
+1.7.9.7
+
+
