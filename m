@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab3FYRT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:19:26 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49697 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751506Ab3FYRTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:19:25 -0400
-Message-ID: <51C9D114.8040408@sgi.com>
-Date: Tue, 25 Jun 2013 10:19:16 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1751594Ab3FYRVK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:21:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30099 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3FYRVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 13:21:07 -0400
+Message-ID: <51C9D17B.5090208@oracle.com>
+Date: Tue, 25 Jun 2013 13:20:59 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@kernel.org>, Nathan Zimmer <nzimmer@sgi.com>,
-        holt@sgi.com, rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
-        yinghai@kernel.org, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130625073819.GC11420@gmail.com> <58029951-199f-484d-ad60-199d15a89c12@email.android.com>
-In-Reply-To: <58029951-199f-484d-ad60-199d15a89c12@email.android.com>
-Content-Type: text/plain; charset=UTF-8
+To: lizefan@huawei.com, tj@kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
+        trinity@vger.kernel.org
+Subject: cgroup: kernel BUG at kernel/cgroup.c:1038!
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks.  I went through a few iterations until finalizing
-on the current patches.  Originally the memory was inserted
-using the memory probe interface, but at 2G per addition,
-it was still very slow.  By bypassing the memory driver
-interface, and going directly to add_memory and memory_online,
-along with Nathan's changes to unlock the memory mutex on
-a per node basis, it sped up dramatically.
+Hi all,
+
+While fuzzing with trinity on a KVM tools guest running latest -next kernel, I've
+stumbled on the following spew:
+
+[   88.247018] kernel BUG at kernel/cgroup.c:1038!
+[   88.250738] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[   88.251169] Dumping ftrace buffer:
+[   88.251169]    (ftrace buffer empty)
+[   88.251169] CPU: 1 PID: 7973 Comm: mount Tainted: G        W    3.10.0-rc7-next-2013
+0625-sasha-00011-g1c1dc0e #1105
+[   88.251169] task: ffff880fc0ae8000 ti: ffff880fc0b9a000 task.ti: ffff880fc0b9a000
+[   88.251437] RIP: 0010:[<ffffffff81249b29>]  [<ffffffff81249b29>] rebind_subsystems+0
+x409/0x5f0
+[   88.252442] RSP: 0018:ffff880fc0b9bba8  EFLAGS: 00010202
+[   88.252994] RAX: 0000000000000001 RBX: ffff880fc0b8a148 RCX: 0000000000000001
+[   88.253839] RDX: 0000000000000003 RSI: 0000000000000001 RDI: ffffffff8860eec0
+[   88.254695] RBP: ffff880fc0b9bc28 R08: ffff880fc0b8a170 R09: ffffffff889e64f8
+[   88.255325] R10: ffffffff889e64d0 R11: ffffffff8a28b600 R12: 0000000000000001
+[   88.255325] R13: 0000000000000000 R14: ffff880fc0b8a170 R15: ffffffff87a6f060
+[   88.255325] FS:  00007f1289eba7e0(0000) GS:ffff880fe5800000(0000) knlGS:000000000000
+0000
+[   88.255325] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   88.255325] CR2: 00007f12894382f0 CR3: 0000000fc01e0000 CR4: 00000000000006e0
+[   88.255325] Stack:
+[   88.255325]  ffffffff87a6e4d8 ffffffff87a6e468 2222222222222222 2222222222222222
+[   88.255325]  2222222222222222 2222222200000001 0000000000000000 0000000187a6e460
+[   88.255325]  ffff880fc0b8a160 0000000000000000 ffff880fcc2f8b88 ffff880fc0b8a148
+[   88.255325] Call Trace:
+[   88.255325]  [<ffffffff8124bd4f>] cgroup_kill_sb+0xff/0x210
+[   88.255325]  [<ffffffff813d21af>] deactivate_locked_super+0x4f/0x90
+[   88.255325]  [<ffffffff8124f3b3>] cgroup_mount+0x673/0x6e0
+[   88.255325]  [<ffffffff81401a6d>] ? get_fs_type+0x7d/0xd0
+[   88.255325]  [<ffffffff854e95ec>] ? _raw_read_unlock+0x5c/0x80
+[   88.255325]  [<ffffffff81257169>] cpuset_mount+0xd9/0x110
+[   88.255325]  [<ffffffff81337908>] ? pcpu_alloc+0x4e8/0x5f0
+[   88.255325]  [<ffffffff813d2580>] mount_fs+0xb0/0x2d0
+[   88.255325]  [<ffffffff81404afd>] vfs_kern_mount+0xbd/0x180
+[   88.255325]  [<ffffffff814070b5>] do_new_mount+0x145/0x2c0
+[   88.255325]  [<ffffffff81de79b8>] ? security_capable+0x18/0x20
+[   88.255325]  [<ffffffff814085d6>] do_mount+0x356/0x3c0
+[   88.255325]  [<ffffffff8140873d>] SyS_mount+0xfd/0x140
+[   88.255325]  [<ffffffff854eb600>] tracesys+0xdd/0xe2
+[   88.255325] Code: 89 c6 89 45 a8 e8 28 b7 07 00 8b 45 a8 48 63 d0 48 83 c2 02 48 8b 0c d5 48 63 
+9e 88 48 ff c1 85 c0 48 89 0c d5 48 63 9e 88 74 04 <0f> 0b eb fe 4a 8b 84 2b 88 00 00 00 48 c7 c7 98 
+ee 60 88 4c 39
+[   88.255325] RIP  [<ffffffff81249b29>] rebind_subsystems+0x409/0x5f0
+[   88.255325]  RSP <ffff880fc0b9bba8>
 
 
-On 6/25/2013 8:07 AM, H. Peter Anvin wrote:
-> I have to say I really like this concept. It should have some very nice properties including perhaps making THP work better?
-> 
-> Ingo Molnar <mingo@kernel.org> wrote:
-> 
->>
->> * Nathan Zimmer <nzimmer@sgi.com> wrote:
->>
->>> On Sun, Jun 23, 2013 at 11:28:40AM +0200, Ingo Molnar wrote:
->>>>
->>>> That's 4.5 GB/sec initialization speed - that feels a bit slow and
->> the 
->>>> boot time effect should be felt on smaller 'a couple of gigabytes' 
->>>> desktop boxes as well. Do we know exactly where the 2 hours of boot
->>
->>>> time on a 32 TB system is spent?
->>>
->>> There are other several spots that could be improved on a large
->> system 
->>> but memory initialization is by far the biggest.
->>
->> My feeling is that deferred/on-demand initialization triggered from the
->>
->> buddy allocator is the better long term solution.
->>
->> That will also make it much easier to profile/test memory init 
->> performance: boot up a large system and run a simple testprogram that 
->> allocates a lot of RAM.
->>
->> ( It will also make people want to optimize the initialization sequence
->>
->>  better, as it will be part of any freshly booted system's memory 
->>  allocation overhead. )
->>
->> Thanks,
->>
->> 	Ingo
-> 
+Thanks,
+Sasha
