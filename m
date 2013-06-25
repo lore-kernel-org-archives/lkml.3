@@ -1,102 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab3FYQNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:13:09 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:8155 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708Ab3FYQNG convert rfc822-to-8bit (ORCPT
+	id S1751902Ab3FYQNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:13:43 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54346 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3FYQNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:13:06 -0400
-X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="68695012"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jlayton@redhat.com" <jlayton@redhat.com>
-Subject: Re: [PATCH v3 2/4] SUNRPC: fix races on PipeFS UMOUNT notifications
-Thread-Topic: [PATCH v3 2/4] SUNRPC: fix races on PipeFS UMOUNT notifications
-Thread-Index: AQHOcK/UX0SLm7oWX0eEtHloKJh9K5lHEbAA
-Date: Tue, 25 Jun 2013 16:13:05 +0000
-Message-ID: <1372176778.5968.29.camel@leira.trondhjem.org>
-References: <20130624075131.17104.55399.stgit@localhost.localdomain>
-	 <20130624075245.17104.6279.stgit@localhost.localdomain>
-In-Reply-To: <20130624075245.17104.6279.stgit@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.117]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <10DDBE5443F9D94EA0FA5BDE54A67390@hq.netapp.com>
-Content-Transfer-Encoding: 7BIT
+	Tue, 25 Jun 2013 12:13:42 -0400
+Date: Tue, 25 Jun 2013 17:13:38 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Yves-Alexis Perez <corsac@debian.org>, linux-acpi@vger.kernel.org,
+        seth.forshee@canonical.com, joeyli.kernel@gmail.com,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Henrique de Moraes Holschuh <hmh@debian.org>
+Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+Message-ID: <20130625161338.GA27609@srcf.ucam.org>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+ <1371937599.17761.19.camel@scapa>
+ <20130625160848.GA27123@srcf.ucam.org>
+ <CAKMK7uEtF9XnPem+rTQuBgAef6RDhRuj-=SdvufTa4zBs80Ssw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uEtF9XnPem+rTQuBgAef6RDhRuj-=SdvufTa4zBs80Ssw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-24 at 11:52 +0400, Stanislav Kinsbursky wrote:
-> CPU#0                                   CPU#1
-> -----------------------------           -----------------------------
-> rpc_kill_sb
-> sn->pipefs_sb = NULL                    rpc_release_client
-> (UMOUNT_EVENT)                          rpc_free_auth
-> rpc_pipefs_event
-> rpc_get_client_for_event
-> !atomic_inc_not_zero(cl_count)
-> <skip the client>
->                                         atomic_inc(cl_count)
->                                         rpc_free_client
->                                         rpc_clnt_remove_pipedir
->                                         <skip client dir removing>
-> 
-> To fix this, this patch does the following:
-> 
-> 1) Calls RPC_PIPEFS_UMOUNT notification with sn->pipefs_sb_lock being held.
-> 2) Removes SUNRPC client from the list AFTER pipes destroying.
-> 3) Doesn't hold RPC client on notification: if client in the list, then it
-> can't be destroyed while sn->pipefs_sb_lock in hold by notification caller.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> Cc: stable@vger.kernel.org
-> ---
->  net/sunrpc/clnt.c     |    5 +----
->  net/sunrpc/rpc_pipe.c |    2 +-
->  2 files changed, 2 insertions(+), 5 deletions(-)
+On Tue, Jun 25, 2013 at 06:10:35PM +0200, Daniel Vetter wrote:
 
-<snip>
+> Do we have any chances to amend this mistake by (gradually) phasing
+> out support for the direct keypress forwarding in ACPI? Or at least
+> some plans?
 
-> diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-> index c512448..efca2f7 100644
-> --- a/net/sunrpc/rpc_pipe.c
-> +++ b/net/sunrpc/rpc_pipe.c
-> @@ -1165,7 +1165,6 @@ static void rpc_kill_sb(struct super_block *sb)
->  		goto out;
->  	}
->  	sn->pipefs_sb = NULL;
-> -	mutex_unlock(&sn->pipefs_sb_lock);
->  	dprintk("RPC:       sending pipefs UMOUNT notification for net %p%s\n",
->  		net, NET_NAME(net));
->  	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
-> @@ -1173,6 +1172,7 @@ static void rpc_kill_sb(struct super_block *sb)
->  					   sb);
->  	put_net(net);
->  out:
-> +	mutex_unlock(&sn->pipefs_sb_lock);
-
-Is this safe to do after the put_net()?
-
->  	kill_litter_super(sb);
->  }
->  
-> 
-
+We could make the default value of brightness_switch_enabled a config 
+variable and encourage distributions to flip their behaviour.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Matthew Garrett | mjg59@srcf.ucam.org
