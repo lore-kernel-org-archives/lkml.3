@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab3FYCA2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 22:00:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:9657 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab3FYCA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 22:00:26 -0400
-X-IronPort-AV: E=Sophos;i="4.87,932,1363104000"; 
-   d="scan'208";a="7668004"
-Message-ID: <51C8F427.4010601@cn.fujitsu.com>
-Date: Tue, 25 Jun 2013 09:36:39 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1751841Ab3FYCCm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 22:02:42 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:26419 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab3FYCCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 22:02:41 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C8FA0C.5090202@asianux.com>
+Date: Tue, 25 Jun 2013 10:01:48 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: bp@alien8.de, pablo@netfilter.org, kaber@trash.net,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org
-Subject: Re: v3.10-rc7 oops soon after boot
-References: <20130624221708.15489.qmail@science.horizon.com>
-In-Reply-To: <20130624221708.15489.qmail@science.horizon.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/25 09:33:46,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/25 09:33:57,
-	Serialize complete at 2013/06/25 09:33:57
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+To: msalter@redhat.com, a-jacquiot@ti.com
+CC: Andrew Morton <akpm@linux-foundation.org>, jiang.liu@huawei.com,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        linux-c6x-dev@linux-c6x.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: c6x: mm: include "asm/uaccess.h" to pass compiling
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 06:17 AM, George Spelvin wrote:
->>> Reported-by: Borislav Petkov <bp@alien8.de>
-> 
->> This should be:
->>
->> Reported-by: George Spelvin <linux@horizon.com>
->>
->> I only connected the dots...
-> 
-> Well, you did a whole lot more than me!  I just lobbed a "d'oh, it
-> crashes" into the seething ocean of lkml.  (Admittedly, I had reason
-> to act fast: we're very close to release.)
-> 
-> You figured out what subsystem was at fault and got the right people
-> involved.  Definitely a valuable contribution.
-> 
-> Me, personally, I don't give a flying f*** about such credit; I had
-> an itch and was trolling for someone to scratch it.
-> 
-> So feel free to take Reported-by (you are the one who reported it *to
-> someone who could fix it*), Triaged-by, or whatever.
+Need include "asm/uaccess.h" to pass compiling.
 
-It's my mistake, the reported-by should be you.
-of course we should thank Borislav, I didn't notice this bug report
-mail until he forwarded it.
+The related error (with allmodconfig):
+  arch/c6x/mm/init.c: In function ‘paging_init’:
+  arch/c6x/mm/init.c:46:2: error: implicit declaration of function ‘set_fs’ [-Werror=implicit-function-declaration]
+  arch/c6x/mm/init.c:46:9: error: ‘KERNEL_DS’ undeclared (first use in this function)
+  arch/c6x/mm/init.c:46:9: note: each undeclared identifier is reported only once for each function it appears in
 
-Thanks all you guys! Sorry for my mistake..
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/c6x/mm/init.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+diff --git a/arch/c6x/mm/init.c b/arch/c6x/mm/init.c
+index e524fde..63f5560 100644
+--- a/arch/c6x/mm/init.c
++++ b/arch/c6x/mm/init.c
+@@ -18,6 +18,7 @@
+ #include <linux/initrd.h>
+ 
+ #include <asm/sections.h>
++#include <asm/uaccess.h>
+ 
+ /*
+  * ZERO_PAGE is a special page that is used for zero-initialized
+-- 
+1.7.7.6
