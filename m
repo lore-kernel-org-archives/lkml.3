@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab3FYMlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 08:41:00 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:42845 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab3FYMk7 (ORCPT
+	id S1751860Ab3FYMmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 08:42:45 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:59708 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab3FYMmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 08:40:59 -0400
+	Tue, 25 Jun 2013 08:42:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
-References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
-Date: Tue, 25 Jun 2013 14:40:58 +0200
-Message-ID: <CABPqkBRkE8z54a1gY00tmYkJ-4KHVv5XyLhvTCOUsDKVcQfP5w@mail.gmail.com>
-Subject: Re: [PATCH 0/7] perf, x86: Haswell LBR call stack support
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130625141508.6c391fd8@mschwide>
+References: <20130403172534.528d04c5@mschwide> <CACxGe6sYM8QPB-ZZkgB0+f81CZHULPi5zPAsWb5dzHiRgU+w6Q@mail.gmail.com>
+ <20130625141508.6c391fd8@mschwide>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 25 Jun 2013 13:42:23 +0100
+X-Google-Sender-Auth: XirZA4St0n9MNHxZca0M-x1cIvw
+Message-ID: <CACxGe6s3RqOkf=M4zwpJGEEVa9XjJvP2q5xeLKewGo6np5C-3g@mail.gmail.com>
+Subject: Re: [GIT PULL] s390 patches for the 3.9-rc6
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 10:47 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On Tue, Jun 25, 2013 at 1:15 PM, Martin Schwidefsky
+<schwidefsky@de.ibm.com> wrote:
+> On Tue, 25 Jun 2013 13:09:51 +0100
+> Grant Likely <grant.likely@secretlab.ca> wrote:
 >
-> Haswell has a new feature that utilizes the existing Last Branch Record
-> facility to record call chains. When the feature is enabled, function
-> call will be collected as normal, but as return instructions are executed
-> the last captured branch record is popped from the on-chip LBR registers.
-> The LBR call stack facility can help perf to get call chains of progam
-> without frame pointer. When perf tool requests PERF_SAMPLE_CALLCHAIN +
-> PERF_SAMPLE_BRANCH_USER, this feature is dynamically enabled by default.
-> This feature can be disabled/enabled through an attribute file in the cpu
-> pmu sysfs directory.
+>> On Wed, Apr 3, 2013 at 4:25 PM, Martin Schwidefsky
+>> <schwidefsky@de.ibm.com> wrote:
+>> > Hi Linus,
+>> >
+>> > please pull from the 'for-linus' branch of
+>> >
+>> >         git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+>> >
+>> > to receive the following updates: Just a bunch of bugfixes.
+>> >
+>> > Heiko Carstens (4):
+>> >       drivers/Kconfig: add several missing GENERIC_HARDIRQS dependencies
+>>
+>> Is anyone currently working on fixing this? s390 is the only
+>> architecture left that does not enable GENERIC_HARDIRQS. It's painful
+>> to keep adding dependencies on GENERIC_HARDIRQS to driver configs.
 >
-> The LBR call stack has following known limitations
->  1. Zero length calls are not filtered out by hardware
->  2. Exception handing such as setjmp/longjmp will have calls/returns not
->     match
->  3. Pushing different return address onto the stack will have calls/returns
->     not match
->
-I would also add that it does not work with leaf call optimizations:
-A calls B, B calls C, C returns to A
+> I am working on it. The hardest part is MSI irqs for PCI. Chances are
+> that I get it done for the merge window of 3.12.
 
-and that can be fairly common with small functions.
+How are you handling the MSIs? I've just been looking at some code for
+irq_domain to handle MSI mapping. What's the part that is getting you
+hung up?
+
+I'd be happy to take a look if you want a hand.
+
+g.
