@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab3FYWNd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 18:13:33 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:57070 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab3FYWNb (ORCPT
+	id S1751930Ab3FYWPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 18:15:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25453 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab3FYWPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 18:13:31 -0400
+	Tue, 25 Jun 2013 18:15:12 -0400
+Message-ID: <51CA1648.50706@oracle.com>
+Date: Tue, 25 Jun 2013 18:14:32 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-In-Reply-To: <20130625144015.1e4e70a0ac888f4ccf5c6a8f@linux-foundation.org>
-References: <1371821962-9151-1-git-send-email-james.hogan@imgtec.com>
-	<51C47864.9030200@gmail.com>
-	<20130621202244.GA16610@redhat.com>
-	<51C4BB86.1020004@caviumnetworks.com>
-	<20130622190940.GA14150@redhat.com>
-	<51C80CF0.4070608@imgtec.com>
-	<20130625144015.1e4e70a0ac888f4ccf5c6a8f@linux-foundation.org>
-Date: Tue, 25 Jun 2013 23:13:30 +0100
-X-Google-Sender-Auth: Y9pQ2NPq1hJRJdLYCH3Asj4-jTM
-Message-ID: <CAAG0J9-5J6=c=1VxEW6FevMHKsjShtbjM8G6Q1vu1P+LurQqoQ@mail.gmail.com>
-Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
-From: James Hogan <james.hogan@imgtec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Daney <ddaney@caviumnetworks.com>,
-        David Daney <ddaney.cavm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        David Daney <david.daney@cavium.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mips@linux-mips.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: mingo@kernel.org, peterz@infradead.org
+CC: LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
+Subject: lockdep: WARNING: CPU: 28 PID: 10552 at kernel/lockdep.c:3539
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 June 2013 22:40, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Mon, 24 Jun 2013 10:10:08 +0100 James Hogan <james.hogan@imgtec.com> wrote:
->
->> On 22/06/13 20:09, Oleg Nesterov wrote:
->> > On 06/21, David Daney wrote:
->> >> I am proposing that we just reduce the number of usable signals such
->> >> that existing libc status checking macros/functions don't change in any
->> >> way.
->> >
->> > And I fully agree! Absolutely, sorry for confusion.
->> >
->> >
->> > What I tried to say, _if_ we change the ABI instead, lets make this
->> > change sane.
->>
->> I agree that this approach isn't very nice (I was really just trying to
->> explore the options) and reducing the number of signals is nicer. But is
->> anybody here confident enough that the number of signals changing under
->> the feet of existing binaries/libc won't actually break anything real?
->> I.e. anything trying to use SIGRTMAX() to get a lower priority signal.
->
-> Meanwhile, unprivileged users can make a MIPS kernel go BUG.
->
-> How much of a problem is this?  Obviously less of a problem with MIPS
-> than it would be with some other CPU types, but I'd imagine it's still
-> awkward in some environments.
->
-> If this _is_ considered a problem, can we think of some nasty little
-> hack which at least makes the effects less damaging, which we can also
-> put into -stable kernels?
+Hi all,
 
-The first rfc patch I sent sort of satisfies that by passing 127 if
-sig==128, or slightly better would be passing 126 if sig>=127 (so that
-SIFSIGNALED returns true). Effectively #ifdef'ing it on _NSIG>127 as
-this patch does may be preferable too.
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+I've stumbled on the following:
 
-That's probably the minimum change necessary to evade the BUG_ON
-without removing it. The wait status code will still be wrong, but it
-wasn't exactly right before so it's no worse.
+[  263.899081] ------------[ cut here ]------------
+[  263.900321] WARNING: CPU: 28 PID: 10552 at kernel/lockdep.c:3539 check_flags+0xe0/0x
+220()
+[  263.906199] DEBUG_LOCKS_WARN_ON(!current->hardirqs_enabled)
+[  263.906199] CPU: 28 PID: 10552 Comm: trinity-child28 Tainted: G        W    3.10.0-r
+c7-next-20130625-sasha-00011-g7725abd #1124
+[  263.906199]  0000000000000dd3 ffff880f4d105d78 ffffffff841214dc ffff880f4d105d78
+[  263.906199]  ffff880f4d105dc8 ffff880f4d105db8 ffffffff8111bfd7 ffff880f4d105db8
+[  263.906199]  ffff880f6a480000 0000000000000000 0000000000000002 0000000000000000
+[  263.906199] Call Trace:
+[  263.906199]  [<ffffffff841214dc>] dump_stack+0x52/0x87
+[  263.906199]  [<ffffffff8111bfd7>] warn_slowpath_common+0x87/0xb0
+[  263.906199]  [<ffffffff8111c0b6>] warn_slowpath_fmt+0x46/0x50
+[  263.906199]  [<ffffffff81194020>] check_flags+0xe0/0x220
+[  263.906199]  [<ffffffff8119b6a8>] lock_acquire+0x88/0x1e0
+[  263.906199]  [<ffffffff8124e013>] ? might_fault+0x53/0xb0
+[  263.906199]  [<ffffffff84125d40>] _raw_spin_lock+0x40/0x80
+[  263.906199]  [<ffffffff812c6306>] ? __fd_install+0x36/0x100
+[  263.906199]  [<ffffffff812c6306>] __fd_install+0x36/0x100
+[  263.906199]  [<ffffffff812c63f5>] fd_install+0x25/0x30
+[  263.906199]  [<ffffffff812b19bc>] SyS_pipe2+0x8c/0xb0
+[  263.906199]  [<ffffffff84127ee1>] ? tracesys+0x7e/0xe2
+[  263.906199]  [<ffffffff812b05b0>] SyS_pipe+0x10/0x20
+[  263.906199]  [<ffffffff84127f40>] tracesys+0xdd/0xe2
+[  263.906199] ---[ end trace d5eed34e44345976 ]---
+[  263.906199] possible reason: unannotated irqs-on.
+[  263.906199] irq event stamp: 45016
+[  263.906199] hardirqs last  enabled at (45015): [<ffffffff8412750a>] paranoid_restore+0x15/0x70
+[  263.906199] hardirqs last disabled at (45016): [<ffffffff8107ab14>] debug_stack_reset+0x94/0x1c0
+[  263.906199] softirqs last  enabled at (44514): [<ffffffff81126de7>] __do_softirq+0x447/0x4d0
+[  263.906199] softirqs last disabled at (44509): [<ffffffff81126fb6>] irq_exit+0x86/0x120
 
-IMO changing the ABI by reducing _NSIG to 127 or 126 isn't appropriate
-for stable.
+I've started seeing those after I switched the guest to use 128 vcpus (same as the host).
 
-Cheers
-James
+
+Thanks,
+Sasha
