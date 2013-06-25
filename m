@@ -1,104 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3FYQVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:21:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16532 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037Ab3FYQTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:19:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="360258458"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Yinghai Lu <yinghai@kernel.org>,
-        john.ronciak@intel.com, miles.j.penner@intel.com,
-        bruce.w.allan@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        x86@kernel.org
-Subject: [PATCH 2/6] PCI: acpiphp: enable_device(): rescan even if no new devices on slot
-Date: Tue, 25 Jun 2013 19:22:06 +0300
-Message-Id: <1372177330-28013-3-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1752221Ab3FYQXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:23:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21820 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab3FYQXj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:23:39 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XqNnylozy48A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pkicDPhlfI0A:10 a=QnSCNFxAoQR4iVq5zPwA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1372177414.18733.211.camel@gandalf.local.home>
+Subject: Re: frequent softlockups with 3.10rc6.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Date: Tue, 25 Jun 2013 12:23:34 -0400
+In-Reply-To: <20130625153520.GA7784@redhat.com>
+References: <20130621151119.GA1596@redhat.com>
+	 <20130621195949.GA15519@redhat.com> <20130622013731.GA22918@redhat.com>
+	 <20130622173129.GA29375@redhat.com> <20130622215905.GA28238@redhat.com>
+	 <20130623143634.GA2000@redhat.com> <20130623150603.GA32313@redhat.com>
+	 <20130623160452.GA11740@redhat.com> <20130624155758.GA5993@redhat.com>
+	 <20130624173510.GA1321@redhat.com> <20130625153520.GA7784@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Tue, 2013-06-25 at 11:35 -0400, Dave Jones wrote:
+> Took a lot longer to trigger this time. (13 hours of runtime).
+> 
+> This trace may still not be from the first lockup, as a flood of
+> them happened at the same time. 
+> 
+> 
+> # tracer: preemptirqsoff
+> #
+> # preemptirqsoff latency trace v1.1.5 on 3.10.0-rc7+
+> # --------------------------------------------------------------------
+> # latency: 389877255 us, #4/4, CPU#1 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:4)
+> #    -----------------
+> #    | task: trinity-main-9252 (uid:1000 nice:19 policy:0 rt_prio:0)
+> #    -----------------
+> #  => started at: vprintk_emit
+> #  => ended at:   vprintk_emit
+> #
+> #
+> #                  _------=> CPU#            
+> #                 / _-----=> irqs-off        
+> #                | / _----=> need-resched    
+> #                || / _---=> hardirq/softirq 
+> #                ||| / _--=> preempt-depth   
+> #                |||| /     delay             
+> #  cmd     pid   ||||| time  |   caller      
+> #     \   /      |||||  \    |   /           
+> trinity--9252    1dNh1    0us!: console_unlock <-vprintk_emit
+> trinity--9252    1dNh1 389877255us : console_unlock <-vprintk_emit
+> trinity--9252    1dNh1 389877255us+: stop_critical_timings <-vprintk_emit
+> trinity--9252    1dNh1 389877261us : <stack trace>
+>  => console_unlock
+>  => vprintk_emit
+>  => printk
 
-pci_scan_slot() returns number of new devices connected *directly*
-connected to the slot. Current enable_device() checks the return value
-and stops if it doesn't see a new device.
+This is the same as the last one, with no new info to why it started the
+tracing at console_unlock :-/
 
-In Thunderbolt chaining case the new device can be deeper in hierarchy, so
-do the rescan anyway.
+Now, what we can try to do as well, is to add a trigger to disable
+tracing, which should (I need to check the code) stop tracing on printk.
+To do so:
 
-Because of that we must make sure that pcibios_resource_survey_bus() and
-check_hotplug_bridge() get called only for a just found bus and not the
-ones already added to the system. Failure to do so will lead to resource
-conflicts.
+# echo printk:traceoff > /sys/kernel/debug/tracing/set_ftrace_filter
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/pci/hotplug/acpiphp_glue.c | 18 +++++++-----------
- 1 file changed, 7 insertions(+), 11 deletions(-)
+This will add a trigger to the printk function that when called, will
+disable tracing. If it is hit before you get your trace, you can just
+re-enable tracing with:
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index b983e29..80a6ea1 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -685,18 +685,13 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 	struct pci_dev *dev;
- 	struct pci_bus *bus = slot->bridge->pci_bus;
- 	struct acpiphp_func *func;
--	int num, max, pass;
-+	int max, pass;
- 	LIST_HEAD(add_list);
+# echo 1 > /sys/kernel/debug/tracing/tracing_on
+
+Hmm, no it needs a fix to make this work. I applied a patch below that
+should do this correctly (and will put this into my 3.11 queue).
+
+If you run the test again with this change and with the above filter, it
+should stop the trace before overwriting the first dump, as it should
+ignore the printk output.
+
+-- Steve
+
+
+>  => rcu_check_callbacks
+>  => update_process_times
+>  => tick_sched_handle.isra.16
+>  => tick_sched_timer
+>  => __run_hrtimer
+>  => hrtimer_interrupt
+>  => smp_apic_timer_interrupt
+>  => apic_timer_interrupt
+>  => _raw_spin_lock
+>  => evict
+>  => iput
+>  => dput
+>  => proc_flush_task
+>  => release_task
+>  => wait_consider_task
+>  => do_wait
+>  => SyS_wait4
+>  => tracesys
+> 
+
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index b19d065..2aefbee 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -373,7 +373,7 @@ start_critical_timing(unsigned long ip, unsigned long parent_ip)
+ 	struct trace_array_cpu *data;
+ 	unsigned long flags;
  
- 	list_for_each_entry(func, &slot->funcs, sibling)
- 		acpiphp_bus_add(func);
+-	if (likely(!tracer_enabled))
++	if (!tracer_enabled || !tracing_is_enabled())
+ 		return;
  
--	num = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
--	if (num == 0) {
--		/* Maybe only part of funcs are added. */
--		dbg("No new device found\n");
--		goto err_exit;
--	}
-+	pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
+ 	cpu = raw_smp_processor_id();
+@@ -416,7 +416,7 @@ stop_critical_timing(unsigned long ip, unsigned long parent_ip)
+ 	else
+ 		return;
  
- 	max = acpiphp_max_busnr(bus);
- 	for (pass = 0; pass < 2; pass++) {
-@@ -707,8 +702,11 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 			    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
- 				max = pci_scan_bridge(bus, dev, max, pass);
- 				if (pass && dev->subordinate) {
--					check_hotplug_bridge(slot, dev);
--					pcibios_resource_survey_bus(dev->subordinate);
-+					if (!dev->subordinate->is_added) {
-+						check_hotplug_bridge(slot, dev);
-+						pcibios_resource_survey_bus(
-+							dev->subordinate);
-+					}
- 					__pci_bus_size_bridges(dev->subordinate,
- 							       &add_list);
- 				}
-@@ -742,8 +740,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 		}
- 	}
+-	if (!tracer_enabled)
++	if (!tracer_enabled || !tracing_is_enabled())
+ 		return;
  
--
-- err_exit:
- 	return 0;
- }
- 
--- 
-1.8.3.1
+ 	data = per_cpu_ptr(tr->trace_buffer.data, cpu);
+
 
