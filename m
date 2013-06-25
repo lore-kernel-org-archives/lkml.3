@@ -1,105 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3FYOvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:51:55 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:50482 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab3FYOuN (ORCPT
+	id S1752260Ab3FYOwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:52:40 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:59053 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3FYOwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:50:13 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 4/6] drbd: Ignore the exit code of a fence-peer handler if it returns too late
-Date: Tue, 25 Jun 2013 16:50:06 +0200
-Message-Id: <1372171808-30515-5-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372171808-30515-1-git-send-email-philipp.reisner@linbit.com>
-References: <1372171808-30515-1-git-send-email-philipp.reisner@linbit.com>
+	Tue, 25 Jun 2013 10:52:39 -0400
+MIME-Version: 1.0
+Date: Tue, 25 Jun 2013 16:52:37 +0200
+Message-ID: <CA+xJJ1-MU_g8tXsvX63ongAZu+1OynnG_PRv4VoZdKHng1qjWg@mail.gmail.com>
+Subject: Question: How to find clock source with no consumer device node?
+From: Mats Liljegren <liljegren.mats2@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case the connection was established and lost again before
-the a fence-peer handler returns, ignore the exit code of this
-instance. (And use the exit code of the later started instance)
+I want to make a load module which is used for performance
+measurements. It hooks into a timer available with the target board in
+question.
 
-Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
----
- drivers/block/drbd/drbd_int.h   |    1 +
- drivers/block/drbd/drbd_nl.c    |   15 +++++++++++++--
- drivers/block/drbd/drbd_state.c |    4 +++-
- 3 files changed, 17 insertions(+), 3 deletions(-)
+Now, there is no device tree information about this timer hardware
+that my load module could use. However, there is device tree
+information about the clock source that my timer needs. But I can't
+figure out how get the clock based on this.
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index f943aac..f104328 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -832,6 +832,7 @@ struct drbd_tconn {			/* is a resource from the config file */
- 	unsigned susp_nod:1;		/* IO suspended because no data */
- 	unsigned susp_fen:1;		/* IO suspended because fence peer handler runs */
- 	struct mutex cstate_mutex;	/* Protects graceful disconnects */
-+	unsigned int connect_cnt;	/* Inc each time a connection is established */
- 
- 	unsigned long flags;
- 	struct net_conf *net_conf;	/* content protected by rcu */
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 0936d6a..e25803b 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -417,6 +417,7 @@ static enum drbd_fencing_p highest_fencing_policy(struct drbd_tconn *tconn)
- 
- bool conn_try_outdate_peer(struct drbd_tconn *tconn)
- {
-+	unsigned int connect_cnt;
- 	union drbd_state mask = { };
- 	union drbd_state val = { };
- 	enum drbd_fencing_p fp;
-@@ -428,6 +429,10 @@ bool conn_try_outdate_peer(struct drbd_tconn *tconn)
- 		return false;
- 	}
- 
-+	spin_lock_irq(&tconn->req_lock);
-+	connect_cnt = tconn->connect_cnt;
-+	spin_unlock_irq(&tconn->req_lock);
-+
- 	fp = highest_fencing_policy(tconn);
- 	switch (fp) {
- 	case FP_NOT_AVAIL:
-@@ -492,8 +497,14 @@ bool conn_try_outdate_peer(struct drbd_tconn *tconn)
- 	   here, because we might were able to re-establish the connection in the
- 	   meantime. */
- 	spin_lock_irq(&tconn->req_lock);
--	if (tconn->cstate < C_WF_REPORT_PARAMS && !test_bit(STATE_SENT, &tconn->flags))
--		_conn_request_state(tconn, mask, val, CS_VERBOSE);
-+	if (tconn->cstate < C_WF_REPORT_PARAMS && !test_bit(STATE_SENT, &tconn->flags)) {
-+		if (tconn->connect_cnt != connect_cnt)
-+			/* In case the connection was established and droped
-+			   while the fence-peer handler was running, ignore it */
-+			conn_info(tconn, "Ignoring fence-peer exit code\n");
-+		else
-+			_conn_request_state(tconn, mask, val, CS_VERBOSE);
-+	}
- 	spin_unlock_irq(&tconn->req_lock);
- 
- 	return conn_highest_pdsk(tconn) <= D_OUTDATED;
-diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
-index 90c5be2..216d47b 100644
---- a/drivers/block/drbd/drbd_state.c
-+++ b/drivers/block/drbd/drbd_state.c
-@@ -1115,8 +1115,10 @@ __drbd_set_state(struct drbd_conf *mdev, union drbd_state ns,
- 		drbd_thread_restart_nowait(&mdev->tconn->receiver);
- 
- 	/* Resume AL writing if we get a connection */
--	if (os.conn < C_CONNECTED && ns.conn >= C_CONNECTED)
-+	if (os.conn < C_CONNECTED && ns.conn >= C_CONNECTED) {
- 		drbd_resume_al(mdev);
-+		mdev->tconn->connect_cnt++;
-+	}
- 
- 	/* remember last attach time so request_timer_fn() won't
- 	 * kill newly established sessions while we are still trying to thaw
--- 
-1.7.9.5
+I do not want to force the user of this load module to patch and
+regenerate their device tree blob, and then restart their computer, to
+get the right information in. I have tried this path and sure enough,
+it works for me. But it will not be so easy for someone else who just
+want to run this load module.
 
+I tried to use "clk_get_sys()", but apparently you can't point at the
+clock producer, you must point at the clock consumer, which would be
+my timer. But this device node does not exist.
+
+I would really like to just say "clk_of_get("/soc/clocks/myclock")"
+where "/soc/clocks/myclock" is the device tree path to the clock
+device I want to use.
+
+Any help or hints are appreciated.
+
+/Mats
