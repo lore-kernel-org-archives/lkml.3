@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3FYP4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:56:32 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:45203 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab3FYPzO (ORCPT
+	id S1752859Ab3FYP4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:56:41 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:63980 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3FYP4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:55:14 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v2 0/3] net: davinci: driver cleanup
-Date: Tue, 25 Jun 2013 21:24:50 +0530
-Message-Id: <1372175693-20318-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 25 Jun 2013 11:56:38 -0400
+Message-ID: <51C9BDB2.7060905@gmail.com>
+Date: Tue, 25 Jun 2013 09:56:34 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-13-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1372079772-20803-13-git-send-email-adrian.hunter@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On 6/24/13 7:16 AM, Adrian Hunter wrote:
+> Sample types need not be identical to determine
+> the sample id from the event.  Only the position
+> of the sample id needs to be the same.
+>
+> Compatible sample types are ones in which the bits
+> defined by PERF_COMPAT_MASK are the same.
+> 'perf_evlist__config()' forces sample types to be
+> compatible on that basis.
 
-This patch series cleans up the davinci driver.
+Something is still missing to support different sample_types for events. 
+Consider the case (S/W event + tracepoint):
+   perf record -e cs -c1 -e sched:sched_switch -a -- sleep 1
+   perf script
 
-This patch series applies on 3.10.rc7 and is boot tested
-on OMAP-L138 EVM with DT and non DT cases.
+This patch addresses the sample_type mismatch error message, but I get 
+no event samples in the output. Besides the usual header I get:
 
-Changes for v2:
-1: Dropped patches which removed include files.
+   No trace sample to read. Did you call 'perf record -R'?
 
-Lad, Prabhakar (3):
-  net: davinci: emac: Convert to devm_* api
-  net: davinci_emac: simplify the OF parser code
-  net: davinci_mdio: gaurd the DT code with IS_ENABLED(CONFIG_OF)
+It's a 16-cpu box with 5 VMs running. I know there should be at least a 
+few samples in 1 second.
 
- drivers/net/ethernet/ti/davinci_emac.c |  116 +++++++++-----------------------
- drivers/net/ethernet/ti/davinci_mdio.c |    5 +-
- 2 files changed, 36 insertions(+), 85 deletions(-)
+Stephane: are you looking at allowing sample_types per event?
 
--- 
-1.7.9.5
-
+David
