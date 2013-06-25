@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775Ab3FYRxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:53:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49466 "EHLO mail.skyhub.de"
+	id S1751887Ab3FYRxk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:53:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36303 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751455Ab3FYRxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:53:10 -0400
-Date: Tue, 25 Jun 2013 19:53:06 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
-        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ying.huang@intel.com
-Subject: Re: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
- banks listed in APEI HEST CMC
-Message-ID: <20130625175306.GE4855@pd.tnic>
-References: <20130621174057.GI22006@pd.tnic>
- <20130625174536.5226.66421.stgit@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130625174536.5226.66421.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751101Ab3FYRxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 13:53:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
+   d="scan'208";a="359406407"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, x86@kernel.org
+In-Reply-To: <CAHp75Vfw5WO+6+_NB1mbgma7KVo-b7pyr6XA=LM1ozg580kbrg@mail.gmail.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-4-git-send-email-mika.westerberg@linux.intel.com>
+ <CAHp75Vfw5WO+6+_NB1mbgma7KVo-b7pyr6XA=LM1ozg580kbrg@mail.gmail.com>
+Subject: Re: [PATCH 3/6] PCI: introduce pci_trim_stale_devices()
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130625175625.3F434E0090@blue.fi.intel.com>
+Date: Tue, 25 Jun 2013 20:56:25 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 11:16:32PM +0530, Naveen N. Rao wrote:
-> Tony, Boris,
-> Can you please see if the comments in the below patch include the details you
-> were expecting?
+Andy Shevchenko wrote:
+> On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
 > 
-> Thanks,
-> Naveen
+> > The new function stops and removes the device if it doesn't respond.
+> > If the device responds and it's a bus we apply the function to all
+> > subdevices recursively.
+> >
+> > It's useful for hotplug bus check case, when you need drop all unplugged
+> > devices before looking for new ones.
 > 
-> --
-> Add comments to clarify usage of the various bitfields in the MCA subsystem
+> One comment below.
 > 
-> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c       |    5 ++++-
->  arch/x86/kernel/cpu/mcheck/mce_intel.c |    9 +++++++++
->  2 files changed, 13 insertions(+), 1 deletion(-)
+> > +void pci_trim_stale_devices(struct pci_dev *dev)
+> > +{
+> > +       struct pci_bus *bus = dev->subordinate;
+> > +       struct pci_dev *child, *tmp;
+> > +       bool alive;
+> > +       u32 l;
+> > +
+> > +       /* check if the device responds */
+> > +       alive = pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &l, 0);
+> > +       if (!alive)
+> > +               pci_stop_and_remove_bus_device(dev);
+> > +
+> > +       if (alive && bus)
+> > +               list_for_each_entry_safe(child, tmp, &bus->devices, bus_list)
+> > +                       pci_trim_stale_devices(child);
 > 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 9239504..bf49cdb 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -89,7 +89,10 @@ static DECLARE_WAIT_QUEUE_HEAD(mce_chrdev_wait);
->  static DEFINE_PER_CPU(struct mce, mces_seen);
->  static int			cpu_missing;
->  
-> -/* MCA banks polled by the period polling timer for corrected events */
-> +/*
-> + * MCA banks polled by the period polling timer for corrected events.
-> + * With Intel CMCI, this only has MCA banks which do not support CMCI (if any).
-> + */
->  DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
->  	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
->  };
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> index ae1697c..2816f53 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> @@ -24,6 +24,15 @@
->   * Also supports reliable discovery of shared banks.
->   */
->  
-> +/*
-> + * Indicates MCA banks controlled by the current cpu for CMCI. Note that this
-> + * can change when a cpu is offlined or brought online since some MCA banks
-> + * are shared across cpus. When a cpu is offlined, cmci_clear() disables CMCI
-> + * on all banks owned by the cpu and clears this bitfield. At this point,
-> + * cmci_rediscover() kicks in and a different cpu may end up taking
-> + * ownership of some of the shared MCA banks that were previously owned
-> + * by the offlined cpu.
-> + */
->  static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
+> It's not a tail call anyway, so, what about
+> 
+>    if (!pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &l, 0)) {
+>              pci_stop_and_remove_bus_device(dev);
+>    } else if (bus) {
+>              list_for_each_entry_safe(child, tmp, &bus->devices, bus_list)
+>                      pci_trim_stale_devices(child);
+>    }
 
-Yep, it looks ok to me.
+Why? It looks uglier.
 
-Acked-by: Borislav Petkov <bp@suse.de>
-
-Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+ Kirill A. Shutemov
