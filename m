@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab3FYSdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:33:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40894 "EHLO
+	id S1752482Ab3FYTH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:07:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40924 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab3FYSdo (ORCPT
+	with ESMTP id S1752356Ab3FYSdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:44 -0400
+	Tue, 25 Jun 2013 14:33:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [ 29/95] carl9170: fix frame drop and WARN due to minstrel_ht change
-Date: Tue, 25 Jun 2013 11:32:16 -0700
-Message-Id: <20130625182156.949745080@linuxfoundation.org>
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 36/95] drm/prime: Honor requested file flags when exporting a buffer
+Date: Tue, 25 Jun 2013 11:32:23 -0700
+Message-Id: <20130625182157.721591509@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,162 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-commit 5f34608fa2acbfef5a06d0072a978c9943c28a2d upstream.
+commit ebc0bad4a05ad63979e8bc115cea3b8abdf814c7 upstream.
 
-With "mac80211/minstrel_ht: add support for using CCK rates"
-minstrel_ht selects legacy CCK rates as viable rates for
-outgoing frames which might be sent as part of an A-MPDU
-[IEEE80211_TX_CTL_AMPDU is set].
+The DRM PRIME API passes file flags to the driver for the exported
+buffer. Honor them instead of hardcoding 0600.
 
-This behavior triggered the following WARN_ON in the driver:
-> WARNING: at carl9170/tx.c:995 carl9170_op_tx+0x1dd/0x6fd
-The driver assumed that the rate control algorithm made a
-mistake and dropped the frame.
-
-This patch removes the noisy warning altogether and allows
-said A-MPDU frames with CCK sample and/or fallback rates to
-be transmitted seamlessly.
-
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/carl9170/tx.c |   69 +++++++++++++--------------------
- 1 file changed, 28 insertions(+), 41 deletions(-)
+ drivers/gpu/drm/drm_prime.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/carl9170/tx.c
-+++ b/drivers/net/wireless/ath/carl9170/tx.c
-@@ -387,8 +387,7 @@ static void carl9170_tx_status_process_a
- 	u8 tid;
- 
- 	if (!(txinfo->flags & IEEE80211_TX_CTL_AMPDU) ||
--	    txinfo->flags & IEEE80211_TX_CTL_INJECTED ||
--	   (!(super->f.mac_control & cpu_to_le16(AR9170_TX_MAC_AGGR))))
-+	    txinfo->flags & IEEE80211_TX_CTL_INJECTED)
- 		return;
- 
- 	rcu_read_lock();
-@@ -981,30 +980,6 @@ static int carl9170_tx_prepare(struct ar
- 
- 		SET_VAL(CARL9170_TX_SUPER_AMPDU_FACTOR,
- 			txc->s.ampdu_settings, factor);
--
--		for (i = 0; i < CARL9170_TX_MAX_RATES; i++) {
--			txrate = &info->control.rates[i];
--			if (txrate->idx >= 0) {
--				txc->s.ri[i] =
--					CARL9170_TX_SUPER_RI_AMPDU;
--
--				if (WARN_ON(!(txrate->flags &
--					      IEEE80211_TX_RC_MCS))) {
--					/*
--					 * Not sure if it's even possible
--					 * to aggregate non-ht rates with
--					 * this HW.
--					 */
--					goto err_out;
--				}
--				continue;
--			}
--
--			txrate->idx = 0;
--			txrate->count = ar->hw->max_rate_tries;
--		}
--
--		mac_tmp |= cpu_to_le16(AR9170_TX_MAC_AGGR);
+--- a/drivers/gpu/drm/drm_prime.c
++++ b/drivers/gpu/drm/drm_prime.c
+@@ -190,8 +190,7 @@ struct dma_buf *drm_gem_prime_export(str
+ 		if (ret)
+ 			return ERR_PTR(ret);
  	}
- 
- 	/*
-@@ -1012,11 +987,31 @@ static int carl9170_tx_prepare(struct ar
- 	 * taken from mac_control. For all fallback rate, the firmware
- 	 * updates the mac_control flags from the rate info field.
- 	 */
--	for (i = 1; i < CARL9170_TX_MAX_RATES; i++) {
-+	for (i = 0; i < CARL9170_TX_MAX_RATES; i++) {
-+		__le32 phy_set;
- 		txrate = &info->control.rates[i];
- 		if (txrate->idx < 0)
- 			break;
- 
-+		phy_set = carl9170_tx_physet(ar, info, txrate);
-+		if (i == 0) {
-+			/* first rate - part of the hw's frame header */
-+			txc->f.phy_control = phy_set;
-+
-+			if (ampdu && txrate->flags & IEEE80211_TX_RC_MCS)
-+				mac_tmp |= cpu_to_le16(AR9170_TX_MAC_AGGR);
-+			if (carl9170_tx_rts_check(ar, txrate, ampdu, no_ack))
-+				mac_tmp |= cpu_to_le16(AR9170_TX_MAC_PROT_RTS);
-+			else if (carl9170_tx_cts_check(ar, txrate))
-+				mac_tmp |= cpu_to_le16(AR9170_TX_MAC_PROT_CTS);
-+
-+		} else {
-+			/* fallback rates are stored in the firmware's
-+			 * retry rate set array.
-+			 */
-+			txc->s.rr[i - 1] = phy_set;
-+		}
-+
- 		SET_VAL(CARL9170_TX_SUPER_RI_TRIES, txc->s.ri[i],
- 			txrate->count);
- 
-@@ -1027,21 +1022,13 @@ static int carl9170_tx_prepare(struct ar
- 			txc->s.ri[i] |= (AR9170_TX_MAC_PROT_CTS <<
- 				CARL9170_TX_SUPER_RI_ERP_PROT_S);
- 
--		txc->s.rr[i - 1] = carl9170_tx_physet(ar, info, txrate);
-+		if (ampdu && (txrate->flags & IEEE80211_TX_RC_MCS))
-+			txc->s.ri[i] |= CARL9170_TX_SUPER_RI_AMPDU;
- 	}
- 
--	txrate = &info->control.rates[0];
--	SET_VAL(CARL9170_TX_SUPER_RI_TRIES, txc->s.ri[0], txrate->count);
--
--	if (carl9170_tx_rts_check(ar, txrate, ampdu, no_ack))
--		mac_tmp |= cpu_to_le16(AR9170_TX_MAC_PROT_RTS);
--	else if (carl9170_tx_cts_check(ar, txrate))
--		mac_tmp |= cpu_to_le16(AR9170_TX_MAC_PROT_CTS);
--
- 	txc->s.len = cpu_to_le16(skb->len);
- 	txc->f.length = cpu_to_le16(len + FCS_LEN);
- 	txc->f.mac_control = mac_tmp;
--	txc->f.phy_control = carl9170_tx_physet(ar, info, txrate);
- 
- 	arinfo = (void *)info->rate_driver_data;
- 	arinfo->timeout = jiffies;
-@@ -1381,9 +1368,9 @@ static void carl9170_tx(struct ar9170 *a
+-	return dma_buf_export(obj, &drm_gem_prime_dmabuf_ops, obj->size,
+-			      0600);
++	return dma_buf_export(obj, &drm_gem_prime_dmabuf_ops, obj->size, flags);
  }
- 
- static bool carl9170_tx_ampdu_queue(struct ar9170 *ar,
--	struct ieee80211_sta *sta, struct sk_buff *skb)
-+	struct ieee80211_sta *sta, struct sk_buff *skb,
-+	struct ieee80211_tx_info *txinfo)
- {
--	struct _carl9170_tx_superframe *super = (void *) skb->data;
- 	struct carl9170_sta_info *sta_info;
- 	struct carl9170_sta_tid *agg;
- 	struct sk_buff *iter;
-@@ -1450,7 +1437,7 @@ err_unlock:
- 
- err_unlock_rcu:
- 	rcu_read_unlock();
--	super->f.mac_control &= ~cpu_to_le16(AR9170_TX_MAC_AGGR);
-+	txinfo->flags &= ~IEEE80211_TX_CTL_AMPDU;
- 	carl9170_tx_status(ar, skb, false);
- 	ar->tx_dropped++;
- 	return false;
-@@ -1492,7 +1479,7 @@ void carl9170_op_tx(struct ieee80211_hw
- 		 * sta == NULL checks are redundant in this
- 		 * special case.
- 		 */
--		run = carl9170_tx_ampdu_queue(ar, sta, skb);
-+		run = carl9170_tx_ampdu_queue(ar, sta, skb, info);
- 		if (run)
- 			carl9170_tx_ampdu(ar);
+ EXPORT_SYMBOL(drm_gem_prime_export);
  
 
 
