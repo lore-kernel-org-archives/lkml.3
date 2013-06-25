@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab3FYWzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 18:55:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49248 "EHLO
+	id S1752051Ab3FYWzP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 18:55:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49266 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab3FYWzA (ORCPT
+	with ESMTP id S1751876Ab3FYWzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 18:55:00 -0400
-Date: Tue, 25 Jun 2013 15:54:47 -0700
+	Tue, 25 Jun 2013 18:55:09 -0400
+Date: Tue, 25 Jun 2013 15:54:56 -0700
 From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-buq1evi5dpykxx7ak6amaam0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, gleb@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, mtosatti@redhat.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, gleb@redhat.com,
-        linux-kernel@vger.kernel.org, mtosatti@redhat.com, tglx@linutronix.de,
-        hpa@linux.intel.com
+Message-ID: <tip-cwckhbrib2aux1qbteaebij0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, hpa@linux.intel.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86: Rename X86_CR4_RDWRGSFS to X86_CR4_FSGSBASE
-Git-Commit-ID: 3451e4dd93a878282669edbfeeac4a7f10bfc9af
+Subject: [tip:x86/asm] x86, processor-flags:
+  Fix the datatypes and add bit number defines
+Git-Commit-ID: 5d378644340de4c43dd3a50ed3a03e916c840d17
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,68 +26,215 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 25 Jun 2013 15:54:53 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 25 Jun 2013 15:55:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3451e4dd93a878282669edbfeeac4a7f10bfc9af
-Gitweb:     http://git.kernel.org/tip/3451e4dd93a878282669edbfeeac4a7f10bfc9af
+Commit-ID:  5d378644340de4c43dd3a50ed3a03e916c840d17
+Gitweb:     http://git.kernel.org/tip/5d378644340de4c43dd3a50ed3a03e916c840d17
 Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Sat, 27 Apr 2013 16:37:47 -0700
+AuthorDate: Sat, 27 Apr 2013 16:11:17 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
 CommitDate: Tue, 25 Jun 2013 15:50:05 -0700
 
-x86: Rename X86_CR4_RDWRGSFS to X86_CR4_FSGSBASE
+x86, processor-flags: Fix the datatypes and add bit number defines
 
-Rename X86_CR4_RDWRGSFS to X86_CR4_FSGSBASE to match the SDM.
+The control registers are unsigned long (32 bits on i386, 64 bits on
+x86-64), and so make that manifest in the data type for the various
+constants.  Add defines with a _BIT suffix which defines the bit
+number, as opposed to the bit mask.
 
+This should resolve some issues with ~bitmask that Linus discovered.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Link: http://lkml.kernel.org/n/tip-buq1evi5dpykxx7ak6amaam0@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-cwckhbrib2aux1qbteaebij0@git.kernel.org
 ---
- arch/x86/include/asm/kvm_host.h             | 2 +-
- arch/x86/include/uapi/asm/processor-flags.h | 2 +-
- arch/x86/kvm/x86.c                          | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/include/uapi/asm/processor-flags.h | 154 +++++++++++++++++++---------
+ 1 file changed, 104 insertions(+), 50 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 3741c65..af9c552 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -59,7 +59,7 @@
- 	(~(unsigned long)(X86_CR4_VME | X86_CR4_PVI | X86_CR4_TSD | X86_CR4_DE\
- 			  | X86_CR4_PSE | X86_CR4_PAE | X86_CR4_MCE     \
- 			  | X86_CR4_PGE | X86_CR4_PCE | X86_CR4_OSFXSR | X86_CR4_PCIDE \
--			  | X86_CR4_OSXSAVE | X86_CR4_SMEP | X86_CR4_RDWRGSFS \
-+			  | X86_CR4_OSXSAVE | X86_CR4_SMEP | X86_CR4_FSGSBASE \
- 			  | X86_CR4_OSXMMEXCPT | X86_CR4_VMXE))
- 
- #define CR8_RESERVED_BITS (~(unsigned long)X86_CR8_TPR)
 diff --git a/arch/x86/include/uapi/asm/processor-flags.h b/arch/x86/include/uapi/asm/processor-flags.h
-index b16e6d2..1b34df5 100644
+index 1b34df5..180a0c3 100644
 --- a/arch/x86/include/uapi/asm/processor-flags.h
 +++ b/arch/x86/include/uapi/asm/processor-flags.h
-@@ -61,7 +61,7 @@
- #define X86_CR4_OSFXSR	0x00000200 /* enable fast FPU save and restore */
- #define X86_CR4_OSXMMEXCPT 0x00000400 /* enable unmasked SSE exceptions */
- #define X86_CR4_VMXE	0x00002000 /* enable VMX virtualization */
--#define X86_CR4_RDWRGSFS 0x00010000 /* enable RDWRGSFS support */
-+#define X86_CR4_FSGSBASE 0x00010000 /* enable RDWRGSFS support */
- #define X86_CR4_PCIDE	0x00020000 /* enable PCID support */
- #define X86_CR4_OSXSAVE 0x00040000 /* enable xsave and xrestore */
- #define X86_CR4_SMEP	0x00100000 /* enable SMEP support */
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 094b5d9..6b941b4 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -619,7 +619,7 @@ int kvm_set_cr4(struct kvm_vcpu *vcpu, unsigned long cr4)
- 	if (!guest_cpuid_has_smep(vcpu) && (cr4 & X86_CR4_SMEP))
- 		return 1;
+@@ -2,75 +2,129 @@
+ #define _UAPI_ASM_X86_PROCESSOR_FLAGS_H
+ /* Various flags defined: can be included from assembler. */
  
--	if (!guest_cpuid_has_fsgsbase(vcpu) && (cr4 & X86_CR4_RDWRGSFS))
-+	if (!guest_cpuid_has_fsgsbase(vcpu) && (cr4 & X86_CR4_FSGSBASE))
- 		return 1;
++#include <linux/const.h>
++
+ /*
+  * EFLAGS bits
+  */
+-#define X86_EFLAGS_CF	0x00000001 /* Carry Flag */
+-#define X86_EFLAGS_FIXED 0x00000002 /* Bit 1 - always on */
+-#define X86_EFLAGS_PF	0x00000004 /* Parity Flag */
+-#define X86_EFLAGS_AF	0x00000010 /* Auxiliary carry Flag */
+-#define X86_EFLAGS_ZF	0x00000040 /* Zero Flag */
+-#define X86_EFLAGS_SF	0x00000080 /* Sign Flag */
+-#define X86_EFLAGS_TF	0x00000100 /* Trap Flag */
+-#define X86_EFLAGS_IF	0x00000200 /* Interrupt Flag */
+-#define X86_EFLAGS_DF	0x00000400 /* Direction Flag */
+-#define X86_EFLAGS_OF	0x00000800 /* Overflow Flag */
+-#define X86_EFLAGS_IOPL	0x00003000 /* IOPL mask */
+-#define X86_EFLAGS_NT	0x00004000 /* Nested Task */
+-#define X86_EFLAGS_RF	0x00010000 /* Resume Flag */
+-#define X86_EFLAGS_VM	0x00020000 /* Virtual Mode */
+-#define X86_EFLAGS_AC	0x00040000 /* Alignment Check */
+-#define X86_EFLAGS_VIF	0x00080000 /* Virtual Interrupt Flag */
+-#define X86_EFLAGS_VIP	0x00100000 /* Virtual Interrupt Pending */
+-#define X86_EFLAGS_ID	0x00200000 /* CPUID detection flag */
++#define X86_EFLAGS_CF_BIT	0 /* Carry Flag */
++#define X86_EFLAGS_CF		_BITUL(X86_EFLAGS_CF_BIT)
++#define X86_EFLAGS_FIXED_BIT	1 /* Bit 1 - always on */
++#define X86_EFLAGS_FIXED	_BITUL(X86_EFLAGS_FIXED_BIT)
++#define X86_EFLAGS_PF_BIT	2 /* Parity Flag */
++#define X86_EFLAGS_PF		_BITUL(X86_EFLAGS_PF_BIT)
++#define X86_EFLAGS_AF_BIT	4 /* Auxiliary carry Flag */
++#define X86_EFLAGS_AF		_BITUL(X86_EFLAGS_AF_BIT)
++#define X86_EFLAGS_ZF_BIT	6 /* Zero Flag */
++#define X86_EFLAGS_ZF		_BITUL(X86_EFLAGS_ZF_BIT)
++#define X86_EFLAGS_SF_BIT	7 /* Sign Flag */
++#define X86_EFLAGS_SF		_BITUL(X86_EFLAGS_SF_BIT)
++#define X86_EFLAGS_TF_BIT	8 /* Trap Flag */
++#define X86_EFLAGS_TF		_BITUL(X86_EFLAGS_TF_BIT)
++#define X86_EFLAGS_IF_BIT	9 /* Interrupt Flag */
++#define X86_EFLAGS_IF		_BITUL(X86_EFLAGS_IF_BIT)
++#define X86_EFLAGS_DF_BIT	10 /* Direction Flag */
++#define X86_EFLAGS_DF		_BITUL(X86_EFLAGS_DF_BIT)
++#define X86_EFLAGS_OF_BIT	11 /* Overflow Flag */
++#define X86_EFLAGS_OF		_BITUL(X86_EFLAGS_OF_BIT)
++#define X86_EFLAGS_IOPL_BIT	12 /* I/O Privilege Level (2 bits) */
++#define X86_EFLAGS_IOPL		(_AC(3,UL) << X86_EFLAGS_IOPL_BIT)
++#define X86_EFLAGS_NT_BIT	14 /* Nested Task */
++#define X86_EFLAGS_NT		_BITUL(X86_EFLAGS_NT_BIT)
++#define X86_EFLAGS_RF_BIT	16 /* Resume Flag */
++#define X86_EFLAGS_RF		_BITUL(X86_EFLAGS_RF_BIT)
++#define X86_EFLAGS_VM_BIT	17 /* Virtual Mode */
++#define X86_EFLAGS_VM		_BITUL(X86_EFLAGS_VM_BIT)
++#define X86_EFLAGS_AC_BIT	18 /* Alignment Check/Access Control */
++#define X86_EFLAGS_AC		_BITUL(X86_EFLAGS_AC_BIT)
++#define X86_EFLAGS_AC_BIT	18 /* Alignment Check/Access Control */
++#define X86_EFLAGS_AC		_BITUL(X86_EFLAGS_AC_BIT)
++#define X86_EFLAGS_VIF_BIT	19 /* Virtual Interrupt Flag */
++#define X86_EFLAGS_VIF		_BITUL(X86_EFLAGS_VIF_BIT)
++#define X86_EFLAGS_VIP_BIT	20 /* Virtual Interrupt Pending */
++#define X86_EFLAGS_VIP		_BITUL(X86_EFLAGS_VIP_BIT)
++#define X86_EFLAGS_ID_BIT	21 /* CPUID detection */
++#define X86_EFLAGS_ID		_BITUL(X86_EFLAGS_ID_BIT)
  
- 	if (is_long_mode(vcpu)) {
+ /*
+  * Basic CPU control in CR0
+  */
+-#define X86_CR0_PE	0x00000001 /* Protection Enable */
+-#define X86_CR0_MP	0x00000002 /* Monitor Coprocessor */
+-#define X86_CR0_EM	0x00000004 /* Emulation */
+-#define X86_CR0_TS	0x00000008 /* Task Switched */
+-#define X86_CR0_ET	0x00000010 /* Extension Type */
+-#define X86_CR0_NE	0x00000020 /* Numeric Error */
+-#define X86_CR0_WP	0x00010000 /* Write Protect */
+-#define X86_CR0_AM	0x00040000 /* Alignment Mask */
+-#define X86_CR0_NW	0x20000000 /* Not Write-through */
+-#define X86_CR0_CD	0x40000000 /* Cache Disable */
+-#define X86_CR0_PG	0x80000000 /* Paging */
++#define X86_CR0_PE_BIT		0 /* Protection Enable */
++#define X86_CR0_PE		_BITUL(X86_CR0_PE_BIT)
++#define X86_CR0_MP_BIT		1 /* Monitor Coprocessor */
++#define X86_CR0_MP		_BITUL(X86_CR0_MP_BIT)
++#define X86_CR0_EM_BIT		2 /* Emulation */
++#define X86_CR0_EM		_BITUL(X86_CR0_EM_BIT)
++#define X86_CR0_TS_BIT		3 /* Task Switched */
++#define X86_CR0_TS		_BITUL(X86_CR0_TS_BIT)
++#define X86_CR0_ET_BIT		4 /* Extension Type */
++#define X86_CR0_ET		_BITUL(X86_CR0_ET_BIT)
++#define X86_CR0_NE_BIT		5 /* Numeric Error */
++#define X86_CR0_NE		_BITUL(X86_CR0_NE_BIT)
++#define X86_CR0_WP_BIT		16 /* Write Protect */
++#define X86_CR0_WP		_BITUL(X86_CR0_WP_BIT)
++#define X86_CR0_AM_BIT		18 /* Alignment Mask */
++#define X86_CR0_AM		_BITUL(X86_CR0_AM_BIT)
++#define X86_CR0_NW_BIT		29 /* Not Write-through */
++#define X86_CR0_NW		_BITUL(X86_CR0_NW_BIT)
++#define X86_CR0_CD_BIT		30 /* Cache Disable */
++#define X86_CR0_CD		_BITUL(X86_CR0_CD_BIT)
++#define X86_CR0_PG_BIT		31 /* Paging */
++#define X86_CR0_PG		_BITUL(X86_CR0_PG_BIT)
+ 
+ /*
+  * Paging options in CR3
+  */
+-#define X86_CR3_PWT	0x00000008 /* Page Write Through */
+-#define X86_CR3_PCD	0x00000010 /* Page Cache Disable */
+-#define X86_CR3_PCID_MASK 0x00000fff /* PCID Mask */
++#define X86_CR3_PWT_BIT		3 /* Page Write Through */
++#define X86_CR3_PWT		_BITUL(X86_CR3_PWT_BIT)
++#define X86_CR3_PCD_BIT		4 /* Page Cache Disable */
++#define X86_CR3_PCD		_BITUL(X86_CR3_PCD_BIT)
++#define X86_CR3_PCID_MASK	_AC(0x00000fff,UL) /* PCID Mask */
+ 
+ /*
+  * Intel CPU features in CR4
+  */
+-#define X86_CR4_VME	0x00000001 /* enable vm86 extensions */
+-#define X86_CR4_PVI	0x00000002 /* virtual interrupts flag enable */
+-#define X86_CR4_TSD	0x00000004 /* disable time stamp at ipl 3 */
+-#define X86_CR4_DE	0x00000008 /* enable debugging extensions */
+-#define X86_CR4_PSE	0x00000010 /* enable page size extensions */
+-#define X86_CR4_PAE	0x00000020 /* enable physical address extensions */
+-#define X86_CR4_MCE	0x00000040 /* Machine check enable */
+-#define X86_CR4_PGE	0x00000080 /* enable global pages */
+-#define X86_CR4_PCE	0x00000100 /* enable performance counters at ipl 3 */
+-#define X86_CR4_OSFXSR	0x00000200 /* enable fast FPU save and restore */
+-#define X86_CR4_OSXMMEXCPT 0x00000400 /* enable unmasked SSE exceptions */
+-#define X86_CR4_VMXE	0x00002000 /* enable VMX virtualization */
+-#define X86_CR4_FSGSBASE 0x00010000 /* enable RDWRGSFS support */
+-#define X86_CR4_PCIDE	0x00020000 /* enable PCID support */
+-#define X86_CR4_OSXSAVE 0x00040000 /* enable xsave and xrestore */
+-#define X86_CR4_SMEP	0x00100000 /* enable SMEP support */
+-#define X86_CR4_SMAP	0x00200000 /* enable SMAP support */
++#define X86_CR4_VME_BIT		0 /* enable vm86 extensions */
++#define X86_CR4_VME		_BITUL(X86_CR4_VME_BIT)
++#define X86_CR4_PVI_BIT		1 /* virtual interrupts flag enable */
++#define X86_CR4_PVI		_BITUL(X86_CR4_PVI_BIT)
++#define X86_CR4_TSD_BIT		2 /* disable time stamp at ipl 3 */
++#define X86_CR4_TSD		_BITUL(X86_CR4_TSD_BIT)
++#define X86_CR4_DE_BIT		3 /* enable debugging extensions */
++#define X86_CR4_DE		_BITUL(X86_CR4_DE_BIT)
++#define X86_CR4_PSE_BIT		4 /* enable page size extensions */
++#define X86_CR4_PSE		_BITUL(X86_CR4_PSE_BIT)
++#define X86_CR4_PAE_BIT		5 /* enable physical address extensions */
++#define X86_CR4_PAE		_BITUL(X86_CR4_PAE_BIT)
++#define X86_CR4_MCE_BIT		6 /* Machine check enable */
++#define X86_CR4_MCE		_BITUL(X86_CR4_MCE_BIT)
++#define X86_CR4_PGE_BIT		7 /* enable global pages */
++#define X86_CR4_PGE		_BITUL(X86_CR4_PGE_BIT)
++#define X86_CR4_PCE_BIT		8 /* enable performance counters at ipl 3 */
++#define X86_CR4_PCE		_BITUL(X86_CR4_PCE_BIT)
++#define X86_CR4_OSFXSR_BIT	9 /* enable fast FPU save and restore */
++#define X86_CR4_OSFXSR		_BITUL(X86_CR4_OSFXSR_BIT)
++#define X86_CR4_OSXMMEXCPT_BIT	10 /* enable unmasked SSE exceptions */
++#define X86_CR4_OSXMMEXCPT	_BITUL(X86_CR4_OSXMMEXCPT_BIT)
++#define X86_CR4_VMXE_BIT	13 /* enable VMX virtualization */
++#define X86_CR4_VMXE		_BITUL(X86_CR4_VMXE_BIT)
++#define X86_CR4_SMXE_BIT	14 /* enable safer mode (TXT) */
++#define X86_CR4_SMXE		_BITUL(X86_CR4_SMXE_BIT)
++#define X86_CR4_FSGSBASE_BIT	16 /* enable RDWRFSGS support */
++#define X86_CR4_FSGSBASE	_BITUL(X86_CR4_FSGSBASE_BIT)
++#define X86_CR4_PCIDE_BIT	17 /* enable PCID support */
++#define X86_CR4_PCIDE		_BITUL(X86_CR4_PCIDE_BIT)
++#define X86_CR4_OSXSAVE_BIT	18 /* enable xsave and xrestore */
++#define X86_CR4_OSXSAVE		_BITUL(X86_CR4_OSXSAVE_BIT)
++#define X86_CR4_SMEP_BIT	20 /* enable SMEP support */
++#define X86_CR4_SMEP		_BITUL(X86_CR4_SMEP_BIT)
++#define X86_CR4_SMAP_BIT	21 /* enable SMAP support */
++#define X86_CR4_SMAP		_BITUL(X86_CR4_SMAP_BIT)
+ 
+ /*
+  * x86-64 Task Priority Register, CR8
+  */
+-#define X86_CR8_TPR	0x0000000F /* task priority register */
++#define X86_CR8_TPR		_AC(0x0000000f,UL) /* task priority register */
+ 
+ /*
+  * AMD and Transmeta use MSRs for configuration; see <asm/msr-index.h>
