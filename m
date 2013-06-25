@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab3FYO5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:57:37 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:39259 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182Ab3FYO5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:57:36 -0400
-Message-ID: <51C9AFC4.1020305@imgtec.com>
-Date: Tue, 25 Jun 2013 15:57:08 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751977Ab3FYO6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:58:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50930 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab3FYO6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 10:58:05 -0400
+Date: Tue, 25 Jun 2013 16:57:54 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Matthew Wilcox <willy@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nvme@lists.infradead.org,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
+Message-ID: <20130625145754.GL5594@kernel.dk>
+References: <20130620201713.GV8211@linux.intel.com>
+ <20130623100920.GA19021@gmail.com>
+ <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+ <20130624071718.GS9422@kernel.dk>
+ <20130625001102.GA6623@home.goodmis.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/4] pinctrl: remove slew-rate parameter from tz1090
-References: <201306251455.01540.heiko@sntech.de> <201306251456.36499.heiko@sntech.de> <51C99581.2010403@imgtec.com> <CACRpkdaVsKCNzQ9zAG5DXfDO2BFpcCzw5VbmARazOrXCW1kmeQ@mail.gmail.com>
-In-Reply-To: <CACRpkdaVsKCNzQ9zAG5DXfDO2BFpcCzw5VbmARazOrXCW1kmeQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_06_25_15_57_35
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130625001102.GA6623@home.goodmis.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/13 14:22, Linus Walleij wrote:
-> Can't we just try to come up with a patch that nails down the meaning of
-> slew rate in some meaningful manner then?
+On Mon, Jun 24 2013, Steven Rostedt wrote:
+> On Mon, Jun 24, 2013 at 09:17:18AM +0200, Jens Axboe wrote:
+> > On Sun, Jun 23 2013, Linus Torvalds wrote:
+> > > 
+> > > You could try to do that either *in* the idle thread (which would take
+> > > the context switch overhead - maybe negating some of the advantages),
+> > > or alternatively hook into the scheduler idle logic before actually
+> > > doing the switch.
+> > 
+> > It can't happen in the idle thread. If you need to take the context
+> > switch, then you've negated pretty much all of the gain of the polled
+> > approach.
 > 
-> So according to:
-> http://en.wikipedia.org/wiki/Slew_rate
-> a proper expression for slew rate would be dV/dt i.e.
-> something like microvolts per microsecond (which then just
-> becomes volts/second).
+> What about hooking into the idle_balance code? That happens if we are
+> about to go to idle but before the full schedule switch to the idle
+> task.
 > 
-> What we need to figure out is what range will be applicable within
-> reasonable doubt for current scenarios and the next few years.
 > 
-> What are your datasheets specifying here, and what would be
-> a proper measure?
+> In __schedule(void):
+> 
+> 	if (unlikely(!rq->nr_running))
+> 		idle_balance(cpu, rq);
 
-My datasheet says:
+If you can avoid the switch (sleep/wakeup), then that's what matters. If
+you end up sleeping, you've lost that latency game and polling is mostly
+useful in the blk_iopoll designed fashion for high iops scenarios.
+Besides, you need the task + page context to be able to find out what to
+poll for (and when to stop).
 
-0: slow (half frequency)
-1: fast
-
-I just got a reply back from a hardware engineer, who said that the
-relationship with the actual volts/usec will depend on both the drive
-strength and the load on the pad, and that a definite answer probably
-requires running a simulation.
-
-Cheers
-James
+-- 
+Jens Axboe
 
