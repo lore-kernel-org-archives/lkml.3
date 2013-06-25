@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3FYSeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:34:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40992 "EHLO
+	id S1752906Ab3FYS6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:58:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41061 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab3FYSeC (ORCPT
+	with ESMTP id S1752621Ab3FYSeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:02 -0400
+	Tue, 25 Jun 2013 14:34:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Kubecek <mkubecek@suse.cz>,
+        Eric Dumazet <edumazet@google.com>,
+        Boris Zhmurov <zhmurov@yandex-team.ru>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 57/95] ipv4: fix redirect handling for TCP packets
-Date: Tue, 25 Jun 2013 11:32:44 -0700
-Message-Id: <20130625182200.093802936@linuxfoundation.org>
+Subject: [ 62/95] net: force a reload of first item in hlist_nulls_for_each_entry_rcu
+Date: Tue, 25 Jun 2013 11:32:49 -0700
+Message-Id: <20130625182200.598413703@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,47 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Kubecek <mkubecek@suse.cz>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit f96ef988cc603487c03a6de07807b06cbe641829 ]
+[ Upstream commit c87a124a5d5e8cf8e21c4363c3372bcaf53ea190 ]
 
-Unlike ipv4_redirect() and ipv4_sk_redirect(), ip_do_redirect()
-doesn't call __build_flow_key() directly but via
-ip_rt_build_flow_key() wrapper. This leads to __build_flow_key()
-getting pointer to IPv4 header of the ICMP redirect packet
-rather than pointer to the embedded IPv4 header of the packet
-initiating the redirect.
+Roman Gushchin discovered that udp4_lib_lookup2() was not reloading
+first item in the rcu protected list, in case the loop was restarted.
 
-As a result, handling of ICMP redirects initiated by TCP packets
-is broken. Issue was introduced by
+This produced soft lockups as in https://lkml.org/lkml/2013/4/16/37
 
-	4895c771c ("ipv4: Add FIB nexthop exceptions.")
+rcu_dereference(X)/ACCESS_ONCE(X) seem to not work as intended if X is
+ptr->field :
 
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+In some cases, gcc caches the value or ptr->field in a register.
+
+Use a barrier() to disallow such caching, as documented in
+Documentation/atomic_ops.txt line 114
+
+Thanks a lot to Roman for providing analysis and numerous patches.
+
+Diagnosed-by: Roman Gushchin <klamm@yandex-team.ru>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/route.c |    7 ++++++-
+ include/linux/rculist_nulls.h |    7 ++++++-
  1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -737,10 +737,15 @@ static void ip_do_redirect(struct dst_en
- {
- 	struct rtable *rt;
- 	struct flowi4 fl4;
-+	const struct iphdr *iph = (const struct iphdr *) skb->data;
-+	int oif = skb->dev->ifindex;
-+	u8 tos = RT_TOS(iph->tos);
-+	u8 prot = iph->protocol;
-+	u32 mark = skb->mark;
- 
- 	rt = (struct rtable *) dst;
- 
--	ip_rt_build_flow_key(&fl4, sk, skb);
-+	__build_flow_key(&fl4, sk, iph, oif, tos, prot, mark, 0);
- 	__ip_do_redirect(rt, skb, &fl4, true);
- }
- 
+--- a/include/linux/rculist_nulls.h
++++ b/include/linux/rculist_nulls.h
+@@ -105,9 +105,14 @@ static inline void hlist_nulls_add_head_
+  * @head:	the head for your list.
+  * @member:	the name of the hlist_nulls_node within the struct.
+  *
++ * The barrier() is needed to make sure compiler doesn't cache first element [1],
++ * as this loop can be restarted [2]
++ * [1] Documentation/atomic_ops.txt around line 114
++ * [2] Documentation/RCU/rculist_nulls.txt around line 146
+  */
+ #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)			\
+-	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
++	for (({barrier();}),							\
++	     pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
+ 		(!is_a_nulls(pos)) &&						\
+ 		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
+ 		pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
 
 
