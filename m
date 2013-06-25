@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab3FYS4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:56:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41101 "EHLO
+	id S1752673Ab3FYSeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:34:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41034 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691Ab3FYSeQ (ORCPT
+	with ESMTP id S1752597Ab3FYSeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:16 -0400
+	Tue, 25 Jun 2013 14:34:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sriram Narasimhan <sriram.narasimhan@hp.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Guillaume Nault <g.nault@alphalink.fr>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 60/95] tuntap: forbid changing mq flag for persistent device
-Date: Tue, 25 Jun 2013 11:32:47 -0700
-Message-Id: <20130625182200.392392501@linuxfoundation.org>
+Subject: [ 72/95] l2tp: Fix PPP header erasure and memory leak
+Date: Tue, 25 Jun 2013 11:32:59 -0700
+Message-Id: <20130625182201.713195034@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -29,43 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Guillaume Nault <g.nault@alphalink.fr>
 
-[ Upstream commit 8e6d91ae0917bf934ed86411148f79d904728d51 ]
+[ Upstream commit 55b92b7a11690bc377b5d373872a6b650ae88e64 ]
 
-We currently allow changing the mq flag (IFF_MULTI_QUEUE) for a persistent
-device. This will result a mismatch between the number the queues in netdev and
-tuntap. This is because we only allocate a 1q netdevice when IFF_MULTI_QUEUE was
-not specified, so when we set the IFF_MULTI_QUEUE and try to attach more queues
-later, netif_set_real_num_tx_queues() may fail which result a single queue
-netdevice with multiple sockets attached.
+Copy user data after PPP framing header. This prevents erasure of the
+added PPP header and avoids leaking two bytes of uninitialised memory
+at the end of skb's data buffer.
 
-Solve this by disallowing changing the mq flag for persistent device.
-
-Bug was introduced by commit edfb6a148ce62e5e19354a1dcd9a34e00815c2a1
-(tuntap: reduce memory using of queues).
-
-Reported-by: Sriram Narasimhan <sriram.narasimhan@hp.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/tun.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/l2tp/l2tp_ppp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1585,6 +1585,10 @@ static int tun_set_iff(struct net *net,
- 		else
- 			return -EINVAL;
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -346,12 +346,12 @@ static int pppol2tp_sendmsg(struct kiocb
+ 	skb_put(skb, 2);
  
-+		if (!!(ifr->ifr_flags & IFF_MULTI_QUEUE) !=
-+		    !!(tun->flags & TUN_TAP_MQ))
-+			return -EINVAL;
-+
- 		if (tun_not_capable(tun))
- 			return -EPERM;
- 		err = security_tun_dev_open(tun->security);
+ 	/* Copy user data into skb */
+-	error = memcpy_fromiovec(skb->data, m->msg_iov, total_len);
++	error = memcpy_fromiovec(skb_put(skb, total_len), m->msg_iov,
++				 total_len);
+ 	if (error < 0) {
+ 		kfree_skb(skb);
+ 		goto error_put_sess_tun;
+ 	}
+-	skb_put(skb, total_len);
+ 
+ 	l2tp_xmit_skb(session, skb, session->hdr_len);
+ 
 
 
