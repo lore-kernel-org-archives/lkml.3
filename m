@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3FYVh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:37:29 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60239 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab3FYVh2 (ORCPT
+	id S1752198Ab3FYViH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:38:07 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:47796 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3FYViE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:37:28 -0400
-Date: Tue, 25 Jun 2013 14:37:21 -0700
+	Tue, 25 Jun 2013 17:38:04 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH RFC nohz_full 0/8] Provide infrastructure for full-system idle
-Message-ID: <20130625213721.GA19452@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC nohz_full 8/8] nohz_full: Force RCU's grace-period kthreads onto timekeeping CPU
+Date: Tue, 25 Jun 2013 14:37:51 -0700
+Message-Id: <1372196271-20393-8-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1372196271-20393-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130625213721.GA19452@linux.vnet.ibm.com>
+ <1372196271-20393-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062521-4834-0000-0000-0000086749AC
+x-cbid: 13062521-7606-0000-0000-00000CC78A56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whenever there is at least one non-idle CPU, it is necessary to
-periodically update timekeeping information.  Before NO_HZ_FULL, this
-updating was carried out by the scheduling-clock tick, which ran on
-every non-idle CPU.  With the advent of NO_HZ_FULL, it is possible
-to have non-idle CPUs that are not receiving scheduling-clock ticks.
-This possibility is handled by assigning a timekeeping CPU that continues
-taking scheduling-clock ticks.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Unfortunately, timekeeping CPU continues taking scheduling-clock
-interrupts even when all other CPUs are completely idle, which is
-not so good for energy efficiency and battery lifetime.  Clearly, it
-would be good to turn off the timekeeping CPU's scheduling-clock tick
-when all CPUs are completely idle.  This is conceptually simple, but
-we also need good performance and scalability on large systems, which
-rules out implementations based on frequently updated global counts of
-non-idle CPUs as well as implementations that frequently scan all CPUs.
-Nevertheless, we need a single global indicator in order to keep the
-overhead of checking acceptably low.
+Because RCU's quiescent-state-forcing mechanism is used to drive the
+full-system-idle state machine, and because this mechanism is executed
+by RCU's grace-period kthreads, this commit forces these kthreads to
+run on the timekeeping CPU (tick_do_timer_cpu).  To do otherwise would
+mean that the RCU grace-period kthreads would force the system into
+non-idle state every time they drove the state machine, which would
+be just a bit on the futile side.
 
-The chosen approach is to enforce hysteresis on the non-idle to
-full-system-idle transition, with the amount of hysteresis increasing
-linearly with the number of CPUs, thus keeping contention acceptably low.
-This approach piggybacks on RCU's existing force-quiescent-state scanning
-of idle CPUs, which has the advantage of avoiding the scan entirely on
-busy systems that have high levels of multiprogramming.  This scan
-take per-CPU idleness information and feeds it into a state machine
-that applies the level of hysteresis required to arrive at a single
-full-system-idle indicator.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rcutree.c        |  1 +
+ kernel/rcutree.h        |  1 +
+ kernel/rcutree_plugin.h | 20 +++++++++++++++++++-
+ 3 files changed, 21 insertions(+), 1 deletion(-)
 
-Note that this version pays attention to CPUs that have taken an NMI
-from idle.  It is not clear to me that NMI handlers can safely access
-the time on a system that is long-term idle.  Unless someone tells me
-that it is somehow safe to access time from an NMI from idle, I will
-remove NMI support in the next version.
-
-						Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/include/linux/rcupdate.h |   18 +
- b/kernel/rcutree.c         |   56 ++++-
- b/kernel/rcutree.h         |   20 ++
- b/kernel/rcutree_plugin.h  |  427 ++++++++++++++++++++++++++++++++++++++++++++-
- b/kernel/time/Kconfig      |   23 ++
- 5 files changed, 527 insertions(+), 17 deletions(-)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 10e74d6..0fe28ed 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1289,6 +1289,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 	struct rcu_data *rdp;
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
++	rcu_bind_gp_kthread();
+ 	raw_spin_lock_irq(&rnp->lock);
+ 	rsp->gp_flags = 0; /* Clear all flags: New grace period. */
+ 
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 8e869fc..7a8cdb4 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -561,6 +561,7 @@ static void rcu_sysidle_nmi_jiffies(struct rcu_dynticks *rdtp);
+ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+ 				  unsigned long *maxj);
+ static bool is_sysidle_rcu_state(struct rcu_state *rsp);
++static void rcu_bind_gp_kthread(void);
+ static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
+ 			       unsigned long maxj);
+ static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index c3ce268..39a3091 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2553,7 +2553,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+ 	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
+ 	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
+ 		return;
+-	/* WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu); */
++	WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+ 
+ 	/*
+ 	 * Pick up current idle and NMI-nesting counters, check.  We check
+@@ -2593,6 +2593,20 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+ }
+ 
+ /*
++ * Bind the grace-period kthread for the sysidle flavor of RCU to the
++ * timekeeping CPU.
++ */
++static void rcu_bind_gp_kthread(void)
++{
++	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
++
++	if (cpu < 0 || cpu >= nr_cpu_ids)
++		return;
++	if (raw_smp_processor_id() != cpu)
++		set_cpus_allowed_ptr(current, cpumask_of(cpu));
++}
++
++/*
+  * Return a delay in jiffies based on the number of CPUs, rcu_node
+  * leaf fanout, and jiffies tick rate.  The idea is to allow larger
+  * systems more time to transition to full-idle state in order to
+@@ -2764,6 +2778,10 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+ 	return false;
+ }
+ 
++static void rcu_bind_gp_kthread(void)
++{
++}
++
+ static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
+ 			       unsigned long maxj)
+ {
+-- 
+1.8.1.5
 
