@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3FYS6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:58:09 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:33848 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752641Ab3FYS6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:58:06 -0400
-Message-ID: <51C9E83A.8070700@sgi.com>
-Date: Tue, 25 Jun 2013 11:58:02 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com> <20130621185056.GA23473@kroah.com> <51C4C5F3.3050800@sgi.com> <CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com> <51C9D4ED.5070805@sgi.com> <51C9DEC1.6030602@zytor.com> <CAE9FiQV5z+3AXy5c=aaU3vq1V3fibJ6PhhA4VW5H8BWVzhxXPA@mail.gmail.com> <51C9E523.7000803@zytor.com>
-In-Reply-To: <51C9E523.7000803@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752646Ab3FYSeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:34:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40992 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab3FYSeC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:34:02 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michal Kubecek <mkubecek@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 57/95] ipv4: fix redirect handling for TCP packets
+Date: Tue, 25 Jun 2013 11:32:44 -0700
+Message-Id: <20130625182200.093802936@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
+References: <20130625182153.605455184@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.9-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Michal Kubecek <mkubecek@suse.cz>
+
+[ Upstream commit f96ef988cc603487c03a6de07807b06cbe641829 ]
+
+Unlike ipv4_redirect() and ipv4_sk_redirect(), ip_do_redirect()
+doesn't call __build_flow_key() directly but via
+ip_rt_build_flow_key() wrapper. This leads to __build_flow_key()
+getting pointer to IPv4 header of the ICMP redirect packet
+rather than pointer to the embedded IPv4 header of the packet
+initiating the redirect.
+
+As a result, handling of ICMP redirects initiated by TCP packets
+is broken. Issue was introduced by
+
+	4895c771c ("ipv4: Add FIB nexthop exceptions.")
+
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/route.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -737,10 +737,15 @@ static void ip_do_redirect(struct dst_en
+ {
+ 	struct rtable *rt;
+ 	struct flowi4 fl4;
++	const struct iphdr *iph = (const struct iphdr *) skb->data;
++	int oif = skb->dev->ifindex;
++	u8 tos = RT_TOS(iph->tos);
++	u8 prot = iph->protocol;
++	u32 mark = skb->mark;
+ 
+ 	rt = (struct rtable *) dst;
+ 
+-	ip_rt_build_flow_key(&fl4, sk, skb);
++	__build_flow_key(&fl4, sk, iph, oif, tos, prot, mark, 0);
+ 	__ip_do_redirect(rt, skb, &fl4, true);
+ }
+ 
 
 
-On 6/25/2013 11:44 AM, H. Peter Anvin wrote:
-> On 06/25/2013 11:40 AM, Yinghai Lu wrote:
->> On Tue, Jun 25, 2013 at 11:17 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 06/25/2013 10:35 AM, Mike Travis wrote:
->>
->>> However, please consider Ingo's counterproposal of doing this via the
->>> buddy allocator, i.e. hugepages being broken on demand.  That is a
->>> *very* powerful model, although would require more infrastructure.
->>
->> Can you or Ingo elaborate more about the buddy allocator proposal?
->>
-> 
-> Start by initializing 1G hyperpages only, but mark them so that the
-> allocator knows that if it needs to break them apart it has to
-> initialize the page structures for the 2M subpages.
-> 
-> Same thing with 2M -> 4K.
-> 
-> 	-hpa
-> 
-> 
-
-It is worth experimenting with but the big question would be,
-if it still avoids the very expensive "memmap_init_zone" and
-it's sub-functions using huge expanses of memory.  I'll do some
-experimenting as soon as I can.  Our 32TB system is being
-brought back to 16TB (we found a number of problems as we
-get closer and closer to the 64TB limit), but that's still
-a significant size.
