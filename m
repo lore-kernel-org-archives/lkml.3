@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab3FYPjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:39:12 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:54345 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752665Ab3FYPjK (ORCPT
+	id S1752786Ab3FYPjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:39:23 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:63178 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab3FYPjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:39:10 -0400
-Date: Tue, 25 Jun 2013 11:39:06 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org
-Subject: [CFP] Tracing Summit 2013, October 23rd, 2013, Edinburgh, UK
-Message-ID: <20130625153906.GC7304@Krystal>
-Reply-To: submission@tracingsummit.org
+	Tue, 25 Jun 2013 11:39:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <51C9A039.4090804@imgtec.com>
+References: <201306251455.01540.heiko@sntech.de>
+	<201306251456.36499.heiko@sntech.de>
+	<51C99581.2010403@imgtec.com>
+	<201306251521.55634.heiko@sntech.de>
+	<51C99AB5.1080002@imgtec.com>
+	<CACRpkdbdwvmBYFX=ppdM_RmGwyTcWVeTCMj60F4sh6YEVRE2Uw@mail.gmail.com>
+	<51C9A039.4090804@imgtec.com>
+Date: Tue, 25 Jun 2013 17:39:19 +0200
+Message-ID: <CACRpkda--Thd9sop2FRUwTKiXnePNyg38ajxAZVvKkROrQsGkw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] pinctrl: remove slew-rate parameter from tz1090
+From: Linus Walleij <linus.walleij@linaro.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 25, 2013 at 3:50 PM, James Hogan <james.hogan@imgtec.com> wrote:
+> On 25/06/13 14:32, Linus Walleij wrote:
 
-We are organizing a tracing summit taking place October 23rd in
-Edinburgh, UK, co-located with LinuxCon Europe. Our objective is to
-gather people involved in development and users of tracing tools and
-trace analysis tools to allow discussing the latest developments, allow
-users to express their needs, and generally ensure that developers and
-end users understand each other.
+>> Patches adding it back in with SI measures will be welcomed!
+>
+> Okay.
+>
+> So the most descriptive documentation I can find for the slew rate in
+> the TZ1090 pin config hardware is basically:
+>
+> 0: slow (half frequency)
+> 1: fast
+>
+> Sounds like this pretty much precludes it from having a generic DT
+> binding unless it can be mapped to some physical value, so I'll add a
+> tz1090,slew-rate and use PIN_CONFIG_END+1 instead of PIN_CONFIG_SLEW_RATE.
 
-If you are interested to present, please submit a proposal to
-submission@tracingsummit.org before August 21, 2013, at 23:59 EST.
+Okay... ut the Nomadik pin controller incidentally have a
+similar definition: NMK_GPIO_LOWEMI. By slashing the
+slew rate in half the EMI is of course reduced so that was
+another name for the same thing.
 
-We are welcoming presentations from both end users and developers, on
-topics covering, but not limited to:
+Maybe this is something that should just be boolean?
 
- * Trace collection and extraction,
- * Trace filtering,
- * Trace aggregation,
- * Trace formats,
- * Tracing multi-core systems,
- * Trace abstraction,
- * Trace modeling,
- * Automated trace analysis (e.g. dependency analysis),
- * Tracing large clusters and distributed systems,
- * Hardware-level tracing (e.g. DSP, GPU, bare-metal),
- * Trace visualisation,
- * Interaction between debugging and tracing,
- * Tracing remote control,
- * Analysis of large trace datasets,
- * Cloud trace collection and analysis,
- * Integration between trace tools,
- * Live tracing & monitoring.
+slewrate-reduced-slope;
 
-Those can cover recently available technologies, ongoing work, and yet
-non-existing technologies (which are compellingly interesting to
-end-users).
+?
 
-There will be a single track, containing presentations between 30 and 45
-minutes per subject with discussion.
+> Anybody object to me adding an argument to
+> pinconf_generic_parse_dt_config() so that an additional
+> pinconf_generic_dt_params array can be optionally passed in? That way I
+> can share the generic pinconf dt parsing code.
 
-For those interested to attend, registration to LinuxCon Europe 2013 or
-Registration to CloudOpen Europe 2013 is required in order to register
-to the Tracing Summit 2013. See the Tracing Summit 2013 wiki at
-http://www.tracingsummit.org/wiki/TracingSummit2013 for details.
+Hm hm hm, that sounds more like it could be a separate
+utility function. Then it could help to parse any such array
+of custom bindings.
 
-Thank you,
-
-Dominique Toupin & Mathieu Desnoyers
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Yours,
+Linus Walleij
