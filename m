@@ -1,187 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab3FYUdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:33:41 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:20332 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab3FYUdj (ORCPT
+	id S1753784Ab3FYUdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:33:55 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34377 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab3FYUdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:33:39 -0400
-Message-ID: <1372192414.1888.8.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: linux-next: Tree for Jun 21 [ BROKEN ipc/ipc-msg ]
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: sedat.dilek@gmail.com
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Jonathan Gonzalez <jgonzalez@linets.cl>
-Date: Tue, 25 Jun 2013 13:33:34 -0700
-In-Reply-To: <CA+icZUVbUD1tUa_ORtn_ZZebpp3gXXHGAcNe0NdYPXPMPoABuA@mail.gmail.com>
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
-	 <CA+icZUVbUD1tUa_ORtn_ZZebpp3gXXHGAcNe0NdYPXPMPoABuA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Tue, 25 Jun 2013 16:33:52 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v2 27/45] perf/x86: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com
+Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
+        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Wed, 26 Jun 2013 02:00:17 +0530
+Message-ID: <20130625203017.16593.40391.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062520-5140-0000-0000-0000036DD655
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-25 at 18:10 +0200, Sedat Dilek wrote:
-[...]
+The CPU_DYING notifier modifies the per-cpu pointer pmu->box, and this can
+race with functions such as uncore_pmu_to_box() and uncore_pci_remove() when
+we remove stop_machine() from the CPU offline path. So protect them using
+get/put_online_cpus_atomic().
 
-> I did some more testing with Linux-Testing-Project (release:
-> ltp-full-20130503) and next-20130624 (Monday) which has still the
-> issue, here.
-> 
-> If I revert the mentioned two commits from my local
-> revert-ipc-next20130624-5089fd1c6a6a-ab9efc2d0db5 GIT repo, everything
-> is fine.
-> 
-> I have tested the LTP ***IPC*** and ***SYSCALLS*** testcases.
-> 
->    root# ./runltp -f ipc
-> 
->    root# ./runltp -f syscalls
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-These are nice test cases!
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-So I was able to reproduce the issue with LTP and manually running
-msgctl08. We seemed to be racing at find_msg(), so take to q_perm lock
-before calling it. The following changes fixes the issue and passes all
-'runltp -f syscall' tests, could you give it a try?
-
-Thanks,
-Davidlohr
-
-diff --git a/ipc/msg.c b/ipc/msg.c
-index a1cf70e..a1f7d84 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -895,6 +895,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
-                if (ipcperms(ns, &msq->q_perm, S_IRUGO))
-                        goto out_unlock1;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 9dd9975..7c2a064 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1,3 +1,4 @@
++#include <linux/cpu.h>
+ #include "perf_event_intel_uncore.h"
  
-+               ipc_lock_object(&msq->q_perm);
-                msg = find_msg(msq, &msgtyp, mode);
-                if (!IS_ERR(msg)) {
-                        /*
-@@ -903,7 +904,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
-                         */
-                        if ((bufsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
-                                msg = ERR_PTR(-E2BIG);
--                               goto out_unlock1;
-+                               goto out_unlock0;
-                        }
-                        /*
-                         * If we are copying, then do not unlink message and do
-@@ -911,10 +912,9 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
-                         */
-                        if (msgflg & MSG_COPY) {
-                                msg = copy_msg(msg, copy);
--                               goto out_unlock1;
-+                               goto out_unlock0;
-                        }
+ static struct intel_uncore_type *empty_uncore[] = { NULL, };
+@@ -2630,6 +2631,7 @@ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+ 	if (box)
+ 		return box;
  
--                       ipc_lock_object(&msq->q_perm);
-                        list_del(&msg->m_list);
-                        msq->q_qnum--;
-                        msq->q_rtime = get_seconds();
-@@ -930,10 +930,9 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
-                /* No message waiting. Wait for a message */
-                if (msgflg & IPC_NOWAIT) {
-                        msg = ERR_PTR(-ENOMSG);
--                       goto out_unlock1;
-+                       goto out_unlock0;
-                }
++	get_online_cpus_atomic();
+ 	raw_spin_lock(&uncore_box_lock);
+ 	list_for_each_entry(box, &pmu->box_list, list) {
+ 		if (box->phys_id == topology_physical_package_id(cpu)) {
+@@ -2639,6 +2641,7 @@ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+ 		}
+ 	}
+ 	raw_spin_unlock(&uncore_box_lock);
++	put_online_cpus_atomic();
  
--               ipc_lock_object(&msq->q_perm);
-                list_add_tail(&msr_d.r_list, &msq->q_receivers);
-                msr_d.r_tsk = current;
-                msr_d.r_msgtype = msgtyp;
-
-
-Thanks,
-Davidlohr
-> 
-> IPC seems to be fine for both -1 (UNPATCHED) and -2 (with attached two
-> REVERTED patches) kernel, but -1 hangs in the SYSCALLS/msgctl08 test.
-> 
-> Previous msgctl07 is OK, but ***msgctl08*** produces this:
-> ...
-> <<<test_start>>>
-> tag=msgctl07 stime=1372174934
-> cmdline="msgctl07"
-> contacts=""
-> analysis=exit
-> <<<test_output>>>
-> msgctl07    1  TPASS  :  msgctl07 ran successfully!
-> <<<execution_status>>>
-> initiation_status="ok"
-> duration=20 termination_type=exited termination_id=0 corefile=no
-> cutime=1995 cstime=3
-> <<<test_end>>>
-> <<<test_start>>>
-> tag=msgctl08 stime=1372174954
-> cmdline="msgctl08"
-> contacts=""
-> analysis=exit
-> <<<test_output>>>
-> msgctl08    0  TWARN  :  Verify error in child 0, *buf = 28, val = 27, size = 8
-> msgctl08    1  TFAIL  :  in child 0 read # = 73,key =  127
-> msgctl08    0  TWARN  :  Verify error in child 3, *buf = ffffff8a, val
-> = ffffff89, size = 52
-> msgctl08    1  TFAIL  :  in child 3 read # = 157,key =  189
-> msgctl08    0  TWARN  :  Verify error in child 2, *buf = ffffff87, val
-> = ffffff86, size = 71
-> msgctl08    1  TFAIL  :  in child 2 read # = 15954,key =  3e86
-> msgctl08    0  TWARN  :  Verify error in child 12, *buf = ffffffa9,
-> val = ffffffa8, size = 22
-> msgctl08    1  TFAIL  :  in child 12 read # = 12904,key =  32a8
-> msgctl08    0  TWARN  :  Verify error in child 13, *buf = 36, val =
-> 35, size = 27
-> msgctl08    1  TFAIL  :  in child 13 read # = 10442,key =  2935
-> msgctl08    0  TWARN  :  Verify error in child 10, *buf = ffffff86,
-> val = ffffff85, size = 63
-> msgctl08    1  TFAIL  :  in child 10 read # = 19713,key =  4d85
-> msgctl08    0  TWARN  :  Verify error in child 4, *buf = 4c, val = 4b, size = 83
-> msgctl08    1  TFAIL  :  in child 4 read # = 23082,key =  5a4b
-> msgctl08    0  TWARN  :  Verify error in child 15, *buf = 61, val =
-> 60, size = 94
-> msgctl08    1  TFAIL  :  in child 15 read # = 23554,key =  5c60
-> msgctl08    0  TWARN  :  Verify error in child 11, *buf = 3b, val =
-> 3a, size = 22
-> msgctl08    1  TFAIL  :  in child 11 read # = 26468,key =  683a
-> msgctl08    0  TWARN  :  Verify error in child 5, *buf = ffffffb5, val
-> = ffffffb4, size = 41
-> msgctl08    1  TFAIL  :  in child 5 read # = 31867,key =  7cb4
-> msgctl08    0  TWARN  :  Verify error in child 1, *buf = 7d, val = 7c, size = 59
-> msgctl08    1  TFAIL  :  in child 1 read # = 41063,key =  a07c
-> msgctl08    0  TWARN  :  Verify error in child 7, *buf = fffffff2, val
-> = fffffff1, size = 83
-> msgctl08    1  TFAIL  :  in child 7 read # = 38476,key =  96f1
-> msgctl08    0  TWARN  :  Verify error in child 9, *buf = ffffff8b, val
-> = ffffff8a, size = 40
-> msgctl08    1  TFAIL  :  in child 9 read # = 90438,key =  1618a
-> msgctl08    0  TWARN  :  Verify error in child 8, *buf = ffffffcd, val
-> = ffffffcc, size = 38
-> msgctl08    1  TFAIL  :  in child 8 read # = 88712,key =  15acc
-> msgctl08    0  TWARN  :  Verify error in child 6, *buf = 6, val = 5, size = 1
-> msgctl08    1  TFAIL  :  in child 6 read # = 83297,key =  14605
-> ***** STOPPED *****
-> 
-> See "ltp-full-20130503.git/testcases/kernel/syscalls/ipc/msgctl/msgctl08.c" [1].
-> 
-> NOTE: Debian/Ubuntu users with dash as default shell require the patch from [2].
-> 
-> - Sedat -
-> 
-> P.S.: Unfortunately, fakeroot DEBUG doc file is outdated.
-> 
-> [1] https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/syscalls/ipc/msgctl/msgctl08.c
-> [2] https://github.com/linux-test-project/ltp/commit/b88fa5b6ec5a29834a0e52df7b22b9bb47fe0379
-
+ 	return *per_cpu_ptr(pmu->box, cpu);
+ }
+@@ -3229,6 +3232,7 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 	list_del(&box->list);
+ 	raw_spin_unlock(&uncore_box_lock);
+ 
++	get_online_cpus_atomic();
+ 	for_each_possible_cpu(cpu) {
+ 		if (*per_cpu_ptr(pmu->box, cpu) == box) {
+ 			*per_cpu_ptr(pmu->box, cpu) = NULL;
+@@ -3237,6 +3241,8 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 	}
+ 
+ 	WARN_ON_ONCE(atomic_read(&box->refcnt) != 1);
++	put_online_cpus_atomic();
++
+ 	kfree(box);
+ }
+ 
 
