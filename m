@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab3FYP3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:29:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52469 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab3FYP3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:29:43 -0400
-Date: Tue, 25 Jun 2013 17:29:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Robert Richter <rric@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH v2 03/14] perf: Add persistent event facilities
-Message-ID: <20130625152941.GD4855@pd.tnic>
-References: <1370968960-22527-1-git-send-email-rric@kernel.org>
- <1370968960-22527-4-git-send-email-rric@kernel.org>
- <20130624094830.GP28407@twins.programming.kicks-ass.net>
- <20130624192616.GB24827@pd.tnic>
- <20130625074401.GY28407@twins.programming.kicks-ass.net>
- <20130625092439.GD21579@rric.localhost>
- <20130625093706.GA18612@pd.tnic>
- <20130625105135.GF21579@rric.localhost>
+	id S1752197Ab3FYPaj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:30:39 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:33270 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab3FYPai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 11:30:38 -0400
+Date: Tue, 25 Jun 2013 17:30:37 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH 0/7] perf, x86: Haswell LBR call stack support
+Message-ID: <20130625153037.GA6123@two.firstfloor.org>
+References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130625105135.GF21579@rric.localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 12:51:35PM +0200, Robert Richter wrote:
-> On 25.06.13 11:37:06, Borislav Petkov wrote:
-> > On Tue, Jun 25, 2013 at 11:24:39AM +0200, Robert Richter wrote:
-> > > I also see 'pers_' not as an optimum since it could be mixed-up easily
-> > > with 'perf_'. Maybe we take 'persist_' instead?
-> > 
-> > Yep, although it reads wrong:
-> > 
-> > perf_add_persist_event
+On Tue, Jun 25, 2013 at 04:47:12PM +0800, Yan, Zheng wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+
+Can you put this description somewhere in Documentation as a file?
+(slightly extended, e.g. with the path name of the file to enable)
+
+I think the users will later need this kind of context to use
+the feature successfully.
+
+-Andi
+
 > 
-> We could use persist_ as prefix for static functions and use the long
-> versions for the interface only.
+> Haswell has a new feature that utilizes the existing Last Branch Record
+> facility to record call chains. When the feature is enabled, function
+> call will be collected as normal, but as return instructions are executed
+> the last captured branch record is popped from the on-chip LBR registers.
+> The LBR call stack facility can help perf to get call chains of progam
+> without frame pointer. When perf tool requests PERF_SAMPLE_CALLCHAIN +
+> PERF_SAMPLE_BRANCH_USER, this feature is dynamically enabled by default.
+> This feature can be disabled/enabled through an attribute file in the cpu
+> pmu sysfs directory.
 > 
-> But all this is a bit bikeshedding. I am sure we find something.
-
-How about
-
-perf_add_pevent?
-
-It is nice and short, although maybe too short but "pevent" is almost
-like a special term and the name shows that it is a special type of
-event, i.e. a p-event.
-
-:-)
+> The LBR call stack has following known limitations
+>  1. Zero length calls are not filtered out by hardware
+>  2. Exception handing such as setjmp/longjmp will have calls/returns not
+>     match
+>  3. Pushing different return address onto the stack will have calls/returns
+>     not match
+> 
+> These patches are based upon tip/perf/core
+> 
+> Regards
+> Yan, Zheng
+> 
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+ak@linux.intel.com -- Speaking for myself only.
