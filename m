@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3FYUfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:35:25 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47554 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab3FYUfU (ORCPT
+	id S1754034Ab3FYUfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:35:55 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39758 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015Ab3FYUfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:35:20 -0400
+	Tue, 25 Jun 2013 16:35:51 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 33/45] cris/smp: Use get/put_online_cpus_atomic() to
- prevent CPU offline
+Subject: [PATCH v2 36/45] ia64: smp,
+ tlb: Use get/put_online_cpus_atomic() to prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
@@ -20,12 +20,11 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-cris-kernel@axis.com,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 02:01:51 +0530
-Message-ID: <20130625203151.16593.6198.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 26 Jun 2013 02:02:25 +0530
+Message-ID: <20130625203224.16593.17120.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
 References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -33,7 +32,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062520-5490-0000-0000-000003B5233C
+x-cbid: 13062520-1396-0000-0000-0000032B5DB5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -45,55 +44,87 @@ from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
 offline, while invoking from atomic context.
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-cris-kernel@axis.com
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/cris/arch-v32/kernel/smp.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/ia64/kernel/smp.c |   12 ++++++------
+ arch/ia64/mm/tlb.c     |    4 ++--
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
-index cdd1202..b2d4612 100644
---- a/arch/cris/arch-v32/kernel/smp.c
-+++ b/arch/cris/arch-v32/kernel/smp.c
-@@ -13,6 +13,7 @@
+diff --git a/arch/ia64/kernel/smp.c b/arch/ia64/kernel/smp.c
+index 9fcd4e6..25991ba 100644
+--- a/arch/ia64/kernel/smp.c
++++ b/arch/ia64/kernel/smp.c
+@@ -24,6 +24,7 @@
  #include <linux/init.h>
- #include <linux/timex.h>
- #include <linux/sched.h>
-+#include <linux/cpu.h>
- #include <linux/kernel.h>
- #include <linux/cpumask.h>
  #include <linux/interrupt.h>
-@@ -222,6 +223,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
- 	unsigned long flags;
- 	cpumask_t cpu_mask;
+ #include <linux/smp.h>
++#include <linux/cpu.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/mm.h>
+ #include <linux/cache.h>
+@@ -259,8 +260,7 @@ smp_flush_tlb_cpumask(cpumask_t xcpumask)
+ 	cpumask_t cpumask = xcpumask;
+ 	int mycpu, cpu, flush_mycpu = 0;
  
-+	get_online_cpus_atomic();
- 	spin_lock_irqsave(&tlbstate_lock, flags);
- 	cpu_mask = (mm == FLUSH_ALL ? cpu_all_mask : *mm_cpumask(mm));
- 	cpumask_clear_cpu(smp_processor_id(), &cpu_mask);
-@@ -230,6 +232,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
- 	flush_addr = addr;
- 	send_ipi(IPI_FLUSH_TLB, 1, cpu_mask);
- 	spin_unlock_irqrestore(&tlbstate_lock, flags);
+-	preempt_disable();
+-	mycpu = smp_processor_id();
++	mycpu = get_online_cpus_atomic();
+ 
+ 	for_each_cpu_mask(cpu, cpumask)
+ 		counts[cpu] = local_tlb_flush_counts[cpu].count & 0xffff;
+@@ -280,7 +280,7 @@ smp_flush_tlb_cpumask(cpumask_t xcpumask)
+ 		while(counts[cpu] == (local_tlb_flush_counts[cpu].count & 0xffff))
+ 			udelay(FLUSH_DELAY);
+ 
+-	preempt_enable();
 +	put_online_cpus_atomic();
  }
  
- void flush_tlb_all(void)
-@@ -319,10 +322,12 @@ int smp_call_function(void (*func)(void *info), void *info, int wait)
- 	data.info = info;
- 	data.wait = wait;
- 
+ void
+@@ -293,12 +293,12 @@ void
+ smp_flush_tlb_mm (struct mm_struct *mm)
+ {
+ 	cpumask_var_t cpus;
+-	preempt_disable();
 +	get_online_cpus_atomic();
- 	spin_lock(&call_lock);
- 	call_data = &data;
- 	ret = send_ipi(IPI_CALL, wait, cpu_mask);
- 	spin_unlock(&call_lock);
+ 	/* this happens for the common case of a single-threaded fork():  */
+ 	if (likely(mm == current->active_mm && atomic_read(&mm->mm_users) == 1))
+ 	{
+ 		local_finish_flush_tlb_mm(mm);
+-		preempt_enable();
++		put_online_cpus_atomic();
+ 		return;
+ 	}
+ 	if (!alloc_cpumask_var(&cpus, GFP_ATOMIC)) {
+@@ -313,7 +313,7 @@ smp_flush_tlb_mm (struct mm_struct *mm)
+ 	local_irq_disable();
+ 	local_finish_flush_tlb_mm(mm);
+ 	local_irq_enable();
+-	preempt_enable();
 +	put_online_cpus_atomic();
- 
- 	return ret;
  }
+ 
+ void arch_send_call_function_single_ipi(int cpu)
+diff --git a/arch/ia64/mm/tlb.c b/arch/ia64/mm/tlb.c
+index ed61297..8c55ef5 100644
+--- a/arch/ia64/mm/tlb.c
++++ b/arch/ia64/mm/tlb.c
+@@ -87,11 +87,11 @@ wrap_mmu_context (struct mm_struct *mm)
+ 	 * can't call flush_tlb_all() here because of race condition
+ 	 * with O(1) scheduler [EF]
+ 	 */
+-	cpu = get_cpu(); /* prevent preemption/migration */
++	cpu = get_online_cpus_atomic(); /* prevent preemption/migration */
+ 	for_each_online_cpu(i)
+ 		if (i != cpu)
+ 			per_cpu(ia64_need_tlb_flush, i) = 1;
+-	put_cpu();
++	put_online_cpus_atomic();
+ 	local_flush_tlb_all();
+ }
+ 
 
