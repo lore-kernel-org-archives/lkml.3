@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab3FYQTb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:19:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29715 "EHLO mga14.intel.com"
+	id S1752499Ab3FYQTa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:19:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16532 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752427Ab3FYQT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:19:27 -0400
+	id S1752455Ab3FYQT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:19:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="322373907"
+   d="scan'208";a="355551849"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
@@ -21,9 +21,9 @@ Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Yinghai Lu <yinghai@kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         x86@kernel.org
-Subject: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
-Date: Tue, 25 Jun 2013 19:22:10 +0300
-Message-Id: <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH 5/6] PCI: acpiphp: look _RMV method a bit deeper in the hierarhcy
+Date: Tue, 25 Jun 2013 19:22:09 +0300
+Message-Id: <1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -31,100 +31,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thunderbolt PCI-to-PCI bridges typically use BIOS "assisted" enumeration.
-This means that the BIOS will allocate bridge resources based on some
-assumptions of a maximum Thunderbolt chain. It also disables native PCIe
-hotplug of the root port where the Thunderbolt host router is connected.
+The acpiphp driver finds out whether the device is hotpluggable by checking
+whether it has _RMV method behind it (and if it returns 1). However, at
+least Acer Aspire S5 with Thunderbolt host router has this method placed
+behind device called EPUP (endpoint upstream port?) and not directly behind
+the root port as can be seen from the ASL code below:
 
-In order to support this we must make sure that the kernel does not try to
-be too smart and resize / open the bridge windows during PCI enumeration.
-For example by default the kernel will add certain amount of space to the
-bridge memory/io windows (this is configurable via pci=hp[mem|io]size=xxx
-command line option). Eventually we run out of space that the BIOS has
-allocated.
+Device (RP05)
+{
+	...
+	Device (HRUP)
+	{
+		Name (_ADR, Zero)
+		Name (_PRW, Package (0x02)
+		{
+			0x09,
+			0x04
+		})
+		Device (HRDN)
+		{
+			Name (_ADR, 0x00040000)
+			Name (_PRW, Package (0x02)
+			{
+				0x09,
+				0x04
+			})
+			Device (EPUP)
+			{
+				Name (_ADR, Zero)
+				Method (_RMV, 0, NotSerialized)
+				{
+					Return (One)
+				}
+			}
+		}
+	}
 
-Also address space for expansion ROMs should not be allocated (BIOS does
-not execute them for Thunderbolt endpoints). If we don't prevent this the
-kernel might find expansion ROM associated with some endpoint and reopen
-the bridge window which the BIOS already closed leading again resource
-exhaustion.
-
-Fix this by adding a quirk that matches known Thunderbolt PCI-to-PCI
-bridges and in that case prevents allocation of expansion ROM resources and
-makes sure that the PCI core does not increase size of bridge windows.
+If we want to support such machines we must look for the _RMV method a bit
+deeper in the hierarchy. Fix this by changing pcihp_is_ejectable() to check
+few more devices down from the root port.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- arch/x86/pci/fixup.c | 51 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
+ drivers/pci/hotplug/acpi_pcihp.c | 53 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 48 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index f5809fa..924822b 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -7,6 +7,8 @@
- #include <linux/pci.h>
- #include <linux/init.h>
- #include <linux/vgaarb.h>
-+#include <linux/acpi.h>
-+#include <linux/pci-acpi.h>
- #include <asm/pci_x86.h>
- 
- static void pci_fixup_i450nx(struct pci_dev *d)
-@@ -539,3 +541,52 @@ static void twinhead_reserve_killing_zone(struct pci_dev *dev)
-         }
+diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+index 2a47e82..2760954 100644
+--- a/drivers/pci/hotplug/acpi_pcihp.c
++++ b/drivers/pci/hotplug/acpi_pcihp.c
+@@ -408,21 +408,64 @@ got_one:
  }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x27B9, twinhead_reserve_killing_zone);
-+
-+#ifdef CONFIG_ACPI
-+/*
-+ * BIOS assisted Thunderbolt PCI enumeration should handle all resource
-+ * allocation on behalf of OS.
-+ */
-+static void quirk_thunderbolt(struct pci_dev *dev)
+ EXPORT_SYMBOL(acpi_get_hp_hw_control_from_firmware);
+ 
++static acpi_status pcihp_evaluate_rmv(acpi_handle handle, u32 lvl,
++				      void *context, void **return_not_used)
 +{
-+	struct acpi_pci_root *root;
-+	acpi_handle handle;
++	unsigned long long *removable = context;
++	unsigned long long value;
++	acpi_status status;
 +
-+	handle = acpi_find_root_bridge_handle(dev);
-+	if (!handle)
-+		return;
-+
-+	root = acpi_pci_find_root(handle);
-+	if (!root)
-+		return;
-+
-+	/*
-+	 * Native PCIe hotplug should be disabled when BIOS assisted
-+	 * hotplug is in use.
-+	 */
-+	if (root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL)
-+		return;
-+
-+	/*
-+	 * Make sure that we don't allocate resources for expansion ROMs.
-+	 * This may accidentally increase the size of the bridge window
-+	 * causing us to run out of resources.
-+	 */
-+	if (!(pci_probe & PCI_NOASSIGN_ROMS)) {
-+		pr_info("Thunderbolt host router detected disabling ROMs\n");
-+		pci_probe |= PCI_NOASSIGN_ROMS;
++	status = acpi_evaluate_integer(handle, "_RMV", NULL, &value);
++	if (ACPI_SUCCESS(status) && value) {
++		*removable = value;
++		return AE_CTRL_TERMINATE;
 +	}
-+
-+	/*
-+	 * Don't add anything to the BIOS allocated bridge window size for
-+	 * the same reason.
-+	 */
-+	dev->is_hotplug_bridge = 0;
++	return AE_OK;
 +}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1513, quirk_thunderbolt);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x151a, quirk_thunderbolt);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x151b, quirk_thunderbolt);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1547, quirk_thunderbolt);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1548, quirk_thunderbolt);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1549, quirk_thunderbolt);
-+#endif
++
++/*
++ * pcihp_is_removable - check if this device is removable
++ * @handle: ACPI handle of the device
++ * @depth: how deep in the hierarchy we look for the _RMV
++ *
++ * Look for _RMV method behind the device. @depth specifies how deep in the
++ * hierarchy we search.
++ *
++ * Returns %true if the device is removable, %false otherwise.
++ */
++static bool pcihp_is_removable(acpi_handle handle, size_t depth)
++{
++	unsigned long long removable = 0;
++	acpi_status status;
++
++	status = pcihp_evaluate_rmv(handle, 0, &removable, NULL);
++	if ((status == AE_CTRL_TERMINATE) && removable)
++		return true;
++
++	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, depth, pcihp_evaluate_rmv,
++			    NULL, &removable, NULL);
++	return !!removable;
++}
++
++/*
++ * Some BIOSes, like the one in Acer Aspire S5 places the _RMV method a bit
++ * deeper in the hierarhcy. So check at least 3 levels behind this device.
++ */
++#define PCIHP_RMV_MAX_DEPTH	3
++
+ static int pcihp_is_ejectable(acpi_handle handle)
+ {
+ 	acpi_status status;
+ 	acpi_handle tmp;
+-	unsigned long long removable;
++
+ 	status = acpi_get_handle(handle, "_ADR", &tmp);
+ 	if (ACPI_FAILURE(status))
+ 		return 0;
+ 	status = acpi_get_handle(handle, "_EJ0", &tmp);
+ 	if (ACPI_SUCCESS(status))
+ 		return 1;
+-	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+-	if (ACPI_SUCCESS(status) && removable)
+-		return 1;
+-	return 0;
++
++	return pcihp_is_removable(handle, PCIHP_RMV_MAX_DEPTH);
+ }
+ 
+ /**
 -- 
 1.8.3.1
 
