@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3FYSdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:33:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40829 "EHLO
+	id S1752231Ab3FYSdn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:33:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3FYSda (ORCPT
+	with ESMTP id S1752183Ab3FYSdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:30 -0400
+	Tue, 25 Jun 2013 14:33:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 08/95] tilepro: work around module link error with gcc 4.7
-Date: Tue, 25 Jun 2013 11:31:55 -0700
-Message-Id: <20130625182154.574915575@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [ 25/95] parisc: parport0: fix this legacy no-device port driver!
+Date: Tue, 25 Jun 2013 11:32:12 -0700
+Message-Id: <20130625182156.494533371@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,31 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 3cb3f839d306443f3d1e79b0bde1a2ad2c12b555 upstream.
+commit 4edb38695d9a3cd62739f8595e21f36f0aabf4c2 upstream.
 
-gcc 4.7.x is emitting calls to __ffsdi2 where previously
-it used to inline the appropriate ctz instructions.
-While this needs to be fixed in gcc, it's also easy to avoid
-having it cause build failures when building with those
-compilers by exporting __ffsdi2 to modules.
+Fix the above kernel error from parport_announce_port() on 32bit GSC
+machines (e.g. B160L). The parport driver requires now a pointer to the
+device struct.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/lib/exports.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/parport/parport_gsc.c |    6 +++---
+ drivers/parport/parport_gsc.h |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/tile/lib/exports.c
-+++ b/arch/tile/lib/exports.c
-@@ -84,4 +84,6 @@ uint64_t __ashrdi3(uint64_t, unsigned in
- EXPORT_SYMBOL(__ashrdi3);
- uint64_t __ashldi3(uint64_t, unsigned int);
- EXPORT_SYMBOL(__ashldi3);
-+int __ffsdi2(uint64_t);
-+EXPORT_SYMBOL(__ffsdi2);
- #endif
+--- a/drivers/parport/parport_gsc.c
++++ b/drivers/parport/parport_gsc.c
+@@ -234,7 +234,7 @@ static int parport_PS2_supported(struct
+ 
+ struct parport *parport_gsc_probe_port(unsigned long base,
+ 				       unsigned long base_hi, int irq,
+-				       int dma, struct pci_dev *dev)
++				       int dma, struct parisc_device *padev)
+ {
+ 	struct parport_gsc_private *priv;
+ 	struct parport_operations *ops;
+@@ -258,7 +258,6 @@ struct parport *parport_gsc_probe_port(u
+ 	priv->ctr_writable = 0xff;
+ 	priv->dma_buf = 0;
+ 	priv->dma_handle = 0;
+-	priv->dev = dev;
+ 	p->base = base;
+ 	p->base_hi = base_hi;
+ 	p->irq = irq;
+@@ -282,6 +281,7 @@ struct parport *parport_gsc_probe_port(u
+ 		return NULL;
+ 	}
+ 
++	p->dev = &padev->dev;
+ 	p->base_hi = base_hi;
+ 	p->modes = tmp.modes;
+ 	p->size = (p->modes & PARPORT_MODE_EPP)?8:3;
+@@ -373,7 +373,7 @@ static int parport_init_chip(struct pari
+ 	}
+ 	
+ 	p = parport_gsc_probe_port(port, 0, dev->irq,
+-			/* PARPORT_IRQ_NONE */ PARPORT_DMA_NONE, NULL);
++			/* PARPORT_IRQ_NONE */ PARPORT_DMA_NONE, dev);
+ 	if (p)
+ 		parport_count++;
+ 	dev_set_drvdata(&dev->dev, p);
+--- a/drivers/parport/parport_gsc.h
++++ b/drivers/parport/parport_gsc.h
+@@ -217,6 +217,6 @@ extern void parport_gsc_dec_use_count(vo
+ extern struct parport *parport_gsc_probe_port(unsigned long base,
+ 						unsigned long base_hi,
+ 						int irq, int dma,
+-						struct pci_dev *dev);
++						struct parisc_device *padev);
+ 
+ #endif	/* __DRIVERS_PARPORT_PARPORT_GSC_H */
 
 
