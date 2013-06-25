@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab3FYStU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:49:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41226 "EHLO
+	id S1753654Ab3FYSti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:49:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41218 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab3FYSfv (ORCPT
+	with ESMTP id S1753111Ab3FYSfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:35:51 -0400
+	Tue, 25 Jun 2013 14:35:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/27] gianfar: add missing iounmap() on error in gianfar_ptp_probe()
-Date: Tue, 25 Jun 2013 11:35:26 -0700
-Message-Id: <20130625183518.530406705@linuxfoundation.org>
+        Zhang Haoyu <haoyu.zhang@huawei.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [ 05/27] KVM: x86: remove vcpus CPL check in host-invoked XCR set
+Date: Tue, 25 Jun 2013 11:35:24 -0700
+Message-Id: <20130625183518.296893797@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
@@ -27,29 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
 
-[ Upstream commit e5f5e380e0f3bb11f04ca5bc66a551e58e0ad26e ]
+commit 764bcbc5a6d7a2f3e75c9f0e4caa984e2926e346 upstream.
 
-Add the missing iounmap() before return from gianfar_ptp_probe()
-in the error handling case.
+__kvm_set_xcr function does the CPL check when set xcr. __kvm_set_xcr is
+called in two flows, one is invoked by guest, call stack shown as below,
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  handle_xsetbv(or xsetbv_interception)
+    kvm_set_xcr
+      __kvm_set_xcr
+
+the other one is invoked by host, for example during system reset:
+
+  kvm_arch_vcpu_ioctl
+    kvm_vcpu_ioctl_x86_set_xcrs
+      __kvm_set_xcr
+
+The former does need the CPL check, but the latter does not.
+
+Signed-off-by: Zhang Haoyu <haoyu.zhang@huawei.com>
+[Tweaks to commit message. - Paolo]
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/freescale/gianfar_ptp.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/freescale/gianfar_ptp.c
-+++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
-@@ -520,6 +520,7 @@ static int gianfar_ptp_probe(struct plat
- 	return 0;
+---
+ arch/x86/kvm/x86.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -555,8 +555,6 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu,
+ 	if (index != XCR_XFEATURE_ENABLED_MASK)
+ 		return 1;
+ 	xcr0 = xcr;
+-	if (kvm_x86_ops->get_cpl(vcpu) != 0)
+-		return 1;
+ 	if (!(xcr0 & XSTATE_FP))
+ 		return 1;
+ 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
+@@ -570,7 +568,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu,
  
- no_clock:
-+	iounmap(etsects->regs);
- no_ioremap:
- 	release_resource(etsects->rsrc);
- no_resource:
+ int kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+ {
+-	if (__kvm_set_xcr(vcpu, index, xcr)) {
++	if (kvm_x86_ops->get_cpl(vcpu) != 0 ||
++	    __kvm_set_xcr(vcpu, index, xcr)) {
+ 		kvm_inject_gp(vcpu, 0);
+ 		return 1;
+ 	}
 
 
