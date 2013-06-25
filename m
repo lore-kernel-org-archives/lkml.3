@@ -1,293 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab3FYSrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:47:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41265 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab3FYSf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:35:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/27] net: Block MSG_CMSG_COMPAT in send(m)msg and recv(m)msg
-Date: Tue, 25 Jun 2013 11:35:34 -0700
-Message-Id: <20130625183519.437772190@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
-References: <20130625183517.651770593@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1753660Ab3FYSrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:47:21 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43549 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753634Ab3FYSrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:47:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
+   d="scan'208";a="260027999"
+Date: Tue, 25 Jun 2013 21:51:11 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 5/6] PCI: acpiphp: look _RMV method a bit deeper in the
+ hierarhcy
+Message-ID: <20130625185111.GL9294@intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
+ <CAHp75Vd2Torku6zy2awLHRTed9mx94a6RAu+oHJYb+rVgZKBDQ@mail.gmail.com>
+ <20130625183123.GJ9294@intel.com>
+ <CAHp75Vc8BauuBJcfqBzu_+6nUwEC-uD3z_RF5gT-3YhV0fjTqw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75Vc8BauuBJcfqBzu_+6nUwEC-uD3z_RF5gT-3YhV0fjTqw@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 25, 2013 at 09:31:52PM +0300, Andy Shevchenko wrote:
+> On Tue, Jun 25, 2013 at 9:31 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > On Tue, Jun 25, 2013 at 09:15:47PM +0300, Andy Shevchenko wrote:
+> >> On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
+> >> <mika.westerberg@linux.intel.com> wrote:
+> 
+> []
+> 
+> >> > +static acpi_status pcihp_evaluate_rmv(acpi_handle handle, u32 lvl,
+> >> > +                                     void *context, void **return_not_used)
+> >> > +{
+> >> > +       unsigned long long *removable = context;
+> >> > +       unsigned long long value;
+> >> > +       acpi_status status;
+> >> > +
+> >> > +       status = acpi_evaluate_integer(handle, "_RMV", NULL, &value);
+> >> > +       if (ACPI_SUCCESS(status) && value) {
+> >>
+> >> So, there is a chance the caller gets back uninitialized *context.
+> >> Let's assume that is by design.
+> >>
+> >> > +               *removable = value;
+> >> > +               return AE_CTRL_TERMINATE;
+> >> > +       }
+> >> > +       return AE_OK;
+> >> > +}
+> >>
+> >>
+> >> > +static bool pcihp_is_removable(acpi_handle handle, size_t depth)
+> >> > +{
+> >> > +       unsigned long long removable = 0;
+> >> > +       acpi_status status;
+> >> > +
+> >> > +       status = pcihp_evaluate_rmv(handle, 0, &removable, NULL);
+> >> > +       if ((status == AE_CTRL_TERMINATE) && removable)
+> >>
+> >> Here you already have removable not equal zero.
+> >
+> > Hmm, removable is initialized to zero just few lines above... Did I miss
+> > something obvious?
+> 
+> Yes, that's correct, however, you already did this check when you call
+> evaluate_rmv. Thus, second check '&& removable' is not needed.
 
-------------------
+Ah, right. Got it now :-)
 
-From: Andy Lutomirski <luto@amacapital.net>
+I think it is better to remove the first value check from the
+pcihp_evaluate_rmv() and keep the check here.
 
-[ Upstream commits 1be374a0518a288147c6a7398792583200a67261 and
-  a7526eb5d06b0084ef12d7b168d008fcf516caab ]
-
-MSG_CMSG_COMPAT is (AFAIK) not intended to be part of the API --
-it's a hack that steals a bit to indicate to other networking code
-that a compat entry was used.  So don't allow it from a non-compat
-syscall.
-
-This prevents an oops when running this code:
-
-int main()
-{
-	int s;
-	struct sockaddr_in addr;
-	struct msghdr *hdr;
-
-	char *highpage = mmap((void*)(TASK_SIZE_MAX - 4096), 4096,
-	                      PROT_READ | PROT_WRITE,
-	                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-	if (highpage == MAP_FAILED)
-		err(1, "mmap");
-
-	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (s == -1)
-		err(1, "socket");
-
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(1);
-        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	if (connect(s, (struct sockaddr*)&addr, sizeof(addr)) != 0)
-		err(1, "connect");
-
-	void *evil = highpage + 4096 - COMPAT_MSGHDR_SIZE;
-	printf("Evil address is %p\n", evil);
-
-	if (syscall(__NR_sendmmsg, s, evil, 1, MSG_CMSG_COMPAT) < 0)
-		err(1, "sendmmsg");
-
-	return 0;
-}
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/socket.h |    3 ++
- net/compat.c           |   13 ++++++++-
- net/socket.c           |   67 ++++++++++++++++++++++++++++++++-----------------
- 3 files changed, 59 insertions(+), 24 deletions(-)
-
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -336,6 +336,9 @@ extern int put_cmsg(struct msghdr*, int
- 
- struct timespec;
- 
-+/* The __sys_...msg variants allow MSG_CMSG_COMPAT */
-+extern long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags);
-+extern long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags);
- extern int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 			  unsigned int flags, struct timespec *timeout);
- extern int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg,
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -743,19 +743,25 @@ static unsigned char nas[21] = {
- 
- asmlinkage long compat_sys_sendmsg(int fd, struct compat_msghdr __user *msg, unsigned flags)
- {
--	return sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
-+	if (flags & MSG_CMSG_COMPAT)
-+		return -EINVAL;
-+	return __sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
- }
- 
- asmlinkage long compat_sys_sendmmsg(int fd, struct compat_mmsghdr __user *mmsg,
- 				    unsigned vlen, unsigned int flags)
- {
-+	if (flags & MSG_CMSG_COMPAT)
-+		return -EINVAL;
- 	return __sys_sendmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 			      flags | MSG_CMSG_COMPAT);
- }
- 
- asmlinkage long compat_sys_recvmsg(int fd, struct compat_msghdr __user *msg, unsigned int flags)
- {
--	return sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
-+	if (flags & MSG_CMSG_COMPAT)
-+		return -EINVAL;
-+	return __sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
- }
- 
- asmlinkage long compat_sys_recv(int fd, void __user *buf, size_t len, unsigned flags)
-@@ -777,6 +783,9 @@ asmlinkage long compat_sys_recvmmsg(int
- 	int datagrams;
- 	struct timespec ktspec;
- 
-+	if (flags & MSG_CMSG_COMPAT)
-+		return -EINVAL;
-+
- 	if (COMPAT_USE_64BIT_TIME)
- 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				      flags | MSG_CMSG_COMPAT,
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1899,9 +1899,9 @@ struct used_address {
- 	unsigned int name_len;
- };
- 
--static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
--			 struct msghdr *msg_sys, unsigned flags,
--			 struct used_address *used_address)
-+static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
-+			  struct msghdr *msg_sys, unsigned flags,
-+			  struct used_address *used_address)
- {
- 	struct compat_msghdr __user *msg_compat =
- 	    (struct compat_msghdr __user *)msg;
-@@ -2017,22 +2017,30 @@ out:
-  *	BSD sendmsg interface
-  */
- 
--SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned, flags)
-+long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags)
- {
- 	int fput_needed, err;
- 	struct msghdr msg_sys;
--	struct socket *sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	struct socket *sock;
- 
-+	sock = sockfd_lookup_light(fd, &err, &fput_needed);
- 	if (!sock)
- 		goto out;
- 
--	err = __sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
-+	err = ___sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
- 
- 	fput_light(sock->file, fput_needed);
- out:
- 	return err;
- }
- 
-+SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
-+{
-+	if (flags & MSG_CMSG_COMPAT)
-+		return -EINVAL;
-+	return __sys_sendmsg(fd, msg, flags);
-+}
-+
- /*
-  *	Linux sendmmsg interface
-  */
-@@ -2063,15 +2071,16 @@ int __sys_sendmmsg(int fd, struct mmsghd
- 
- 	while (datagrams < vlen) {
- 		if (MSG_CMSG_COMPAT & flags) {
--			err = __sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
--					    &msg_sys, flags, &used_address);
-+			err = ___sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
-+					     &msg_sys, flags, &used_address);
- 			if (err < 0)
- 				break;
- 			err = __put_user(err, &compat_entry->msg_len);
- 			++compat_entry;
- 		} else {
--			err = __sys_sendmsg(sock, (struct msghdr __user *)entry,
--					    &msg_sys, flags, &used_address);
-+			err = ___sys_sendmsg(sock,
-+					     (struct msghdr __user *)entry,
-+					     &msg_sys, flags, &used_address);
- 			if (err < 0)
- 				break;
- 			err = put_user(err, &entry->msg_len);
-@@ -2095,11 +2104,13 @@ int __sys_sendmmsg(int fd, struct mmsghd
- SYSCALL_DEFINE4(sendmmsg, int, fd, struct mmsghdr __user *, mmsg,
- 		unsigned int, vlen, unsigned int, flags)
- {
-+	if (flags & MSG_CMSG_COMPAT)
-+		return -EINVAL;
- 	return __sys_sendmmsg(fd, mmsg, vlen, flags);
- }
- 
--static int __sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
--			 struct msghdr *msg_sys, unsigned flags, int nosec)
-+static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
-+			  struct msghdr *msg_sys, unsigned flags, int nosec)
- {
- 	struct compat_msghdr __user *msg_compat =
- 	    (struct compat_msghdr __user *)msg;
-@@ -2192,23 +2203,31 @@ out:
-  *	BSD recvmsg interface
-  */
- 
--SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
--		unsigned int, flags)
-+long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags)
- {
- 	int fput_needed, err;
- 	struct msghdr msg_sys;
--	struct socket *sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	struct socket *sock;
- 
-+	sock = sockfd_lookup_light(fd, &err, &fput_needed);
- 	if (!sock)
- 		goto out;
- 
--	err = __sys_recvmsg(sock, msg, &msg_sys, flags, 0);
-+	err = ___sys_recvmsg(sock, msg, &msg_sys, flags, 0);
- 
- 	fput_light(sock->file, fput_needed);
- out:
- 	return err;
- }
- 
-+SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
-+		unsigned int, flags)
-+{
-+	if (flags & MSG_CMSG_COMPAT)
-+		return -EINVAL;
-+	return __sys_recvmsg(fd, msg, flags);
-+}
-+
- /*
-  *     Linux recvmmsg interface
-  */
-@@ -2246,17 +2265,18 @@ int __sys_recvmmsg(int fd, struct mmsghd
- 		 * No need to ask LSM for more than the first datagram.
- 		 */
- 		if (MSG_CMSG_COMPAT & flags) {
--			err = __sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
--					    &msg_sys, flags & ~MSG_WAITFORONE,
--					    datagrams);
-+			err = ___sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
-+					     &msg_sys, flags & ~MSG_WAITFORONE,
-+					     datagrams);
- 			if (err < 0)
- 				break;
- 			err = __put_user(err, &compat_entry->msg_len);
- 			++compat_entry;
- 		} else {
--			err = __sys_recvmsg(sock, (struct msghdr __user *)entry,
--					    &msg_sys, flags & ~MSG_WAITFORONE,
--					    datagrams);
-+			err = ___sys_recvmsg(sock,
-+					     (struct msghdr __user *)entry,
-+					     &msg_sys, flags & ~MSG_WAITFORONE,
-+					     datagrams);
- 			if (err < 0)
- 				break;
- 			err = put_user(err, &entry->msg_len);
-@@ -2323,6 +2343,9 @@ SYSCALL_DEFINE5(recvmmsg, int, fd, struc
- 	int datagrams;
- 	struct timespec timeout_sys;
- 
-+	if (flags & MSG_CMSG_COMPAT)
-+		return -EINVAL;
-+
- 	if (!timeout)
- 		return __sys_recvmmsg(fd, mmsg, vlen, flags, NULL);
- 
-
-
+I'll fix that in the next revision as well.
