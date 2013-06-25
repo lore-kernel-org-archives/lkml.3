@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab3FYS7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:59:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41046 "EHLO
+	id S1753223Ab3FYTAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:00:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41039 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab3FYSeI (ORCPT
+	with ESMTP id S1752592Ab3FYSeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:08 -0400
+	Tue, 25 Jun 2013 14:34:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guillaume Nault <g.nault@alphalink.fr>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 73/95] l2tp: Fix sendmsg() return value
-Date: Tue, 25 Jun 2013 11:33:00 -0700
-Message-Id: <20130625182201.818160708@linuxfoundation.org>
+Subject: [ 71/95] packet: packet_getname_spkt: make sure string is always 0-terminated
+Date: Tue, 25 Jun 2013 11:32:58 -0700
+Message-Id: <20130625182201.603464439@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,30 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit a6f79d0f26704214b5b702bbac525cb72997f984 ]
+[ Upstream commit 2dc85bf323515e59e15dfa858d1472bb25cad0fe ]
 
-PPPoL2TP sockets should comply with the standard send*() return values
-(i.e. return number of bytes sent instead of 0 upon success).
+uaddr->sa_data is exactly of size 14, which is hard-coded here and
+passed as a size argument to strncpy(). A device name can be of size
+IFNAMSIZ (== 16), meaning we might leave the destination string
+unterminated. Thus, use strlcpy() and also sizeof() while we're
+at it. We need to memset the data area beforehand, since strlcpy
+does not padd the remaining buffer with zeroes for user space, so
+that we do not possibly leak anything.
 
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/l2tp/l2tp_ppp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/packet/af_packet.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -358,7 +358,7 @@ static int pppol2tp_sendmsg(struct kiocb
- 	sock_put(ps->tunnel_sock);
- 	sock_put(sk);
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -2769,12 +2769,11 @@ static int packet_getname_spkt(struct so
+ 		return -EOPNOTSUPP;
  
--	return error;
-+	return total_len;
+ 	uaddr->sa_family = AF_PACKET;
++	memset(uaddr->sa_data, 0, sizeof(uaddr->sa_data));
+ 	rcu_read_lock();
+ 	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+ 	if (dev)
+-		strncpy(uaddr->sa_data, dev->name, 14);
+-	else
+-		memset(uaddr->sa_data, 0, 14);
++		strlcpy(uaddr->sa_data, dev->name, sizeof(uaddr->sa_data));
+ 	rcu_read_unlock();
+ 	*uaddr_len = sizeof(*uaddr);
  
- error_put_sess_tun:
- 	sock_put(ps->tunnel_sock);
 
 
