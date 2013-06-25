@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab3FYQKi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:10:38 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36515 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab3FYQKg (ORCPT
+	id S1751569Ab3FYQLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:11:48 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:36378 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab3FYQLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:10:36 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130625160848.GA27123@srcf.ucam.org>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-	<1371937599.17761.19.camel@scapa>
-	<20130625160848.GA27123@srcf.ucam.org>
-Date: Tue, 25 Jun 2013 18:10:35 +0200
-Message-ID: <CAKMK7uEtF9XnPem+rTQuBgAef6RDhRuj-=SdvufTa4zBs80Ssw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Yves-Alexis Perez <corsac@debian.org>, linux-acpi@vger.kernel.org,
-        seth.forshee@canonical.com, joeyli.kernel@gmail.com,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Henrique de Moraes Holschuh <hmh@debian.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Jun 2013 12:11:47 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+Cc: Mike Frysinger <vapier@gentoo.org>, Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: Avoid extra calls to the C compiler
+Date: Tue, 25 Jun 2013 09:11:36 -0700
+Message-Id: <1372176696-5104-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 6:08 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Sat, Jun 22, 2013 at 11:46:39PM +0200, Yves-Alexis Perez wrote:
->
->> Before Linux support for acpi_osi("Windows 2012") (and when booting with
->> acpi_osi="!Windows 2012"), brightness keys were handled by the kernel
->> just fine, whether in console, in the display manager or in my desktop
->> environment (Xfce). xfce4-power-manager just needs to be told that the
->> brightness keys are already handled and it doesn't need to do anything.
->
-> Right, the kernel has special-casing to hook the backlight keys up to
-> the ACPI backlight control. This is an awful thing, because there's no
-> way to detect this case other than parsing a single driver-specific
-> module parameter.
->
-> Could this functionality be duplicated across other backlight drivers?
-> Not easily. The ACPI driver receives keypresses and performs backlight
-> control. The i915 driver doesn't receive keypresses. We could easily tie
-> certain keycodes into backlight events, but which backlight should they
-> control? You're really starting to get into the kind of complex policy
-> decision that's best left to userspace, which is where it should have
-> been to begin with.
+Starting up the C compiler can be a slow operation on some systems.
+Though these calls don't individually take a lot of time, they add up.
+Rearrange the ARM Makefile a bit to avoid extra calls to the compiler
+when they can be easily avoided.
 
-Do we have any chances to amend this mistake by (gradually) phasing
-out support for the direct keypress forwarding in ACPI? Or at least
-some plans?
--Daniel
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+When running with the Chrome OS ARM cross compiler
+"armv7a-cros-linux-gnueabi-", this shaved .55 seconds (from 5.31
+seconds to 4.76 seconds) off an incremental build of the kernel:
+  time make -j32 ARCH=arm CROSS_COMPILE=armv7a-cros-linux-gnueabi-
+
+Thanks to Mike Frysinger for the clean trick to make this work.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ arch/arm/Makefile | 56 ++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 31 insertions(+), 25 deletions(-)
+
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 1ba358b..49f0c7e 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -59,37 +59,43 @@ comma = ,
+ # Note that GCC does not numerically define an architecture version
+ # macro, but instead defines a whole series of macros which makes
+ # testing for a specific architecture or later rather impossible.
+-arch-$(CONFIG_CPU_32v7)		:=-D__LINUX_ARM_ARCH__=7 $(call cc-option,-march=armv7-a,-march=armv5t -Wa$(comma)-march=armv7-a)
+-arch-$(CONFIG_CPU_32v6)		:=-D__LINUX_ARM_ARCH__=6 $(call cc-option,-march=armv6,-march=armv5t -Wa$(comma)-march=armv6)
++arch-$(CONFIG_CPU_32v7)		=-D__LINUX_ARM_ARCH__=7 $(call cc-option,-march=armv7-a,-march=armv5t -Wa$(comma)-march=armv7-a)
++arch-$(CONFIG_CPU_32v6)		=-D__LINUX_ARM_ARCH__=6 $(call cc-option,-march=armv6,-march=armv5t -Wa$(comma)-march=armv6)
+ # Only override the compiler option if ARMv6. The ARMv6K extensions are
+ # always available in ARMv7
+ ifeq ($(CONFIG_CPU_32v6),y)
+-arch-$(CONFIG_CPU_32v6K)	:=-D__LINUX_ARM_ARCH__=6 $(call cc-option,-march=armv6k,-march=armv5t -Wa$(comma)-march=armv6k)
++arch-$(CONFIG_CPU_32v6K)	=-D__LINUX_ARM_ARCH__=6 $(call cc-option,-march=armv6k,-march=armv5t -Wa$(comma)-march=armv6k)
+ endif
+-arch-$(CONFIG_CPU_32v5)		:=-D__LINUX_ARM_ARCH__=5 $(call cc-option,-march=armv5te,-march=armv4t)
+-arch-$(CONFIG_CPU_32v4T)	:=-D__LINUX_ARM_ARCH__=4 -march=armv4t
+-arch-$(CONFIG_CPU_32v4)		:=-D__LINUX_ARM_ARCH__=4 -march=armv4
+-arch-$(CONFIG_CPU_32v3)		:=-D__LINUX_ARM_ARCH__=3 -march=armv3
++arch-$(CONFIG_CPU_32v5)		=-D__LINUX_ARM_ARCH__=5 $(call cc-option,-march=armv5te,-march=armv4t)
++arch-$(CONFIG_CPU_32v4T)	=-D__LINUX_ARM_ARCH__=4 -march=armv4t
++arch-$(CONFIG_CPU_32v4)		=-D__LINUX_ARM_ARCH__=4 -march=armv4
++arch-$(CONFIG_CPU_32v3)		=-D__LINUX_ARM_ARCH__=3 -march=armv3
++
++# Evaluate arch cc-option calls now
++arch-y := $(arch-y)
+ 
+ # This selects how we optimise for the processor.
+-tune-$(CONFIG_CPU_ARM7TDMI)	:=-mtune=arm7tdmi
+-tune-$(CONFIG_CPU_ARM720T)	:=-mtune=arm7tdmi
+-tune-$(CONFIG_CPU_ARM740T)	:=-mtune=arm7tdmi
+-tune-$(CONFIG_CPU_ARM9TDMI)	:=-mtune=arm9tdmi
+-tune-$(CONFIG_CPU_ARM940T)	:=-mtune=arm9tdmi
+-tune-$(CONFIG_CPU_ARM946E)	:=$(call cc-option,-mtune=arm9e,-mtune=arm9tdmi)
+-tune-$(CONFIG_CPU_ARM920T)	:=-mtune=arm9tdmi
+-tune-$(CONFIG_CPU_ARM922T)	:=-mtune=arm9tdmi
+-tune-$(CONFIG_CPU_ARM925T)	:=-mtune=arm9tdmi
+-tune-$(CONFIG_CPU_ARM926T)	:=-mtune=arm9tdmi
+-tune-$(CONFIG_CPU_FA526)	:=-mtune=arm9tdmi
+-tune-$(CONFIG_CPU_SA110)	:=-mtune=strongarm110
+-tune-$(CONFIG_CPU_SA1100)	:=-mtune=strongarm1100
+-tune-$(CONFIG_CPU_XSCALE)	:=$(call cc-option,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
+-tune-$(CONFIG_CPU_XSC3)		:=$(call cc-option,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
+-tune-$(CONFIG_CPU_FEROCEON)	:=$(call cc-option,-mtune=marvell-f,-mtune=xscale)
+-tune-$(CONFIG_CPU_V6)		:=$(call cc-option,-mtune=arm1136j-s,-mtune=strongarm)
+-tune-$(CONFIG_CPU_V6K)		:=$(call cc-option,-mtune=arm1136j-s,-mtune=strongarm)
++tune-$(CONFIG_CPU_ARM7TDMI)	=-mtune=arm7tdmi
++tune-$(CONFIG_CPU_ARM720T)	=-mtune=arm7tdmi
++tune-$(CONFIG_CPU_ARM740T)	=-mtune=arm7tdmi
++tune-$(CONFIG_CPU_ARM9TDMI)	=-mtune=arm9tdmi
++tune-$(CONFIG_CPU_ARM940T)	=-mtune=arm9tdmi
++tune-$(CONFIG_CPU_ARM946E)	=$(call cc-option,-mtune=arm9e,-mtune=arm9tdmi)
++tune-$(CONFIG_CPU_ARM920T)	=-mtune=arm9tdmi
++tune-$(CONFIG_CPU_ARM922T)	=-mtune=arm9tdmi
++tune-$(CONFIG_CPU_ARM925T)	=-mtune=arm9tdmi
++tune-$(CONFIG_CPU_ARM926T)	=-mtune=arm9tdmi
++tune-$(CONFIG_CPU_FA526)	=-mtune=arm9tdmi
++tune-$(CONFIG_CPU_SA110)	=-mtune=strongarm110
++tune-$(CONFIG_CPU_SA1100)	=-mtune=strongarm1100
++tune-$(CONFIG_CPU_XSCALE)	=$(call cc-option,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
++tune-$(CONFIG_CPU_XSC3)		=$(call cc-option,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
++tune-$(CONFIG_CPU_FEROCEON)	=$(call cc-option,-mtune=marvell-f,-mtune=xscale)
++tune-$(CONFIG_CPU_V6)		=$(call cc-option,-mtune=arm1136j-s,-mtune=strongarm)
++tune-$(CONFIG_CPU_V6K)		=$(call cc-option,-mtune=arm1136j-s,-mtune=strongarm)
++
++# Evaluate tune cc-option calls now
++tune-y := $(tune-y)
+ 
+ ifeq ($(CONFIG_AEABI),y)
+ CFLAGS_ABI	:=-mabi=aapcs-linux -mno-thumb-interwork
+-- 
+1.8.3
+
