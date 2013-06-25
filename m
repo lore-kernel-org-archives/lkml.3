@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab3FYSyR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:54:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41112 "EHLO
+	id S1753799Ab3FYSyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:54:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41132 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab3FYSeV (ORCPT
+	with ESMTP id S1752769Ab3FYSeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:34:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 78/95] tuntap: set transport header before passing it to kernel
-Date: Tue, 25 Jun 2013 11:33:05 -0700
-Message-Id: <20130625182202.393335388@linuxfoundation.org>
+Subject: [ 77/95] macvtap: set transport header before passing skb to lower device
+Date: Tue, 25 Jun 2013 11:33:04 -0700
+Message-Id: <20130625182202.293197703@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -29,57 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 38502af77e07b5d6650b9ff99a0b482d86366592 ]
+[ Upstream commit 9b4d669bc06c215d64f56f1eb0d4eb96e14d689d ]
 
-Currently, for the packets receives from tuntap, before doing header check,
-kernel just reset the transport header in netif_receive_skb() which pretends no
-l4 header. This is suboptimal for precise packet length estimation (introduced
-in 1def9238) which needs correct l4 header for gso packets.
+Set the transport header for 1) some drivers (e.g ixgbe) needs l4 header 2)
+precise packet length estimation (introduced in 1def9238) needs l4 header to
+compute header length.
 
-So this patch set the transport header to csum_start for partial checksum
-packets, otherwise it first try skb_flow_dissect(), if it fails, just reset the
-transport header.
+For the packets with partial checksum, the patch just set the transport header
+to csum_start. Otherwise tries to use skb_flow_dissect() to get l4 offset, if it
+fails, just pretend no l4 header.
 
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 Cc: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/tun.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/macvtap.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -70,6 +70,7 @@
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -21,6 +21,7 @@
+ #include <net/rtnetlink.h>
  #include <net/sock.h>
- 
- #include <asm/uaccess.h>
+ #include <linux/virtio_net.h>
 +#include <net/flow_keys.h>
  
- /* Uncomment to enable debugging */
- /* #define TUN_DEBUG 1 */
-@@ -1051,6 +1052,7 @@ static ssize_t tun_get_user(struct tun_s
+ /*
+  * A macvtap queue is the central object of this driver, it connects
+@@ -645,6 +646,7 @@ static ssize_t macvtap_get_user(struct m
+ 	int vnet_hdr_len = 0;
+ 	int copylen = 0;
  	bool zerocopy = false;
- 	int err;
- 	u32 rxhash;
 +	struct flow_keys keys;
  
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) > total_len)
-@@ -1205,6 +1207,14 @@ static ssize_t tun_get_user(struct tun_s
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		vnet_hdr_len = q->vnet_hdr_sz;
+@@ -725,6 +727,13 @@ static ssize_t macvtap_get_user(struct m
+ 			goto err_kfree;
  	}
  
- 	skb_reset_network_header(skb);
-+
 +	if (skb->ip_summed == CHECKSUM_PARTIAL)
 +		skb_set_transport_header(skb, skb_checksum_start_offset(skb));
 +	else if (skb_flow_dissect(skb, &keys))
 +		skb_set_transport_header(skb, keys.thoff);
 +	else
-+		skb_reset_transport_header(skb);
++		skb_set_transport_header(skb, ETH_HLEN);
 +
- 	rxhash = skb_get_rxhash(skb);
- 	netif_rx_ni(skb);
- 
+ 	rcu_read_lock_bh();
+ 	vlan = rcu_dereference_bh(q->vlan);
+ 	/* copy skb_ubuf_info for callback when skb has no error */
 
 
