@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab3FYTfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:35:14 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47943 "EHLO bear.ext.ti.com"
+	id S1751982Ab3FYThj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:37:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48043 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab3FYTfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 15:35:11 -0400
-Message-ID: <1372188900.18889.18.camel@cumari.coelho.fi>
+	id S1751269Ab3FYThh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 15:37:37 -0400
+Message-ID: <1372189024.18889.19.camel@cumari.coelho.fi>
 Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
 From: Luciano Coelho <coelho@ti.com>
 To: <grant.likely@linaro.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
         <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>
-CC: <tony@atomide.com>, <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@vger.kernel.org>
-Date: Tue, 25 Jun 2013 22:35:00 +0300
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Date: Tue, 25 Jun 2013 22:37:04 +0300
 In-Reply-To: <1372149330-24335-1-git-send-email-coelho@ti.com>
 References: <1372149330-24335-1-git-send-email-coelho@ti.com>
 Content-Type: text/plain; charset="UTF-8"
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(fixed the ARM mailing list address)
+(oh crap, now *really* fixed the ARM mailing list address)
 
 On Tue, 2013-06-25 at 11:35 +0300, Luciano Coelho wrote:
 > Add device tree bindings documentation for the TI WiLink modules.
@@ -103,4 +103,5 @@ node parsing in the driver.
 
 --
 Luca.
+
 
