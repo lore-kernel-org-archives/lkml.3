@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab3FYSoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:44:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41352 "EHLO
+	id S1753458Ab3FYSo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:44:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753392Ab3FYSjh (ORCPT
+	with ESMTP id S1751670Ab3FYSjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:39:37 -0400
+	Tue, 25 Jun 2013 14:39:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Matt Schnall <mischnal@google.com>, Eric Dumazet <edumazet@google.com>,
+        Bernhard Beck <bbeck@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 05/17] gianfar: add missing iounmap() on error in gianfar_ptp_probe()
-Date: Tue, 25 Jun 2013 11:39:20 -0700
-Message-Id: <20130625183916.086758273@linuxfoundation.org>
+Subject: [ 04/17] tcp: fix tcp_md5_hash_skb_data()
+Date: Tue, 25 Jun 2013 11:39:19 -0700
+Message-Id: <20130625183915.960334084@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183915.443950649@linuxfoundation.org>
 References: <20130625183915.443950649@linuxfoundation.org>
@@ -27,29 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit e5f5e380e0f3bb11f04ca5bc66a551e58e0ad26e ]
+[ Upstream commit 54d27fcb338bd9c42d1dfc5a39e18f6f9d373c2e ]
 
-Add the missing iounmap() before return from gianfar_ptp_probe()
-in the error handling case.
+TCP md5 communications fail [1] for some devices, because sg/crypto code
+assume page offsets are below PAGE_SIZE.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+This was discovered using mlx4 driver [2], but I suspect loopback
+might trigger the same bug now we use order-3 pages in tcp_sendmsg()
+
+[1] Failure is giving following messages.
+
+huh, entered softirq 3 NET_RX ffffffff806ad230 preempt_count 00000100,
+exited with 00000101?
+
+[2] mlx4 driver uses order-2 pages to allocate RX frags
+
+Reported-by: Matt Schnall <mischnal@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Bernhard Beck <bbeck@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/gianfar_ptp.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/tcp.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/gianfar_ptp.c
-+++ b/drivers/net/gianfar_ptp.c
-@@ -521,6 +521,7 @@ static int gianfar_ptp_probe(struct plat
- 	return 0;
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3043,7 +3043,11 @@ int tcp_md5_hash_skb_data(struct tcp_md5
  
- no_clock:
-+	iounmap(etsects->regs);
- no_ioremap:
- 	release_resource(etsects->rsrc);
- no_resource:
+ 	for (i = 0; i < shi->nr_frags; ++i) {
+ 		const struct skb_frag_struct *f = &shi->frags[i];
+-		sg_set_page(&sg, f->page, f->size, f->page_offset);
++		unsigned int offset = f->page_offset;
++		struct page *page = f->page + (offset >> PAGE_SHIFT);
++
++		sg_set_page(&sg, page, f->size,
++			    offset_in_page(offset));
+ 		if (crypto_hash_update(desc, &sg, f->size))
+ 			return 1;
+ 	}
 
 
