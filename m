@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab3FYTBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:01:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41023 "EHLO
+	id S1752977Ab3FYTBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:01:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41029 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab3FYSeF (ORCPT
+	with ESMTP id S1752494Ab3FYSeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:34:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Daniel Petre <daniel.petre@rcs-rds.ro>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 54/95] tcp: xps: fix reordering issues
-Date: Tue, 25 Jun 2013 11:32:41 -0700
-Message-Id: <20130625182159.758500577@linuxfoundation.org>
+Subject: [ 55/95] ip_tunnel: fix kernel panic with icmp_dest_unreach
+Date: Tue, 25 Jun 2013 11:32:42 -0700
+Message-Id: <20130625182159.856000678@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -31,45 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 547669d483e5783d722772af1483fa474da7caf9 ]
+[ Upstream commit a622260254ee481747cceaaa8609985b29a31565 ]
 
-commit 3853b5841c01a ("xps: Improvements in TX queue selection")
-introduced ooo_okay flag, but the condition to set it is slightly wrong.
+Daniel Petre reported crashes in icmp_dst_unreach() with following call
+graph:
 
-In our traces, we have seen ACK packets being received out of order,
-and RST packets sent in response.
+Daniel found a similar problem mentioned in
+ http://lkml.indiana.edu/hypermail/linux/kernel/1007.0/00961.html
 
-We should test if we have any packets still in host queue.
+And indeed this is the root cause : skb->cb[] contains data fooling IP
+stack.
 
+We must clear IPCB in ip_tunnel_xmit() sooner in case dst_link_failure()
+is called. Or else skb->cb[] might contain garbage from GSO segmentation
+layer.
+
+A similar fix was tested on linux-3.9, but gre code was refactored in
+linux-3.10. I'll send patches for stable kernels as well.
+
+Many thanks to Daniel for providing reports, patches and testing !
+
+Reported-by: Daniel Petre <daniel.petre@rcs-rds.ro>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_output.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ net/ipv4/ip_gre.c |    2 +-
+ net/ipv4/ipip.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1032,11 +1032,13 @@ static int tcp_transmit_skb(struct sock
- 							   &md5);
- 	tcp_header_size = tcp_options_size + sizeof(struct tcphdr);
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -804,6 +804,7 @@ static netdev_tx_t ipgre_tunnel_xmit(str
+ 		tiph = &tunnel->parms.iph;
+ 	}
  
--	if (tcp_packets_in_flight(tp) == 0) {
-+	if (tcp_packets_in_flight(tp) == 0)
- 		tcp_ca_event(sk, CA_EVENT_TX_START);
--		skb->ooo_okay = 1;
--	} else
--		skb->ooo_okay = 0;
-+
-+	/* if no packet is in qdisc/device queue, then allow XPS to select
-+	 * another queue.
-+	 */
-+	skb->ooo_okay = sk_wmem_alloc_get(sk) == 0;
++	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	if ((dst = tiph->daddr) == 0) {
+ 		/* NBMA tunnel */
  
- 	skb_push(skb, tcp_header_size);
- 	skb_reset_transport_header(skb);
+@@ -952,7 +953,6 @@ static netdev_tx_t ipgre_tunnel_xmit(str
+ 	skb_push(skb, gre_hlen);
+ 	skb_reset_network_header(skb);
+ 	skb_set_transport_header(skb, sizeof(*iph));
+-	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
+ 			      IPSKB_REROUTED);
+ 	skb_dst_drop(skb);
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -491,6 +491,7 @@ static netdev_tx_t ipip_tunnel_xmit(stru
+ 	if (tos & 1)
+ 		tos = old_iph->tos;
+ 
++	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	if (!dst) {
+ 		/* NBMA tunnel */
+ 		if ((rt = skb_rtable(skb)) == NULL) {
+@@ -573,7 +574,6 @@ static netdev_tx_t ipip_tunnel_xmit(stru
+ 	skb->transport_header = skb->network_header;
+ 	skb_push(skb, sizeof(struct iphdr));
+ 	skb_reset_network_header(skb);
+-	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
+ 			      IPSKB_REROUTED);
+ 	skb_dst_drop(skb);
 
 
