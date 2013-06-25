@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab3FYVrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:47:12 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:45294 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab3FYVrK (ORCPT
+	id S1751709Ab3FYVtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:49:18 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60092 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab3FYVtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:47:10 -0400
+	Tue, 25 Jun 2013 17:49:17 -0400
+Date: Tue, 25 Jun 2013 22:49:14 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yves-Alexis Perez <corsac@debian.org>
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
+        Henrique de Moraes Holschuh <hmh@debian.org>
+Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+Message-ID: <20130625214914.GA3654@srcf.ucam.org>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+ <1371937599.17761.19.camel@scapa>
+ <20130625160848.GA27123@srcf.ucam.org>
+ <1372193037.8189.24.camel@scapa>
+ <20130625205430.GA2438@srcf.ucam.org>
+ <1372194611.8189.31.camel@scapa>
+ <20130625211415.GA2899@srcf.ucam.org>
+ <1372195837.8189.42.camel@scapa>
+ <20130625213300.GA3296@srcf.ucam.org>
+ <1372196761.8189.47.camel@scapa>
 MIME-Version: 1.0
-In-Reply-To: <1372196295.3944.221.camel@pasglop>
-References: <1370066593-22736-1-git-send-email-yinghai@kernel.org>
- <1370066593-22736-3-git-send-email-yinghai@kernel.org> <20130625211516.GA8494@google.com>
- <1372196295.3944.221.camel@pasglop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 25 Jun 2013 15:46:49 -0600
-Message-ID: <CAErSpo7b7=E8uG-TzcNinE1F9QUX2xyC-WFGXKVv5svcrZ9aGQ@mail.gmail.com>
-Subject: Re: [PATCH v5 3/7] PCI: Use pci_walk_bus to detect unassigned resources
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1372196761.8189.47.camel@scapa>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 3:38 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Tue, 2013-06-25 at 15:15 -0600, Bjorn Helgaas wrote:
->> -     for_each_pci_dev(dev) {
->> > -             int i;
->> > +             /* Not assigned, or rejected by kernel ? */
->> > +             if (r->flags && !r->start) {
->> > +                     (*unassigned)++;
->> > +                     return 1; /* return early from pci_walk_bus */
->> > +             }
->> > +     }
->
-> BTW. I'm aware you didn't change that logic but ... it's somewhat broken
-> in the case where the aperture has an offset. You should compare
-> r->start with the offset, not with 0.
+On Tue, Jun 25, 2013 at 11:46:01PM +0200, Yves-Alexis Perez wrote:
+> But if that introduce regressions, shouldn't workarounds be found then?
+> Sorry if I keep repeating that but brightness keys handling in-kernel is
+> quite a useful feature and losing it (because of the “behave exactly
+> like Windows 8 kernel” policy) is indeed a regression.
 
-Yes, please fix that in a separate patch that contains only the bugfix.
+Your firmware behaves differently depending on whether the OS claims to 
+be Windows 8 or not. We can't make that invisible.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
