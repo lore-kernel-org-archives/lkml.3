@@ -1,118 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab3FYVma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:42:30 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:44079 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab3FYVm2 convert rfc822-to-8bit (ORCPT
+	id S1752051Ab3FYVqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:46:10 -0400
+Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:41831 "EHLO
+	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3FYVqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:42:28 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Naresh Kamboju <naresh.kamboju@linaro.org>
-Cc: Robin Holt <holt@sgi.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Andrey Konovalov <andrey.konovalov@linaro.org>,
-        Russ Anderson <rja@sgi.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org,
-        Milosz Wasilewski <milosz.wasilewski@linaro.org>
-Subject: Re: linux-next: panda build failed at arch/arm/mach-omap2/omap4-restart.c
-References: <CA+G9fYv_9EQUmpRNPUwioSwJVXnXJC5odEKiMd=vKHNWYRT8xw@mail.gmail.com>
-	<CA+G9fYupw8Gi=5p2nKVJ9GqfhwBcTw7hyzGA8+K+gHmdL96mJg@mail.gmail.com>
-Date: Tue, 25 Jun 2013 14:42:24 -0700
-In-Reply-To: <CA+G9fYupw8Gi=5p2nKVJ9GqfhwBcTw7hyzGA8+K+gHmdL96mJg@mail.gmail.com>
-	(Naresh Kamboju's message of "Tue, 25 Jun 2013 22:46:02 +0530")
-Message-ID: <874ncluatb.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 Jun 2013 17:46:08 -0400
+Message-ID: <1372196761.8189.47.camel@scapa>
+Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+From: Yves-Alexis Perez <corsac@debian.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
+        Henrique de Moraes Holschuh <hmh@debian.org>
+Date: Tue, 25 Jun 2013 23:46:01 +0200
+In-Reply-To: <20130625213300.GA3296@srcf.ucam.org>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+	 <1371937599.17761.19.camel@scapa> <20130625160848.GA27123@srcf.ucam.org>
+	 <1372193037.8189.24.camel@scapa> <20130625205430.GA2438@srcf.ucam.org>
+	 <1372194611.8189.31.camel@scapa> <20130625211415.GA2899@srcf.ucam.org>
+	 <1372195837.8189.42.camel@scapa> <20130625213300.GA3296@srcf.ucam.org>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-HmBZOgAKIBUw8aNZWuns"
+X-Mailer: Evolution 3.8.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naresh Kamboju <naresh.kamboju@linaro.org> writes:
 
-> ping
+--=-HmBZOgAKIBUw8aNZWuns
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This is a known issue[1] and already has some proposed fixes, they are just
-not merged yet.
+On mar., 2013-06-25 at 22:33 +0100, Matthew Garrett wrote:
+> > I was referring to =E2=80=9Cstandardize the behaviour by leaving up to
+> > userspace=E2=80=9D. A lot of thinkpads (for example) (all the pre-windo=
+ws 8
+> > ones) have a perfectly working ACPI backlight interface.
+>=20
+> And this patchset won't alter their behaviour.
 
-Kevin
+Sorry if I was unclear and if my mail implied that. It was about your
+remark later in the thread (and the mail from Daniel Vetter)
+>=20
+> > Also, if the kernel has no way of knowing which levels work, I fail to
+> > see how userspace can do better.
+>=20
+> It can't. That's why this patchset disables the ACPI interface on=20
+> Windows 8 systems.
+>=20
+> > I understand that switching to intel_backlight instead of acpi_video0
+> > follows what Windows 8 recommends but for me it looks orthogonal to the
+> > fact ACPI methods now have some awkward (Lenovo) or broken (Dell). I
+> > mean, it's not the first time firmware people break some kernel
+> > behavior. I know it's usually not easy to contact them, but shouldn't
+> > those methods be fixed, instead of somehow blindly switching to graphic
+> > drivers?
+>=20
+> No. The correct answer to all firmware issues is "Are we making the same=
+=20
+> firmware calls as the version of Windows that this hardware thinks it's=
+=20
+> running". If Windows 8 doesn't make these calls, we shouldn't make these=
+=20
+> calls.
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/178209.html
+But if that introduce regressions, shouldn't workarounds be found then?
+Sorry if I keep repeating that but brightness keys handling in-kernel is
+quite a useful feature and losing it (because of the =E2=80=9Cbehave exactl=
+y
+like Windows 8 kernel=E2=80=9D policy) is indeed a regression.
+--=20
+Yves-Alexis
 
-> On 23 June 2013 13:53, Naresh Kamboju <naresh.kamboju@linaro.org> wrote:
->> Hi,
->>
->> panda build broken on linux-next branch
->>
->> kernel_config=omap2plus_defconfig
->> KERNEL_VERSION=3.10.0-rc6
->> KERNEL_GIT=git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
->> KERNEL_COMMIT=e1a86578747376f08985627c84df088a5d0d1e92
->>
->> Build error log :
->> -------------------
->> 04:43:18   CC      arch/arm/mach-omap2/omap4-restart.o
->> 04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:28:
->> warning: ‘enum reboot_mode’ declared inside parameter list [enabled by
->> default]
->> 04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
->> 04:43:18                             ^
->> 04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:28:
->> warning: its scope is only this definition or declaration, which is
->> probably not what you want [enabled by default]
->> 04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:40:
->> error: parameter 1 (‘mode’) has incomplete type
->> 04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
->> 04:43:18                                         ^
->> 04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:6:
->> warning: function declaration isn’t a prototype [-Wstrict-prototypes]
->> 04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
->> 04:43:18       ^
->> 04:43:18 make[2]: *** [arch/arm/mach-omap2/omap4-restart.o] Error 1
->> 04:43:18 make[1]: *** [arch/arm/mach-omap2] Error 2
->>
->> Full build log:
->> ------------------
->> https://ci.linaro.org/jenkins/job/linux-next/hwpack=panda,label=kernel_cloud/lastBuild/console
->>
->> Suspecting patch which caused build failed:
->> --------------------------------------------------------
->> commit b61cdf2aebc5cd2f4efc4e0cbebeb8a91884a43e
->> Author: Robin Holt <holt@sgi.com>
->> Date:   Wed Jun 19 10:08:43 2013 +1000
->>
->> reboot: arm: change reboot_mode to use enum reboot_mode
->>
->> Preparing to move the parsing of reboot= to generic kernel code forces the
->> change in reboot_mode handling to use the enum.
->>
->> Signed-off-by: Robin Holt <holt@sgi.com>
->>
->> ...
->> diff --git a/arch/arm/mach-omap2/omap4-restart.c
->> b/arch/arm/mach-omap2/omap4-restart.c
->> index f90e02e..652adde 100644
->> --- a/arch/arm/mach-omap2/omap4-restart.c
->> +++ b/arch/arm/mach-omap2/omap4-restart.c
->> @@ -18,7 +18,7 @@
->>   * Resets the SoC.  For @cmd, see the 'reboot' syscall in
->>   * kernel/sys.c.  No return value.
->>   */
->> -void omap44xx_restart(char mode, const char *cmd)
->> +void omap44xx_restart(enum reboot_mode mode, const char *cmd)
->>  {
->>         /* XXX Should save 'cmd' into scratchpad for use after reboot */
->>         omap4_prminst_global_warm_sw_reset(); /* never returns */
->> ...
->>
->> Best regards
->> Naresh Kamboju
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--=-HmBZOgAKIBUw8aNZWuns
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQEcBAABCAAGBQJRyg+ZAAoJEG3bU/KmdcClFHcH/jNv2QPAD8op1cy5dqcGpZW8
+KK/ac6JCm94ryOaly5DYyJwRl0+qVAWwMrt+M8eYy7BY+vHMWEtkkjFog+/Nrg6G
+plcfiydkUpoqu4RTsg1sfUgbwccQCR4G09k6whdSLRb4lvhgfi1KPzxMWPoBje1Q
+KvCQMXL1PY91iSitAn4FGsHGh3TbrhopQXM18GrsnlORFszFNWHYrRSHywfOpBZd
+FLF6w7mOSgy0qwnVgbBGac8auJZ2RzmVH8/FboQvmNI11f3l+rlvkx3fDMOKFYWy
++V13SzP293Ma4YgswlQKytOej0xz+9XVuja8chLijCC+pJAZG6wX/aPkcRvFs20=
+=g201
+-----END PGP SIGNATURE-----
+
+--=-HmBZOgAKIBUw8aNZWuns--
