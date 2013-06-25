@@ -1,145 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab3FYUav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:30:51 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57629 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab3FYUar (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:30:47 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 12/45] sched/fair: Use get/put_online_cpus_atomic() to
- prevent CPU offline
-To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com
-Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
-        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 01:57:24 +0530
-Message-ID: <20130625202724.16593.64863.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
-References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062520-3864-0000-0000-000008CC2ABD
+	id S1753247Ab3FYUpG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:45:06 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:42359 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753149Ab3FYUpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 16:45:01 -0400
+Message-ID: <1372193037.8189.24.camel@scapa>
+Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+From: Yves-Alexis Perez <corsac@debian.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
+        Henrique de Moraes Holschuh <hmh@debian.org>
+Date: Tue, 25 Jun 2013 22:43:57 +0200
+In-Reply-To: <20130625160848.GA27123@srcf.ucam.org>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+	 <1371937599.17761.19.camel@scapa> <20130625160848.GA27123@srcf.ucam.org>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-h0qekHEZ+L+n3AONK2yC"
+X-Mailer: Evolution 3.8.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able
-to depend on disabling preemption to prevent CPUs from going offline
-from under us.
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
-offline, while invoking from atomic context.
+--=-h0qekHEZ+L+n3AONK2yC
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+On mar., 2013-06-25 at 17:08 +0100, Matthew Garrett wrote:
+> On Sat, Jun 22, 2013 at 11:46:39PM +0200, Yves-Alexis Perez wrote:
+>=20
+> > Before Linux support for acpi_osi("Windows 2012") (and when booting wit=
+h
+> > acpi_osi=3D"!Windows 2012"), brightness keys were handled by the kernel
+> > just fine, whether in console, in the display manager or in my desktop
+> > environment (Xfce). xfce4-power-manager just needs to be told that the
+> > brightness keys are already handled and it doesn't need to do anything.
+>=20
+> Right, the kernel has special-casing to hook the backlight keys up to=20
+> the ACPI backlight control. This is an awful thing, because there's no=
+=20
+> way to detect this case other than parsing a single driver-specific=20
+> module parameter.
 
- kernel/sched/fair.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+I'm not sure what that means. To detect what case exactly? That the
+brightness is handled by video.ko?
+>=20
+> Could this functionality be duplicated across other backlight drivers?=
+=20
+> Not easily. The ACPI driver receives keypresses and performs backlight=
+=20
+> control. The i915 driver doesn't receive keypresses. We could easily tie=
+=20
+> certain keycodes into backlight events, but which backlight should they=
+=20
+> control? You're really starting to get into the kind of complex policy=
+=20
+> decision that's best left to userspace, which is where it should have=20
+> been to begin with.
+>=20
+Well, I get the reasoning, but I'm not sure I agree. That means
+userspace behavior is inconsistent depending on who does it
+(gnome-power-manager, gnome-setting-daemon, whatever), and it usually
+means there's nothing handling the brightness before those are running,
+not to mention people not running them because they don't run a full
+blown desktop environment (until someone starts thinking it's a good
+idea to handle brightness in systemd).
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c0ac2c3..88f056e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3338,7 +3338,8 @@ done:
-  *
-  * Returns the target CPU number, or the same CPU if no balancing is needed.
-  *
-- * preempt must be disabled.
-+ * Must be called within get/put_online_cpus_atomic(), to prevent CPUs
-+ * from going offline from under us.
-  */
- static int
- select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
-@@ -5267,6 +5268,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
- 	raw_spin_unlock(&this_rq->lock);
- 
- 	update_blocked_averages(this_cpu);
-+
-+	get_online_cpus_atomic();
- 	rcu_read_lock();
- 	for_each_domain(this_cpu, sd) {
- 		unsigned long interval;
-@@ -5290,6 +5293,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
- 		}
- 	}
- 	rcu_read_unlock();
-+	put_online_cpus_atomic();
- 
- 	raw_spin_lock(&this_rq->lock);
- 
-@@ -5316,6 +5320,7 @@ static int active_load_balance_cpu_stop(void *data)
- 	struct rq *target_rq = cpu_rq(target_cpu);
- 	struct sched_domain *sd;
- 
-+	get_online_cpus_atomic();
- 	raw_spin_lock_irq(&busiest_rq->lock);
- 
- 	/* make sure the requested cpu hasn't gone down in the meantime */
-@@ -5367,6 +5372,7 @@ static int active_load_balance_cpu_stop(void *data)
- out_unlock:
- 	busiest_rq->active_balance = 0;
- 	raw_spin_unlock_irq(&busiest_rq->lock);
-+	put_online_cpus_atomic();
- 	return 0;
- }
- 
-@@ -5527,6 +5533,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
- 
- 	update_blocked_averages(cpu);
- 
-+	get_online_cpus_atomic();
- 	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
- 		if (!(sd->flags & SD_LOAD_BALANCE))
-@@ -5575,6 +5582,7 @@ out:
- 			break;
- 	}
- 	rcu_read_unlock();
-+	put_online_cpus_atomic();
- 
- 	/*
- 	 * next_balance will be updated only when there is a need.
-@@ -5706,6 +5714,7 @@ static void run_rebalance_domains(struct softirq_action *h)
- 	enum cpu_idle_type idle = this_rq->idle_balance ?
- 						CPU_IDLE : CPU_NOT_IDLE;
- 
-+	get_online_cpus_atomic();
- 	rebalance_domains(this_cpu, idle);
- 
- 	/*
-@@ -5714,6 +5723,7 @@ static void run_rebalance_domains(struct softirq_action *h)
- 	 * stopped.
- 	 */
- 	nohz_idle_balance(this_cpu, idle);
-+	put_online_cpus_atomic();
- }
- 
- static inline int on_null_domain(int cpu)
-@@ -5731,8 +5741,10 @@ void trigger_load_balance(struct rq *rq, int cpu)
- 	    likely(!on_null_domain(cpu)))
- 		raise_softirq(SCHED_SOFTIRQ);
- #ifdef CONFIG_NO_HZ_COMMON
-+	get_online_cpus_atomic();
- 	if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
- 		nohz_balancer_kick(cpu);
-+	put_online_cpus_atomic();
- #endif
- }
- 
+And in the end, the user just want the brightness keys to correctly
+handle the brightness, full stop. Having multiple brightness daemons
+using different policies on different hardware is a nightmare for the
+end user, imho. From a user point of view, having it handled all in the
+kernel works really pretty fine and is completely transparent (I have to
+admit that from that point of view, it was even better when it was
+handled by the EC but those times seem long gone).
 
+Regards,
+--=20
+Yves-Alexis
+
+--=-h0qekHEZ+L+n3AONK2yC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQEcBAABCAAGBQJRygENAAoJEG3bU/KmdcCl3PgIAJWjGaTnGC4da9Pb1h4Wtyvu
+fGVBCqky+23sKfVovt8BjgU0asnRoZ+4pkz6QSbLlU/hVsD27m+2i0k4/bdrxOzK
+2AT+SqcWXE+leObHHe181SnFC9xglXxz8HnzxzUnNoTDWuOzXdNQWNQfh5iLqaq5
+Qqiiu6wNZttHzlD0Yb3ym/jtM0OuhZ/K3HHULlqOxLxOuHqDuvbFIW03+MJPrq0L
+HYNR5SGb+NQER9h4CCx1pS8VO+86ofB4a7QicjOSWALAG+mgBdOzCbP43q4GJncU
+R+IUHtO4piTArTo3ckfI2Yc78jz4kzj7CqyeS+jBpxXtMjvBbA8Z5rHJM8auePk=
+=ddvU
+-----END PGP SIGNATURE-----
+
+--=-h0qekHEZ+L+n3AONK2yC--
