@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab3FYCNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 22:13:07 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:46207 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751165Ab3FYCNF (ORCPT
+	id S1751768Ab3FYCNk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 22:13:40 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:35983 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3FYCNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 22:13:05 -0400
-X-Sasl-enc: b1QA3scrXoILvjs7eJnz3uFzrb5CCk6ALIniKqGdpID8 1372126383
-Date: Mon, 24 Jun 2013 19:13:46 -0700
-From: Greg KH <greg@kroah.com>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-ID: <20130625021346.GA18752@kroah.com>
-References: <20130619181031.8b53acc44466ba70a47e1fcd@canb.auug.org.au>
- <CA+a=Yy4z-ufq2GEtzC17TBbrNGWv6ZUzuVe=VLBH48Df=3HZxA@mail.gmail.com>
- <20130624224035.GD24099@kroah.com>
- <20130625094051.b9cf8f8950eeeeed0dd266b2@canb.auug.org.au>
- <20130624235003.GA1263@kroah.com>
- <51C8E2D9.2070304@gmail.com>
+	Mon, 24 Jun 2013 22:13:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C8E2D9.2070304@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130624101454.GG27646@sirena.org.uk>
+References: <1371713467-3256-1-git-send-email-chao.xie@marvell.com>
+	<20130621152416.GC27646@sirena.org.uk>
+	<CADApbeigFTQNhxR-CVBGUhXvg+jVtt7ZVvEHuKqeSA80CFz-dQ@mail.gmail.com>
+	<20130624101454.GG27646@sirena.org.uk>
+Date: Tue, 25 Jun 2013 10:13:38 +0800
+Message-ID: <CADApbeh7upEmy7URYvoMdU0jUR4qC-a+AErH5ND5QG5xwVdAdg@mail.gmail.com>
+Subject: Re: [PATCH V2] regulator: 88pm800: add regulator driver for 88pm800
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Chao Xie <chao.xie@marvell.com>, lgirdwood@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        yizhang@marvell.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 08:22:49AM +0800, Peng Tao wrote:
-> On 06/25/2013 07:50 AM, Greg KH wrote:
-> >On Tue, Jun 25, 2013 at 09:40:51AM +1000, Stephen Rothwell wrote:
-> >>Hi Greg,
-> >>
-> >>On Mon, 24 Jun 2013 15:40:35 -0700 Greg KH <greg@kroah.com> wrote:
-> >>>We are running out of time, my tree is pretty much closed for 3.11 now,
-> >>>should I just disable the build of this module for 3.11?
-> >>That's what I've been doing - it has never been enabled in a final
-> >>linux-next release.  So, it should probably just be disabled properly.
-> >I agree, now disabled.
-> >
-> >greg k-h
-> Greg,
-> 
-> Sorry for the delay. I've been caught up by other build failures
-> that were found during my tests. I'm sending you the latest patches
-> that should fix all the build errors. I've verified that we can now
-> pass build on sparc/mips/s390/powerpc/x86, both 32bits and 64bits.
-> Please help to queue them.
-> 
-> I see that you have already disabled Lustre build. Can we re-enable
-> it or do we have to wait until 3.10 is released?
+On Mon, Jun 24, 2013 at 6:14 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Mon, Jun 24, 2013 at 10:01:39AM +0800, Chao Xie wrote:
+>> On Fri, Jun 21, 2013 at 11:24 PM, Mark Brown <broonie@kernel.org> wrote:
+>
+>> > Just provide get_voltage_sel(), the core will do the mapping to voltages
+>> > using list_voltage().
+>
+>> I am a little confused.
+>> The BUCK voltage is not linear, and it contains a lot of voltages.
+>> If we use map_voltage_ascend, it will looking a a suitable voltage
+>> from begin to end one by one.
+>
+> What does this have to do with get_voltage()?  And note that you can
+> write your own mapping function for a reason...
+>
+>> If we directly make use of set_voltage and get_voltage, we can
+>> directly calculates the voltage which is
+>> suitable, and do not go through all the voltags.
+>> for example, now BUCK voltage table is
+>> range 1 from 600000 to 1587500, each step is 12500
+>> range 2 from 1600000 to 1800000, each step is 50000
+>
+> No, this is nothing at all to do with using the selector versions of the
+> API.  Think about what the API is doing and take a look at the code.
+>
+OK. I will try to define my own mapping function and use the sel APIs.
 
-My trees mare now closed for 3.11, given that 3.10 will be released in
-less than a week.  I'll keep patches in my to-apply mailbox, which I
-will then apply after 3.11-rc1 is out, so I'll not be accepting anything
-for the next 3 weeks or so.
+>> >> +     } else if (pdata->num_regulators) {
+>> >> +             /* Check whether num_regulator is valid. */
+>> >> +             unsigned int count = 0;
+>> >> +             for (i = 0; pdata->regulators[i]; i++)
+>> >> +                     count++;
+>> >> +             if (count != pdata->num_regulators)
+>> >> +                     return -EINVAL;
+>
+>> > This looks...  odd.
+>
+>> It is just make sure that pdata has correct number of regulators.
+>> It you think that it is redundant, i can remove it.
+>
+> If you really need to have platform data for all the regulators then
+> just embed the array inside the platform data so there's no possibility
+> of any confusion.
+>
+Some regulators will not be exported to kernel depending on boards which are
+for special usage. So i do not use a array inside the platform data.
 
-thanks,
-
-greg k-h
+>> > With deferred probing you should just be able to use
+>> > module_platform_driver().
+>
+>> The regulator controlles some BUCK regulators.
+>> These regulators may be used by application CPU or CP(communication
+>> CPU) for telephony.
+>> The CP may need different voltages if it goes deep initialization. if
+>> we defer the setting later, it is too late for
+>> CP initialization, and will impact the performance.
+>
+> If your kernel startup is taking long enough for this to be an issue it
+> seems like there's much bigger problems here and things are going to be
+> very fragile anyway, it's going to be better to figure out what the root
+> issue is.
+I see. I will use module_platform_driver
