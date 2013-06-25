@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab3FYS4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:56:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41104 "EHLO
+	id S1753782Ab3FYS4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:56:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab3FYSeQ (ORCPT
+	with ESMTP id S1752691Ab3FYSeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:34:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anders Hammarquist <iko@iko.pp.se>
-Subject: [ 85/95] USB: serial: ti_usb_3410_5052: new device id for Abbot strip port cable
-Date: Tue, 25 Jun 2013 11:33:12 -0700
-Message-Id: <20130625182203.226777274@linuxfoundation.org>
+        Sriram Narasimhan <sriram.narasimhan@hp.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 60/95] tuntap: forbid changing mq flag for persistent device
+Date: Tue, 25 Jun 2013 11:32:47 -0700
+Message-Id: <20130625182200.392392501@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,45 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anders Hammarquist <iko@iko.pp.se>
+From: Jason Wang <jasowang@redhat.com>
 
-commit 35a2fbc941accd0e9f1bfadd669311786118d874 upstream.
+[ Upstream commit 8e6d91ae0917bf934ed86411148f79d904728d51 ]
 
-Add product id for Abbott strip port cable for Precision meter which
-uses the TI 3410 chip.
+We currently allow changing the mq flag (IFF_MULTI_QUEUE) for a persistent
+device. This will result a mismatch between the number the queues in netdev and
+tuntap. This is because we only allocate a 1q netdevice when IFF_MULTI_QUEUE was
+not specified, so when we set the IFF_MULTI_QUEUE and try to attach more queues
+later, netif_set_real_num_tx_queues() may fail which result a single queue
+netdevice with multiple sockets attached.
 
-Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
+Solve this by disallowing changing the mq flag for persistent device.
+
+Bug was introduced by commit edfb6a148ce62e5e19354a1dcd9a34e00815c2a1
+(tuntap: reduce memory using of queues).
+
+Reported-by: Sriram Narasimhan <sriram.narasimhan@hp.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/ti_usb_3410_5052.c |    3 ++-
- drivers/usb/serial/ti_usb_3410_5052.h |    4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/tun.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -178,7 +178,8 @@ static struct usb_device_id ti_id_table_
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- };
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1585,6 +1585,10 @@ static int tun_set_iff(struct net *net,
+ 		else
+ 			return -EINVAL;
  
---- a/drivers/usb/serial/ti_usb_3410_5052.h
-+++ b/drivers/usb/serial/ti_usb_3410_5052.h
-@@ -52,7 +52,9 @@
- 
- /* Abbott Diabetics vendor and product ids */
- #define ABBOTT_VENDOR_ID		0x1a61
--#define ABBOTT_PRODUCT_ID		0x3410
-+#define ABBOTT_STEREO_PLUG_ID		0x3410
-+#define ABBOTT_PRODUCT_ID		ABBOTT_STEREO_PLUG_ID
-+#define ABBOTT_STRIP_PORT_ID		0x3420
- 
- /* Commands */
- #define TI_GET_VERSION			0x01
++		if (!!(ifr->ifr_flags & IFF_MULTI_QUEUE) !=
++		    !!(tun->flags & TUN_TAP_MQ))
++			return -EINVAL;
++
+ 		if (tun_not_capable(tun))
+ 			return -EPERM;
+ 		err = security_tun_dev_open(tun->security);
 
 
