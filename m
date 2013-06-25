@@ -1,112 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab3FYTW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:22:59 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64011 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab3FYTW5 (ORCPT
+	id S1751806Ab3FYTXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:23:31 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45512 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab3FYTXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 15:22:57 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 25 Jun 2013 12:23:00 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/17] 3.0.84-stable review
-Message-ID: <20130625192300.GA10427@roeck-us.net>
-References: <20130625183915.443950649@linuxfoundation.org>
+	Tue, 25 Jun 2013 15:23:24 -0400
+Message-ID: <51C9ED61.1060306@linux.vnet.ibm.com>
+Date: Wed, 26 Jun 2013 00:50:01 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130625183915.443950649@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Michael Ellerman <michael@ellerman.id.au>, tglx@linutronix.de,
+        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ian Munsie <imunsie@au1.ibm.com>
+Subject: Re: [PATCH 40/45] powerpc, irq: Use GFP_ATOMIC allocations in atomic
+ context
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com> <20130623134657.19094.93687.stgit@srivatsabhat.in.ibm.com> <20130625020842.GD14051@concordia> <1372126384.3944.177.camel@pasglop> <20130625025858.GE14051@concordia> <1372130007.3944.185.camel@pasglop>
+In-Reply-To: <1372130007.3944.185.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062519-9574-0000-0000-000008759AF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 11:39:15AM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.0.84 release.
-> There are 17 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On 06/25/2013 08:43 AM, Benjamin Herrenschmidt wrote:
+> On Tue, 2013-06-25 at 12:58 +1000, Michael Ellerman wrote:
+>> On Tue, Jun 25, 2013 at 12:13:04PM +1000, Benjamin Herrenschmidt wrote:
+>>> On Tue, 2013-06-25 at 12:08 +1000, Michael Ellerman wrote:
+>>>> We're not checking for allocation failure, which we should be.
+>>>>
+>>>> But this code is only used on powermac and 85xx, so it should probably
+>>>> just be a TODO to fix this up to handle the failure.
+>>>
+>>> And what can we do if they fail ?
+>>
+>> Fail up the chain and not unplug the CPU presumably.
 > 
-> Responses should be made by Thu Jun 27 18:35:59 UTC 2013.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.84-rc1.gz
-> and the diffstat can be found below.
-> 
-Build results are as follows. I did not check every failure, but as far as I
-recall there are no new failures.
+> BTW. Isn't Srivatsa series removing the need to stop_machine() for
+> unplug ? 
 
-Guenter
+Yes.
 
---
+That should mean we should be able to use GFP_KERNEL no ?
 
-Build reference: v3.0.83-17-g45bec3c
+No, because whatever code was being executed in stop_machine() context
+would still be executed with interrupts disabled. So allocations that
+can sleep would continue to be forbidden in this path.
 
-Build x86_64:defconfig passed
-Build x86_64:allyesconfig passed
-Build x86_64:allmodconfig passed
-Build x86_64:allnoconfig passed
-Build x86_64:alldefconfig passed
-Build i386:defconfig passed
-Build i386:allyesconfig passed
-Build i386:allmodconfig passed
-Build i386:allnoconfig passed
-Build i386:alldefconfig passed
-Build mips:defconfig passed
-Build mips:bcm47xx_defconfig passed
-Build mips:bcm63xx_defconfig passed
-Build mips:ar7_defconfig passed
-Build mips:fuloong2e_defconfig passed
-Build mips:e55_defconfig passed
-Build mips:powertv_defconfig passed
-Build mips:malta_defconfig passed
-Build powerpc:defconfig failed
-Build powerpc:allyesconfig failed
-Build powerpc:allmodconfig failed
-Build powerpc:maple_defconfig failed
-Build powerpc:ppc6xx_defconfig passed
-Build powerpc:mpc83xx_defconfig passed
-Build powerpc:mpc85xx_defconfig passed
-Build powerpc:mpc85xx_smp_defconfig passed
-Build powerpc:tqm8xx_defconfig passed
-Build powerpc:85xx/sbc8548_defconfig passed
-Build powerpc:83xx/mpc834x_mds_defconfig passed
-Build powerpc:86xx/sbc8641d_defconfig passed
-Build arm:defconfig passed
-Build arm:allyesconfig failed
-Build arm:allmodconfig failed
-Build arm:exynos4_defconfig passed
-Build arm:kirkwood_defconfig passed
-Build arm:omap2plus_defconfig passed
-Build arm:tegra_defconfig passed
-Build arm:u8500_defconfig failed
-Build arm:ap4evb_defconfig passed
-Build arm:pxa910_defconfig passed
-Build m68k:defconfig passed
-Build m68k:apollo_defconfig passed
-Build m68k:m5272c3_defconfig failed
-Build m68k:m5307c3_defconfig failed
-Build m68k:m5249evb_defconfig failed
-Build m68k:m5407c3_defconfig failed
-Build m68k:mac_defconfig passed
-Build m68k:multi_defconfig passed
-Build m68k:sun3_defconfig passed
-Build m68k:sun3x_defconfig passed
-Build m68k:mvme16x_defconfig passed
-Build m68k:hp300_defconfig passed
-Build sparc:defconfig passed
-Build sparc:sparc64_defconfig passed
-Build xtensa:defconfig failed
-Build xtensa:iss_defconfig failed
-Build microblaze:mmu_defconfig failed
-Build microblaze:nommu_defconfig failed
-Build blackfin:defconfig failed
-Build parisc:defconfig failed
+In the CPU unplug sequence, the CPU_DYING notifications (and the surrounding
+code) is guaranteed to be run:
+a. _on_ the CPU going offline
+b. with interrupts disabled on that CPU.
 
------------------------
-Total builds: 60 Total build errors: 17
+My patchset will retain these guarantees even after removing stop_machine().
+And these are required for the correct execution of the code in this path,
+since they rely on these semantics.
+
+So I guess I'll retain the patch as it is. Thank you!
+
+Regards,
+Srivatsa S. Bhat
+
