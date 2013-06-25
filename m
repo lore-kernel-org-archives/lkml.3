@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab3FYHba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 03:31:30 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:52955 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab3FYHb2 (ORCPT
+	id S1751775Ab3FYHbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 03:31:42 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27843 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751274Ab3FYHbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 03:31:28 -0400
-Date: Tue, 25 Jun 2013 09:31:22 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, holt@sgi.com, travis@sgi.com,
-        rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
-        yinghai@kernel.org, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
-Message-ID: <20130625073122.GB11420@gmail.com>
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
- <1371831934-156971-3-git-send-email-nzimmer@sgi.com>
- <20130623092840.GB13445@gmail.com>
- <20130623093250.GA13776@gmail.com>
- <51C88400.7090907@zytor.com>
- <20130624193959.GB4065@gmail.com>
- <51C8A728.8010409@zytor.com>
+	Tue, 25 Jun 2013 03:31:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18u21UPiXGYqYkkDzS0DSOi
+Date: Tue, 25 Jun 2013 00:31:35 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] pinctrl: document the pinctrl PM states
+Message-ID: <20130625073134.GE5523@atomide.com>
+References: <1370980749-15383-1-git-send-email-linus.walleij@stericsson.com>
+ <51BA1FE7.4000900@wwwdotorg.org>
+ <CACRpkdZV7R3MgbuvEMhs24YYv2hK8Kt9Kjmv_cpRQQ1NYviDQg@mail.gmail.com>
+ <51BB3A2C.608@wwwdotorg.org>
+ <20130617072021.GB4465@atomide.com>
+ <CACRpkdYwGHMznjoJqf5bX_74pmeKSiWtTwpNF1_4GSEk+KwrZA@mail.gmail.com>
+ <20130617180212.GU20992@atomide.com>
+ <CACRpkdY7hF+9s0f64yc09DHLFQCjzzhPoS-ypBmgit=kFFD0Mg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51C8A728.8010409@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdY7hF+9s0f64yc09DHLFQCjzzhPoS-ypBmgit=kFFD0Mg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 06/24/2013 12:39 PM, Ingo Molnar wrote:
-> > 
-> > That might be a bit too granular: if we hit such an uninitialized block of 
-> > memory we'd have to process 262,144 pages - potentially from an IRQ 
-> > handler that does GFP_ATOMIC... or other latency critical code.
-> > 
-> > With 2MB we'd have to on-demand initialize 512 pages, which shouldn't show 
-> > up during normal use.
-> > 
+* Linus Walleij <linus.walleij@linaro.org> [130624 05:43]:
+> On Mon, Jun 17, 2013 at 8:02 PM, Tony Lindgren <tony@atomide.com> wrote:
+> > * Linus Walleij <linus.walleij@linaro.org> [130617 09:11]:
 > 
-> No... you split the gigabyte page into 511 2M pages and 512 4K pages.
+> >> Bear in mind that struct pinctl * forks effects in two paths,
+> >> one is muxing the other is config, like pull-ups etc.
+> >
+> > I also thought the plan was to merge pinmux and pinconf and
+> > do things based the named modes?
+> 
+> That is done from a consumer point of view.
+> Consumers only care about pinctrl * handles
+> and pinctrl_state * switches.
+> 
+> > The last time I tried using the pinconf functions it involved
+> > knowing the name of the pin in the consumer driver. The name
+> > may not be very descriptive in the device tree cases at least
+> > for the pinctrl-single. So I did not pay much attention to
+> > the pinconf functions.
+> 
+> Consumers should not use that interface, i.e.:
+> 
+> int pin_config_get(const char *dev_name, const char *name,
+>                                 unsigned long *config);
+> int pin_config_set(const char *dev_name, const char *name,
+>                                  unsigned long config)
+> 
+> This needs to be deleted from <linux/pinctrl/consumer.h>
+> I'll see if I can get rid of it pronto to avoid any more confusion
+> and sorry for leaving that in place for too long.
+> 
+> The proper way to use it is to use the states.
 
-Oh, double deferred initialization. That should solve the 32 exabyte 
-problem as well I guess ;-)
+OK thanks for clarifying that. Yes I think the named states
+is a good way to handle the pins in a generic way.
 
-Thanks,
+Regards,
 
-	Ingo
+Tony
+
