@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab3FYJ7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 05:59:12 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:33130 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab3FYJ7J (ORCPT
+	id S1752563Ab3FYJ7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 05:59:48 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:41403 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3FYJ7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 05:59:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130624084338.GI28407@twins.programming.kicks-ass.net>
-References: <1371824448-7306-1-git-send-email-eranian@google.com>
-	<20130624084338.GI28407@twins.programming.kicks-ass.net>
-Date: Tue, 25 Jun 2013 11:59:09 +0200
-Message-ID: <CABPqkBRqiNVZnioV_R4sfam1QwHwXZgo36Gixxg5ALPbLbiXfw@mail.gmail.com>
-Subject: Re: [PATCH 0/8] perf: add ability to sample physical data addresses
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 25 Jun 2013 05:59:47 -0400
+Date: Tue, 25 Jun 2013 11:59:44 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Samu Onkalo <samu.p.onkalo@nokia.com>,
+        michael.opdenacker@free-electrons.com,
+        gregory.clement@free-electrons.com, maxime.ripard@free-electrons.com,
+        alexandre.belloni@free-electrons.com
+Subject: Re: [PATCH] char: misc: assign file->private_data in all cases
+Message-ID: <20130625115944.28fc447b@skate>
+In-Reply-To: <20130624222642.GA24099@kroah.com>
+References: <1371819665-3882-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	<20130624222642.GA24099@kroah.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 10:43 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Jun 21, 2013 at 04:20:40PM +0200, Stephane Eranian wrote:
->> This patch series extends perf_events with the ability to sample
->> physical data addresses. This is useful with the memory access
->> sampling mode added just recently. In particular, it helps
->> disambiguate data addresses between two processes, such as
->> in the case of a shared memory segment mapped at different
->> addresses in different processes.
->>
->> The patch adds the PERF_SAMPLE_PHYS_ADDR sample_type.
->> A 64-bit address is added to the sample record for
->> the corresponding event.
->>
->> On Intel X86, it is used with the PEBS Load Latency
->> support. On other architectures, zero is returned.
->>
->> The patch series also demonstrates the use of this
->> new feature by extending perf report, mem, record
->> with a --phys-addr option. When enable, it will
->> capture physical data address and display it.
->> This is implemented as a new sort_order (symbol_paddr).
->>
->
-> So I'm a bit puzzled by this thing...
->
-> What exact problem are we trying to solve here? Only the shared memory
-> mapped at different addresses between processes thing mentioned earlier?
->
-That is indeed one problem I am trying to address here based on actual
-feedback of people building tools on top of PEBS-LL.
+Dear Greg Kroah-Hartman,
 
-> The big problem I see with all this is that typically memory is subject
-> to being moved about at random; be it either from paging, compaction,
-> NUMA policies or explicit page migration.
->
-One guarantee we have is that the physical does correspond to the virtual
-address at the time of the interrupt.
+On Mon, 24 Jun 2013 15:26:42 -0700, Greg Kroah-Hartman wrote:
 
-But yeah, if physical pages are swapped during the run, then things become
-a lot more complicated. I am not trying to address this.
+> > However, this assignment was only done when the misc driver was
+> > declaring a driver-specific ->open() operation in its
+> > file_operations. This doesn't make sense, as the driver may not
+> > necessarily have a custom ->open() operation, and might still be
+> > interested in having file->private_data properly set for use in its
+> > ->read() and write() operations.
+> > 
+> > Therefore, we move the assignment of file->private_data outside of the
+> > condition that tests whether a driver-specific ->open() operation was
+> > defined.
+> 
+> Does this solve a problem with an existing misc driver?  Or are you just
+> trying to be "safe" for future, broken, drivers?
 
-Can page move for shared memory segments?
+This problem was spotted while implementing a dummy/example misc driver
+for training purposes. I am not aware of any mainline misc driver
+affected by this problem, but I haven't reviewed all misc drivers.
 
+It simply seems to make sense to implement the feature of fa1f68db6ca
+("drivers: misc: pass miscdevice pointer via file private data") in a
+way that also allows misc drivers that do not provide their own
+->open() operation to use it.
 
-> Such would completely shatter physical page relations.
->
-> If the shared memory thing is really the issue, doesn't perf already
-> have the process memory layout (/proc/$PID/maps and aux stream mmap
-> updates) with which it can compute map relative offsets and compare
-> thusly?
+That said, I'm not sure why you call such drivers 'broken'.
 
-Not sure I understand this.
-suppose the same shared memory segment is mapped at two different
-addresses by shmat(). First, I don't know if those show up in /proc/maps.
-Second, what offset are you talking about here?
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
