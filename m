@@ -1,79 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab3FYIKu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:10:50 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:41497 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab3FYIKp (ORCPT
+	id S1752333Ab3FYILq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:11:46 -0400
+Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:35674 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751506Ab3FYILn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:10:45 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <201306251001.12430.yann.morin.1998@free.fr>
-References: <cover.1372097219.git.yann.morin.1998@free.fr>
-	<8357b48549e17b3e4e402c7f977b65708922e60f.1372097219.git.yann.morin.1998@free.fr>
-	<201306251001.12430.yann.morin.1998@free.fr>
-Date: Tue, 25 Jun 2013 10:10:44 +0200
-Message-ID: <CA+icZUW69zkZice9K4Q2Fr=nuC3KCOr2ZXRZFymYadsxCvB1tA@mail.gmail.com>
-Subject: Re: [PATCH 15/15] kconfig: fix randomising choice entries in presence
- of KCONFIG_ALLCONFIG
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Alexander Kriegisch <Alexander@kriegisch.name>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 25 Jun 2013 04:11:43 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Chris Ball <cjb@laptop.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH v2 2/4] mmc: atmel-mci: prepare clk before calling enable
+Date: Tue, 25 Jun 2013 10:11:31 +0200
+Message-Id: <1372147891-4296-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
+References: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 5843139043080435820
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 10:01 AM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
-> Michal, All,
->
-> On Monday 24 June 2013 20:11:59 Yann E. MORIN wrote:
->> Currently, randconfig does randomise choice entries, unless KCONFIG_ALLCONFIG
->> is specified.
-> [--SNIP--]
->> This patch defers setting that a choice has a value until a symbol for
->> that choice is indeed set, so that choices are properly randomised when
->> KCONFIG_ALLCONFIG is set, but not if a symbol for that choice is set.
->
-> I've just been informed by Fengguang that this patch breaks yet another
-> use-case of his, but this time KCONFIG_ALLCONFIG is not involved.
->
-> I'll investigate this issue when I'm back home tonight (ie. ~16:00 UTC).
-> Sorry for the breakage (again...). :-(
->
-> We really need a known, shared test-suite for kconfig... :-/
->
+Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+avoid common clk framework warnings.
 
-[ CC Alexander ]
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ drivers/mmc/host/atmel-mci.c |   27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
-A-propos, "testing Kconfig" I recommended to take into account the
-script of Alexander.
-In PM we discussed on where to place such scripts and that Alexander's
-patch needs some refreshing in your eyes.
-Maybe, Alexander can/will help as he is the original author.
-As said, this script helped in the Freetz router project to eliminate
-dozens of (logically) wrong Kconfig settings.
-IMHO there exist a lot of more, as there are "double/triple" checks in
-the Freetz-buildsystem, but hey noone is perfect :-).
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index e75774f..631c4cf 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -380,6 +380,8 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+ {
+ 	struct atmel_mci	*host = s->private;
+ 	u32			*buf;
++	int			ret = 0;
++
+ 
+ 	buf = kmalloc(ATMCI_REGS_SIZE, GFP_KERNEL);
+ 	if (!buf)
+@@ -391,9 +393,13 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+ 	 * consistent.
+ 	 */
+ 	spin_lock_bh(&host->lock);
+-	clk_enable(host->mck);
++	ret = clk_prepare_enable(host->mck);
++	if (ret) {
++		spin_unlock_bh(&host->lock);
++		goto out;
++	}
+ 	memcpy_fromio(buf, host->regs, ATMCI_REGS_SIZE);
+-	clk_disable(host->mck);
++	clk_disable_unprepare(host->mck);
+ 	spin_unlock_bh(&host->lock);
+ 
+ 	seq_printf(s, "MR:\t0x%08x%s%s ",
+@@ -444,9 +450,10 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+ 				val & ATMCI_CFG_LSYNC ? " LSYNC" : "");
+ 	}
+ 
++out:
+ 	kfree(buf);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int atmci_regs_open(struct inode *inode, struct file *file)
+@@ -1281,7 +1288,7 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 
+ 		spin_lock_bh(&host->lock);
+ 		if (!host->mode_reg) {
+-			clk_enable(host->mck);
++			clk_prepare_enable(host->mck);
+ 			atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
+ 			atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIEN);
+ 			if (host->caps.has_cfg_reg)
+@@ -1361,7 +1368,7 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 			atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
+ 			if (host->mode_reg) {
+ 				atmci_readl(host, ATMCI_MR);
+-				clk_disable(host->mck);
++				clk_disable_unprepare(host->mck);
+ 			}
+ 			host->mode_reg = 0;
+ 		}
+@@ -2379,10 +2386,12 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 	if (!host->regs)
+ 		goto err_ioremap;
+ 
+-	clk_enable(host->mck);
++	ret = clk_prepare_enable(host->mck);
++	if (ret)
++		goto err_request_irq;
+ 	atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
+ 	host->bus_hz = clk_get_rate(host->mck);
+-	clk_disable(host->mck);
++	clk_disable_unprepare(host->mck);
+ 
+ 	host->mapbase = regs->start;
+ 
+@@ -2487,11 +2496,11 @@ static int __exit atmci_remove(struct platform_device *pdev)
+ 			atmci_cleanup_slot(host->slot[i], i);
+ 	}
+ 
+-	clk_enable(host->mck);
++	clk_prepare_enable(host->mck);
+ 	atmci_writel(host, ATMCI_IDR, ~0UL);
+ 	atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
+ 	atmci_readl(host, ATMCI_SR);
+-	clk_disable(host->mck);
++	clk_disable_unprepare(host->mck);
+ 
+ 	if (host->dma.chan)
+ 		dma_release_channel(host->dma.chan);
+-- 
+1.7.9.5
 
-- Sedat -
-
-[1] http://freetz.org/browser/trunk/tools/developer/create-kconfig-warnings
-
-> Regards,
-> Yann E. MORIN.
->
-> --
-> .-----------------.--------------------.------------------.--------------------.
-> |  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-> | +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
-> | --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
-> | http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
-> '------------------------------'-------'------------------'--------------------'
