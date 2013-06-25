@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab3FYTDQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:03:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40996 "EHLO
+	id S1753530Ab3FYTDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:03:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40992 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab3FYSd7 (ORCPT
+	with ESMTP id S1752495Ab3FYSd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:33:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
+        Nandita Dukkipati <nanditad@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 51/95] 8139cp: reset BQL when ring tx ring cleared
-Date: Tue, 25 Jun 2013 11:32:38 -0700
-Message-Id: <20130625182159.397184396@linuxfoundation.org>
+Subject: [ 52/95] tcp: bug fix in proportional rate reduction.
+Date: Tue, 25 Jun 2013 11:32:39 -0700
+Message-Id: <20130625182159.507444188@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,30 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Nandita Dukkipati <nanditad@google.com>
 
-[ Upstream commit 98962baad72fd6d393bf39dbb7c2076532c363c6 ]
+[ Upstream commit 35f079ebbc860dcd1cca70890c9c8d59c1145525 ]
 
-This patch cures transmit timeout's with DHCP observed
-while running under KVM. When the transmit ring is cleaned out,
-the Byte Queue Limit values need to be reset.
+This patch is a fix for a bug triggering newly_acked_sacked < 0
+in tcp_ack(.).
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+The bug is triggered by sacked_out decreasing relative to prior_sacked,
+but packets_out remaining the same as pior_packets. This is because the
+snapshot of prior_packets is taken after tcp_sacktag_write_queue() while
+prior_sacked is captured before tcp_sacktag_write_queue(). The problem
+is: tcp_sacktag_write_queue (tcp_match_skb_to_sack() -> tcp_fragment)
+adjusts the pcount for packets_out and sacked_out (MSS change or other
+reason). As a result, this delta in pcount is reflected in
+(prior_sacked - sacked_out) but not in (prior_packets - packets_out).
+
+This patch does the following:
+1) initializes prior_packets at the start of tcp_ack() so as to
+capture the delta in packets_out created by tcp_fragment.
+2) introduces a new "previous_packets_out" variable that snapshots
+packets_out right before tcp_clean_rtx_queue, so pkts_acked can be
+correctly computed as before.
+3) Computes pkts_acked using previous_packets_out, and computes
+newly_acked_sacked using prior_packets.
+
+Signed-off-by: Nandita Dukkipati <nanditad@google.com>
+Acked-by: Yuchung Cheng <ycheng@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/realtek/8139cp.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/tcp_input.c |   23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -1136,6 +1136,7 @@ static void cp_clean_rings (struct cp_pr
- 			cp->dev->stats.tx_dropped++;
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -2885,8 +2885,8 @@ static void tcp_enter_recovery(struct so
+  * tcp_xmit_retransmit_queue().
+  */
+ static void tcp_fastretrans_alert(struct sock *sk, int pkts_acked,
+-				  int prior_sacked, bool is_dupack,
+-				  int flag)
++				  int prior_sacked, int prior_packets,
++				  bool is_dupack, int flag)
+ {
+ 	struct inet_connection_sock *icsk = inet_csk(sk);
+ 	struct tcp_sock *tp = tcp_sk(sk);
+@@ -2952,7 +2952,8 @@ static void tcp_fastretrans_alert(struct
+ 				tcp_add_reno_sack(sk);
+ 		} else
+ 			do_lost = tcp_try_undo_partial(sk, pkts_acked);
+-		newly_acked_sacked = pkts_acked + tp->sacked_out - prior_sacked;
++		newly_acked_sacked = prior_packets - tp->packets_out +
++				     tp->sacked_out - prior_sacked;
+ 		break;
+ 	case TCP_CA_Loss:
+ 		if (flag & FLAG_DATA_ACKED)
+@@ -2974,7 +2975,8 @@ static void tcp_fastretrans_alert(struct
+ 			if (is_dupack)
+ 				tcp_add_reno_sack(sk);
  		}
- 	}
-+	netdev_reset_queue(cp->dev);
+-		newly_acked_sacked = pkts_acked + tp->sacked_out - prior_sacked;
++		newly_acked_sacked = prior_packets - tp->packets_out +
++				     tp->sacked_out - prior_sacked;
  
- 	memset(cp->rx_ring, 0, sizeof(struct cp_desc) * CP_RX_RING_SIZE);
- 	memset(cp->tx_ring, 0, sizeof(struct cp_desc) * CP_TX_RING_SIZE);
+ 		if (icsk->icsk_ca_state <= TCP_CA_Disorder)
+ 			tcp_try_undo_dsack(sk);
+@@ -3597,9 +3599,10 @@ static int tcp_ack(struct sock *sk, cons
+ 	bool is_dupack = false;
+ 	u32 prior_in_flight;
+ 	u32 prior_fackets;
+-	int prior_packets;
++	int prior_packets = tp->packets_out;
+ 	int prior_sacked = tp->sacked_out;
+ 	int pkts_acked = 0;
++	int previous_packets_out = 0;
+ 	bool frto_cwnd = false;
+ 
+ 	/* If the ack is older than previous acks
+@@ -3670,14 +3673,14 @@ static int tcp_ack(struct sock *sk, cons
+ 	sk->sk_err_soft = 0;
+ 	icsk->icsk_probes_out = 0;
+ 	tp->rcv_tstamp = tcp_time_stamp;
+-	prior_packets = tp->packets_out;
+ 	if (!prior_packets)
+ 		goto no_queue;
+ 
+ 	/* See if we can take anything off of the retransmit queue. */
++	previous_packets_out = tp->packets_out;
+ 	flag |= tcp_clean_rtx_queue(sk, prior_fackets, prior_snd_una);
+ 
+-	pkts_acked = prior_packets - tp->packets_out;
++	pkts_acked = previous_packets_out - tp->packets_out;
+ 
+ 	if (tp->frto_counter)
+ 		frto_cwnd = tcp_process_frto(sk, flag);
+@@ -3692,7 +3695,7 @@ static int tcp_ack(struct sock *sk, cons
+ 			tcp_cong_avoid(sk, ack, prior_in_flight);
+ 		is_dupack = !(flag & (FLAG_SND_UNA_ADVANCED | FLAG_NOT_DUP));
+ 		tcp_fastretrans_alert(sk, pkts_acked, prior_sacked,
+-				      is_dupack, flag);
++				      prior_packets, is_dupack, flag);
+ 	} else {
+ 		if ((flag & FLAG_DATA_ACKED) && !frto_cwnd)
+ 			tcp_cong_avoid(sk, ack, prior_in_flight);
+@@ -3709,7 +3712,7 @@ no_queue:
+ 	/* If data was DSACKed, see if we can undo a cwnd reduction. */
+ 	if (flag & FLAG_DSACKING_ACK)
+ 		tcp_fastretrans_alert(sk, pkts_acked, prior_sacked,
+-				      is_dupack, flag);
++				      prior_packets, is_dupack, flag);
+ 	/* If this ack opens up a zero window, clear backoff.  It was
+ 	 * being used to time the probes, and is probably far higher than
+ 	 * it needs to be for normal retransmission.
+@@ -3729,7 +3732,7 @@ old_ack:
+ 	if (TCP_SKB_CB(skb)->sacked) {
+ 		flag |= tcp_sacktag_write_queue(sk, skb, prior_snd_una);
+ 		tcp_fastretrans_alert(sk, pkts_acked, prior_sacked,
+-				      is_dupack, flag);
++				      prior_packets, is_dupack, flag);
+ 	}
+ 
+ 	SOCK_DEBUG(sk, "Ack %u before %u:%u\n", ack, tp->snd_una, tp->snd_nxt);
 
 
