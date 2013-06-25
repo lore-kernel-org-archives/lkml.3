@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab3FYPbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:31:07 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35972 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab3FYPbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:31:05 -0400
-Message-ID: <51C9B7B4.6030109@wwwdotorg.org>
-Date: Tue, 25 Jun 2013 09:31:00 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752534Ab3FYPew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:34:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38989 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751264Ab3FYPev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 11:34:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
+   d="scan'208";a="259934962"
+Message-ID: <51C9B88C.1080401@linux.intel.com>
+Date: Tue, 25 Jun 2013 18:34:36 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Christian Ruppert <christian.ruppert@abilis.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
-References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com> <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com> <51BA3BC1.3090109@wwwdotorg.org> <20130614091241.GA23745@ab42.lan> <51C1F42E.5090107@wwwdotorg.org> <51C1F82C.4020502@wwwdotorg.org> <20130620115710.GB942@ab42.lan> <51C4C2ED.5090505@wwwdotorg.org> <CACRpkdb5uVMBg96T5_CLYDMzs5KGB7a+njWd-OKewTm5D2mz1g@mail.gmail.com>
-In-Reply-To: <CACRpkdb5uVMBg96T5_CLYDMzs5KGB7a+njWd-OKewTm5D2mz1g@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: yaniv saar <yaniv.mellanox@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH RFC] net: lls epoll support
+References: <20130619100421.22132.99447.stgit@ladj378.jer.intel.com> <51C1993C.9030204@linux.intel.com> <CALuTh9E5CvV1sfjMJRs7mWwfTm2HpaFFMJWEP10sbSpA8qBMsg@mail.gmail.com>
+In-Reply-To: <CALuTh9E5CvV1sfjMJRs7mWwfTm2HpaFFMJWEP10sbSpA8qBMsg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 08:56 AM, Linus Walleij wrote:
-> On Fri, Jun 21, 2013 at 11:17 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 06/20/2013 05:57 AM, Christian Ruppert wrote:
-> 
->>> Your remark seems to reflect one of the following two hardware
->>> architectures:
->>>
->>>                                                      +- SPI
->>>                  Physical pins --- GPIO --- pinctrl -+- I2C
->>>                                                      +- mmc
+On 25/06/2013 17:26, yaniv saar wrote:
+> On Wed, Jun 19, 2013 at 2:42 PM, Eliezer Tamir
+> <eliezer.tamir@linux.intel.com> wrote:
 >>
->> (that's diagram 1)
+>> [this patch needs the poll patch to be applied first]
+>> with sockperf doing epoll on 1000 sockets I see an avg latency of 6us
 >>
->>>
->>>                                 +- GPIO
->>>                  Physical pins -+           +- SPI
->>>                                 +- pinctrl -+- I2C
->>>                                             +- mmc
->>
->> (that's diagram 2)
->>
->>> TB10x hardware architecture:
->>>
->>>                                             +- SPI
->>>                  Physical pins --- pinctrl -+- I2C
->>>                                             +- mmc
->>>                                             +- GPIO
->>
->> (that's diagram 3)
->>
->> No, I was thinking of diagram 3 above. I'm not sure if diagrams (1) or
->> (2) are common or exist?
-> 
-> The U300 pin controller is obviously of type (1) as it can spy on
-> the signals.
+>
+> hi eliezer,
+>
+> please consider the following solution for epoll that is based on
+> polling dev+queue.
+> instead of looping over the socket as in LLS, maintain in eventpool
+> struct a list of device+queues (qdlist).
 
-U300 HW might be diagram (1) - I can't say since I'm not familiar with
-the HW. However, the fact that GPIO can spy on signals in no way at all
-implies that the HW must conform to diagram (1).
+Thanks for looking into this.
+I'm currently working on a solution that has a lot similar to what you 
+are proposing.
 
-In diagram (2), the pins are routed to both the GPIO and pinctrl module,
-so there's no reason why GPIO couldn't spy on any input signals there too.
+We don't need a new id mechanism, we already have the napi_id.
+The nice thing about the napi_id is that the only locking it needs
+is an rcu_read_lock when dereferencing.
 
-Even in diagram 3, GPIO may be able to spy. The issue is how the
-"inbound" muxes work.
+we don't need to remember the ll_usec value of each socket because
+the patch for select/poll (currently waiting for review) added
+a separate sysctl value for poll.
 
-For output signals from HW modules through the pinctrl HW to the pins,
-there's likely a plain n:1 mux that selects a single signal and drives
-it out.
+I would like to find a way for the user to specify how long to busy
+wait, directly from the system call, but I was not able to find
+a simple way of adding this without a change to the system call
+prototype.
 
-For input signals, there are still some choices; you might have a 1:n
-mux that only drives 1 single HW module's input signals from the pins,
-or you may simply wire the input pin through to all the possible HW
-modules in parallel on the input side, or you may always wire the input
-pin to the GPIO HW module, but have a 1:n mux for the dedicated HW
-modules so that (at most) one of those is driven by the pin, etc.
+we do however need to track when a socket's napi_id changes.
+But for that we can hook into sk_mark_ll().
 
-For reference, the Tegra HW is diagram (3), although actually the GPIO
-module has the register bits that select between GPIO and mux-function
-for each pin! The signals that control this are fed from the GPIO
-register bits into input signals on the pinmux HW, which does all the
-actual muxing. The input path muxing is set up so that without affecting
-the pinmux programming, the GPIO module can spy on any input signal,
-although while doing so, it disconnects the input pin from the dedicated
-mux function, thus potentially causing some disruption.
+so here is a list of proposed changes:
 
-> The Nomadik pin controller is basically type (2).
-> 
-> Maybe this is part of the explanation to why we sometimes tend
-> to talk past each other :-D
-> 
-> (I would replace the string "pinctrl" with "pinmux" above,
-> as I just did in my documentation patch adding these
-> diagrams.)
+1. add a linked list of unique napi_id's to struct eventpoll.
+each id will have a collision list of sockets that have the same id.
+-a hash is gratuitous, we expect the unique list to have 0 to 2
+  elements in most cases.
+
+2. when a new socket is added, if its id is new it gets added to the 
+unique list, otherwise to the collision list of that id.
+
+3. when a socket is removed, if it's on the unique list, replace it
+with the first on its former collision list.
+
+4. add callback mechanism to sk_mark_ll() which will be activated when
+  the mark changes, update the lists.
+(a socket may be polled by more than one epoll so be careful)
+
+5. add  and remove to/from the lists in ep_insert and ep_remove
+  respectively. check if we need to do something for ep_modify().
+
+6. add an ep_poll helper that will round robin polling on the
+files in the unique list.
+
+7. init everything from epoll_create.
+
+locking:
+
+napi_id's are great since they don't need locking except for an
+rcu_read_lock when polling on one.
+
+the lists need a spinlock for adding/removing, maybe they
+can use ep->lock.
+
+callback registration/removal needs to use the same mechanism that
+ep_add / ep_remove use to protect themselves from the rest of epoll.
+
 
