@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab3FYDPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 23:15:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42074 "EHLO gate.crashing.org"
+	id S1752436Ab3FYDSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 23:18:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39255 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab3FYDPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 23:15:07 -0400
-Message-ID: <1372130007.3944.185.camel@pasglop>
-Subject: Re: [PATCH 40/45] powerpc, irq: Use GFP_ATOMIC allocations in
- atomic context
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de,
-        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ian Munsie <imunsie@au1.ibm.com>
-Date: Tue, 25 Jun 2013 13:13:27 +1000
-In-Reply-To: <20130625025858.GE14051@concordia>
-References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
-	 <20130623134657.19094.93687.stgit@srivatsabhat.in.ibm.com>
-	 <20130625020842.GD14051@concordia> <1372126384.3944.177.camel@pasglop>
-	 <20130625025858.GE14051@concordia>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752053Ab3FYDSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 23:18:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,933,1363158000"; 
+   d="scan'208";a="359910808"
+Date: Mon, 24 Jun 2013 23:18:09 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nvme@lists.infradead.org,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
+Message-ID: <20130625031809.GB8211@linux.intel.com>
+References: <20130620201713.GV8211@linux.intel.com>
+ <20130623100920.GA19021@gmail.com>
+ <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
+ <20130624080750.GA21768@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624080750.GA21768@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-25 at 12:58 +1000, Michael Ellerman wrote:
-> On Tue, Jun 25, 2013 at 12:13:04PM +1000, Benjamin Herrenschmidt wrote:
-> > On Tue, 2013-06-25 at 12:08 +1000, Michael Ellerman wrote:
-> > > We're not checking for allocation failure, which we should be.
-> > > 
-> > > But this code is only used on powermac and 85xx, so it should probably
-> > > just be a TODO to fix this up to handle the failure.
-> > 
-> > And what can we do if they fail ?
-> 
-> Fail up the chain and not unplug the CPU presumably.
+On Mon, Jun 24, 2013 at 10:07:51AM +0200, Ingo Molnar wrote:
+> I'm wondering, how will this scheme work if the IO completion latency is a 
+> lot more than the 5 usecs in the testcase? What if it takes 20 usecs or 
+> 100 usecs or more?
 
-BTW. Isn't Srivatsa series removing the need to stop_machine() for
-unplug ? That should mean we should be able to use GFP_KERNEL no ?
+There's clearly a threshold at which it stops making sense, and our
+current NAND-based SSDs are almost certainly on the wrong side of that
+threshold!  I can't wait for one of the "post-NAND" technologies to make
+it to market in some form that makes it economical to use in an SSD.
 
-Cheers,
-Ben.
-
+The problem is that some of the people who are looking at those
+technologies are crazy.  They want to "bypass the kernel" and "do user
+space I/O" because "the kernel is too slow".  This patch is part of an
+effort to show them how crazy they are.  And even if it doesn't convince
+them, at least users who refuse to rewrite their applications to take
+advantage of magical userspace I/O libraries will see real performance
+benefits.
 
