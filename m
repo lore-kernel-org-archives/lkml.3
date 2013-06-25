@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab3FYJ7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 05:59:48 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:41403 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab3FYJ7r (ORCPT
+	id S1752379Ab3FYKKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 06:10:23 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:49706 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3FYKKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 05:59:47 -0400
-Date: Tue, 25 Jun 2013 11:59:44 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Samu Onkalo <samu.p.onkalo@nokia.com>,
-        michael.opdenacker@free-electrons.com,
-        gregory.clement@free-electrons.com, maxime.ripard@free-electrons.com,
-        alexandre.belloni@free-electrons.com
-Subject: Re: [PATCH] char: misc: assign file->private_data in all cases
-Message-ID: <20130625115944.28fc447b@skate>
-In-Reply-To: <20130624222642.GA24099@kroah.com>
-References: <1371819665-3882-1-git-send-email-thomas.petazzoni@free-electrons.com>
-	<20130624222642.GA24099@kroah.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 25 Jun 2013 06:10:21 -0400
+Message-ID: <51C96C89.6080207@hitachi.com>
+Date: Tue, 25 Jun 2013 19:10:17 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 1/2] tracing/kprobes: move free_trace_probe into unregister_trace_probe
+References: <51C951BF.1090509@huawei.com>
+In-Reply-To: <51C951BF.1090509@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg Kroah-Hartman,
-
-On Mon, 24 Jun 2013 15:26:42 -0700, Greg Kroah-Hartman wrote:
-
-> > However, this assignment was only done when the misc driver was
-> > declaring a driver-specific ->open() operation in its
-> > file_operations. This doesn't make sense, as the driver may not
-> > necessarily have a custom ->open() operation, and might still be
-> > interested in having file->private_data properly set for use in its
-> > ->read() and write() operations.
-> > 
-> > Therefore, we move the assignment of file->private_data outside of the
-> > condition that tests whether a driver-specific ->open() operation was
-> > defined.
+(2013/06/25 17:15), zhangwei(Jovi) wrote:
+> There have no good reason to call free_trace_probe
+> every time when unregister_trace_probe return 0.
 > 
-> Does this solve a problem with an existing misc driver?  Or are you just
-> trying to be "safe" for future, broken, drivers?
+> Move free_trace_probe into unregister_trace_probe,
+> make code simpler.
 
-This problem was spotted while implementing a dummy/example misc driver
-for training purposes. I am not aware of any mainline misc driver
-affected by this problem, but I haven't reviewed all misc drivers.
+Sorry, nack. For the symmetrical coding reason, I don't like
+involving "free" and "alloc" into "unregister"/"register"
+functions. I think those should be just another actions.
 
-It simply seems to make sense to implement the feature of fa1f68db6ca
-("drivers: misc: pass miscdevice pointer via file private data") in a
-way that also allows misc drivers that do not provide their own
-->open() operation to use it.
+Thank you,
 
-That said, I'm not sure why you call such drivers 'broken'.
+> 
+> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/trace_kprobe.c |    5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index 9f46e98..f193c38 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -401,6 +401,7 @@ static int unregister_trace_probe(struct trace_probe *tp)
+>  	__unregister_trace_probe(tp);
+>  	list_del(&tp->list);
+>  	unregister_probe_event(tp);
+> +	free_trace_probe(tp);
+> 
+>  	return 0;
+>  }
+> @@ -419,7 +420,6 @@ static int register_trace_probe(struct trace_probe *tp)
+>  		ret = unregister_trace_probe(old_tp);
+>  		if (ret < 0)
+>  			goto end;
+> -		free_trace_probe(old_tp);
+>  	}
+> 
+>  	/* Register new event */
+> @@ -550,8 +550,6 @@ static int create_trace_probe(int argc, char **argv)
+>  		}
+>  		/* delete an event */
+>  		ret = unregister_trace_probe(tp);
+> -		if (ret == 0)
+> -			free_trace_probe(tp);
+>  		mutex_unlock(&probe_lock);
+>  		return ret;
+>  	}
+> @@ -680,7 +678,6 @@ static int release_all_trace_probes(void)
+>  	while (!list_empty(&probe_list)) {
+>  		tp = list_entry(probe_list.next, struct trace_probe, list);
+>  		unregister_trace_probe(tp);
+> -		free_trace_probe(tp);
+>  	}
+> 
+>  end:
+> 
 
-Best regards,
 
-Thomas
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
