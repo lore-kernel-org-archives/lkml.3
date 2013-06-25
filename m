@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab3FYSEe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:04:34 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:62135 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab3FYSEc (ORCPT
+	id S1752175Ab3FYSGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:06:23 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:45510 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3FYSGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:04:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
-Date: Tue, 25 Jun 2013 21:04:31 +0300
-Message-ID: <CAHp75Vesp=u+GqBM5RfG-s_BmEoLXZz-zp3+tsHYUsoSNv4XUQ@mail.gmail.com>
-Subject: Re: [PATCH 4/6] PCI: acpiphp: check for new devices on enabled host
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 25 Jun 2013 14:06:20 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-efi@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org, hpa@linux.intel.com,
+        tglx@linutronix.de, matt.fleming@intel.com,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
+Date: Tue, 25 Jun 2013 19:11:00 +0100
+Message-Id: <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+This patch provides documentation of the [U]EFI runtime services and
+configuration features.
 
-> Current acpiphp_check_bridge() implementation is pretty dumb:
->  - it enables the slot if it's not enabled and the slot status is
->    ACPI_STA_ALL;
->  - it disables the slot if it's enabled and slot is not in ACPI_STA_ALL
->    state.
->
-> This behavior is not enough to handle Thunderbolt chaining case
-> properly. We need to actually rescan for new devices even if a device
-> has already in the slot.
->
-> The new implementation disables and stops the slot if it's not in
-> ACPI_STA_ALL state.
->
-> For ACPI_STA_ALL state we first trim devices which don't respond and
-> look for the ones after that. We do that even if slot already enabled
-> (SLOT_ENABLED).
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+---
+ Documentation/arm/00-INDEX |    3 +++
+ Documentation/arm/uefi.txt |   39 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+)
+ create mode 100644 Documentation/arm/uefi.txt
 
-Just a couple of nitpicks below.
+diff --git a/Documentation/arm/00-INDEX b/Documentation/arm/00-INDEX
+index 4978456..87e01d1 100644
+--- a/Documentation/arm/00-INDEX
++++ b/Documentation/arm/00-INDEX
+@@ -36,3 +36,6 @@ nwfpe/
+ 	- NWFPE floating point emulator documentation
+ swp_emulation
+ 	- SWP/SWPB emulation handler/logging description
++
++uefi.txt
++	- [U]EFI configuration and runtime services documentation
+diff --git a/Documentation/arm/uefi.txt b/Documentation/arm/uefi.txt
+new file mode 100644
+index 0000000..5c48271
+--- /dev/null
++++ b/Documentation/arm/uefi.txt
+@@ -0,0 +1,39 @@
++The nomenclature EFI and UEFI are used interchangeably in this document.
++
++The implementation depends on receiving pointers to the UEFI memory map
++and System Table in a Flattened Device Tree - so is only available with
++CONFIG_OF.
++
++It (early) parses the FDT for the following parameters:
++- 'efi-system-table':
++  Physical address of the system table. (required)
++- 'efi-runtime-mmap':
++  Physical address of an EFI memory map, containing at least
++  the regions to be preserved. (required)
++- 'efi-runtime-mmap-size':
++  Size in bytes of the provided memory map. (required)
++- 'efi-mmap-desc-size':
++  Size of each descriptor in the memory map. (override default)
++- 'efi-mmap-desc-ver':
++  Memory descriptor format version. (override default)
++
++Since UEFI firmware on ARM systems are required to use a 1:1 memory map
++even on LPAE-capable systems, the above fields are 32-bit regardless.
++
++It also depends on early_ioremap to parse the memory map and preserve
++the regions required for runtime services.
++
++For actually enabling [U]EFI support, enable:
++- CONFIG_EFI=y
++- CONFIG_EFI_VARS=y or m
++
++After the kernel has mapped the required regions into its address space,
++a SetVirtualAddressMap() call is made into UEFI in order to update
++relocations. This call must be performed with all the code in a 1:1
++mapping. This implementation achieves this by temporarily disabling the
++MMU for the duration of this call. This can only be done safely:
++- before secondary CPUs are brought online.
++- after early_initcalls have completed, sinze it uses setup_mm_for_reboot().
++
++For verbose debug messages, specify 'uefi_debug' on the kernel command
++line.
+-- 
+1.7.10.4
 
->         list_for_each_entry(slot, &bridge->slots, node) {
-> +               struct pci_bus *bus = slot->bridge->pci_bus;
-> +               struct pci_dev *dev, *tmp;
-> +               int retval;
-> +
-> +               mutex_lock(&slot->crit_sect);
-
-Does it make sense to introduce a helper let's say
-__acpiphp_check_slot() and put there all lines inside this mutex?
-
-> +               if (get_slot_status(slot) == ACPI_STA_ALL) {
-> +                       /* remove stale devices if any */
-> +                       list_for_each_entry_safe(dev, tmp,
-> +                                       &bus->devices, bus_list) {
-> +                               if (PCI_SLOT(dev->devfn) != slot->device)
-> +                                       continue;
-> +                               pci_trim_stale_devices(dev);
-
-Perhaps
-
- list_for_each_entry_safe(dev, tmp, &bus->devices, bus_list) {
-      if (PCI_SLOT(dev->devfn) == slot->device)
-                pci_trim_stale_devices(dev);
- }
-
---
-With Best Regards,
-Andy Shevchenko
