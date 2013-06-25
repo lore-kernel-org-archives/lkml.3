@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab3FYERy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 00:17:54 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:48363 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3FYERw convert rfc822-to-8bit (ORCPT
+	id S1751138Ab3FYEfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 00:35:34 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:39449 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab3FYEfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 00:17:52 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, Joe Perches <joe@perches.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        David Laight <david.laight@aculab.com>
-Subject: Re: [PATCH v8] ethernet/arc/arc_emac - Add new driver
-Thread-Topic: [PATCH v8] ethernet/arc/arc_emac - Add new driver
-Thread-Index: AQHOcJ9RwYQFoPDyZE+7SVCl+a+Z7Q==
-Date: Tue, 25 Jun 2013 04:17:48 +0000
-Message-ID: <4881796E12491D4BB15146FE0209CE643F5FFB9C@DE02WEMBXB.internal.synopsys.com>
-References: <1372053267-19359-1-git-send-email-abrodkin@synopsys.com>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.121.8.30]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 Jun 2013 00:35:31 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130617182446.GI32663@mtj.dyndns.org>
+References: <1366104482-14240-1-git-send-email-ks.giri@samsung.com>
+	<20130617182446.GI32663@mtj.dyndns.org>
+Date: Tue, 25 Jun 2013 10:05:29 +0530
+Message-ID: <CAKrE-KdQCCW1jjkCyh03JWK4mjzSYRtcHcZCc7wi5-y3+CLOhA@mail.gmail.com>
+Subject: Re: [PATCH V2] ahci: sata: add support for exynos5440 sata
+From: Girish KS <girishks2000@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 09:54 AM, Alexey Brodkin wrote:
-> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
-> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
-> ARCAngel4/ML50x.
+On Mon, Jun 17, 2013 at 11:54 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Tue, Apr 16, 2013 at 02:58:02PM +0530, Girish K S wrote:
+>> This patch adds the compatible string of the exynos5440 sata controller
+>> compliant with the ahci 1.3 and sata 3.0 specification.
+>>
+>> Signed-off-by: Girish K S <ks.giri@samsung.com>
+>>
+>> changes in v2:
+>>               changed the compatible string by adding the actual IP
+>> owners name instead of the SoC vendor name.
+>
+> Applied to libata/for-3.11.
+>
+> Can you please keep SOB at the end of the description after the
+> revision history from the next time?
 
-Any comments on this patch?
+Sure. Thanks
 
-If not please consider applying.
-
-Regards,
-Alexey
+>
+> Thanks.
+>
+> --
+> tejun
