@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab3FYHXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 03:23:54 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35849 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab3FYHXu (ORCPT
+	id S1752071Ab3FYHZF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 03:25:05 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:62743 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab3FYHZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 03:23:50 -0400
+	Tue, 25 Jun 2013 03:25:02 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C94599.1020707@asianux.com>
+Date: Tue, 25 Jun 2013 15:24:09 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <e6abf12a77bc56dceeb4cba557b726268e71350e.1372097219.git.yann.morin.1998@free.fr>
-References: <cover.1372097219.git.yann.morin.1998@free.fr>
-	<e6abf12a77bc56dceeb4cba557b726268e71350e.1372097219.git.yann.morin.1998@free.fr>
-Date: Tue, 25 Jun 2013 09:23:49 +0200
-Message-ID: <CA+icZUXCfr3ijrRqQEjqK03imcENwUHZWMk536pE265BUtV0Eg@mail.gmail.com>
-Subject: Re: [PATCH 09/15] kconfig/conf: fix randconfig setting multiple
- symbols in a choice
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>, Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthieu CASTET <matthieu.castet@parrot.com>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Alexander Kriegisch <Alexander@kriegisch.name>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        cornelia.huck@de.ibm.com, mtosatti@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, linux-s390@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: s390: kernel: reset 'c->hotpluggable' when failure
+ occurs
+References: <51C8F685.6000209@asianux.com> <20130625064832.GA4999@osiris>
+In-Reply-To: <20130625064832.GA4999@osiris>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 8:11 PM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
-> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
->
-> Currently, randconfig may set more than one symbol in a given choice.
-> Given this config file:
->     config A
->         bool "A"
->     if A
->     choice
->         bool "B/C/D"
->     config B
->         bool "B"
->     config C
->         bool "C"
->     config D
->         bool "D"
->     endchoice
->     endif # A
->
-> Then randconfig generates such .config files (case where A is not set is not
-> shown below for brevity), and where only the right-most .config is valid:
->   CONFIG_A=y                  CONFIG_A=y                  CONFIG_A=y
->   CONFIG_B=y                  CONFIG_B=y                  CONFIG_B=y
->   CONFIG_C=y                  # CONFIG_C is not set       # CONFIG_C is not set
->   # CONFIG_D is not set       CONFIG_D=y                  # CONFIG_D is not set
->
-> That is, in a randomised choice, the first symbol is always selected,
-> and at most one other symbol may be selected.
->
-> This is due to symbol randomised in a choice not being properly flagged
-> as having a value.
->
-> Fix that by flagging those symbols adequately: have a user-defined value,
-> and be not valid (to force recalculation of the symbol).
->
-> Note: if the choice is not conditional, then the randomisation is properly
-> done.
->
-> Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
-> Signed-off-by: Matthieu CASTET <matthieu.castet@parrot.com>
-> [yann.morin.1998@free.fr: independently re-done the same patch as Matthieu,
->                           as pointed out by Sedat]
-> Cc: Arnaud Lacombe <lacombar@gmail.com>
-> Cc: Sedat Dilek <sedat.dilek@gmail.com>
-> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+On 06/25/2013 02:48 PM, Heiko Carstens wrote:
+> On Tue, Jun 25, 2013 at 09:46:45AM +0800, Chen Gang wrote:
+>> > When smp_add_present_cpu() fails, it has reset all things excluding
+>> > 'c->hotpluggable', so need reset it as original state completely.
+>> > 
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > ---
+>> >  arch/s390/kernel/smp.c |    1 +
+>> >  1 files changed, 1 insertions(+), 0 deletions(-)
+>> > 
+>> > diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+>> > index 15a016c..c4c6f42 100644
+>> > --- a/arch/s390/kernel/smp.c
+>> > +++ b/arch/s390/kernel/smp.c
+>> > @@ -1016,6 +1016,7 @@ out_cpu:
+>> >  	unregister_cpu(c);
+>> >  #endif
+>> >  out:
+>> > +	c->hotpluggable = 0;
+>> >  	return rc;
+> No, that doesn't make sense. All cpus on s390 are always hotplugable.
+> It really doesn't matter if the value of this field is 0 or 1 after
+> an error.
+> 
 
-[ CC Alexander ]
+If so, is it better to set 'c->hotpluggable' for all cpus on s390 during
+initializing ?
 
-Can you or Marek (kbuild maintainer) please add also a Reported-by of
-Alexander (see [1])?
 
-     Reported-by: Alexander Kriegisch <Alexander@kriegisch.name>
+Thanks.
+-- 
+Chen Gang
 
-It's a bit a pity that you discovered this issue by yourself independantly.
-As said in PM, the Freetz router project has included it when playing
-with Kconfig of Linux-v3.1-rc9.
-
-Thanks for taking care.
-
-- Sedat -
-
-[1] http://www.spinics.net/lists/linux-kbuild/msg05702.html
-[2] http://freetz.org/browser/trunk/tools/make/patches/340-fix_randconfig_choice.kconfig.patch
-
-> ---
->  scripts/kconfig/confdata.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-> index 35e0f16..d36bc1f 100644
-> --- a/scripts/kconfig/confdata.c
-> +++ b/scripts/kconfig/confdata.c
-> @@ -1077,6 +1077,9 @@ static void randomize_choice_values(struct symbol *csym)
->                 else {
->                         sym->def[S_DEF_USER].tri = no;
->                 }
-> +               sym->flags |= SYMBOL_DEF_USER;
-> +               /* clear VALID to get value calculated */
-> +               sym->flags &= ~SYMBOL_VALID;
->         }
->         csym->flags |= SYMBOL_DEF_USER;
->         /* clear VALID to get value calculated */
-> --
-> 1.8.1.2
->
+Asianux Corporation
