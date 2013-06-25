@@ -1,114 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3FYPzB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:55:01 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:41017 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab3FYPy6 (ORCPT
+	id S1752702Ab3FYPz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:55:26 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38371 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab3FYPzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:54:58 -0400
-X-IronPort-AV: E=Sophos;i="4.87,938,1363132800"; 
-   d="scan'208";a="31725955"
-Date: Tue, 25 Jun 2013 16:54:53 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Chen Gang <gang.chen@asianux.com>, Will Deacon <Will.Deacon@arm.com>,
-        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [Suggestion] arch: arm64: xen: "ln -s" the paravirt.h from
- arm.
-In-Reply-To: <20130625132519.GA7222@arm.com>
-Message-ID: <alpine.DEB.2.02.1306251645260.4782@kaball.uk.xensource.com>
-References: <51C53C06.7050205@asianux.com> <51C81115.4070803@asianux.com> <51C81A39.5060909@asianux.com> <alpine.DEB.2.02.1306241639260.4782@kaball.uk.xensource.com> <alpine.DEB.2.02.1306241747360.4782@kaball.uk.xensource.com>
- <20130625132519.GA7222@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 25 Jun 2013 11:55:23 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v2 1/3] net: davinci: emac: Convert to devm_* api
+Date: Tue, 25 Jun 2013 21:24:51 +0530
+Message-Id: <1372175693-20318-2-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372175693-20318-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1372175693-20318-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jun 2013, Catalin Marinas wrote:
-> On Mon, Jun 24, 2013 at 05:50:46PM +0100, Stefano Stabellini wrote:
-> > On Mon, 24 Jun 2013, Stefano Stabellini wrote:
-> > > On Mon, 24 Jun 2013, Chen Gang wrote:
-> > > > Hello Maintainers:
-> > > > 
-> > > > if 'CONFIG_XEN'
-> > > > 
-> > > >   CC      arch/arm64/xen/../../arm/xen/enlighten.o
-> > > > arch/arm64/xen/../../arm/xen/enlighten.c:19:26: fatal error: asm/paravirt.h: No such file or directory
-> > > > 
-> > > > The related .config file for next-20130624 is in attachment.
-> > > > 
-> > > > 
-> > > > If "ln -s ../../../arm/include/asm/paravirt.h paravirt.h", it can pass
-> > > > compiling, but I do not know how to make a patch for it ("ln -s ..."),
-> > > > Do we have another more suitable ways for it (or another fixing ways) ?
-> > > > 
-> > > > Welcome any suggestions or completions.
-> > > 
-> > > The problem is caused by:
-> > > 
-> > > commit 3a885582a366caf868b0782041c44854ff4c3568
-> > > Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > Date:   Wed May 29 10:56:34 2013 +0000
-> > > 
-> > >     xen/arm: account for stolen ticks
-> > > 
-> > > that is in my tree for linux-next (even though I have not received any
-> > > replies from the ARM maintainers so I don't know when and if it is going
-> > > to go upstream).
-> > > 
-> > > I think that the best thing to do would be to add a couple of ifdef
-> > > CONFIG_PARAVIRT in arch/arm/xen/enlighten.c. I'll add them to my tree.
-> > 
-> > Actually now that we have XEN support under arm64, we can just introduce the
-> > same pv_time_op struct and paravirt header that this patch
-> > 
-> > http://marc.info/?l=linux-arm-kernel&m=136992435301890&w=2
-> > 
-> > is introducing under arm.
-> 
-> I'm not sure whether I replied to your Xen pull request but the patches
-> have been merged into my 'upstream' branch on git.kernel.org and they'll
-> be going in for 3.11-rc1.
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-Great, thanks!
+Use devm_ioremap_resource instead of devm_request_mem_region()/devm_ioremap()
+and devm_request_irq() instead of request_irq().
 
+This ensures more consistent error values and simplifies error paths.
 
-> > diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> > index 19c1cde..47bd26b 100644
-> > --- a/arch/arm64/Kconfig
-> > +++ b/arch/arm64/Kconfig
-> > @@ -207,6 +207,25 @@ config FORCE_MAX_ZONEORDER
-> >  	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
-> >  	default "11"
-> >  
-> > +config PARAVIRT
-> > +	bool "Enable paravirtualization code"
-> > +	---help---
-> > +	  This changes the kernel so it can modify itself when it is run
-> > +	  under a hypervisor, potentially improving performance significantly
-> > +	  over full virtualization.
-> > +
-> > +config PARAVIRT_TIME_ACCOUNTING
-> > +	bool "Paravirtual steal time accounting"
-> > +	select PARAVIRT
-> > +	default n
-> 
-> No need for "default n".
-> 
-> If you want, I can apply this patch on top (or send me another pull
-> request but don't rebase your original Xen branch which I merged).
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/net/ethernet/ti/davinci_emac.c |   49 ++++++--------------------------
+ 1 file changed, 9 insertions(+), 40 deletions(-)
 
-Thanks, but unfortunately the corresponding arm part of this patch
-(linked above) didn't manage to get enough reviews and acks.
-I might as well send another iteration of "CONFIG_PARAVIRT and stolen
-ticks accounting" with this change in it.
+diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
+index 860e15d..8baf630 100644
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -1532,7 +1532,7 @@ static int emac_dev_open(struct net_device *ndev)
+ 	struct device *emac_dev = &ndev->dev;
+ 	u32 cnt;
+ 	struct resource *res;
+-	int q, m, ret;
++	int ret;
+ 	int i = 0;
+ 	int k = 0;
+ 	struct emac_priv *priv = netdev_priv(ndev);
+@@ -1567,8 +1567,9 @@ static int emac_dev_open(struct net_device *ndev)
+ 
+ 	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, k))) {
+ 		for (i = res->start; i <= res->end; i++) {
+-			if (request_irq(i, emac_irq, IRQF_DISABLED,
+-					ndev->name, ndev))
++			if (devm_request_irq(&priv->pdev->dev, i, emac_irq,
++					     IRQF_DISABLED,
++					     ndev->name, ndev))
+ 				goto rollback;
+ 		}
+ 		k++;
+@@ -1641,15 +1642,7 @@ static int emac_dev_open(struct net_device *ndev)
+ 
+ rollback:
+ 
+-	dev_err(emac_dev, "DaVinci EMAC: request_irq() failed");
+-
+-	for (q = k; k >= 0; k--) {
+-		for (m = i; m >= res->start; m--)
+-			free_irq(m, ndev);
+-		res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, k-1);
+-		m = res->end;
+-	}
+-
++	dev_err(emac_dev, "DaVinci EMAC: devm_request_irq() failed");
+ 	ret = -EBUSY;
+ err:
+ 	pm_runtime_put(&priv->pdev->dev);
+@@ -1667,9 +1660,6 @@ err:
+  */
+ static int emac_dev_stop(struct net_device *ndev)
+ {
+-	struct resource *res;
+-	int i = 0;
+-	int irq_num;
+ 	struct emac_priv *priv = netdev_priv(ndev);
+ 	struct device *emac_dev = &ndev->dev;
+ 
+@@ -1685,13 +1675,6 @@ static int emac_dev_stop(struct net_device *ndev)
+ 	if (priv->phydev)
+ 		phy_disconnect(priv->phydev);
+ 
+-	/* Free IRQ */
+-	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, i))) {
+-		for (irq_num = res->start; irq_num <= res->end; irq_num++)
+-			free_irq(irq_num, priv->ndev);
+-		i++;
+-	}
+-
+ 	if (netif_msg_drv(priv))
+ 		dev_notice(emac_dev, "DaVinci EMAC: %s stopped\n", ndev->name);
+ 
+@@ -1856,7 +1839,7 @@ static int davinci_emac_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	struct net_device *ndev;
+ 	struct emac_priv *priv;
+-	unsigned long size, hw_ram_addr;
++	unsigned long hw_ram_addr;
+ 	struct emac_platform_data *pdata;
+ 	struct device *emac_dev;
+ 	struct cpdma_params dma_params;
+@@ -1907,25 +1890,11 @@ static int davinci_emac_probe(struct platform_device *pdev)
+ 	emac_dev = &ndev->dev;
+ 	/* Get EMAC platform data */
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev,"error getting res\n");
+-		rc = -ENOENT;
+-		goto no_pdata;
+-	}
+-
+ 	priv->emac_base_phys = res->start + pdata->ctrl_reg_offset;
+-	size = resource_size(res);
+-	if (!devm_request_mem_region(&pdev->dev, res->start,
+-				     size, ndev->name)) {
+-		dev_err(&pdev->dev, "failed request_mem_region() for regs\n");
+-		rc = -ENXIO;
+-		goto no_pdata;
+-	}
+-
+-	priv->remap_addr = devm_ioremap(&pdev->dev, res->start, size);
+-	if (!priv->remap_addr) {
++	priv->remap_addr = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(priv->remap_addr)) {
+ 		dev_err(&pdev->dev, "unable to map IO\n");
+-		rc = -ENOMEM;
++		rc = PTR_ERR(priv->remap_addr);
+ 		goto no_pdata;
+ 	}
+ 	priv->emac_base = priv->remap_addr + pdata->ctrl_reg_offset;
+-- 
+1.7.9.5
+
