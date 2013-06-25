@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab3FYSiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:38:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41308 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233Ab3FYSgG (ORCPT
+	id S1753371Ab3FYSir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:38:47 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:48903 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680Ab3FYSim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:36:06 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ferruh Yigit <fery@cypress.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 24/27] Input: cyttsp - fix memcpy size param
-Date: Tue, 25 Jun 2013 11:35:43 -0700
-Message-Id: <20130625183520.467362477@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
-References: <20130625183517.651770593@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 25 Jun 2013 14:38:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <51C9D4ED.5070805@sgi.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
+	<20130621165142.GA32125@kroah.com>
+	<51C48745.9030304@zytor.com>
+	<CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com>
+	<20130621185056.GA23473@kroah.com>
+	<51C4C5F3.3050800@sgi.com>
+	<CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com>
+	<51C9D4ED.5070805@sgi.com>
+Date: Tue, 25 Jun 2013 11:38:42 -0700
+X-Google-Sender-Auth: P3vywvuWiYFoJjlSFu3An9RJPgk
+Message-ID: <CAE9FiQV+3gEZKPC0sthniGKceSfxV942m+DbyGHa-93Uj6wd1w@mail.gmail.com>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 25, 2013 at 10:35 AM, Mike Travis <travis@sgi.com> wrote:
+>
+>
+> On 6/21/2013 5:23 PM, Yinghai Lu wrote:
+>> On Fri, Jun 21, 2013 at 2:30 PM, Mike Travis <travis@sgi.com> wrote:
+>>> Exactly.  That's why I left both low and high memory on each node.
+>>
+>> looks like you assume every node have same ram, and before booting you
+>> you need to know memory layout to append the boot command line.
+>>
+>> We have patchset that moving srat table parse early.
+>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>> for-x86-mm
+>> https://git.kernel.org/cgit/linux/kernel/git/yinghai/linux-yinghai.git/log/?h=for-x86-mm
+>>
+>> on top that, we could make your patch pass more simple command like
+>> 1/2^n of every node, and only need to pass n instead.
+>
+> The two params that I couldn't figure out how to provide except via kernel
+> param option was the memory block size (128M or 2G) and the physical
+> address space per node.  The other 3 params can be automatically
+> setup by a script when the total system size is known.  As soon as we
+> verify on the 32TB system and surmise what will be needed for 64TB,
+> then those 3 params can probably disappear.
 
-------------------
+our "numa parsing early" patchset could provide "physical address
+space per node",
+also can calculate memory block size via alignment detection from numa info.
 
-From: Ferruh Yigit <fery@cypress.com>
+with that, user only can pass "delay_init_mem" only.
 
-commit d2983cdb480157f637df07723f28aaa657b1080d upstream.
+Thanks
 
-memcpy param is wrong because of offset in bl_cmd, this may corrupt the
-stack which may cause a crash.
-
-Tested-by: Ferruh Yigit <fery@cypress.com> on TMA300-DVK
-Signed-off-by: Ferruh Yigit <fery@cypress.com>
-Acked-by: Javier Martinez Canillas <javier@dowhile0.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/input/touchscreen/cyttsp_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/input/touchscreen/cyttsp_core.c
-+++ b/drivers/input/touchscreen/cyttsp_core.c
-@@ -133,7 +133,7 @@ static int cyttsp_exit_bl_mode(struct cy
- 	memcpy(bl_cmd, bl_command, sizeof(bl_command));
- 	if (ts->pdata->bl_keys)
- 		memcpy(&bl_cmd[sizeof(bl_command) - CY_NUM_BL_KEYS],
--			ts->pdata->bl_keys, sizeof(bl_command));
-+			ts->pdata->bl_keys, CY_NUM_BL_KEYS);
- 
- 	error = ttsp_write_block_data(ts, CY_REG_BASE,
- 				      sizeof(bl_cmd), bl_cmd);
-
-
+Yinghai
