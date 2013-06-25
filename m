@@ -1,61 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3FYQ1R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:27:17 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:39246 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751424Ab3FYQ1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:27:16 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Doug Anderson <dianders@chromium.org>
-Subject: Re: [PATCH] ARM: Avoid extra calls to the C compiler
-Date: Tue, 25 Jun 2013 12:27:16 -0400
-User-Agent: KMail/1.13.7 (Linux/3.8.3; KDE/4.6.5; x86_64; ; )
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1372176696-5104-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1372176696-5104-1-git-send-email-dianders@chromium.org>
+	id S1752195Ab3FYQaW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:30:22 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:13953 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab3FYQaU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:30:20 -0400
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+To: <devel@linuxdriverproject.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <shigekatsu.tateno@atmel.com>
+Subject: [PATCH] staging: ozwpan: Convert printk to dev_dbg()
+Date: Tue, 25 Jun 2013 17:30:02 +0100
+Message-ID: <1372177802-11360-1-git-send-email-rupesh.gujare@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4394912.WQYWJF4qlR";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306251227.18274.vapier@gentoo.org>
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4394912.WQYWJF4qlR
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+convert all debug messages from printk to dev_dbg() & add kernel config to
+enable/disable these messages during compilation.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+---
+ drivers/staging/ozwpan/Kbuild    |    2 +-
+ drivers/staging/ozwpan/Kconfig   |    9 +++++++++
+ drivers/staging/ozwpan/ozcdev.c  |    9 +++++----
+ drivers/staging/ozwpan/oztrace.h |    9 +++++----
+ 4 files changed, 20 insertions(+), 9 deletions(-)
 
---nextPart4394912.WQYWJF4qlR
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+diff --git a/drivers/staging/ozwpan/Kbuild b/drivers/staging/ozwpan/Kbuild
+index 1766a26..35a4278 100644
+--- a/drivers/staging/ozwpan/Kbuild
++++ b/drivers/staging/ozwpan/Kbuild
+@@ -15,4 +15,4 @@ ozwpan-y := \
+ 	ozurbparanoia.o \
+ 	oztrace.o
+ 
+-
++ccflags-$(CONFIG_USB_WPAN_HCD_DEBUG) := -DDEBUG -DWANT_TRACE
+diff --git a/drivers/staging/ozwpan/Kconfig b/drivers/staging/ozwpan/Kconfig
+index 7904cae..ccee97c 100644
+--- a/drivers/staging/ozwpan/Kconfig
++++ b/drivers/staging/ozwpan/Kconfig
+@@ -7,3 +7,12 @@ config USB_WPAN_HCD
+ 
+ 	  To compile this driver a module, choose M here: the module
+ 	  will be called "ozwpan".
++
++if USB_WPAN_HCD
++
++config USB_WPAN_HCD_DEBUG
++	boolean "Debug support for USB over WiFi Host Controller"
++	help
++	  Say "yes" to enable debug messages.
++
++endif # USB_WPAN_HCD
+diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
+index 374fdc3..2fc944b 100644
+--- a/drivers/staging/ozwpan/ozcdev.c
++++ b/drivers/staging/ozwpan/ozcdev.c
+@@ -44,6 +44,7 @@ struct oz_serial_ctx {
+  */
+ static struct oz_cdev g_cdev;
+ static struct class *g_oz_class;
++struct device *g_oz_wpan_dev;
+ /*------------------------------------------------------------------------------
+  * Context: process and softirq
+  */
+@@ -334,7 +335,6 @@ static const struct file_operations oz_fops = {
+ int oz_cdev_register(void)
+ {
+ 	int err;
+-	struct device *dev;
+ 	memset(&g_cdev, 0, sizeof(g_cdev));
+ 	err = alloc_chrdev_region(&g_cdev.devnum, 0, 1, "ozwpan");
+ 	if (err < 0)
+@@ -357,10 +357,11 @@ int oz_cdev_register(void)
+ 		err = PTR_ERR(g_oz_class);
+ 		goto out1;
+ 	}
+-	dev = device_create(g_oz_class, NULL, g_cdev.devnum, NULL, "ozwpan");
+-	if (IS_ERR(dev)) {
++	g_oz_wpan_dev = device_create(g_oz_class, NULL, g_cdev.devnum, NULL,
++								"ozwpan");
++	if (IS_ERR(g_oz_wpan_dev)) {
+ 		oz_trace("Failed to create sysfs entry for cdev\n");
+-		err = PTR_ERR(dev);
++		err = PTR_ERR(g_oz_wpan_dev);
+ 		goto out1;
+ 	}
+ 	return 0;
+diff --git a/drivers/staging/ozwpan/oztrace.h b/drivers/staging/ozwpan/oztrace.h
+index 8293b24..8764f37 100644
+--- a/drivers/staging/ozwpan/oztrace.h
++++ b/drivers/staging/ozwpan/oztrace.h
+@@ -7,14 +7,15 @@
+ #define _OZTRACE_H_
+ #include "ozconfig.h"
+ 
+-#define TRACE_PREFIX	KERN_ALERT "OZWPAN: "
++extern struct device *g_oz_wpan_dev;
+ 
+ #ifdef WANT_TRACE
+-#define oz_trace(...) printk(TRACE_PREFIX __VA_ARGS__)
++#define oz_trace(fmt, ...) dev_dbg(g_oz_wpan_dev, fmt, ##__VA_ARGS__);
+ #ifdef WANT_VERBOSE_TRACE
+ extern unsigned long trace_flags;
+-#define oz_trace2(_flag, ...) \
+-	do { if (trace_flags & _flag) printk(TRACE_PREFIX __VA_ARGS__); \
++#define oz_trace2(_flag, fmt, ...) \
++	do { if (trace_flags & _flag) \
++		dev_dbg(g_oz_wpan_dev, fmt, ##__VA_ARGS__); \
+ 	} while (0)
+ #else
+ #define oz_trace2(...)
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJRycTmAAoJEEFjO5/oN/WB9tYQAMpPKcK/M8i4YgPldJeddAbk
-D1364wkrau+y7Z/T6E/iWafoESXNfNglDsJ3BJL5qrOw6ubHWhrkRytWf7/OM6qN
-ES83bWmdh4gO4R0i8tnYK7sF+/zO3OfKVRsPYffTVu2RYQsexqDsPJvMYLSHfD+m
-nszcvAUSSTefVJ/gg9rUFtAj2+yE0i49acu6LyCkOVNuZGydfe4Cdn3fFdv4lNJQ
-ph0Cn43tEuZ+2pzmtiZi0ZV9oO9uT30lWpf+hvCEAbiGxQC2kEg8brn/ehlbVK2e
-U78KRlbnEiuXm5tTS82QvNNRtgPS60juWk5LOQ2dE8wxfDKZN7By8cYvIw8qX0Mx
-ev8g198DkM12IyH090QAknij4H5hqyXvkfyPVZlky9/3dnT2C6V4IOf1RbzIU+bm
-7eBOaWKGDGyE33MItid9bPFlwLd9kHvu8OdbMXyMLRRhafBFw5ujPrT2IMfMwNZB
-coq0QtHPAKQg+ecy4qLsDa53fZLcR0B5gQMtlB/jEa5Yq/vN29hMHy+bCzL18wBg
-a/crv8IGnpxaw6nrFd4YhOsqaKLVnz2YcW9hQyNDNJPrno/Jj0hoCYZkTFxLlsgf
-ki4gIE9+V0UzfIt19umZhc6xoRwL6wcnjT3yoqImksfCBDmHFdaYmPvv5IcgQMMk
-qh9tQ1dp+zMkTPMzpDnI
-=pSV2
------END PGP SIGNATURE-----
-
---nextPart4394912.WQYWJF4qlR--
