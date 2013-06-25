@@ -1,64 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab3FYVky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:40:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43199 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086Ab3FYVkx (ORCPT
+	id S1752495Ab3FYVlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:41:11 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:40960 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab3FYVlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:40:53 -0400
-Message-ID: <51CA0E62.2080403@wwwdotorg.org>
-Date: Tue, 25 Jun 2013 15:40:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 25 Jun 2013 17:41:10 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: James Hogan <james.hogan@imgtec.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbne?= =?ISO-8859-1?Q?r?= 
-	<heiko@sntech.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/4] pinctrl: remove slew-rate parameter from tz1090
-References: <201306251455.01540.heiko@sntech.de> <201306251456.36499.heiko@sntech.de> <51C99581.2010403@imgtec.com> <201306251521.55634.heiko@sntech.de> <51C99AB5.1080002@imgtec.com> <CACRpkdbdwvmBYFX=ppdM_RmGwyTcWVeTCMj60F4sh6YEVRE2Uw@mail.gmail.com> <51C9A039.4090804@imgtec.com> <CACRpkda--Thd9sop2FRUwTKiXnePNyg38ajxAZVvKkROrQsGkw@mail.gmail.com>
-In-Reply-To: <CACRpkda--Thd9sop2FRUwTKiXnePNyg38ajxAZVvKkROrQsGkw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <201306192016.00659.arnd@arndb.de>
+References: <1370519244-49918-1-git-send-email-holt@sgi.com>
+	<12642293.RmlRtOVM54@wuerfel>
+	<20130619102141.411c8e39.akpm@linux-foundation.org>
+	<201306192016.00659.arnd@arndb.de>
+Date: Tue, 25 Jun 2013 14:41:08 -0700
+Message-ID: <CAGa+x87SZyOU3SWcBEUGKzke8whbHhudRzsj0VjgGU_VkhnJZA@mail.gmail.com>
+Subject: Re: [PATCH -v11 resend 10/11] arm, change reboot_mode to use enum reboot_mode
+From: Kevin Hilman <khilman@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Russ Anderson <rja@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 09:39 AM, Linus Walleij wrote:
-> On Tue, Jun 25, 2013 at 3:50 PM, James Hogan <james.hogan@imgtec.com> wrote:
->> On 25/06/13 14:32, Linus Walleij wrote:
-> 
->>> Patches adding it back in with SI measures will be welcomed!
->>
->> Okay.
->>
->> So the most descriptive documentation I can find for the slew rate in
->> the TZ1090 pin config hardware is basically:
->>
->> 0: slow (half frequency)
->> 1: fast
->>
->> Sounds like this pretty much precludes it from having a generic DT
->> binding unless it can be mapped to some physical value, so I'll add a
->> tz1090,slew-rate and use PIN_CONFIG_END+1 instead of PIN_CONFIG_SLEW_RATE.
-> 
-> Okay... ut the Nomadik pin controller incidentally have a
-> similar definition: NMK_GPIO_LOWEMI. By slashing the
-> slew rate in half the EMI is of course reduced so that was
-> another name for the same thing.
-> 
-> Maybe this is something that should just be boolean?
-> 
-> slewrate-reduced-slope;
+On Wed, Jun 19, 2013 at 11:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 19 June 2013, Andrew Morton wrote:
+>> This patchset gets a lot of rejects which I keep on fixing up.  Please
+>> merge up early in the merge window and compile-test (and review) the
+>> linux-next changes to make sure I didn't muck up the reject-fixing,
+>> then we should be fine.
+>
+> Ok, good. The patch below is what I used locally to get everything to
+> build. Please fold that into the larger patch.
 
-Tegra has, IIRC, 4 different slew rates. I'm not sure that a
-Boolean/dual-state value would be appropriate here; it'd be limited to
-supporting some arbitrary cases rather than being something generic.
+I'm still seeing build breaks in linux-next due to the original patch.
 
+Will the fix below from Arnd be folded into the original?
+
+Kevin
+
+> From cc87f1a209e88d007f93c5c52813d523b753657b Mon Sep 17 00:00:00 2001
+> From: Arnd Bergmann <arnd@arndb.de>
+> Date: Wed, 19 Jun 2013 12:54:48 +0200
+> Subject: [PATCH] ARM: use enum reboot_type on new platforms
+>
+> The interface has changed with "reboot: arm: change reboot_mode to
+> use enum reboot_mode" that is getting merged through the -mm tree.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>
+> diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
+> index fe4d9ff..7c1bbe2e 100644
+> --- a/arch/arm/mach-keystone/keystone.c
+> +++ b/arch/arm/mach-keystone/keystone.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/init.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/of_address.h>
+> +#include <linux/reboot.h>
+>
+>  #include <asm/setup.h>
+>  #include <asm/mach/map.h>
+> @@ -49,7 +50,7 @@ static const char *keystone_match[] __initconst = {
+>         NULL,
+>  };
+>
+> -void keystone_restart(char mode, const char *cmd)
+> +void keystone_restart(enum reboot_mode mode, const char *cmd)
+>  {
+>         u32 val;
+>
+> diff --git a/arch/arm/mach-omap2/omap4-restart.c b/arch/arm/mach-omap2/omap4-restart.c
+> index 652adde..41dfd7d 100644
+> --- a/arch/arm/mach-omap2/omap4-restart.c
+> +++ b/arch/arm/mach-omap2/omap4-restart.c
+> @@ -8,6 +8,7 @@
+>   */
+>
+>  #include <linux/types.h>
+> +#include <linux/reboot.h>
+>  #include "prminst44xx.h"
+>
+>  /**
+> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+> index ef5b84f..c2c9083 100644
+> --- a/arch/arm/mach-zynq/common.c
+> +++ b/arch/arm/mach-zynq/common.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/of_platform.h>
+>  #include <linux/of.h>
+>  #include <linux/irqchip.h>
+> +#include <linux/reboot.h>
+>
+>  #include <asm/mach/arch.h>
+>  #include <asm/mach/map.h>
+> @@ -92,7 +93,7 @@ static void __init zynq_map_io(void)
+>         zynq_scu_map_io();
+>  }
+>
+> -static void zynq_system_reset(char mode, const char *cmd)
+> +static void zynq_system_reset(enum reboot_mode mode, const char *cmd)
+>  {
+>         zynq_slcr_system_reset();
+>  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
