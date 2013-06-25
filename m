@@ -1,40 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab3FYHBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 03:01:46 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:48075 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab3FYHBo (ORCPT
+	id S1751864Ab3FYHE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 03:04:58 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:50199 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab3FYHE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 03:01:44 -0400
+	Tue, 25 Jun 2013 03:04:56 -0400
+Message-ID: <51C94101.3030702@linux.vnet.ibm.com>
+Date: Tue, 25 Jun 2013 12:34:33 +0530
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1372143585.1245.44.camel@joe-AO722>
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
-	<1372102237-8757-26-git-send-email-paul.gortmaker@windriver.com>
-	<CAKohponpsJBqbj_8u8MUiu7sCEpeg5bcztWJAZdn9uxL5taVZQ@mail.gmail.com>
-	<1372133724.1245.38.camel@joe-AO722>
-	<CAKohpomOyV2zze1QCKArytXD=x7NXSPtsxped_j2ZKJ_aZOi3w@mail.gmail.com>
-	<1372143585.1245.44.camel@joe-AO722>
-Date: Tue, 25 Jun 2013 12:31:43 +0530
-Message-ID: <CAKohpokbXbyLpqd=XWy3iEqx-=AA=QEH_GyxOeaKFTw34tuwuQ@mail.gmail.com>
-Subject: Re: [PATCH 25/32] cpufreq: delete __cpuinit usage from all cpufreq files
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kees Cook <keescook@chromium.org>
+CC: jkenisto@linux.vnet.ibm.com, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>, LKML <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>, linuxppc-dev@ozlabs.org,
+        paulus@samba.org, Anton Blanchard <anton@samba.org>,
+        mahesh@linux.vnet.ibm.com
+Subject: Re: [PATCH 3/3] powerpc/pseries: Support compression of oops text
+ via pstore
+References: <20130624061936.12963.72529.stgit@aruna-ThinkPad-T420> <20130624062316.12963.87911.stgit@aruna-ThinkPad-T420> <CAGXu5jJezRynWEBmmH8wp=pt1yEjukhe6Pg_aRcZP7E6t-1R=g@mail.gmail.com>
+In-Reply-To: <CAGXu5jJezRynWEBmmH8wp=pt1yEjukhe6Pg_aRcZP7E6t-1R=g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062506-1618-0000-0000-00000425DE79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 June 2013 12:29, Joe Perches <joe@perches.com> wrote:
-> Sure Viresh.
->
-> I could agree with that, but that's not what you
-> recommended though.  "Check this everywhere" isn't
-> the same as the advice you just gave above.
+Hi Kees,
 
-So, I couldn't communicate myself well :(
-What I meant is, "check all changes you are making
-and be sure you are not repeating this change again".
+On Monday 24 June 2013 11:27 PM, Kees Cook wrote:
+> On Sun, Jun 23, 2013 at 11:23 PM, Aruna Balakrishnaiah
+> <aruna@linux.vnet.ibm.com> wrote:
+>> The patch set supports compression of oops messages while writing to NVRAM,
+>> this helps in capturing more of oops data to lnx,oops-log. The pstore file
+>> for oops messages will be in decompressed format making it readable.
+>>
+>> In case compression fails, the patch takes care of copying the header added
+>> by pstore and last oops_data_sz bytes of big_oops_buf to NVRAM so that we
+>> have recent oops messages in lnx,oops-log.
+>>
+>> In case decompression fails, it will result in absence of oops file but still
+>> have files (in /dev/pstore) for other partitions.
+>>
+>> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+>> ---
+>>   arch/powerpc/platforms/pseries/nvram.c |  132 +++++++++++++++++++++++++++++---
+>>   1 file changed, 118 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
+>> index 0159d74..b5ba5e2 100644
+>> --- a/arch/powerpc/platforms/pseries/nvram.c
+>> +++ b/arch/powerpc/platforms/pseries/nvram.c
+>> @@ -539,6 +539,65 @@ static int zip_oops(size_t text_len)
+>>   }
+>>
+>>   #ifdef CONFIG_PSTORE
+>> +/* Derived from logfs_uncompress */
+>> +int nvram_decompress(void *in, void *out, size_t inlen, size_t outlen)
+>> +{
+>> +       int err, ret;
+>> +
+>> +       ret = -EIO;
+>> +       err = zlib_inflateInit(&stream);
+>> +       if (err != Z_OK)
+>> +               goto error;
+>> +
+>> +       stream.next_in = in;
+>> +       stream.avail_in = inlen;
+>> +       stream.total_in = 0;
+>> +       stream.next_out = out;
+>> +       stream.avail_out = outlen;
+>> +       stream.total_out = 0;
+>> +
+>> +       err = zlib_inflate(&stream, Z_FINISH);
+>> +       if (err != Z_STREAM_END)
+>> +               goto error;
+>> +
+>> +       err = zlib_inflateEnd(&stream);
+>> +       if (err != Z_OK)
+>> +               goto error;
+>> +
+>> +       ret = stream.total_out;
+>> +error:
+>> +       return ret;
+>> +}
+>> +
+>> +static int unzip_oops(char *oops_buf, char *big_buf)
+>> +{
+>> +       struct oops_log_info *oops_hdr = (struct oops_log_info *)oops_buf;
+>> +       u64 timestamp = oops_hdr->timestamp;
+>> +       char *big_oops_data = NULL;
+>> +       char *oops_data_buf = NULL;
+>> +       size_t big_oops_data_sz;
+>> +       int unzipped_len;
+>> +
+>> +       big_oops_data = big_buf + sizeof(struct oops_log_info);
+>> +       big_oops_data_sz = big_oops_buf_sz - sizeof(struct oops_log_info);
+>> +       oops_data_buf = oops_buf + sizeof(struct oops_log_info);
+>> +
+>> +       unzipped_len = nvram_decompress(oops_data_buf, big_oops_data,
+>> +                                       oops_hdr->report_length,
+>> +                                       big_oops_data_sz);
+>> +
+>> +       if (unzipped_len < 0) {
+>> +               pr_err("nvram: decompression failed; returned %d\n",
+>> +                                                               unzipped_len);
+>> +               return -1;
+>> +       }
+>> +       oops_hdr = (struct oops_log_info *)big_buf;
+>> +       oops_hdr->version = OOPS_HDR_VERSION;
+>> +       oops_hdr->report_length = (u16) unzipped_len;
+>> +       oops_hdr->timestamp = timestamp;
+>> +       return 0;
+>> +}
+>> +
+>>   static int nvram_pstore_open(struct pstore_info *psi)
+>>   {
+>>          /* Reset the iterator to start reading partitions again */
+>> @@ -567,6 +626,7 @@ static int nvram_pstore_write(enum pstore_type_id type,
+>>                                  size_t size, struct pstore_info *psi)
+>>   {
+>>          int rc;
+>> +       unsigned int err_type = ERR_TYPE_KERNEL_PANIC;
+>>          struct oops_log_info *oops_hdr = (struct oops_log_info *) oops_buf;
+>>
+>>          /* part 1 has the recent messages from printk buffer */
+>> @@ -577,8 +637,31 @@ static int nvram_pstore_write(enum pstore_type_id type,
+>>          oops_hdr->version = OOPS_HDR_VERSION;
+>>          oops_hdr->report_length = (u16) size;
+>>          oops_hdr->timestamp = get_seconds();
+>> +
+>> +       if (big_oops_buf) {
+>> +               rc = zip_oops(size);
+>> +               /*
+>> +                * If compression fails copy recent log messages from
+>> +                * big_oops_buf to oops_data.
+>> +                */
+>> +               if (rc != 0) {
+>> +                       int hsize = pstore_get_header_size();
+> I think I would rather see the API to pstore_write() changed to
+> include explicit details about header sizes. Mkaing hsize a global
+> seems unwise, since it's not strictly going to be a constant value. It
+> could change between calls to the writer, for example.
+
+Introducing headersize in pstore_write() API would need changes at
+multiple places whereits being called. The idea is to move the
+compression support to pstore infrastructure so that other platforms
+could also make use of it. Once the compression support gets in,
+header size argument in pstore_write() will have to be deprecated.
+
+Till the time compression support for pstore goes in, can't we call
+pstore_header_size before every write call to knowthe header size.
+
+> Beyond that, this all seems sensible, though it would be kind of cool
+> to move this compression logic into the pstore core so it would get
+> used by default (or through a module parameter).
+> -Kees
+>
+>> +                       size_t diff = size - oops_data_sz + hsize;
+>> +
+>> +                       if (size > oops_data_sz) {
+>> +                               memcpy(oops_data, big_oops_buf, hsize);
+>> +                               memcpy(oops_data + hsize, big_oops_buf + diff,
+>> +                                       oops_data_sz - hsize);
+>> +
+>> +                               oops_hdr->report_length = (u16) oops_data_sz;
+>> +                       } else
+>> +                               memcpy(oops_data, big_oops_buf, size);
+>> +               } else
+>> +                       err_type = ERR_TYPE_KERNEL_PANIC_GZ;
+>> +       }
+>> +
+>>          rc = nvram_write_os_partition(&oops_log_partition, oops_buf,
+>> -               (int) (sizeof(*oops_hdr) + size), ERR_TYPE_KERNEL_PANIC,
+>> +               (int) (sizeof(*oops_hdr) + oops_hdr->report_length), err_type,
+>>                  count);
+>>
+>>          if (rc != 0)
+>> @@ -600,10 +683,11 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
+>>          struct oops_log_info *oops_hdr;
+>>          unsigned int err_type, id_no, size = 0;
+>>          struct nvram_os_partition *part = NULL;
+>> -       char *buff = NULL;
+>> -       int sig = 0;
+>> +       char *buff = NULL, *big_buff = NULL;
+>> +       int rc, sig = 0;
+>>          loff_t p;
+>>
+>> +read_partition:
+>>          read_type++;
+>>
+>>          switch (nvram_type_ids[read_type]) {
+>> @@ -666,6 +750,25 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
+>>          if (nvram_type_ids[read_type] == PSTORE_TYPE_DMESG) {
+>>                  oops_hdr = (struct oops_log_info *)buff;
+>>                  *buf = buff + sizeof(*oops_hdr);
+>> +
+>> +               if (err_type == ERR_TYPE_KERNEL_PANIC_GZ) {
+>> +                       big_buff = kmalloc(big_oops_buf_sz, GFP_KERNEL);
+>> +                       if (!big_buff)
+>> +                               return -ENOMEM;
+>> +
+>> +                       rc = unzip_oops(buff, big_buff);
+>> +
+>> +                       if (rc != 0) {
+>> +                               kfree(buff);
+>> +                               kfree(big_buff);
+>> +                               goto read_partition;
+>> +                       }
+>> +
+>> +                       oops_hdr = (struct oops_log_info *)big_buff;
+>> +                       *buf = big_buff + sizeof(*oops_hdr);
+>> +                       kfree(buff);
+>> +               }
+>> +
+>>                  time->tv_sec = oops_hdr->timestamp;
+>>                  time->tv_nsec = 0;
+>>                  return oops_hdr->report_length;
+>> @@ -687,17 +790,18 @@ static int nvram_pstore_init(void)
+>>   {
+>>          int rc = 0;
+>>
+>> -       nvram_pstore_info.buf = oops_data;
+>> -       nvram_pstore_info.bufsize = oops_data_sz;
+>> +       if (big_oops_buf) {
+>> +               nvram_pstore_info.buf = big_oops_buf;
+>> +               nvram_pstore_info.bufsize = big_oops_buf_sz;
+>> +       } else {
+>> +               nvram_pstore_info.buf = oops_data;
+>> +               nvram_pstore_info.bufsize = oops_data_sz;
+>> +       }
+>>
+>>          rc = pstore_register(&nvram_pstore_info);
+>>          if (rc != 0)
+>>                  pr_err("nvram: pstore_register() failed, defaults to "
+>>                                  "kmsg_dump; returned %d\n", rc);
+>> -       else
+>> -               /*TODO: Support compression when pstore is configured */
+>> -               pr_info("nvram: Compression of oops text supported only when "
+>> -                               "pstore is not configured");
+>>
+>>          return rc;
+>>   }
+>> @@ -731,11 +835,6 @@ static void __init nvram_init_oops_partition(int rtas_partition_exists)
+>>          oops_data = oops_buf + sizeof(struct oops_log_info);
+>>          oops_data_sz = oops_log_partition.size - sizeof(struct oops_log_info);
+>>
+>> -       rc = nvram_pstore_init();
+>> -
+>> -       if (!rc)
+>> -               return;
+>> -
+>>          /*
+>>           * Figure compression (preceded by elimination of each line's <n>
+>>           * severity prefix) will reduce the oops/panic report to at most
+>> @@ -759,6 +858,11 @@ static void __init nvram_init_oops_partition(int rtas_partition_exists)
+>>                  stream.workspace = NULL;
+>>          }
+>>
+>> +       rc = nvram_pstore_init();
+>> +
+>> +       if (!rc)
+>> +               return;
+>> +
+>>          rc = kmsg_dump_register(&nvram_kmsg_dumper);
+>>          if (rc != 0) {
+>>                  pr_err("nvram: kmsg_dump_register() failed; returned %d\n", rc);
+>>
+>
+>
+> --
+> Kees Cook
+> Chrome OS Security
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+>
+
