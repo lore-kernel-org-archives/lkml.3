@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab3FYJxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 05:53:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38390 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab3FYJxT (ORCPT
+	id S1752317Ab3FYJ7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 05:59:12 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:33130 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab3FYJ7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 05:53:19 -0400
-Date: Tue, 25 Jun 2013 02:52:29 -0700
-From: tip-bot for Javier Martinez Canillas <tipbot@zytor.com>
-Message-ID: <tip-fb90c22ab5e926bd35526f197097793cf479b254@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, jason@lakedaemon.net,
-        grant.likely@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        javier.martinez@collabora.co.uk, benh@kernel.crashing.org,
-        ralf@linux-mips.org, linux@arm.linux.org.uk, andrew@lunn.ch,
-        tglx@linutronix.de, sameo@linux.intel.com, linus.walleij@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        jason@lakedaemon.net, linux-kernel@vger.kernel.org,
-        javier.martinez@collabora.co.uk, benh@kernel.crashing.org,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, andrew@lunn.ch,
-        sameo@linux.intel.com, tglx@linutronix.de, linus.walleij@linaro.org
-In-Reply-To: <1371228049-27080-3-git-send-email-javier.martinez@collabora.co.uk>
-References: <1371228049-27080-3-git-send-email-javier.martinez@collabora.co.uk>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] gpio: mvebu: Use irq_get_trigger_type()
-  to get IRQ flags
-Git-Commit-ID: fb90c22ab5e926bd35526f197097793cf479b254
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 25 Jun 2013 05:59:09 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130624084338.GI28407@twins.programming.kicks-ass.net>
+References: <1371824448-7306-1-git-send-email-eranian@google.com>
+	<20130624084338.GI28407@twins.programming.kicks-ass.net>
+Date: Tue, 25 Jun 2013 11:59:09 +0200
+Message-ID: <CABPqkBRqiNVZnioV_R4sfam1QwHwXZgo36Gixxg5ALPbLbiXfw@mail.gmail.com>
+Subject: Re: [PATCH 0/8] perf: add ability to sample physical data addresses
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 25 Jun 2013 02:52:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb90c22ab5e926bd35526f197097793cf479b254
-Gitweb:     http://git.kernel.org/tip/fb90c22ab5e926bd35526f197097793cf479b254
-Author:     Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-AuthorDate: Fri, 14 Jun 2013 18:40:44 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 25 Jun 2013 11:48:25 +0200
+On Mon, Jun 24, 2013 at 10:43 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Jun 21, 2013 at 04:20:40PM +0200, Stephane Eranian wrote:
+>> This patch series extends perf_events with the ability to sample
+>> physical data addresses. This is useful with the memory access
+>> sampling mode added just recently. In particular, it helps
+>> disambiguate data addresses between two processes, such as
+>> in the case of a shared memory segment mapped at different
+>> addresses in different processes.
+>>
+>> The patch adds the PERF_SAMPLE_PHYS_ADDR sample_type.
+>> A 64-bit address is added to the sample record for
+>> the corresponding event.
+>>
+>> On Intel X86, it is used with the PEBS Load Latency
+>> support. On other architectures, zero is returned.
+>>
+>> The patch series also demonstrates the use of this
+>> new feature by extending perf report, mem, record
+>> with a --phys-addr option. When enable, it will
+>> capture physical data address and display it.
+>> This is implemented as a new sort_order (symbol_paddr).
+>>
+>
+> So I'm a bit puzzled by this thing...
+>
+> What exact problem are we trying to solve here? Only the shared memory
+> mapped at different addresses between processes thing mentioned earlier?
+>
+That is indeed one problem I am trying to address here based on actual
+feedback of people building tools on top of PEBS-LL.
 
-gpio: mvebu: Use irq_get_trigger_type() to get IRQ flags
+> The big problem I see with all this is that typically memory is subject
+> to being moved about at random; be it either from paging, compaction,
+> NUMA policies or explicit page migration.
+>
+One guarantee we have is that the physical does correspond to the virtual
+address at the time of the interrupt.
 
-Use irq_get_trigger_type() to get the IRQ trigger type flags
-instead calling irqd_get_trigger_type(irq_get_irq_data(irq))
+But yeah, if physical pages are swapped during the run, then things become
+a lot more complicated. I am not trying to address this.
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-mips@linux-mips.org
-Link: http://lkml.kernel.org/r/1371228049-27080-3-git-send-email-javier.martinez@collabora.co.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/gpio/gpio-mvebu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Can page move for shared memory segments?
 
-diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
-index 3a4816a..80ad35e 100644
---- a/drivers/gpio/gpio-mvebu.c
-+++ b/drivers/gpio/gpio-mvebu.c
-@@ -457,7 +457,7 @@ static void mvebu_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
- 		if (!(cause & (1 << i)))
- 			continue;
- 
--		type = irqd_get_trigger_type(irq_get_irq_data(irq));
-+		type = irq_get_trigger_type(irq);
- 		if ((type & IRQ_TYPE_SENSE_MASK) == IRQ_TYPE_EDGE_BOTH) {
- 			/* Swap polarity (race with GPIO line) */
- 			u32 polarity;
+
+> Such would completely shatter physical page relations.
+>
+> If the shared memory thing is really the issue, doesn't perf already
+> have the process memory layout (/proc/$PID/maps and aux stream mmap
+> updates) with which it can compute map relative offsets and compare
+> thusly?
+
+Not sure I understand this.
+suppose the same shared memory segment is mapped at two different
+addresses by shmat(). First, I don't know if those show up in /proc/maps.
+Second, what offset are you talking about here?
