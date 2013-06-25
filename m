@@ -1,180 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab3FYGCK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 02:02:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44538 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063Ab3FYGAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 02:00:25 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
-        <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
-        <sylvester.nawrocki@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <akpm@linux-foundation.org>
-CC: <rob.herring@calxeda.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <benoit.cousson@linaro.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
-        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
-        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>, <balajitk@ti.com>,
-        <george.cherian@ti.com>
-Subject: [PATCH v8 6/8] usb: musb: omap2430: use the new generic PHY framework
-Date: Tue, 25 Jun 2013 11:28:44 +0530
-Message-ID: <1372139926-3719-7-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1372139926-3719-1-git-send-email-kishon@ti.com>
-References: <1372139926-3719-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751595Ab3FYGDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 02:03:48 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:12725 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab3FYGDp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 02:03:45 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-fc-51c932c0ea27
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <1372140227.28480.69.camel@kjgkr>
+Subject: Re: [PATCH 2/2] f2fs: add sysfs support for controlling the gc_thread
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>
+Date: Tue, 25 Jun 2013 15:03:47 +0900
+In-reply-to: <CAKYAXd-OO5niMiFv+ysStw=c-NQXT4AkTz3m7o1wTRZRd=WYFw@mail.gmail.com>
+References: <1369533945-6955-1-git-send-email-linkinjeon@gmail.com>
+ <1369619214.10521.25.camel@kjgkr>
+ <CAKYAXd_QZronHD536LOfeFWLmtCoweRq3gbH94R4_7oKC7hv3w@mail.gmail.com>
+ <1369704867.10521.46.camel@kjgkr>
+ <CAKYAXd-OO5niMiFv+ysStw=c-NQXT4AkTz3m7o1wTRZRd=WYFw@mail.gmail.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zQ90DRicDDdrPs1lcv3uL2eLSIneL
+	PXtPslhc3jWHzeLH9HqLH7vOMzuweeycdZfdY/eCz0wefVtWMXp83iQXwBLFZZOSmpNZllqk
+	b5fAlfHr/iTmgv9yFavO/GJqYJwt0cXIwSEhYCLxZqVoFyMnkCkmceHeerYuRi4OIYFljBLv
+	Nn5jh6npXhgEEV/EKPHjfwMzSAOvgKDEj8n3WEBsZgF1iUnzFjFD2CIS2y/cZ4KwtSWWLXzN
+	DNH8mlHi2KLnLBDNuhJTd30Ds4UF/CQmTvjFDLKMDahh834DkLCQgKLE2/13WUHCIgJqEhOe
+	pUKM3MEo0XTQHMRmEVCVWHr+ARuIzSkQLHHpy0d2iFUzmSTO9v4Cu4dfQFTi8MLtzBBPKkns
+	bu8EK5IQuMUuMe3xWiaISQIS3yYfYoF4WFZi0wGoekmJgytusExglJyF5OVZSF6eheTlWUhe
+	XsDIsopRNLUguaA4Kb3IUK84Mbe4NC9dLzk/dxMjJHZ7dzDePmB9iDEZaP1EZinR5Hxg7OeV
+	xBsamxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgXFO+f+P
+	8+rtSxZPdg86I2nlWC2ty5oSzr3m6rI9wienamz/fPj0t89a165Pd46Re/629PG+1ZvDlER7
+	Dwj3/dRMcLwTwPRE5Cj3xZk159InHkwuZpj+c/4zZWXDGRv5OmSEZC6rqC3x6l68+s4fhsJJ
+	gV/mX0pfcYRhYsQKPsHdnM5CEu0G5zyUWIozEg21mIuKEwEzVKyW8wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jAd39RicDDXofSVtcv3uL2eLSIneL
+	PXtPslhc3jWHzeLH9HqLH7vOMzuweeycdZfdY/eCz0wefVtWMXp83iQXwBLVwGiTkZqYklqk
+	kJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RbSaEsMacUKBSQWFys
+	pG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5jxZ8VPtoLXchW3l/SxNDC2S3QxcnBICJhIdC8M
+	6mLkBDLFJC7cW8/WxcjFISSwiFHix/8GZpAEr4CgxI/J91hA6pkF5CWOXMoGCTMLqEtMmreI
+	GaL+NaPEsUXPWSDqdSWm7voGZgsL+ElMnPCLGaSXTUBbYvN+A5CwkICixNv9d1lBwiICahIT
+	nqVCjNzBKNF00BzEZhFQlVh6/gEbiM0pECxx6ctHdohVM5kkzvb+AjuNX0BU4vDC7cwQ9ytJ
+	7G7vZJ/AKDQLydWzEK6eheTqBYzMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGC4/yZ1A7G
+	lQ0WhxgFOBiVeHgjd50IFGJNLCuuzD3EKMHBrCTCGyoCFOJNSaysSi3Kjy8qzUktPsSYDHT5
+	RGYp0eR8YArKK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQbG
+	fT9CV/bdSFyaXf57vVQNQ915qe1qBbHFVpr5e6TPqslJ7PE+NvuOz6P3Mj7zitk+2Gw0mH3l
+	ZWy/ymx3P5e0jycmxoVeDn1zdfOGl3ZNxcL98vHvm1WYbVnuaDuen5x2g/10ZMZDC85jrp2v
+	LuYcZ9Tj5s/Mmc0qtrPq//V/G3g+9/Lu/m+ixFKckWioxVxUnAgALE8inTcDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic PHY framework API to get the PHY. The usb_phy_set_resume
-and usb_phy_set_suspend is replaced with power_on and
-power_off to align with the new PHY framework.
+Hi Namjae,
 
-musb->xceiv can't be removed as of now because musb core uses xceiv.state and
-xceiv.otg. Once there is a separate state machine to handle otg, these can be
-moved out of xceiv and then we can start using the generic PHY framework.
+Sorry for the late reply.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
- drivers/usb/musb/Kconfig     |    1 +
- drivers/usb/musb/musb_core.c |    1 +
- drivers/usb/musb/musb_core.h |    3 +++
- drivers/usb/musb/omap2430.c  |   26 ++++++++++++++++++++------
- 4 files changed, 25 insertions(+), 6 deletions(-)
+2013-05-29 (수), 09:01 +0900, Namjae Jeon:
+> >> I have thought more after getting your reply.
+> >> f2fs_cleaner(a tentative name) is that provide the following several
+> >> options to control gc thread.
+> >> 1. start forground gc thread to clean all invalid blocks.
+> >> 2. stop number 1(fg) working.
+> >> 3. set new tunning parameter (min/max/no_gc).
+> >> 4. get status of current f2fs.
+> >> We will provide user level util in f2fs tools and sysfs at the same time.
+> >> It is useful if the console level user/App user can change them easily.
 
-diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-index 06f8d29..6ef595a 100644
---- a/drivers/usb/musb/Kconfig
-+++ b/drivers/usb/musb/Kconfig
-@@ -47,6 +47,7 @@ config USB_MUSB_TUSB6010
- config USB_MUSB_OMAP2PLUS
- 	tristate "OMAP2430 and onwards"
- 	depends on ARCH_OMAP2PLUS
-+	depends on GENERIC_PHY
- 
- config USB_MUSB_AM35X
- 	tristate "AM35x"
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 37a261a..f732bcc 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1864,6 +1864,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
- 	musb->board_set_power = plat->set_power;
- 	musb->min_power = plat->min_power;
- 	musb->ops = plat->platform_ops;
-+	musb->phy_label = plat->phy_label;
- 
- 	/* The musb_platform_init() call:
- 	 *   - adjusts musb->mregs
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index 7fb4819..498ae21 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -46,6 +46,7 @@
- #include <linux/usb.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/musb.h>
-+#include <linux/phy/phy.h>
- 
- struct musb;
- struct musb_hw_ep;
-@@ -357,6 +358,7 @@ struct musb {
- 	u16			int_tx;
- 
- 	struct usb_phy		*xceiv;
-+	struct phy		*phy;
- 
- 	int nIrq;
- 	unsigned		irq_wake:1;
-@@ -434,6 +436,7 @@ struct musb {
- 	unsigned                double_buffer_not_ok:1;
- 
- 	struct musb_hdrc_config	*config;
-+	const char		*phy_label;
- 
- #ifdef MUSB_CONFIG_PROC_FS
- 	struct proc_dir_entry *proc_entry;
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 628b93f..12b94da 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -348,11 +348,21 @@ static int omap2430_musb_init(struct musb *musb)
- 	 * up through ULPI.  TWL4030-family PMICs include one,
- 	 * which needs a driver, drivers aren't always needed.
- 	 */
--	if (dev->parent->of_node)
-+	if (dev->parent->of_node) {
-+		musb->phy = devm_phy_get(dev->parent, "usb2-phy");
-+
-+		/* We can't totally remove musb->xceiv as of now because
-+		 * musb core uses xceiv.state and xceiv.otg. Once we have
-+		 * a separate state machine to handle otg, these can be moved
-+		 * out of xceiv and then we can start using the generic PHY
-+		 * framework
-+		 */
- 		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
- 		    "usb-phy", 0);
--	else
-+	} else {
- 		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
-+		musb->phy = devm_phy_get(dev, musb->phy_label);
-+	}
- 
- 	if (IS_ERR(musb->xceiv)) {
- 		status = PTR_ERR(musb->xceiv);
-@@ -364,6 +374,10 @@ static int omap2430_musb_init(struct musb *musb)
- 		return -EPROBE_DEFER;
- 	}
- 
-+	if (IS_ERR(musb->phy)) {
-+		pr_err("HS USB OTG: no PHY configured\n");
-+		return PTR_ERR(musb->phy);
-+	}
- 	musb->isr = omap2430_musb_interrupt;
- 
- 	status = pm_runtime_get_sync(dev);
-@@ -397,7 +411,7 @@ static int omap2430_musb_init(struct musb *musb)
- 	if (glue->status != OMAP_MUSB_UNKNOWN)
- 		omap_musb_set_mailbox(glue);
- 
--	usb_phy_init(musb->xceiv);
-+	phy_init(musb->phy);
- 
- 	pm_runtime_put_noidle(musb->controller);
- 	return 0;
-@@ -460,6 +474,7 @@ static int omap2430_musb_exit(struct musb *musb)
- 	del_timer_sync(&musb_idle_timer);
- 
- 	omap2430_low_level_exit(musb);
-+	phy_exit(musb->phy);
- 
- 	return 0;
- }
-@@ -619,7 +634,7 @@ static int omap2430_runtime_suspend(struct device *dev)
- 				OTG_INTERFSEL);
- 
- 		omap2430_low_level_exit(musb);
--		usb_phy_set_suspend(musb->xceiv, 1);
-+		phy_power_off(musb->phy);
- 	}
- 
- 	return 0;
-@@ -634,8 +649,7 @@ static int omap2430_runtime_resume(struct device *dev)
- 		omap2430_low_level_init(musb);
- 		musb_writel(musb->mregs, OTG_INTERFSEL,
- 				musb->context.otg_interfsel);
--
--		usb_phy_set_suspend(musb->xceiv, 0);
-+		phy_power_on(musb->phy);
- 	}
- 
- 	return 0;
+I think we'd better support configurable min/max/no_gc times only.
+And I don't think users need to do foreground GCs explicitly, since
+foreground GCs should be done only when the file system suffers from the
+shortage of free space. The foreground GC is the most costly operation
+so that I'd like to avoid triggering it as much as possible even if
+users want to do.
+
+Otherwise, if users would like to move data, they can just adjust
+background GC times appropriately and then do sync if they really move
+data synchronously.
+
+> >>
+> >> >
+> >> > Afterwards, it is worth to add some information to
+> >> > Document/filesystems/f2fs.txt.
+> >> Yes, It will be included in next series patches.
+> >> How do you think ? If you agree my suggestion, I will start to work
+> >> the above jobs.
+> Hi. Jaegeuk.
+> >
+> > As I described, basically I agreed that this kind of interfaces and user
+> > apps are definitely beneficial to the f2fs users.
+> >
+> > But wrt design and implementation of new interfaces, we'd better discuss
+> > how to use them in more detail and what information should be needed for
+> > user-made cleaner.
+> > After then, we'd better start to design the interfaces as well as user
+> > scenarios clearly.
+> Okay. I agree.
+> 
+> >
+> > IMO, the following issues should be addressed.
+> > - how to know system idle time by users?
+> e.g. When playing PVR function, In case of DTV, App try to read data
+> from filesystem of usb device.
+> now that, user app will never access flash rw partition and don't need
+> to access there.
+> I think that we can cleverly use such time to avoid or make slowly
+> come in the possible performance regression later.
+
+Okay.
+
+> 
+> > - any priority scheme for cleaning?
+> Could you plz tell me a little more detail ?
+
+I meant, as well as the GC times, user also gives a kind of status like:
+LONG_IDLE, SHORT_IDLE, something like that.
+Therefore, how about using this information to select a victim selection
+policy between cost-benefit and greedy algorithms?
+
+> 
+> > - what status of current f2fs?
+> I think that we can get this information how many victim section and
+> segment is possible to reclaim in sysfs.
+> It will be easily interpreted by the user and it allows the user the
+> freedom to check itself if really running GC is useful
+> and user can decide to run cleaner at timing they want.
+> 
+> > - how about supporting that f2fs controls gc times dynamically instead
+> > of the user decision?
+> Yes, I thought such idea before. It might be useful if gc thread can
+> dynamically control own gc times with different partition size and
+> available size.
+> But I think there is a limitation that f2fs don't predict when user access f2fs.
+> So I think that user level controller surely is needed.
+> Ah,, And It will be also useful if f2fs is mounted with background_gc_off.
+
+Okay.
+Thanks, :)
+
+> 
+> Let me know your opinion~.
+> 
+> Thanks:)
+> >
+> > Thanks,
+> >
+> >>
+> >> Let me know your opinion.
+> >>
+> >> Thanks.
+> >> >
+> >> > Thanks,
+> >> >
+> >
+> > --
+> > Jaegeuk Kim
+> > Samsung
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-1.7.10.4
+Jaegeuk Kim
+Samsung
 
