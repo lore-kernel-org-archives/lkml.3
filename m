@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab3FYRfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:35:13 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:43854 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab3FYRfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:35:10 -0400
+	id S1751993Ab3FYRfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:35:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57562 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490Ab3FYRfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 13:35:08 -0400
+Date: Tue, 25 Jun 2013 13:34:51 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130625173451.GB17050@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Oleg Nesterov <oleg@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrey Vagin <avagin@openvz.org>
+References: <20130624020014.GB12811@redhat.com>
+ <20130624143928.GA20659@redhat.com>
+ <1372085549.18733.162.camel@gandalf.local.home>
+ <20130624160012.GB5993@redhat.com>
+ <1372091079.18733.168.camel@gandalf.local.home>
+ <20130624165140.GB8572@redhat.com>
+ <1372093476.18733.170.camel@gandalf.local.home>
+ <20130625165556.GA16170@redhat.com>
+ <1372180890.18733.217.camel@gandalf.local.home>
+ <1372181394.18733.222.camel@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <20130620125120.GP2575@8bytes.org>
-References: <CAErSpo7onNaU5mquJ_a7kwGPgzs3Q_7U89__HT9DbJFkUX4fsQ@mail.gmail.com>
- <20130529083652.GA25971@dhcp-26-207.brq.redhat.com> <CAErSpo4EkXX-UoFLyni+ZpXaTmCRq5sJCqZ4FCt7fywpDyVWqw@mail.gmail.com>
- <CAErSpo6bjBEK=Ta=pVzwCBMfrqfe3jB-sEfv1Kz9mt9iakdeaA@mail.gmail.com> <20130620125120.GP2575@8bytes.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 25 Jun 2013 11:34:49 -0600
-Message-ID: <CAErSpo5AD0aQtc-EWCQHcviXv-xyC=Gn6Lii8a5MdtFOvpe59w@mail.gmail.com>
-Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
- multiple-MSIs as requested
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Jan Beulich <JBeulich@suse.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372181394.18733.222.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 6:51 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Mon, Jun 03, 2013 at 02:46:59PM -0600, Bjorn Helgaas wrote:
->> I pushed these with updates to
->> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/alexander-msi
->>
->> Anybody want to ack the iommu/irq_remapping.c patch?  If so, I can
->> merge that branch into -next for v3.11.
->
-> Sorry for being unresponsive, things habe been pretty busy here :-(
-> The changes look good, you have my
->
-> Acked-by: Joerg Roedel <joro@8bytes.org>
+On Tue, Jun 25, 2013 at 01:29:54PM -0400, Steven Rostedt wrote:
+ > On Tue, 2013-06-25 at 13:21 -0400, Steven Rostedt wrote:
+ > > On Tue, 2013-06-25 at 12:55 -0400, Dave Jones wrote:
+ > > 
+ > > > While I've been spinning wheels trying to reproduce that softlockup bug,
+ > > > On another machine I've been refining my list-walk debug patch.
+ > > > I added an ugly "ok, the ringbuffer is playing games with lower two bits" special case.
+ > > > 
+ > > > But what the hell is going on here ?
+ > > > 
+ > > > next->prev should be prev (ffff88023c6cdd18), but was 00ffff88023c6cdd. (next=ffff880243288001).
+ > 
+ > Ah you didn't handle the bit set case. I just noticed "00" in
+ > 00ffff88023c6cdd. To test this, you really need to do a "next & ~3", to
+ > clear the pointer.
+ > 
+ > Perhaps its best to have just a "raw_list_for_each" that doesn't do any
+ > check, and have the ring buffer use that instead. The
+ > rb_head_page_deactivate() is usually followed by an integrity check
+ > anyway.
 
-No problem, thanks!  I added your ack and merged to my -next branch for v3.11.
+I think that's probably the best way forward. The ring buffer code does
+so many weird things with list heads that it's almost it's own ADT.
 
-Bjorn
+	Dave
+
