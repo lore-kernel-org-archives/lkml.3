@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab3FYTNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:13:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40833 "EHLO
+	id S1752193Ab3FYTNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:13:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab3FYSdb (ORCPT
+	with ESMTP id S1751912Ab3FYSdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:33:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        Arend Van Spriel <arend@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 09/95] rtlwifi: rtl8192cu: Fix problem in connecting to WEP or WPA(1) networks
-Date: Tue, 25 Jun 2013 11:31:56 -0700
-Message-Id: <20130625182154.682478939@linuxfoundation.org>
+Subject: [ 10/95] brcmfmac: Turn off ARP offloading when configured for AP.
+Date: Tue, 25 Jun 2013 11:31:57 -0700
+Message-Id: <20130625182154.802888583@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,403 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Hante Meuleman <meuleman@broadcom.com>
 
-commit 5b8df24e22e0b00b599cb9ae63dbb96e1959be30 upstream.
+commit b3657453f16a7b84eab9b93bb9a9a2901ffc70af upstream.
 
-Driver rtl8192cu can connect to WPA2 networks, but fails for any other
-encryption method. The cause is a failure to set the rate control data
-blocks. These changes fix https://bugzilla.redhat.com/show_bug.cgi?id=952793
-and https://bugzilla.redhat.com/show_bug.cgi?id=761525.
+ARP offloading should only be used in STA or P2P client mode. It
+is currently configured once at init. When being configured for AP
+ARP offloading should be turned off and when AP mode is left it can
+be turned back on.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reviewed-by: Arend Van Spriel <arend@broadcom.com>
+Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c  |  132 ++++++++++++++++++++-------
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.h  |    4 
- drivers/net/wireless/rtlwifi/rtl8192cu/mac.c |   18 +++
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c  |    4 
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.h  |    3 
- drivers/net/wireless/rtlwifi/usb.c           |   13 ++
- drivers/net/wireless/rtlwifi/wifi.h          |    4 
- 7 files changed, 138 insertions(+), 40 deletions(-)
+ drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c  |   18 --------
+ drivers/net/wireless/brcm80211/brcmfmac/fwil_types.h  |    6 ++
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |   40 +++++++++++++++++-
+ 3 files changed, 45 insertions(+), 19 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -1973,26 +1973,35 @@ void rtl92cu_set_hw_reg(struct ieee80211
+--- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
+@@ -26,7 +26,6 @@
+ #include "fwil.h"
+ 
+ #define PKTFILTER_BUF_SIZE		128
+-#define BRCMF_ARPOL_MODE		0xb	/* agent|snoop|peer_autoreply */
+ #define BRCMF_DEFAULT_BCN_TIMEOUT	3
+ #define BRCMF_DEFAULT_SCAN_CHANNEL_TIME	40
+ #define BRCMF_DEFAULT_SCAN_UNASSOC_TIME	40
+@@ -337,23 +336,6 @@ int brcmf_c_preinit_dcmds(struct brcmf_i
+ 		goto done;
  	}
+ 
+-	/* Try to set and enable ARP offload feature, this may fail */
+-	err = brcmf_fil_iovar_int_set(ifp, "arp_ol", BRCMF_ARPOL_MODE);
+-	if (err) {
+-		brcmf_dbg(TRACE, "failed to set ARP offload mode to 0x%x, err = %d\n",
+-			  BRCMF_ARPOL_MODE, err);
+-		err = 0;
+-	} else {
+-		err = brcmf_fil_iovar_int_set(ifp, "arpoe", 1);
+-		if (err) {
+-			brcmf_dbg(TRACE, "failed to enable ARP offload err = %d\n",
+-				  err);
+-			err = 0;
+-		} else
+-			brcmf_dbg(TRACE, "successfully enabled ARP offload to 0x%x\n",
+-				  BRCMF_ARPOL_MODE);
+-	}
+-
+ 	/* Setup packet filter */
+ 	brcmf_c_pktfilter_offload_set(ifp, BRCMF_DEFAULT_PACKET_FILTER);
+ 	brcmf_c_pktfilter_offload_enable(ifp, BRCMF_DEFAULT_PACKET_FILTER,
+--- a/drivers/net/wireless/brcm80211/brcmfmac/fwil_types.h
++++ b/drivers/net/wireless/brcm80211/brcmfmac/fwil_types.h
+@@ -23,6 +23,12 @@
+ 
+ #define BRCMF_FIL_ACTION_FRAME_SIZE	1800
+ 
++/* ARP Offload feature flags for arp_ol iovar */
++#define BRCMF_ARP_OL_AGENT		0x00000001
++#define BRCMF_ARP_OL_SNOOP		0x00000002
++#define BRCMF_ARP_OL_HOST_AUTO_REPLY	0x00000004
++#define BRCMF_ARP_OL_PEER_AUTO_REPLY	0x00000008
++
+ 
+ enum brcmf_fil_p2p_if_types {
+ 	BRCMF_FIL_P2P_IF_CLIENT,
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -505,6 +505,38 @@ send_key_to_dongle(struct net_device *nd
+ 	return err;
  }
  
--void rtl92cu_update_hal_rate_table(struct ieee80211_hw *hw,
--				   struct ieee80211_sta *sta,
--				   u8 rssi_level)
-+static void rtl92cu_update_hal_rate_table(struct ieee80211_hw *hw,
-+					  struct ieee80211_sta *sta)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	struct rtl_phy *rtlphy = &(rtlpriv->phy);
- 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
--	u32 ratr_value = (u32) mac->basic_rates;
--	u8 *mcsrate = mac->mcs;
-+	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
-+	u32 ratr_value;
- 	u8 ratr_index = 0;
- 	u8 nmode = mac->ht_enable;
--	u8 mimo_ps = 1;
--	u16 shortgi_rate = 0;
--	u32 tmp_ratr_value = 0;
-+	u8 mimo_ps = IEEE80211_SMPS_OFF;
-+	u16 shortgi_rate;
-+	u32 tmp_ratr_value;
- 	u8 curtxbw_40mhz = mac->bw_40;
--	u8 curshortgi_40mhz = mac->sgi_40;
--	u8 curshortgi_20mhz = mac->sgi_20;
-+	u8 curshortgi_40mhz = (sta->ht_cap.cap & IEEE80211_HT_CAP_SGI_40) ?
-+			       1 : 0;
-+	u8 curshortgi_20mhz = (sta->ht_cap.cap & IEEE80211_HT_CAP_SGI_20) ?
-+			       1 : 0;
- 	enum wireless_mode wirelessmode = mac->mode;
- 
--	ratr_value |= ((*(u16 *) (mcsrate))) << 12;
-+	if (rtlhal->current_bandtype == BAND_ON_5G)
-+		ratr_value = sta->supp_rates[1] << 4;
++static s32
++brcmf_configure_arp_offload(struct brcmf_if *ifp, bool enable)
++{
++	s32 err;
++	u32 mode;
++
++	if (enable)
++		mode = BRCMF_ARP_OL_AGENT | BRCMF_ARP_OL_PEER_AUTO_REPLY;
 +	else
-+		ratr_value = sta->supp_rates[0];
-+	if (mac->opmode == NL80211_IFTYPE_ADHOC)
-+		ratr_value = 0xfff;
++		mode = 0;
 +
-+	ratr_value |= (sta->ht_cap.mcs.rx_mask[1] << 20 |
-+			sta->ht_cap.mcs.rx_mask[0] << 12);
- 	switch (wirelessmode) {
- 	case WIRELESS_MODE_B:
- 		if (ratr_value & 0x0000000c)
-@@ -2006,7 +2015,7 @@ void rtl92cu_update_hal_rate_table(struc
- 	case WIRELESS_MODE_N_24G:
- 	case WIRELESS_MODE_N_5G:
- 		nmode = 1;
--		if (mimo_ps == 0) {
-+		if (mimo_ps == IEEE80211_SMPS_STATIC) {
- 			ratr_value &= 0x0007F005;
- 		} else {
- 			u32 ratr_mask;
-@@ -2016,8 +2025,7 @@ void rtl92cu_update_hal_rate_table(struc
- 				ratr_mask = 0x000ff005;
- 			else
- 				ratr_mask = 0x0f0ff005;
--			if (curtxbw_40mhz)
--				ratr_mask |= 0x00000010;
++	/* Try to set and enable ARP offload feature, this may fail, then it  */
++	/* is simply not supported and err 0 will be returned                 */
++	err = brcmf_fil_iovar_int_set(ifp, "arp_ol", mode);
++	if (err) {
++		brcmf_dbg(TRACE, "failed to set ARP offload mode to 0x%x, err = %d\n",
++			  mode, err);
++		err = 0;
++	} else {
++		err = brcmf_fil_iovar_int_set(ifp, "arpoe", enable);
++		if (err) {
++			brcmf_dbg(TRACE, "failed to configure (%d) ARP offload err = %d\n",
++				  enable, err);
++			err = 0;
++		} else
++			brcmf_dbg(TRACE, "successfully configured (%d) ARP offload to 0x%x\n",
++				  enable, mode);
++	}
 +
- 			ratr_value &= ratr_mask;
- 		}
- 		break;
-@@ -2026,41 +2034,74 @@ void rtl92cu_update_hal_rate_table(struc
- 			ratr_value &= 0x000ff0ff;
- 		else
- 			ratr_value &= 0x0f0ff0ff;
-+
- 		break;
- 	}
-+
- 	ratr_value &= 0x0FFFFFFF;
--	if (nmode && ((curtxbw_40mhz && curshortgi_40mhz) ||
--	    (!curtxbw_40mhz && curshortgi_20mhz))) {
-+
-+	if (nmode && ((curtxbw_40mhz &&
-+			 curshortgi_40mhz) || (!curtxbw_40mhz &&
-+					       curshortgi_20mhz))) {
-+
- 		ratr_value |= 0x10000000;
- 		tmp_ratr_value = (ratr_value >> 12);
-+
- 		for (shortgi_rate = 15; shortgi_rate > 0; shortgi_rate--) {
- 			if ((1 << shortgi_rate) & tmp_ratr_value)
- 				break;
- 		}
-+
- 		shortgi_rate = (shortgi_rate << 12) | (shortgi_rate << 8) |
--			       (shortgi_rate << 4) | (shortgi_rate);
-+		    (shortgi_rate << 4) | (shortgi_rate);
- 	}
-+
- 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
-+
-+	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "%x\n",
-+		 rtl_read_dword(rtlpriv, REG_ARFR0));
- }
- 
--void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
-+static void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw,
-+					 struct ieee80211_sta *sta,
-+					 u8 rssi_level)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	struct rtl_phy *rtlphy = &(rtlpriv->phy);
- 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
--	u32 ratr_bitmap = (u32) mac->basic_rates;
--	u8 *p_mcsrate = mac->mcs;
--	u8 ratr_index = 0;
--	u8 curtxbw_40mhz = mac->bw_40;
--	u8 curshortgi_40mhz = mac->sgi_40;
--	u8 curshortgi_20mhz = mac->sgi_20;
--	enum wireless_mode wirelessmode = mac->mode;
-+	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
-+	struct rtl_sta_info *sta_entry = NULL;
-+	u32 ratr_bitmap;
-+	u8 ratr_index;
-+	u8 curtxbw_40mhz = (sta->bandwidth >= IEEE80211_STA_RX_BW_40) ? 1 : 0;
-+	u8 curshortgi_40mhz = curtxbw_40mhz &&
-+			      (sta->ht_cap.cap & IEEE80211_HT_CAP_SGI_40) ?
-+				1 : 0;
-+	u8 curshortgi_20mhz = (sta->ht_cap.cap & IEEE80211_HT_CAP_SGI_20) ?
-+				1 : 0;
-+	enum wireless_mode wirelessmode = 0;
- 	bool shortgi = false;
- 	u8 rate_mask[5];
- 	u8 macid = 0;
--	u8 mimops = 1;
-+	u8 mimo_ps = IEEE80211_SMPS_OFF;
- 
--	ratr_bitmap |= (p_mcsrate[1] << 20) | (p_mcsrate[0] << 12);
-+	sta_entry = (struct rtl_sta_info *) sta->drv_priv;
-+	wirelessmode = sta_entry->wireless_mode;
-+	if (mac->opmode == NL80211_IFTYPE_STATION ||
-+	    mac->opmode == NL80211_IFTYPE_MESH_POINT)
-+		curtxbw_40mhz = mac->bw_40;
-+	else if (mac->opmode == NL80211_IFTYPE_AP ||
-+		mac->opmode == NL80211_IFTYPE_ADHOC)
-+		macid = sta->aid + 1;
-+
-+	if (rtlhal->current_bandtype == BAND_ON_5G)
-+		ratr_bitmap = sta->supp_rates[1] << 4;
-+	else
-+		ratr_bitmap = sta->supp_rates[0];
-+	if (mac->opmode == NL80211_IFTYPE_ADHOC)
-+		ratr_bitmap = 0xfff;
-+	ratr_bitmap |= (sta->ht_cap.mcs.rx_mask[1] << 20 |
-+			sta->ht_cap.mcs.rx_mask[0] << 12);
- 	switch (wirelessmode) {
- 	case WIRELESS_MODE_B:
- 		ratr_index = RATR_INX_WIRELESS_B;
-@@ -2071,6 +2112,7 @@ void rtl92cu_update_hal_rate_mask(struct
- 		break;
- 	case WIRELESS_MODE_G:
- 		ratr_index = RATR_INX_WIRELESS_GB;
-+
- 		if (rssi_level == 1)
- 			ratr_bitmap &= 0x00000f00;
- 		else if (rssi_level == 2)
-@@ -2085,7 +2127,8 @@ void rtl92cu_update_hal_rate_mask(struct
- 	case WIRELESS_MODE_N_24G:
- 	case WIRELESS_MODE_N_5G:
- 		ratr_index = RATR_INX_WIRELESS_NGB;
--		if (mimops == 0) {
-+
-+		if (mimo_ps == IEEE80211_SMPS_STATIC) {
- 			if (rssi_level == 1)
- 				ratr_bitmap &= 0x00070000;
- 			else if (rssi_level == 2)
-@@ -2128,8 +2171,10 @@ void rtl92cu_update_hal_rate_mask(struct
- 				}
- 			}
- 		}
-+
- 		if ((curtxbw_40mhz && curshortgi_40mhz) ||
- 		    (!curtxbw_40mhz && curshortgi_20mhz)) {
-+
- 			if (macid == 0)
- 				shortgi = true;
- 			else if (macid == 1)
-@@ -2138,21 +2183,42 @@ void rtl92cu_update_hal_rate_mask(struct
- 		break;
- 	default:
- 		ratr_index = RATR_INX_WIRELESS_NGB;
-+
- 		if (rtlphy->rf_type == RF_1T2R)
- 			ratr_bitmap &= 0x000ff0ff;
- 		else
- 			ratr_bitmap &= 0x0f0ff0ff;
- 		break;
- 	}
--	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "ratr_bitmap :%x\n",
--		 ratr_bitmap);
--	*(u32 *)&rate_mask = ((ratr_bitmap & 0x0fffffff) |
--				      ratr_index << 28);
-+	sta_entry->ratr_index = ratr_index;
-+
-+	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG,
-+		 "ratr_bitmap :%x\n", ratr_bitmap);
-+	*(u32 *)&rate_mask = (ratr_bitmap & 0x0fffffff) |
-+				     (ratr_index << 28);
- 	rate_mask[4] = macid | (shortgi ? 0x20 : 0x00) | 0x80;
- 	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG,
- 		 "Rate_index:%x, ratr_val:%x, %5phC\n",
- 		 ratr_index, ratr_bitmap, rate_mask);
--	rtl92c_fill_h2c_cmd(hw, H2C_RA_MASK, 5, rate_mask);
-+	memcpy(rtlpriv->rate_mask, rate_mask, 5);
-+	/* rtl92c_fill_h2c_cmd() does USB I/O and will result in a
-+	 * "scheduled while atomic" if called directly */
-+	schedule_work(&rtlpriv->works.fill_h2c_cmd);
-+
-+	if (macid != 0)
-+		sta_entry->ratr_index = ratr_index;
++	return err;
 +}
 +
-+void rtl92cu_update_hal_rate_tbl(struct ieee80211_hw *hw,
-+				 struct ieee80211_sta *sta,
-+				 u8 rssi_level)
-+{
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+
-+	if (rtlpriv->dm.useramask)
-+		rtl92cu_update_hal_rate_mask(hw, sta, rssi_level);
-+	else
-+		rtl92cu_update_hal_rate_table(hw, sta);
+ static struct wireless_dev *brcmf_cfg80211_add_iface(struct wiphy *wiphy,
+ 						     const char *name,
+ 						     enum nl80211_iftype type,
+@@ -3709,6 +3741,7 @@ brcmf_cfg80211_start_ap(struct wiphy *wi
+ 	}
+ 
+ 	brcmf_set_mpc(ndev, 0);
++	brcmf_configure_arp_offload(ifp, false);
+ 
+ 	/* find the RSN_IE */
+ 	rsn_ie = brcmf_parse_tlvs((u8 *)settings->beacon.tail,
+@@ -3815,8 +3848,10 @@ brcmf_cfg80211_start_ap(struct wiphy *wi
+ 	set_bit(BRCMF_VIF_STATUS_AP_CREATED, &ifp->vif->sme_state);
+ 
+ exit:
+-	if (err)
++	if (err) {
+ 		brcmf_set_mpc(ndev, 1);
++		brcmf_configure_arp_offload(ifp, true);
++	}
+ 	return err;
  }
  
- void rtl92cu_update_channel_access_setting(struct ieee80211_hw *hw)
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.h
-@@ -98,10 +98,6 @@ void rtl92cu_update_interrupt_mask(struc
- 				   u32 add_msr, u32 rm_msr);
- void rtl92cu_get_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val);
- void rtl92cu_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val);
--void rtl92cu_update_hal_rate_table(struct ieee80211_hw *hw,
--				   struct ieee80211_sta *sta,
--				   u8 rssi_level);
--void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level);
+@@ -3857,6 +3892,7 @@ static int brcmf_cfg80211_stop_ap(struct
+ 			brcmf_err("bss_enable config failed %d\n", err);
+ 	}
+ 	brcmf_set_mpc(ndev, 1);
++	brcmf_configure_arp_offload(ifp, true);
+ 	set_bit(BRCMF_VIF_STATUS_AP_CREATING, &ifp->vif->sme_state);
+ 	clear_bit(BRCMF_VIF_STATUS_AP_CREATED, &ifp->vif->sme_state);
  
- void rtl92cu_update_channel_access_setting(struct ieee80211_hw *hw);
- bool rtl92cu_gpio_radio_on_off_checking(struct ieee80211_hw *hw, u8 * valid);
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-@@ -289,14 +289,30 @@ void rtl92c_set_key(struct ieee80211_hw
- 				macaddr = cam_const_broad;
- 				entry_id = key_index;
- 			} else {
-+				if (mac->opmode == NL80211_IFTYPE_AP ||
-+				    mac->opmode == NL80211_IFTYPE_MESH_POINT) {
-+					entry_id = rtl_cam_get_free_entry(hw,
-+								 p_macaddr);
-+					if (entry_id >=  TOTAL_CAM_ENTRY) {
-+						RT_TRACE(rtlpriv, COMP_SEC,
-+							 DBG_EMERG,
-+							 "Can not find free hw security cam entry\n");
-+						return;
-+					}
-+				} else {
-+					entry_id = CAM_PAIRWISE_KEY_POSITION;
-+				}
+@@ -4995,6 +5031,8 @@ static s32 brcmf_config_dongle(struct br
+ 	if (err)
+ 		goto default_conf_out;
+ 
++	brcmf_configure_arp_offload(ifp, true);
 +
- 				key_index = PAIRWISE_KEYIDX;
--				entry_id = CAM_PAIRWISE_KEY_POSITION;
- 				is_pairwise = true;
- 			}
- 		}
- 		if (rtlpriv->sec.key_len[key_index] == 0) {
- 			RT_TRACE(rtlpriv, COMP_SEC, DBG_DMESG,
- 				 "delete one entry\n");
-+			if (mac->opmode == NL80211_IFTYPE_AP ||
-+			    mac->opmode == NL80211_IFTYPE_MESH_POINT)
-+				rtl_cam_del_entry(hw, p_macaddr);
- 			rtl_cam_delete_one_entry(hw, p_macaddr, entry_id);
- 		} else {
- 			RT_TRACE(rtlpriv, COMP_SEC, DBG_LOUD,
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -106,8 +106,7 @@ static struct rtl_hal_ops rtl8192cu_hal_
- 	.update_interrupt_mask = rtl92cu_update_interrupt_mask,
- 	.get_hw_reg = rtl92cu_get_hw_reg,
- 	.set_hw_reg = rtl92cu_set_hw_reg,
--	.update_rate_tbl = rtl92cu_update_hal_rate_table,
--	.update_rate_mask = rtl92cu_update_hal_rate_mask,
-+	.update_rate_tbl = rtl92cu_update_hal_rate_tbl,
- 	.fill_tx_desc = rtl92cu_tx_fill_desc,
- 	.fill_fake_txdesc = rtl92cu_fill_fake_txdesc,
- 	.fill_tx_cmddesc = rtl92cu_tx_fill_cmddesc,
-@@ -137,6 +136,7 @@ static struct rtl_hal_ops rtl8192cu_hal_
- 	.phy_lc_calibrate = _rtl92cu_phy_lc_calibrate,
- 	.phy_set_bw_mode_callback = rtl92cu_phy_set_bw_mode_callback,
- 	.dm_dynamic_txpower = rtl92cu_dm_dynamic_txpower,
-+	.fill_h2c_cmd = rtl92c_fill_h2c_cmd,
- };
+ 	cfg->dongle_up = true;
+ default_conf_out:
  
- static struct rtl_mod_params rtl92cu_mod_params = {
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.h
-@@ -49,5 +49,8 @@ bool rtl92cu_phy_set_rf_power_state(stru
- u32 rtl92cu_phy_query_rf_reg(struct ieee80211_hw *hw,
- 			    enum radio_path rfpath, u32 regaddr, u32 bitmask);
- void rtl92cu_phy_set_bw_mode_callback(struct ieee80211_hw *hw);
-+void rtl92cu_update_hal_rate_tbl(struct ieee80211_hw *hw,
-+				 struct ieee80211_sta *sta,
-+				 u8 rssi_level);
- 
- #endif
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -740,6 +740,7 @@ static void rtl_usb_stop(struct ieee8021
- 
- 	/* should after adapter start and interrupt enable. */
- 	set_hal_stop(rtlhal);
-+	cancel_work_sync(&rtlpriv->works.fill_h2c_cmd);
- 	/* Enable software */
- 	SET_USB_STOP(rtlusb);
- 	rtl_usb_deinit(hw);
-@@ -942,6 +943,16 @@ static bool rtl_usb_tx_chk_waitq_insert(
- 	return false;
- }
- 
-+static void rtl_fill_h2c_cmd_work_callback(struct work_struct *work)
-+{
-+	struct rtl_works *rtlworks =
-+	    container_of(work, struct rtl_works, fill_h2c_cmd);
-+	struct ieee80211_hw *hw = rtlworks->hw;
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+
-+	rtlpriv->cfg->ops->fill_h2c_cmd(hw, H2C_RA_MASK, 5, rtlpriv->rate_mask);
-+}
-+
- static struct rtl_intf_ops rtl_usb_ops = {
- 	.adapter_start = rtl_usb_start,
- 	.adapter_stop = rtl_usb_stop,
-@@ -973,6 +984,8 @@ int rtl_usb_probe(struct usb_interface *
- 
- 	/* this spin lock must be initialized early */
- 	spin_lock_init(&rtlpriv->locks.usb_lock);
-+	INIT_WORK(&rtlpriv->works.fill_h2c_cmd,
-+		  rtl_fill_h2c_cmd_work_callback);
- 
- 	rtlpriv->usb_data_index = 0;
- 	init_completion(&rtlpriv->firmware_loading_complete);
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -1572,6 +1572,8 @@ struct rtl_hal_ops {
- 	void (*bt_wifi_media_status_notify) (struct ieee80211_hw *hw,
- 					     bool mstate);
- 	void (*bt_coex_off_before_lps) (struct ieee80211_hw *hw);
-+	void (*fill_h2c_cmd) (struct ieee80211_hw *hw, u8 element_id,
-+			      u32 cmd_len, u8 *p_cmdbuffer);
- };
- 
- struct rtl_intf_ops {
-@@ -1698,6 +1700,7 @@ struct rtl_works {
- 	struct delayed_work ps_rfon_wq;
- 
- 	struct work_struct lps_leave_work;
-+	struct work_struct fill_h2c_cmd;
- };
- 
- struct rtl_debug {
-@@ -1866,6 +1869,7 @@ struct rtl_priv {
- 			bool bt_operation_on;
- 		};
- 	};
-+	u8 rate_mask[5];
- 
- 	/*This must be the last item so
- 	   that it points to the data allocated
 
 
