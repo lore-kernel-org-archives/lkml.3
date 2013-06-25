@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab3FYSir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:38:47 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:48903 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab3FYSim (ORCPT
+	id S1753226Ab3FYSgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:36:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41276 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab3FYSgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:38:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <51C9D4ED.5070805@sgi.com>
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
-	<20130621165142.GA32125@kroah.com>
-	<51C48745.9030304@zytor.com>
-	<CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com>
-	<20130621185056.GA23473@kroah.com>
-	<51C4C5F3.3050800@sgi.com>
-	<CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com>
-	<51C9D4ED.5070805@sgi.com>
-Date: Tue, 25 Jun 2013 11:38:42 -0700
-X-Google-Sender-Auth: P3vywvuWiYFoJjlSFu3An9RJPgk
-Message-ID: <CAE9FiQV+3gEZKPC0sthniGKceSfxV942m+DbyGHa-93Uj6wd1w@mail.gmail.com>
-Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Jun 2013 14:36:01 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 17/27] ipv6: assign rt6_info to inet6_ifaddr in init_loopback
+Date: Tue, 25 Jun 2013 11:35:36 -0700
+Message-Id: <20130625183519.668636076@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
+References: <20130625183517.651770593@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 10:35 AM, Mike Travis <travis@sgi.com> wrote:
->
->
-> On 6/21/2013 5:23 PM, Yinghai Lu wrote:
->> On Fri, Jun 21, 2013 at 2:30 PM, Mike Travis <travis@sgi.com> wrote:
->>> Exactly.  That's why I left both low and high memory on each node.
->>
->> looks like you assume every node have same ram, and before booting you
->> you need to know memory layout to append the boot command line.
->>
->> We have patchset that moving srat table parse early.
->> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->> for-x86-mm
->> https://git.kernel.org/cgit/linux/kernel/git/yinghai/linux-yinghai.git/log/?h=for-x86-mm
->>
->> on top that, we could make your patch pass more simple command like
->> 1/2^n of every node, and only need to pass n instead.
->
-> The two params that I couldn't figure out how to provide except via kernel
-> param option was the memory block size (128M or 2G) and the physical
-> address space per node.  The other 3 params can be automatically
-> setup by a script when the total system size is known.  As soon as we
-> verify on the 32TB system and surmise what will be needed for 64TB,
-> then those 3 params can probably disappear.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-our "numa parsing early" patchset could provide "physical address
-space per node",
-also can calculate memory block size via alignment detection from numa info.
+------------------
 
-with that, user only can pass "delay_init_mem" only.
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-Thanks
+[ Upstream commit 534c877928a16ae5f9776436a497109639bf67dc ]
 
-Yinghai
+Commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
+"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
+forgot to assign rt6_info to the inet6_ifaddr.
+When disable the net device, the rt6_info which allocated
+in init_loopback will not be destroied in __ipv6_ifa_notify.
+
+This will trigger the waring message below
+[23527.916091] unregister_netdevice: waiting for tap0 to become free. Usage count = 1
+
+Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv6/addrconf.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2432,8 +2432,10 @@ static void init_loopback(struct net_dev
+ 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
+ 
+ 			/* Failure cases are ignored */
+-			if (!IS_ERR(sp_rt))
++			if (!IS_ERR(sp_rt)) {
++				sp_ifa->rt = sp_rt;
+ 				ip6_ins_rt(sp_rt);
++			}
+ 		}
+ 		read_unlock_bh(&idev->lock);
+ 	}
+
+
