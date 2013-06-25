@@ -1,107 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab3FYUvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:51:31 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:33511 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab3FYUva convert rfc822-to-8bit (ORCPT
+	id S1751977Ab3FYUyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:54:36 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:59255 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab3FYUye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:51:30 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-ad-51ca02d0422d
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Dave Airlie <airlied@redhat.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: Linux 3.10-rc7
-Thread-topic: Linux 3.10-rc7
-Thread-index: AQHOcO9Wy94BEELWoUiZdIX6E3dp1w==
-Date: Tue, 25 Jun 2013 20:51:27 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E617306DD@sisaex02sj>
-References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
- <B8EFE96D1287C24090BAD9D858E15E6172FFB9@sisaex02sj>
- <CA+55aFxuB_nx8fZ_kN8U=fMFOq43cKZC_HJbj=6vKo7-fDqNuw@mail.gmail.com>
- <CAKMK7uH0q1vSaVRigtZD2pf5ZeVLEv1sn+tsiO7ZWjJdt=DwBA@mail.gmail.com>
- <20130625125437.6e7bb2d4@jbarnes-desktop>
- <B8EFE96D1287C24090BAD9D858E15E617305B4@sisaex02sj>
- <20130625130816.55e6cb80@jbarnes-desktop>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9hX90LTKcCDY73aVpcvbWAyeLmw7Os
-	Fgsf3mW2mD1hM5PFozMn2S0u75rDZvH1p4PFo7637A4cHis/aHns/baAxWPnrLvsHidm/Gbx
-	uN99nMnj/b6rbB6fN8l5fPu6lymAI4rLJiU1J7MstUjfLoEr49nttcwF5wUq/q/8wtbAeJi3
-	i5GTQ0LARKJjZx8jhC0mceHeerYuRi4OIYFljBJXf21kgXB6mSR61vaDVQkJzGeUWHEvF8Rm
-	E1CX+Px6BzuILSKgLfFjzklGkAZmgWdMEr9ubmXtYuTgEBaQlnh5SAaiRkZiZutHVghbT+LU
-	v3NgNouAqsSpjnVg83kF7CVaJz+DWryEWeLu1DdMIAlGoPO+n1oDZjMLiEs0t95kgThbQGLJ
-	nvPMELaoxMvH/8D2SggoSmxfbQVRriWxfudxqFZtiSfvLrBC7BKU+DH5HssERrFZSKbOQtIy
-	C0nLLCQtCxhZVjGKlRYnFxQnpadWGOkVJ+YWl+al6yXn525ihERt9Q7Gu19tDjEKcDAq8fCe
-	2HQyUIg1say4MvcQowQHs5IIb/4NoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGiUgOy5Tpd/gm
-	ve4VfmVux8nKtubx6w9v/UTuv/P7YXi/Ii49YfU6pasbfl6Ns16dJWkzcYroaZ2aA2U/zly7
-	u/66VeurNeulVzJo/rXxltiuXyO98YltUCLD28ibmnevPNI+yaq9RMBVyvk235dIV5kl8+wM
-	ZGtqtz4LfFD+dPJn2Wfu13d3KbEUZyQaajEXFScCAE2opca4AgAA
+	Tue, 25 Jun 2013 16:54:34 -0400
+Date: Tue, 25 Jun 2013 21:54:30 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yves-Alexis Perez <corsac@debian.org>
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
+        Henrique de Moraes Holschuh <hmh@debian.org>
+Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+Message-ID: <20130625205430.GA2438@srcf.ucam.org>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+ <1371937599.17761.19.camel@scapa>
+ <20130625160848.GA27123@srcf.ucam.org>
+ <1372193037.8189.24.camel@scapa>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372193037.8189.24.camel@scapa>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 02:06 PM, Jesse Barnes wrote:
-> On Tue, 25 Jun 2013 19:59:28 +0000
-> Shuah Khan <shuah.kh@samsung.com> wrote:
->
->> On 06/25/2013 01:52 PM, Jesse Barnes wrote:
->>> On Tue, 25 Jun 2013 21:37:37 +0200
->>> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->>>
->>
->>>>
->>>> Adding more lists to cc + Jesse since he's the guilty one for the
->>>> vt-switchless state restore stuff.
->>>
->>> Yeah, looks like we don't fetch the PLL state on resume from hibernate,
->>> leading to this warning.  The refcount is nonzero, indicating the pll
->>> is in use, but the active field is clear, which means we're missing an
->>> update somewhere.
->>>
->>> Shuah, just to confirm, does your resume actually work ok aside from
->>> the warning?  I *think* it's harmless in this case, but does indicate a
->>> real bug in our state tracking... trying to come up with a patch now.
->>>
->>> Thanks,
->>>
->>
->> Resume works just fine. I see it take longer for it to suspend compared
->> to 3.9.7 and then resumes just fine. Suspend taking longer very well
->> could be because of this warn_on. Other than this warn_on I haven't
->> noticed any other problems.
->
-> Here's the patch I'm testing now, can you give it a try?
->
+On Tue, Jun 25, 2013 at 10:43:57PM +0200, Yves-Alexis Perez wrote:
+> On mar., 2013-06-25 at 17:08 +0100, Matthew Garrett wrote:
+> > Right, the kernel has special-casing to hook the backlight keys up to 
+> > the ACPI backlight control. This is an awful thing, because there's no 
+> > way to detect this case other than parsing a single driver-specific 
+> > module parameter.
+> 
+> I'm not sure what that means. To detect what case exactly? That the
+> brightness is handled by video.ko?
 
-Jesse,
+That the kernel will automatically handle backlight key presses.
 
-With this patch warn_on went away. Resume worked. I started seeing:
+> > Could this functionality be duplicated across other backlight drivers? 
+> > Not easily. The ACPI driver receives keypresses and performs backlight 
+> > control. The i915 driver doesn't receive keypresses. We could easily tie 
+> > certain keycodes into backlight events, but which backlight should they 
+> > control? You're really starting to get into the kind of complex policy 
+> > decision that's best left to userspace, which is where it should have 
+> > been to begin with.
+> > 
+> Well, I get the reasoning, but I'm not sure I agree. That means
+> userspace behavior is inconsistent depending on who does it
+> (gnome-power-manager, gnome-setting-daemon, whatever), and it usually
+> means there's nothing handling the brightness before those are running,
+> not to mention people not running them because they don't run a full
+> blown desktop environment (until someone starts thinking it's a good
+> idea to handle brightness in systemd).
 
-[   78.733062] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[   78.733079] mei_me 0000:00:16.0: reset: wrong host start response
-[   78.733082] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
+The behaviour is already inconsistent. If you have an ACPI backlight 
+interface, hitting the keys makes your brightness change without any 
+userspace help. If you don't, it doesn't.
 
-over and over again after resume from reboot mode suspend. dmesg filled 
-up with these messages.
+> And in the end, the user just want the brightness keys to correctly
+> handle the brightness, full stop. Having multiple brightness daemons
+> using different policies on different hardware is a nightmare for the
+> end user, imho. From a user point of view, having it handled all in the
+> kernel works really pretty fine and is completely transparent (I have to
+> admit that from that point of view, it was even better when it was
+> handled by the EC but those times seem long gone).
 
-I did suspend to disk shutdown mode right away. Resume worked, no 
-warn_ons, and no mei_me messages.
+I agree, we should standardise the behaviour. And the only way we can 
+standardise the behaviour is to leave it up to userspace.
 
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
