@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab3FYKbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 06:31:53 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53533 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3FYKbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 06:31:52 -0400
-Date: Tue, 25 Jun 2013 11:31:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        a.hajda@samsung.com, Myungjoo Ham <myungjoo.ham@samsung.com>
-Message-ID: <20130625103146.GB27646@sirena.org.uk>
-References: <1372122518-6131-1-git-send-email-jonghwa3.lee@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L4gFVV/CladpyON8"
-Content-Disposition: inline
-In-Reply-To: <1372122518-6131-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regulator: max77693: Add max77693 regualtor driver.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1751923Ab3FYKdB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 06:33:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40130 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784Ab3FYKc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 06:32:59 -0400
+Date: Tue, 25 Jun 2013 06:32:13 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
+        dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
+        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
+Subject: Re: [PATCH v4 06/14] locks: encapsulate the fl_link list handling
+Message-ID: <20130625063213.615d8a83@corrin.poochiereds.net>
+In-Reply-To: <20130625113704.89a686a55dcec684e5e99434@canb.auug.org.au>
+References: <1371819502-26363-1-git-send-email-jlayton@redhat.com>
+	<1371819502-26363-7-git-send-email-jlayton@redhat.com>
+	<20130625113704.89a686a55dcec684e5e99434@canb.auug.org.au>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/ShwMJupcxbTnBXyanQNalBy"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/ShwMJupcxbTnBXyanQNalBy
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
---L4gFVV/CladpyON8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, 25 Jun 2013 11:37:04 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-On Tue, Jun 25, 2013 at 10:08:38AM +0900, Jonghwa Lee wrote:
-> This patch adds new regulator driver to support max77693 chip's regulators.
-> max77693 has two linear voltage regulators and one current regulator which
-> can be controlled through I2C bus. This driver also supports device tree.
+> Hi Jeff,
+>=20
+> Thanks for doing all this work!
+>=20
+> Trivial comments below.
+>=20
+> On Fri, 21 Jun 2013 08:58:14 -0400 Jeff Layton <jlayton@redhat.com> wrote:
+> >
+> > +static inline void
+> > +locks_insert_global_locks(struct file_lock *fl)
+> > +{
+> > +	list_add_tail(&fl->fl_link, &file_lock_list);
+> > +}
+>=20
+> We generally do not use "inline" in C files any more and leave it to the
+> compiler to do that.  Also, without the "inline" these function headers
+> should all be able to fit on single lines like the others here i.e.
+>=20
+> static void locks_insert_global_locks(struct file_lock *fl)
+>=20
 
-Applied, thanks.
+Thanks for helping review.
 
---L4gFVV/CladpyON8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Usually that makes sense, but doesn't the compiler generally determine
+that by counting the number of call sites? In this case, we'll have
+several call sites and it probably wouldn't inline the function. That
+makes this a little less efficient since we'll have to jump to this
+routine, do the list_add_tail and then jump back.
+
+That said, I'm not opposed to doing that since these routines grow a
+bit in size later and we'll only do this when a lock is acquired or
+dropped. I think Al has already merged most of this set into his
+for-next branch though. Perhaps I can do a patch on top of that set
+that removes the inline keywords from those functions?
+
+--=20
+Jeff Layton <jlayton@redhat.com>
+
+--Sig_/ShwMJupcxbTnBXyanQNalBy
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRyXGPAAoJELSic+t+oim9jL0P/22URezon9lk4T2fFeLL9r0p
-VJ+VLCnSpi6JWnKRCqmA9Ucf5/+ADBuopyae84+/N2Eijcwmig9ilhpdOsj+JwM4
-RjgtQ1oFsFpZxPhiP2DON46yKb+JPASW7VSIDp8y901vBP8Z4K7Ya10gKT+qwZli
-LFQ/IO2eM4hul5KLf7g7L/veW+/J19EipDAy6ht2KeLkHVBOSEdVblRZItkg4syQ
-4kjAOFjZ2UezT9k4aMjeyM+8tbVyGrDzBNLnEFSpj4NHiuNkGH6NTcM1jv9Dbu5v
-EGLXJ9YJc9PFo0ZrkCnixsHsldyUmkvKfiP/eOapXrTR4qs3rWZFaJZQ06tiZyJ3
-qFP3ffVIcNfSiHGmtMnt/2G5b/9ZAZYNPQTRt1u+7myTJALLqNAKHdNYCWV/1x0o
-cFTBVP2npPDrYkJXtRRvvuPuAqTKwQNa40MGBBaCyIgVG51AKqP1V6bF7FNTf7xi
-oBLvRsJMwiOKJdk99TWyAWyAyVpVVfAz4DPFZjEaV3QTs11qzR0lf90hEsHop1zf
-XZS8K7d1q8Za35nWPwQrHNth7dF7oMqbZrPptFuE27UoErDzmROnt3vOT/MeWmyq
-ZX7sc8l2LkUUWIkoQe9yS3YpNXPxYM2Bs0zDOYB4RkaM3aCAFVODie1ucBGJt07O
-ZTiRyAYPLHrrjODiWt2Y
-=L7Q2
+iQIcBAEBAgAGBQJRyXG1AAoJEAAOaEEZVoIV188QALcuRamXPJN7nN/0F1U8vBST
+dnkD9sbdZ9z69wiZxs+mlsNQrB9i/y5z8TdPII4EanP34WF/4J49/6A3sKbfF/76
+d5QbvbNwovDd2W9jOdlJ6GJ9vy7BvMaDz9bVmykmGT+65BYyb/Pt1w2dC1TLf7CT
+u2XfbmejGEYA7YUuW3nJhjDMDZCQiOGX2DPXX/+Fzp7keWoipMLaMR5UedoYe7Oh
+mtG8YrxHOKrqLofY9QTzXaZ6J2URsfkpG75nF7RmKEwkJzpO5OAKrcJJrmzb1MjP
+AdSPXgVziKoB0Xw/fxL8UH30Ery9JmhiWDqqJoX2XurCQx71O/+liFquNvdilUTI
+gtwx5mlJAsmTGCMVz7EFq7Lv4nSLp6VI+f9fdP4UlA17i6JTBvug/29tvEVKC6FP
+BsiHilT/59onUY8lVgfDp5XxgA/s7RdCPolbRChH4zvMdxmGOJ4P33kUFqWLRjn9
+DfKsPFrozVBNmUjQc9mUnwzLjGgEIyX1PJSoyJihJZhKoOcyXRvMC+/hi1eYJuZA
+H8u6vqXIyZE+PnLnS4Ki+J4tLXZcRMybZLCv9YrmUctJYdnujzRf7Don+pBAZ9we
+rkwZH4sw3fFRz0NR8rjHuVXzsPhZtIsIfEjFbO3Xcon7JUFYKBFxGvqoZDLwAAUz
+jqMvz+6wt0Lz2IFiMU56
+=cqOu
 -----END PGP SIGNATURE-----
 
---L4gFVV/CladpyON8--
+--Sig_/ShwMJupcxbTnBXyanQNalBy--
