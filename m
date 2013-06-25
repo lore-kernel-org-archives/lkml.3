@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab3FYSvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:51:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41192 "EHLO
+	id S1753756Ab3FYSv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:51:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41172 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab3FYSe3 (ORCPT
+	with ESMTP id S1752848Ab3FYSe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:29 -0400
+	Tue, 25 Jun 2013 14:34:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerome Blin <jerome.blin@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 95/95] spi/pxa2xx: fix memory corruption due to wrong size used in devm_kzalloc()
-Date: Tue, 25 Jun 2013 11:33:22 -0700
-Message-Id: <20130625182204.390799090@linuxfoundation.org>
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 91/95] perf: Fix perf mmap bugs
+Date: Tue, 25 Jun 2013 11:33:18 -0700
+Message-Id: <20130625182203.909446585@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,68 +30,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit cc0ee9873c6afafb387379ca1df25da78a08c603 upstream.
+commit 26cb63ad11e04047a64309362674bcbbd6a6f246 upstream.
 
-ACPI part of the driver accidentally used sizeof(*ssp) instead of the
-correct sizeof(*pdata). This leads to nasty memory corruptions like the one
-below:
+Vince reported a problem found by his perf specific trinity
+fuzzer.
 
-    BUG: unable to handle kernel paging request at 0000000749fd30b8
-    IP: [<ffffffff813fe8a1>] __list_del_entry+0x31/0xd0
-    PGD 0
-    Oops: 0000 [#1] PREEMPT SMP
-    Modules linked in:
-    CPU: 0 PID: 30 Comm: kworker/0:1 Not tainted 3.10.0-rc6v3.10-rc6_sdhci_modprobe+ #443
-    task: ffff8801483a0940 ti: ffff88014839e000 task.ti: ffff88014839e000
-    RIP: 0010:[<ffffffff813fe8a1>]  [<ffffffff813fe8a1>] __list_del_entry+0x31/0xd0
-    RSP: 0000:ffff88014839fde8  EFLAGS: 00010046
-    RAX: ffff880149fd30b0 RBX: ffff880149fd3040 RCX: dead000000200200
-    RDX: 0000000749fd30b0 RSI: ffff880149fd3058 RDI: ffff88014834d640
-    RBP: ffff88014839fde8 R08: ffff88014834d640 R09: 0000000000000001
-    R10: ffff8801483a0940 R11: 0000000000000001 R12: ffff880149fd3040
-    R13: ffffffff810e0b30 R14: ffff8801483a0940 R15: ffff88014834d640
-    FS:  0000000000000000(0000) GS:ffff880149e00000(0000) knlGS:0000000000000000
-    CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-    CR2: 0000000000000168 CR3: 0000000001e0b000 CR4: 00000000001407f0
-    DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-    DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-    Stack:
-     ffff88014839fe48 ffffffff810e0baf ffffffff81120abd ffff88014839fe20
-     ffff8801483a0940 ffff8801483a0940 ffff8801483a0940 ffff8801486b1c90
-     ffff88014834d640 ffffffff810e0b30 0000000000000000 0000000000000000
-    Call Trace:
-     [<ffffffff810e0baf>] worker_thread+0x7f/0x390
-     [<ffffffff81120abd>] ? trace_hardirqs_on+0xd/0x10
-     [<ffffffff810e0b30>] ? manage_workers.isra.22+0x2b0/0x2b0
-     [<ffffffff810e6c09>] kthread+0xd9/0xe0
-     [<ffffffff810f93df>] ? local_clock+0x3f/0x50
-     [<ffffffff810e6b30>] ? kthread_create_on_node+0x110/0x110
-     [<ffffffff818c5dec>] ret_from_fork+0x7c/0xb0
-     [<ffffffff810e6b30>] ? kthread_create_on_node+0x110/0x110
+Al noticed 2 problems with perf's mmap():
 
-Fix this by using the right structure size in devm_kzalloc().
+ - it has issues against fork() since we use vma->vm_mm for accounting.
+ - it has an rb refcount leak on double mmap().
 
-Reported-by: Jerome Blin <jerome.blin@intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+We fix the issues against fork() by using VM_DONTCOPY; I don't
+think there's code out there that uses this; we didn't hear
+about weird accounting problems/crashes. If we do need this to
+work, the previously proposed VM_PINNED could make this work.
+
+Aside from the rb reference leak spotted by Al, Vince's example
+prog was indeed doing a double mmap() through the use of
+perf_event_set_output().
+
+This exposes another problem, since we now have 2 events with
+one buffer, the accounting gets screwy because we account per
+event. Fix this by making the buffer responsible for its own
+accounting.
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/20130528085548.GA12193@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-pxa2xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/perf_event.h |    3 +--
+ kernel/events/core.c       |   37 ++++++++++++++++++++-----------------
+ kernel/events/internal.h   |    3 +++
+ 3 files changed, 24 insertions(+), 19 deletions(-)
 
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -1069,7 +1069,7 @@ pxa2xx_spi_acpi_get_pdata(struct platfor
- 	    acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
- 		return NULL;
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -404,8 +404,7 @@ struct perf_event {
+ 	/* mmap bits */
+ 	struct mutex			mmap_mutex;
+ 	atomic_t			mmap_count;
+-	int				mmap_locked;
+-	struct user_struct		*mmap_user;
++
+ 	struct ring_buffer		*rb;
+ 	struct list_head		rb_entry;
  
--	pdata = devm_kzalloc(&pdev->dev, sizeof(*ssp), GFP_KERNEL);
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata) {
- 		dev_err(&pdev->dev,
- 			"failed to allocate memory for platform data\n");
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2866,7 +2866,7 @@ static void free_event_rcu(struct rcu_he
+ 	kfree(event);
+ }
+ 
+-static void ring_buffer_put(struct ring_buffer *rb);
++static bool ring_buffer_put(struct ring_buffer *rb);
+ 
+ static void free_event(struct perf_event *event)
+ {
+@@ -3531,13 +3531,13 @@ static struct ring_buffer *ring_buffer_g
+ 	return rb;
+ }
+ 
+-static void ring_buffer_put(struct ring_buffer *rb)
++static bool ring_buffer_put(struct ring_buffer *rb)
+ {
+ 	struct perf_event *event, *n;
+ 	unsigned long flags;
+ 
+ 	if (!atomic_dec_and_test(&rb->refcount))
+-		return;
++		return false;
+ 
+ 	spin_lock_irqsave(&rb->event_lock, flags);
+ 	list_for_each_entry_safe(event, n, &rb->event_list, rb_entry) {
+@@ -3547,6 +3547,7 @@ static void ring_buffer_put(struct ring_
+ 	spin_unlock_irqrestore(&rb->event_lock, flags);
+ 
+ 	call_rcu(&rb->rcu_head, rb_free_rcu);
++	return true;
+ }
+ 
+ static void perf_mmap_open(struct vm_area_struct *vma)
+@@ -3561,18 +3562,20 @@ static void perf_mmap_close(struct vm_ar
+ 	struct perf_event *event = vma->vm_file->private_data;
+ 
+ 	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
+-		unsigned long size = perf_data_size(event->rb);
+-		struct user_struct *user = event->mmap_user;
+ 		struct ring_buffer *rb = event->rb;
++		struct user_struct *mmap_user = rb->mmap_user;
++		int mmap_locked = rb->mmap_locked;
++		unsigned long size = perf_data_size(rb);
+ 
+-		atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
+-		vma->vm_mm->pinned_vm -= event->mmap_locked;
+ 		rcu_assign_pointer(event->rb, NULL);
+ 		ring_buffer_detach(event, rb);
+ 		mutex_unlock(&event->mmap_mutex);
+ 
+-		ring_buffer_put(rb);
+-		free_uid(user);
++		if (ring_buffer_put(rb)) {
++			atomic_long_sub((size >> PAGE_SHIFT) + 1, &mmap_user->locked_vm);
++			vma->vm_mm->pinned_vm -= mmap_locked;
++			free_uid(mmap_user);
++		}
+ 	}
+ }
+ 
+@@ -3625,9 +3628,7 @@ static int perf_mmap(struct file *file,
+ 	WARN_ON_ONCE(event->ctx->parent_ctx);
+ 	mutex_lock(&event->mmap_mutex);
+ 	if (event->rb) {
+-		if (event->rb->nr_pages == nr_pages)
+-			atomic_inc(&event->rb->refcount);
+-		else
++		if (event->rb->nr_pages != nr_pages)
+ 			ret = -EINVAL;
+ 		goto unlock;
+ 	}
+@@ -3669,12 +3670,14 @@ static int perf_mmap(struct file *file,
+ 		ret = -ENOMEM;
+ 		goto unlock;
+ 	}
+-	rcu_assign_pointer(event->rb, rb);
++
++	rb->mmap_locked = extra;
++	rb->mmap_user = get_current_user();
+ 
+ 	atomic_long_add(user_extra, &user->locked_vm);
+-	event->mmap_locked = extra;
+-	event->mmap_user = get_current_user();
+-	vma->vm_mm->pinned_vm += event->mmap_locked;
++	vma->vm_mm->pinned_vm += extra;
++
++	rcu_assign_pointer(event->rb, rb);
+ 
+ 	perf_event_update_userpage(event);
+ 
+@@ -3683,7 +3686,7 @@ unlock:
+ 		atomic_inc(&event->mmap_count);
+ 	mutex_unlock(&event->mmap_mutex);
+ 
+-	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
++	vma->vm_flags |= VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
+ 	vma->vm_ops = &perf_mmap_vmops;
+ 
+ 	return ret;
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -31,6 +31,9 @@ struct ring_buffer {
+ 	spinlock_t			event_lock;
+ 	struct list_head		event_list;
+ 
++	int				mmap_locked;
++	struct user_struct		*mmap_user;
++
+ 	struct perf_event_mmap_page	*user_page;
+ 	void				*data_pages[0];
+ };
 
 
