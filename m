@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3FYTNq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:13:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40836 "EHLO
+	id S1752043Ab3FYTO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:14:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40818 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab3FYSdb (ORCPT
+	with ESMTP id S1751101Ab3FYSd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:31 -0400
+	Tue, 25 Jun 2013 14:33:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arend Van Spriel <arend@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 10/95] brcmfmac: Turn off ARP offloading when configured for AP.
-Date: Tue, 25 Jun 2013 11:31:57 -0700
-Message-Id: <20130625182154.802888583@linuxfoundation.org>
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 02/95] ARM: 7754/1: Fix the CPU ID and the mask associated to the PJ4B
+Date: Tue, 25 Jun 2013 11:31:49 -0700
+Message-Id: <20130625182153.915257183@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,154 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hante Meuleman <meuleman@broadcom.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit b3657453f16a7b84eab9b93bb9a9a2901ffc70af upstream.
+commit 049be07053ebbf0ee8543caea23ae7bdf0765bb2 upstream.
 
-ARP offloading should only be used in STA or P2P client mode. It
-is currently configured once at init. When being configured for AP
-ARP offloading should be turned off and when AP mode is left it can
-be turned back on.
+This commit fixes the ID and mask for the PJ4B which was too
+restrictive and didn't match the CPU of the Armada 370 SoC.
 
-Reviewed-by: Arend Van Spriel <arend@broadcom.com>
-Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reviewed-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c  |   18 --------
- drivers/net/wireless/brcm80211/brcmfmac/fwil_types.h  |    6 ++
- drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |   40 +++++++++++++++++-
- 3 files changed, 45 insertions(+), 19 deletions(-)
+ arch/arm/mm/proc-v7.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
-@@ -26,7 +26,6 @@
- #include "fwil.h"
- 
- #define PKTFILTER_BUF_SIZE		128
--#define BRCMF_ARPOL_MODE		0xb	/* agent|snoop|peer_autoreply */
- #define BRCMF_DEFAULT_BCN_TIMEOUT	3
- #define BRCMF_DEFAULT_SCAN_CHANNEL_TIME	40
- #define BRCMF_DEFAULT_SCAN_UNASSOC_TIME	40
-@@ -337,23 +336,6 @@ int brcmf_c_preinit_dcmds(struct brcmf_i
- 		goto done;
- 	}
- 
--	/* Try to set and enable ARP offload feature, this may fail */
--	err = brcmf_fil_iovar_int_set(ifp, "arp_ol", BRCMF_ARPOL_MODE);
--	if (err) {
--		brcmf_dbg(TRACE, "failed to set ARP offload mode to 0x%x, err = %d\n",
--			  BRCMF_ARPOL_MODE, err);
--		err = 0;
--	} else {
--		err = brcmf_fil_iovar_int_set(ifp, "arpoe", 1);
--		if (err) {
--			brcmf_dbg(TRACE, "failed to enable ARP offload err = %d\n",
--				  err);
--			err = 0;
--		} else
--			brcmf_dbg(TRACE, "successfully enabled ARP offload to 0x%x\n",
--				  BRCMF_ARPOL_MODE);
--	}
--
- 	/* Setup packet filter */
- 	brcmf_c_pktfilter_offload_set(ifp, BRCMF_DEFAULT_PACKET_FILTER);
- 	brcmf_c_pktfilter_offload_enable(ifp, BRCMF_DEFAULT_PACKET_FILTER,
---- a/drivers/net/wireless/brcm80211/brcmfmac/fwil_types.h
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/fwil_types.h
-@@ -23,6 +23,12 @@
- 
- #define BRCMF_FIL_ACTION_FRAME_SIZE	1800
- 
-+/* ARP Offload feature flags for arp_ol iovar */
-+#define BRCMF_ARP_OL_AGENT		0x00000001
-+#define BRCMF_ARP_OL_SNOOP		0x00000002
-+#define BRCMF_ARP_OL_HOST_AUTO_REPLY	0x00000004
-+#define BRCMF_ARP_OL_PEER_AUTO_REPLY	0x00000008
-+
- 
- enum brcmf_fil_p2p_if_types {
- 	BRCMF_FIL_P2P_IF_CLIENT,
---- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -505,6 +505,38 @@ send_key_to_dongle(struct net_device *nd
- 	return err;
- }
- 
-+static s32
-+brcmf_configure_arp_offload(struct brcmf_if *ifp, bool enable)
-+{
-+	s32 err;
-+	u32 mode;
-+
-+	if (enable)
-+		mode = BRCMF_ARP_OL_AGENT | BRCMF_ARP_OL_PEER_AUTO_REPLY;
-+	else
-+		mode = 0;
-+
-+	/* Try to set and enable ARP offload feature, this may fail, then it  */
-+	/* is simply not supported and err 0 will be returned                 */
-+	err = brcmf_fil_iovar_int_set(ifp, "arp_ol", mode);
-+	if (err) {
-+		brcmf_dbg(TRACE, "failed to set ARP offload mode to 0x%x, err = %d\n",
-+			  mode, err);
-+		err = 0;
-+	} else {
-+		err = brcmf_fil_iovar_int_set(ifp, "arpoe", enable);
-+		if (err) {
-+			brcmf_dbg(TRACE, "failed to configure (%d) ARP offload err = %d\n",
-+				  enable, err);
-+			err = 0;
-+		} else
-+			brcmf_dbg(TRACE, "successfully configured (%d) ARP offload to 0x%x\n",
-+				  enable, mode);
-+	}
-+
-+	return err;
-+}
-+
- static struct wireless_dev *brcmf_cfg80211_add_iface(struct wiphy *wiphy,
- 						     const char *name,
- 						     enum nl80211_iftype type,
-@@ -3709,6 +3741,7 @@ brcmf_cfg80211_start_ap(struct wiphy *wi
- 	}
- 
- 	brcmf_set_mpc(ndev, 0);
-+	brcmf_configure_arp_offload(ifp, false);
- 
- 	/* find the RSN_IE */
- 	rsn_ie = brcmf_parse_tlvs((u8 *)settings->beacon.tail,
-@@ -3815,8 +3848,10 @@ brcmf_cfg80211_start_ap(struct wiphy *wi
- 	set_bit(BRCMF_VIF_STATUS_AP_CREATED, &ifp->vif->sme_state);
- 
- exit:
--	if (err)
-+	if (err) {
- 		brcmf_set_mpc(ndev, 1);
-+		brcmf_configure_arp_offload(ifp, true);
-+	}
- 	return err;
- }
- 
-@@ -3857,6 +3892,7 @@ static int brcmf_cfg80211_stop_ap(struct
- 			brcmf_err("bss_enable config failed %d\n", err);
- 	}
- 	brcmf_set_mpc(ndev, 1);
-+	brcmf_configure_arp_offload(ifp, true);
- 	set_bit(BRCMF_VIF_STATUS_AP_CREATING, &ifp->vif->sme_state);
- 	clear_bit(BRCMF_VIF_STATUS_AP_CREATED, &ifp->vif->sme_state);
- 
-@@ -4995,6 +5031,8 @@ static s32 brcmf_config_dongle(struct br
- 	if (err)
- 		goto default_conf_out;
- 
-+	brcmf_configure_arp_offload(ifp, true);
-+
- 	cfg->dongle_up = true;
- default_conf_out:
- 
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -407,8 +407,8 @@ __v7_ca9mp_proc_info:
+ 	 */
+ 	.type   __v7_pj4b_proc_info, #object
+ __v7_pj4b_proc_info:
+-	.long	0x562f5840
+-	.long	0xfffffff0
++	.long	0x560f5800
++	.long	0xff0fff00
+ 	__v7_proc __v7_pj4b_setup
+ 	.size	__v7_pj4b_proc_info, . - __v7_pj4b_proc_info
+ #endif	/* CONFIG_ARM_LPAE */
 
 
