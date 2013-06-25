@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab3FYXxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 19:53:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35222 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab3FYXxa (ORCPT
+	id S1752486Ab3FYX7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 19:59:54 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:48016 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab3FYX7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 19:53:30 -0400
-Date: Tue, 25 Jun 2013 16:53:22 -0700 (PDT)
-Message-Id: <20130625.165322.632668357167412473.davem@davemloft.net>
-To: prabhakar.csengg@gmail.com
-Cc: netdev@vger.kernel.org, davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org, mugunthanvnm@ti.com
-Subject: Re: [PATCH v2 0/3] net: davinci: driver cleanup
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1372175693-20318-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1372175693-20318-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Jun 2013 19:59:52 -0400
+From: Chad Williamson <chad@dahc.us>
+To: gregkh@linuxfoundation.org
+Cc: puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
+        tulinizer@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Chad Williamson <chad@dahc.us>
+Subject: [PATCH v2 5/6] Staging: silicom: remove the typedef for bpmod_info_t
+Date: Tue, 25 Jun 2013 18:59:23 -0500
+Message-Id: <1372204764-16203-2-git-send-email-chad@dahc.us>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1372204764-16203-1-git-send-email-chad@dahc.us>
+References: <1372204764-16203-1-git-send-email-chad@dahc.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 25 Jun 2013 21:24:50 +0530
+Remove the bpmod_info_t typedef from bpctl_mod.c, replacing it with
+struct bpmod_info.
 
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> 
-> This patch series cleans up the davinci driver.
-> 
-> This patch series applies on 3.10.rc7 and is boot tested
-> on OMAP-L138 EVM with DT and non DT cases.
+Signed-off-by: Chad Williamson <chad@dahc.us>
+---
+v2: rebased onto latest master in linux-next
+---
+ drivers/staging/silicom/bpctl_mod.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Series applied, thanks.
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+index 4689076..91c864c 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -5971,7 +5971,7 @@ enum board_type {
+ 	PE210G2BPi40,
+ };
+ 
+-typedef struct _bpmod_info_t {
++struct bpmod_info {
+ 	unsigned int vendor;
+ 	unsigned int device;
+ 	unsigned int subvendor;
+@@ -5979,7 +5979,7 @@ typedef struct _bpmod_info_t {
+ 	unsigned int index;
+ 	char *bp_name;
+ 
+-} bpmod_info_t;
++};
+ 
+ typedef struct _dev_desc {
+ 	char *name;
+@@ -6155,7 +6155,7 @@ dev_desc_t dev_desc[] = {
+ 	{0},
+ };
+ 
+-static bpmod_info_t tx_ctl_pci_tbl[] = {
++static struct bpmod_info tx_ctl_pci_tbl[] = {
+ 	{0x8086, 0x107a, SILICOM_SVID, SILICOM_PXG2BPFI_SSID, PXG2BPFI,
+ 	 "PXG2BPFI-SD"},
+ 	{0x8086, 0x107a, SILICOM_SVID, SILICOM_PXG2BPFIL_SSID, PXG2BPFIL,
+@@ -6653,7 +6653,7 @@ static void find_fw(struct bpctl_dev *dev)
+ 	printk("firmware version: 0x%x\n", dev->bp_fw_ver);
+ }
+ 
+-static int init_one(struct bpctl_dev *dev, bpmod_info_t *info, struct pci_dev *pdev1)
++static int init_one(struct bpctl_dev *dev, struct bpmod_info *info, struct pci_dev *pdev1)
+ {
+ 	unsigned long mmio_start, mmio_len;
+ 
+-- 
+1.8.1.4
+
