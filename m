@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab3FYB7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 21:59:25 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:9601 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab3FYB7Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 21:59:24 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C8F948.2040204@asianux.com>
-Date: Tue, 25 Jun 2013 09:58:32 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751819Ab3FYCA2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 22:00:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:9657 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab3FYCA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 22:00:26 -0400
+X-IronPort-AV: E=Sophos;i="4.87,932,1363104000"; 
+   d="scan'208";a="7668004"
+Message-ID: <51C8F427.4010601@cn.fujitsu.com>
+Date: Tue, 25 Jun 2013 09:36:39 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: msalter@redhat.com, a-jacquiot@ti.com
-CC: jkc@redhat.com, linux-c6x-dev@linux-c6x.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH] arch: c6x: kernel: include "linux/console.h" when 'VT' and
- 'DUMMY_CONSOLE' enabled.
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: George Spelvin <linux@horizon.com>
+CC: bp@alien8.de, pablo@netfilter.org, kaber@trash.net,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org
+Subject: Re: v3.10-rc7 oops soon after boot
+References: <20130624221708.15489.qmail@science.horizon.com>
+In-Reply-To: <20130624221708.15489.qmail@science.horizon.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/25 09:33:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/25 09:33:57,
+	Serialize complete at 2013/06/25 09:33:57
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need include "linux/console.h" when 'VT' and 'DUMMY_CONSOLE' enabled
-(e.g allmodconfig).
+On 06/25/2013 06:17 AM, George Spelvin wrote:
+>>> Reported-by: Borislav Petkov <bp@alien8.de>
+> 
+>> This should be:
+>>
+>> Reported-by: George Spelvin <linux@horizon.com>
+>>
+>> I only connected the dots...
+> 
+> Well, you did a whole lot more than me!  I just lobbed a "d'oh, it
+> crashes" into the seething ocean of lkml.  (Admittedly, I had reason
+> to act fast: we're very close to release.)
+> 
+> You figured out what subsystem was at fault and got the right people
+> involved.  Definitely a valuable contribution.
+> 
+> Me, personally, I don't give a flying f*** about such credit; I had
+> an itch and was trolling for someone to scratch it.
+> 
+> So feel free to take Reported-by (you are the one who reported it *to
+> someone who could fix it*), Triaged-by, or whatever.
 
-The related error:
-  arch/c6x/kernel/setup.c: In function ‘setup_arch’:
-  arch/c6x/kernel/setup.c:442:2: error: ‘conswitchp’ undeclared (first use in this function)
-  arch/c6x/kernel/setup.c:442:2: note: each undeclared identifier is reported only once for each function it appears in
-  arch/c6x/kernel/setup.c:442:16: error: ‘dummy_con’ undeclared (first use in this function)
+It's my mistake, the reported-by should be you.
+of course we should thank Borislav, I didn't notice this bug report
+mail until he forwarded it.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/c6x/kernel/setup.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Thanks all you guys! Sorry for my mistake..
 
-diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
-index f4e72bd..1411141 100644
---- a/arch/c6x/kernel/setup.c
-+++ b/arch/c6x/kernel/setup.c
-@@ -26,6 +26,9 @@
- #include <linux/cpu.h>
- #include <linux/fs.h>
- #include <linux/of.h>
-+#if defined(CONFIG_VT) && defined(CONFIG_DUMMY_CONSOLE)
-+#include <linux/console.h>
-+#endif
- 
- 
- #include <asm/sections.h>
--- 
-1.7.7.6
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
