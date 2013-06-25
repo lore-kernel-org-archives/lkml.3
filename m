@@ -1,140 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab3FYKS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 06:18:56 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56543 "EHLO
+	id S1752836Ab3FYKTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 06:19:07 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56575 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3FYKSz (ORCPT
+	with ESMTP id S1751134Ab3FYKTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 06:18:55 -0400
-X-AuditID: 85900ec0-d56cbb900000151e-95-51c96e8d5dd5
-Message-ID: <51C96E7B.3030503@hitachi.com>
-Date: Tue, 25 Jun 2013 19:18:35 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Tue, 25 Jun 2013 06:19:00 -0400
+Message-ID: <51C96E91.7020602@hitachi.com>
+Date: Tue, 25 Jun 2013 19:18:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, David Sharp <dhsharp@google.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH] [BUGFIX] Fix build error caused by an undefinition
- of the kvm_write_tsc_offset tracepoint for x86_32
-References: <20130623075848.GO5832@redhat.com> <20130625101641.29672.13013.stgit@yunodevel>
-In-Reply-To: <20130625101641.29672.13013.stgit@yunodevel>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 1/2 v3] tracing/uprobes: Support ftrace_event_file base
+ multibuffer
+References: <51C90ECC.9030303@huawei.com>
+In-Reply-To: <51C90ECC.9030303@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gleb,
+(2013/06/25 12:30), zhangwei(Jovi) wrote:
+> @@ -605,33 +629,84 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
+>  				struct mm_struct *mm);
+> 
+>  static int
+> -probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
+> +probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+> +		   filter_func_t filter)
+>  {
+> +	int enabled = 0;
+>  	int ret = 0;
+> 
+> +	/* we cannot call uprobe_register twice for same tu */
+>  	if (is_trace_uprobe_enabled(tu))
+> -		return -EINTR;
+> +		enabled = 1;
+> +
+> +	if (file) {
+> +		struct event_file_link *link;
+> +
+> +		if (tu->flags & TP_FLAG_PROFILE)
+> +			return -EINTR;
+> +
+> +		link = kmalloc(sizeof(*link), GFP_KERNEL);
+> +		if (!link)
+> +			return -ENOMEM;
+> +
+> +		link->file = file;
+> +		list_add_rcu(&link->list, &tu->files);
 
-Thank you for applying my patch.
-I received a mail of build error for i386, so I fixed the problem.
-Since the tracepoint was defined only for x86_64, build was failed in
-x86_32.
+Maybe, list_add_tail_rcu() ? :) (but this is a minor one)
 
-Would you apply this patch to kvm-tree?
-Sorry for the inconvenience this may cause.
+Other parts looks good for me.
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
 Thank you,
-Yoshihiro YUNOMAE
-
-(2013/06/25 19:16), Yoshihiro YUNOMAE wrote:
-> Fix build error caused by an undefinition of the kvm_write_tsc_offset
-> tracepoint for x86_32.
-> Since the tracepoint in trace.h was defined for CONFIG_X86_64, kernel build
-> on i386 was failed.
->
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Cc: Joerg Roedel <joro@8bytes.org>
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> ---
->   arch/x86/kvm/trace.h |   42 +++++++++++++++++++++---------------------
->   1 file changed, 21 insertions(+), 21 deletions(-)
->
-> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-> index 6c82cf1..545245d 100644
-> --- a/arch/x86/kvm/trace.h
-> +++ b/arch/x86/kvm/trace.h
-> @@ -756,6 +756,27 @@ TRACE_EVENT(
->   		  __entry->gpa_match ? "GPA" : "GVA")
->   );
->
-> +TRACE_EVENT(kvm_write_tsc_offset,
-> +	TP_PROTO(unsigned int vcpu_id, __u64 previous_tsc_offset,
-> +		 __u64 next_tsc_offset),
-> +	TP_ARGS(vcpu_id, previous_tsc_offset, next_tsc_offset),
-> +
-> +	TP_STRUCT__entry(
-> +		__field( unsigned int,	vcpu_id				)
-> +		__field(	__u64,	previous_tsc_offset		)
-> +		__field(	__u64,	next_tsc_offset			)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->vcpu_id		= vcpu_id;
-> +		__entry->previous_tsc_offset	= previous_tsc_offset;
-> +		__entry->next_tsc_offset	= next_tsc_offset;
-> +	),
-> +
-> +	TP_printk("vcpu=%u prev=%llu next=%llu", __entry->vcpu_id,
-> +		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
-> +);
-> +
->   #ifdef CONFIG_X86_64
->
->   #define host_clocks					\
-> @@ -815,27 +836,6 @@ TRACE_EVENT(kvm_track_tsc,
->   		  __print_symbolic(__entry->host_clock, host_clocks))
->   );
->
-> -TRACE_EVENT(kvm_write_tsc_offset,
-> -	TP_PROTO(unsigned int vcpu_id, __u64 previous_tsc_offset,
-> -		 __u64 next_tsc_offset),
-> -	TP_ARGS(vcpu_id, previous_tsc_offset, next_tsc_offset),
-> -
-> -	TP_STRUCT__entry(
-> -		__field( unsigned int,	vcpu_id				)
-> -		__field(	__u64,	previous_tsc_offset		)
-> -		__field(	__u64,	next_tsc_offset			)
-> -	),
-> -
-> -	TP_fast_assign(
-> -		__entry->vcpu_id		= vcpu_id;
-> -		__entry->previous_tsc_offset	= previous_tsc_offset;
-> -		__entry->next_tsc_offset	= next_tsc_offset;
-> -	),
-> -
-> -	TP_printk("vcpu=%u prev=%llu next=%llu", __entry->vcpu_id,
-> -		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
-> -);
-> -
->   #endif /* CONFIG_X86_64 */
->
->   #endif /* _TRACE_KVM_H */
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
 
 -- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
 Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
