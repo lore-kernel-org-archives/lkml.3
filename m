@@ -1,355 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317Ab3FYMHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 08:07:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52136 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab3FYMHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 08:07:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,936,1363158000"; 
-   d="scan'208";a="335203427"
-Message-ID: <51C98969.40401@intel.com>
-Date: Tue, 25 Jun 2013 15:13:29 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1751394Ab3FYMJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 08:09:48 -0400
+Received: from r-mail2.rd.orange.com ([217.108.152.42]:23158 "EHLO
+	r-mail2.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab3FYMJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 08:09:46 -0400
+X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jun 2013 08:09:46 EDT
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Michal Marek <mmarek@suse.cz>
+Subject: Re: linux-next: Tree for Jun 25
+Date: Tue, 25 Jun 2013 14:03:17 +0200
+User-Agent: KMail/1.13.5 (Linux/3.9.3-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
+Cc: sedat.dilek@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+References: <20130625184420.b811089a069c63ccd3721d68@canb.auug.org.au> <CA+icZUUH7AeR7OSm-SB56AGRiE815tTkQW9fFkKzyrSvzs3Etg@mail.gmail.com> <201306251121.53862.yann.morin.1998@free.fr>
+In-Reply-To: <201306251121.53862.yann.morin.1998@free.fr>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
-References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-13-git-send-email-adrian.hunter@intel.com> <CABPqkBRoRgHUM5ahHmvYXJ1BkHncm9Z2GZkzuRFbsNfh4=HJ6g@mail.gmail.com>
-In-Reply-To: <CABPqkBRoRgHUM5ahHmvYXJ1BkHncm9Z2GZkzuRFbsNfh4=HJ6g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306251403.17436.yann.morin.1998@free.fr>
+X-OriginalArrivalTime: 25 Jun 2013 12:03:18.0133 (UTC) FILETIME=[FAC3D250:01CE719B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/13 14:23, Stephane Eranian wrote:
-> On Mon, Jun 24, 2013 at 3:16 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
->> Sample types need not be identical to determine
->> the sample id from the event.  Only the position
->> of the sample id needs to be the same.
->>
->> Compatible sample types are ones in which the bits
->> defined by PERF_COMPAT_MASK are the same.
->> 'perf_evlist__config()' forces sample types to be
->> compatible on that basis.
->>
-> This is indeed a major flaw of the current sampling buffer format.
-> I have a patch coming to address this from the kernel side.
-> 
-> I am trying to understand this patch and I am confused by the
-> description and especially the structure of COMPAT_MASK.
-> 
-> I agree that if the SAMPLE_ID position remains constant then
-> it can be extracted from the body of the sample uniformly.
-> The only way to guarantee a fixed position is by ensuring that
-> all the sample_types before SAMPLE_ID and either set or
-> unset. By before I don't mean in the enum order but in the
-> order in which the kernel lays them various sample_types
-> in the buffer. And that's determined by perf_output_sample().
-> So I don't understand why PERF_SAMPLE_CPU and
-> PERF_SAMPLE_STREAM_ID  are here.
-> 
-> Any explanation?
+Michal, All,
 
-There are 2 sample formats: one for sample events and one for other events
-(the id sample).  In perf tools refer __perf_evsel__parse_sample() vs
-perf_evsel__parse_id_sample().
+[Sorry for duplicates, I inadvertently sent HTML]
 
+On Tuesday 25 June 2013 11:21:53 Yann E. MORIN wrote:
+> On Tuesday 25 June 2013 10:55:20 Sedat Dilek wrote:
+> > Not sure what's going on, but I get this with today's Linux-Next.
+> > ( Yesterday's next-20130624 was OK. )
+> > 
+> > $ LANG=C LC_ALL=C  yes "" | make oldconfig && LANG=C LC_ALL=C make
+> > silentoldconfig </dev/null
+> [--SNIP--]
+> > RapidIO support (RAPIDIO) [Y/n/?] y
+> >   IDT Tsi721 PCI Express SRIO Controller support (RAPIDIO_TSI721) [Y/n/?] y
+> >   Discovery timeout duration (seconds) (RAPIDIO_DISC_TIMEOUT) [30] 30
+> >   Enable RapidIO Input/Output Ports (RAPIDIO_ENABLE_RX_TX_PORTS) [N/y/?] n
+> >   DMA Engine support for RapidIO (RAPIDIO_DMA_ENGINE) [Y/n/?] y
+> >   RapidIO subsystem debug messages (RAPIDIO_DEBUG) [N/y/?] n
+> >   Enumeration method [M/y/?] (NEW) aborted!
+> > 
+> > Console input/output is redirected. Run 'make oldconfig' to update
+> > configuration.
+> 
+> Yes, the same error as reported by Fengguang earlier:
+>     http://marc.info/?l=linux-kbuild&m=137214773928335&w=4
+> 
+> And caused by (yet once more):
+>     8357b48: kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+> 
+> Basically, the issue is:
+> 
+>   - 'Enumeration method' is a tristate choice
+>   - for tristate choices, it is possible to select zero, one or more of the
+>     symbols in the choice
+>   - if no symbol is selected (randomly or otherwise) in a tristate choice,
+>     then the choice symbol itself has no assigned 'value'
+>   - then silentoldconfig whines
+> 
+> It worked so far as a side effect of another bug (which 8357b48 tries to
+> fix), and now this new one has been exposed.
 
-> 
-> 
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->>  tools/perf/util/event.h  |  6 ++++
->>  tools/perf/util/evlist.c | 93 ++++++++++++++++++++++++++++++++++++++++++++++--
->>  tools/perf/util/evlist.h |  3 ++
->>  tools/perf/util/evsel.c  | 41 +++++++++++++++++++++
->>  tools/perf/util/evsel.h  |  4 +++
->>  5 files changed, 145 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
->> index 1813895..858572f 100644
->> --- a/tools/perf/util/event.h
->> +++ b/tools/perf/util/event.h
->> @@ -65,6 +65,12 @@ struct read_event {
->>         PERF_SAMPLE_ID | PERF_SAMPLE_STREAM_ID |        \
->>          PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
->>
->> +#define PERF_COMPAT_MASK                               \
->> +       (PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |     \
->> +        PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR      |     \
->> +        PERF_SAMPLE_ID   | PERF_SAMPLE_STREAM_ID |     \
->> +        PERF_SAMPLE_CPU)
->> +
->>  struct sample_event {
->>         struct perf_event_header        header;
->>         u64 array[];
->> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
->> index a660f56..85c4d91 100644
->> --- a/tools/perf/util/evlist.c
->> +++ b/tools/perf/util/evlist.c
->> @@ -49,10 +49,20 @@ struct perf_evlist *perf_evlist__new(void)
->>         return evlist;
->>  }
->>
->> +static void perf_evlist__set_id_pos(struct perf_evlist *evlist)
->> +{
->> +       struct perf_evsel *first = perf_evlist__first(evlist);
->> +
->> +       evlist->id_pos = first->id_pos;
->> +       evlist->is_pos = first->is_pos;
->> +}
->> +
->>  void perf_evlist__config(struct perf_evlist *evlist,
->>                         struct perf_record_opts *opts)
->>  {
->>         struct perf_evsel *evsel;
->> +       u64 compat = 0;
->> +
->>         /*
->>          * Set the evsel leader links before we configure attributes,
->>          * since some might depend on this info.
->> @@ -68,7 +78,15 @@ void perf_evlist__config(struct perf_evlist *evlist,
->>
->>                 if (evlist->nr_entries > 1)
->>                         perf_evsel__set_sample_id(evsel);
->> +               compat |= evsel->attr.sample_type & PERF_COMPAT_MASK;
->>         }
->> +
->> +       list_for_each_entry(evsel, &evlist->entries, node) {
->> +               evsel->attr.sample_type |= compat;
->> +               perf_evsel__calc_id_pos(evsel);
->> +       }
->> +
->> +       perf_evlist__set_id_pos(evlist);
->>  }
->>
->>  static void perf_evlist__purge(struct perf_evlist *evlist)
->> @@ -102,6 +120,7 @@ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry)
->>  {
->>         list_add_tail(&entry->node, &evlist->entries);
->>         ++evlist->nr_entries;
->> +       perf_evlist__set_id_pos(evlist);
->>  }
->>
->>  void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
->> @@ -110,6 +129,7 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
->>  {
->>         list_splice_tail(list, &evlist->entries);
->>         evlist->nr_entries += nr_entries;
->> +       perf_evlist__set_id_pos(evlist);
->>  }
->>
->>  void __perf_evlist__set_leader(struct list_head *list)
->> @@ -339,6 +359,55 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
->>         return NULL;
->>  }
->>
->> +static int perf_evlist__event2id(struct perf_evlist *evlist,
->> +                                union perf_event *event, u64 *id)
->> +{
->> +       const u64 *array = event->sample.array;
->> +       ssize_t n;
->> +
->> +       n = (event->header.size - sizeof(event->header)) >> 3;
->> +
->> +       if (event->header.type == PERF_RECORD_SAMPLE) {
->> +               if (evlist->id_pos >= n)
->> +                       return -1;
->> +               *id = array[evlist->id_pos];
->> +       } else {
->> +               if (evlist->is_pos >= n)
->> +                       return -1;
->> +               n -= evlist->is_pos;
->> +               *id = array[n];
->> +       }
->> +       return 0;
->> +}
->> +
->> +static struct perf_evsel *perf_evlist__event2evsel(struct perf_evlist *evlist,
->> +                                                  union perf_event *event)
->> +{
->> +       struct hlist_head *head;
->> +       struct perf_sample_id *sid;
->> +       int hash;
->> +       u64 id;
->> +
->> +       if (evlist->nr_entries == 1 || evlist->matching_sample_types)
->> +               return perf_evlist__first(evlist);
->> +
->> +       if (perf_evlist__event2id(evlist, event, &id))
->> +               return NULL;
->> +
->> +       /* Synthesized events have an id of zero */
->> +       if (!id)
->> +               return perf_evlist__first(evlist);
->> +
->> +       hash = hash_64(id, PERF_EVLIST__HLIST_BITS);
->> +       head = &evlist->heads[hash];
->> +
->> +       hlist_for_each_entry(sid, head, node) {
->> +               if (sid->id == id)
->> +                       return sid->evsel;
->> +       }
->> +       return NULL;
->> +}
->> +
->>  union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
->>  {
->>         struct perf_mmap *md = &evlist->mmap[idx];
->> @@ -650,9 +719,26 @@ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter)
->>  bool perf_evlist__valid_sample_type(struct perf_evlist *evlist)
->>  {
->>         struct perf_evsel *first = perf_evlist__first(evlist), *pos = first;
->> +       bool ok = true;
->>
->>         list_for_each_entry_continue(pos, &evlist->entries, node) {
->> -               if (first->attr.sample_type != pos->attr.sample_type)
->> +               if (first->attr.sample_type != pos->attr.sample_type) {
->> +                       ok = false;
->> +                       break;
->> +               }
->> +       }
->> +
->> +       if (ok) {
->> +               evlist->matching_sample_types = true;
->> +               return true;
->> +       }
->> +
->> +       if (evlist->id_pos < 0 || evlist->is_pos < 0)
->> +               return false;
->> +
->> +       list_for_each_entry(pos, &evlist->entries, node) {
->> +               if (pos->id_pos != evlist->id_pos ||
->> +                   pos->is_pos != evlist->is_pos)
->>                         return false;
->>         }
->>
->> @@ -848,7 +934,10 @@ int perf_evlist__start_workload(struct perf_evlist *evlist)
->>  int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *event,
->>                               struct perf_sample *sample)
->>  {
->> -       struct perf_evsel *evsel = perf_evlist__first(evlist);
->> +       struct perf_evsel *evsel = perf_evlist__event2evsel(evlist, event);
->> +
->> +       if (!evsel)
->> +               return -EFAULT;
->>         return perf_evsel__parse_sample(evsel, event, sample);
->>  }
->>
->> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
->> index 0583d36..bfcbf67 100644
->> --- a/tools/perf/util/evlist.h
->> +++ b/tools/perf/util/evlist.h
->> @@ -32,11 +32,14 @@ struct perf_evlist {
->>         int              nr_fds;
->>         int              nr_mmaps;
->>         int              mmap_len;
->> +       int              id_pos;
->> +       int              is_pos;
->>         struct {
->>                 int     cork_fd;
->>                 pid_t   pid;
->>         } workload;
->>         bool             overwrite;
->> +       bool             matching_sample_types;
->>         struct perf_mmap *mmap;
->>         struct pollfd    *pollfd;
->>         struct thread_map *threads;
->> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
->> index d01d2cd..ee0f894 100644
->> --- a/tools/perf/util/evsel.c
->> +++ b/tools/perf/util/evsel.c
->> @@ -46,6 +46,46 @@ static int __perf_evsel__sample_size(u64 sample_type)
->>         return size;
->>  }
->>
->> +static int __perf_evsel__calc_id_pos(u64 sample_type)
->> +{
->> +       u64 mask;
->> +       int i, idx;
->> +
->> +       if (!(sample_type & PERF_SAMPLE_ID))
->> +               return -1;
->> +
->> +       mask = sample_type & (PERF_SAMPLE_ID - 1);
->> +
->> +       for (i = 0, idx = 0; i < 64; i++) {
->> +               if (mask & (1ULL << i))
->> +                       idx++;
->> +       }
->> +
->> +       return idx;
->> +}
->> +
->> +static int __perf_evsel__calc_is_pos(u64 sample_type)
->> +{
->> +       int idx = 1;
->> +
->> +       if (!(sample_type & PERF_SAMPLE_ID))
->> +               return -1;
->> +
->> +       if (sample_type & PERF_SAMPLE_CPU)
->> +               idx += 1;
->> +
->> +       if (sample_type & PERF_SAMPLE_STREAM_ID)
->> +               idx += 1;
->> +
->> +       return idx;
->> +}
->> +
->> +void perf_evsel__calc_id_pos(struct perf_evsel *evsel)
->> +{
->> +       evsel->id_pos = __perf_evsel__calc_id_pos(evsel->attr.sample_type);
->> +       evsel->is_pos = __perf_evsel__calc_is_pos(evsel->attr.sample_type);
->> +}
->> +
->>  void hists__init(struct hists *hists)
->>  {
->>         memset(hists, 0, sizeof(*hists));
->> @@ -89,6 +129,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
->>         INIT_LIST_HEAD(&evsel->node);
->>         hists__init(&evsel->hists);
->>         evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
->> +       perf_evsel__calc_id_pos(evsel);
->>  }
->>
->>  struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
->> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
->> index 3f156cc..88b4319 100644
->> --- a/tools/perf/util/evsel.h
->> +++ b/tools/perf/util/evsel.h
->> @@ -71,6 +71,8 @@ struct perf_evsel {
->>         } handler;
->>         struct cpu_map          *cpus;
->>         unsigned int            sample_size;
->> +       int                     id_pos;
->> +       int                     is_pos;
->>         bool                    supported;
->>         bool                    needs_swap;
->>         /* parse modifier helper */
->> @@ -100,6 +102,8 @@ void perf_evsel__delete(struct perf_evsel *evsel);
->>  void perf_evsel__config(struct perf_evsel *evsel,
->>                         struct perf_record_opts *opts);
->>
->> +void perf_evsel__calc_id_pos(struct perf_evsel *evsel);
->> +
->>  bool perf_evsel__is_cache_op_valid(u8 type, u8 op);
->>
->>  #define PERF_EVSEL__MAX_ALIASES 8
->> --
->> 1.7.11.7
->>
-> 
-> 
+OK, after battling on this during my lunch-break, I now better understand
+the root cause. Consider this trivial Kconfig snippet:
 
+    ---8<--- BEGIN Ktest ---8<---
+    config MODULES
+        bool "Modules"
+
+    choice
+        tristate "test"
+
+    config A
+        tristate "A"
+
+    config B
+        tristate "B"
+
+    config C
+        tristate "C"
+
+    endchoice
+    ---8<---  END Ktest  ---8<---
+
+Now, this choice "test" is a tristate, so it can be either 'M' or 'Y'.
+
+But since this is a choice _prompt_ *and* it does not have a symbol
+associated, then its value is not stored in .config.
+
+On a sub-sequent run of a kconfig utility, the Ktest file is parsed, and
+the .config is read, associating read values to the symbols. But since
+the choice prompt has no symbol, no value is assigned to it, so it is
+believed to be new, and since it can be either 'M' or 'Y', it is asked
+for.
+
+Furthermore, even if the choice had a symbol, it would not be saved to
+the .config either. And we'd be back to square-1.
+
+> This one is starting to drive me crazy, really... :-(
+
+Yes, it is! (head spining frantically, toons-like) ;-)
+
+My lunch-break is over now, so more on this when I'mn back home, in ~6h.
+
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
+| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
+| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
+'------------------------------'-------'------------------'--------------------'
