@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab3FYTIz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:08:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40907 "EHLO
+	id S1753904Ab3FYTJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:09:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40889 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab3FYSdq (ORCPT
+	with ESMTP id S1752195Ab3FYSdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:46 -0400
+	Tue, 25 Jun 2013 14:33:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Haoyu <haoyu.zhang@huawei.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [ 32/95] KVM: x86: remove vcpus CPL check in host-invoked XCR set
-Date: Tue, 25 Jun 2013 11:32:19 -0700
-Message-Id: <20130625182157.273622007@linuxfoundation.org>
+        Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
+        Helge Deller <deller@gmx.de>
+Subject: [ 27/95] parisc: fix serial ports on C8000 workstation
+Date: Tue, 25 Jun 2013 11:32:14 -0700
+Message-Id: <20130625182156.715306743@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,54 +27,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+From: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
 
-commit 764bcbc5a6d7a2f3e75c9f0e4caa984e2926e346 upstream.
+commit 9a66d1869d90f13fbaf83dcce5b1aeec86fbc699 upstream.
 
-__kvm_set_xcr function does the CPL check when set xcr. __kvm_set_xcr is
-called in two flows, one is invoked by guest, call stack shown as below,
+The C8000 workstation (64 bit kernel only) has a somewhat different
+serial port configuration than other models.
+Thomas Bogendoerfer sent a patch to fix this in September 2010, which
+was now minimally modified by me.
 
-  handle_xsetbv(or xsetbv_interception)
-    kvm_set_xcr
-      __kvm_set_xcr
-
-the other one is invoked by host, for example during system reset:
-
-  kvm_arch_vcpu_ioctl
-    kvm_vcpu_ioctl_x86_set_xcrs
-      __kvm_set_xcr
-
-The former does need the CPL check, but the latter does not.
-
-Signed-off-by: Zhang Haoyu <haoyu.zhang@huawei.com>
-[Tweaks to commit message. - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/x86.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/parisc/kernel/hardware.c      |    1 
+ drivers/parisc/iosapic.c           |   66 +++++++++++++++++++++++++++++++++++++
+ drivers/tty/serial/8250/8250_gsc.c |   10 +++++
+ 3 files changed, 76 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -558,8 +558,6 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu,
- 	if (index != XCR_XFEATURE_ENABLED_MASK)
- 		return 1;
- 	xcr0 = xcr;
--	if (kvm_x86_ops->get_cpl(vcpu) != 0)
--		return 1;
- 	if (!(xcr0 & XSTATE_FP))
- 		return 1;
- 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
-@@ -573,7 +571,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu,
+--- a/arch/parisc/kernel/hardware.c
++++ b/arch/parisc/kernel/hardware.c
+@@ -1205,6 +1205,7 @@ static struct hp_hardware hp_hardware_li
+ 	{HPHW_FIO, 0x004, 0x00320, 0x0, "Metheus Frame Buffer"}, 
+ 	{HPHW_FIO, 0x004, 0x00340, 0x0, "BARCO CX4500 VME Grphx Cnsl"}, 
+ 	{HPHW_FIO, 0x004, 0x00360, 0x0, "Hughes TOG VME FDDI"}, 
++	{HPHW_FIO, 0x076, 0x000AD, 0x00, "Crestone Peak RS-232"},
+ 	{HPHW_IOA, 0x185, 0x0000B, 0x00, "Java BC Summit Port"}, 
+ 	{HPHW_IOA, 0x1FF, 0x0000B, 0x00, "Hitachi Ghostview Summit Port"}, 
+ 	{HPHW_IOA, 0x580, 0x0000B, 0x10, "U2-IOA BC Runway Port"}, 
+--- a/drivers/parisc/iosapic.c
++++ b/drivers/parisc/iosapic.c
+@@ -811,6 +811,70 @@ int iosapic_fixup_irq(void *isi_obj, str
+ 	return pcidev->irq;
+ }
  
- int kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- {
--	if (__kvm_set_xcr(vcpu, index, xcr)) {
-+	if (kvm_x86_ops->get_cpl(vcpu) != 0 ||
-+	    __kvm_set_xcr(vcpu, index, xcr)) {
- 		kvm_inject_gp(vcpu, 0);
- 		return 1;
++static struct iosapic_info *first_isi = NULL;
++
++#ifdef CONFIG_64BIT
++int iosapic_serial_irq(int num)
++{
++	struct iosapic_info *isi = first_isi;
++	struct irt_entry *irte = NULL;  /* only used if PAT PDC */
++	struct vector_info *vi;
++	int isi_line;	/* line used by device */
++
++	/* lookup IRT entry for isi/slot/pin set */
++	irte = &irt_cell[num];
++
++	DBG_IRT("iosapic_serial_irq(): irte %p %x %x %x %x %x %x %x %x\n",
++		irte,
++		irte->entry_type,
++		irte->entry_length,
++		irte->polarity_trigger,
++		irte->src_bus_irq_devno,
++		irte->src_bus_id,
++		irte->src_seg_id,
++		irte->dest_iosapic_intin,
++		(u32) irte->dest_iosapic_addr);
++	isi_line = irte->dest_iosapic_intin;
++
++	/* get vector info for this input line */
++	vi = isi->isi_vector + isi_line;
++	DBG_IRT("iosapic_serial_irq:  line %d vi 0x%p\n", isi_line, vi);
++
++	/* If this IRQ line has already been setup, skip it */
++	if (vi->irte)
++		goto out;
++
++	vi->irte = irte;
++
++	/*
++	 * Allocate processor IRQ
++	 *
++	 * XXX/FIXME The txn_alloc_irq() code and related code should be
++	 * moved to enable_irq(). That way we only allocate processor IRQ
++	 * bits for devices that actually have drivers claiming them.
++	 * Right now we assign an IRQ to every PCI device present,
++	 * regardless of whether it's used or not.
++	 */
++	vi->txn_irq = txn_alloc_irq(8);
++
++	if (vi->txn_irq < 0)
++		panic("I/O sapic: couldn't get TXN IRQ\n");
++
++	/* enable_irq() will use txn_* to program IRdT */
++	vi->txn_addr = txn_alloc_addr(vi->txn_irq);
++	vi->txn_data = txn_alloc_data(vi->txn_irq);
++
++	vi->eoi_addr = isi->addr + IOSAPIC_REG_EOI;
++	vi->eoi_data = cpu_to_le32(vi->txn_data);
++
++	cpu_claim_irq(vi->txn_irq, &iosapic_interrupt_type, vi);
++
++ out:
++
++	return vi->txn_irq;
++}
++#endif
++
+ 
+ /*
+ ** squirrel away the I/O Sapic Version
+@@ -877,6 +941,8 @@ void *iosapic_register(unsigned long hpa
+ 		vip->irqline = (unsigned char) cnt;
+ 		vip->iosapic = isi;
  	}
++	if (!first_isi)
++		first_isi = isi;
+ 	return isi;
+ }
+ 
+--- a/drivers/tty/serial/8250/8250_gsc.c
++++ b/drivers/tty/serial/8250/8250_gsc.c
+@@ -30,6 +30,12 @@ static int __init serial_init_chip(struc
+ 	unsigned long address;
+ 	int err;
+ 
++#ifdef CONFIG_64BIT
++	extern int iosapic_serial_irq(int cellnum);
++	if (!dev->irq && (dev->id.sversion == 0xad))
++		dev->irq = iosapic_serial_irq(dev->mod_index-1);
++#endif
++
+ 	if (!dev->irq) {
+ 		/* We find some unattached serial ports by walking native
+ 		 * busses.  These should be silently ignored.  Otherwise,
+@@ -51,7 +57,8 @@ static int __init serial_init_chip(struc
+ 	memset(&uart, 0, sizeof(uart));
+ 	uart.port.iotype	= UPIO_MEM;
+ 	/* 7.272727MHz on Lasi.  Assumed the same for Dino, Wax and Timi. */
+-	uart.port.uartclk	= 7272727;
++	uart.port.uartclk	= (dev->id.sversion != 0xad) ?
++					7272727 : 1843200;
+ 	uart.port.mapbase	= address;
+ 	uart.port.membase	= ioremap_nocache(address, 16);
+ 	uart.port.irq	= dev->irq;
+@@ -73,6 +80,7 @@ static struct parisc_device_id serial_tb
+ 	{ HPHW_FIO, HVERSION_REV_ANY_ID, HVERSION_ANY_ID, 0x00075 },
+ 	{ HPHW_FIO, HVERSION_REV_ANY_ID, HVERSION_ANY_ID, 0x0008c },
+ 	{ HPHW_FIO, HVERSION_REV_ANY_ID, HVERSION_ANY_ID, 0x0008d },
++	{ HPHW_FIO, HVERSION_REV_ANY_ID, HVERSION_ANY_ID, 0x000ad },
+ 	{ 0 }
+ };
+ 
 
 
