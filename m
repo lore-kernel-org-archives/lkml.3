@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab3FYOTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:19:50 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:55160 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750990Ab3FYOTt (ORCPT
+	id S1751633Ab3FYO0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:26:06 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:56094 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab3FYO0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:19:49 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Landley <rob@landley.net>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [PATCH] pinctrl: elaborate a bit on arrangements in doc
-Date: Tue, 25 Jun 2013 16:19:12 +0200
-Message-ID: <1372169952-22439-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Tue, 25 Jun 2013 10:26:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <51C1993C.9030204@linux.intel.com>
+References: <20130619100421.22132.99447.stgit@ladj378.jer.intel.com>
+	<51C1993C.9030204@linux.intel.com>
+Date: Tue, 25 Jun 2013 17:26:02 +0300
+Message-ID: <CALuTh9E5CvV1sfjMJRs7mWwfTm2HpaFFMJWEP10sbSpA8qBMsg@mail.gmail.com>
+Subject: Re: [PATCH RFC] net: lls epoll support
+From: yaniv saar <yaniv.mellanox@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Wed, Jun 19, 2013 at 2:42 PM, Eliezer Tamir
+<eliezer.tamir@linux.intel.com> wrote:
+> This is a wild hack, just as a POC to show the power or LLS with epoll.
+>
+> We assume that we only ever need to poll on one device queue,
+> so the first FD that reports POLL_LL gets saved aside so we can poll on.
+>
+> While this assumption is wrong in so many ways, it's very easy to satisfy
+> with a micro-benchmark.
+>
+> [this patch needs the poll patch to be applied first]
+> with sockperf doing epoll on 1000 sockets I see an avg latency of 6us
+>
 
-This elaborates a bit on the pinctrl vs GPIO arangements
-in the hardware.
+hi eliezer,
 
-Inspired by some drawings in a mail from Christian
-Ruppert.
+please consider the following solution for epoll that is based on
+polling dev+queue.
+instead of looping over the socket as in LLS, maintain in eventpool
+struct a list of device+queues (qdlist).
+the dqlist must be unique w.r.t. device+queue, (no two identical
+device+queues items in qdlist).
+each device+queues item (qditem) holds:
+* device (id)
+* queue (id)
+* list of epi (epilist) that created this qditem
+- I think it won't be possible to extend epitem (breaks cache aligned
+to 128)... instead you can have a simple ll_usec list.
+* ll_usec, the maximum time to poll from all the referring epi items.
+finally, polling should iterate over the qdlist once, and then check for events.
 
-Cc: Rob Landley <rob@landley.net>
-Cc: Christian Ruppert <christian.ruppert@abilis.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- Documentation/pinctrl.txt | 37 ++++++++++++++++++++++++++++++++-----
- 1 file changed, 32 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index 447fd4c..41ecad0 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -784,11 +784,38 @@ special GPIO-handler is registered.
- GPIO mode pitfalls
- ==================
- 
--Sometime the developer may be confused by a datasheet talking about a pin
--being possible to set into "GPIO mode". It appears that what hardware
--engineers mean with "GPIO mode" is not necessarily the use case that is
--implied in the kernel interface <linux/gpio.h>: a pin that you grab from
--kernel code and then either listen for input or drive high/low to
-+The GPIO portions of a pin and its relation to a certain pin controller
-+logic can be constructed in several ways. Here are three examples:
-+
-+(A)
-+
-+                                         +- SPI
-+     Physical pins --- GPIO --- pinctrl -+- I2C
-+                                         +- mmc
-+
-+(B)
-+                    +- GPIO
-+     Physical pins -+           +- SPI
-+                    +- pinctrl -+- I2C
-+                                +- mmc
-+
-+(C)
-+                                +- SPI
-+     Physical pins --- pinctrl -+- I2C
-+                                +- mmc
-+                                +- GPIO
-+
-+In (A) the GPIO-like functionality of the pin is *always* available.
-+For example it is possible to read the GPIO input register to "spy" on
-+the SPI, I2C or MMC line while it is being used by the peripheral.
-+In (B) the GPIO functionality is orthogonal to any device using the
-+pin, and in (C) the GPIO case is the same as "some peripheral".
-+
-+For this reason the developer may be confused by a datasheet talking
-+about a pin being possible to set into "GPIO mode". It appears that what
-+hardware engineers mean with "GPIO mode" is not necessarily the use case
-+that is implied in the kernel interface <linux/gpio.h>: a pin that you
-+grab from kernel code and then either listen for input or drive high/low to
- assert/deassert some external line.
- 
- Rather hardware engineers think that "GPIO mode" means that you can
--- 
-1.7.11.3
-
+----
+as far as coding this sketch involves:
+1) adjust eventpoll struct.
+2) initialize on creation (epoll_create)
+3) update the list on modification (epoll_ctl)
+3.1) ep_insert->add this epi/ll_usec in relevant qditem (or create new
+one), and update qditem->ll_usec
+3.2) ep_remove->remove this epi/ll_usec from relevant qditem (MUST be
+existing -- sort of ref counting), and update qditem->ll_usec
+3.3) ep_modify->...
+4) on polling event (epoll_wait)
+ep_poll->if qdlist is not empty, then find the maximum ll_usec (could
+be done while maintaining...)
+... and just before going into wait ...
+if max ll_usec!=0
+    poll once on all device+queues in the qdlist.
+    continue to the next iteration (check events).
+5) to support this flow we also need to implement API for
+5.1) given a file/fd/epi, if is a sock then get the device+queue.
+5.2) poll over a given device+queue (dq_poll_ll) once.
