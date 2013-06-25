@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab3FYSeE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:34:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40981 "EHLO
+	id S1752719Ab3FYTBh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:01:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40992 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab3FYSd5 (ORCPT
+	with ESMTP id S1752548Ab3FYSeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:57 -0400
+	Tue, 25 Jun 2013 14:34:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Neal Cardwell <ncardwell@google.com>
-Subject: [ 48/95] ipv6: fix possible crashes in ip6_cork_release()
-Date: Tue, 25 Jun 2013 11:32:35 -0700
-Message-Id: <20130625182159.054057587@linuxfoundation.org>
+        =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
+        Li RongQing <roy.qing.li@gmail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 53/95] xfrm: properly handle invalid states as an error
+Date: Tue, 25 Jun 2013 11:32:40 -0700
+Message-Id: <20130625182159.627976050@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Timo Teräs <timo.teras@iki.fi>
 
-[ Upstream commit 284041ef21fdf2e0d216ab6b787bc9072b4eb58a ]
+[ Upstream commit 497574c72c9922cf20c12aed15313c389f722fa0 ]
 
-commit 0178b695fd6b4 ("ipv6: Copy cork options in ip6_append_data")
-added some code duplication and bad error recovery, leading to potential
-crash in ip6_cork_release() as kfree() could be called with garbage.
+The error exit path needs err explicitly set. Otherwise it
+returns success and the only caller, xfrm_output_resume(),
+would oops in skb_dst(skb)->ops derefence as skb_dst(skb) is
+NULL.
 
-use kzalloc() to make sure this wont happen.
+Bug introduced in commit bb65a9cb (xfrm: removes a superfluous
+check and add a statistic).
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
+Cc: Li RongQing <roy.qing.li@gmail.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_output.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/xfrm/xfrm_output.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1147,7 +1147,7 @@ int ip6_append_data(struct sock *sk, int
- 			if (WARN_ON(np->cork.opt))
- 				return -EINVAL;
+--- a/net/xfrm/xfrm_output.c
++++ b/net/xfrm/xfrm_output.c
+@@ -64,6 +64,7 @@ static int xfrm_output_one(struct sk_buf
  
--			np->cork.opt = kmalloc(opt->tot_len, sk->sk_allocation);
-+			np->cork.opt = kzalloc(opt->tot_len, sk->sk_allocation);
- 			if (unlikely(np->cork.opt == NULL))
- 				return -ENOBUFS;
+ 		if (unlikely(x->km.state != XFRM_STATE_VALID)) {
+ 			XFRM_INC_STATS(net, LINUX_MIB_XFRMOUTSTATEINVALID);
++			err = -EINVAL;
+ 			goto error;
+ 		}
  
 
 
