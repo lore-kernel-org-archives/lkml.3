@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab3FYSup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:50:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753455Ab3FYSul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:50:41 -0400
-Date: Tue, 25 Jun 2013 20:46:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] epoll_[p]wait: fix spurious -EINTR on ptrace attach
-Message-ID: <20130625184619.GA4003@redhat.com>
-References: <1372172737-18726-1-git-send-email-dvlasenk@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372172737-18726-1-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752858Ab3FYSe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:34:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41140 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab3FYSeW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:34:22 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 79/95] packet: set transport header before doing xmit
+Date: Tue, 25 Jun 2013 11:33:06 -0700
+Message-Id: <20130625182202.513570963@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
+References: <20130625182153.605455184@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25, Denys Vlasenko wrote:
->
-> Before this change, epoll_wait and epoll_pwait
-> spuriously return with -EINTR on ptrace attach.
->
-> By analogy with poll syscall family, epoll_[p]wait should be interruptible
-> by signals regardless of SA_RESTART, therefore, this change
-> makes them return -ERESTARTNOHAND if timeout has expired.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-Denys, I am not even going to actuallu read this patch, but I think
-you should redo it in any case... And you need to cc maintainers.
+------------------
 
-Because I believe we should cleanup fs/eventpoll.c first, I'll try
-to send the patch(es) soon.
+From: Jason Wang <jasowang@redhat.com>
 
-> In order to define a "sigset_t ksigmask" member,
+[ Upstream commit c1aad275b0293d2b1905ec95a945422262470684 ]
 
-You do not need it. But the reason is not clear until the cleanup.
+Set the transport header for 1) some drivers (e.g ixgbe needs l4 header to do
+atr) 2) precise packet length estimation (introduced in 1def9238) needs l4
+header to compute header length.
 
-> +	if (sigmask) {
-> +		ksigmask = *sigmask;
-> +		sigdelsetmask(&ksigmask, sigmask(SIGKILL) | sigmask(SIGSTOP));
-> +		sigprocmask(SIG_SETMASK, &ksigmask, &ksigsaved);
+So this patch first tries to get l4 header for packet socket through
+skb_flow_dissect(), and pretend no l4 header if skb_flow_dissect() fails.
 
-sigprocmask() should not be used. Again, we need cleanup.
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/packet/af_packet.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-> +	}
-> +	else
-> +	/*
-> +	 * If we changed the signal mask, we need to restore the original one.
-> +	 */
-> +	if (sigmask) {
-> +		sigprocmask(SIG_SETMASK, &ksigsaved, NULL);
-> +	}
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -88,6 +88,7 @@
+ #include <linux/virtio_net.h>
+ #include <linux/errqueue.h>
+ #include <linux/net_tstamp.h>
++#include <net/flow_keys.h>
+ 
+ #ifdef CONFIG_INET
+ #include <net/inet_common.h>
+@@ -1343,6 +1344,7 @@ static int packet_sendmsg_spkt(struct ki
+ 	__be16 proto = 0;
+ 	int err;
+ 	int extra_len = 0;
++	struct flow_keys keys;
+ 
+ 	/*
+ 	 *	Get and verify the address.
+@@ -1443,6 +1445,11 @@ retry:
+ 	if (unlikely(extra_len == 4))
+ 		skb->no_fcs = 1;
+ 
++	if (skb_flow_dissect(skb, &keys))
++		skb_set_transport_header(skb, keys.thoff);
++	else
++		skb_reset_transport_header(skb);
++
+ 	dev_queue_xmit(skb);
+ 	rcu_read_unlock();
+ 	return len;
+@@ -1849,6 +1856,7 @@ static int tpacket_fill_skb(struct packe
+ 	struct page *page;
+ 	void *data;
+ 	int err;
++	struct flow_keys keys;
+ 
+ 	ph.raw = frame;
+ 
+@@ -1874,6 +1882,11 @@ static int tpacket_fill_skb(struct packe
+ 	skb_reserve(skb, hlen);
+ 	skb_reset_network_header(skb);
+ 
++	if (skb_flow_dissect(skb, &keys))
++		skb_set_transport_header(skb, keys.thoff);
++	else
++		skb_reset_transport_header(skb);
++
+ 	if (po->tp_tx_has_off) {
+ 		int off_min, off_max, off;
+ 		off_min = po->tp_hdrlen - sizeof(struct sockaddr_ll);
+@@ -2130,6 +2143,7 @@ static int packet_snd(struct socket *soc
+ 	unsigned short gso_type = 0;
+ 	int hlen, tlen;
+ 	int extra_len = 0;
++	struct flow_keys keys;
+ 
+ 	/*
+ 	 *	Get and verify the address.
+@@ -2282,6 +2296,13 @@ static int packet_snd(struct socket *soc
+ 		len += vnet_hdr_len;
+ 	}
+ 
++	if (skb->ip_summed == CHECKSUM_PARTIAL)
++		skb_set_transport_header(skb, skb_checksum_start_offset(skb));
++	else if (skb_flow_dissect(skb, &keys))
++		skb_set_transport_header(skb, keys.thoff);
++	else
++		skb_set_transport_header(skb, reserve);
++
+ 	if (unlikely(extra_len == 4))
+ 		skb->no_fcs = 1;
+ 
 
-cough.. in this case you should also update Documentation/CodingStyle ;)
-
-Oleg.
 
