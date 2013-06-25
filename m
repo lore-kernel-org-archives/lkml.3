@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab3FYSdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:33:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40862 "EHLO
+	id S1753965Ab3FYTLg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:11:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab3FYSdg (ORCPT
+	with ESMTP id S1752088Ab3FYSdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:36 -0400
+	Tue, 25 Jun 2013 14:33:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Helge Deller <deller@gmx.de>
-Subject: [ 18/95] parisc: show number of FPE and unaligned access handler calls in /proc/interrupts
-Date: Tue, 25 Jun 2013 11:32:05 -0700
-Message-Id: <20130625182155.703552446@linuxfoundation.org>
+Subject: [ 20/95] parisc: fix irq stack on UP and SMP
+Date: Tue, 25 Jun 2013 11:32:07 -0700
+Message-Id: <20130625182155.919056807@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,77 +28,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Helge Deller <deller@gmx.de>
 
-commit d0c3be806a3fe7f4abdb0f7e7287addb55e73f35 upstream.
+commit d96b51ec14650b490ab98e738bcc02309396e5bc upstream.
 
-Show number of floating point assistant and unaligned access fixup
-handler in /proc/interrupts file.
+The logic to detect if the irq stack was already in use with
+raw_spin_trylock() is wrong, because it will generate a "trylock failure
+on UP" error message with CONFIG_SMP=n and CONFIG_DEBUG_SPINLOCK=y.
+
+arch_spin_trylock() can't be used either since in the CONFIG_SMP=n case
+no atomic protection is given and we are reentrant here. A mutex didn't
+worked either and brings more overhead by turning off interrupts.
+
+So, let's use the fastest path for parisc which is the ldcw instruction.
+
+Counting how often the irq stack was used is pretty useless, so just
+drop this piece of code.
 
 Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/hardirq.h |    2 ++
- arch/parisc/kernel/irq.c          |    8 ++++++++
- arch/parisc/kernel/traps.c        |    1 +
- arch/parisc/kernel/unaligned.c    |    3 +++
- 4 files changed, 14 insertions(+)
+ arch/parisc/include/asm/hardirq.h   |    5 ----
+ arch/parisc/include/asm/processor.h |   21 ------------------
+ arch/parisc/kernel/irq.c            |   41 ++++++++++++++++++++++--------------
+ 3 files changed, 26 insertions(+), 41 deletions(-)
 
 --- a/arch/parisc/include/asm/hardirq.h
 +++ b/arch/parisc/include/asm/hardirq.h
-@@ -28,6 +28,8 @@ typedef struct {
+@@ -17,13 +17,8 @@
+ 
+ typedef struct {
+ 	unsigned int __softirq_pending;
+-#ifdef CONFIG_DEBUG_STACKOVERFLOW
+ 	unsigned int kernel_stack_usage;
+-#ifdef CONFIG_IRQSTACKS
+ 	unsigned int irq_stack_usage;
+-	unsigned int irq_stack_counter;
+-#endif
+-#endif
+ #ifdef CONFIG_SMP
  	unsigned int irq_resched_count;
  	unsigned int irq_call_count;
- #endif
-+	unsigned int irq_unaligned_count;
-+	unsigned int irq_fpassist_count;
- 	unsigned int irq_tlb_count;
- } ____cacheline_aligned irq_cpustat_t;
+--- a/arch/parisc/include/asm/processor.h
++++ b/arch/parisc/include/asm/processor.h
+@@ -17,7 +17,6 @@
+ #include <asm/ptrace.h>
+ #include <asm/types.h>
+ #include <asm/percpu.h>
+-
+ #endif /* __ASSEMBLY__ */
  
+ /*
+@@ -59,26 +58,6 @@
+ #ifndef __ASSEMBLY__
+ 
+ /*
+- * IRQ STACK - used for irq handler
+- */
+-#ifdef __KERNEL__
+-
+-#include <linux/spinlock_types.h>
+-
+-#define IRQ_STACK_SIZE      (4096 << 2) /* 16k irq stack size */
+-
+-union irq_stack_union {
+-	unsigned long stack[IRQ_STACK_SIZE/sizeof(unsigned long)];
+-	raw_spinlock_t lock;
+-};
+-
+-DECLARE_PER_CPU(union irq_stack_union, irq_stack_union);
+-
+-void call_on_stack(unsigned long p1, void *func, unsigned long new_stack);
+-
+-#endif /* __KERNEL__ */
+-
+-/*
+  * Data detected about CPUs at boot time which is the same for all CPU's.
+  * HP boxes are SMP - ie identical processors.
+  *
 --- a/arch/parisc/kernel/irq.c
 +++ b/arch/parisc/kernel/irq.c
-@@ -188,6 +188,14 @@ int arch_show_interrupts(struct seq_file
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
- 	seq_puts(p, "  Function call interrupts\n");
- #endif
-+	seq_printf(p, "%*s: ", prec, "UAH");
-+	for_each_online_cpu(j)
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_unaligned_count);
-+	seq_puts(p, "  Unaligned access handler traps\n");
-+	seq_printf(p, "%*s: ", prec, "FPA");
-+	for_each_online_cpu(j)
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_fpassist_count);
-+	seq_puts(p, "  Floating point assist traps\n");
- 	seq_printf(p, "%*s: ", prec, "TLB");
+@@ -27,11 +27,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/seq_file.h>
+-#include <linux/spinlock.h>
+ #include <linux/types.h>
+ #include <asm/io.h>
+ 
+ #include <asm/smp.h>
++#include <asm/ldcw.h>
+ 
+ #undef PARISC_IRQ_CR16_COUNTS
+ 
+@@ -172,10 +172,6 @@ int arch_show_interrupts(struct seq_file
  	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
---- a/arch/parisc/kernel/traps.c
-+++ b/arch/parisc/kernel/traps.c
-@@ -652,6 +652,7 @@ void notrace handle_interruption(int cod
- 	case 14:
- 		/* Assist Exception Trap, i.e. floating point exception. */
- 		die_if_kernel("Floating point exception", regs, 0); /* quiet */
-+		__inc_irq_stat(irq_fpassist_count);
- 		handle_fpe(regs);
- 		return;
- 		
---- a/arch/parisc/kernel/unaligned.c
-+++ b/arch/parisc/kernel/unaligned.c
-@@ -27,6 +27,7 @@
- #include <linux/signal.h>
- #include <linux/ratelimit.h>
- #include <asm/uaccess.h>
-+#include <asm/hardirq.h>
+ 		seq_printf(p, "%10u ", irq_stats(j)->irq_stack_usage);
+ 	seq_puts(p, "  Interrupt stack usage\n");
+-	seq_printf(p, "%*s: ", prec, "ISC");
+-	for_each_online_cpu(j)
+-		seq_printf(p, "%10u ", irq_stats(j)->irq_stack_counter);
+-	seq_puts(p, "  Interrupt stack usage counter\n");
+ # endif
+ #endif
+ #ifdef CONFIG_SMP
+@@ -384,6 +380,24 @@ static inline int eirr_to_irq(unsigned l
+ 	return (BITS_PER_LONG - bit) + TIMER_IRQ;
+ }
  
- /* #define DEBUG_UNALIGNED 1 */
- 
-@@ -454,6 +455,8 @@ void handle_unaligned(struct pt_regs *re
- 	struct siginfo si;
- 	register int flop=0;	/* true if this is a flop */
- 
-+	__inc_irq_stat(irq_unaligned_count);
++#ifdef CONFIG_IRQSTACKS
++/*
++ * IRQ STACK - used for irq handler
++ */
++#define IRQ_STACK_SIZE      (4096 << 2) /* 16k irq stack size */
 +
- 	/* log a message with pacing */
- 	if (user_mode(regs)) {
- 		if (current->thread.flags & PARISC_UAC_SIGBUS) {
++union irq_stack_union {
++	unsigned long stack[IRQ_STACK_SIZE/sizeof(unsigned long)];
++	volatile unsigned int slock[4];
++	volatile unsigned int lock[1];
++};
++
++DEFINE_PER_CPU(union irq_stack_union, irq_stack_union) = {
++		.slock = { 1,1,1,1 },
++	};
++#endif
++
++
+ int sysctl_panic_on_stackoverflow = 1;
+ 
+ static inline void stack_overflow_check(struct pt_regs *regs)
+@@ -450,27 +464,26 @@ panic_check:
+ }
+ 
+ #ifdef CONFIG_IRQSTACKS
+-DEFINE_PER_CPU(union irq_stack_union, irq_stack_union) = {
+-		.lock = __RAW_SPIN_LOCK_UNLOCKED((irq_stack_union).lock)
+-	};
++/* in entry.S: */
++void call_on_stack(unsigned long p1, void *func, unsigned long new_stack);
+ 
+ static void execute_on_irq_stack(void *func, unsigned long param1)
+ {
+ 	union irq_stack_union *union_ptr;
+ 	unsigned long irq_stack;
+-	raw_spinlock_t *irq_stack_in_use;
++	volatile unsigned int *irq_stack_in_use;
+ 
+ 	union_ptr = &per_cpu(irq_stack_union, smp_processor_id());
+ 	irq_stack = (unsigned long) &union_ptr->stack;
+-	irq_stack = ALIGN(irq_stack + sizeof(irq_stack_union.lock),
++	irq_stack = ALIGN(irq_stack + sizeof(irq_stack_union.slock),
+ 			 64); /* align for stack frame usage */
+ 
+ 	/* We may be called recursive. If we are already using the irq stack,
+ 	 * just continue to use it. Use spinlocks to serialize
+ 	 * the irq stack usage.
+ 	 */
+-	irq_stack_in_use = &union_ptr->lock;
+-	if (!raw_spin_trylock(irq_stack_in_use)) {
++	irq_stack_in_use = (volatile unsigned int *)__ldcw_align(union_ptr);
++	if (!__ldcw(irq_stack_in_use)) {
+ 		void (*direct_call)(unsigned long p1) = func;
+ 
+ 		/* We are using the IRQ stack already.
+@@ -482,10 +495,8 @@ static void execute_on_irq_stack(void *f
+ 	/* This is where we switch to the IRQ stack. */
+ 	call_on_stack(param1, func, irq_stack);
+ 
+-	__inc_irq_stat(irq_stack_counter);
+-
+ 	/* free up irq stack usage. */
+-	do_raw_spin_unlock(irq_stack_in_use);
++	*irq_stack_in_use = 1;
+ }
+ 
+ asmlinkage void do_softirq(void)
 
 
