@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab3FYOhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:37:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56321 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab3FYOhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:37:34 -0400
-Date: Tue, 25 Jun 2013 16:37:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver
-In-Reply-To: <20130625141141.GA1720@ab42.lan>
-Message-ID: <alpine.DEB.2.02.1306251636270.4013@ionos.tec.linutronix.de>
-References: <20130530211944.05F4D3E0A90@localhost> <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com> <alpine.DEB.2.02.1306251551020.4013@ionos.tec.linutronix.de> <20130625141141.GA1720@ab42.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751539Ab3FYOno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:43:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40840 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161Ab3FYOnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 10:43:42 -0400
+Message-ID: <51C9AC69.6060604@ti.com>
+Date: Tue, 25 Jun 2013 10:42:49 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Joel A Fernandes <joelagnel@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Rob Landley <rob@landley.net>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Matt Porter <matt@ohporter.com>
+Subject: Re: [PATCH v12 00/11] DMA Engine support for AM33XX
+References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <20130624101903.GV5523@atomide.com> <51C85958.9030502@ti.com> <20130625065450.GY5523@atomide.com> <51C9A634.6030605@ti.com>
+In-Reply-To: <51C9A634.6030605@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jun 2013, Christian Ruppert wrote:
-> On Tue, Jun 25, 2013 at 03:58:43PM +0200, Thomas Gleixner wrote:
-> > On Fri, 31 May 2013, Christian Ruppert wrote:
-> > > The SOC interrupt controller driver for the Abilis Systems TB10x series of
-> > > SOCs based on ARC700 CPUs.
-> > > 
-> > > This patch depends on commits eb76bdd407d8a90e59a06cb0158886df390e5d1c and
-> > > 712bc93df9e7f14b8a163148d2aa7c778e151627 from branch irq/for-arm of
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git.
-> > 
-> > This should go below --- as it is not part of the changelog.
+On Tuesday 25 June 2013 10:16 AM, Sekhar Nori wrote:
+> On 6/25/2013 12:24 PM, Tony Lindgren wrote:
+>> * Benoit Cousson <b-cousson@ti.com> [130624 07:42]:
+>>> Hi Tony,
+>>>
+>>> On 06/24/2013 12:19 PM, Tony Lindgren wrote:
+>>>> Hi,
+>>>>
+>>>> For merging this series, I suggest the following sets:
+>>>>
+>>>> * Joel A Fernandes <joelagnel@ti.com> [130620 14:13]:
+>>>>>
+>>>>> Joel A Fernandes (3):
+>>>>>   edma: config: Enable config options for EDMA
+>>>>>   da8xx: config: Enable MMC and FS options
+>>>>>   ARM: davinci: Fix compiler warnings in devices-da8xx
+>>>>>
+>>>>> Matt Porter (8):
+>>>>>   dmaengine: edma: Add TI EDMA device tree binding
+>>>>>   ARM: edma: Add DT and runtime PM support to the private EDMA API
+>>>>>   ARM: edma: Add EDMA crossbar event mux support
+>>>>>   dmaengine: edma: enable build for AM33XX
+>>>>
+>>>> Sekhar should queue the above patches, I've acked the
+>>>> mach-omap2/Kconfig change.
+>>>>
+>>>>>   spi: omap2-mcspi: add generic DMA request support to the DT binding
+>>>>>   spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
+>>>>
+>>>>
+>>>> The spi changes should get merged via the driver list.
+>>>>
+>>>>>   ARM: dts: add AM33XX EDMA support
+>>>>>   ARM: dts: add AM33XX SPI DMA support
+>>>>
+>>>> Benoit should queue the .dts changes.
+>>>
+>>> I'll do that, but do you consider them for 3.11?
+>>
+>> Yes right after -rc1 if it makes the DMA work. We almost
+>> certainly need to send few branches of fixes after -rc1 once
+>> we find out what might have broken by the removal of the
+>> hwmod data..
 > 
-> OK, I will change that.
+> The DMA related changes went into arm-soc yesterday. So it should be
+> safe to send the DT patches in before the merge window opens. If Tony is
+> done with sending his pull requests may be Benoit can send to arm-soc
+> directly?
 > 
-> > > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> > 
-> > Why is Pierrick in the SOB chain? 
-> 
-> We work on the platform port together and review and test each others'
-> patches. It is planned submitting several of his patches as soon as
-> basic platform is in.
-> 
-> > > ---
-> > >  .../interrupt-controller/abilis,tb10x-ictl.txt     |   38 ++++
-> > >  arch/arc/boot/dts/abilis_tb100.dtsi                |   32 ++--
-> > >  arch/arc/boot/dts/abilis_tb101.dtsi                |   32 ++--
-> > >  arch/arc/boot/dts/abilis_tb10x.dtsi                |   32 ++--
-> > >  arch/arc/plat-tb10x/Kconfig                        |    1 +
-> > >  drivers/irqchip/Kconfig                            |    5 +
-> > >  drivers/irqchip/Makefile                           |    1 +
-> > >  drivers/irqchip/irq-tb10x.c                        |  195 ++++++++++++++++++++
-> > 
-> > I can pick it up, but I'm not so fond of carrying arch/arc patches
-> > which might conflict with other stuff in the arc tree. Veenet, if I
-> > should pick the whole thing up, I'd like to have an acked-by at least.
-> 
-> Would you prefer if we separated everything in arch/arc from this patch
-> and push it through Vineet's channel?
+I was just typing the same thing. Even if Tony send them during rc's,
+thats fine.
 
-If it can be split w/o breaking the world, this would be the most
-elegant solution.
+Regards,
+Santosh
 
-Thanks,
-
-	tglx
