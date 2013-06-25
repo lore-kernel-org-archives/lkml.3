@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab3FYSji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:39:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41345 "EHLO
+	id S1753505Ab3FYSjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:39:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab3FYSjg (ORCPT
+	with ESMTP id S1753489Ab3FYSjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:39:36 -0400
+	Tue, 25 Jun 2013 14:39:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Haoyu <haoyu.zhang@huawei.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [ 03/17] KVM: x86: remove vcpus CPL check in host-invoked XCR set
-Date: Tue, 25 Jun 2013 11:39:18 -0700
-Message-Id: <20130625183915.835902978@linuxfoundation.org>
+        Guillaume Nault <g.nault@alphalink.fr>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 16/17] l2tp: Fix sendmsg() return value
+Date: Tue, 25 Jun 2013 11:39:31 -0700
+Message-Id: <20130625183917.268024017@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183915.443950649@linuxfoundation.org>
 References: <20130625183915.443950649@linuxfoundation.org>
@@ -27,54 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+From: Guillaume Nault <g.nault@alphalink.fr>
 
-commit 764bcbc5a6d7a2f3e75c9f0e4caa984e2926e346 upstream.
+[ Upstream commit a6f79d0f26704214b5b702bbac525cb72997f984 ]
 
-__kvm_set_xcr function does the CPL check when set xcr. __kvm_set_xcr is
-called in two flows, one is invoked by guest, call stack shown as below,
+PPPoL2TP sockets should comply with the standard send*() return values
+(i.e. return number of bytes sent instead of 0 upon success).
 
-  handle_xsetbv(or xsetbv_interception)
-    kvm_set_xcr
-      __kvm_set_xcr
-
-the other one is invoked by host, for example during system reset:
-
-  kvm_arch_vcpu_ioctl
-    kvm_vcpu_ioctl_x86_set_xcrs
-      __kvm_set_xcr
-
-The former does need the CPL check, but the latter does not.
-
-Signed-off-by: Zhang Haoyu <haoyu.zhang@huawei.com>
-[Tweaks to commit message. - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/kvm/x86.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ net/l2tp/l2tp_ppp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -548,8 +548,6 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu,
- 	if (index != XCR_XFEATURE_ENABLED_MASK)
- 		return 1;
- 	xcr0 = xcr;
--	if (kvm_x86_ops->get_cpl(vcpu) != 0)
--		return 1;
- 	if (!(xcr0 & XSTATE_FP))
- 		return 1;
- 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
-@@ -563,7 +561,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu,
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -362,7 +362,7 @@ static int pppol2tp_sendmsg(struct kiocb
+ 	sock_put(ps->tunnel_sock);
+ 	sock_put(sk);
  
- int kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- {
--	if (__kvm_set_xcr(vcpu, index, xcr)) {
-+	if (kvm_x86_ops->get_cpl(vcpu) != 0 ||
-+	    __kvm_set_xcr(vcpu, index, xcr)) {
- 		kvm_inject_gp(vcpu, 0);
- 		return 1;
- 	}
+-	return error;
++	return total_len;
+ 
+ error_put_sess_tun:
+ 	sock_put(ps->tunnel_sock);
 
 
