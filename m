@@ -1,55 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411Ab3FYGdO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 02:33:14 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:37582 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab3FYGdN (ORCPT
+	id S1751727Ab3FYGot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 02:44:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43712 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab3FYGor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 02:33:13 -0400
-Date: Tue, 25 Jun 2013 12:02:57 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86/MCE: Update MCE severity condition check
-Message-ID: <20130625063257.GA2274@naverao1-tp.in.ibm.com>
-References: <1371719773-27572-1-git-send-email-gong.chen@linux.intel.com>
+	Tue, 25 Jun 2013 02:44:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371719773-27572-1-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062506-2000-0000-0000-00000CA0433E
+In-Reply-To: <1372133724.1245.38.camel@joe-AO722>
+References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
+	<1372102237-8757-26-git-send-email-paul.gortmaker@windriver.com>
+	<CAKohponpsJBqbj_8u8MUiu7sCEpeg5bcztWJAZdn9uxL5taVZQ@mail.gmail.com>
+	<1372133724.1245.38.camel@joe-AO722>
+Date: Tue, 25 Jun 2013 12:14:46 +0530
+Message-ID: <CAKohpomOyV2zze1QCKArytXD=x7NXSPtsxped_j2ZKJ_aZOi3w@mail.gmail.com>
+Subject: Re: [PATCH 25/32] cpufreq: delete __cpuinit usage from all cpufreq files
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/06/20 05:16AM, Chen Gong wrote:
-> Update some SRAR severity conditions check to make it clearer,
-> according to latest Intel SDM Vol 3(June 2013), table 15-20.
-> 
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce-severity.c |   15 +++++----------
->  1 file changed, 5 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> index beb1f16..1fa12ea 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> @@ -110,22 +110,17 @@ static struct severity {
->  	/* known AR MCACODs: */
->  #ifdef	CONFIG_MEMORY_FAILURE
->  	MCESEV(
-> -		KEEP, "HT thread notices Action required: data load error",
-> -		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
-> -		MCGMASK(MCG_STATUS_EIPV, 0)
-> +		KEEP, "Action required but non-affected thread is continuable",
+On 25 June 2013 09:45, Joe Perches <joe@perches.com> wrote:
+> Viresh, there's no absolute "right" way to do this.
 
-The SDM talks about "non-affected" logical processors, but perhaps we
-can call this an "unaffected" thread?
-
-- Naveen
-
+Yeah Joe, but I thought its better to keep it consistent within a file.
+So, while writing new files, keep what you want but for existing ones
+follow what's in there.
