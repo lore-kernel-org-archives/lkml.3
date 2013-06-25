@@ -1,383 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab3FYDbz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 23:31:55 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:56672 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab3FYDbx (ORCPT
+	id S1751674Ab3FYDd6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 23:33:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35423 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3FYDd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 23:31:53 -0400
+	Mon, 24 Jun 2013 23:33:57 -0400
+Date: Tue, 25 Jun 2013 06:33:26 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Chao Xie <xiechao.mail@gmail.com>
+CC: "balbi@ti.com" <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Roger Quadros <rogerq@ti.com>, Chao Xie <chao.xie@marvell.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
+ host controller
+Message-ID: <20130625033326.GC15407@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130620121749.GF9817@arwen.pp.htv.fi>
+ <Pine.LNX.4.44L0.1306201319580.2063-100000@iolanthe.rowland.org>
+ <CADApbejTBAv0+XxkGLXuMVrLatbNurR0XBkK2gt6eQnXr+5yEA@mail.gmail.com>
+ <20130624194549.GD11815@arwen.pp.htv.fi>
+ <CADApbej4QRQBdZC9gGNy2_CfZjwM5wVhg89R0XA4Jp3vYivQsg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1372102237-8757-26-git-send-email-paul.gortmaker@windriver.com>
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
-	<1372102237-8757-26-git-send-email-paul.gortmaker@windriver.com>
-Date: Tue, 25 Jun 2013 09:01:53 +0530
-Message-ID: <CAKohponpsJBqbj_8u8MUiu7sCEpeg5bcztWJAZdn9uxL5taVZQ@mail.gmail.com>
-Subject: Re: [PATCH 25/32] cpufreq: delete __cpuinit usage from all cpufreq files
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ALfTUftag+2gvp1h"
+Content-Disposition: inline
+In-Reply-To: <CADApbej4QRQBdZC9gGNy2_CfZjwM5wVhg89R0XA4Jp3vYivQsg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 June 2013 01:00, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+--ALfTUftag+2gvp1h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index f8c2860..5687d28 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1900,8 +1900,8 @@ no_policy:
->  }
->  EXPORT_SYMBOL(cpufreq_update_policy);
->
-> -static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
-> -                                       unsigned long action, void *hcpu)
-> +static int cpufreq_cpu_callback(struct notifier_block *nfb,
-> +                               unsigned long action, void *hcpu)
+Hi,
 
-You were not required to change second line here and also don't
-change its indentation level. Check this everywhere.
+On Tue, Jun 25, 2013 at 09:25:30AM +0800, Chao Xie wrote:
+> >> It is same as clk, irq requested by ehci-xxx driver.
+> >
+> > clocks could be handled generically in some cases, we have pm_clk_add()
+> > for a reason ;-)
+> >
+> > Also, clock handling can be hidden under pm_runtime callbacks (say,
+> > clk_enable() on ->runtime_resume(), clk_disable() on
+> > ->runtime_suspend()). IRQ is actually handled by usbcore, you just pass
+> > a handler which, in most cases, is the normal ehci_irq() handler.
+> >
+> > But we'll get to those later, let's focus on PHY for now.
+> >
+> clock is another story, and i know that OMAP has full system to handle
+> the clock with PM runtime,
+> i would like to discuss it when one day you want to do it.
 
->  {
->         unsigned int cpu = (unsigned long)hcpu;
->         struct device *dev;
-> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-> index fb65dec..ff50b0c 100644
-> --- a/drivers/cpufreq/cpufreq_stats.c
-> +++ b/drivers/cpufreq/cpufreq_stats.c
-> @@ -306,7 +306,7 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
->  }
->
->  static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
-> -               unsigned long val, void *data)
-> +                                      unsigned long val, void *data)
+sure, anytime.
 
-See.. unnecessary change.
+> >> So i think add a flag and use usb_get_phy() is not very good.
+> >
+> > Alan was talking about use hcd->phy as that flag, no flag would be
+> > added. But why isn't it very good ? you didn't mention your resoning.
+> >
+> I maybe understand something wrong.
+> Using hcd->phy as a flag to indicates whether the gule driver need
+> EHCI HCD to help
+> phy operation, such as initialization and shutdown, i think it is fine.
+> If add another member as a flag in EHCI HCD to indicates the PHY
+> differences of each echi-xxx.c driver,
+> and handle them in EHCI HCD, i think that is not very good. Because as
 
->  {
->         struct cpufreq_freqs *freq = data;
->         struct cpufreq_stats *stat;
-> @@ -341,7 +341,7 @@ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
->         return 0;
->  }
->
-> -static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
-> +static int cpufreq_stat_cpu_callback(struct notifier_block *nfb,
->                                                unsigned long action,
->                                                void *hcpu)
->  {
-> diff --git a/drivers/cpufreq/dbx500-cpufreq.c b/drivers/cpufreq/dbx500-cpufreq.c
-> index 6ec6539..8c005ac 100644
-> --- a/drivers/cpufreq/dbx500-cpufreq.c
-> +++ b/drivers/cpufreq/dbx500-cpufreq.c
-> @@ -82,7 +82,7 @@ static unsigned int dbx500_cpufreq_getspeed(unsigned int cpu)
->         return freq_table[i].frequency;
->  }
->
-> -static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
-> +static int dbx500_cpufreq_init(struct cpufreq_policy *policy)
->  {
->         int res;
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 07f2840..b012d76 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -617,7 +617,7 @@ static int intel_pstate_verify_policy(struct cpufreq_policy *policy)
->         return 0;
->  }
->
-> -static int __cpuinit intel_pstate_cpu_exit(struct cpufreq_policy *policy)
-> +static int intel_pstate_cpu_exit(struct cpufreq_policy *policy)
->  {
->         int cpu = policy->cpu;
->
-> @@ -627,7 +627,7 @@ static int __cpuinit intel_pstate_cpu_exit(struct cpufreq_policy *policy)
->         return 0;
->  }
->
-> -static int __cpuinit intel_pstate_cpu_init(struct cpufreq_policy *policy)
-> +static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
->  {
->         int rc, min_pstate, max_pstate;
->         struct cpudata *cpu;
-> diff --git a/drivers/cpufreq/longhaul.c b/drivers/cpufreq/longhaul.c
-> index b6a0a7a..8c49261 100644
-> --- a/drivers/cpufreq/longhaul.c
-> +++ b/drivers/cpufreq/longhaul.c
-> @@ -422,7 +422,7 @@ static int guess_fsb(int mult)
->  }
->
->
-> -static int __cpuinit longhaul_get_ranges(void)
-> +static int longhaul_get_ranges(void)
->  {
->         unsigned int i, j, k = 0;
->         unsigned int ratio;
-> @@ -526,7 +526,7 @@ static int __cpuinit longhaul_get_ranges(void)
->  }
->
->
-> -static void __cpuinit longhaul_setup_voltagescaling(void)
-> +static void longhaul_setup_voltagescaling(void)
->  {
->         union msr_longhaul longhaul;
->         struct mV_pos minvid, maxvid, vid;
-> @@ -780,7 +780,7 @@ static int longhaul_setup_southbridge(void)
->         return 0;
->  }
->
-> -static int __cpuinit longhaul_cpu_init(struct cpufreq_policy *policy)
-> +static int longhaul_cpu_init(struct cpufreq_policy *policy)
->  {
->         struct cpuinfo_x86 *c = &cpu_data(0);
->         char *cpuname = NULL;
-> diff --git a/drivers/cpufreq/longhaul.h b/drivers/cpufreq/longhaul.h
-> index e2dc436..1928b92 100644
-> --- a/drivers/cpufreq/longhaul.h
-> +++ b/drivers/cpufreq/longhaul.h
-> @@ -56,7 +56,7 @@ union msr_longhaul {
->  /*
->   * VIA C3 Samuel 1  & Samuel 2 (stepping 0)
->   */
-> -static const int __cpuinitconst samuel1_mults[16] = {
-> +static const int samuel1_mults[16] = {
->         -1, /* 0000 -> RESERVED */
->         30, /* 0001 ->  3.0x */
->         40, /* 0010 ->  4.0x */
-> @@ -75,7 +75,7 @@ static const int __cpuinitconst samuel1_mults[16] = {
->         -1, /* 1111 -> RESERVED */
->  };
->
-> -static const int __cpuinitconst samuel1_eblcr[16] = {
-> +static const int samuel1_eblcr[16] = {
->         50, /* 0000 -> RESERVED */
->         30, /* 0001 ->  3.0x */
->         40, /* 0010 ->  4.0x */
-> @@ -97,7 +97,7 @@ static const int __cpuinitconst samuel1_eblcr[16] = {
->  /*
->   * VIA C3 Samuel2 Stepping 1->15
->   */
-> -static const int __cpuinitconst samuel2_eblcr[16] = {
-> +static const int samuel2_eblcr[16] = {
->         50,  /* 0000 ->  5.0x */
->         30,  /* 0001 ->  3.0x */
->         40,  /* 0010 ->  4.0x */
-> @@ -119,7 +119,7 @@ static const int __cpuinitconst samuel2_eblcr[16] = {
->  /*
->   * VIA C3 Ezra
->   */
-> -static const int __cpuinitconst ezra_mults[16] = {
-> +static const int ezra_mults[16] = {
->         100, /* 0000 -> 10.0x */
->         30,  /* 0001 ->  3.0x */
->         40,  /* 0010 ->  4.0x */
-> @@ -138,7 +138,7 @@ static const int __cpuinitconst ezra_mults[16] = {
->         120, /* 1111 -> 12.0x */
->  };
->
-> -static const int __cpuinitconst ezra_eblcr[16] = {
-> +static const int ezra_eblcr[16] = {
->         50,  /* 0000 ->  5.0x */
->         30,  /* 0001 ->  3.0x */
->         40,  /* 0010 ->  4.0x */
-> @@ -160,7 +160,7 @@ static const int __cpuinitconst ezra_eblcr[16] = {
->  /*
->   * VIA C3 (Ezra-T) [C5M].
->   */
-> -static const int __cpuinitconst ezrat_mults[32] = {
-> +static const int ezrat_mults[32] = {
->         100, /* 0000 -> 10.0x */
->         30,  /* 0001 ->  3.0x */
->         40,  /* 0010 ->  4.0x */
-> @@ -196,7 +196,7 @@ static const int __cpuinitconst ezrat_mults[32] = {
->         -1,  /* 1111 -> RESERVED (12.0x) */
->  };
->
-> -static const int __cpuinitconst ezrat_eblcr[32] = {
-> +static const int ezrat_eblcr[32] = {
->         50,  /* 0000 ->  5.0x */
->         30,  /* 0001 ->  3.0x */
->         40,  /* 0010 ->  4.0x */
-> @@ -235,7 +235,7 @@ static const int __cpuinitconst ezrat_eblcr[32] = {
->  /*
->   * VIA C3 Nehemiah */
->
-> -static const int __cpuinitconst nehemiah_mults[32] = {
-> +static const int nehemiah_mults[32] = {
->         100, /* 0000 -> 10.0x */
->         -1, /* 0001 -> 16.0x */
->         40,  /* 0010 ->  4.0x */
-> @@ -270,7 +270,7 @@ static const int __cpuinitconst nehemiah_mults[32] = {
->         -1, /* 1111 -> 12.0x */
->  };
->
-> -static const int __cpuinitconst nehemiah_eblcr[32] = {
-> +static const int nehemiah_eblcr[32] = {
->         50,  /* 0000 ->  5.0x */
->         160, /* 0001 -> 16.0x */
->         40,  /* 0010 ->  4.0x */
-> @@ -315,7 +315,7 @@ struct mV_pos {
->         unsigned short pos;
->  };
->
-> -static const struct mV_pos __cpuinitconst vrm85_mV[32] = {
-> +static const struct mV_pos vrm85_mV[32] = {
->         {1250, 8},      {1200, 6},      {1150, 4},      {1100, 2},
->         {1050, 0},      {1800, 30},     {1750, 28},     {1700, 26},
->         {1650, 24},     {1600, 22},     {1550, 20},     {1500, 18},
-> @@ -326,14 +326,14 @@ static const struct mV_pos __cpuinitconst vrm85_mV[32] = {
->         {1475, 17},     {1425, 15},     {1375, 13},     {1325, 11}
->  };
->
-> -static const unsigned char __cpuinitconst mV_vrm85[32] = {
-> +static const unsigned char mV_vrm85[32] = {
->         0x04,   0x14,   0x03,   0x13,   0x02,   0x12,   0x01,   0x11,
->         0x00,   0x10,   0x0f,   0x1f,   0x0e,   0x1e,   0x0d,   0x1d,
->         0x0c,   0x1c,   0x0b,   0x1b,   0x0a,   0x1a,   0x09,   0x19,
->         0x08,   0x18,   0x07,   0x17,   0x06,   0x16,   0x05,   0x15
->  };
->
-> -static const struct mV_pos __cpuinitconst mobilevrm_mV[32] = {
-> +static const struct mV_pos mobilevrm_mV[32] = {
->         {1750, 31},     {1700, 30},     {1650, 29},     {1600, 28},
->         {1550, 27},     {1500, 26},     {1450, 25},     {1400, 24},
->         {1350, 23},     {1300, 22},     {1250, 21},     {1200, 20},
-> @@ -344,7 +344,7 @@ static const struct mV_pos __cpuinitconst mobilevrm_mV[32] = {
->         {675, 3},       {650, 2},       {625, 1},       {600, 0}
->  };
->
-> -static const unsigned char __cpuinitconst mV_mobilevrm[32] = {
-> +static const unsigned char mV_mobilevrm[32] = {
->         0x1f,   0x1e,   0x1d,   0x1c,   0x1b,   0x1a,   0x19,   0x18,
->         0x17,   0x16,   0x15,   0x14,   0x13,   0x12,   0x11,   0x10,
->         0x0f,   0x0e,   0x0d,   0x0c,   0x0b,   0x0a,   0x09,   0x08,
-> diff --git a/drivers/cpufreq/longrun.c b/drivers/cpufreq/longrun.c
-> index 8bc9f5f..7ad792d 100644
-> --- a/drivers/cpufreq/longrun.c
-> +++ b/drivers/cpufreq/longrun.c
-> @@ -33,7 +33,7 @@ static unsigned int longrun_low_freq, longrun_high_freq;
->   * Reads the current LongRun policy by access to MSR_TMTA_LONGRUN_FLAGS
->   * and MSR_TMTA_LONGRUN_CTRL
->   */
-> -static void __cpuinit longrun_get_policy(struct cpufreq_policy *policy)
-> +static void longrun_get_policy(struct cpufreq_policy *policy)
->  {
->         u32 msr_lo, msr_hi;
->
-> @@ -163,8 +163,8 @@ static unsigned int longrun_get(unsigned int cpu)
->   * TMTA rules:
->   * performance_pctg = (target_freq - low_freq)/(high_freq - low_freq)
->   */
-> -static int __cpuinit longrun_determine_freqs(unsigned int *low_freq,
-> -                                                     unsigned int *high_freq)
-> +static int longrun_determine_freqs(unsigned int *low_freq,
-> +                                  unsigned int *high_freq)
+no argument there :-)
 
-again
+> you said that make
+> common part into EHCI HCD is the target, but this member will import
+> all the differences to EHCI HCD.
 
->  {
->         u32 msr_lo, msr_hi;
->         u32 save_lo, save_hi;
-> @@ -256,7 +256,7 @@ static int __cpuinit longrun_determine_freqs(unsigned int *low_freq,
->  }
->
->
-> -static int __cpuinit longrun_cpu_init(struct cpufreq_policy *policy)
-> +static int longrun_cpu_init(struct cpufreq_policy *policy)
->  {
->         int result = 0;
->
-> diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
-> index 0279d18..4b81d3e 100644
-> --- a/drivers/cpufreq/omap-cpufreq.c
-> +++ b/drivers/cpufreq/omap-cpufreq.c
-> @@ -165,7 +165,7 @@ static inline void freq_table_free(void)
->                 opp_free_cpufreq_table(mpu_dev, &freq_table);
->  }
->
-> -static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
-> +static int omap_cpu_init(struct cpufreq_policy *policy)
->  {
->         int result = 0;
->
-> diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
-> index b9f80b7..9558708 100644
-> --- a/drivers/cpufreq/powernow-k7.c
-> +++ b/drivers/cpufreq/powernow-k7.c
-> @@ -563,7 +563,7 @@ static int powernow_verify(struct cpufreq_policy *policy)
->   * We will then get the same kind of behaviour already tested under
->   * the "well-known" other OS.
->   */
-> -static int __cpuinit fixup_sgtc(void)
-> +static int fixup_sgtc(void)
->  {
->         unsigned int sgtc;
->         unsigned int m;
-> @@ -597,7 +597,7 @@ static unsigned int powernow_get(unsigned int cpu)
->  }
->
->
-> -static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
-> +static int acer_cpufreq_pst(const struct dmi_system_id *d)
->  {
->         printk(KERN_WARNING PFX
->                 "%s laptop with broken PST tables in BIOS detected.\n",
-> @@ -615,7 +615,7 @@ static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
->   * A BIOS update is all that can save them.
->   * Mention this, and disable cpufreq.
->   */
-> -static struct dmi_system_id __cpuinitdata powernow_dmi_table[] = {
-> +static struct dmi_system_id powernow_dmi_table[] = {
->         {
->                 .callback = acer_cpufreq_pst,
->                 .ident = "Acer Aspire",
-> @@ -627,7 +627,7 @@ static struct dmi_system_id __cpuinitdata powernow_dmi_table[] = {
->         { }
->  };
->
-> -static int __cpuinit powernow_cpu_init(struct cpufreq_policy *policy)
-> +static int powernow_cpu_init(struct cpufreq_policy *policy)
->  {
->         union msr_fidvidstatus fidvidstatus;
->         int result;
-> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> index 51343a1..c71907f 100644
-> --- a/drivers/cpufreq/powernow-k8.c
-> +++ b/drivers/cpufreq/powernow-k8.c
-> @@ -1069,7 +1069,7 @@ struct init_on_cpu {
->         int rc;
->  };
->
-> -static void __cpuinit powernowk8_cpu_init_on_cpu(void *_init_on_cpu)
-> +static void powernowk8_cpu_init_on_cpu(void *_init_on_cpu)
->  {
->         struct init_on_cpu *init_on_cpu = _init_on_cpu;
->
-> @@ -1096,7 +1096,7 @@ static const char missing_pss_msg[] =
->         FW_BUG PFX "If that doesn't help, try upgrading your BIOS.\n";
->
->  /* per CPU init entry point to the driver */
-> -static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
-> +static int powernowk8_cpu_init(struct cpufreq_policy *pol)
->  {
->         struct powernow_k8_data *data;
->         struct init_on_cpu init_on_cpu;
-> @@ -1263,7 +1263,7 @@ static void __request_acpi_cpufreq(void)
->  }
->
->  /* driver entry point for init */
-> -static int __cpuinit powernowk8_init(void)
-> +static int powernowk8_init(void)
->  {
->         unsigned int i, supported_cpus = 0;
->         int ret;
+oh no, by 'flag' I meant something to tell ehci-hcd that we want to
+handle PHY by ourselves, but as Alan pointed out, we don't need a
+separate flag.
 
-Fix these and add my
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+IOW, I didn't mean to cater for OMAP's peculiarities in the generic code
+:-)
 
-Probably this can go through Rafael's pm tree. So, you can take it
-out of this series if you want.
+> It is better to let the ehci-xxx.c driver to handle the differences if
+> it does not fit EHCI HCD's requirment
+> for common PHY handling just as this patch did.
+
+right :-)
+
+> >> It is bette to make ehci-xxx to do the phy getting and EHCI HCD
+> >> initialize it and shut down as the patch did, or let ehci-xxx to
+> >> handle the PHY as Roger said.
+> >
+> > right, so this is what Alan suggested:
+> >
+> > ehci-xxx.c does usb_get_phy() (or any of those variants) and sets the
+> > returned pointer to hcd->phy. From that point on, ehci-hcd will play
+> > with the phy, resuming and suspending at the proper locations, asking
+> > the phy to enable wakeup capabilities and the like.
+> >
+> > In fact, because of that, I was just considering if I should protect
+> > usb_phy* against NULL pointers, just to make EHCI's life easier, I mean:
+> >
+> > static inline int usb_phy_set_suspend(struct usb_phy *phy, int suspend)
+> > {
+> >         if (!phy)
+> >                 return 0;
+> >
+> >         return phy->suspend(phy, suspend);
+> > }
+> >
+> This patch does not include the suspending/resumeing. It is great that yo=
+u are
+> woking at it.
+
+yeah, I'll add that part so that ehci-hcd doesn't have to add if
+(hcd->phy) all over the place.
+
+> >> Based on the generic work is not too much, and does not look so
+> >> meaningful. I suggest that let to echi-xxx
+> >> do it.
+> >
+> > we'll end up with a boilerplate code in every single ehci-xxx doing
+> > exactly the same thing. By building the common case in ehci-hcd, we can
+> > make sure to focus efforts wrt power consumption, proper use of the phy
+> > layer, etc in a single location which (almost) everybody shares.
+> >
+> > The other bits which are non-generic, can use ehci-hcd as a reference to
+> > build their own stuff.
+> >
+> > my 2 cents
+> >
+> OK. I understand. I am not very fimilar with PHY suspending/resuming.
+> I hope that i can see the patch move all PHY handling to EHCI HCD
+> including suspending/resuming, so
+> i can change our ehci driver to fit it and continuing to push the USB
+> patches ;-)
+
+suspend/resume is usually very tricky, so I'd rather leave it for later.
+
+For now, let's just build enough ground-work as to make it easier to
+think about suspend/resume later :-)
+
+Meaning that we can just add the bare minimum (init on probe and
+shutdown on remove) and add more support as we go :-)
+
+cheers
+
+--=20
+balbi
+
+--ALfTUftag+2gvp1h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRyQ+GAAoJEIaOsuA1yqRE5/YP/0dZOltBc6CxO5n8G5vfiiRS
+L+/CH1nyH0cMX1LxGn4Sw8JEA5Yhv0EVSnHguhCfnya6v5cOuClc3vMz7Al+YJE3
+Z40qOaeceMlS4z/5bUAiJ1L4pjVFQPVEotflQXNSd8XH9TWam2+dyNXTriy8ek5q
+Z39teOd9fql4ns+5q444UOVUvGwNjfwFOfSJ7LIADLpIBBpPrId9uK+Tpc5SUJog
+NEBQ74DPkhVyR8cbC1eTiOaL9EwIxgnWlpFCH2/rwNmcnNeGgb87Jtja1nQ8k4pC
+GDQA3/NvfUbg50qoDgO8wNEevTK6ROktSTmKD+F8aRby3Zq65otJt2NouVeaG8+l
+66T74H0/BNyQQGeq6iFbaFcOkeRoEMSD573uI/7QNsNwos7jno5lF6ZQmKffQiVF
+vzDJufZmWP6ThC+vRYrgveMCRDvFTkLTIGYxIkuR9GELguRrehu/0GpkDsm1bQA2
+ziHJkAre4uxapyWhOVSE/txOVjnRqziD6jXtObh9THzCDyYbAYjvlKClFAfkQp2m
+mFoidb6RLcMiMxJAD3XqE5AiiCLeJE15tqizIrjLwgyfpZmHPjs6V4khlidke702
+qSe3Ka1uyL8J1O/J1ekiFJ6CTv3yYktl/2OvGwgcexbaBEu9uJCf65slHV0tM7yj
+qS3EowSQ2F7mipHfObvp
+=iAVO
+-----END PGP SIGNATURE-----
+
+--ALfTUftag+2gvp1h--
