@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab3FYSr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:47:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41256 "EHLO
+	id S1753601Ab3FYSsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:48:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41248 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab3FYSf6 (ORCPT
+	with ESMTP id S1753154Ab3FYSf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:35:58 -0400
+	Tue, 25 Jun 2013 14:35:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        =?UTF-8?q?Holger=20Hoffst=C3=A4tte?= 
+	<holger.hoffstaette@googlemail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/27] tcp: xps: fix reordering issues
-Date: Tue, 25 Jun 2013 11:35:32 -0700
-Message-Id: <20130625183519.208075532@linuxfoundation.org>
+Subject: [ 10/27] r8169: fix offloaded tx checksum for small packets.
+Date: Tue, 25 Jun 2013 11:35:29 -0700
+Message-Id: <20130625183518.886049430@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,47 +32,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Francois Romieu <romieu@fr.zoreil.com>
 
-[ Upstream commit 547669d483e5783d722772af1483fa474da7caf9 ]
+[ Upstream commit b423e9ae49d78ea3f53b131c8d5a6087aed16fd6 ]
 
-commit 3853b5841c01a ("xps: Improvements in TX queue selection")
-introduced ooo_okay flag, but the condition to set it is slightly wrong.
+8168evl offloaded checksums are wrong since commit
+e5195c1f31f399289347e043d6abf3ffa80f0005 ("r8169: fix 8168evl frame padding.")
+pads small packets to 60 bytes (without ethernet checksum). Typical symptoms
+appear as UDP checksums which are wrong by the count of added bytes.
 
-In our traces, we have seen ACK packets being received out of order,
-and RST packets sent in response.
+It isn't worth compensating. Let the driver checksum.
 
-We should test if we have any packets still in host queue.
+Due to the skb length changes, TSO code is moved before the Tx descriptor gets
+written.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Tested-by: Holger Hoffstätte <holger.hoffstaette@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_output.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |   41 +++++++++++++++++++++++------------
+ 1 file changed, 27 insertions(+), 14 deletions(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -835,11 +835,13 @@ static int tcp_transmit_skb(struct sock
- 							   &md5);
- 	tcp_header_size = tcp_options_size + sizeof(struct tcphdr);
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -5126,7 +5126,20 @@ err_out:
+ 	return -EIO;
+ }
  
--	if (tcp_packets_in_flight(tp) == 0) {
-+	if (tcp_packets_in_flight(tp) == 0)
- 		tcp_ca_event(sk, CA_EVENT_TX_START);
--		skb->ooo_okay = 1;
--	} else
--		skb->ooo_okay = 0;
+-static inline void rtl8169_tso_csum(struct rtl8169_private *tp,
++static bool rtl_skb_pad(struct sk_buff *skb)
++{
++	if (skb_padto(skb, ETH_ZLEN))
++		return false;
++	skb_put(skb, ETH_ZLEN - skb->len);
++	return true;
++}
 +
-+	/* if no packet is in qdisc/device queue, then allow XPS to select
-+	 * another queue.
-+	 */
-+	skb->ooo_okay = sk_wmem_alloc_get(sk) == 0;
++static bool rtl_test_hw_pad_bug(struct rtl8169_private *tp, struct sk_buff *skb)
++{
++	return skb->len < ETH_ZLEN && tp->mac_version == RTL_GIGA_MAC_VER_34;
++}
++
++static inline bool rtl8169_tso_csum(struct rtl8169_private *tp,
+ 				    struct sk_buff *skb, u32 *opts)
+ {
+ 	const struct rtl_tx_desc_info *info = tx_desc_info + tp->txd_version;
+@@ -5139,13 +5152,20 @@ static inline void rtl8169_tso_csum(stru
+ 	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 		const struct iphdr *ip = ip_hdr(skb);
  
- 	skb_push(skb, tcp_header_size);
- 	skb_reset_transport_header(skb);
++		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
++			return skb_checksum_help(skb) == 0 && rtl_skb_pad(skb);
++
+ 		if (ip->protocol == IPPROTO_TCP)
+ 			opts[offset] |= info->checksum.tcp;
+ 		else if (ip->protocol == IPPROTO_UDP)
+ 			opts[offset] |= info->checksum.udp;
+ 		else
+ 			WARN_ON_ONCE(1);
++	} else {
++		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
++			return rtl_skb_pad(skb);
+ 	}
++	return true;
+ }
+ 
+ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
+@@ -5166,17 +5186,15 @@ static netdev_tx_t rtl8169_start_xmit(st
+ 		goto err_stop_0;
+ 	}
+ 
+-	/* 8168evl does not automatically pad to minimum length. */
+-	if (unlikely(tp->mac_version == RTL_GIGA_MAC_VER_34 &&
+-		     skb->len < ETH_ZLEN)) {
+-		if (skb_padto(skb, ETH_ZLEN))
+-			goto err_update_stats;
+-		skb_put(skb, ETH_ZLEN - skb->len);
+-	}
+-
+ 	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
+ 		goto err_stop_0;
+ 
++	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(tp, skb));
++	opts[0] = DescOwn;
++
++	if (!rtl8169_tso_csum(tp, skb, opts))
++		goto err_update_stats;
++
+ 	len = skb_headlen(skb);
+ 	mapping = dma_map_single(d, skb->data, len, DMA_TO_DEVICE);
+ 	if (unlikely(dma_mapping_error(d, mapping))) {
+@@ -5188,11 +5206,6 @@ static netdev_tx_t rtl8169_start_xmit(st
+ 	tp->tx_skb[entry].len = len;
+ 	txd->addr = cpu_to_le64(mapping);
+ 
+-	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(tp, skb));
+-	opts[0] = DescOwn;
+-
+-	rtl8169_tso_csum(tp, skb, opts);
+-
+ 	frags = rtl8169_xmit_frags(tp, skb, opts);
+ 	if (frags < 0)
+ 		goto err_dma_1;
 
 
