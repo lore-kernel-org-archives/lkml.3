@@ -1,122 +1,550 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751082Ab3FYLaW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 07:30:22 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53167 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3FYLaU convert rfc822-to-8bit (ORCPT
+	id S1751211Ab3FYLc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 07:32:57 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:38049 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab3FYLcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 07:30:20 -0400
-Message-ID: <51C97F40.5030101@arm.com>
-Date: Tue, 25 Jun 2013 12:30:08 +0100
-From: Jonathan Austin <jonathan.austin@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Vinod Koul <vinod.koul@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Steve Capper <Steve.Capper@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linus.walleij@linaro.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: amba-pl08x and 'get_signal' namespace collision/build error
-X-OriginalArrivalTime: 25 Jun 2013 11:30:15.0754 (UTC) FILETIME=[5D2CCAA0:01CE7197]
-X-MC-Unique: 113062512301800201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 Jun 2013 07:32:55 -0400
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: b-cousson@ti.com, tony@atomide.com
+Cc: benoit.cousson@linaro.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v2] ARM: DTS: OMAP4: Add OMAP4 Blaze Tablet support
+Date: Tue, 25 Jun 2013 14:32:50 +0300
+Message-Id: <1372159970-6361-1-git-send-email-ruslan.bilovol@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+The OMAP4 Blaze Tablet is TI OMAP4 processor-based
+development platform in a tablet formfactor.
+The platform contains many of the features found in
+present-day handsets (such as audio, video, wireless
+functions and user interfaces) and in addition
+contains features for software development and test.
 
-There's a patch making its way to mainline via Russell's tree
-(8d96250700: ARM: mm: Transparent huge page support for LPAE systems)
-that breaks the build of the amba-pl08x driver (drivers/dma/amba-pl08x.c) 
-because the 'get_signal' macro from include/linux/signal.h is now in the
-driver's scope and it clobbers a (previously) valid function call.
+This patch adds initial support for the OMAP4 Blaze
+Tablet development platform. Additional functionality
+depends on different drivers and code modifications that
+are not upstreamed yet or do not support DT yet, so will
+be added later.
 
-The error:
-drivers/dma/amba-pl08x.c: In function ‘pl08x_request_mux’:
-drivers/dma/amba-pl08x.c:303:13: error: expected identifier before ‘(’ token
+Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
+---
 
-Here's the problematic include:
-In file included from include/linux/sched.h:32:0,
---new include--> from /data/build/a32/linux/arch/arm/include/asm/tlbflush.h:204,
-                 from /data/build/a32/linux/arch/arm/include/asm/pgtable.h:28,
-                 from include/linux/mm.h:44,
-                 from include/linux/scatterlist.h:6,
-                 from include/linux/dmaengine.h:27,
-                 from include/linux/amba/pl08x.h:21,
-                 from drivers/dma/amba-pl08x.c:74:
-include/linux/signal.h:298:2: error: #error get_signal defined here
+v2:
+ - Rebased onto 'for_3.11/dts' branch of bcousson/linux-omap-dt tree
+ - Bound more hardware and picked up updates from omap4-sdp 
 
-Below is a 'fix' that *doesn't* require any renaming of either the
-get_signal function or macro, but there's nothing to say that driver
-shouldn't be able to use the pl08x_platform_data struct *and* do
-scheduling so this doesn't seem like the best fix really.
+ arch/arm/boot/dts/Makefile              |    1 +
+ arch/arm/boot/dts/omap4-blazetablet.dts |  483 +++++++++++++++++++++++++++++++
+ 2 files changed, 484 insertions(+)
+ create mode 100644 arch/arm/boot/dts/omap4-blazetablet.dts
 
-So can we do something better?
-
-Al: the commit where you add the get_signal() helper suggests you want
-to make it a function not a macro in the future - what needs to be done
-before that can happen? I think that would be the best/easiest fix.
-
-
-Jonny
-
-----------8<-----------
-diff --git a/arch/arm/include/asm/tlbflush.h b/arch/arm/include/asm/tlbflush.h
-index c78efbc..ce1185c 100644
---- a/arch/arm/include/asm/tlbflush.h
-+++ b/arch/arm/include/asm/tlbflush.h
-@@ -201,7 +201,10 @@
- 
- #ifndef __ASSEMBLY__
- 
--#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/mm_types.h>
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 05da469..4fafde1 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -150,6 +150,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	omap4-var-som.dtb \
+ 	omap4-sdp.dtb \
+ 	omap4-sdp-es23plus.dtb \
++	omap4-blazetablet.dtb \
+ 	omap5-uevm.dtb \
+ 	am335x-evm.dtb \
+ 	am335x-evmsk.dtb \
+diff --git a/arch/arm/boot/dts/omap4-blazetablet.dts b/arch/arm/boot/dts/omap4-blazetablet.dts
+new file mode 100644
+index 0000000..07f40b6
+--- /dev/null
++++ b/arch/arm/boot/dts/omap4-blazetablet.dts
+@@ -0,0 +1,483 @@
++/*
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * Author: Ruslan Bilovol <ruslan.bilovol@ti.com>
++ *
++ * based on omap4-sdp.dts
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/dts-v1/;
 +
-+#include <asm/barrier.h>
- 
- struct cpu_tlb_fns {
-        void (*flush_user_range)(unsigned long, unsigned long, struct vm_area_struct *);
-diff --git a/arch/arm/kernel/suspend.c b/arch/arm/kernel/suspend.c
-index 38a5067..3100983 100644
---- a/arch/arm/kernel/suspend.c
-+++ b/arch/arm/kernel/suspend.c
-@@ -1,4 +1,5 @@
- #include <linux/init.h>
-+#include <linux/sched.h>
- 
- #include <asm/idmap.h>
- #include <asm/pgalloc.h>
-diff --git a/arch/arm/mm/idmap.c b/arch/arm/mm/idmap.c
-index 83cb3ac..304e8ce 100644
---- a/arch/arm/mm/idmap.c
-+++ b/arch/arm/mm/idmap.c
-@@ -1,6 +1,7 @@
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/slab.h>
-+#include <linux/sched.h>
- 
- #include <asm/cputype.h>
- #include <asm/idmap.h>
-diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
-index d5a4e9a..6eeaf3d 100644
---- a/arch/arm/mm/mm.h
-+++ b/arch/arm/mm/mm.h
-@@ -1,6 +1,7 @@
- #ifdef CONFIG_MMU
- #include <linux/list.h>
- #include <linux/vmalloc.h>
-+#include <linux/sched.h>
- 
- /* the upper-most page table pointer */
- extern pmd_t *top_pmd;
-
-
++#include "omap443x.dtsi"
++#include "elpida_ecb240abacn.dtsi"
++
++/ {
++	model = "TI OMAP4 Blaze Tablet";
++	compatible = "ti,omap4-blazetablet", "ti,omap4430", "ti,omap4";
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x40000000>; /* 1 GB */
++	};
++
++	vdd_eth: fixedregulator-vdd-eth {
++		compatible = "regulator-fixed";
++		regulator-name = "VDD_ETH";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio2 16 0>;  /* gpio line 48 */
++		enable-active-high;
++		regulator-boot-on;
++	};
++
++	vbat: fixedregulator-vbat {
++		compatible = "regulator-fixed";
++		regulator-name = "VBAT";
++		regulator-min-microvolt = <3750000>;
++		regulator-max-microvolt = <3750000>;
++		regulator-boot-on;
++	};
++
++	gpio_keys {
++		compatible = "gpio-keys";
++
++		volume_up {
++			label = "volume-up";
++			linux,code = <115>;	/* KEY_VOLUMEUP */
++			gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;	/* 43 */
++			gpio-key,wakeup;
++		};
++
++		home {
++			label = "home";
++			linux,code = <102>;	/* KEY_HOME */
++			gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>;	/* 46 */
++			gpio-key,wakeup;
++		};
++
++		volume_down {
++			label = "volume-down";
++			linux,code = <114>;	/* KEY_VOLUMEDOWN */
++			gpios = <&gpio2 15 GPIO_ACTIVE_HIGH>;	/* 47 */
++			gpio-key,wakeup;
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		debug2 {
++			label = "omap4:green:debug2";
++			gpios = <&gpio6 13 GPIO_ACTIVE_HIGH>; /* 173 */
++		};
++
++		debug4 {
++			label = "omap4:green:debug4";
++			gpios = <&gpio2 18 GPIO_ACTIVE_HIGH>; /* 50 */
++		};
++
++		user1 {
++			label = "omap4:blue:user";
++			gpios = <&gpio6 9 GPIO_ACTIVE_HIGH>; /* 169 */
++		};
++
++		user2 {
++			label = "omap4:red:user";
++			gpios = <&gpio6 10 GPIO_ACTIVE_HIGH>; /* 170 */
++		};
++
++		user3 {
++			label = "omap4:green:user";
++			gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>; /* 174 */
++		};
++	};
++
++	sound {
++		compatible = "ti,abe-twl6040";
++		ti,model = "BlazeTablet";
++
++		ti,jack-detection = <1>;
++		ti,mclk-freq = <38400000>;
++
++		ti,mcpdm = <&mcpdm>;
++		ti,dmic = <&dmic>;
++
++		ti,twl6040 = <&twl6040>;
++
++		/* Audio routing */
++		ti,audio-routing =
++			"Headset Stereophone", "HSOL",
++			"Headset Stereophone", "HSOR",
++			"Ext Spk", "HFL",
++			"Ext Spk", "HFR",
++			"Line Out", "AUXL",
++			"Line Out", "AUXR",
++			"Vibrator", "VIBRAL",
++			"Vibrator", "VIBRAR",
++			"HSMIC", "Headset Mic",
++			"Headset Mic", "Headset Mic Bias",
++			"MAINMIC", "Main Handset Mic",
++			"Main Handset Mic", "Main Mic Bias",
++			"SUBMIC", "Sub Handset Mic",
++			"Sub Handset Mic", "Main Mic Bias",
++			"AFML", "Line In",
++			"AFMR", "Line In",
++			"DMic", "Digital Mic",
++			"Digital Mic", "Digital Mic1 Bias";
++	};
++};
++
++&omap4_pmx_wkup {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++			&twl6030_wkup_pins
++	>;
++
++	twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
++		pinctrl-single,pins = <
++			0x14 (PIN_OUTPUT | MUX_MODE2)		/* fref_clk0_out.sys_drm_msecure */
++		>;
++	};
++};
++
++&omap4_pmx_core {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++			&twl6030_pins
++			&twl6040_pins
++			&mcpdm_pins
++			&dmic_pins
++			&mcbsp1_pins
++			&mcbsp2_pins
++			&dss_hdmi_pins
++			&tpd12s015_pins
++			&gpio_keys_pins
++			&leds_pins
++	>;
++
++	gpio_keys_pins: pinmux_gpio_keys_pins {
++		pinctrl-single,pins = <
++			0x26 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_a19.gpio_43 */
++			0x2C (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_a22.gpio_46 */
++			0x2E (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_a22.gpio_47 */
++		>;
++	};
++
++	leds_pins: pinmux_led_pins {
++		pinctrl-single,pins = <
++			0x34 (PIN_OUTPUT | MUX_MODE3)	/* gpmc_ncs0.gpio_50 */
++			0x138 (PIN_OUTPUT | MUX_MODE3)	/* usbb2_hsic_data.gpio_169 */
++			0x13a (PIN_OUTPUT | MUX_MODE3)	/* usbb2_hsic_strobe.gpio_170 */
++			0x140 (PIN_OUTPUT | MUX_MODE3)	/* kpd_col5.gpio_173 */
++			0x142 (PIN_OUTPUT | MUX_MODE3)	/* kpd_col5.gpio_174 */
++		>;
++	};
++
++	uart2_pins: pinmux_uart2_pins {
++		pinctrl-single,pins = <
++			0xd8 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart2_cts.uart2_cts */
++			0xda (PIN_OUTPUT | MUX_MODE0)		/* uart2_rts.uart2_rts */
++			0xdc (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart2_rx.uart2_rx */
++			0xde (PIN_OUTPUT | MUX_MODE0)		/* uart2_tx.uart2_tx */
++		>;
++	};
++
++	uart3_pins: pinmux_uart3_pins {
++		pinctrl-single,pins = <
++			0x100 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart3_cts_rctx.uart3_cts_rctx */
++			0x102 (PIN_OUTPUT | MUX_MODE0)		/* uart3_rts_sd.uart3_rts_sd */
++			0x104 (PIN_INPUT | MUX_MODE0)		/* uart3_rx_irrx.uart3_rx_irrx */
++			0x106 (PIN_OUTPUT | MUX_MODE0)		/* uart3_tx_irtx.uart3_tx_irtx */
++		>;
++	};
++
++	uart4_pins: pinmux_uart4_pins {
++		pinctrl-single,pins = <
++			0x11c (PIN_INPUT | MUX_MODE0)		/* uart4_rx.uart4_rx */
++			0x11e (PIN_OUTPUT | MUX_MODE0)		/* uart4_tx.uart4_tx */
++		>;
++	};
++
++	twl6030_pins: pinmux_twl6030_pins {
++		pinctrl-single,pins = <
++			0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)	/* sys_nirq1.sys_nirq1 */
++		>;
++	};
++
++	twl6040_pins: pinmux_twl6040_pins {
++		pinctrl-single,pins = <
++			0xe0 (PIN_OUTPUT | MUX_MODE3)		/* hdq_sio.gpio_127 */
++			0x160 (PIN_INPUT | MUX_MODE0)		/* sys_nirq2.sys_nirq2 */
++		>;
++	};
++
++	mcpdm_pins: pinmux_mcpdm_pins {
++		pinctrl-single,pins = <
++			0xc6 (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* abe_pdm_ul_data.abe_pdm_ul_data */
++			0xc8 (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* abe_pdm_dl_data.abe_pdm_dl_data */
++			0xca (PIN_INPUT_PULLUP | MUX_MODE0)	/* abe_pdm_frame.abe_pdm_frame */
++			0xcc (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* abe_pdm_lb_clk.abe_pdm_lb_clk */
++			0xce (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* abe_clks.abe_clks */
++		>;
++	};
++
++	dmic_pins: pinmux_dmic_pins {
++		pinctrl-single,pins = <
++			0xd0 (PIN_OUTPUT | MUX_MODE0)		/* abe_dmic_clk1.abe_dmic_clk1 */
++			0xd2 (PIN_INPUT | MUX_MODE0)		/* abe_dmic_din1.abe_dmic_din1 */
++			0xd4 (PIN_INPUT | MUX_MODE0)		/* abe_dmic_din2.abe_dmic_din2 */
++			0xd6 (PIN_INPUT | MUX_MODE0)		/* abe_dmic_din3.abe_dmic_din3 */
++		>;
++	};
++
++	mcbsp1_pins: pinmux_mcbsp1_pins {
++		pinctrl-single,pins = <
++			0xbe (PIN_INPUT | MUX_MODE0)		/* abe_mcbsp1_clkx.abe_mcbsp1_clkx */
++			0xc0 (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* abe_mcbsp1_dr.abe_mcbsp1_dr */
++			0xc2 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* abe_mcbsp1_dx.abe_mcbsp1_dx */
++			0xc4 (PIN_INPUT | MUX_MODE0)		/* abe_mcbsp1_fsx.abe_mcbsp1_fsx */
++		>;
++	};
++
++	mcbsp2_pins: pinmux_mcbsp2_pins {
++		pinctrl-single,pins = <
++			0xb6 (PIN_INPUT | MUX_MODE0)		/* abe_mcbsp2_clkx.abe_mcbsp2_clkx */
++			0xb8 (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* abe_mcbsp2_dr.abe_mcbsp2_dr */
++			0xba (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* abe_mcbsp2_dx.abe_mcbsp2_dx */
++			0xbc (PIN_INPUT | MUX_MODE0)		/* abe_mcbsp2_fsx.abe_mcbsp2_fsx */
++		>;
++	};
++
++	mcspi1_pins: pinmux_mcspi1_pins {
++		pinctrl-single,pins = <
++			0xf2 (PIN_INPUT | MUX_MODE0)		/*  mcspi1_clk.mcspi1_clk */
++			0xf4 (PIN_INPUT | MUX_MODE0)		/*  mcspi1_somi.mcspi1_somi */
++			0xf6 (PIN_INPUT | MUX_MODE0)		/*  mcspi1_simo.mcspi1_simo */
++			0xf8 (PIN_INPUT | MUX_MODE0)		/*  mcspi1_cs0.mcspi1_cs0 */
++			0xfa (PIN_INPUT | MUX_MODE0)		/*  mcspi1_cs1.mcspi1_cs1 */
++		>;
++	};
++
++	dss_hdmi_pins: pinmux_dss_hdmi_pins {
++		pinctrl-single,pins = <
++			0x5a (PIN_INPUT_PULLUP | MUX_MODE0)	/* hdmi_cec.hdmi_cec */
++			0x5c (PIN_INPUT_PULLUP | MUX_MODE0)	/* hdmi_scl.hdmi_scl */
++			0x5e (PIN_INPUT_PULLUP | MUX_MODE0)	/* hdmi_sda.hdmi_sda */
++		>;
++	};
++
++	tpd12s015_pins: pinmux_tpd12s015_pins {
++		pinctrl-single,pins = <
++			0x22 (PIN_OUTPUT | MUX_MODE3)		/* gpmc_a17.gpio_41 */
++			0x48 (PIN_OUTPUT | MUX_MODE3)		/* gpmc_nbe1.gpio_60 */
++			0x58 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* hdmi_hpd.gpio_63 */
++		>;
++	};
++
++	i2c1_pins: pinmux_i2c1_pins {
++		pinctrl-single,pins = <
++			0xe2 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c1_scl */
++			0xe4 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c1_sda */
++		>;
++	};
++
++	i2c2_pins: pinmux_i2c2_pins {
++		pinctrl-single,pins = <
++			0xe6 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c2_scl */
++			0xe8 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c2_sda */
++		>;
++	};
++
++	i2c3_pins: pinmux_i2c3_pins {
++		pinctrl-single,pins = <
++			0xea (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c3_scl */
++			0xec (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c3_sda */
++		>;
++	};
++
++	i2c4_pins: pinmux_i2c4_pins {
++		pinctrl-single,pins = <
++			0xee (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c4_scl */
++			0xf0 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c4_sda */
++		>;
++	};
++};
++
++&i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1_pins>;
++
++	clock-frequency = <400000>;
++
++	twl: twl@48 {
++		reg = <0x48>;
++		/* SPI = 0, IRQ# = 7, 4 = active high level-sensitive */
++		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_1N cascaded to gic */
++		interrupt-parent = <&gic>;
++	};
++
++	twl6040: twl@4b {
++		compatible = "ti,twl6040";
++		reg = <0x4b>;
++		/* SPI = 0, IRQ# = 119, 4 = active high level-sensitive */
++		interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_2N cascaded to gic */
++		interrupt-parent = <&gic>;
++		ti,audpwron-gpio = <&gpio4 31 0>;  /* gpio line 127 */
++
++		vio-supply = <&v1v8>;
++		v2v1-supply = <&v2v1>;
++		enable-active-high;
++
++		/* regulators for vibra motor */
++		vddvibl-supply = <&vbat>;
++		vddvibr-supply = <&vbat>;
++
++		vibra {
++			/* Vibra driver, motor resistance parameters */
++			ti,vibldrv-res = <8>;
++			ti,vibrdrv-res = <3>;
++			ti,viblmotor-res = <10>;
++			ti,vibrmotor-res = <10>;
++			ti,vddvibl-uV = <0>;	/* fixed volt supply - VBAT */
++			ti,vddvibr-uV = <0>;	/* fixed volt supply - VBAT */
++		};
++	};
++};
++
++#include "twl6030.dtsi"
++
++&i2c2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c2_pins>;
++
++	clock-frequency = <400000>;
++};
++
++&i2c3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c3_pins>;
++
++	clock-frequency = <400000>;
++
++	/*
++	 * Temperature Sensor
++	 * http://www.ti.com/lit/ds/symlink/tmp105.pdf
++	 */
++	tmp105@48 {
++		compatible = "ti,tmp105";
++		reg = <0x48>;
++	};
++};
++
++&i2c4 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c4_pins>;
++
++	clock-frequency = <400000>;
++
++	/*
++	 * 3-Axis Digital Compass
++	 * https://www.sparkfun.com/products/10426
++	 */
++	hmc5883@1e {
++		compatible = "honeywell,hmc5883";
++		reg = <0x1e>;
++	};
++
++	/*
++	 * BMP085 digital pressure sensor
++	 */
++	bmp085@77 {
++		compatible = "bosch,bmp085";
++		reg = <0x77>;
++	};
++};
++
++&mcspi1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mcspi1_pins>;
++
++	eth@0 {
++		compatible = "ks8851";
++		spi-max-frequency = <24000000>;
++		reg = <0>;
++		interrupt-parent = <&gpio2>;
++		interrupts = <2 IRQ_TYPE_LEVEL_LOW>; /* gpio line 34 */
++		vdd-supply = <&vdd_eth>;
++	};
++
++	/*
++	 * Dummy interface for debug UART multiplexor
++	 */
++	quart@1 {
++		compatible = "dummy";
++		spi-max-frequency = <24000000>;
++		reg = <1>;
++	};
++};
++
++&mmc1 {
++	vmmc-supply = <&vmmc>;
++	bus-width = <8>;
++};
++
++&mmc2 {
++	vmmc-supply = <&vaux1>;
++	bus-width = <8>;
++	ti,non-removable;
++};
++
++&mmc3 {
++	status = "disabled";
++};
++
++&mmc4 {
++	status = "disabled";
++};
++
++&mmc5 {
++	bus-width = <4>;
++	ti,non-removable;
++};
++
++&emif1 {
++	cs1-used;
++	device-handle = <&elpida_ECB240ABACN>;
++};
++
++&emif2 {
++	cs1-used;
++	device-handle = <&elpida_ECB240ABACN>;
++};
++
++&uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart2_pins>;
++};
++
++&uart3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart3_pins>;
++};
++
++&uart4 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart4_pins>;
++};
++
++&mcbsp3 {
++	status = "disabled";
++};
++
++&twl_usb_comparator {
++	usb-supply = <&vusb>;
++};
++
++&usb_otg_hs {
++	interface-type = <1>;
++	mode = <3>;
++	power = <100>;
++};
+-- 
+1.7.9.5
 
