@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab3FYK7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 06:59:00 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:41976 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab3FYK65 (ORCPT
+	id S1752789Ab3FYLFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 07:05:07 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:45966 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab3FYLFF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 06:58:57 -0400
+	Tue, 25 Jun 2013 07:05:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130624141257.GM27646@sirena.org.uk>
-References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
-	<1371737138-9340-1-git-send-email-srinivas.kandagatla@st.com>
-	<51C45816.5010207@st.com>
-	<CACRpkdb-H2=GdF54Fay+PQVdXLTs++L5+QYe_vFPuzpa+E4ZMg@mail.gmail.com>
-	<20130624141257.GM27646@sirena.org.uk>
-Date: Tue, 25 Jun 2013 12:58:57 +0200
-Message-ID: <CACRpkdaxqfdXz8bE0coF_mN2W5EUW1ENUJqwV8ne-ezUBpziCA@mail.gmail.com>
-Subject: Re: [PATCH v3 03/10] pinctrl:st: Add pinctrl and pinconf support.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+In-Reply-To: <20130625103440.GR11232@pengutronix.de>
+References: <1371073835-10639-1-git-send-email-u.kleine-koenig@pengutronix.de> <20130625103440.GR11232@pengutronix.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 25 Jun 2013 12:04:44 +0100
+X-Google-Sender-Auth: 052cxl7LhXLxLbg1psANWXh33_I
+Message-ID: <CACxGe6vBCKCnXRtvT9N6cRPa7uHTJDMw7k-46eCj7fFPko+Raw@mail.gmail.com>
+Subject: Re: [PATCH v4] irqchip: Add support for ARMv7-M's NVIC
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Sascha Hauer <kernel@pengutronix.de>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        kernel@stlinux.com,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Arnd Bergmann <arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 4:12 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Jun 24, 2013 at 01:57:56PM +0200, Linus Walleij wrote:
+On Tue, Jun 25, 2013 at 11:34 AM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
+> Hello Thomas, hello Grant,
 >
->> This seems fairly complete, but I cannot have such a basic dependency onto
->> the regmap tree this late in the merge window, i.e. I'm not ready to pull
->> all of regmap into the pinctrl tree. I'd consider this for merging
->> for the next kernel cycle so it's more orthogonal.
->
-> I've got the patch on a topic branch in regmap to allow for this sort of
-> stuff - I can readily provide a signed tag for you to get just that
-> patch if that'd help?  Alternatively I'm happy to carry the pinctrl
-> patch in regmap?
+> On Wed, Jun 12, 2013 at 11:50:35PM +0200, Uwe Kleine-König wrote:
+>> This interrupt controller is found on Cortex-M3 and Cortex-M4 machines.
+>>
+>> Support for this controller appeared in Catalin's Cortex tree based on
+>> 2.6.33 but was nearly completely rewritten.
+>>
+>> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>> ---
+>>
+>> Notes:
+>>     Changes since v3, sent with
+>>     Message-Id: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>:
+>>
+>>      - use generic chip
+>>      - rename nvic_do_IRQ to nvic_handle_irq
+>>
+>>     This depends on the stuff currently in tip/irq/for-arm
+> I see that tip/irq/for-arm went into next via Grant's irqdomain tree. I
+> assume that means the changes go in for 3.11?
 
-I'm OK that you carry this in the regmap tree.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Yes, the plan is to put that branch into v3.11. I don't know if Thomas
+plans to send a separate pull request for the irq/for-arm branch, or
+if he is going to let it go as part of my pull request. I'll work it
+out with him when the merge window opens. It would probably be best
+for your patch to be applied on the irq/for-arm branch and pushed
+separately from my irqdomain branch since I don't maintain any of the
+irqchip drivers.
 
-The clock retime weirdness convinced me that this cannot really
-use the generic pin config layout...
-
-Yours,
-Linus Walleij
+g.
