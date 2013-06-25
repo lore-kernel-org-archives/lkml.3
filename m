@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3FYSgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:36:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41283 "EHLO
+	id S1753080Ab3FYSgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:36:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41321 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab3FYSgB (ORCPT
+	with ESMTP id S1753173Ab3FYSgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:36:01 -0400
+	Tue, 25 Jun 2013 14:36:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/27] net: sctp: fix NULL pointer dereference in socket destruction
-Date: Tue, 25 Jun 2013 11:35:37 -0700
-Message-Id: <20130625183519.763955068@linuxfoundation.org>
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        Jim Somerville <Jim.Somerville@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Eric Paris <eparis@parisplace.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 27/27] inotify: invalid mask should return a error number but not set it
+Date: Tue, 25 Jun 2013 11:35:46 -0700
+Message-Id: <20130625183520.815554051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
@@ -29,95 +32,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 
-[ Upstream commit 1abd165ed757db1afdefaac0a4bc8a70f97d258c ]
+commit 04df32fa10ab9a6f0643db2949d42efc966bc844 upstream.
 
-While stress testing sctp sockets, I hit the following panic:
+When we run the crackerjack testsuite, the inotify_add_watch test is
+stalled.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-IP: [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
-PGD 7cead067 PUD 7ce76067 PMD 0
-Oops: 0000 [#1] SMP
-Modules linked in: sctp(F) libcrc32c(F) [...]
-CPU: 7 PID: 2950 Comm: acc Tainted: GF            3.10.0-rc2+ #1
-Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
-task: ffff88007ce0e0c0 ti: ffff88007b568000 task.ti: ffff88007b568000
-RIP: 0010:[<ffffffffa0490c4e>]  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
-RSP: 0018:ffff88007b569e08  EFLAGS: 00010292
-RAX: 0000000000000000 RBX: ffff88007db78a00 RCX: dead000000200200
-RDX: ffffffffa049fdb0 RSI: ffff8800379baf38 RDI: 0000000000000000
-RBP: ffff88007b569e18 R08: ffff88007c230da0 R09: 0000000000000001
-R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-R13: ffff880077990d00 R14: 0000000000000084 R15: ffff88007db78a00
-FS:  00007fc18ab61700(0000) GS:ffff88007fc60000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000020 CR3: 000000007cf9d000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- ffff88007b569e38 ffff88007db78a00 ffff88007b569e38 ffffffffa049fded
- ffffffff81abf0c0 ffff88007db78a00 ffff88007b569e58 ffffffff8145b60e
- 0000000000000000 0000000000000000 ffff88007b569eb8 ffffffff814df36e
-Call Trace:
- [<ffffffffa049fded>] sctp_destroy_sock+0x3d/0x80 [sctp]
- [<ffffffff8145b60e>] sk_common_release+0x1e/0xf0
- [<ffffffff814df36e>] inet_create+0x2ae/0x350
- [<ffffffff81455a6f>] __sock_create+0x11f/0x240
- [<ffffffff81455bf0>] sock_create+0x30/0x40
- [<ffffffff8145696c>] SyS_socket+0x4c/0xc0
- [<ffffffff815403be>] ? do_page_fault+0xe/0x10
- [<ffffffff8153cb32>] ? page_fault+0x22/0x30
- [<ffffffff81544e02>] system_call_fastpath+0x16/0x1b
-Code: 0c c9 c3 66 2e 0f 1f 84 00 00 00 00 00 e8 fb fe ff ff c9 c3 66 0f
-      1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 <48>
-      8b 47 20 48 89 fb c6 47 1c 01 c6 40 12 07 e8 9e 68 01 00 48
-RIP  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
- RSP <ffff88007b569e08>
-CR2: 0000000000000020
----[ end trace e0d71ec1108c1dd9 ]---
+This is caused by the invalid mask 0 - the task is waiting for the event
+but it never comes.  inotify_add_watch() should return -EINVAL as it did
+before commit 676a0675cf92 ("inotify: remove broken mask checks causing
+unmount to be EINVAL").  That commit removes the invalid mask check, but
+that check is needed.
 
-I did not hit this with the lksctp-tools functional tests, but with a
-small, multi-threaded test program, that heavily allocates, binds,
-listens and waits in accept on sctp sockets, and then randomly kills
-some of them (no need for an actual client in this case to hit this).
-Then, again, allocating, binding, etc, and then killing child processes.
+Check the mask's ALL_INOTIFY_BITS before the inotify_arg_to_mask() call.
+If none are set, just return -EINVAL.
 
-This panic then only occurs when ``echo 1 > /proc/sys/net/sctp/auth_enable''
-is set. The cause for that is actually very simple: in sctp_endpoint_init()
-we enter the path of sctp_auth_init_hmacs(). There, we try to allocate
-our crypto transforms through crypto_alloc_hash(). In our scenario,
-it then can happen that crypto_alloc_hash() fails with -EINTR from
-crypto_larval_wait(), thus we bail out and release the socket via
-sk_common_release(), sctp_destroy_sock() and hit the NULL pointer
-dereference as soon as we try to access members in the endpoint during
-sctp_endpoint_free(), since endpoint at that time is still NULL. Now,
-if we have that case, we do not need to do any cleanup work and just
-leave the destruction handler.
+Because IN_UNMOUNT is in ALL_INOTIFY_BITS, this change will not trigger
+the problem that above commit fixed.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[akpm@linux-foundation.org: fix build]
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Acked-by: Jim Somerville <Jim.Somerville@windriver.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: Eric Paris <eparis@parisplace.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/socket.c |    6 ++++++
- 1 file changed, 6 insertions(+)
 
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -3929,6 +3929,12 @@ SCTP_STATIC void sctp_destroy_sock(struc
+
+---
+ fs/notify/inotify/inotify_user.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -577,7 +577,6 @@ static int inotify_update_existing_watch
+ 	int add = (arg & IN_MASK_ADD);
+ 	int ret;
  
- 	/* Release our hold on the endpoint. */
- 	sp = sctp_sk(sk);
-+	/* This could happen during socket init, thus we bail out
-+	 * early, since the rest of the below is not setup either.
-+	 */
-+	if (sp->ep == NULL)
-+		return;
+-	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+ 
+ 	fsn_mark = fsnotify_find_inode_mark(group, inode);
+@@ -628,7 +627,6 @@ static int inotify_new_watch(struct fsno
+ 	struct idr *idr = &group->inotify_data.idr;
+ 	spinlock_t *idr_lock = &group->inotify_data.idr_lock;
+ 
+-	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+ 
+ 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
+@@ -757,6 +755,10 @@ SYSCALL_DEFINE3(inotify_add_watch, int,
+ 	int ret, fput_needed;
+ 	unsigned flags = 0;
+ 
++	/* don't allow invalid bits: we don't want flags set */
++	if (unlikely(!(mask & ALL_INOTIFY_BITS)))
++		return -EINVAL;
 +
- 	if (sp->do_auto_asconf) {
- 		sp->do_auto_asconf = 0;
- 		list_del(&sp->auto_asconf_list);
+ 	filp = fget_light(fd, &fput_needed);
+ 	if (unlikely(!filp))
+ 		return -EBADF;
 
 
