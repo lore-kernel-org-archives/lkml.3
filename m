@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab3FYJaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 05:30:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56592 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab3FYJaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 05:30:13 -0400
-Message-ID: <51C96322.9000801@suse.cz>
-Date: Tue, 25 Jun 2013 11:30:10 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752312Ab3FYJcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 05:32:23 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:1351 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3FYJcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 05:32:20 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C9636F.1050709@asianux.com>
+Date: Tue, 25 Jun 2013 17:31:27 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: linux-next: Tree for Jun 25
-References: <20130625184420.b811089a069c63ccd3721d68@canb.auug.org.au> <CA+icZUUH7AeR7OSm-SB56AGRiE815tTkQW9fFkKzyrSvzs3Etg@mail.gmail.com> <201306251121.53862.yann.morin.1998@free.fr> <CA+icZUU06C43bxyX2UGtDxRQqcyqeAQgt7fZHq7H7HgcJ6sHzQ@mail.gmail.com>
-In-Reply-To: <CA+icZUU06C43bxyX2UGtDxRQqcyqeAQgt7fZHq7H7HgcJ6sHzQ@mail.gmail.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        cornelia.huck@de.ibm.com, mtosatti@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, linux-s390@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: s390: kernel: reset 'c->hotpluggable' when failure
+ occurs
+References: <51C8F685.6000209@asianux.com> <20130625064832.GA4999@osiris> <51C94599.1020707@asianux.com> <20130625090928.GA8981@osiris>
+In-Reply-To: <20130625090928.GA8981@osiris>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.6.2013 11:26, Sedat Dilek wrote:
-> On Tue, Jun 25, 2013 at 11:21 AM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=a11650e11093ed57dca78bf16e7836517c599098
+On 06/25/2013 05:09 PM, Heiko Carstens wrote:
+> On Tue, Jun 25, 2013 at 03:24:09PM +0800, Chen Gang wrote:
+>> On 06/25/2013 02:48 PM, Heiko Carstens wrote:
+>>> On Tue, Jun 25, 2013 at 09:46:45AM +0800, Chen Gang wrote:
+>>>>> When smp_add_present_cpu() fails, it has reset all things excluding
+>>>>> 'c->hotpluggable', so need reset it as original state completely.
+>>>>>
+>>>>> +	c->hotpluggable = 0;
+>>>>>  	return rc;
+>>> No, that doesn't make sense. All cpus on s390 are always hotplugable.
+>>> It really doesn't matter if the value of this field is 0 or 1 after
+>>> an error.
+>>>
+>>
+>> If so, is it better to set 'c->hotpluggable' for all cpus on s390 during
+>> initializing ?
 > 
->>   - for tristate choices, it is possible to select zero, one or more of the
->>     symbols in the choice
->>   - if no symbol is selected (randomly or otherwise) in a tristate choice,
->>     then the choice symbol itself has no assigned 'value'
->>   - then silentoldconfig whines
+> No, just leave the code as it is.
 > 
-> Bad bad bad Yann, didn't Marek told you to test always with...
-> 
->     $ yes "" | make oldconfig; make silentoldconfig </dev/null
-> 
-> Anyway, have fun.
 
-You only hit this if you have CONFIG_RAPIDIO=y in the original config.
+Currently we have 3 possible states for 'struct cpu':
+  initialized, and set hotplugable.
+  unitialized, and set hotplugable.
+  unitialized, and unset hotplugable.
 
-Michal
+Either 2nd or 3rd is inconsistent.
+
+The cpu_is_hotplugable() will be used in kernel/rcutorture.c. I do not
+know whether it will cause issue or not, but it seems dangerous when
+__smp_rescan_cpus() has already called, and has some unsucessfull call
+of smp_add_present_cpu().
+
+Please help check.
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
