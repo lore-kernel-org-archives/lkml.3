@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab3FYQzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:55:32 -0400
-Received: from fbr03.mfg.siteprotect.com ([64.26.60.138]:60367 "EHLO
-	fbr03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3FYQz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:55:28 -0400
-X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jun 2013 12:55:28 EDT
-Date: Tue, 25 Jun 2013 12:46:42 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au, paulus@samba.org, acme@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        vincent.weaver@maine.edu, Stephane Eranian <eranian@google.com>,
-        sukadev@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for
- perf
-In-Reply-To: <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy>
-References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com> <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751922Ab3FYQ4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:56:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19833 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751060Ab3FYQ4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:56:12 -0400
+Date: Tue, 25 Jun 2013 12:55:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130625165556.GA16170@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Oleg Nesterov <oleg@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrey Vagin <avagin@openvz.org>
+References: <20130623143634.GA2000@redhat.com>
+ <20130623150603.GA32313@redhat.com>
+ <20130623160452.GA11740@redhat.com>
+ <20130624020014.GB12811@redhat.com>
+ <20130624143928.GA20659@redhat.com>
+ <1372085549.18733.162.camel@gandalf.local.home>
+ <20130624160012.GB5993@redhat.com>
+ <1372091079.18733.168.camel@gandalf.local.home>
+ <20130624165140.GB8572@redhat.com>
+ <1372093476.18733.170.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020201.51C9C94E.01C5,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372093476.18733.170.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jun 2013, Runzhen Wang wrote:
+On Mon, Jun 24, 2013 at 01:04:36PM -0400, Steven Rostedt wrote:
+ > On Mon, 2013-06-24 at 12:51 -0400, Dave Jones wrote:
+ > > On Mon, Jun 24, 2013 at 12:24:39PM -0400, Steven Rostedt wrote:
+ > > 
+ > >  > > Ah, this is the first victim of my new 'check sanity of nodes during list walks' patch.
+ > >  > > It's doing the same prev->next next->prev checking as list_add and friends.
+ > >  > > I'm looking at getting it into shape for a 3.12 merge after some other preparatory patches
+ > >  > > go into 3.11
+ > >  > 
+ > >  > OK, and you may need to make an exception for the ring buffer. To do a
+ > >  > lockless swap out of the reader page for one of the pages in the buffer,
+ > >  > it uses the 2 LSB as flags. Notice the "next=ffff880243288001", that "1"
+ > >  > is a flag that states the next page is the "header" page (next to be
+ > >  > read). We use cmpxchg to update the pages to handle races between the
+ > >  > reader and writer.
+ > > 
+ > > I just had a plumber come visit to replace my toilet.
+ > > I think even he would say "dude, gross" about that hack.
+ > 
+ > Wow, that hack made you so sick you needed to replace your toilet?
+ > 
+ > Note, the idea of using the 2 LSB bits of pointers came from -rt. Where
+ > we do the same with the rt_mutex owner.
 
-> This patch makes all the POWER7 events available in sysfs.
-> 
-> ...
->
-> $ size arch/powerpc/perf/power7-pmu.o
->    text	   data	    bss	    dec	    hex	filename
->    3073	   2720	      0	   5793	   16a1	arch/powerpc/perf/power7-pmu.o
-> 
-> and after the patch is applied, it is:
-> 
-> $ size arch/powerpc/perf/power7-pmu.o
->    text	   data	    bss	    dec	    hex	filename
->   15950	  31112	      0	  47062	   b7d6	arch/powerpc/perf/power7-pmu.o
+While I've been spinning wheels trying to reproduce that softlockup bug,
+On another machine I've been refining my list-walk debug patch.
+I added an ugly "ok, the ringbuffer is playing games with lower two bits" special case.
 
-So if I'm reading this right, there's 45k of overhead for just one cpu 
-type?
+But what the hell is going on here ?
 
-What happens if we do this on x86?
+next->prev should be prev (ffff88023c6cdd18), but was 00ffff88023c6cdd. (next=ffff880243288001).
 
-If we have similar for p6/p4/core2/nehalem/ivb/snb/amd10h/amd15h/amd16h/knb
-that's 450k of event defintions in the kernel.  And may I remind everyone 
-that you can't compile perf_event support as a module, nor can you 
-unconfigure it on x86 (it's always built in, no option to disable).
+(trace comes from the same ringbuffer code)
 
-I'd like to repeat my unpopular position that we just link perf against 
-libpfm4 and keep event tables in userspace where they belong.
-
-Vince
+	Dave
 
