@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab3FYVKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:10:22 -0400
-Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:41670 "EHLO
-	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab3FYVKT (ORCPT
+	id S1752630Ab3FYVLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:11:49 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:48956 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab3FYVLr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:10:19 -0400
-X-Greylist: delayed 1572 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jun 2013 17:10:19 EDT
-Message-ID: <1372194611.8189.31.camel@scapa>
-Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
-From: Yves-Alexis Perez <corsac@debian.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
-        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
-        Henrique de Moraes Holschuh <hmh@debian.org>
-Date: Tue, 25 Jun 2013 23:10:11 +0200
-In-Reply-To: <20130625205430.GA2438@srcf.ucam.org>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-	 <1371937599.17761.19.camel@scapa> <20130625160848.GA27123@srcf.ucam.org>
-	 <1372193037.8189.24.camel@scapa> <20130625205430.GA2438@srcf.ucam.org>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-UaGPv2ffmJnVd9Pb+rb8"
-X-Mailer: Evolution 3.8.2-1 
-Mime-Version: 1.0
+	Tue, 25 Jun 2013 17:11:47 -0400
+X-AuditID: cbfec37b-b7f306d0000047de-8a-51ca0792c73f
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Dave Airlie <airlied@redhat.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: Linux 3.10-rc7
+Thread-topic: Linux 3.10-rc7
+Thread-index: AQHOcO9Wy94BEELWoUiZdIX6E3dp1w==
+Date: Tue, 25 Jun 2013 21:11:45 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E6173079B@sisaex02sj>
+References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
+ <B8EFE96D1287C24090BAD9D858E15E6172FFB9@sisaex02sj>
+ <CA+55aFxuB_nx8fZ_kN8U=fMFOq43cKZC_HJbj=6vKo7-fDqNuw@mail.gmail.com>
+ <CAKMK7uH0q1vSaVRigtZD2pf5ZeVLEv1sn+tsiO7ZWjJdt=DwBA@mail.gmail.com>
+ <20130625125437.6e7bb2d4@jbarnes-desktop>
+ <B8EFE96D1287C24090BAD9D858E15E617305B4@sisaex02sj>
+ <20130625130816.55e6cb80@jbarnes-desktop>
+ <B8EFE96D1287C24090BAD9D858E15E617306DD@sisaex02sj>
+ <CA+i0qc64MqeZd3y2E4YOtxwxyWRPXqofJep1BGCeEHCdkJuxQg@mail.gmail.com>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t9hP91J7KcCDfpPy1tcvbWAyeLmw7Os
+	Fgsf3mW2mD1hM5PFozMn2S0u75rDZvH1p4PFh546i0d9b9kdOD1WftDy2PttAYvHzll32T0W
+	73nJ5HFixm8Wj/vdx5k83u+7yubxeZOcx7eve5kCOKO4bFJSczLLUov07RK4Mt5v+MRcMIOn
+	YvvkjywNjH85uxg5OSQETCRmTp3BAmGLSVy4t56ti5GLQ0hgGaPEq56prBBOL5PEogttTBDO
+	fEaJlsc9zCAtbALqEp9f72AHsUUEtCVmvfwO1sEsMJFZYsLXfUBzOTiEBaQlXh6SgaiRkZjZ
+	+pEVwtaTOPXvHJjNIqAq8fHyU7AzeAXsJRbf6oRatpBF4vrhQ2DLGIHu+35qDROIzSwgLtHc
+	ehPqbgGJJXvOM0PYohIvH/9jBdkrIaAosX21FUS5lsT6ncehWrUlnry7wAqxS1Dix+R7LBMY
+	xWYhmToLScssJC2zkLQsYGRZxShWWpxcUJyUnlphpFecmFtcmpeul5yfu4kREsnVOxjvfrU5
+	xCjAwajEw3ti08lAIdbEsuLK3EOMEhzMSiK8+TeAQrwpiZVVqUX58UWlOanFhxiZODilGhgL
+	Eg1fCzifm9ejtDNjvt4xyZOaCVkXE3Zc3pr48sQjbvkrkdu+9Bh3Kk/unqyVeU05Ut1I6NzV
+	P4w6k9fdkEzc9+KfUHen4z6hkO8tn8SiEjarnvqyKOj6uj0aUVsWJTA492xxTWrsqpPpThAP
+	NfK0vWHDKhuRwGVW9Od47t2Y7+WVl8+scFFiKc5INNRiLipOBACMsdljwgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/25/2013 02:57 PM, Tomas Winkler wrote:
+> On Tue, Jun 25, 2013 at 11:51 PM, Shuah Khan <shuah.kh@samsung.com> wrote:
+>>
 
---=-UaGPv2ffmJnVd9Pb+rb8
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+>> With this patch warn_on went away. Resume worked. I started seeing:
+>>
+>> [   78.733062] mei_me 0000:00:16.0: unexpected reset: dev_state =
+>> RESETTING
+>> [   78.733079] mei_me 0000:00:16.0: reset: wrong host start response
+>> [   78.733082] mei_me 0000:00:16.0: unexpected reset: dev_state =
+>> RESETTING
+>>
+>> over and over again after resume from reboot mode suspend. dmesg filled
+>> up with these messages.
+>
+> Can you please send me the log part when this starts?
+>
+> Thanks
+>
 
-On mar., 2013-06-25 at 21:54 +0100, Matthew Garrett wrote:
-> On Tue, Jun 25, 2013 at 10:43:57PM +0200, Yves-Alexis Perez wrote:
-> > On mar., 2013-06-25 at 17:08 +0100, Matthew Garrett wrote:
-> > > Right, the kernel has special-casing to hook the backlight keys up to=
-=20
-> > > the ACPI backlight control. This is an awful thing, because there's n=
-o=20
-> > > way to detect this case other than parsing a single driver-specific=
-=20
-> > > module parameter.
-> >=20
-> > I'm not sure what that means. To detect what case exactly? That the
-> > brightness is handled by video.ko?
->=20
-> That the kernel will automatically handle backlight key presses.
+It rolled over and I don't have prior messages. I tried reproducing 
+twice and didn't see it again. I will try a few more times and see if I 
+can get it to happen again.
 
-Ok, so for detection by userspace? hal managed to do that just fine, it
-seems that upower doesn't, for some reason.
+This is what I could save before dmesg rolled over:
 
-> The behaviour is already inconsistent. If you have an ACPI backlight=20
-> interface, hitting the keys makes your brightness change without any=20
-> userspace help. If you don't, it doesn't.
+[   78.709014] mei_me 0000:00:16.0: reset: wrong host start response
+[   78.709016] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
+[   78.709029] mei_me 0000:00:16.0: reset: unexpected enumeration 
+response hbm.
+[   78.709031] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
+[   78.709069] mei_me 0000:00:16.0: reset: wrong host start response
 
-At least on the same (class of) hardware it always behaves the same.
->=20
-> > And in the end, the user just want the brightness keys to correctly
-> > handle the brightness, full stop. Having multiple brightness daemons
-> > using different policies on different hardware is a nightmare for the
-> > end user, imho. From a user point of view, having it handled all in the
-> > kernel works really pretty fine and is completely transparent (I have t=
-o
-> > admit that from that point of view, it was even better when it was
-> > handled by the EC but those times seem long gone).
->=20
-> I agree, we should standardise the behaviour. And the only way we can=20
-> standardise the behaviour is to leave it up to userspace.
->=20
-It's pretty clear we disagree on this and that my opinion won't really
-matter here. But letting userspace handle that just means broken
-functionality for those who have the chance (apparently) to have an ACPI
-backlight interface.
+-- Shuah
 
-Regards,
---=20
-Yves-Alexis
-
---=-UaGPv2ffmJnVd9Pb+rb8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQEcBAABCAAGBQJRygczAAoJEG3bU/KmdcClaLIH/1jamYk4eOPNcVll/621eWom
-1WhujXtkRA1SQTHOtu//CW7PIIkoE5ry6cd5Wy6C5Aq5vVshXgZoJ5tdQ101SXYP
-c7sI1r5vrVy39T197r4CWz10syK9Zf4yo+4QAN6aI+C+uBxdHYOqf4f+gUPriCbN
-SezoragsNCAb1Y7NLHJDnA1o0Vp9Pdp7nrnRnG14cg+fEKc88hjz2dD2kI1hESqv
-RR43tnbziPYB7P1BjRao0/S5QXtPubSqijbiahw6G+HhTYWIfYFzUnuO9rEIQQIh
-XehCuryZT4BIZCtzLPoHC5dXZE6gCQH8vfNc4kmJ/Amytm9v0H97s9TmWDJ7Myc=
-=mPcq
------END PGP SIGNATURE-----
-
---=-UaGPv2ffmJnVd9Pb+rb8--
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
