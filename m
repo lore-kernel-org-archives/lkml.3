@@ -1,51 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab3FYNRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 09:17:37 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:25467 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211Ab3FYNRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 09:17:36 -0400
-Message-ID: <51C99823.1060503@imgtec.com>
-Date: Tue, 25 Jun 2013 14:16:19 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
+	id S1751891Ab3FYNRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 09:17:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55802 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab3FYNRn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 09:17:43 -0400
+Date: Tue, 25 Jun 2013 15:17:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+cc: John Stultz <john.stultz@linaro.org>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 0/4] Fix more issues with generic pinconf bindings
-References: <201306251455.01540.heiko@sntech.de>
-In-Reply-To: <201306251455.01540.heiko@sntech.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_06_25_14_17_35
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v6] clocksource:arm_global_timer: Add ARM global timer
+ support.
+In-Reply-To: <1372152678-29530-1-git-send-email-srinivas.kandagatla@st.com>
+Message-ID: <alpine.DEB.2.02.1306251459160.4013@ionos.tec.linutronix.de>
+References: <1372152678-29530-1-git-send-email-srinivas.kandagatla@st.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/13 13:55, Heiko Stübner wrote:
-> As Stephen Warren pointed out, some pinconf bindings had deficits
-> either in documentation or in the whole thought process.
-> 
-> Therefore this series tries to fix these issues by improving
-> documentation and removing the real controversial bindings for now.
-> 
-> Of the changed pinconf bindings only the slew-rate had an acutal
-> current user (since yesterday). James I hope it's ok to simply
-> remove the slew-rate handling from the tz1090 driver until we can
-> handle it correctly in dt.
+On Tue, 25 Jun 2013, Srinivas KANDAGATLA wrote:
+> If its not too late can this patch be considered for 3.11 via clocksource tree?
 
-Other than my comment about patch 3 (which since it's the only case I
-don't mind too much, it can easily be added back again in the future):
+Sure. No worry, though I noticed a little detail when reading through it
+again. See below.
 
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> +/**
+> + * To ensure that updates to comparator value register do not set the
+> + * Interrupt Status Register proceed as follows:
+> + * 1. Clear the Comp Enable bit in the Timer Control Register.
+> + * 2. Write the lower 32-bit Comparator Value Register.
+> + * 3. Write the upper 32-bit Comparator Value Register.
+> + * 4. Set the Comp Enable bit and, if necessary, the IRQ enable bit.
+> + */
+> +static void gt_compare_set(unsigned long delta, int periodic)
+> +{
+> +	u64 counter = gt_counter_read();
+> +	unsigned long ctrl = readl(gt_base + GT_CONTROL);
 
-Cheers
-James
+Why are you reading the control register back over and over? All you
+need to preserve is the GT_CONTROL_TIMER_ENABLE bit. So you can spare
+that read out and just do
 
+	ctrl = GT_CONTROL_TIMER_ENABLE;
+	writel(ctrl, gt_base + GT_CONTROL);
+
+> +static irqreturn_t gt_clockevent_interrupt(int irq, void *dev_id)
+> +{
+> +	struct clock_event_device *evt = dev_id;
+> +
+> +	if (readl_relaxed(gt_base + GT_INT_STATUS) &
+> +				GT_INT_STATUS_EVENT_FLAG) {
+
+If you negate the check and return IRQ_NONE, you save one indent level
+for the real code.
+
+> +		/**
+> +		 * ERRATA 740657( Global Timer can send 2 interrupts for
+> +		 * the same event in single-shot mode)
+> +		 * Workaround:
+> +		 *	Either disable single-shot mode.
+> +		 *	Or
+> +		 *	Modify the Interrupt Handler to avoid the
+> +		 *	offending sequence. This is achieved by clearing
+> +		 *	the Global Timer flag _after_ having incremented
+> +		 *	the Comparator register	value to a higher value.
+> +		 */
+> +		if (!(readl_relaxed(gt_base + GT_CONTROL) &
+> +						GT_CONTROL_AUTO_INC))
+
+Again, no need to read from the hardware.
+
+       if (evt->mode == CLOCK_EVT_MODE_ONESHOT)
+
+tells you what you need to know.
+
+Thanks,
+
+	tglx
