@@ -1,246 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853Ab3FYWv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 18:51:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49208 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab3FYWvx (ORCPT
+	id S1751895Ab3FYWwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 18:52:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31789 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab3FYWwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 18:51:53 -0400
-Date: Tue, 25 Jun 2013 15:51:38 -0700
-From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-d5c78673b1b28467354c2c30c3d4f003666ff385@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, stable@vger.kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, stable@vger.kernel.org,
-        hpa@linux.intel.com
-In-Reply-To: <1371162815-29931-1-git-send-email-yinghai@kernel.org>
-References: <1371162815-29931-1-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86: Fix /proc/mtrr with base/size more than 44bits
-Git-Commit-ID: d5c78673b1b28467354c2c30c3d4f003666ff385
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 25 Jun 2013 15:51:45 -0700 (PDT)
+	Tue, 25 Jun 2013 18:52:36 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=xpoA3amYCf4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=npYvvCUsI3cA:10 a=OCqfDqu9CtsUbkVxWngA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1372200754.18733.236.camel@gandalf.local.home>
+Subject: question about disabling interrupts for workqueue pool?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <clark@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Date: Tue, 25 Jun 2013 18:52:34 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d5c78673b1b28467354c2c30c3d4f003666ff385
-Gitweb:     http://git.kernel.org/tip/d5c78673b1b28467354c2c30c3d4f003666ff385
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 13 Jun 2013 15:33:35 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 25 Jun 2013 13:08:10 -0700
+Hi Tejun,
 
-x86: Fix /proc/mtrr with base/size more than 44bits
+We've been playing with porting -rt to 3.10, and one of the stumbling
+blocks we are dealing with happens to be with commit fa1b54e69bc
+"workqueue: update synchronization rules on worker_pool_idr".
 
-On one sytem that mtrr range is more then 44bits, in dmesg we have
-[    0.000000] MTRR default type: write-back
-[    0.000000] MTRR fixed ranges enabled:
-[    0.000000]   00000-9FFFF write-back
-[    0.000000]   A0000-BFFFF uncachable
-[    0.000000]   C0000-DFFFF write-through
-[    0.000000]   E0000-FFFFF write-protect
-[    0.000000] MTRR variable ranges enabled:
-[    0.000000]   0 [000080000000-0000FFFFFFFF] mask 3FFF80000000 uncachable
-[    0.000000]   1 [380000000000-38FFFFFFFFFF] mask 3F0000000000 uncachable
-[    0.000000]   2 [000099000000-000099FFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   3 [00009A000000-00009AFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   4 [381FFA000000-381FFBFFFFFF] mask 3FFFFE000000 write-through
-[    0.000000]   5 [381FFC000000-381FFC0FFFFF] mask 3FFFFFF00000 write-through
-[    0.000000]   6 [0000AD000000-0000ADFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   7 [0000BD000000-0000BDFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   8 disabled
-[    0.000000]   9 disabled
+The issue is with the disabling of interrupts, and specifically this
+sequence of events from start_flush_work():
 
-but /proc/mtrr report wrong:
-reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
-reg01: base=0x80000000000 (8388608MB), size=1048576MB, count=1: uncachable
-reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
-reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
-reg04: base=0x81ffa000000 (8519584MB), size=   32MB, count=1: write-through
-reg05: base=0x81ffc000000 (8519616MB), size=    1MB, count=1: write-through
-reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
-reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
-reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
+        local_irq_disable();
+        pool = get_work_pool(work);
+        if (!pool) {
+                local_irq_enable();
+                return false;
+        }
 
-so bit 44 and bit 45 get cut off.
+        spin_lock(&pool->lock);
+        /* see the comment in try_to_grab_pending() with the same code */
+        pwq = get_work_pwq(work);
+        if (pwq) {
+                if (unlikely(pwq->pool != pool))
+                        goto already_gone;
+        } else {
+                worker = find_worker_executing_work(pool, work);
+                if (!worker)
+                        goto already_gone;
+                pwq = worker->current_pwq;
+        }
 
-We have problems in arch/x86/kernel/cpu/mtrr/generic.c::generic_get_mtrr().
-1. for base, we miss cast base_lo to 64bit before shifting.
-Fix that by adding u64 casting.
+        insert_wq_barrier(pwq, barr, work, worker);
+        spin_unlock_irq(&pool->lock);
 
-2. for size, it only can handle 44 bits aka 32bits + page_shift
-Fix that with 64bit mask instead of 32bit mask_lo, then range could be
-more than 44bits.
-At the same time, we need to update size_or_mask for old cpus that does
-support cpuid 0x80000008 to get phys_addr. Need to set high 32bits
-to all 1s, otherwise will not get correct size for them.
 
-Also fix mtrr_add_page: it should check base and (base + size - 1)
-instead of base and size, as base and size could be small but
-base + size could bigger enough to be out of boundary. We can
-use boot_cpu_data.x86_phys_bits directly to avoid size_or_mask.
+As -rt does not have spin_lock_irq() disable interrupts, it means that
+spin_unlock_irq() will not enable them either. But that's not all:
 
-So When are we going to have size more than 44bits? that is 16TiB.
+        local_irq_save(flags);
+        pool = get_work_pool(work);
+        if (pool) {
+                spin_lock(&pool->lock);
+                if (find_worker_executing_work(pool, work))
+                        ret |= WORK_BUSY_RUNNING;
+                spin_unlock(&pool->lock);
+        }
+        local_irq_restore(flags);
 
-after patch we have right ouput:
-reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
-reg01: base=0x380000000000 (58720256MB), size=1048576MB, count=1: uncachable
-reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
-reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
-reg04: base=0x381ffa000000 (58851232MB), size=   32MB, count=1: write-through
-reg05: base=0x381ffc000000 (58851264MB), size=    1MB, count=1: write-through
-reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
-reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
-reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
+Basically, anywhere you disable interrupts, as -rt converts spin_lock()
+into a mutex.
 
--v2: simply checking in mtrr_add_page according to hpa.
+Now my question is, are those local_irq_*() calls just for synchronizing
+with sched RCU? If so, can you use rcu_read_lock_sched() instead?
 
-[ hpa: This probably wants to go into -stable only after having sat in
-  mainline for a bit.  It is not a regression. ]
+This wont solve our problems, as we will need to deal with
+rcu_read_lock_sched() critical sections sleeping, but it will at least
+change the problem area away from workqueues, and will document the
+workqueue code better because stand alone "local_irq_disable()"s tend to
+bring up a lot of questions to "why do we need to disable interrupts
+here?".
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1371162815-29931-1-git-send-email-yinghai@kernel.org
-Cc: <stable@vger.kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/mtrr/generic.c | 21 +++++++++++----------
- arch/x86/kernel/cpu/mtrr/main.c    | 16 +++++++++-------
- 2 files changed, 20 insertions(+), 17 deletions(-)
+-- Steve
 
-diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
-index fa72a39..3982357 100644
---- a/arch/x86/kernel/cpu/mtrr/generic.c
-+++ b/arch/x86/kernel/cpu/mtrr/generic.c
-@@ -510,8 +510,9 @@ generic_get_free_region(unsigned long base, unsigned long size, int replace_reg)
- static void generic_get_mtrr(unsigned int reg, unsigned long *base,
- 			     unsigned long *size, mtrr_type *type)
- {
--	unsigned int mask_lo, mask_hi, base_lo, base_hi;
--	unsigned int tmp, hi;
-+	u32 mask_lo, mask_hi, base_lo, base_hi;
-+	unsigned int hi;
-+	u64 tmp, mask;
- 
- 	/*
- 	 * get_mtrr doesn't need to update mtrr_state, also it could be called
-@@ -532,18 +533,18 @@ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
- 	rdmsr(MTRRphysBase_MSR(reg), base_lo, base_hi);
- 
- 	/* Work out the shifted address mask: */
--	tmp = mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
--	mask_lo = size_or_mask | tmp;
-+	tmp = (u64)mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
-+	mask = size_or_mask | tmp;
- 
- 	/* Expand tmp with high bits to all 1s: */
--	hi = fls(tmp);
-+	hi = fls64(tmp);
- 	if (hi > 0) {
--		tmp |= ~((1<<(hi - 1)) - 1);
-+		tmp |= ~((1ULL<<(hi - 1)) - 1);
- 
--		if (tmp != mask_lo) {
-+		if (tmp != mask) {
- 			printk(KERN_WARNING "mtrr: your BIOS has configured an incorrect mask, fixing it.\n");
- 			add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
--			mask_lo = tmp;
-+			mask = tmp;
- 		}
- 	}
- 
-@@ -551,8 +552,8 @@ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
- 	 * This works correctly if size is a power of two, i.e. a
- 	 * contiguous range:
- 	 */
--	*size = -mask_lo;
--	*base = base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
-+	*size = -mask;
-+	*base = (u64)base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
- 	*type = base_lo & 0xff;
- 
- out_put_cpu:
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 726bf96..ca22b73 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -305,7 +305,8 @@ int mtrr_add_page(unsigned long base, unsigned long size,
- 		return -EINVAL;
- 	}
- 
--	if (base & size_or_mask || size & size_or_mask) {
-+	if ((base | (base + size - 1)) >>
-+	    (boot_cpu_data.x86_phys_bits - PAGE_SHIFT)) {
- 		pr_warning("mtrr: base or size exceeds the MTRR width\n");
- 		return -EINVAL;
- 	}
-@@ -583,6 +584,7 @@ static struct syscore_ops mtrr_syscore_ops = {
- 
- int __initdata changed_by_mtrr_cleanup;
- 
-+#define SIZE_OR_MASK_BITS(n)  (~((1ULL << ((n) - PAGE_SHIFT)) - 1))
- /**
-  * mtrr_bp_init - initialize mtrrs on the boot CPU
-  *
-@@ -600,7 +602,7 @@ void __init mtrr_bp_init(void)
- 
- 	if (cpu_has_mtrr) {
- 		mtrr_if = &generic_mtrr_ops;
--		size_or_mask = 0xff000000;			/* 36 bits */
-+		size_or_mask = SIZE_OR_MASK_BITS(36);
- 		size_and_mask = 0x00f00000;
- 		phys_addr = 36;
- 
-@@ -619,7 +621,7 @@ void __init mtrr_bp_init(void)
- 			     boot_cpu_data.x86_mask == 0x4))
- 				phys_addr = 36;
- 
--			size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
-+			size_or_mask = SIZE_OR_MASK_BITS(phys_addr);
- 			size_and_mask = ~size_or_mask & 0xfffff00000ULL;
- 		} else if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
- 			   boot_cpu_data.x86 == 6) {
-@@ -627,7 +629,7 @@ void __init mtrr_bp_init(void)
- 			 * VIA C* family have Intel style MTRRs,
- 			 * but don't support PAE
- 			 */
--			size_or_mask = 0xfff00000;		/* 32 bits */
-+			size_or_mask = SIZE_OR_MASK_BITS(32);
- 			size_and_mask = 0;
- 			phys_addr = 32;
- 		}
-@@ -637,21 +639,21 @@ void __init mtrr_bp_init(void)
- 			if (cpu_has_k6_mtrr) {
- 				/* Pre-Athlon (K6) AMD CPU MTRRs */
- 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CENTAUR:
- 			if (cpu_has_centaur_mcr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CYRIX:
- 			if (cpu_has_cyrix_arr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
+
+
