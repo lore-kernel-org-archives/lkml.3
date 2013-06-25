@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab3FYSe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:34:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41140 "EHLO
+	id S1753728Ab3FYSvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:51:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41192 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab3FYSeW (ORCPT
+	with ESMTP id S1752867Ab3FYSe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:22 -0400
+	Tue, 25 Jun 2013 14:34:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 79/95] packet: set transport header before doing xmit
-Date: Tue, 25 Jun 2013 11:33:06 -0700
-Message-Id: <20130625182202.513570963@linuxfoundation.org>
+        Jerome Blin <jerome.blin@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [ 95/95] spi/pxa2xx: fix memory corruption due to wrong size used in devm_kzalloc()
+Date: Tue, 25 Jun 2013 11:33:22 -0700
+Message-Id: <20130625182204.390799090@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,96 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-[ Upstream commit c1aad275b0293d2b1905ec95a945422262470684 ]
+commit cc0ee9873c6afafb387379ca1df25da78a08c603 upstream.
 
-Set the transport header for 1) some drivers (e.g ixgbe needs l4 header to do
-atr) 2) precise packet length estimation (introduced in 1def9238) needs l4
-header to compute header length.
+ACPI part of the driver accidentally used sizeof(*ssp) instead of the
+correct sizeof(*pdata). This leads to nasty memory corruptions like the one
+below:
 
-So this patch first tries to get l4 header for packet socket through
-skb_flow_dissect(), and pretend no l4 header if skb_flow_dissect() fails.
+    BUG: unable to handle kernel paging request at 0000000749fd30b8
+    IP: [<ffffffff813fe8a1>] __list_del_entry+0x31/0xd0
+    PGD 0
+    Oops: 0000 [#1] PREEMPT SMP
+    Modules linked in:
+    CPU: 0 PID: 30 Comm: kworker/0:1 Not tainted 3.10.0-rc6v3.10-rc6_sdhci_modprobe+ #443
+    task: ffff8801483a0940 ti: ffff88014839e000 task.ti: ffff88014839e000
+    RIP: 0010:[<ffffffff813fe8a1>]  [<ffffffff813fe8a1>] __list_del_entry+0x31/0xd0
+    RSP: 0000:ffff88014839fde8  EFLAGS: 00010046
+    RAX: ffff880149fd30b0 RBX: ffff880149fd3040 RCX: dead000000200200
+    RDX: 0000000749fd30b0 RSI: ffff880149fd3058 RDI: ffff88014834d640
+    RBP: ffff88014839fde8 R08: ffff88014834d640 R09: 0000000000000001
+    R10: ffff8801483a0940 R11: 0000000000000001 R12: ffff880149fd3040
+    R13: ffffffff810e0b30 R14: ffff8801483a0940 R15: ffff88014834d640
+    FS:  0000000000000000(0000) GS:ffff880149e00000(0000) knlGS:0000000000000000
+    CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+    CR2: 0000000000000168 CR3: 0000000001e0b000 CR4: 00000000001407f0
+    DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+    DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+    Stack:
+     ffff88014839fe48 ffffffff810e0baf ffffffff81120abd ffff88014839fe20
+     ffff8801483a0940 ffff8801483a0940 ffff8801483a0940 ffff8801486b1c90
+     ffff88014834d640 ffffffff810e0b30 0000000000000000 0000000000000000
+    Call Trace:
+     [<ffffffff810e0baf>] worker_thread+0x7f/0x390
+     [<ffffffff81120abd>] ? trace_hardirqs_on+0xd/0x10
+     [<ffffffff810e0b30>] ? manage_workers.isra.22+0x2b0/0x2b0
+     [<ffffffff810e6c09>] kthread+0xd9/0xe0
+     [<ffffffff810f93df>] ? local_clock+0x3f/0x50
+     [<ffffffff810e6b30>] ? kthread_create_on_node+0x110/0x110
+     [<ffffffff818c5dec>] ret_from_fork+0x7c/0xb0
+     [<ffffffff810e6b30>] ? kthread_create_on_node+0x110/0x110
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix this by using the right structure size in devm_kzalloc().
+
+Reported-by: Jerome Blin <jerome.blin@intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/packet/af_packet.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -88,6 +88,7 @@
- #include <linux/virtio_net.h>
- #include <linux/errqueue.h>
- #include <linux/net_tstamp.h>
-+#include <net/flow_keys.h>
+---
+ drivers/spi/spi-pxa2xx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1069,7 +1069,7 @@ pxa2xx_spi_acpi_get_pdata(struct platfor
+ 	    acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
+ 		return NULL;
  
- #ifdef CONFIG_INET
- #include <net/inet_common.h>
-@@ -1343,6 +1344,7 @@ static int packet_sendmsg_spkt(struct ki
- 	__be16 proto = 0;
- 	int err;
- 	int extra_len = 0;
-+	struct flow_keys keys;
- 
- 	/*
- 	 *	Get and verify the address.
-@@ -1443,6 +1445,11 @@ retry:
- 	if (unlikely(extra_len == 4))
- 		skb->no_fcs = 1;
- 
-+	if (skb_flow_dissect(skb, &keys))
-+		skb_set_transport_header(skb, keys.thoff);
-+	else
-+		skb_reset_transport_header(skb);
-+
- 	dev_queue_xmit(skb);
- 	rcu_read_unlock();
- 	return len;
-@@ -1849,6 +1856,7 @@ static int tpacket_fill_skb(struct packe
- 	struct page *page;
- 	void *data;
- 	int err;
-+	struct flow_keys keys;
- 
- 	ph.raw = frame;
- 
-@@ -1874,6 +1882,11 @@ static int tpacket_fill_skb(struct packe
- 	skb_reserve(skb, hlen);
- 	skb_reset_network_header(skb);
- 
-+	if (skb_flow_dissect(skb, &keys))
-+		skb_set_transport_header(skb, keys.thoff);
-+	else
-+		skb_reset_transport_header(skb);
-+
- 	if (po->tp_tx_has_off) {
- 		int off_min, off_max, off;
- 		off_min = po->tp_hdrlen - sizeof(struct sockaddr_ll);
-@@ -2130,6 +2143,7 @@ static int packet_snd(struct socket *soc
- 	unsigned short gso_type = 0;
- 	int hlen, tlen;
- 	int extra_len = 0;
-+	struct flow_keys keys;
- 
- 	/*
- 	 *	Get and verify the address.
-@@ -2282,6 +2296,13 @@ static int packet_snd(struct socket *soc
- 		len += vnet_hdr_len;
- 	}
- 
-+	if (skb->ip_summed == CHECKSUM_PARTIAL)
-+		skb_set_transport_header(skb, skb_checksum_start_offset(skb));
-+	else if (skb_flow_dissect(skb, &keys))
-+		skb_set_transport_header(skb, keys.thoff);
-+	else
-+		skb_set_transport_header(skb, reserve);
-+
- 	if (unlikely(extra_len == 4))
- 		skb->no_fcs = 1;
- 
+-	pdata = devm_kzalloc(&pdev->dev, sizeof(*ssp), GFP_KERNEL);
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev,
+ 			"failed to allocate memory for platform data\n");
 
 
