@@ -1,34 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab3FYGot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 02:44:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43712 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab3FYGor (ORCPT
+	id S1751557Ab3FYGsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 02:48:08 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:57330 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab3FYGsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 02:44:47 -0400
+	Tue, 25 Jun 2013 02:48:05 -0400
+Date: Tue, 25 Jun 2013 08:48:00 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: =?iso-8859-1?Q?H=E5vard?= Skinnemoen <hskinnemoen@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [Suggestion] arch: avr32: compiler: compiling tools issue
+Message-ID: <20130625064800.GB23182@samfundet.no>
+References: <51C90B06.5070802@asianux.com>
 MIME-Version: 1.0
-In-Reply-To: <1372133724.1245.38.camel@joe-AO722>
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
-	<1372102237-8757-26-git-send-email-paul.gortmaker@windriver.com>
-	<CAKohponpsJBqbj_8u8MUiu7sCEpeg5bcztWJAZdn9uxL5taVZQ@mail.gmail.com>
-	<1372133724.1245.38.camel@joe-AO722>
-Date: Tue, 25 Jun 2013 12:14:46 +0530
-Message-ID: <CAKohpomOyV2zze1QCKArytXD=x7NXSPtsxped_j2ZKJ_aZOi3w@mail.gmail.com>
-Subject: Re: [PATCH 25/32] cpufreq: delete __cpuinit usage from all cpufreq files
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51C90B06.5070802@asianux.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 June 2013 09:45, Joe Perches <joe@perches.com> wrote:
-> Viresh, there's no absolute "right" way to do this.
+Around Tue 25 Jun 2013 11:14:14 +0800 or thereabout, Chen Gang wrote:
+> Hello Maintainers:
+> 
+> With allmodconfig, and set "avr32-linux-gnu-" as cross compiler prefix.
+> 
+> It will report error:
+>   avr32-linux-gnu-gcc: error: unrecognized command line option ‘-mno-pic’
+>   avr32-linux-gnu-gcc: error: unrecognized command line option ‘-march=ap’
+> 
+> The related gcc version:
+>   [root@dhcp122 linux-next]# rpm -qf /usr/bin/avr32-linux-gnu-gcc
+>   gcc-avr32-linux-gnu-4.7.1-0.1.20120606.fc17.x86_64
 
-Yeah Joe, but I thought its better to keep it consistent within a file.
-So, while writing new files, keep what you want but for existing ones
-follow what's in there.
+Interesting version, 4.7.1.
+
+> Can we say: it is compiler's issue, and I need try to compile the cross
+> compiler to test it again ?
+
+I would assume so, I didn't know Atmel finally pushed all the source code to
+support avr32-linux from upstream.
+
+I still use a jay old 4.2 based GCC port, which was the last one I used when
+working for Atmel.
+
+-- 
+mvh
+Hans-Christian Egtvedt
