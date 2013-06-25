@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab3FYJV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 05:21:59 -0400
-Received: from p-mail2.rd.orange.com ([195.101.245.16]:57016 "EHLO
-	p-mail2.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab3FYJV5 (ORCPT
+	id S1752067Ab3FYJYq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 05:24:46 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:45964 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab3FYJYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 05:21:57 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: sedat.dilek@gmail.com
-Subject: Re: linux-next: Tree for Jun 25
-Date: Tue, 25 Jun 2013 11:21:53 +0200
-User-Agent: KMail/1.13.5 (Linux/3.9.3-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-References: <20130625184420.b811089a069c63ccd3721d68@canb.auug.org.au> <CA+icZUUH7AeR7OSm-SB56AGRiE815tTkQW9fFkKzyrSvzs3Etg@mail.gmail.com>
-In-Reply-To: <CA+icZUUH7AeR7OSm-SB56AGRiE815tTkQW9fFkKzyrSvzs3Etg@mail.gmail.com>
+	Tue, 25 Jun 2013 05:24:44 -0400
+Date: Tue, 25 Jun 2013 11:24:39 +0200
+From: Robert Richter <rric@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH v2 03/14] perf: Add persistent event facilities
+Message-ID: <20130625092439.GD21579@rric.localhost>
+References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+ <1370968960-22527-4-git-send-email-rric@kernel.org>
+ <20130624094830.GP28407@twins.programming.kicks-ass.net>
+ <20130624192616.GB24827@pd.tnic>
+ <20130625074401.GY28407@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306251121.53862.yann.morin.1998@free.fr>
-X-OriginalArrivalTime: 25 Jun 2013 09:21:54.0400 (UTC) FILETIME=[6ECF6E00:01CE7185]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130625074401.GY28407@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat, All,
-
-On Tuesday 25 June 2013 10:55:20 Sedat Dilek wrote:
-> Not sure what's going on, but I get this with today's Linux-Next.
-> ( Yesterday's next-20130624 was OK. )
+On 25.06.13 09:44:01, Peter Zijlstra wrote:
+> Elsewhere in this series you use 'pers' to shorten things; it reads a
+> bit odd to me because 'pers' is the Dutch word for press (both meanings
+> transfer) but that is just something I'll have to live with isn't it ;-)
 > 
-> $ LANG=C LC_ALL=C  yes "" | make oldconfig && LANG=C LC_ALL=C make
-> silentoldconfig </dev/null
-[--SNIP--]
-> RapidIO support (RAPIDIO) [Y/n/?] y
->   IDT Tsi721 PCI Express SRIO Controller support (RAPIDIO_TSI721) [Y/n/?] y
->   Discovery timeout duration (seconds) (RAPIDIO_DISC_TIMEOUT) [30] 30
->   Enable RapidIO Input/Output Ports (RAPIDIO_ENABLE_RX_TX_PORTS) [N/y/?] n
->   DMA Engine support for RapidIO (RAPIDIO_DMA_ENGINE) [Y/n/?] y
->   RapidIO subsystem debug messages (RAPIDIO_DEBUG) [N/y/?] n
->   Enumeration method [M/y/?] (NEW) aborted!
+> As for tracepoint, it seems common to shorten that to tp; which always
+> reminds me of toilet paper, but I suppose more people suffer from that.
 > 
-> Console input/output is redirected. Run 'make oldconfig' to update
-> configuration.
+> Yielding: perf_add_pers_tp() 
+> 
+> which I read as adding pressed toilet paper.. a well :-)
 
-Yes, the same error as reported by Fengguang earlier:
-    http://marc.info/?l=linux-kbuild&m=137214773928335&w=4
+Better we avoid this, don't wonat you misread the code. ;)
 
-And caused by (yet once more):
-    8357b48: kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+I also see 'pers_' not as an optimum since it could be mixed-up easily
+with 'perf_'. Maybe we take 'persist_' instead?
 
-Basically, the issue is:
-
-  - 'Enumeration method' is a tristate choice
-  - for tristate choices, it is possible to select zero, one or more of the
-    symbols in the choice
-  - if no symbol is selected (randomly or otherwise) in a tristate choice,
-    then the choice symbol itself has no assigned 'value'
-  - then silentoldconfig whines
-
-It worked so far as a side effect of another bug (which 8357b48 tries to
-fix), and now this new one has been exposed.
-
-I have to think in a calm place tonight, when I'm back from work...
-
-This one is starting to drive me crazy, really... :-(
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
-| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
-| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
-'------------------------------'-------'------------------'--------------------'
+-Robert
