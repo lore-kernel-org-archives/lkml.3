@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab3FYUmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:42:42 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:60136 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab3FYUdM (ORCPT
+	id S1753259Ab3FYUav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:30:51 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57629 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab3FYUar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:33:12 -0400
+	Tue, 25 Jun 2013 16:30:47 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 23/45] infiniband: ehca: Use get/put_online_cpus_atomic()
- to prevent CPU offline
+Subject: [PATCH v2 12/45] sched/fair: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
@@ -20,13 +20,10 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
-        Christoph Raisch <raisch@de.ibm.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 01:59:50 +0530
-Message-ID: <20130625202950.16593.10057.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 26 Jun 2013 01:57:24 +0530
+Message-ID: <20130625202724.16593.64863.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
 References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -35,7 +32,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062520-9574-0000-0000-00000875C0D0
+x-cbid: 13062520-3864-0000-0000-000008CC2ABD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -47,60 +44,102 @@ from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
 offline, while invoking from atomic context.
 
-Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
-Cc: Christoph Raisch <raisch@de.ibm.com>
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Sean Hefty <sean.hefty@intel.com>
-Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
-Cc: linux-rdma@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- drivers/infiniband/hw/ehca/ehca_irq.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/sched/fair.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
-index 8615d7c..ace901e 100644
---- a/drivers/infiniband/hw/ehca/ehca_irq.c
-+++ b/drivers/infiniband/hw/ehca/ehca_irq.c
-@@ -43,6 +43,7 @@
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c0ac2c3..88f056e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3338,7 +3338,8 @@ done:
+  *
+  * Returns the target CPU number, or the same CPU if no balancing is needed.
+  *
+- * preempt must be disabled.
++ * Must be called within get/put_online_cpus_atomic(), to prevent CPUs
++ * from going offline from under us.
+  */
+ static int
+ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+@@ -5267,6 +5268,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	raw_spin_unlock(&this_rq->lock);
  
- #include <linux/slab.h>
- #include <linux/smpboot.h>
-+#include <linux/cpu.h>
+ 	update_blocked_averages(this_cpu);
++
++	get_online_cpus_atomic();
+ 	rcu_read_lock();
+ 	for_each_domain(this_cpu, sd) {
+ 		unsigned long interval;
+@@ -5290,6 +5293,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 		}
+ 	}
+ 	rcu_read_unlock();
++	put_online_cpus_atomic();
  
- #include "ehca_classes.h"
- #include "ehca_irq.h"
-@@ -703,6 +704,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
- 	int cq_jobs;
- 	unsigned long flags;
+ 	raw_spin_lock(&this_rq->lock);
+ 
+@@ -5316,6 +5320,7 @@ static int active_load_balance_cpu_stop(void *data)
+ 	struct rq *target_rq = cpu_rq(target_cpu);
+ 	struct sched_domain *sd;
  
 +	get_online_cpus_atomic();
- 	cpu_id = find_next_online_cpu(pool);
- 	BUG_ON(!cpu_online(cpu_id));
+ 	raw_spin_lock_irq(&busiest_rq->lock);
  
-@@ -720,6 +722,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
- 		BUG_ON(!cct || !thread);
+ 	/* make sure the requested cpu hasn't gone down in the meantime */
+@@ -5367,6 +5372,7 @@ static int active_load_balance_cpu_stop(void *data)
+ out_unlock:
+ 	busiest_rq->active_balance = 0;
+ 	raw_spin_unlock_irq(&busiest_rq->lock);
++	put_online_cpus_atomic();
+ 	return 0;
+ }
+ 
+@@ -5527,6 +5533,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 
+ 	update_blocked_averages(cpu);
+ 
++	get_online_cpus_atomic();
+ 	rcu_read_lock();
+ 	for_each_domain(cpu, sd) {
+ 		if (!(sd->flags & SD_LOAD_BALANCE))
+@@ -5575,6 +5582,7 @@ out:
+ 			break;
  	}
- 	__queue_comp_task(__cq, cct, thread);
+ 	rcu_read_unlock();
++	put_online_cpus_atomic();
+ 
+ 	/*
+ 	 * next_balance will be updated only when there is a need.
+@@ -5706,6 +5714,7 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 	enum cpu_idle_type idle = this_rq->idle_balance ?
+ 						CPU_IDLE : CPU_NOT_IDLE;
+ 
++	get_online_cpus_atomic();
+ 	rebalance_domains(this_cpu, idle);
+ 
+ 	/*
+@@ -5714,6 +5723,7 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 	 * stopped.
+ 	 */
+ 	nohz_idle_balance(this_cpu, idle);
 +	put_online_cpus_atomic();
  }
  
- static void run_comp_task(struct ehca_cpu_comp_task *cct)
-@@ -759,6 +762,7 @@ static void comp_task_park(unsigned int cpu)
- 	list_splice_init(&cct->cq_list, &list);
- 	spin_unlock_irq(&cct->task_lock);
- 
+ static inline int on_null_domain(int cpu)
+@@ -5731,8 +5741,10 @@ void trigger_load_balance(struct rq *rq, int cpu)
+ 	    likely(!on_null_domain(cpu)))
+ 		raise_softirq(SCHED_SOFTIRQ);
+ #ifdef CONFIG_NO_HZ_COMMON
 +	get_online_cpus_atomic();
- 	cpu = find_next_online_cpu(pool);
- 	target = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
- 	thread = *per_cpu_ptr(pool->cpu_comp_threads, cpu);
-@@ -768,6 +772,7 @@ static void comp_task_park(unsigned int cpu)
- 		__queue_comp_task(cq, target, thread);
- 	}
- 	spin_unlock_irq(&target->task_lock);
+ 	if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
+ 		nohz_balancer_kick(cpu);
 +	put_online_cpus_atomic();
+ #endif
  }
  
- static void comp_task_stop(unsigned int cpu, bool online)
 
