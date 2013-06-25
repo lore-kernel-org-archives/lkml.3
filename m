@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3FYGAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 02:00:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44553 "EHLO arroyo.ext.ti.com"
+	id S1751844Ab3FYGAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 02:00:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42925 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab3FYGAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 02:00:32 -0400
+	id S1751411Ab3FYGAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 02:00:16 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
         <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
@@ -19,9 +19,9 @@ CC: <rob.herring@calxeda.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
         <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <nsekhar@ti.com>, <balajitk@ti.com>,
         <george.cherian@ti.com>
-Subject: [PATCH v8 7/8] usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2
-Date: Tue, 25 Jun 2013 11:28:45 +0530
-Message-ID: <1372139926-3719-8-git-send-email-kishon@ti.com>
+Subject: [PATCH v8 4/8] ARM: OMAP: USB: Add phy binding information
+Date: Tue, 25 Jun 2013 11:28:42 +0530
+Message-ID: <1372139926-3719-5-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1372139926-3719-1-git-send-email-kishon@ti.com>
 References: <1372139926-3719-1-git-send-email-kishon@ti.com>
@@ -31,66 +31,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that omap-usb2 is adapted to the new generic PHY framework,
-*set_suspend* ops can be removed from omap-usb2 driver.
+In order for controllers to get PHY in case of non dt boot, the phy
+binding information (phy device name) should be added in the platform
+data of the controller.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
 Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 ---
- drivers/usb/phy/phy-omap-usb2.c |   25 -------------------------
- 1 file changed, 25 deletions(-)
+ arch/arm/mach-omap2/usb-musb.c |    6 +++++-
+ include/linux/usb/musb.h       |    3 +++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/phy/phy-omap-usb2.c b/drivers/usb/phy/phy-omap-usb2.c
-index ecdf1ac..7171426 100644
---- a/drivers/usb/phy/phy-omap-usb2.c
-+++ b/drivers/usb/phy/phy-omap-usb2.c
-@@ -97,29 +97,6 @@ static int omap_usb_set_peripheral(struct usb_otg *otg,
- 	return 0;
- }
+diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+index 3242a55..284ba51 100644
+--- a/arch/arm/mach-omap2/usb-musb.c
++++ b/arch/arm/mach-omap2/usb-musb.c
+@@ -85,8 +85,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
+ 	musb_plat.mode = board_data->mode;
+ 	musb_plat.extvbus = board_data->extvbus;
  
--static int omap_usb2_suspend(struct usb_phy *x, int suspend)
--{
--	u32 ret;
--	struct omap_usb *phy = phy_to_omapusb(x);
--
--	if (suspend && !phy->is_suspended) {
--		omap_control_usb_phy_power(phy->control_dev, 0);
--		pm_runtime_put_sync(phy->dev);
--		phy->is_suspended = 1;
--	} else if (!suspend && phy->is_suspended) {
--		ret = pm_runtime_get_sync(phy->dev);
--		if (ret < 0) {
--			dev_err(phy->dev, "get_sync failed with err %d\n",
--									ret);
--			return ret;
--		}
--		omap_control_usb_phy_power(phy->control_dev, 1);
--		phy->is_suspended = 0;
--	}
--
--	return 0;
--}
--
- static int omap_usb_power_off(struct phy *x)
- {
- 	struct omap_usb *phy = dev_get_drvdata(&x->dev);
-@@ -167,7 +144,6 @@ static int omap_usb2_probe(struct platform_device *pdev)
+-	if (cpu_is_omap44xx())
++	if (cpu_is_omap44xx()) {
+ 		musb_plat.has_mailbox = true;
++		musb_plat.phy_label = "omap-usb2";
++	} else if (cpu_is_omap34xx()) {
++		musb_plat.phy_label = "twl4030";
++	}
  
- 	phy->phy.dev		= phy->dev;
- 	phy->phy.label		= "omap-usb2";
--	phy->phy.set_suspend	= omap_usb2_suspend;
- 	phy->phy.otg		= otg;
- 	phy->phy.type		= USB_PHY_TYPE_USB2;
+ 	if (soc_is_am35xx()) {
+ 		oh_name = "am35x_otg_hs";
+diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
+index 053c268..596f8c8 100644
+--- a/include/linux/usb/musb.h
++++ b/include/linux/usb/musb.h
+@@ -104,6 +104,9 @@ struct musb_hdrc_platform_data {
+ 	/* for clk_get() */
+ 	const char	*clock;
  
-@@ -182,7 +158,6 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
++	/* phy label */
++	const char	*phy_label;
++
+ 	/* (HOST or OTG) switch VBUS on/off */
+ 	int		(*set_vbus)(struct device *dev, int is_on);
  
--	phy->is_suspended	= 1;
- 	omap_control_usb_phy_power(phy->control_dev, 0);
- 
- 	otg->set_host		= omap_usb_set_host;
 -- 
 1.7.10.4
 
