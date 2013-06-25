@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab3FYJkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 05:40:22 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:46997 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab3FYJkU (ORCPT
+	id S1752559Ab3FYJoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 05:44:46 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:57906 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751896Ab3FYJoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 05:40:20 -0400
+	Tue, 25 Jun 2013 05:44:44 -0400
+Message-ID: <51C9653A.4050500@st.com>
+Date: Tue, 25 Jun 2013 10:39:06 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <51C96322.9000801@suse.cz>
-References: <20130625184420.b811089a069c63ccd3721d68@canb.auug.org.au>
-	<CA+icZUUH7AeR7OSm-SB56AGRiE815tTkQW9fFkKzyrSvzs3Etg@mail.gmail.com>
-	<201306251121.53862.yann.morin.1998@free.fr>
-	<CA+icZUU06C43bxyX2UGtDxRQqcyqeAQgt7fZHq7H7HgcJ6sHzQ@mail.gmail.com>
-	<51C96322.9000801@suse.cz>
-Date: Tue, 25 Jun 2013 11:40:18 +0200
-Message-ID: <CA+icZUWS6d98YA7_rdjXw-R3V+OyV2YCH9Hpn-C+qB385-QO_g@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 25
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        John Stultz <john.stultz@linaro.org>, Rob Landley <rob@landley.net>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [STLinux Kernel] [PATCH v3 03/10] pinctrl:st: Add pinctrl and
+ pinconf support.
+References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com> <1371737138-9340-1-git-send-email-srinivas.kandagatla@st.com> <51C45816.5010207@st.com> <CACRpkdb-H2=GdF54Fay+PQVdXLTs++L5+QYe_vFPuzpa+E4ZMg@mail.gmail.com> <20130624141257.GM27646@sirena.org.uk>
+In-Reply-To: <20130624141257.GM27646@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 11:30 AM, Michal Marek <mmarek@suse.cz> wrote:
-> On 25.6.2013 11:26, Sedat Dilek wrote:
->> On Tue, Jun 25, 2013 at 11:21 AM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
->> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=a11650e11093ed57dca78bf16e7836517c599098
->>
->>>   - for tristate choices, it is possible to select zero, one or more of the
->>>     symbols in the choice
->>>   - if no symbol is selected (randomly or otherwise) in a tristate choice,
->>>     then the choice symbol itself has no assigned 'value'
->>>   - then silentoldconfig whines
->>
->> Bad bad bad Yann, didn't Marek told you to test always with...
->>
->>     $ yes "" | make oldconfig; make silentoldconfig </dev/null
->>
->> Anyway, have fun.
->
-> You only hit this if you have CONFIG_RAPIDIO=y in the original config.
->
+On 24/06/13 15:12, Mark Brown wrote:
+> On Mon, Jun 24, 2013 at 01:57:56PM +0200, Linus Walleij wrote:
+> 
+>> This seems fairly complete, but I cannot have such a basic dependency onto
+>> the regmap tree this late in the merge window, i.e. I'm not ready to pull
+>> all of regmap into the pinctrl tree. I'd consider this for merging
+>> for the next kernel cycle so it's more orthogonal.
+> 
+> I've got the patch on a topic branch in regmap to allow for this sort of
+> stuff - I can readily provide a signed tag for you to get just that
+> patch if that'd help?  Alternatively I'm happy to carry the pinctrl
+> patch in regmap?
+Thanks Mark,
 
-OK, my kernel-config base was from a Ubuntu/precise kernel.
-You are right for x86 it is not a defconfig.
+Am Ok with either way, it is required that these 2 patches to go together.
 
-$ grep RAPIDIO arch/x86/configs/*_defconfig
+Linus W, if you are happy with the patch can Mark take it via regmap repo?
 
-$ grep RAPIDIO arch/powerpc/configs/*_defconfig
-arch/powerpc/configs/corenet32_smp_defconfig:CONFIG_RAPIDIO=y
-arch/powerpc/configs/corenet64_smp_defconfig:CONFIG_RAPIDIO=y
-arch/powerpc/configs/mpc85xx_defconfig:CONFIG_RAPIDIO=y
-arch/powerpc/configs/mpc85xx_smp_defconfig:CONFIG_RAPIDIO=y
+Thanks,
+srini
 
-Anyway, it is good we catched this.
+> 
+> 
+> 
+> _______________________________________________
+> Kernel mailing list
+> Kernel@stlinux.com
+> http://www.stlinux.com/mailman/listinfo/kernel
+> 
 
-- Sedat -
-
-
-> Michal
