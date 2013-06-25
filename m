@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab3FYTPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:15:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40804 "EHLO
+	id S1752612Ab3FYTPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:15:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40811 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab3FYSd0 (ORCPT
+	with ESMTP id S1751208Ab3FYSd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:33:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jed Davis <jld@mozilla.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [ 03/95] perf: arm64: Record the user-mode PC in the call chain.
-Date: Tue, 25 Jun 2013 11:31:50 -0700
-Message-Id: <20130625182154.049293865@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 04/95] ALSA: usb-audio: Fix invalid volume resolution for Logitech HD Webcam c310
+Date: Tue, 25 Jun 2013 11:31:51 -0700
+Message-Id: <20130625182154.162353044@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,33 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jed Davis <jld@mozilla.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit abc41254181e901ef5eda2c884ca6cd88a186b6d upstream.
+commit 36691e1be6ec551eef4a5225f126a281f8c051c2 upstream.
 
-With this change, we no longer lose the innermost entry in the user-mode
-part of the call chain.  See also the x86 port, which includes the ip,
-and the corresponding change in arch/arm.
+Just like the previous fix for LogitechHD Webcam c270 in commit
+11e7064f35bb87da8f427d1aa4bbd8b7473a3993, c310 model also requires the
+same workaround for avoiding the kernel warning.
 
-Signed-off-by: Jed Davis <jld@mozilla.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=59741
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/perf_event.c |    1 +
+ sound/usb/mixer.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -1336,6 +1336,7 @@ void perf_callchain_user(struct perf_cal
- 		return;
- 	}
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -885,6 +885,7 @@ static void volume_control_quirks(struct
  
-+	perf_callchain_store(entry, regs->pc);
- 	tail = (struct frame_tail __user *)regs->regs[29];
- 
- 	while (entry->nr < PERF_MAX_STACK_DEPTH &&
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
++	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
+ 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+ 	case USB_ID(0x046d, 0x0991):
 
 
