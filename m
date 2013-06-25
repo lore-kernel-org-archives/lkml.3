@@ -1,69 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab3FYIY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:24:58 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:43280 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab3FYIY4 (ORCPT
+	id S1752175Ab3FYI2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:28:03 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46899 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597Ab3FYI17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:24:56 -0400
-Message-ID: <51C953CF.4070805@atmel.com>
-Date: Tue, 25 Jun 2013 10:24:47 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 25 Jun 2013 04:27:59 -0400
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, "Wenyou Yang" <wenyou.yang@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: at91/PMC: fix at91sam9n12 USB FS init
-References: <1372071462-29063-1-git-send-email-nicolas.ferre@atmel.com> <51C9264C.6050400@atmel.com>
-In-Reply-To: <51C9264C.6050400@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <1371795256-16703-4-git-send-email-mturquette@linaro.org>
+References: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
+	<1371795256-16703-4-git-send-email-mturquette@linaro.org>
+Date: Tue, 25 Jun 2013 16:27:58 +0800
+Message-ID: <CAD6h2NS=AOQ4B6V=TtA120ga9ucF7eBxEguqFK0y4cfpa-F50Q@mail.gmail.com>
+Subject: Re: [PATCH v3 3/5] clk: dt: binding for basic multiplexer clock
+From: Haojian Zhuang <haojian.zhuang@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Matt Sealey <neko@bakuhatsu.net>, Stephen Boyd <sboyd@codeaurora.org>,
+        Tero Kristo <t-kristo@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/2013 07:10, Bo Shen :
-> Hi Nicolas,
+On 21 June 2013 14:14, Mike Turquette <mturquette@linaro.org> wrote:
+> Device Tree binding for the basic clock multiplexer, plus the setup
+> function to register the clock.  Based on the existing fixed-clock
+> binding.
 >
-> On 06/24/2013 06:57 PM, Nicolas Ferre wrote:
->> at91sam9n12 has Full-speed only USB. So we should add
->> it to the list in at91_pllb_usbfs_clock_init() function.
->>
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> ---
->>   arch/arm/mach-at91/clock.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
->> index 978de42..2f732d9 100644
->> --- a/arch/arm/mach-at91/clock.c
->> +++ b/arch/arm/mach-at91/clock.c
->> @@ -699,7 +699,7 @@ static void __init
->> at91_pllb_usbfs_clock_init(unsigned long main_clock)
->>           at91_pmc_write(AT91_PMC_SCER, AT91RM9200_PMC_MCKUDP);
->>       } else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() ||
->>              cpu_is_at91sam9263() || cpu_is_at91sam9g20() ||
->> -           cpu_is_at91sam9g10()) {
->> +           cpu_is_at91sam9g10() || cpu_is_at91sam9n12()) {
->>           uhpck.pmc_mask = AT91SAM926x_PMC_UHP;
->>           udpck.pmc_mask = AT91SAM926x_PMC_UDP;
->>       }
->>
+> Includes minor beautification of clk-provider.h where some whitespace is
+> added and of_fixed_factor_clock_setup is relocated to maintain a
+> consistent style.
 >
-> As you post the following patches:
->    ARM: at91/PMC: fix at91sam9n12 USB FS init
-> (https://patchwork.kernel.org/patch/2772301/)
+> Tero Kristo contributed helpful bug fixes to this patch.
 >
-> This patch no need anymore.
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> ---
+> Changes since v2:
+> * added hiword-mask property to the binding
+> * changed bit-shift property from u8 to u32 in the dt binding
+>
+> Changes since v1:
+> * pass shift value into clk_register_mux_table
+> * s/multiplexor/multiplexer/
+> * removed debug prints
+> * mask is u32, shift is u8
+> * DT property names use dashes instead of underscores
+> * DT property names are more verbose
+> * shift property is optional in binding and can be auto-generated from a
+>   full 32-bit mask
+>
+>  .../devicetree/bindings/clock/mux-clock.txt        | 79 ++++++++++++++++++++++
+>  drivers/clk/clk-mux.c                              | 65 +++++++++++++++++-
+>  include/linux/clk-provider.h                       |  5 +-
+>  3 files changed, 147 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/mux-clock.txt
+>
+> diff --git a/Documentation/devicetree/bindings/clock/mux-clock.txt b/Documentation/devicetree/bindings/clock/mux-clock.txt
+> new file mode 100644
+> index 0000000..54cb8d1
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/mux-clock.txt
+> @@ -0,0 +1,79 @@
+> +Binding for simple mux clock.
+> +
+> +This binding uses the common clock binding[1].  It assumes a
+> +register-mapped multiplexer with multiple input clock signals or
+> +parents, one of which can be selected as output.  This clock does not
+> +gate or adjust the parent rate via a divider or multiplier.
+> +
+> +By default the "clocks" property lists the parents in the same order
+> +as they are programmed into the regster.  E.g:
+> +
+> +       clocks = <&foo_clock>, <&bar_clock>, <&baz_clock>;
+> +
+> +results in programming the register as follows:
+> +
+> +register value         selected parent clock
+> +0                      foo_clock
+> +1                      bar_clock
+> +2                      baz_clock
+> +
+> +Some clock controller IPs do not allow a value of zero to be programmed
+> +into the register, instead indexing begins at 1.  The optional property
+> +"index_one" modified the scheme as follows:
+> +
+> +register value         selected clock parent
+> +1                      foo_clock
+> +2                      bar_clock
+> +3                      baz_clock
+> +
+> +Additionally an optional table of bit and parent pairs may be supplied
+> +like so:
+> +
+> +       table = <&foo_clock 0x0>, <&bar_clock, 0x2>, <&baz_clock, 0x4>;
+> +
+> +where the first value in the pair is the parent clock and the second
+> +value is the bitfield to be programmed into the register.
+> +
+> +The binding must provide the register to control the mux and the mask
+> +for the corresponding control bits.  Optionally the number of bits to
+> +shift that mask if necessary.  If the shift value is missing it is the
+> +same as supplying a zero shift.
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +Required properties:
+> +- compatible : shall be "mux-clock".
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- clocks : link phandles of parent clocks
+> +- reg : base address for register controlling adjustable mux
+> +- bit-mask : arbitrary bitmask for programming the adjustable mux
+> +
+> +Optional properties:
+> +- clock-output-names : From common clock binding.
+> +- table : array of integer pairs defining parents & bitfield values
+> +- bit-shift : number of bits to shift the bit-mask, defaults to
+> +  (ffs(mask) - 1) if not present
+> +- index-starts-at-one : valid input select programming starts at 1, not
+> +  zero
+> +- hiword-mask : lower half of the register programs the mux, upper half
+> +  of the register indicates bits that were updated in the lower half
+> +
+> +Examples:
+> +       clock: clock@4a008100 {
+> +               compatible = "mux-clock";
+> +               #clock-cells = <0>;
+> +               clocks = <&clock_foo>, <&clock_bar>, <&clock_baz>;
+> +               reg = <0x4a008100 0x4>
+> +               mask = <0x3>;
+> +               index_one;
+> +       };
+> +
+> +       clock: clock@4a008100 {
+> +               #clock-cells = <0>;
+> +               compatible = "mux-clock";
+> +               clocks = <&clock_foo>, <&clock_bar>, <&clock_baz>;
+> +               reg = <0x4a008100 0x4>;
+> +               mask = <0x3>;
+> +               shift = <0>;
+> +               table = <&clock_foo 1>, <&clock_bar 2>, <&clock_baz 3>;
+> +       };
+> diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
+> index 614444c..4751bce 100644
+> --- a/drivers/clk/clk-mux.c
+> +++ b/drivers/clk/clk-mux.c
+> @@ -1,7 +1,7 @@
+>  /*
+>   * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
+>   * Copyright (C) 2011 Richard Zhao, Linaro <richard.zhao@linaro.org>
+> - * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
+> + * Copyright (C) 2011-2013 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -16,6 +16,8 @@
+>  #include <linux/slab.h>
+>  #include <linux/io.h>
+>  #include <linux/err.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+>
+>  /*
+>   * DOC: basic adjustable multiplexer clock that cannot gate
+> @@ -166,3 +168,64 @@ struct clk *clk_register_mux(struct device *dev, const char *name,
+>                                       flags, reg, shift, mask, clk_mux_flags,
+>                                       NULL, lock);
+>  }
+> +
+> +#ifdef CONFIG_OF
+> +/**
+> + * of_mux_clk_setup() - Setup function for simple mux rate clock
+> + */
+> +void of_mux_clk_setup(struct device_node *node)
+> +{
+> +       struct clk *clk;
+> +       const char *clk_name = node->name;
+> +       void __iomem *reg;
+> +       int num_parents;
+> +       const char **parent_names;
+> +       int i;
+> +       u8 clk_mux_flags = 0;
+> +       u32 mask = 0;
+> +       u32 shift = 0;
+> +
+> +       of_property_read_string(node, "clock-output-names", &clk_name);
+> +
+> +       num_parents = of_clk_get_parent_count(node);
+> +       if (num_parents < 1) {
+> +               pr_err("%s: mux-clock %s must have parent(s)\n",
+> +                               __func__, node->name);
+> +               return;
+> +       }
+> +
+> +       parent_names = kzalloc((sizeof(char*) * num_parents),
+> +                       GFP_KERNEL);
+> +
+> +       for (i = 0; i < num_parents; i++)
+> +               parent_names[i] = of_clk_get_parent_name(node, i);
+> +
+> +       reg = of_iomap(node, 0);
 
-Absolutely.
+As you mentioned above,  reg : base address for register controlling
+adjustable mux.
 
-Bye,
--- 
-Nicolas Ferre
+Each clock node has the reg property. It means that we have to
+allocate one page memory
+for each register since of_iomap() is used at here. We always have
+lots of registers with
+continuous address in SoC, like 0x40a00040, 0x40a00044, .... Then
+we'll waste too much
+memory in system.
+
+How about only define common function to parse property? Make register
+mapping handled
+by vendor's clock driver.
+
+Regards
+Haojian
