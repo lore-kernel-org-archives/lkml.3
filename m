@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab3FYSsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:48:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41230 "EHLO
+	id S1753645Ab3FYSsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:48:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41241 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab3FYSfw (ORCPT
+	with ESMTP id S1753085Ab3FYSf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:35:52 -0400
+	Tue, 25 Jun 2013 14:35:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [ 03/27] clk: remove notifier from list before freeing it
-Date: Tue, 25 Jun 2013 11:35:22 -0700
-Message-Id: <20130625183518.069165159@linuxfoundation.org>
+        Vlad Halilov <vlad.halilov@gmail.com>, Paul Moore <pmoore@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 09/27] netlabel: improve domain mapping validation
+Date: Tue, 25 Jun 2013 11:35:28 -0700
+Message-Id: <20130625183518.766476489@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,77 +27,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit 72b5322f11ff0abf6a52b3007486656578d2c982 upstream.
+[ Upstream commit 6b21e1b77d1a3d58ebfd513264c885695e8a0ba5 ]
 
-The @cn is stay in @clk_notifier_list after it is freed, it cause
-memory corruption.
+The net/netlabel/netlabel_domainhash.c:netlbl_domhsh_add() function
+does not properly validate new domain hash entries resulting in
+potential problems when an administrator attempts to add an invalid
+entry.  One such problem, as reported by Vlad Halilov, is a kernel
+BUG (found in netlabel_domainhash.c:netlbl_domhsh_audit_add()) when
+adding an IPv6 outbound mapping with a CIPSO configuration.
 
-Example, if @clk is registered(first), unregistered(first),
-registered(second), unregistered(second).
+This patch corrects this problem by adding the necessary validation
+code to netlbl_domhsh_add() via the newly created
+netlbl_domhsh_validate() function.
 
-The freed @cn will be used when @clk is registered(second),
-and the bug will be happened when @clk is unregistered(second):
+Ideally this patch should also be pushed to the currently active
+-stable trees.
 
-[  517.040000] clk_notif_dbg clk_notif_dbg.1: clk_notifier_unregister()
-[  517.040000] Unable to handle kernel paging request at virtual address 00df3008
-[  517.050000] pgd = ed858000
-[  517.050000] [00df3008] *pgd=00000000
-[  517.060000] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[  517.060000] Modules linked in: clk_notif_dbg(O-) [last unloaded: clk_notif_dbg]
-[  517.060000] CPU: 1 PID: 499 Comm: modprobe Tainted: G           O 3.10.0-rc3-00119-ga93cb29-dirty #85
-[  517.060000] task: ee1e0180 ti: ee3e6000 task.ti: ee3e6000
-[  517.060000] PC is at srcu_readers_seq_idx+0x48/0x84
-[  517.060000] LR is at srcu_readers_seq_idx+0x60/0x84
-[  517.060000] pc : [<c0052720>]    lr : [<c0052738>]    psr: 80070013
-[  517.060000] sp : ee3e7d48  ip : 00000000  fp : ee3e7d6c
-[  517.060000] r10: 00000000  r9 : ee3e6000  r8 : 00000000
-[  517.060000] r7 : ed84fe4c  r6 : c068ec90  r5 : c068e430  r4 : 00000000
-[  517.060000] r3 : 00df3000  r2 : 00000000  r1 : 00000002  r0 : 00000000
-[  517.060000] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[  517.060000] Control: 18c5387d  Table: 2d85804a  DAC: 00000015
-[  517.060000] Process modprobe (pid: 499, stack limit = 0xee3e6238)
-[  517.060000] Stack: (0xee3e7d48 to 0xee3e8000)
-....
-[  517.060000] [<c0052720>] (srcu_readers_seq_idx+0x48/0x84) from [<c0052790>] (try_check_zero+0x34/0xfc)
-[  517.060000] [<c0052790>] (try_check_zero+0x34/0xfc) from [<c00528b0>] (srcu_advance_batches+0x58/0x114)
-[  517.060000] [<c00528b0>] (srcu_advance_batches+0x58/0x114) from [<c0052c30>] (__synchronize_srcu+0x114/0x1ac)
-[  517.060000] [<c0052c30>] (__synchronize_srcu+0x114/0x1ac) from [<c0052d14>] (synchronize_srcu+0x2c/0x34)
-[  517.060000] [<c0052d14>] (synchronize_srcu+0x2c/0x34) from [<c0053a08>] (srcu_notifier_chain_unregister+0x68/0x74)
-[  517.060000] [<c0053a08>] (srcu_notifier_chain_unregister+0x68/0x74) from [<c0375a78>] (clk_notifier_unregister+0x7c/0xc0)
-[  517.060000] [<c0375a78>] (clk_notifier_unregister+0x7c/0xc0) from [<bf008034>] (clk_notif_dbg_remove+0x34/0x9c [clk_notif_dbg])
-[  517.060000] [<bf008034>] (clk_notif_dbg_remove+0x34/0x9c [clk_notif_dbg]) from [<c02bb974>] (platform_drv_remove+0x24/0x28)
-[  517.060000] [<c02bb974>] (platform_drv_remove+0x24/0x28) from [<c02b9bf8>] (__device_release_driver+0x8c/0xd4)
-[  517.060000] [<c02b9bf8>] (__device_release_driver+0x8c/0xd4) from [<c02ba680>] (driver_detach+0x9c/0xc4)
-[  517.060000] [<c02ba680>] (driver_detach+0x9c/0xc4) from [<c02b99c4>] (bus_remove_driver+0xcc/0xfc)
-[  517.060000] [<c02b99c4>] (bus_remove_driver+0xcc/0xfc) from [<c02bace4>] (driver_unregister+0x54/0x78)
-[  517.060000] [<c02bace4>] (driver_unregister+0x54/0x78) from [<c02bbb44>] (platform_driver_unregister+0x1c/0x20)
-[  517.060000] [<c02bbb44>] (platform_driver_unregister+0x1c/0x20) from [<bf0081f8>] (clk_notif_dbg_driver_exit+0x14/0x1c [clk_notif_dbg])
-[  517.060000] [<bf0081f8>] (clk_notif_dbg_driver_exit+0x14/0x1c [clk_notif_dbg]) from [<c00835e4>] (SyS_delete_module+0x200/0x28c)
-[  517.060000] [<c00835e4>] (SyS_delete_module+0x200/0x28c) from [<c000edc0>] (ret_fast_syscall+0x0/0x48)
-[  517.060000] Code: e5973004 e7911102 e0833001 e2881002 (e7933101)
-
-Reported-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Tested-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-[mturquette@linaro.org: shortened $SUBJECT]
+Reported-by: Vlad Halilov <vlad.halilov@gmail.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/clk/clk.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/netlabel/netlabel_domainhash.c |   69 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 69 insertions(+)
 
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1453,6 +1453,7 @@ int clk_notifier_unregister(struct clk *
- 		/* XXX the notifier code should handle this better */
- 		if (!cn->notifier_head.head) {
- 			srcu_cleanup_notifier_head(&cn->notifier_head);
-+			list_del(&cn->node);
- 			kfree(cn);
- 		}
+--- a/net/netlabel/netlabel_domainhash.c
++++ b/net/netlabel/netlabel_domainhash.c
+@@ -245,6 +245,71 @@ static void netlbl_domhsh_audit_add(stru
+ 	}
+ }
  
++/**
++ * netlbl_domhsh_validate - Validate a new domain mapping entry
++ * @entry: the entry to validate
++ *
++ * This function validates the new domain mapping entry to ensure that it is
++ * a valid entry.  Returns zero on success, negative values on failure.
++ *
++ */
++static int netlbl_domhsh_validate(const struct netlbl_dom_map *entry)
++{
++	struct netlbl_af4list *iter4;
++	struct netlbl_domaddr4_map *map4;
++#if IS_ENABLED(CONFIG_IPV6)
++	struct netlbl_af6list *iter6;
++	struct netlbl_domaddr6_map *map6;
++#endif /* IPv6 */
++
++	if (entry == NULL)
++		return -EINVAL;
++
++	switch (entry->type) {
++	case NETLBL_NLTYPE_UNLABELED:
++		if (entry->type_def.cipsov4 != NULL ||
++		    entry->type_def.addrsel != NULL)
++			return -EINVAL;
++		break;
++	case NETLBL_NLTYPE_CIPSOV4:
++		if (entry->type_def.cipsov4 == NULL)
++			return -EINVAL;
++		break;
++	case NETLBL_NLTYPE_ADDRSELECT:
++		netlbl_af4list_foreach(iter4, &entry->type_def.addrsel->list4) {
++			map4 = netlbl_domhsh_addr4_entry(iter4);
++			switch (map4->type) {
++			case NETLBL_NLTYPE_UNLABELED:
++				if (map4->type_def.cipsov4 != NULL)
++					return -EINVAL;
++				break;
++			case NETLBL_NLTYPE_CIPSOV4:
++				if (map4->type_def.cipsov4 == NULL)
++					return -EINVAL;
++				break;
++			default:
++				return -EINVAL;
++			}
++		}
++#if IS_ENABLED(CONFIG_IPV6)
++		netlbl_af6list_foreach(iter6, &entry->type_def.addrsel->list6) {
++			map6 = netlbl_domhsh_addr6_entry(iter6);
++			switch (map6->type) {
++			case NETLBL_NLTYPE_UNLABELED:
++				break;
++			default:
++				return -EINVAL;
++			}
++		}
++#endif /* IPv6 */
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ /*
+  * Domain Hash Table Functions
+  */
+@@ -311,6 +376,10 @@ int netlbl_domhsh_add(struct netlbl_dom_
+ 	struct netlbl_af6list *tmp6;
+ #endif /* IPv6 */
+ 
++	ret_val = netlbl_domhsh_validate(entry);
++	if (ret_val != 0)
++		return ret_val;
++
+ 	/* XXX - we can remove this RCU read lock as the spinlock protects the
+ 	 *       entire function, but before we do we need to fixup the
+ 	 *       netlbl_af[4,6]list RCU functions to do "the right thing" with
 
 
