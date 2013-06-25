@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab3FYSjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:39:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41364 "EHLO
+	id S1753537Ab3FYSnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:43:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41372 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab3FYSjj (ORCPT
+	with ESMTP id S1753421Ab3FYSjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:39:39 -0400
+	Tue, 25 Jun 2013 14:39:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Halilov <vlad.halilov@gmail.com>, Paul Moore <pmoore@redhat.com>,
+        Daniel Petre <daniel.petre@rcs-rds.ro>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/17] netlabel: improve domain mapping validation
-Date: Tue, 25 Jun 2013 11:39:22 -0700
-Message-Id: <20130625183916.283170720@linuxfoundation.org>
+Subject: [ 09/17] ip_tunnel: fix kernel panic with icmp_dest_unreach
+Date: Tue, 25 Jun 2013 11:39:24 -0700
+Message-Id: <20130625183916.502927132@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183915.443950649@linuxfoundation.org>
 References: <20130625183915.443950649@linuxfoundation.org>
@@ -27,116 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 6b21e1b77d1a3d58ebfd513264c885695e8a0ba5 ]
+[ Upstream commit a622260254ee481747cceaaa8609985b29a31565 ]
 
-The net/netlabel/netlabel_domainhash.c:netlbl_domhsh_add() function
-does not properly validate new domain hash entries resulting in
-potential problems when an administrator attempts to add an invalid
-entry.  One such problem, as reported by Vlad Halilov, is a kernel
-BUG (found in netlabel_domainhash.c:netlbl_domhsh_audit_add()) when
-adding an IPv6 outbound mapping with a CIPSO configuration.
+Daniel Petre reported crashes in icmp_dst_unreach() with following call
+graph:
 
-This patch corrects this problem by adding the necessary validation
-code to netlbl_domhsh_add() via the newly created
-netlbl_domhsh_validate() function.
+Daniel found a similar problem mentioned in
+ http://lkml.indiana.edu/hypermail/linux/kernel/1007.0/00961.html
 
-Ideally this patch should also be pushed to the currently active
--stable trees.
+And indeed this is the root cause : skb->cb[] contains data fooling IP
+stack.
 
-Reported-by: Vlad Halilov <vlad.halilov@gmail.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+We must clear IPCB in ip_tunnel_xmit() sooner in case dst_link_failure()
+is called. Or else skb->cb[] might contain garbage from GSO segmentation
+layer.
+
+A similar fix was tested on linux-3.9, but gre code was refactored in
+linux-3.10. I'll send patches for stable kernels as well.
+
+Many thanks to Daniel for providing reports, patches and testing !
+
+Reported-by: Daniel Petre <daniel.petre@rcs-rds.ro>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netlabel/netlabel_domainhash.c |   69 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 69 insertions(+)
+ net/ipv4/ip_gre.c |    2 +-
+ net/ipv4/ipip.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/netlabel/netlabel_domainhash.c
-+++ b/net/netlabel/netlabel_domainhash.c
-@@ -246,6 +246,71 @@ static void netlbl_domhsh_audit_add(stru
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -716,6 +716,7 @@ static netdev_tx_t ipgre_tunnel_xmit(str
+ 		tiph = &tunnel->parms.iph;
  	}
- }
  
-+/**
-+ * netlbl_domhsh_validate - Validate a new domain mapping entry
-+ * @entry: the entry to validate
-+ *
-+ * This function validates the new domain mapping entry to ensure that it is
-+ * a valid entry.  Returns zero on success, negative values on failure.
-+ *
-+ */
-+static int netlbl_domhsh_validate(const struct netlbl_dom_map *entry)
-+{
-+	struct netlbl_af4list *iter4;
-+	struct netlbl_domaddr4_map *map4;
-+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
-+	struct netlbl_af6list *iter6;
-+	struct netlbl_domaddr6_map *map6;
-+#endif /* IPv6 */
-+
-+	if (entry == NULL)
-+		return -EINVAL;
-+
-+	switch (entry->type) {
-+	case NETLBL_NLTYPE_UNLABELED:
-+		if (entry->type_def.cipsov4 != NULL ||
-+		    entry->type_def.addrsel != NULL)
-+			return -EINVAL;
-+		break;
-+	case NETLBL_NLTYPE_CIPSOV4:
-+		if (entry->type_def.cipsov4 == NULL)
-+			return -EINVAL;
-+		break;
-+	case NETLBL_NLTYPE_ADDRSELECT:
-+		netlbl_af4list_foreach(iter4, &entry->type_def.addrsel->list4) {
-+			map4 = netlbl_domhsh_addr4_entry(iter4);
-+			switch (map4->type) {
-+			case NETLBL_NLTYPE_UNLABELED:
-+				if (map4->type_def.cipsov4 != NULL)
-+					return -EINVAL;
-+				break;
-+			case NETLBL_NLTYPE_CIPSOV4:
-+				if (map4->type_def.cipsov4 == NULL)
-+					return -EINVAL;
-+				break;
-+			default:
-+				return -EINVAL;
-+			}
-+		}
-+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
-+		netlbl_af6list_foreach(iter6, &entry->type_def.addrsel->list6) {
-+			map6 = netlbl_domhsh_addr6_entry(iter6);
-+			switch (map6->type) {
-+			case NETLBL_NLTYPE_UNLABELED:
-+				break;
-+			default:
-+				return -EINVAL;
-+			}
-+		}
-+#endif /* IPv6 */
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  * Domain Hash Table Functions
-  */
-@@ -312,6 +377,10 @@ int netlbl_domhsh_add(struct netlbl_dom_
- 	struct netlbl_af6list *tmp6;
- #endif /* IPv6 */
++	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	if ((dst = tiph->daddr) == 0) {
+ 		/* NBMA tunnel */
  
-+	ret_val = netlbl_domhsh_validate(entry);
-+	if (ret_val != 0)
-+		return ret_val;
-+
- 	/* XXX - we can remove this RCU read lock as the spinlock protects the
- 	 *       entire function, but before we do we need to fixup the
- 	 *       netlbl_af[4,6]list RCU functions to do "the right thing" with
+@@ -853,7 +854,6 @@ static netdev_tx_t ipgre_tunnel_xmit(str
+ 	skb_reset_transport_header(skb);
+ 	skb_push(skb, gre_hlen);
+ 	skb_reset_network_header(skb);
+-	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
+ 			      IPSKB_REROUTED);
+ 	skb_dst_drop(skb);
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -448,6 +448,7 @@ static netdev_tx_t ipip_tunnel_xmit(stru
+ 	if (tos & 1)
+ 		tos = old_iph->tos;
+ 
++	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	if (!dst) {
+ 		/* NBMA tunnel */
+ 		if ((rt = skb_rtable(skb)) == NULL) {
+@@ -531,7 +532,6 @@ static netdev_tx_t ipip_tunnel_xmit(stru
+ 	skb->transport_header = skb->network_header;
+ 	skb_push(skb, sizeof(struct iphdr));
+ 	skb_reset_network_header(skb);
+-	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+ 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
+ 			      IPSKB_REROUTED);
+ 	skb_dst_drop(skb);
 
 
