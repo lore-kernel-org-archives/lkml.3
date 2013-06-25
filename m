@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab3FYDHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 23:07:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:6936 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab3FYDH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 23:07:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,933,1363158000"; 
-   d="scan'208";a="322042749"
-Date: Mon, 24 Jun 2013 23:07:21 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
-Message-ID: <20130625030721.GA8211@linux.intel.com>
-References: <20130620201713.GV8211@linux.intel.com>
- <20130623100920.GA19021@gmail.com>
- <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com>
- <20130624071718.GS9422@kernel.dk>
- <20130625001102.GA6623@home.goodmis.org>
+	id S1752353Ab3FYDPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 23:15:09 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:31345 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab3FYDPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 23:15:06 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C90B06.5070802@asianux.com>
+Date: Tue, 25 Jun 2013 11:14:14 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130625001102.GA6623@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?windows-1252?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [Suggestion] arch: avr32: compiler: compiling tools issue
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 08:11:02PM -0400, Steven Rostedt wrote:
-> What about hooking into the idle_balance code? That happens if we are
-> about to go to idle but before the full schedule switch to the idle
-> task.
-> 
-> 
-> In __schedule(void):
-> 
-> 	if (unlikely(!rq->nr_running))
-> 		idle_balance(cpu, rq);
+Hello Maintainers:
 
-That may be a great place to try it from the PoV of the scheduler, but are
-you OK with me threading a struct backing_dev_info * all the way through
-the scheduler to idle_balance()?  :-)
+With allmodconfig, and set "avr32-linux-gnu-" as cross compiler prefix.
+
+It will report error:
+  avr32-linux-gnu-gcc: error: unrecognized command line option ‘-mno-pic’
+  avr32-linux-gnu-gcc: error: unrecognized command line option ‘-march=ap’
+
+The related gcc version:
+  [root@dhcp122 linux-next]# rpm -qf /usr/bin/avr32-linux-gnu-gcc
+  gcc-avr32-linux-gnu-4.7.1-0.1.20120606.fc17.x86_64
+
+Can we say: it is compiler's issue, and I need try to compile the cross
+compiler to test it again ?
+
+Welcome any additional suggestion or completions.
+
+Thanks.
+--
+Chen Gang
+
+Asianux Corporation 
