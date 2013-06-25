@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab3FYRcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:32:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18625 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab3FYRcy (ORCPT
+	id S1752029Ab3FYRfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:35:13 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:43854 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab3FYRfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:32:54 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XqNnylozy48A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pkicDPhlfI0A:10 a=KQVShBsxvV6anhLZ10oA:9 a=QEXdDO2ut3YA:10 a=b9L0sdV2BR1Mxpvk:21 a=Zrp0ClEmbC8YRoEa:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1372181572.18733.225.camel@gandalf.local.home>
-Subject: Re: frequent softlockups with 3.10rc6.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Date: Tue, 25 Jun 2013 13:32:52 -0400
-In-Reply-To: <20130625172609.GA17050@redhat.com>
-References: <20130623160452.GA11740@redhat.com>
-	 <20130624020014.GB12811@redhat.com> <20130624143928.GA20659@redhat.com>
-	 <1372085549.18733.162.camel@gandalf.local.home>
-	 <20130624160012.GB5993@redhat.com>
-	 <1372091079.18733.168.camel@gandalf.local.home>
-	 <20130624165140.GB8572@redhat.com>
-	 <1372093476.18733.170.camel@gandalf.local.home>
-	 <20130625165556.GA16170@redhat.com>
-	 <1372180890.18733.217.camel@gandalf.local.home>
-	 <20130625172609.GA17050@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Jun 2013 13:35:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130620125120.GP2575@8bytes.org>
+References: <CAErSpo7onNaU5mquJ_a7kwGPgzs3Q_7U89__HT9DbJFkUX4fsQ@mail.gmail.com>
+ <20130529083652.GA25971@dhcp-26-207.brq.redhat.com> <CAErSpo4EkXX-UoFLyni+ZpXaTmCRq5sJCqZ4FCt7fywpDyVWqw@mail.gmail.com>
+ <CAErSpo6bjBEK=Ta=pVzwCBMfrqfe3jB-sEfv1Kz9mt9iakdeaA@mail.gmail.com> <20130620125120.GP2575@8bytes.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 25 Jun 2013 11:34:49 -0600
+Message-ID: <CAErSpo5AD0aQtc-EWCQHcviXv-xyC=Gn6Lii8a5MdtFOvpe59w@mail.gmail.com>
+Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
+ multiple-MSIs as requested
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jan Beulich <JBeulich@suse.com>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-25 at 13:26 -0400, Dave Jones wrote:
->  
->  > What's the above saying?  ffff880243288000->prev == 00ffff88023c6cdd but
->  > it should have been ffff88023c6cdd18? That is: ffff88023c6cdd18->next ==
->  > ffff880243288001?
-> 
-> It's saying something has done >>8 on a pointer, and stuck it in a list head.
-> 
+On Thu, Jun 20, 2013 at 6:51 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Mon, Jun 03, 2013 at 02:46:59PM -0600, Bjorn Helgaas wrote:
+>> I pushed these with updates to
+>> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/alexander-msi
+>>
+>> Anybody want to ack the iommu/irq_remapping.c patch?  If so, I can
+>> merge that branch into -next for v3.11.
+>
+> Sorry for being unresponsive, things habe been pretty busy here :-(
+> The changes look good, you have my
+>
+> Acked-by: Joerg Roedel <joro@8bytes.org>
 
-Yes, that's from the "01" in ffff880243288001. The flags held in the
-pointer are never used as an address. That's always encapsulated with
-rb_list_head(), which clears the flags and returns the actual address.
+No problem, thanks!  I added your ack and merged to my -next branch for v3.11.
 
--- Steve
-
-
+Bjorn
