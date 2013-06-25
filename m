@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3FYIUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:20:48 -0400
-Received: from 11.mo1.mail-out.ovh.net ([188.165.48.29]:40044 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751292Ab3FYIUq (ORCPT
+	id S1751946Ab3FYIY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:24:58 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:43280 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab3FYIY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:20:46 -0400
-X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jun 2013 04:20:46 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v2 4/4] at91/avr32/atmel_lcdfb: prepare clk before calling enable
-Date: Tue, 25 Jun 2013 10:14:13 +0200
-Message-Id: <1372148053-4477-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
-References: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 5888456514879846508
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrkedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 25 Jun 2013 04:24:56 -0400
+Message-ID: <51C953CF.4070805@atmel.com>
+Date: Tue, 25 Jun 2013 10:24:47 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Bo Shen <voice.shen@atmel.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, "Wenyou Yang" <wenyou.yang@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: at91/PMC: fix at91sam9n12 USB FS init
+References: <1372071462-29063-1-git-send-email-nicolas.ferre@atmel.com> <51C9264C.6050400@atmel.com>
+In-Reply-To: <51C9264C.6050400@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+On 25/06/2013 07:10, Bo Shen :
+> Hi Nicolas,
+>
+> On 06/24/2013 06:57 PM, Nicolas Ferre wrote:
+>> at91sam9n12 has Full-speed only USB. So we should add
+>> it to the list in at91_pllb_usbfs_clock_init() function.
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>   arch/arm/mach-at91/clock.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+>> index 978de42..2f732d9 100644
+>> --- a/arch/arm/mach-at91/clock.c
+>> +++ b/arch/arm/mach-at91/clock.c
+>> @@ -699,7 +699,7 @@ static void __init
+>> at91_pllb_usbfs_clock_init(unsigned long main_clock)
+>>           at91_pmc_write(AT91_PMC_SCER, AT91RM9200_PMC_MCKUDP);
+>>       } else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() ||
+>>              cpu_is_at91sam9263() || cpu_is_at91sam9g20() ||
+>> -           cpu_is_at91sam9g10()) {
+>> +           cpu_is_at91sam9g10() || cpu_is_at91sam9n12()) {
+>>           uhpck.pmc_mask = AT91SAM926x_PMC_UHP;
+>>           udpck.pmc_mask = AT91SAM926x_PMC_UDP;
+>>       }
+>>
+>
+> As you post the following patches:
+>    ARM: at91/PMC: fix at91sam9n12 USB FS init
+> (https://patchwork.kernel.org/patch/2772301/)
+>
+> This patch no need anymore.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/video/atmel_lcdfb.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Absolutely.
 
-diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
-index 540909d..8525457 100644
---- a/drivers/video/atmel_lcdfb.c
-+++ b/drivers/video/atmel_lcdfb.c
-@@ -893,14 +893,14 @@ static int __init atmel_lcdfb_init_fbinfo(struct atmel_lcdfb_info *sinfo)
- 
- static void atmel_lcdfb_start_clock(struct atmel_lcdfb_info *sinfo)
- {
--	clk_enable(sinfo->bus_clk);
--	clk_enable(sinfo->lcdc_clk);
-+	clk_prepare_enable(sinfo->bus_clk);
-+	clk_prepare_enable(sinfo->lcdc_clk);
- }
- 
- static void atmel_lcdfb_stop_clock(struct atmel_lcdfb_info *sinfo)
- {
--	clk_disable(sinfo->bus_clk);
--	clk_disable(sinfo->lcdc_clk);
-+	clk_disable_unprepare(sinfo->bus_clk);
-+	clk_disable_unprepare(sinfo->lcdc_clk);
- }
- 
- 
+Bye,
 -- 
-1.7.9.5
-
+Nicolas Ferre
