@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab3FYS7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:59:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41055 "EHLO
+	id S1752616Ab3FYSeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:34:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40977 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab3FYSeK (ORCPT
+	with ESMTP id S1752487Ab3FYSd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:10 -0400
+	Tue, 25 Jun 2013 14:33:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kravkov <dkravkov@gmail.com>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Dmitry Kravkov <dmitry@broadcom.com>,
+        Sridhar Samudrala <sri@us.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 61/95] udp6: Fix udp fragmentation for tunnel traffic.
-Date: Tue, 25 Jun 2013 11:32:48 -0700
-Message-Id: <20130625182200.499292003@linuxfoundation.org>
+Subject: [ 47/95] vxlan: Update vxlan fdb used field after each usage
+Date: Tue, 25 Jun 2013 11:32:34 -0700
+Message-Id: <20130625182158.944490094@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -29,99 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pravin B Shelar <pshelar@nicira.com>
+From: Sridhar Samudrala <sri@us.ibm.com>
 
-[ Upstream commit 1e2bd517c108816220f262d7954b697af03b5f9c ]
+[ Upstream commit 014be2c8eac3381e202f684c1f35ae184a8b152b ]
 
-udp6 over GRE tunnel does not work after to GRE tso changes. GRE
-tso handler passes inner packet but keeps track of outer header
-start in SKB_GSO_CB(skb)->mac_offset.  udp6 fragment need to
-take care of outer header, which start at the mac_offset, while
-adding fragment header.
-This bug is introduced by commit 68c3316311 (GRE: Add TCP
-segmentation offload for GRE).
+Fix some instances where vxlan fdb 'used' field is not updated after the entry
+is used.
 
-Reported-by: Dmitry Kravkov <dkravkov@gmail.com>
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
-Tested-by: Dmitry Kravkov <dmitry@broadcom.com>
+v2: rename vxlan_find_mac() as __vxlan_find_mac() and create a new vxlan_find_mac()
+that also updates ->used field.
+
+Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h |   15 +++++++++++++++
- net/ipv6/udp_offload.c |   20 ++++++++++++--------
- 2 files changed, 27 insertions(+), 8 deletions(-)
+ drivers/net/vxlan.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2761,6 +2761,21 @@ static inline int skb_tnl_header_len(con
- 		SKB_GSO_CB(inner_skb)->mac_offset;
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -285,7 +285,7 @@ static inline struct hlist_head *vxlan_f
  }
  
-+static inline int gso_pskb_expand_head(struct sk_buff *skb, int extra)
+ /* Look up Ethernet address in forwarding table */
+-static struct vxlan_fdb *vxlan_find_mac(struct vxlan_dev *vxlan,
++static struct vxlan_fdb *__vxlan_find_mac(struct vxlan_dev *vxlan,
+ 					const u8 *mac)
+ 
+ {
+@@ -300,6 +300,18 @@ static struct vxlan_fdb *vxlan_find_mac(
+ 	return NULL;
+ }
+ 
++static struct vxlan_fdb *vxlan_find_mac(struct vxlan_dev *vxlan,
++					const u8 *mac)
 +{
-+	int new_headroom, headroom;
-+	int ret;
++	struct vxlan_fdb *f;
 +
-+	headroom = skb_headroom(skb);
-+	ret = pskb_expand_head(skb, extra, 0, GFP_ATOMIC);
-+	if (ret)
-+		return ret;
++	f = __vxlan_find_mac(vxlan, mac);
++	if (f)
++		f->used = jiffies;
 +
-+	new_headroom = skb_headroom(skb);
-+	SKB_GSO_CB(skb)->mac_offset += (new_headroom - headroom);
-+	return 0;
++	return f;
 +}
 +
- static inline bool skb_is_gso(const struct sk_buff *skb)
- {
- 	return skb_shinfo(skb)->gso_size;
---- a/net/ipv6/udp_offload.c
-+++ b/net/ipv6/udp_offload.c
-@@ -42,11 +42,12 @@ static struct sk_buff *udp6_ufo_fragment
- 	unsigned int mss;
- 	unsigned int unfrag_ip6hlen, unfrag_len;
- 	struct frag_hdr *fptr;
--	u8 *mac_start, *prevhdr;
-+	u8 *packet_start, *prevhdr;
- 	u8 nexthdr;
- 	u8 frag_hdr_sz = sizeof(struct frag_hdr);
- 	int offset;
- 	__wsum csum;
-+	int tnl_hlen;
+ /* Add new entry to forwarding table -- assumes lock held */
+ static int vxlan_fdb_create(struct vxlan_dev *vxlan,
+ 			    const u8 *mac, __be32 ip,
+@@ -308,7 +320,7 @@ static int vxlan_fdb_create(struct vxlan
+ 	struct vxlan_fdb *f;
+ 	int notify = 0;
  
- 	mss = skb_shinfo(skb)->gso_size;
- 	if (unlikely(skb->len <= mss))
-@@ -77,9 +78,11 @@ static struct sk_buff *udp6_ufo_fragment
- 	skb->ip_summed = CHECKSUM_NONE;
+-	f = vxlan_find_mac(vxlan, mac);
++	f = __vxlan_find_mac(vxlan, mac);
+ 	if (f) {
+ 		if (flags & NLM_F_EXCL) {
+ 			netdev_dbg(vxlan->dev,
+@@ -453,7 +465,6 @@ static void vxlan_snoop(struct net_devic
  
- 	/* Check if there is enough headroom to insert fragment header. */
--	if ((skb_mac_header(skb) < skb->head + frag_hdr_sz) &&
--	    pskb_expand_head(skb, frag_hdr_sz, 0, GFP_ATOMIC))
--		goto out;
-+	tnl_hlen = skb_tnl_header_len(skb);
-+	if (skb_headroom(skb) < (tnl_hlen + frag_hdr_sz)) {
-+		if (gso_pskb_expand_head(skb, tnl_hlen + frag_hdr_sz))
-+			goto out;
-+	}
- 
- 	/* Find the unfragmentable header and shift it left by frag_hdr_sz
- 	 * bytes to insert fragment header.
-@@ -87,11 +90,12 @@ static struct sk_buff *udp6_ufo_fragment
- 	unfrag_ip6hlen = ip6_find_1stfragopt(skb, &prevhdr);
- 	nexthdr = *prevhdr;
- 	*prevhdr = NEXTHDR_FRAGMENT;
--	unfrag_len = skb_network_header(skb) - skb_mac_header(skb) +
--		     unfrag_ip6hlen;
--	mac_start = skb_mac_header(skb);
--	memmove(mac_start-frag_hdr_sz, mac_start, unfrag_len);
-+	unfrag_len = (skb_network_header(skb) - skb_mac_header(skb)) +
-+		     unfrag_ip6hlen + tnl_hlen;
-+	packet_start = (u8 *) skb->head + SKB_GSO_CB(skb)->mac_offset;
-+	memmove(packet_start-frag_hdr_sz, packet_start, unfrag_len);
- 
-+	SKB_GSO_CB(skb)->mac_offset -= frag_hdr_sz;
- 	skb->mac_header -= frag_hdr_sz;
- 	skb->network_header -= frag_hdr_sz;
+ 	f = vxlan_find_mac(vxlan, src_mac);
+ 	if (likely(f)) {
+-		f->used = jiffies;
+ 		if (likely(f->remote_ip == src_ip))
+ 			return;
  
 
 
