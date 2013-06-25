@@ -1,114 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab3FYC6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 22:58:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21748 "EHLO mx1.redhat.com"
+	id S1752275Ab3FYC7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 22:59:04 -0400
+Received: from ozlabs.org ([203.10.76.45]:33020 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab3FYC6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 22:58:44 -0400
-Message-ID: <1372129109.30572.335.camel@ul30vt.home>
-Subject: Re: [PATCH] PCI: avoid NULL deref in alloc_pcie_link_state
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Radim =?UTF-8?Q?Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>
-Date: Mon, 24 Jun 2013 20:58:29 -0600
-In-Reply-To: <CAErSpo7O2YUUq-Ninu+BdmnrDGcU_h5=h=v1MBCoLorSDZW=Ow@mail.gmail.com>
-References: <1371668174-32115-1-git-send-email-rkrcmar@redhat.com>
-	 <CAErSpo7O2YUUq-Ninu+BdmnrDGcU_h5=h=v1MBCoLorSDZW=Ow@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752068Ab3FYC7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 22:59:01 -0400
+Date: Tue, 25 Jun 2013 12:58:58 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de,
+        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ian Munsie <imunsie@au1.ibm.com>
+Subject: Re: [PATCH 40/45] powerpc, irq: Use GFP_ATOMIC allocations in atomic
+ context
+Message-ID: <20130625025858.GE14051@concordia>
+References: <20130623133642.19094.16038.stgit@srivatsabhat.in.ibm.com>
+ <20130623134657.19094.93687.stgit@srivatsabhat.in.ibm.com>
+ <20130625020842.GD14051@concordia>
+ <1372126384.3944.177.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372126384.3944.177.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-24 at 19:38 -0600, Bjorn Helgaas wrote:
-> [+cc Michael, Alex, Isaku]
+On Tue, Jun 25, 2013 at 12:13:04PM +1000, Benjamin Herrenschmidt wrote:
+> On Tue, 2013-06-25 at 12:08 +1000, Michael Ellerman wrote:
+> > We're not checking for allocation failure, which we should be.
+> > 
+> > But this code is only used on powermac and 85xx, so it should probably
+> > just be a TODO to fix this up to handle the failure.
 > 
-> On Wed, Jun 19, 2013 at 12:56 PM, Radim Krčmář <rkrcmar@redhat.com> wrote:
-> > PCIe switch upstream port can be connected directly to the PCIe root bus
-> > in QEMU; ASPM does not expect this topology and dereferences NULL pointer
-> > when initializing.
-> >
-> > I have not confirmed this can happen on real hardware, but it is presented
-> > as a feature in QEMU, so there is no reason to panic if we can recover.
-> 
-> This doesn't seem like a valid hardware topology to me.  If this *can*
-> occur on real hardware, we should fix it in Linux.  If not, maybe QEMU
-> should be changed to disallow it.
+> And what can we do if they fail ?
 
-I think a quad-port 82576 plugged into an express slot is likely the
-same topology.
+Fail up the chain and not unplug the CPU presumably.
 
-> > The dereference happens with topology defined by
-> >   -M q35 -device x3130-upstream,bus=pcie.0,id=upstream \
-> >   -device xio3130-downstream,bus=upstream,id=downstream,chassis=1
-> > where on line drivers/pci/pcie/aspm.c:530 (alloc_pcie_link_state+13):
-> >                 parent = pdev->bus->parent->self->link_state;
-> > "pdev->bus->parent->self == NULL", because "pdev->bus->parent" has no
-> > "->parent", hence no "->self".
-> >
-> > Even though discouraged by QEMU documentation, one can set up even
-> > topology without the upstream port
-> >   -M q35 -device xio3130-downstream,bus=pcie.0,id=downstream,chassis=1
-> > so "pdev->bus->parent == NULL", because "pdev->bus" is the root bus.
-> > The patch checks for this too, because I do not like *NULL.
-
-I don't think this is legal on real hardware.
-
-> > Right now, PCIe switch has to connect to the root port
-> >   -M q35 -device ioh3420,bus=pcie.0,id=root.0 \
-> >   -device x3130-upstream,bus=root.0,id=upstream \
-> >   -device xio3130-downstream,bus=upstream,id=downstream,chassis=1
-> >
-> > Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> > ---
-> >  drivers/pci/pcie/aspm.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-> > index 403a443..1ad1514 100644
-> > --- a/drivers/pci/pcie/aspm.c
-> > +++ b/drivers/pci/pcie/aspm.c
-> > @@ -527,8 +527,8 @@ static struct pcie_link_state *alloc_pcie_link_state(struct pci_dev *pdev)
-> >         link->pdev = pdev;
-> >         if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM) {
-> >                 struct pcie_link_state *parent;
-> > -               parent = pdev->bus->parent->self->link_state;
-> > -               if (!parent) {
-> > +               if (!pdev->bus->parent || !pdev->bus->parent->self ||
-
-I think there's an extra test in here.  Elsewhere we seem to assume that
-if parent exists, then so does parent->self.  So this could be
-simplified to just add:
-
-if (pci_is_root_bus(pdev->bus) {
-	kfree(link);
-	return NULL;
-}
-
-> > +                   !(parent = pdev->bus->parent->self->link_state)) {
-> >                         kfree(link);
-> >                         return NULL;
-> >                 }
-> > --
-> > 1.8.1.4
-> 
-> I don't really want to further complicate the "if" statement you're
-> changing.  The link state allocation is pretty obtuse already, and if
-> this situation only occurs in QEMU, we're likely to break it again
-> when somebody refactors this code.
-
-Maybe the above plus a common exit to avoid duplicate free/return.
-Thanks,
-
-Alex
-
-
+cheers
