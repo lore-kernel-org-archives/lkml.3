@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3FYA7f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 20:59:35 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:56580 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044Ab3FYA7e (ORCPT
+	id S1752534Ab3FYBAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 21:00:41 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45671 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752356Ab3FYBAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 20:59:34 -0400
-X-Spam-Score: -100.7
-Message-ID: <51C8EB41.6060501@asianux.com>
-Date: Tue, 25 Jun 2013 08:58:41 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 24 Jun 2013 21:00:40 -0400
+X-AuditID: 9c93016f-b7b0aae0000032af-a2-51c8ebb513e5
+Message-ID: <51C8EBB5.3040000@lge.com>
+Date: Tue, 25 Jun 2013 10:00:37 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/itimer.c: beautify code, not need check 'value',
- so save one instruction, simpler and easier for readers.t
-References: <51C2E6F9.80107@asianux.com> <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de> <51C3B4B4.90603@asianux.com> <alpine.DEB.2.02.1306242242480.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306242242480.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=GB2312
+To: Andi Kleen <andi@firstfloor.org>
+CC: mingo@kernel.org, hpa@zytor.com, paulus@samba.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf sort: Separate out memory-specific sort
+ keys
+References: <1364991979-3008-3-git-send-email-namhyung@kernel.org> <tip-afab87b91f3f331d55664172dad8e476e6ffca9d@git.kernel.org> <20130625003010.GU6123@two.firstfloor.org>
+In-Reply-To: <20130625003010.GU6123@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 07:28 AM, Thomas Gleixner wrote:
-> On Fri, 21 Jun 2013, Chen Gang wrote:
->>>>> > >> > Also can let code simpler and easier for readers: if checking parameter
->>>>> > >> > 'value', it will easily lead readers to think about why not return
->>>>> > >> > -EINVAL instead of -EFAULT, when checking parameter failed.
->>> > > So you are seriously claiming, that the check for !value makes people
->>> > > think that the return value should be -EINVAL?
->>> > > 
->>> > > That's hillarious.
->>> > > 
->> > That seems not a quite polite word, is it ?  ;-)
-> My apologies for being so impolite. Let me rephrase it. Here is a
-> "sample" changelog for your patch:
-> 
+Hi Andi,
 
-It doesn't matter, I really don't (shouldn't) care about it.
+2013-06-25 AM 9:30, Andi Kleen wrote:
+> On Fri, May 31, 2013 at 04:20:20AM -0700, tip-bot for Namhyung Kim wrote:
+>> perf sort: Separate out memory-specific sort keys
+>>
+>> Since they're used only for perf mem, separate out them to a different
+>> dimension so that normal user cannot access them by any chance.
+>>
+>> For global/local weights, I'm not entirely sure to place them into the
+>> memory dimension.  But it's the only user at this time.
+>
+> So I was finally able to test with this patch, but
+> I found it completely breaks TSX weight abort profiling.
+>
+> It uses weight (global/local), but it's not
+> running in memory mode.
+>
+> I'll send a patch to move weight back into
+> the common keys.
 
-Next time, I should try to send patch carefully, so may save the
-maintainers' timer resource.
+I'm not sure it should move to the common keys as normal perf session 
+won't have those.  I guess you need to set up a couple of TSX-specific 
+sort keys like perf mem, if so what about moving the two weights to your 
+table?
 
-And excuse me for my poor English and either not familiar with kernel, I
-am trying to improve them, and keep improving them.
-
-
->   Subject: itimers: Remove bogus NULL pointer check in sys_getitimer()
-> 
->     People might be tricked into assuming that the return value for a
->     failed NULL pointer check should be -EINVAL instead of -EFAULT.
-> 
->     Remove the misleading NULL pointer check to fix this nuisance.
-> 
->     Aside of that this patch fixes the problem of NOMMU kernels, where
->     a NULL pointer dereference is a valid operation. This allows to
->     boot NOMMU kernels without working around the shortcomings of the
->     getitimer() system call, which have been ignored since this NULL
->     pointer check was introduced in Linux 0.96a.
-> 
-
-Really very good comments, at least for me now, I really can not write a
-comment like that.
-
-> 
-> Please resubmit.
-
-I will send patch v4 (patch v3 has sent, and should be obsoleted)
-
-Thanks.
--- 
-Chen Gang
-
-Asianux Corporation
+Thanks,
+Namhyung
