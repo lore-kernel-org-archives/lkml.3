@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab3FYSdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:33:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40891 "EHLO
+	id S1753856Ab3FYTGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:06:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40936 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3FYSdn (ORCPT
+	with ESMTP id S1752403Ab3FYSdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:43 -0400
+	Tue, 25 Jun 2013 14:33:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [ 28/95] parisc: provide pci_mmap_page_range() for parisc
-Date: Tue, 25 Jun 2013 11:32:15 -0700
-Message-Id: <20130625182156.842578037@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 30/95] x86/efi: Fix dummy variable buffer allocation
+Date: Tue, 25 Jun 2013 11:32:17 -0700
+Message-Id: <20130625182157.050825943@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,69 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 2cc7138f4347df939ce03f313e3d87794bab36f8 upstream.
+commit b8cb62f82103083a6e8fa5470bfe634a2c06514d upstream.
 
-pci_mmap_page_range() is needed for X11-server support on C8000 with ATI
-FireGL card.
+1. Check for allocation failure
+2. Clear the buffer contents, as they may actually be written to flash
+3. Don't leak the buffer
 
-Signed-off-by Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Compile-tested only.
+
+[ Tested successfully on my buggy ASUS machine - Matt ]
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/pci.h |    5 +++++
- arch/parisc/kernel/pci.c      |   27 +++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+)
+ arch/x86/platform/efi/efi.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/parisc/include/asm/pci.h
-+++ b/arch/parisc/include/asm/pci.h
-@@ -225,4 +225,9 @@ static inline int pci_get_legacy_ide_irq
- 	return channel ? 15 : 14;
- }
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -1059,7 +1059,10 @@ efi_status_t efi_query_variable_store(u3
+ 		 * that by attempting to use more space than is available.
+ 		 */
+ 		unsigned long dummy_size = remaining_size + 1024;
+-		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
++		void *dummy = kzalloc(dummy_size, GFP_ATOMIC);
++
++		if (!dummy)
++			return EFI_OUT_OF_RESOURCES;
  
-+#define HAVE_PCI_MMAP
-+
-+extern int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
-+	enum pci_mmap_state mmap_state, int write_combine);
-+
- #endif /* __ASM_PARISC_PCI_H */
---- a/arch/parisc/kernel/pci.c
-+++ b/arch/parisc/kernel/pci.c
-@@ -220,6 +220,33 @@ resource_size_t pcibios_align_resource(v
- }
+ 		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+ 					  EFI_VARIABLE_NON_VOLATILE |
+@@ -1079,6 +1082,8 @@ efi_status_t efi_query_variable_store(u3
+ 					 0, dummy);
+ 		}
  
- 
-+int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
-+			enum pci_mmap_state mmap_state, int write_combine)
-+{
-+	unsigned long prot;
++		kfree(dummy);
 +
-+	/*
-+	 * I/O space can be accessed via normal processor loads and stores on
-+	 * this platform but for now we elect not to do this and portable
-+	 * drivers should not do this anyway.
-+	 */
-+	if (mmap_state == pci_mmap_io)
-+		return -EINVAL;
-+
-+	if (write_combine)
-+		return -EINVAL;
-+
-+	/*
-+	 * Ignore write-combine; for now only return uncached mappings.
-+	 */
-+	prot = pgprot_val(vma->vm_page_prot);
-+	prot |= _PAGE_NO_CACHE;
-+	vma->vm_page_prot = __pgprot(prot);
-+
-+	return remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
-+		vma->vm_end - vma->vm_start, vma->vm_page_prot);
-+}
-+
- /*
-  * A driver is enabling the device.  We make sure that all the appropriate
-  * bits are set to allow the device to operate as the driver is expecting.
+ 		/*
+ 		 * The runtime code may now have triggered a garbage collection
+ 		 * run, so check the variable info again
 
 
