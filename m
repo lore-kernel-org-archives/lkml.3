@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab3FYDhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 23:37:36 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:22562 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab3FYDhf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 23:37:35 -0400
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jun 2013 23:37:34 EDT
-Message-ID: <51C90EC0.1070206@huawei.com>
-Date: Tue, 25 Jun 2013 11:30:08 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752204Ab3FYD4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 23:56:35 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:45686 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751528Ab3FYD4d convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jun 2013 23:56:33 -0400
+From: Bing Zhao <bzhao@marvell.com>
+To: Doug Anderson <dianders@chromium.org>
+CC: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@gmail.com>,
+        Ashok Nagarajan <asnagarajan@chromium.org>,
+        Paul Stewart <pstew@chromium.org>, Olof Johansson <olof@lixom.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Jun 2013 20:54:15 -0700
+Subject: RE: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from
+ STATE_DATA_ERROR
+Thread-Topic: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from
+ STATE_DATA_ERROR
+Thread-Index: Ac5uMCufjr1C5kOuSSelId8rLsG4CADHkr6A
+Message-ID: <477F20668A386D41ADCC57781B1F70430EA2BD5ECB@SC-VEXCH1.marvell.com>
+References: <1363382956-14557-1-git-send-email-dianders@chromium.org>
+	<5146EAB0.1030705@samsung.com>
+	<CAD=FV=Ww-iK=-vg4jnJe6w4836-yQUoUyxNvCYsDQ5w0q-OMMQ@mail.gmail.com>
+	<515E88E3.5070507@samsung.com>
+	<003401ce3453$19d1e8c0$4d75ba40$%jun@samsung.com>
+	<CAD=FV=V+ZZ0MUtuWKUOgR9NPyAquUjFC6KtHvAP-4iHXAYpjqA@mail.gmail.com>
+	<001601ce35b9$652c5870$2f850950$%jun@samsung.com>
+	<CAD=FV=XKeRjpH1+ytjMfLuGGqQ5VVub22n=V+UpV=jBCD4LLHw@mail.gmail.com>
+	<001801ce6c20$6ba39900$42eacb00$%jun@samsung.com>
+	<477F20668A386D41ADCC57781B1F70430EA2AA2513@SC-VEXCH1.marvell.com>
+	<CAD=FV=Xz-Cp86u=w8m91AEMJgH-o6cLkz6_udVw_3bm7Tm0OiA@mail.gmail.com>
+	<477F20668A386D41ADCC57781B1F70430EA2AA251A@SC-VEXCH1.marvell.com>
+ <CAD=FV=V6S7FsK+=+7EHDV74=Mw_iWecO2ZxVpVcd=p7ugW-sHA@mail.gmail.com>
+In-Reply-To: <CAD=FV=V6S7FsK+=+7EHDV74=Mw_iWecO2ZxVpVcd=p7ugW-sHA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: [PATCH 0/2 v3] tracing/uprobes: Support multibuffer and soft-mode
- disabling
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is third version of uprobes-based dynamic events
-multibuffer and soft-mode disabling support work.
 
-[v3]:
-1. separate soft-mode disabling patch from multibuffer support patch.
-2. fix some comments
-3. coding style trivial
-4. fix flags race in probe_event_disable
+> I think the proposal on the table is to take Seungwon's patches
+> instead of mine.  Assuming they solve your problems, I'm OK with that.
+>  I think he was requesting testing the first of his two patches alone
+> and then both of his two patches together.
 
+Test #1: Swungwon's patch #1 alone [1]
+Test #2: Swungwon's patch #2 alone [1]
+Test #3: Swungwon's patch #1 and #2 [1]
+Test #4: Doug's original patch [2]
 
-zhangwei(Jovi) (2):
-  tracing/uprobes: Support ftrace_event_file base multibuffer
-  tracing/uprobes: Support soft-mode disabling
+Test #1 and #3: it doesn't work; system reboots due to kernel hung_task
+Test #2 and #4: it works; instead of hung_task driver gets CRC error (which is expected)
 
- kernel/trace/trace_uprobe.c |  121 +++++++++++++++++++++++++++++++++++--------
- 1 file changed, 100 insertions(+), 21 deletions(-)
+Thanks,
+Bing
 
--- 
-1.7.9.7
-
+[1] https://lkml.org/lkml/2013/4/8/316
+[2] https://lkml.org/lkml/2013/3/15/583
 
