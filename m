@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab3FYS5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:57:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41091 "EHLO
+	id S1753312Ab3FYS5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:57:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41080 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab3FYSeP (ORCPT
+	with ESMTP id S1752659Ab3FYSeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:15 -0400
+	Tue, 25 Jun 2013 14:34:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 69/95] team: check return value of team_get_port_by_index_rcu() for NULL
-Date: Tue, 25 Jun 2013 11:32:56 -0700
-Message-Id: <20130625182201.389801943@linuxfoundation.org>
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 65/95] net_sched: htb: do not mix 1ns and 64ns time units
+Date: Tue, 25 Jun 2013 11:32:52 -0700
+Message-Id: <20130625182200.921897498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,34 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 76c455decbbad31de21c727edb184a963f42b40b ]
+[ Upstream commit 5343a7f8be11951cb3095b91e8e4eb506cfacc0f ]
 
-team_get_port_by_index_rcu() might return NULL due to race between port
-removal and skb tx path. Panic is easily triggeable when txing packets
-and adding/removing port in a loop.
+commit 56b765b79 ("htb: improved accuracy at high rates") added another
+regression for low rates, because it mixes 1ns and 64ns time units.
 
-introduced by commit 3d249d4ca "net: introduce ethernet teaming device"
-and commit 753f993911b "team: introduce random mode" (for random mode)
+So the maximum delay (mbuffer) was not 60 second, but 937 ms.
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Lets convert all time fields to 1ns as 64bit arches are becoming the
+norm.
+
+Reported-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/team/team_mode_roundrobin.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/sched/sch_htb.c |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/drivers/net/team/team_mode_roundrobin.c
-+++ b/drivers/net/team/team_mode_roundrobin.c
-@@ -52,6 +52,8 @@ static bool rr_transmit(struct team *tea
+--- a/net/sched/sch_htb.c
++++ b/net/sched/sch_htb.c
+@@ -109,7 +109,7 @@ struct htb_class {
+ 	} un;
+ 	struct rb_node node[TC_HTB_NUMPRIO];	/* node for self or feed tree */
+ 	struct rb_node pq_node;	/* node for event queue */
+-	psched_time_t pq_key;
++	s64	pq_key;
  
- 	port_index = rr_priv(team)->sent_packets++ % team->en_port_count;
- 	port = team_get_port_by_index_rcu(team, port_index);
-+	if (unlikely(!port))
-+		goto drop;
- 	port = __get_first_port_up(team, port);
- 	if (unlikely(!port))
- 		goto drop;
+ 	int prio_activity;	/* for which prios are we active */
+ 	enum htb_cmode cmode;	/* current mode of the class */
+@@ -121,10 +121,10 @@ struct htb_class {
+ 	/* token bucket parameters */
+ 	struct psched_ratecfg rate;
+ 	struct psched_ratecfg ceil;
+-	s64 buffer, cbuffer;	/* token bucket depth/rate */
+-	psched_tdiff_t mbuffer;	/* max wait time */
+-	s64 tokens, ctokens;	/* current number of tokens */
+-	psched_time_t t_c;	/* checkpoint time */
++	s64	buffer, cbuffer;	/* token bucket depth/rate */
++	s64	mbuffer;		/* max wait time */
++	s64	tokens, ctokens;	/* current number of tokens */
++	s64	t_c;			/* checkpoint time */
+ };
+ 
+ struct htb_sched {
+@@ -141,15 +141,15 @@ struct htb_sched {
+ 	struct rb_root wait_pq[TC_HTB_MAXDEPTH];
+ 
+ 	/* time of nearest event per level (row) */
+-	psched_time_t near_ev_cache[TC_HTB_MAXDEPTH];
++	s64	near_ev_cache[TC_HTB_MAXDEPTH];
+ 
+ 	int defcls;		/* class where unclassified flows go to */
+ 
+ 	/* filters for qdisc itself */
+ 	struct tcf_proto *filter_list;
+ 
+-	int rate2quantum;	/* quant = rate / rate2quantum */
+-	psched_time_t now;	/* cached dequeue time */
++	int	rate2quantum;	/* quant = rate / rate2quantum */
++	s64	now;	/* cached dequeue time */
+ 	struct qdisc_watchdog watchdog;
+ 
+ 	/* non shaped skbs; let them go directly thru */
+@@ -664,8 +664,8 @@ static void htb_charge_class(struct htb_
+  * next pending event (0 for no event in pq, q->now for too many events).
+  * Note: Applied are events whose have cl->pq_key <= q->now.
+  */
+-static psched_time_t htb_do_events(struct htb_sched *q, int level,
+-				   unsigned long start)
++static s64 htb_do_events(struct htb_sched *q, int level,
++			 unsigned long start)
+ {
+ 	/* don't run for longer than 2 jiffies; 2 is used instead of
+ 	 * 1 to simplify things when jiffy is going to be incremented
+@@ -857,7 +857,7 @@ static struct sk_buff *htb_dequeue(struc
+ 	struct sk_buff *skb;
+ 	struct htb_sched *q = qdisc_priv(sch);
+ 	int level;
+-	psched_time_t next_event;
++	s64 next_event;
+ 	unsigned long start_at;
+ 
+ 	/* try to dequeue direct packets as high prio (!) to minimize cpu work */
+@@ -880,7 +880,7 @@ ok:
+ 	for (level = 0; level < TC_HTB_MAXDEPTH; level++) {
+ 		/* common case optimization - skip event handler quickly */
+ 		int m;
+-		psched_time_t event;
++		s64 event;
+ 
+ 		if (q->now >= q->near_ev_cache[level]) {
+ 			event = htb_do_events(q, level, start_at);
+@@ -1116,8 +1116,8 @@ htb_dump_class_stats(struct Qdisc *sch,
+ 
+ 	if (!cl->level && cl->un.leaf.q)
+ 		cl->qstats.qlen = cl->un.leaf.q->q.qlen;
+-	cl->xstats.tokens = cl->tokens;
+-	cl->xstats.ctokens = cl->ctokens;
++	cl->xstats.tokens = PSCHED_NS2TICKS(cl->tokens);
++	cl->xstats.ctokens = PSCHED_NS2TICKS(cl->ctokens);
+ 
+ 	if (gnet_stats_copy_basic(d, &cl->bstats) < 0 ||
+ 	    gnet_stats_copy_rate_est(d, NULL, &cl->rate_est) < 0 ||
+@@ -1199,7 +1199,7 @@ static void htb_parent_to_leaf(struct ht
+ 	parent->un.leaf.q = new_q ? new_q : &noop_qdisc;
+ 	parent->tokens = parent->buffer;
+ 	parent->ctokens = parent->cbuffer;
+-	parent->t_c = psched_get_time();
++	parent->t_c = ktime_to_ns(ktime_get());
+ 	parent->cmode = HTB_CAN_SEND;
+ }
+ 
+@@ -1416,8 +1416,8 @@ static int htb_change_class(struct Qdisc
+ 		/* set class to be in HTB_CAN_SEND state */
+ 		cl->tokens = PSCHED_TICKS2NS(hopt->buffer);
+ 		cl->ctokens = PSCHED_TICKS2NS(hopt->cbuffer);
+-		cl->mbuffer = 60 * PSCHED_TICKS_PER_SEC;	/* 1min */
+-		cl->t_c = psched_get_time();
++		cl->mbuffer = 60ULL * NSEC_PER_SEC;	/* 1min */
++		cl->t_c = ktime_to_ns(ktime_get());
+ 		cl->cmode = HTB_CAN_SEND;
+ 
+ 		/* attach to the hash list and parent's family */
 
 
