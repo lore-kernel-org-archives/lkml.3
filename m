@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3FYN1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 09:27:55 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:26683 "EHLO multi.imgtec.com"
+	id S1751994Ab3FYNaJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 09:30:09 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:23384 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab3FYN1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 09:27:54 -0400
-Message-ID: <51C99AB5.1080002@imgtec.com>
-Date: Tue, 25 Jun 2013 14:27:17 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751458Ab3FYNaH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 09:30:07 -0400
+Date: Tue, 25 Jun 2013 15:29:25 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver
+Message-ID: <20130625132925.GC30827@ab42.lan>
+References: <20130530211944.05F4D3E0A90@localhost>
+ <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com>
+ <alpine.LFD.2.02.1305311835040.2905@ionos>
+ <20130531221814.534DF3E08FE@localhost>
+ <51AC15FA.4060800@synopsys.com>
+ <CACxGe6se9rqOdLAqj7XQ+Awa5HP+2k1t7pN1AYOAPdiL2o3AjQ@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/4] pinctrl: remove slew-rate parameter from tz1090
-References: <201306251455.01540.heiko@sntech.de> <201306251456.36499.heiko@sntech.de> <51C99581.2010403@imgtec.com> <201306251521.55634.heiko@sntech.de>
-In-Reply-To: <201306251521.55634.heiko@sntech.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_06_25_14_27_53
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACxGe6se9rqOdLAqj7XQ+Awa5HP+2k1t7pN1AYOAPdiL2o3AjQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/13 14:21, Heiko Stübner wrote:
-> Am Dienstag, 25. Juni 2013, 15:05:05 schrieb James Hogan:
->> Hi Heiko,
->>
->> On 25/06/13 13:56, Heiko Stübner wrote:
->>> As the binding for slew-rate is under discussion and seems to need
->>> more tought it will get removed for now, so it doesn't get an offical
->>
->> s/tought/thought/
->> s/offical/official/
->>
->>> release.
->>>
->>> Therefore remove it again from the only current user, tz1090.
->>>
->>> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
->>> ---
->>
->> <snip>
->>
->>> diff --git a/drivers/pinctrl/pinctrl-tz1090-pdc.c
->>> b/drivers/pinctrl/pinctrl-tz1090-pdc.c index 12e4808..d4f12cc 100644
->>> --- a/drivers/pinctrl/pinctrl-tz1090-pdc.c
->>> +++ b/drivers/pinctrl/pinctrl-tz1090-pdc.c
->>> @@ -809,11 +809,6 @@ static int tz1090_pdc_pinconf_group_reg(struct
->>> pinctrl_dev *pctldev,
->>>
->>>  		*width = 1;
->>>  		*map = tz1090_pdc_boolean_map;
->>>  		break;
->>>
->>> -	case PIN_CONFIG_SLEW_RATE:
->>> -		*shift = REG_GPIO_CONTROL2_PDC_SR_S;
->>> -		*width = 1;
->>> -		*map = tz1090_pdc_boolean_map;
->>> -		break;
->>>
->>>  	case PIN_CONFIG_DRIVE_STRENGTH:
->>>  		*shift = REG_GPIO_CONTROL2_PDC_DR_S;
->>>  		*width = 2;
->>>
->>> diff --git a/drivers/pinctrl/pinctrl-tz1090.c
->>> b/drivers/pinctrl/pinctrl-tz1090.c index 02ff3a2..4edae08 100644
->>> --- a/drivers/pinctrl/pinctrl-tz1090.c
->>> +++ b/drivers/pinctrl/pinctrl-tz1090.c
->>> @@ -1834,11 +1834,6 @@ static int tz1090_pinconf_group_reg(struct
->>> pinctrl_dev *pctldev,
->>>
->>>  		*width = 1;
->>>  		*map = tz1090_boolean_map;
->>>  		break;
->>>
->>> -	case PIN_CONFIG_SLEW_RATE:
->>> -		*reg = REG_PINCTRL_SR;
->>> -		*width = 1;
->>> -		*map = tz1090_boolean_map;
->>> -		break;
->>>
->>>  	case PIN_CONFIG_DRIVE_STRENGTH:
->>>  		*reg = REG_PINCTRL_DR;
->>>  		*width = 2;
->>
->> I don't see the harm in keeping the handling of PIN_CONFIG_SLEW_RATE,
->> since PIN_CONFIG_SLEW_RATE is still present and you only seem to be
->> removing the device tree bindings (which is the only important bit from
->> the DT ABI point of view).
+On Mon, Jun 03, 2013 at 10:51:06AM +0100, Grant Likely wrote:
+> On Mon, Jun 3, 2013 at 5:05 AM, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+> > On 06/01/2013 03:48 AM, Grant Likely wrote:
+> >> If I were working on this system I'd drop the
+> >> snps,arc700-intc node entirely and have a single abilis,tb10x-intc that
+> >> encapsulated the properties of both (you would of course want to share
+> >> handler functions for the 'normal' inputs without the custom features).
+> >> That would eliminate the goofyness of listing 27 separate interrupts in
+> >> the abilis,tb10x-ictl interrupts property.
+> >
+> > But how is this different from other systems with a primary in-core intc and a
+> > cascaded external intc. How do they do it. I guess I need to read up more on this.
 > 
-> I'm partial to this :-)
-> 
-> My thoughts were that this code would never be reached when the parsing was 
-> removed and to not cause confusion to the driver when an acceptable binding 
-> was found for slew-rate.
-> 
-> But it of course also doesn't hurt to stay in.
+> Usually cascaded irq controllers have multiple irqs multiplexed onto a
+> single irq on the parent controller. It's the 1:1 situation that makes
+> this controller odd.
 
-Okay, fair enough.
+You're right, this might be a bit confusing. The controller was mainly
+designed as a compatibility layer between ARC770 built-in interrupts and
+the rest of the system.
 
-Acked-by: James Hogan <james.hogan@imgtec.com>
+Do you see a better way to drive this kind of hardware? Do you have any
+other comments on the driver?
 
-Cheers
-James
+Without this driver, arch/arc/plat-tb10x and related drivers will not
+work and it would thus be good to have this in the kernel as quickly as
+possible if there are no more issues with it.
 
+Greetings,
+  Christian
+
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pr�-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
