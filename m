@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab3FYO3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:29:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1472 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113Ab3FYO3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:29:03 -0400
-Date: Tue, 25 Jun 2013 17:29:46 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Asias He <asias@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCHv2] vhost-net: fix use-after-free in vhost_net_flush
-Message-ID: <20130625142946.GA17414@redhat.com>
+	id S1752169Ab3FYOaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:30:07 -0400
+Received: from mail.windriver.com ([147.11.1.11]:64159 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab3FYOaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 10:30:04 -0400
+Message-ID: <51C9A992.7010209@windriver.com>
+Date: Tue, 25 Jun 2013 10:30:42 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 25/32] cpufreq: delete __cpuinit usage from all cpufreq
+ files
+References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com> <1372102237-8757-26-git-send-email-paul.gortmaker@windriver.com> <CAKohponpsJBqbj_8u8MUiu7sCEpeg5bcztWJAZdn9uxL5taVZQ@mail.gmail.com>
+In-Reply-To: <CAKohponpsJBqbj_8u8MUiu7sCEpeg5bcztWJAZdn9uxL5taVZQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vhost_net_ubuf_put_and_wait has a confusing name:
-it will actually also free it's argument.
-Thus since commit 1280c27f8e29acf4af2da914e80ec27c3dbd5c01
-    "vhost-net: flush outstanding DMAs on memory change"
-vhost_net_flush tries to use the argument after passing it
-to vhost_net_ubuf_put_and_wait, this results
-in use after free.
-To fix, don't free the argument in vhost_net_ubuf_put_and_wait,
-add an new API for callers that want to free ubufs.
+On 13-06-24 11:31 PM, Viresh Kumar wrote:
+> On 25 June 2013 01:00, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+> 
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index f8c2860..5687d28 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -1900,8 +1900,8 @@ no_policy:
+>>  }
+>>  EXPORT_SYMBOL(cpufreq_update_policy);
+>>
+>> -static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+>> -                                       unsigned long action, void *hcpu)
+>> +static int cpufreq_cpu_callback(struct notifier_block *nfb,
+>> +                               unsigned long action, void *hcpu)
+> 
+> You were not required to change second line here and also don't
+> change its indentation level. Check this everywhere.
+> 
 
-Acked-by: Asias He <asias@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+[...]
 
----
+Since you've explicitly requested it, I've left all second lines
+of args untouched in v2, now pushed to the patch queue:
 
-Please review, and queue for 3.10 and stable.
-Changes since v1:
-	- no functional change, tweaked the commit message
+http://git.kernel.org/cgit/linux/kernel/git/paulg/cpuinit-delete.git
 
- drivers/vhost/net.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+> 
+> Fix these and add my
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> 
+> Probably this can go through Rafael's pm tree. So, you can take it
+> out of this series if you want.
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 5c77d6a..534adb0 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -149,6 +149,11 @@ static void vhost_net_ubuf_put_and_wait(struct vhost_net_ubuf_ref *ubufs)
- {
- 	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
- 	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
-+}
-+
-+static void vhost_net_ubuf_put_wait_and_free(struct vhost_net_ubuf_ref *ubufs)
-+{
-+	vhost_net_ubuf_put_and_wait(ubufs);
- 	kfree(ubufs);
- }
- 
-@@ -1073,7 +1078,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
- 	mutex_unlock(&vq->mutex);
- 
- 	if (oldubufs) {
--		vhost_net_ubuf_put_and_wait(oldubufs);
-+		vhost_net_ubuf_put_wait_and_free(oldubufs);
- 		mutex_lock(&vq->mutex);
- 		vhost_zerocopy_signal_used(n, vq);
- 		mutex_unlock(&vq->mutex);
-@@ -1091,7 +1096,7 @@ err_used:
- 	vq->private_data = oldsock;
- 	vhost_net_enable_vq(n, vq);
- 	if (ubufs)
--		vhost_net_ubuf_put_and_wait(ubufs);
-+		vhost_net_ubuf_put_wait_and_free(ubufs);
- err_ubufs:
- 	fput(sock->file);
- err_vq:
--- 
-MST
+I'd encourage people to not take the patches into their specific
+trees unless they really feel a specific need to do so.  It will
+keep the majority of them clumped together in git history that way.
+
+Thanks,
+Paul.
+--
+
+> 
