@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab3FYSv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:51:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41172 "EHLO
+	id S1753637Ab3FYSvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:51:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41164 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab3FYSe1 (ORCPT
+	with ESMTP id S1752827Ab3FYSeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:27 -0400
+	Tue, 25 Jun 2013 14:34:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 91/95] perf: Fix perf mmap bugs
-Date: Tue, 25 Jun 2013 11:33:18 -0700
-Message-Id: <20130625182203.909446585@linuxfoundation.org>
+        Shawn Joseph <jms.576@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 84/95] Input: xpad - fix for "Mad Catz Street Fighter IV FightPad" controllers
+Date: Tue, 25 Jun 2013 11:33:11 -0700
+Message-Id: <20130625182203.113715280@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -30,171 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Shawn Joseph <jms.576@gmail.com>
 
-commit 26cb63ad11e04047a64309362674bcbbd6a6f246 upstream.
+commit be66227151c0cd4da536098c3ee07809101c6faa upstream.
 
-Vince reported a problem found by his perf specific trinity
-fuzzer.
+Added MAP_TRIGGERS_TO_BUTTONS for Mad Catz Street Fighter IV FightPad
+device. This controller model was already supported by the xpad
+driver, but none of the buttons work correctly without this change.
 
-Al noticed 2 problems with perf's mmap():
+Tested on kernel version 3.9.5.
 
- - it has issues against fork() since we use vma->vm_mm for accounting.
- - it has an rb refcount leak on double mmap().
-
-We fix the issues against fork() by using VM_DONTCOPY; I don't
-think there's code out there that uses this; we didn't hear
-about weird accounting problems/crashes. If we do need this to
-work, the previously proposed VM_PINNED could make this work.
-
-Aside from the rb reference leak spotted by Al, Vince's example
-prog was indeed doing a double mmap() through the use of
-perf_event_set_output().
-
-This exposes another problem, since we now have 2 events with
-one buffer, the accounting gets screwy because we account per
-event. Fix this by making the buffer responsible for its own
-accounting.
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Link: http://lkml.kernel.org/r/20130528085548.GA12193@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Shawn Joseph <jms.576@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/perf_event.h |    3 +--
- kernel/events/core.c       |   37 ++++++++++++++++++++-----------------
- kernel/events/internal.h   |    3 +++
- 3 files changed, 24 insertions(+), 19 deletions(-)
+ drivers/input/joystick/xpad.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -404,8 +404,7 @@ struct perf_event {
- 	/* mmap bits */
- 	struct mutex			mmap_mutex;
- 	atomic_t			mmap_count;
--	int				mmap_locked;
--	struct user_struct		*mmap_user;
-+
- 	struct ring_buffer		*rb;
- 	struct list_head		rb_entry;
- 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2866,7 +2866,7 @@ static void free_event_rcu(struct rcu_he
- 	kfree(event);
- }
- 
--static void ring_buffer_put(struct ring_buffer *rb);
-+static bool ring_buffer_put(struct ring_buffer *rb);
- 
- static void free_event(struct perf_event *event)
- {
-@@ -3531,13 +3531,13 @@ static struct ring_buffer *ring_buffer_g
- 	return rb;
- }
- 
--static void ring_buffer_put(struct ring_buffer *rb)
-+static bool ring_buffer_put(struct ring_buffer *rb)
- {
- 	struct perf_event *event, *n;
- 	unsigned long flags;
- 
- 	if (!atomic_dec_and_test(&rb->refcount))
--		return;
-+		return false;
- 
- 	spin_lock_irqsave(&rb->event_lock, flags);
- 	list_for_each_entry_safe(event, n, &rb->event_list, rb_entry) {
-@@ -3547,6 +3547,7 @@ static void ring_buffer_put(struct ring_
- 	spin_unlock_irqrestore(&rb->event_lock, flags);
- 
- 	call_rcu(&rb->rcu_head, rb_free_rcu);
-+	return true;
- }
- 
- static void perf_mmap_open(struct vm_area_struct *vma)
-@@ -3561,18 +3562,20 @@ static void perf_mmap_close(struct vm_ar
- 	struct perf_event *event = vma->vm_file->private_data;
- 
- 	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
--		unsigned long size = perf_data_size(event->rb);
--		struct user_struct *user = event->mmap_user;
- 		struct ring_buffer *rb = event->rb;
-+		struct user_struct *mmap_user = rb->mmap_user;
-+		int mmap_locked = rb->mmap_locked;
-+		unsigned long size = perf_data_size(rb);
- 
--		atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
--		vma->vm_mm->pinned_vm -= event->mmap_locked;
- 		rcu_assign_pointer(event->rb, NULL);
- 		ring_buffer_detach(event, rb);
- 		mutex_unlock(&event->mmap_mutex);
- 
--		ring_buffer_put(rb);
--		free_uid(user);
-+		if (ring_buffer_put(rb)) {
-+			atomic_long_sub((size >> PAGE_SHIFT) + 1, &mmap_user->locked_vm);
-+			vma->vm_mm->pinned_vm -= mmap_locked;
-+			free_uid(mmap_user);
-+		}
- 	}
- }
- 
-@@ -3625,9 +3628,7 @@ static int perf_mmap(struct file *file,
- 	WARN_ON_ONCE(event->ctx->parent_ctx);
- 	mutex_lock(&event->mmap_mutex);
- 	if (event->rb) {
--		if (event->rb->nr_pages == nr_pages)
--			atomic_inc(&event->rb->refcount);
--		else
-+		if (event->rb->nr_pages != nr_pages)
- 			ret = -EINVAL;
- 		goto unlock;
- 	}
-@@ -3669,12 +3670,14 @@ static int perf_mmap(struct file *file,
- 		ret = -ENOMEM;
- 		goto unlock;
- 	}
--	rcu_assign_pointer(event->rb, rb);
-+
-+	rb->mmap_locked = extra;
-+	rb->mmap_user = get_current_user();
- 
- 	atomic_long_add(user_extra, &user->locked_vm);
--	event->mmap_locked = extra;
--	event->mmap_user = get_current_user();
--	vma->vm_mm->pinned_vm += event->mmap_locked;
-+	vma->vm_mm->pinned_vm += extra;
-+
-+	rcu_assign_pointer(event->rb, rb);
- 
- 	perf_event_update_userpage(event);
- 
-@@ -3683,7 +3686,7 @@ unlock:
- 		atomic_inc(&event->mmap_count);
- 	mutex_unlock(&event->mmap_mutex);
- 
--	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-+	vma->vm_flags |= VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
- 	vma->vm_ops = &perf_mmap_vmops;
- 
- 	return ret;
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -31,6 +31,9 @@ struct ring_buffer {
- 	spinlock_t			event_lock;
- 	struct list_head		event_list;
- 
-+	int				mmap_locked;
-+	struct user_struct		*mmap_user;
-+
- 	struct perf_event_mmap_page	*user_page;
- 	void				*data_pages[0];
- };
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -137,7 +137,7 @@ static const struct xpad_device {
+ 	{ 0x0738, 0x4540, "Mad Catz Beat Pad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
+ 	{ 0x0738, 0x4556, "Mad Catz Lynx Wireless Controller", 0, XTYPE_XBOX },
+ 	{ 0x0738, 0x4716, "Mad Catz Wired Xbox 360 Controller", 0, XTYPE_XBOX360 },
+-	{ 0x0738, 0x4728, "Mad Catz Street Fighter IV FightPad", XTYPE_XBOX360 },
++	{ 0x0738, 0x4728, "Mad Catz Street Fighter IV FightPad", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x0738, 0x4738, "Mad Catz Wired Xbox 360 Controller (SFIV)", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x0738, 0x6040, "Mad Catz Beat Pad Pro", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
+ 	{ 0x0738, 0xbeef, "Mad Catz JOYTECH NEO SE Advanced GamePad", XTYPE_XBOX360 },
 
 
