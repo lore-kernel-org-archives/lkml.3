@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab3FYSvv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:51:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41164 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab3FYSeZ (ORCPT
+	id S1753767Ab3FYSv5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:51:57 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:37398 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab3FYSvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Joseph <jms.576@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 84/95] Input: xpad - fix for "Mad Catz Street Fighter IV FightPad" controllers
-Date: Tue, 25 Jun 2013 11:33:11 -0700
-Message-Id: <20130625182203.113715280@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
-References: <20130625182153.605455184@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 25 Jun 2013 14:51:52 -0400
+Date: Tue, 25 Jun 2013 11:51:46 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rculist: list_first_or_null_rcu() should use
+ list_entry_rcu()
+Message-ID: <20130625185146.GE20051@mtj.dyndns.org>
+References: <20130621003244.GD11837@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130621003244.GD11837@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jun 20, 2013 at 05:32:44PM -0700, Tejun Heo wrote:
+> list_first_or_null() should test whether the list is empty and return
+> pointer to the first entry if not in a RCU safe manner.  It's broken
+> in two ways.
+> 
+> * It compares __kernel @__ptr with __rcu @__next triggering the
+>   following sparse warning.
+> 
+>   net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
+> 
+> * It doesn't perform rcu_dereference*() and computes the entry address
+>   using container_of() directly from the __rcu pointer which is
+>   inconsitent with other rculist interface.  As a result, all three
+>   in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
+>   dereference the pointer w/o going through read barrier.
+> 
+> Fix it by making list_first_or_null_rcu() dereference ->next directly
+> and then use list_entry_rcu() on it like other rculist accessors.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Dipankar Sarma <dipankar@in.ibm.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Cc: stable@vger.kernel.org
 
-------------------
+Paul, ping.
 
-From: Shawn Joseph <jms.576@gmail.com>
-
-commit be66227151c0cd4da536098c3ee07809101c6faa upstream.
-
-Added MAP_TRIGGERS_TO_BUTTONS for Mad Catz Street Fighter IV FightPad
-device. This controller model was already supported by the xpad
-driver, but none of the buttons work correctly without this change.
-
-Tested on kernel version 3.9.5.
-
-Signed-off-by: Shawn Joseph <jms.576@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/input/joystick/xpad.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -137,7 +137,7 @@ static const struct xpad_device {
- 	{ 0x0738, 0x4540, "Mad Catz Beat Pad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
- 	{ 0x0738, 0x4556, "Mad Catz Lynx Wireless Controller", 0, XTYPE_XBOX },
- 	{ 0x0738, 0x4716, "Mad Catz Wired Xbox 360 Controller", 0, XTYPE_XBOX360 },
--	{ 0x0738, 0x4728, "Mad Catz Street Fighter IV FightPad", XTYPE_XBOX360 },
-+	{ 0x0738, 0x4728, "Mad Catz Street Fighter IV FightPad", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0x0738, 0x4738, "Mad Catz Wired Xbox 360 Controller (SFIV)", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0x0738, 0x6040, "Mad Catz Beat Pad Pro", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
- 	{ 0x0738, 0xbeef, "Mad Catz JOYTECH NEO SE Advanced GamePad", XTYPE_XBOX360 },
-
-
+-- 
+tejun
