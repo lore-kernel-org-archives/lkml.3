@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab3FYSsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:48:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41241 "EHLO
+	id S1753116Ab3FYSfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:35:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41213 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3FYSf4 (ORCPT
+	with ESMTP id S1753085Ab3FYSft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:35:56 -0400
+	Tue, 25 Jun 2013 14:35:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Halilov <vlad.halilov@gmail.com>, Paul Moore <pmoore@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/27] netlabel: improve domain mapping validation
-Date: Tue, 25 Jun 2013 11:35:28 -0700
-Message-Id: <20130625183518.766476489@linuxfoundation.org>
+        Jeremy Rosen <jeremy.rosen@openwide.fr>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 02/27] ALSA: usb-audio: work around Android accessory firmware bug
+Date: Tue, 25 Jun 2013 11:35:21 -0700
+Message-Id: <20130625183517.965044212@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
@@ -27,116 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-[ Upstream commit 6b21e1b77d1a3d58ebfd513264c885695e8a0ba5 ]
+commit 342cda29343a6272c630f94ed56810a76740251b upstream.
 
-The net/netlabel/netlabel_domainhash.c:netlbl_domhsh_add() function
-does not properly validate new domain hash entries resulting in
-potential problems when an administrator attempts to add an invalid
-entry.  One such problem, as reported by Vlad Halilov, is a kernel
-BUG (found in netlabel_domainhash.c:netlbl_domhsh_audit_add()) when
-adding an IPv6 outbound mapping with a CIPSO configuration.
+When the Android firmware enables the audio interfaces in accessory
+mode, it always declares in the control interface's baInterfaceNr array
+that interfaces 0 and 1 belong to the audio function.  However, the
+accessory interface itself, if also enabled, already is at index 0 and
+shifts the actual audio interface numbers to 1 and 2, which prevents the
+PCM streaming interface from being seen by the host driver.
 
-This patch corrects this problem by adding the necessary validation
-code to netlbl_domhsh_add() via the newly created
-netlbl_domhsh_validate() function.
+To get the PCM interface interface to work, detect when the descriptors
+point to the (for this driver useless) accessory interface, and redirect
+to the correct one.
 
-Ideally this patch should also be pushed to the currently active
--stable trees.
-
-Reported-by: Vlad Halilov <vlad.halilov@gmail.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
+Tested-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/netlabel/netlabel_domainhash.c |   69 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 69 insertions(+)
 
---- a/net/netlabel/netlabel_domainhash.c
-+++ b/net/netlabel/netlabel_domainhash.c
-@@ -245,6 +245,71 @@ static void netlbl_domhsh_audit_add(stru
+---
+ sound/usb/card.c |   22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
+
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -149,14 +149,32 @@ static int snd_usb_create_stream(struct
+ 		return -EINVAL;
  	}
- }
  
-+/**
-+ * netlbl_domhsh_validate - Validate a new domain mapping entry
-+ * @entry: the entry to validate
-+ *
-+ * This function validates the new domain mapping entry to ensure that it is
-+ * a valid entry.  Returns zero on success, negative values on failure.
-+ *
-+ */
-+static int netlbl_domhsh_validate(const struct netlbl_dom_map *entry)
-+{
-+	struct netlbl_af4list *iter4;
-+	struct netlbl_domaddr4_map *map4;
-+#if IS_ENABLED(CONFIG_IPV6)
-+	struct netlbl_af6list *iter6;
-+	struct netlbl_domaddr6_map *map6;
-+#endif /* IPv6 */
++	alts = &iface->altsetting[0];
++	altsd = get_iface_desc(alts);
 +
-+	if (entry == NULL)
-+		return -EINVAL;
-+
-+	switch (entry->type) {
-+	case NETLBL_NLTYPE_UNLABELED:
-+		if (entry->type_def.cipsov4 != NULL ||
-+		    entry->type_def.addrsel != NULL)
++	/*
++	 * Android with both accessory and audio interfaces enabled gets the
++	 * interface numbers wrong.
++	 */
++	if ((chip->usb_id == USB_ID(0x18d1, 0x2d04) ||
++	     chip->usb_id == USB_ID(0x18d1, 0x2d05)) &&
++	    interface == 0 &&
++	    altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC &&
++	    altsd->bInterfaceSubClass == USB_SUBCLASS_VENDOR_SPEC) {
++		interface = 2;
++		iface = usb_ifnum_to_if(dev, interface);
++		if (!iface)
 +			return -EINVAL;
-+		break;
-+	case NETLBL_NLTYPE_CIPSOV4:
-+		if (entry->type_def.cipsov4 == NULL)
-+			return -EINVAL;
-+		break;
-+	case NETLBL_NLTYPE_ADDRSELECT:
-+		netlbl_af4list_foreach(iter4, &entry->type_def.addrsel->list4) {
-+			map4 = netlbl_domhsh_addr4_entry(iter4);
-+			switch (map4->type) {
-+			case NETLBL_NLTYPE_UNLABELED:
-+				if (map4->type_def.cipsov4 != NULL)
-+					return -EINVAL;
-+				break;
-+			case NETLBL_NLTYPE_CIPSOV4:
-+				if (map4->type_def.cipsov4 == NULL)
-+					return -EINVAL;
-+				break;
-+			default:
-+				return -EINVAL;
-+			}
-+		}
-+#if IS_ENABLED(CONFIG_IPV6)
-+		netlbl_af6list_foreach(iter6, &entry->type_def.addrsel->list6) {
-+			map6 = netlbl_domhsh_addr6_entry(iter6);
-+			switch (map6->type) {
-+			case NETLBL_NLTYPE_UNLABELED:
-+				break;
-+			default:
-+				return -EINVAL;
-+			}
-+		}
-+#endif /* IPv6 */
-+		break;
-+	default:
-+		return -EINVAL;
++		alts = &iface->altsetting[0];
++		altsd = get_iface_desc(alts);
 +	}
 +
-+	return 0;
-+}
-+
- /*
-  * Domain Hash Table Functions
-  */
-@@ -311,6 +376,10 @@ int netlbl_domhsh_add(struct netlbl_dom_
- 	struct netlbl_af6list *tmp6;
- #endif /* IPv6 */
+ 	if (usb_interface_claimed(iface)) {
+ 		snd_printdd(KERN_INFO "%d:%d:%d: skipping, already claimed\n",
+ 						dev->devnum, ctrlif, interface);
+ 		return -EINVAL;
+ 	}
  
-+	ret_val = netlbl_domhsh_validate(entry);
-+	if (ret_val != 0)
-+		return ret_val;
-+
- 	/* XXX - we can remove this RCU read lock as the spinlock protects the
- 	 *       entire function, but before we do we need to fixup the
- 	 *       netlbl_af[4,6]list RCU functions to do "the right thing" with
+-	alts = &iface->altsetting[0];
+-	altsd = get_iface_desc(alts);
+ 	if ((altsd->bInterfaceClass == USB_CLASS_AUDIO ||
+ 	     altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC) &&
+ 	    altsd->bInterfaceSubClass == USB_SUBCLASS_MIDISTREAMING) {
 
 
