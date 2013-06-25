@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab3FYRzb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:55:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1466 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab3FYRz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:55:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="360315058"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "bp@alien8.de" <bp@alien8.de>
-CC: "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
-        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: RE: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
- banks listed in APEI HEST CMC
-Thread-Topic: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
- banks listed in APEI HEST CMC
-Thread-Index: AQHOccwSjjVlORDVjkS9g/z7o8WmYJlGtWoQ
-Date: Tue, 25 Jun 2013 17:55:27 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31C54AF9@ORSMSX106.amr.corp.intel.com>
-References: <20130621174057.GI22006@pd.tnic>
- <20130625174536.5226.66421.stgit@localhost.localdomain>
-In-Reply-To: <20130625174536.5226.66421.stgit@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1752014Ab3FYRzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:55:44 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45157 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750830Ab3FYRzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 13:55:43 -0400
+Date: Tue, 25 Jun 2013 13:55:42 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+cc: Greg KH <gregkh@linuxfoundation.org>, <devel@linuxdriverproject.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <shigekatsu.tateno@atmel.com>
+Subject: Re: [PATCH] staging: ozwpan: Convert printk to dev_dbg()
+In-Reply-To: <51C9D818.1090702@atmel.com>
+Message-ID: <Pine.LNX.4.44L0.1306251352150.1340-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5PHtcGa030812
 
-+/*
-+ * Indicates MCA banks controlled by the current cpu for CMCI. Note that this
-+ * can change when a cpu is offlined or brought online since some MCA banks
-+ * are shared across cpus. When a cpu is offlined, cmci_clear() disables CMCI
-+ * on all banks owned by the cpu and clears this bitfield. At this point,
-+ * cmci_rediscover() kicks in and a different cpu may end up taking
-+ * ownership of some of the shared MCA banks that were previously owned
-+ * by the offlined cpu.
-+ */
- static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
+On Tue, 25 Jun 2013, Rupesh Gujare wrote:
 
-Maybe an extra sentence or two at the beginning to say *why* we need this.
-E.g.
+> On 25/06/13 18:02, Greg KH wrote:
+> > On Tue, Jun 25, 2013 at 05:30:02PM +0100, Rupesh Gujare wrote:
+> >> convert all debug messages from printk to dev_dbg() & add kernel config to
+> >> enable/disable these messages during compilation.
+> > No, just use the built-in dynamic debug code in the kernel, no need to
+> > provide any new macros or functions or most importantly, no new Kconfig
+> > options.
+> >
+> 
+> New macro (oz_trace) is being used as pointer to "struct device *" is 
+> not available in all functions for dev_dbg() function.
+> Please let me know if there is better way to handle this, I will be 
+> happy to rework on this.
 
-/*
- * CMCI can be delivered to multiple cpus that share a machine check bank
- * so we need to designate a single cpu to process errors logged in each bank
- * in the interrupt handler (otherwise we would have many races and potential
- * double reporting of the same error.
- */
-...
+It depends on the situation.  In many cases there _is_ a struct device
+associated with the log message, even if a pointer to that device isn't
+available in the function.  The proper solution in those cases is to
+make it available, by passing the function an extra "struct device *"
+argument.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+In a few cases there really is no device associated with the message.  
+For example, if the module prints out a message when it is first 
+loaded, there probably is no device around at that time.  However, in 
+most cases there _is_ an associated device.
+
+Alan Stern
+
