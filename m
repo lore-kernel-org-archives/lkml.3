@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab3FYTMk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:12:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40854 "EHLO
+	id S1753937Ab3FYTMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:12:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40843 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab3FYSde (ORCPT
+	with ESMTP id S1752014Ab3FYSdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:34 -0400
+	Tue, 25 Jun 2013 14:33:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 15/95] parisc: remove the second argument of kmap_atomic()
-Date: Tue, 25 Jun 2013 11:32:02 -0700
-Message-Id: <20130625182155.370346465@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [ 16/95] parisc: implement irq stacks - part 2 (v2)
+Date: Tue, 25 Jun 2013 11:32:03 -0700
+Message-Id: <20130625182155.487598533@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -30,45 +26,269 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhao Hongjiang <zhaohongjiang@huawei.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 1ab4ce762370b82870834899e49c08129d7ae271 upstream.
+commit 416821d3d68164909b2cbcf398e4ba0797f5f8a2 upstream.
 
-kmap_atomic() requires only one argument now.
+This patch fixes few build issues which were introduced with the last
+irq stack patch, e.g. the combination of stack overflow check and irq
+stack.
 
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Furthermore we now do proper locking and change the irq bh handler
+to use the irq stack as well.
+
+In /proc/interrupts one now can monitor how huge the irq stack has grown
+and how often it was preferred over the kernel stack.
+
+IRQ stacks are now enabled by default just to make sure that we not
+overflow the kernel stack by accident.
+
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/cache.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/parisc/Kconfig                 |    2 
+ arch/parisc/include/asm/hardirq.h   |    9 +++
+ arch/parisc/include/asm/processor.h |    3 +
+ arch/parisc/kernel/irq.c            |  103 ++++++++++++++++++++++++++++++------
+ arch/parisc/mm/init.c               |    4 -
+ 5 files changed, 103 insertions(+), 18 deletions(-)
 
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -606,7 +606,7 @@ void clear_user_highpage(struct page *pa
- 	/* Clear using TMPALIAS region.  The page doesn't need to
- 	   be flushed but the kernel mapping needs to be purged.  */
+--- a/arch/parisc/Kconfig
++++ b/arch/parisc/Kconfig
+@@ -243,7 +243,7 @@ config SMP
  
--	vto = kmap_atomic(page, KM_USER0);
-+	vto = kmap_atomic(page);
+ config IRQSTACKS
+ 	bool "Use separate kernel stacks when processing interrupts"
+-	default n
++	default y
+ 	help
+ 	  If you say Y here the kernel will use separate kernel stacks
+ 	  for handling hard and soft interrupts.  This can help avoid
+--- a/arch/parisc/include/asm/hardirq.h
++++ b/arch/parisc/include/asm/hardirq.h
+@@ -11,10 +11,18 @@
+ #include <linux/threads.h>
+ #include <linux/irq.h>
  
- 	/* The PA-RISC 2.0 Architecture book states on page F-6:
- 	   "Before a write-capable translation is enabled, *all*
-@@ -641,8 +641,8 @@ void copy_user_highpage(struct page *to,
- 	   the `to' page must be flushed in copy_user_page_asm since
- 	   it can be used to bring in executable code.  */
++#ifdef CONFIG_IRQSTACKS
++#define __ARCH_HAS_DO_SOFTIRQ
++#endif
++
+ typedef struct {
+ 	unsigned int __softirq_pending;
+ #ifdef CONFIG_DEBUG_STACKOVERFLOW
+ 	unsigned int kernel_stack_usage;
++#ifdef CONFIG_IRQSTACKS
++	unsigned int irq_stack_usage;
++	unsigned int irq_stack_counter;
++#endif
+ #endif
+ #ifdef CONFIG_SMP
+ 	unsigned int irq_resched_count;
+@@ -28,6 +36,7 @@ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpust
+ #define __ARCH_IRQ_STAT
+ #define __IRQ_STAT(cpu, member) (irq_stat[cpu].member)
+ #define inc_irq_stat(member)	this_cpu_inc(irq_stat.member)
++#define __inc_irq_stat(member)	__this_cpu_inc(irq_stat.member)
+ #define local_softirq_pending()	this_cpu_read(irq_stat.__softirq_pending)
  
--	vfrom = kmap_atomic(from, KM_USER0);
--	vto = kmap_atomic(to, KM_USER1);
-+	vfrom = kmap_atomic(from);
-+	vto = kmap_atomic(to);
+ #define __ARCH_SET_SOFTIRQ_PENDING
+--- a/arch/parisc/include/asm/processor.h
++++ b/arch/parisc/include/asm/processor.h
+@@ -63,10 +63,13 @@
+  */
+ #ifdef __KERNEL__
  
- 	purge_kernel_dcache_page_asm((unsigned long)vto);
- 	purge_tlb_start(flags);
++#include <linux/spinlock_types.h>
++
+ #define IRQ_STACK_SIZE      (4096 << 2) /* 16k irq stack size */
+ 
+ union irq_stack_union {
+ 	unsigned long stack[IRQ_STACK_SIZE/sizeof(unsigned long)];
++	raw_spinlock_t lock;
+ };
+ 
+ DECLARE_PER_CPU(union irq_stack_union, irq_stack_union);
+--- a/arch/parisc/kernel/irq.c
++++ b/arch/parisc/kernel/irq.c
+@@ -166,22 +166,32 @@ int arch_show_interrupts(struct seq_file
+ 	seq_printf(p, "%*s: ", prec, "STK");
+ 	for_each_online_cpu(j)
+ 		seq_printf(p, "%10u ", irq_stats(j)->kernel_stack_usage);
+-	seq_printf(p, "  Kernel stack usage\n");
++	seq_puts(p, "  Kernel stack usage\n");
++# ifdef CONFIG_IRQSTACKS
++	seq_printf(p, "%*s: ", prec, "IST");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_stack_usage);
++	seq_puts(p, "  Interrupt stack usage\n");
++	seq_printf(p, "%*s: ", prec, "ISC");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_stack_counter);
++	seq_puts(p, "  Interrupt stack usage counter\n");
++# endif
+ #endif
+ #ifdef CONFIG_SMP
+ 	seq_printf(p, "%*s: ", prec, "RES");
+ 	for_each_online_cpu(j)
+ 		seq_printf(p, "%10u ", irq_stats(j)->irq_resched_count);
+-	seq_printf(p, "  Rescheduling interrupts\n");
++	seq_puts(p, "  Rescheduling interrupts\n");
+ 	seq_printf(p, "%*s: ", prec, "CAL");
+ 	for_each_online_cpu(j)
+ 		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
+-	seq_printf(p, "  Function call interrupts\n");
++	seq_puts(p, "  Function call interrupts\n");
+ #endif
+ 	seq_printf(p, "%*s: ", prec, "TLB");
+ 	for_each_online_cpu(j)
+ 		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
+-	seq_printf(p, "  TLB shootdowns\n");
++	seq_puts(p, "  TLB shootdowns\n");
+ 	return 0;
+ }
+ 
+@@ -378,6 +388,7 @@ static inline void stack_overflow_check(
+ 	unsigned long sp = regs->gr[30];
+ 	unsigned long stack_usage;
+ 	unsigned int *last_usage;
++	int cpu = smp_processor_id();
+ 
+ 	/* if sr7 != 0, we interrupted a userspace process which we do not want
+ 	 * to check for stack overflow. We will only check the kernel stack. */
+@@ -386,7 +397,31 @@ static inline void stack_overflow_check(
+ 
+ 	/* calculate kernel stack usage */
+ 	stack_usage = sp - stack_start;
+-	last_usage = &per_cpu(irq_stat.kernel_stack_usage, smp_processor_id());
++#ifdef CONFIG_IRQSTACKS
++	if (likely(stack_usage <= THREAD_SIZE))
++		goto check_kernel_stack; /* found kernel stack */
++
++	/* check irq stack usage */
++	stack_start = (unsigned long) &per_cpu(irq_stack_union, cpu).stack;
++	stack_usage = sp - stack_start;
++
++	last_usage = &per_cpu(irq_stat.irq_stack_usage, cpu);
++	if (unlikely(stack_usage > *last_usage))
++		*last_usage = stack_usage;
++
++	if (likely(stack_usage < (IRQ_STACK_SIZE - STACK_MARGIN)))
++		return;
++
++	pr_emerg("stackcheck: %s will most likely overflow irq stack "
++		 "(sp:%lx, stk bottom-top:%lx-%lx)\n",
++		current->comm, sp, stack_start, stack_start + IRQ_STACK_SIZE);
++	goto panic_check;
++
++check_kernel_stack:
++#endif
++
++	/* check kernel stack usage */
++	last_usage = &per_cpu(irq_stat.kernel_stack_usage, cpu);
+ 
+ 	if (unlikely(stack_usage > *last_usage))
+ 		*last_usage = stack_usage;
+@@ -398,31 +433,69 @@ static inline void stack_overflow_check(
+ 		 "(sp:%lx, stk bottom-top:%lx-%lx)\n",
+ 		current->comm, sp, stack_start, stack_start + THREAD_SIZE);
+ 
++#ifdef CONFIG_IRQSTACKS
++panic_check:
++#endif
+ 	if (sysctl_panic_on_stackoverflow)
+ 		panic("low stack detected by irq handler - check messages\n");
+ #endif
+ }
+ 
+ #ifdef CONFIG_IRQSTACKS
+-DEFINE_PER_CPU(union irq_stack_union, irq_stack_union);
++DEFINE_PER_CPU(union irq_stack_union, irq_stack_union) = {
++		.lock = __RAW_SPIN_LOCK_UNLOCKED((irq_stack_union).lock)
++	};
+ 
+ static void execute_on_irq_stack(void *func, unsigned long param1)
+ {
+-	unsigned long *irq_stack_start;
++	union irq_stack_union *union_ptr;
+ 	unsigned long irq_stack;
+-	int cpu = smp_processor_id();
++	raw_spinlock_t *irq_stack_in_use;
+ 
+-	irq_stack_start = &per_cpu(irq_stack_union, cpu).stack[0];
+-	irq_stack = (unsigned long) irq_stack_start;
+-	irq_stack = ALIGN(irq_stack, 16); /* align for stack frame usage */
+-
+-	BUG_ON(*irq_stack_start); /* report bug if we were called recursive. */
+-	*irq_stack_start = 1;
++	union_ptr = &per_cpu(irq_stack_union, smp_processor_id());
++	irq_stack = (unsigned long) &union_ptr->stack;
++	irq_stack = ALIGN(irq_stack + sizeof(irq_stack_union.lock),
++			 64); /* align for stack frame usage */
++
++	/* We may be called recursive. If we are already using the irq stack,
++	 * just continue to use it. Use spinlocks to serialize
++	 * the irq stack usage.
++	 */
++	irq_stack_in_use = &union_ptr->lock;
++	if (!raw_spin_trylock(irq_stack_in_use)) {
++		void (*direct_call)(unsigned long p1) = func;
++
++		/* We are using the IRQ stack already.
++		 * Do direct call on current stack. */
++		direct_call(param1);
++		return;
++	}
+ 
+ 	/* This is where we switch to the IRQ stack. */
+ 	call_on_stack(param1, func, irq_stack);
+ 
+-	*irq_stack_start = 0;
++	__inc_irq_stat(irq_stack_counter);
++
++	/* free up irq stack usage. */
++	do_raw_spin_unlock(irq_stack_in_use);
++}
++
++asmlinkage void do_softirq(void)
++{
++	__u32 pending;
++	unsigned long flags;
++
++	if (in_interrupt())
++		return;
++
++	local_irq_save(flags);
++
++	pending = local_softirq_pending();
++
++	if (pending)
++		execute_on_irq_stack(__do_softirq, 0);
++
++	local_irq_restore(flags);
+ }
+ #endif /* CONFIG_IRQSTACKS */
+ 
+--- a/arch/parisc/mm/init.c
++++ b/arch/parisc/mm/init.c
+@@ -1077,7 +1077,7 @@ void flush_tlb_all(void)
+ {
+ 	int do_recycle;
+ 
+-	inc_irq_stat(irq_tlb_count);
++	__inc_irq_stat(irq_tlb_count);
+ 	do_recycle = 0;
+ 	spin_lock(&sid_lock);
+ 	if (dirty_space_ids > RECYCLE_THRESHOLD) {
+@@ -1098,7 +1098,7 @@ void flush_tlb_all(void)
+ #else
+ void flush_tlb_all(void)
+ {
+-	inc_irq_stat(irq_tlb_count);
++	__inc_irq_stat(irq_tlb_count);
+ 	spin_lock(&sid_lock);
+ 	flush_tlb_all_local(NULL);
+ 	recycle_sids();
 
 
