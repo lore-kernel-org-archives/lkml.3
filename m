@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab3FYOno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:43:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40840 "EHLO comal.ext.ti.com"
+	id S1751777Ab3FYOqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:46:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59432 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab3FYOnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:43:42 -0400
-Message-ID: <51C9AC69.6060604@ti.com>
-Date: Tue, 25 Jun 2013 10:42:49 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751256Ab3FYOqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 10:46:06 -0400
+Date: Tue, 25 Jun 2013 16:45:29 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
+Message-ID: <20130625144529.GL23329@krava.brq.redhat.com>
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
+ <1372079772-20803-13-git-send-email-adrian.hunter@intel.com>
+ <CABPqkBRoRgHUM5ahHmvYXJ1BkHncm9Z2GZkzuRFbsNfh4=HJ6g@mail.gmail.com>
+ <51C98969.40401@intel.com>
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Joel A Fernandes <joelagnel@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Rob Landley <rob@landley.net>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Matt Porter <matt@ohporter.com>
-Subject: Re: [PATCH v12 00/11] DMA Engine support for AM33XX
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <20130624101903.GV5523@atomide.com> <51C85958.9030502@ti.com> <20130625065450.GY5523@atomide.com> <51C9A634.6030605@ti.com>
-In-Reply-To: <51C9A634.6030605@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C98969.40401@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 June 2013 10:16 AM, Sekhar Nori wrote:
-> On 6/25/2013 12:24 PM, Tony Lindgren wrote:
->> * Benoit Cousson <b-cousson@ti.com> [130624 07:42]:
->>> Hi Tony,
->>>
->>> On 06/24/2013 12:19 PM, Tony Lindgren wrote:
->>>> Hi,
->>>>
->>>> For merging this series, I suggest the following sets:
->>>>
->>>> * Joel A Fernandes <joelagnel@ti.com> [130620 14:13]:
->>>>>
->>>>> Joel A Fernandes (3):
->>>>>   edma: config: Enable config options for EDMA
->>>>>   da8xx: config: Enable MMC and FS options
->>>>>   ARM: davinci: Fix compiler warnings in devices-da8xx
->>>>>
->>>>> Matt Porter (8):
->>>>>   dmaengine: edma: Add TI EDMA device tree binding
->>>>>   ARM: edma: Add DT and runtime PM support to the private EDMA API
->>>>>   ARM: edma: Add EDMA crossbar event mux support
->>>>>   dmaengine: edma: enable build for AM33XX
->>>>
->>>> Sekhar should queue the above patches, I've acked the
->>>> mach-omap2/Kconfig change.
->>>>
->>>>>   spi: omap2-mcspi: add generic DMA request support to the DT binding
->>>>>   spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
->>>>
->>>>
->>>> The spi changes should get merged via the driver list.
->>>>
->>>>>   ARM: dts: add AM33XX EDMA support
->>>>>   ARM: dts: add AM33XX SPI DMA support
->>>>
->>>> Benoit should queue the .dts changes.
->>>
->>> I'll do that, but do you consider them for 3.11?
->>
->> Yes right after -rc1 if it makes the DMA work. We almost
->> certainly need to send few branches of fixes after -rc1 once
->> we find out what might have broken by the removal of the
->> hwmod data..
-> 
-> The DMA related changes went into arm-soc yesterday. So it should be
-> safe to send the DT patches in before the merge window opens. If Tony is
-> done with sending his pull requests may be Benoit can send to arm-soc
-> directly?
-> 
-I was just typing the same thing. Even if Tony send them during rc's,
-thats fine.
+On Tue, Jun 25, 2013 at 03:13:29PM +0300, Adrian Hunter wrote:
+> On 25/06/13 14:23, Stephane Eranian wrote:
+> > On Mon, Jun 24, 2013 at 3:16 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+> >> Sample types need not be identical to determine
+> >> the sample id from the event.  Only the position
+> >> of the sample id needs to be the same.
+> >>
+> >> Compatible sample types are ones in which the bits
+> >> defined by PERF_COMPAT_MASK are the same.
+> >> 'perf_evlist__config()' forces sample types to be
+> >> compatible on that basis.
+> >>
 
-Regards,
-Santosh
+nice idea
 
+> > This is indeed a major flaw of the current sampling buffer format.
+> > I have a patch coming to address this from the kernel side.
+> > 
+> > I am trying to understand this patch and I am confused by the
+> > description and especially the structure of COMPAT_MASK.
+> > 
+> > I agree that if the SAMPLE_ID position remains constant then
+> > it can be extracted from the body of the sample uniformly.
+> > The only way to guarantee a fixed position is by ensuring that
+> > all the sample_types before SAMPLE_ID and either set or
+> > unset. By before I don't mean in the enum order but in the
+> > order in which the kernel lays them various sample_types
+> > in the buffer. And that's determined by perf_output_sample().
+> > So I don't understand why PERF_SAMPLE_CPU and
+> > PERF_SAMPLE_STREAM_ID  are here.
+> > 
+> > Any explanation?
+
++1 for more comments in changelog and code ;-)
+
+> 
+> There are 2 sample formats: one for sample events and one for other events
+> (the id sample).  In perf tools refer __perf_evsel__parse_sample() vs
+> perf_evsel__parse_id_sample().
+
+For non sample events the ID info is stored backwards via:
+__perf_event__output_id_sample kernel func.
+
+Why do you use PERF_SAMPLE_STREAM_ID in this case instead
+of the PERF_SAMPLE_ID as for sample events.. ? apart from
+one more condition in __perf_evsel__calc_is_pos function.
+
+AFAICS PERF_SAMPLE_STREAM_ID holds same id value as PERF_SAMPLE_ID,
+but I guess it has some other meaning.. if not for now, maybe meant
+something else for the future ;-) not sure
+
+jirka
