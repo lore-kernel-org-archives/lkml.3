@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab3FYUeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:34:17 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34416 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab3FYUeM (ORCPT
+	id S1753883Ab3FYUek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:34:40 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:44301 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823Ab3FYUeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:34:12 -0400
+	Tue, 25 Jun 2013 16:34:36 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 29/45] kvm/vmx: Use get/put_online_cpus_atomic() to prevent
+Subject: [PATCH v2 30/45] x86/xen: Use get/put_online_cpus_atomic() to prevent
  CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
@@ -20,12 +20,15 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 02:00:43 +0530
-Message-ID: <20130625203043.16593.1600.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 26 Jun 2013 02:00:57 +0530
+Message-ID: <20130625203057.16593.50205.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
 References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -33,7 +36,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062520-5140-0000-0000-0000036DD677
+x-cbid: 13062607-3568-0000-0000-000003D4B1FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -45,74 +48,46 @@ from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
 offline, while invoking from atomic context.
 
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
-Cc: kvm@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Cc: virtualization@lists.linux-foundation.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kvm/vmx.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/xen/mmu.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 260a919..4e1e966 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -26,6 +26,7 @@
- #include <linux/mm.h>
- #include <linux/highmem.h>
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index fdc3ba2..3229c4f 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -39,6 +39,7 @@
+  * Jeremy Fitzhardinge <jeremy@xensource.com>, XenSource Inc, 2007
+  */
  #include <linux/sched.h>
 +#include <linux/cpu.h>
- #include <linux/moduleparam.h>
- #include <linux/mod_devicetable.h>
- #include <linux/ftrace_event.h>
-@@ -7164,12 +7165,12 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
- 	if (!vmm_exclusive)
- 		kvm_cpu_vmxoff();
- 
--	cpu = get_cpu();
-+	cpu = get_online_cpus_atomic();
- 	vmx_vcpu_load(&vmx->vcpu, cpu);
- 	vmx->vcpu.cpu = cpu;
- 	err = vmx_vcpu_setup(vmx);
- 	vmx_vcpu_put(&vmx->vcpu);
--	put_cpu();
-+	put_online_cpus_atomic();
- 	if (err)
- 		goto free_vmcs;
- 	if (vm_need_virtualize_apic_accesses(kvm)) {
-@@ -7706,12 +7707,12 @@ static int nested_vmx_run(struct kvm_vcpu *vcpu, bool launch)
- 
- 	vmx->nested.vmcs01_tsc_offset = vmcs_read64(TSC_OFFSET);
- 
--	cpu = get_cpu();
-+	cpu = get_online_cpus_atomic();
- 	vmx->loaded_vmcs = vmcs02;
- 	vmx_vcpu_put(vcpu);
- 	vmx_vcpu_load(vcpu, cpu);
- 	vcpu->cpu = cpu;
+ #include <linux/highmem.h>
+ #include <linux/debugfs.h>
+ #include <linux/bug.h>
+@@ -1163,9 +1164,13 @@ static void xen_drop_mm_ref(struct mm_struct *mm)
+  */
+ static void xen_exit_mmap(struct mm_struct *mm)
+ {
+-	get_cpu();		/* make sure we don't move around */
++	/*
++	 * Make sure we don't move around, and also prevent CPUs from
++	 * going offline.
++	 */
++	get_online_cpus_atomic();
+ 	xen_drop_mm_ref(mm);
 -	put_cpu();
 +	put_online_cpus_atomic();
  
- 	vmx_segment_cache_clear(vmx);
- 
-@@ -8023,12 +8024,12 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu)
- 	leave_guest_mode(vcpu);
- 	prepare_vmcs12(vcpu, vmcs12);
- 
--	cpu = get_cpu();
-+	cpu = get_online_cpus_atomic();
- 	vmx->loaded_vmcs = &vmx->vmcs01;
- 	vmx_vcpu_put(vcpu);
- 	vmx_vcpu_load(vcpu, cpu);
- 	vcpu->cpu = cpu;
--	put_cpu();
-+	put_online_cpus_atomic();
- 
- 	vmx_segment_cache_clear(vmx);
+ 	spin_lock(&mm->page_table_lock);
  
 
