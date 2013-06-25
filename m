@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab3FYS5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:57:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41080 "EHLO
+	id S1753839Ab3FYS5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:57:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41068 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659Ab3FYSeM (ORCPT
+	with ESMTP id S1752641Ab3FYSeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:12 -0400
+	Tue, 25 Jun 2013 14:34:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jesper Dangaard Brouer <brouer@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Eric Dumazet <edumazet@google.com>, Vimalkumar <j.vimal@gmail.com>,
+        Jiri Pirko <jpirko@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 65/95] net_sched: htb: do not mix 1ns and 64ns time units
-Date: Tue, 25 Jun 2013 11:32:52 -0700
-Message-Id: <20130625182200.921897498@linuxfoundation.org>
+Subject: [ 63/95] net_sched: restore "overhead xxx" handling
+Date: Tue, 25 Jun 2013 11:32:50 -0700
+Message-Id: <20130625182200.705267147@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -30,129 +31,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 5343a7f8be11951cb3095b91e8e4eb506cfacc0f ]
+[ Upstream commit 01cb71d2d47b78354358e4bb938bb06323e17498 ]
 
-commit 56b765b79 ("htb: improved accuracy at high rates") added another
-regression for low rates, because it mixes 1ns and 64ns time units.
+commit 56b765b79 ("htb: improved accuracy at high rates")
+broke the "overhead xxx" handling, as well as the "linklayer atm"
+attribute.
 
-So the maximum delay (mbuffer) was not 60 second, but 937 ms.
+tc class add ... htb rate X ceil Y linklayer atm overhead 10
 
-Lets convert all time fields to 1ns as 64bit arches are becoming the
-norm.
+This patch restores the "overhead xxx" handling, for htb, tbf
+and act_police
+
+The "linklayer atm" thing needs a separate fix.
 
 Reported-by: Jesper Dangaard Brouer <brouer@redhat.com>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Cc: Vimalkumar <j.vimal@gmail.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_htb.c |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ include/net/sch_generic.h |   18 +++++++++++-------
+ net/sched/act_police.c    |    8 ++++----
+ net/sched/sch_generic.c   |    8 +++++---
+ net/sched/sch_htb.c       |    8 ++++----
+ net/sched/sch_tbf.c       |    8 ++++----
+ 5 files changed, 28 insertions(+), 22 deletions(-)
 
---- a/net/sched/sch_htb.c
-+++ b/net/sched/sch_htb.c
-@@ -109,7 +109,7 @@ struct htb_class {
- 	} un;
- 	struct rb_node node[TC_HTB_NUMPRIO];	/* node for self or feed tree */
- 	struct rb_node pq_node;	/* node for event queue */
--	psched_time_t pq_key;
-+	s64	pq_key;
+--- a/include/net/sch_generic.h
++++ b/include/net/sch_generic.h
+@@ -679,22 +679,26 @@ static inline struct sk_buff *skb_act_cl
+ #endif
  
- 	int prio_activity;	/* for which prios are we active */
- 	enum htb_cmode cmode;	/* current mode of the class */
-@@ -121,10 +121,10 @@ struct htb_class {
- 	/* token bucket parameters */
- 	struct psched_ratecfg rate;
- 	struct psched_ratecfg ceil;
--	s64 buffer, cbuffer;	/* token bucket depth/rate */
--	psched_tdiff_t mbuffer;	/* max wait time */
--	s64 tokens, ctokens;	/* current number of tokens */
--	psched_time_t t_c;	/* checkpoint time */
-+	s64	buffer, cbuffer;	/* token bucket depth/rate */
-+	s64	mbuffer;		/* max wait time */
-+	s64	tokens, ctokens;	/* current number of tokens */
-+	s64	t_c;			/* checkpoint time */
+ struct psched_ratecfg {
+-	u64 rate_bps;
+-	u32 mult;
+-	u32 shift;
++	u64	rate_bps;
++	u32	mult;
++	u16	overhead;
++	u8	shift;
  };
  
- struct htb_sched {
-@@ -141,15 +141,15 @@ struct htb_sched {
- 	struct rb_root wait_pq[TC_HTB_MAXDEPTH];
- 
- 	/* time of nearest event per level (row) */
--	psched_time_t near_ev_cache[TC_HTB_MAXDEPTH];
-+	s64	near_ev_cache[TC_HTB_MAXDEPTH];
- 
- 	int defcls;		/* class where unclassified flows go to */
- 
- 	/* filters for qdisc itself */
- 	struct tcf_proto *filter_list;
- 
--	int rate2quantum;	/* quant = rate / rate2quantum */
--	psched_time_t now;	/* cached dequeue time */
-+	int	rate2quantum;	/* quant = rate / rate2quantum */
-+	s64	now;	/* cached dequeue time */
- 	struct qdisc_watchdog watchdog;
- 
- 	/* non shaped skbs; let them go directly thru */
-@@ -664,8 +664,8 @@ static void htb_charge_class(struct htb_
-  * next pending event (0 for no event in pq, q->now for too many events).
-  * Note: Applied are events whose have cl->pq_key <= q->now.
-  */
--static psched_time_t htb_do_events(struct htb_sched *q, int level,
--				   unsigned long start)
-+static s64 htb_do_events(struct htb_sched *q, int level,
-+			 unsigned long start)
+ static inline u64 psched_l2t_ns(const struct psched_ratecfg *r,
+ 				unsigned int len)
  {
- 	/* don't run for longer than 2 jiffies; 2 is used instead of
- 	 * 1 to simplify things when jiffy is going to be incremented
-@@ -857,7 +857,7 @@ static struct sk_buff *htb_dequeue(struc
- 	struct sk_buff *skb;
- 	struct htb_sched *q = qdisc_priv(sch);
- 	int level;
--	psched_time_t next_event;
-+	s64 next_event;
- 	unsigned long start_at;
- 
- 	/* try to dequeue direct packets as high prio (!) to minimize cpu work */
-@@ -880,7 +880,7 @@ ok:
- 	for (level = 0; level < TC_HTB_MAXDEPTH; level++) {
- 		/* common case optimization - skip event handler quickly */
- 		int m;
--		psched_time_t event;
-+		s64 event;
- 
- 		if (q->now >= q->near_ev_cache[level]) {
- 			event = htb_do_events(q, level, start_at);
-@@ -1116,8 +1116,8 @@ htb_dump_class_stats(struct Qdisc *sch,
- 
- 	if (!cl->level && cl->un.leaf.q)
- 		cl->qstats.qlen = cl->un.leaf.q->q.qlen;
--	cl->xstats.tokens = cl->tokens;
--	cl->xstats.ctokens = cl->ctokens;
-+	cl->xstats.tokens = PSCHED_NS2TICKS(cl->tokens);
-+	cl->xstats.ctokens = PSCHED_NS2TICKS(cl->ctokens);
- 
- 	if (gnet_stats_copy_basic(d, &cl->bstats) < 0 ||
- 	    gnet_stats_copy_rate_est(d, NULL, &cl->rate_est) < 0 ||
-@@ -1199,7 +1199,7 @@ static void htb_parent_to_leaf(struct ht
- 	parent->un.leaf.q = new_q ? new_q : &noop_qdisc;
- 	parent->tokens = parent->buffer;
- 	parent->ctokens = parent->cbuffer;
--	parent->t_c = psched_get_time();
-+	parent->t_c = ktime_to_ns(ktime_get());
- 	parent->cmode = HTB_CAN_SEND;
+-	return ((u64)len * r->mult) >> r->shift;
++	return ((u64)(len + r->overhead) * r->mult) >> r->shift;
  }
  
-@@ -1416,8 +1416,8 @@ static int htb_change_class(struct Qdisc
- 		/* set class to be in HTB_CAN_SEND state */
- 		cl->tokens = PSCHED_TICKS2NS(hopt->buffer);
- 		cl->ctokens = PSCHED_TICKS2NS(hopt->cbuffer);
--		cl->mbuffer = 60 * PSCHED_TICKS_PER_SEC;	/* 1min */
--		cl->t_c = psched_get_time();
-+		cl->mbuffer = 60ULL * NSEC_PER_SEC;	/* 1min */
-+		cl->t_c = ktime_to_ns(ktime_get());
- 		cl->cmode = HTB_CAN_SEND;
+-extern void psched_ratecfg_precompute(struct psched_ratecfg *r, u32 rate);
++extern void psched_ratecfg_precompute(struct psched_ratecfg *r, const struct tc_ratespec *conf);
  
- 		/* attach to the hash list and parent's family */
+-static inline u32 psched_ratecfg_getrate(const struct psched_ratecfg *r)
++static inline void psched_ratecfg_getrate(struct tc_ratespec *res,
++					  const struct psched_ratecfg *r)
+ {
+-	return r->rate_bps >> 3;
++	memset(res, 0, sizeof(*res));
++	res->rate = r->rate_bps >> 3;
++	res->overhead = r->overhead;
+ }
+ 
+ #endif
+--- a/net/sched/act_police.c
++++ b/net/sched/act_police.c
+@@ -231,14 +231,14 @@ override:
+ 	}
+ 	if (R_tab) {
+ 		police->rate_present = true;
+-		psched_ratecfg_precompute(&police->rate, R_tab->rate.rate);
++		psched_ratecfg_precompute(&police->rate, &R_tab->rate);
+ 		qdisc_put_rtab(R_tab);
+ 	} else {
+ 		police->rate_present = false;
+ 	}
+ 	if (P_tab) {
+ 		police->peak_present = true;
+-		psched_ratecfg_precompute(&police->peak, P_tab->rate.rate);
++		psched_ratecfg_precompute(&police->peak, &P_tab->rate);
+ 		qdisc_put_rtab(P_tab);
+ 	} else {
+ 		police->peak_present = false;
+@@ -376,9 +376,9 @@ tcf_act_police_dump(struct sk_buff *skb,
+ 	};
+ 
+ 	if (police->rate_present)
+-		opt.rate.rate = psched_ratecfg_getrate(&police->rate);
++		psched_ratecfg_getrate(&opt.rate, &police->rate);
+ 	if (police->peak_present)
+-		opt.peakrate.rate = psched_ratecfg_getrate(&police->peak);
++		psched_ratecfg_getrate(&opt.peakrate, &police->peak);
+ 	if (nla_put(skb, TCA_POLICE_TBF, sizeof(opt), &opt))
+ 		goto nla_put_failure;
+ 	if (police->tcfp_result &&
+--- a/net/sched/sch_generic.c
++++ b/net/sched/sch_generic.c
+@@ -898,14 +898,16 @@ void dev_shutdown(struct net_device *dev
+ 	WARN_ON(timer_pending(&dev->watchdog_timer));
+ }
+ 
+-void psched_ratecfg_precompute(struct psched_ratecfg *r, u32 rate)
++void psched_ratecfg_precompute(struct psched_ratecfg *r,
++			       const struct tc_ratespec *conf)
+ {
+ 	u64 factor;
+ 	u64 mult;
+ 	int shift;
+ 
+-	r->rate_bps = (u64)rate << 3;
+-	r->shift = 0;
++	memset(r, 0, sizeof(*r));
++	r->overhead = conf->overhead;
++	r->rate_bps = (u64)conf->rate << 3;
+ 	r->mult = 1;
+ 	/*
+ 	 * Calibrate mult, shift so that token counting is accurate
+--- a/net/sched/sch_htb.c
++++ b/net/sched/sch_htb.c
+@@ -1089,9 +1089,9 @@ static int htb_dump_class(struct Qdisc *
+ 
+ 	memset(&opt, 0, sizeof(opt));
+ 
+-	opt.rate.rate = psched_ratecfg_getrate(&cl->rate);
++	psched_ratecfg_getrate(&opt.rate, &cl->rate);
+ 	opt.buffer = PSCHED_NS2TICKS(cl->buffer);
+-	opt.ceil.rate = psched_ratecfg_getrate(&cl->ceil);
++	psched_ratecfg_getrate(&opt.ceil, &cl->ceil);
+ 	opt.cbuffer = PSCHED_NS2TICKS(cl->cbuffer);
+ 	opt.quantum = cl->quantum;
+ 	opt.prio = cl->prio;
+@@ -1458,8 +1458,8 @@ static int htb_change_class(struct Qdisc
+ 			cl->prio = TC_HTB_NUMPRIO - 1;
+ 	}
+ 
+-	psched_ratecfg_precompute(&cl->rate, hopt->rate.rate);
+-	psched_ratecfg_precompute(&cl->ceil, hopt->ceil.rate);
++	psched_ratecfg_precompute(&cl->rate, &hopt->rate);
++	psched_ratecfg_precompute(&cl->ceil, &hopt->ceil);
+ 
+ 	cl->buffer = PSCHED_TICKS2NS(hopt->buffer);
+ 	cl->cbuffer = PSCHED_TICKS2NS(hopt->buffer);
+--- a/net/sched/sch_tbf.c
++++ b/net/sched/sch_tbf.c
+@@ -298,9 +298,9 @@ static int tbf_change(struct Qdisc *sch,
+ 	q->tokens = q->buffer;
+ 	q->ptokens = q->mtu;
+ 
+-	psched_ratecfg_precompute(&q->rate, rtab->rate.rate);
++	psched_ratecfg_precompute(&q->rate, &rtab->rate);
+ 	if (ptab) {
+-		psched_ratecfg_precompute(&q->peak, ptab->rate.rate);
++		psched_ratecfg_precompute(&q->peak, &ptab->rate);
+ 		q->peak_present = true;
+ 	} else {
+ 		q->peak_present = false;
+@@ -350,9 +350,9 @@ static int tbf_dump(struct Qdisc *sch, s
+ 		goto nla_put_failure;
+ 
+ 	opt.limit = q->limit;
+-	opt.rate.rate = psched_ratecfg_getrate(&q->rate);
++	psched_ratecfg_getrate(&opt.rate, &q->rate);
+ 	if (q->peak_present)
+-		opt.peakrate.rate = psched_ratecfg_getrate(&q->peak);
++		psched_ratecfg_getrate(&opt.peakrate, &q->peak);
+ 	else
+ 		memset(&opt.peakrate, 0, sizeof(opt.peakrate));
+ 	opt.mtu = PSCHED_NS2TICKS(q->mtu);
 
 
