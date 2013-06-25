@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab3FYSti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:49:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41218 "EHLO
+	id S1753741Ab3FYSt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:49:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab3FYSfu (ORCPT
+	with ESMTP id S1753061Ab3FYSft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:35:50 -0400
+	Tue, 25 Jun 2013 14:35:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Haoyu <haoyu.zhang@huawei.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [ 05/27] KVM: x86: remove vcpus CPL check in host-invoked XCR set
-Date: Tue, 25 Jun 2013 11:35:24 -0700
-Message-Id: <20130625183518.296893797@linuxfoundation.org>
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 04/27] tilepro: work around module link error with gcc 4.7
+Date: Tue, 25 Jun 2013 11:35:23 -0700
+Message-Id: <20130625183518.189207356@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
@@ -27,54 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 764bcbc5a6d7a2f3e75c9f0e4caa984e2926e346 upstream.
+commit 3cb3f839d306443f3d1e79b0bde1a2ad2c12b555 upstream.
 
-__kvm_set_xcr function does the CPL check when set xcr. __kvm_set_xcr is
-called in two flows, one is invoked by guest, call stack shown as below,
+gcc 4.7.x is emitting calls to __ffsdi2 where previously
+it used to inline the appropriate ctz instructions.
+While this needs to be fixed in gcc, it's also easy to avoid
+having it cause build failures when building with those
+compilers by exporting __ffsdi2 to modules.
 
-  handle_xsetbv(or xsetbv_interception)
-    kvm_set_xcr
-      __kvm_set_xcr
-
-the other one is invoked by host, for example during system reset:
-
-  kvm_arch_vcpu_ioctl
-    kvm_vcpu_ioctl_x86_set_xcrs
-      __kvm_set_xcr
-
-The former does need the CPL check, but the latter does not.
-
-Signed-off-by: Zhang Haoyu <haoyu.zhang@huawei.com>
-[Tweaks to commit message. - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/x86.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/tile/lib/exports.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -555,8 +555,6 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu,
- 	if (index != XCR_XFEATURE_ENABLED_MASK)
- 		return 1;
- 	xcr0 = xcr;
--	if (kvm_x86_ops->get_cpl(vcpu) != 0)
--		return 1;
- 	if (!(xcr0 & XSTATE_FP))
- 		return 1;
- 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
-@@ -570,7 +568,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu,
- 
- int kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- {
--	if (__kvm_set_xcr(vcpu, index, xcr)) {
-+	if (kvm_x86_ops->get_cpl(vcpu) != 0 ||
-+	    __kvm_set_xcr(vcpu, index, xcr)) {
- 		kvm_inject_gp(vcpu, 0);
- 		return 1;
- 	}
+--- a/arch/tile/lib/exports.c
++++ b/arch/tile/lib/exports.c
+@@ -90,4 +90,6 @@ uint64_t __ashrdi3(uint64_t, unsigned in
+ EXPORT_SYMBOL(__ashrdi3);
+ uint64_t __ashldi3(uint64_t, unsigned int);
+ EXPORT_SYMBOL(__ashldi3);
++int __ffsdi2(uint64_t);
++EXPORT_SYMBOL(__ffsdi2);
+ #endif
 
 
