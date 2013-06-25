@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab3FYTKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:10:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40881 "EHLO
+	id S1753956Ab3FYTK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:10:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40875 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab3FYSdk (ORCPT
+	with ESMTP id S1751957Ab3FYSdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:40 -0400
+	Tue, 25 Jun 2013 14:33:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen@asianux.com>, Kyle McMartin <kyle@mcmartin.ca>,
         Helge Deller <deller@gmx.de>
-Subject: [ 24/95] parisc: kernel: using strlcpy() instead of strcpy()
-Date: Tue, 25 Jun 2013 11:32:11 -0700
-Message-Id: <20130625182156.365876467@linuxfoundation.org>
+Subject: [ 22/95] parisc: fix kernel BUG at arch/parisc/include/asm/mmzone.h:50
+Date: Tue, 25 Jun 2013 11:32:09 -0700
+Message-Id: <20130625182156.160754876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,33 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Helge Deller <deller@gmx.de>
 
-commit ea99b1adf22abd62bdcf14b1c9a0a4d3664eefd8 upstream.
+commit ae249b5fa27f9fba25aa59664d4338efc2dd2394 upstream.
 
-'boot_args' is an input args, and 'boot_command_line' has a fix length.
-So use strlcpy() instead of strcpy() to avoid memory overflow.
+With CONFIG_DISCONTIGMEM=y and multiple physical memory areas,
+cat /proc/kpageflags triggers this kernel bug:
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Acked-by: Kyle McMartin <kyle@mcmartin.ca>
+kernel BUG at arch/parisc/include/asm/mmzone.h:50!
+CPU: 2 PID: 7848 Comm: cat Tainted: G      D W 3.10.0-rc3-64bit #44
+ IAOQ[0]: kpageflags_read0x128/0x238
+ IAOQ[1]: kpageflags_read0x12c/0x238
+ RP(r2): proc_reg_read0xbc/0x130
+Backtrace:
+ [<00000000402ca2d4>] proc_reg_read0xbc/0x130
+ [<0000000040235bcc>] vfs_read0xc4/0x1d0
+ [<0000000040235f0c>] SyS_read0x94/0xf0
+ [<0000000040105fc0>] syscall_exit0x0/0x14
+
+kpageflags_read() walks through the whole memory, even if some memory
+areas are physically not available. So, we should better not BUG on an
+unavailable pfn in pfn_to_nid() but just return the expected value -1 or
+0.
+
 Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/setup.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/parisc/include/asm/mmzone.h |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/arch/parisc/kernel/setup.c
-+++ b/arch/parisc/kernel/setup.c
-@@ -69,7 +69,8 @@ void __init setup_cmdline(char **cmdline
- 		/* called from hpux boot loader */
- 		boot_command_line[0] = '\0';
- 	} else {
--		strcpy(boot_command_line, (char *)__va(boot_args[1]));
-+		strlcpy(boot_command_line, (char *)__va(boot_args[1]),
-+			COMMAND_LINE_SIZE);
+--- a/arch/parisc/include/asm/mmzone.h
++++ b/arch/parisc/include/asm/mmzone.h
+@@ -39,17 +39,14 @@ extern unsigned char pfnnid_map[PFNNID_M
+ static inline int pfn_to_nid(unsigned long pfn)
+ {
+ 	unsigned int i;
+-	unsigned char r;
  
- #ifdef CONFIG_BLK_DEV_INITRD
- 		if (boot_args[2] != 0) /* did palo pass us a ramdisk? */
+ 	if (unlikely(pfn_is_io(pfn)))
+ 		return 0;
+ 
+ 	i = pfn >> PFNNID_SHIFT;
+ 	BUG_ON(i >= ARRAY_SIZE(pfnnid_map));
+-	r = pfnnid_map[i];
+-	BUG_ON(r == 0xff);
+ 
+-	return (int)r;
++	return (int)pfnnid_map[i];
+ }
+ 
+ static inline int pfn_valid(int pfn)
 
 
