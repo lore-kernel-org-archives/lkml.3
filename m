@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab3FYFD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 01:03:27 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:52168 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab3FYFDO (ORCPT
+	id S1751531Ab3FYFG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 01:06:26 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50875 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab3FYFGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 01:03:14 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-68-51c924916375
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: anton.vorontsov@linaro.org
-Cc: linux-kernel@vger.kernel.org, Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH 2/2] power: charger-manager: Fix a bug when it unregisters
- notifier block of extcon.
-Date: Tue, 25 Jun 2013 14:02:49 +0900
-Message-id: <1372136569-551-2-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1372136569-551-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1372136569-551-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsWyRsSkRHeiyslAg2MtohYXW2+zWHSefcJs
-	cXnXHDaL240r2BxYPO5c28Pm0bdlFaPH501yAcxRXDYpqTmZZalF+nYJXBlzZ35mKrjJVfH2
-	8WLGBsZ/HF2MHBwSAiYSm9truhg5gUwxiQv31rN1MXJxCAksZZR4t6WVHSJhInFz13omiMQi
-	Rom/nx+wQDgtTBJTfn1nBqliE9CR+L/vJliHiICcxOu1f5lAbGaBYonP1xazgtjCAmkSHxcd
-	AouzCKhK/F2xCayeV8BNYtVMkNUgFylIzJlkAxLmFHCXuHH7PQuILQRU8nDqQqiDvrNJ7Nte
-	ADFGQOLb5EMsEK2yEpsOMEOUSEocXHGDZQKj8AJGhlWMoqkFyQXFSelFxnrFibnFpXnpesn5
-	uZsYgQF7+t+z/h2Mdw9YH2JMBho3kVlKNDkfGPB5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgH
-	CgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBkvTD/If8+58s73RyeSWx8Gua/N3fVZ/WUgn16
-	Nds8b7hWyV6etEg9yW33rJ7kV3+4X+x7+bZ90cenb1a23A/z+2hwQnz2Tkm2Vttl3jerTtvL
-	X5jZc45z61kDtc4r1fk1595uOTmtlIHd/swywa+G/73WZ3J3i8Z9US/5y31k652vKewvWEJf
-	KbEUZyQaajEXFScCAC/gCfduAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd2JKicDDV5e4LO42HqbxaLz7BNm
-	i8u75rBZ3G5cwebA4nHn2h42j74tqxg9Pm+SC2COamC0yUhNTEktUkjNS85PycxLt1XyDo53
-	jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFap6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULX
-	NyQIrsfIAA0krGHMmDvzM1PBTa6Kt48XMzYw/uPoYuTkkBAwkbi5az0ThC0mceHeerYuRi4O
-	IYFFjBJ/Pz9ggXBamCSm/PrODFLFJqAj8X/fTXYQW0RATuL12r9g3cwCxRKfry1mBbGFBdIk
-	Pi46BBZnEVCV+LtiE1g9r4CbxKqZIBs4gLYpSMyZZAMS5hRwl7hx+z0LiC0EVPJw6kL2CYy8
-	CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx8Qz6R2MqxosDjEKcDAq8fB+iDsRKMSa
-	WFZcmXuIUYKDWUmEN1QEKMSbklhZlVqUH19UmpNafIgxGeioicxSosn5wHjNK4k3NDYxM7I0
-	Mje0MDI2J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQZGk2DD7rv1Z78fYjZo9+iwWeV1
-	jWXHP2EWP44AE/nQkp8sDdNmy3eFtlzM2fgt+VXgFb/6Xuk7sxuDj868Oflo+A7r+zxeOw5t
-	WX5p6xGvn/xrvqo3bn4vZbY7PuEVq+Od6+YM/y8pe6n+lQ/e+JT9U7D4Ks2vdYZbe95sros6
-	NXOfy/S1n34kKbEUZyQaajEXFScCANsFhV/NAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 25 Jun 2013 01:06:24 -0400
+Message-ID: <51C92636.2060006@linux.vnet.ibm.com>
+Date: Tue, 25 Jun 2013 10:40:14 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
+        Jens Axboe <axboe@kernel.dk>, Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
+        Lin Ming <ming.m.lin@intel.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH] block:Remove extra condition in end of disk check
+References: <20130623171711.7127.16248.sendpatchset@codeblue.in.ibm.com> <51C84E94.8020100@linux.vnet.ibm.com> <20130624225126.GO1918@mtj.dyndns.org>
+In-Reply-To: <20130624225126.GO1918@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062504-2000-0000-0000-00000CA001D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prevents NULL pointer error cauesed by unregistering unregistered
-exton notifier block. At the probing time of charger manager, it tries to
-remove extcon notifier block when it fails to initialize them. It has to be
-applied for only registered one. Otherwise, it'd make kernel panic. To make it
-work right, it checks extcon_specific_cable_nb's extcon_dev node. If extcon
-cable notifier block was registered successfully, it has proper extcon_dev
-pointer if not so it has NULL pointer.
+On 06/25/2013 04:21 AM, Tejun Heo wrote:
+> On Mon, Jun 24, 2013 at 07:20:12PM +0530, Raghavendra K T wrote:
+>>> @@ -1656,7 +1656,7 @@ static inline int bio_check_eod(struct bio *bio, unsigned int nr_sectors)
+>>>   	if (maxsector) {
+>>>   		sector_t sector = bio->bi_sector;
+>>>
+>>> -		if (maxsector < nr_sectors || maxsector - nr_sectors < sector) {
+>>> +		if (maxsector - nr_sectors < sector) {
+>
+> If maxsector < nr_sectors, the subtraction will underflow making it a
+> very large number and fail to detect the invalid condition, no?
+>
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
----
- drivers/power/charger-manager.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Hi Tejun,
+Thanks for the reply and explanation. You are right. underflow results
+in invalid condition.
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 7d1bcde..c55a7dc 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -1666,7 +1666,9 @@ err_reg_extcon:
- 		charger = &desc->charger_regulators[i];
- 		for (j = 0; j < charger->num_cables; j++) {
- 			struct charger_cable *cable = &charger->cables[j];
--			extcon_unregister_interest(&cable->extcon_dev);
-+			/* Remove notifier block if only edev exists */
-+			if (cable->extcon_dev.edev)
-+				extcon_unregister_interest(&cable->extcon_dev);
- 		}
- 
- 		regulator_put(desc->charger_regulators[i].consumer);
--- 
-1.7.9.5
+Considering maxsector and sectors are unsigned long, and nr_sector is
+unsigned int, probably safer bet is
+(max_sector < sector + nr_sector), but still it would leave scope for 
+overflow.
+
+Thanks again,
+Raghu.
 
