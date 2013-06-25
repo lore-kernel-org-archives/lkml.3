@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab3FYTFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:05:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40946 "EHLO
+	id S1753320Ab3FYTEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:04:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40967 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab3FYSdw (ORCPT
+	with ESMTP id S1752460Ab3FYSdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:52 -0400
+	Tue, 25 Jun 2013 14:33:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 41/95] x86: fix build error and kconfig for ia32_emulation and binfmt
-Date: Tue, 25 Jun 2013 11:32:28 -0700
-Message-Id: <20130625182158.269576612@linuxfoundation.org>
+        Denys Fedoryshchenko <denys@visp.net.lb>,
+        Eric Dumazet <edumazet@google.com>, David Ward <david.ward@ll.mit.edu>,
+        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 45/95] net/802/mrp: fix lockdep splat
+Date: Tue, 25 Jun 2013 11:32:32 -0700
+Message-Id: <20130625182158.733828365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,41 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <rdunlap@infradead.org>
+From: Eric Dumazet <edumazet@google.com>
 
-commit d1603990ea626668c78527376d9ec084d634202d upstream.
+[ Upstream commit faff57a92ba1d7247c5e86ecea2886d2c9d54507 ]
 
-Fix kconfig warning and build errors on x86_64 by selecting BINFMT_ELF
-when COMPAT_BINFMT_ELF is being selected.
+commit fb745e9a037895 ("net/802/mrp: fix possible race condition when
+calling mrp_pdu_queue()") introduced a lockdep splat.
 
-warning: (IA32_EMULATION) selects COMPAT_BINFMT_ELF which has unmet direct dependencies (COMPAT && BINFMT_ELF)
+[   19.735147] =================================
+[   19.735235] [ INFO: inconsistent lock state ]
+[   19.735324] 3.9.2-build-0063 #4 Not tainted
+[   19.735412] ---------------------------------
+[   19.735500] inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
+[   19.735592] rmmod/1840 [HC0[0]:SC0[0]:HE1:SE1] takes:
+[   19.735682]  (&(&app->lock)->rlock#2){+.?...}, at: [<f862bb5b>]
+mrp_uninit_applicant+0x69/0xba [mrp]
 
-fs/built-in.o: In function `elf_core_dump':
-compat_binfmt_elf.c:(.text+0x3e093): undefined reference to `elf_core_extra_phdrs'
-compat_binfmt_elf.c:(.text+0x3ebcd): undefined reference to `elf_core_extra_data_size'
-compat_binfmt_elf.c:(.text+0x3eddd): undefined reference to `elf_core_write_extra_phdrs'
-compat_binfmt_elf.c:(.text+0x3f004): undefined reference to `elf_core_write_extra_data'
+app->lock is normally taken under softirq context, so disable BH to
+avoid the splat.
 
-[ hpa: This was sent to me for -next but it is a low risk build fix ]
-
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Link: http://lkml.kernel.org/r/51C0B614.5000708@infradead.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Denys Fedoryshchenko <denys@visp.net.lb>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: David Ward <david.ward@ll.mit.edu>
+Cc: Cong Wang <amwang@redhat.com>
+Tested-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ net/802/mrp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2268,6 +2268,7 @@ source "fs/Kconfig.binfmt"
- config IA32_EMULATION
- 	bool "IA32 Emulation"
- 	depends on X86_64
-+	select BINFMT_ELF
- 	select COMPAT_BINFMT_ELF
- 	select HAVE_UID16
- 	---help---
+--- a/net/802/mrp.c
++++ b/net/802/mrp.c
+@@ -871,10 +871,10 @@ void mrp_uninit_applicant(struct net_dev
+ 	 */
+ 	del_timer_sync(&app->join_timer);
+ 
+-	spin_lock(&app->lock);
++	spin_lock_bh(&app->lock);
+ 	mrp_mad_event(app, MRP_EVENT_TX);
+ 	mrp_pdu_queue(app);
+-	spin_unlock(&app->lock);
++	spin_unlock_bh(&app->lock);
+ 
+ 	mrp_queue_xmit(app);
+ 
 
 
