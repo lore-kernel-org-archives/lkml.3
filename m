@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab3FYSxk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:53:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41155 "EHLO
+	id S1753794Ab3FYSx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:53:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41151 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab3FYSeY (ORCPT
+	with ESMTP id S1752798Ab3FYSeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:24 -0400
+	Tue, 25 Jun 2013 14:34:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ferruh Yigit <fery@cypress.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 82/95] Input: cyttsp - fix memcpy size param
-Date: Tue, 25 Jun 2013 11:33:09 -0700
-Message-Id: <20130625182202.838216788@linuxfoundation.org>
+        Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 81/95] net_sched: better precise estimation on packet length for untrusted packets
+Date: Tue, 25 Jun 2013 11:33:08 -0700
+Message-Id: <20130625182202.724012020@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,33 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ferruh Yigit <fery@cypress.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit d2983cdb480157f637df07723f28aaa657b1080d upstream.
+[ Upstream commit 15e5a030716468dce4032fa0f398d840fa2756f6 ]
 
-memcpy param is wrong because of offset in bl_cmd, this may corrupt the
-stack which may cause a crash.
+gso_segs were reset to zero when kernel receive packets from untrusted
+source. But we use this zero value to estimate precise packet len which is
+wrong. So this patch tries to estimate the correct gso_segs value before using
+it in qdisc_pkt_len_init().
 
-Tested-by: Ferruh Yigit <fery@cypress.com> on TMA300-DVK
-Signed-off-by: Ferruh Yigit <fery@cypress.com>
-Acked-by: Javier Martinez Canillas <javier@dowhile0.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/input/touchscreen/cyttsp_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/dev.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/input/touchscreen/cyttsp_core.c
-+++ b/drivers/input/touchscreen/cyttsp_core.c
-@@ -133,7 +133,7 @@ static int cyttsp_exit_bl_mode(struct cy
- 	memcpy(bl_cmd, bl_command, sizeof(bl_command));
- 	if (ts->pdata->bl_keys)
- 		memcpy(&bl_cmd[sizeof(bl_command) - CY_NUM_BL_KEYS],
--			ts->pdata->bl_keys, sizeof(bl_command));
-+			ts->pdata->bl_keys, CY_NUM_BL_KEYS);
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2592,6 +2592,7 @@ static void qdisc_pkt_len_init(struct sk
+ 	 */
+ 	if (shinfo->gso_size)  {
+ 		unsigned int hdr_len;
++		u16 gso_segs = shinfo->gso_segs;
  
- 	error = ttsp_write_block_data(ts, CY_REG_BASE,
- 				      sizeof(bl_cmd), bl_cmd);
+ 		/* mac layer + network layer */
+ 		hdr_len = skb_transport_header(skb) - skb_mac_header(skb);
+@@ -2601,7 +2602,12 @@ static void qdisc_pkt_len_init(struct sk
+ 			hdr_len += tcp_hdrlen(skb);
+ 		else
+ 			hdr_len += sizeof(struct udphdr);
+-		qdisc_skb_cb(skb)->pkt_len += (shinfo->gso_segs - 1) * hdr_len;
++
++		if (shinfo->gso_type & SKB_GSO_DODGY)
++			gso_segs = DIV_ROUND_UP(skb->len - hdr_len,
++						shinfo->gso_size);
++
++		qdisc_skb_cb(skb)->pkt_len += (gso_segs - 1) * hdr_len;
+ 	}
+ }
+ 
 
 
