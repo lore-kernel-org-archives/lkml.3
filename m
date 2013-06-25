@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3FYSGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:06:20 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:57650 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3FYSGS (ORCPT
+	id S1751440Ab3FYSPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:15:49 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:33089 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab3FYSPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:06:18 -0400
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-efi@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org, hpa@linux.intel.com,
-        tglx@linutronix.de, matt.fleming@intel.com,
-        Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH 0/4] arm: [U]EFI runtime services support
-Date: Tue, 25 Jun 2013 19:10:59 +0100
-Message-Id: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 25 Jun 2013 14:15:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
+Date: Tue, 25 Jun 2013 21:15:47 +0300
+Message-ID: <CAHp75Vd2Torku6zy2awLHRTed9mx94a6RAu+oHJYb+rVgZKBDQ@mail.gmail.com>
+Subject: Re: [PATCH 5/6] PCI: acpiphp: look _RMV method a bit deeper in the hierarhcy
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In systems based on [U]EFI-conformant firmware, runtime services provide
-a standardised way for the kernel to update firmware environment variables.
-This is used for example by efibootmgr to update which image should be
-loaded on next boot.
+On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-This patchset implements basic support for UEFI runtime services on ARM
-platforms, as well as the basic underlying EFI support. It also defines a
-mechanism by which the required information is passed from the bootloader
-to the kernel via FDT entries.
+> The acpiphp driver finds out whether the device is hotpluggable by checking
+> whether it has _RMV method behind it (and if it returns 1). However, at
+> least Acer Aspire S5 with Thunderbolt host router has this method placed
+> behind device called EPUP (endpoint upstream port?) and not directly behind
+> the root port as can be seen from the ASL code below:
 
-This patchset depends on the previously submitted early_ioremap() patchset.
+[]
 
-Leif Lindholm (4):
-  Documentation: arm: [U]EFI runtime services
-  x86: efi: break efi_lookup_mapped_addr out to generic code
-  arm: Add [U]EFI runtime services support
-  init: efi: arm: enable (U)EFI runtime services on arm
 
- Documentation/arm/00-INDEX        |    3 +
- Documentation/arm/uefi.txt        |   39 ++++
- arch/arm/Kconfig                  |   15 ++
- arch/arm/include/asm/efi.h        |   22 ++
- arch/arm/kernel/Makefile          |    2 +
- arch/arm/kernel/efi.c             |  456 +++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/efi_phys.S        |   59 +++++
- arch/arm/kernel/setup.c           |    5 +
- arch/x86/platform/efi/efi.c       |   28 ---
- drivers/firmware/efi/Makefile     |    2 +-
- drivers/firmware/efi/efi-helper.c |   33 +++
- init/main.c                       |    6 +
- 12 files changed, 641 insertions(+), 29 deletions(-)
- create mode 100644 Documentation/arm/uefi.txt
- create mode 100644 arch/arm/include/asm/efi.h
- create mode 100644 arch/arm/kernel/efi.c
- create mode 100644 arch/arm/kernel/efi_phys.S
- create mode 100644 drivers/firmware/efi/efi-helper.c
+> +static acpi_status pcihp_evaluate_rmv(acpi_handle handle, u32 lvl,
+> +                                     void *context, void **return_not_used)
+> +{
+> +       unsigned long long *removable = context;
+> +       unsigned long long value;
+> +       acpi_status status;
+> +
+> +       status = acpi_evaluate_integer(handle, "_RMV", NULL, &value);
+> +       if (ACPI_SUCCESS(status) && value) {
 
--- 
-1.7.10.4
+So, there is a chance the caller gets back uninitialized *context.
+Let's assume that is by design.
 
+> +               *removable = value;
+> +               return AE_CTRL_TERMINATE;
+> +       }
+> +       return AE_OK;
+> +}
+
+
+> +static bool pcihp_is_removable(acpi_handle handle, size_t depth)
+> +{
+> +       unsigned long long removable = 0;
+> +       acpi_status status;
+> +
+> +       status = pcihp_evaluate_rmv(handle, 0, &removable, NULL);
+> +       if ((status == AE_CTRL_TERMINATE) && removable)
+
+Here you already have removable not equal zero.
+
+Internal braces could be removed, but it's up top you.
+
+> +               return true;
+> +
+> +       acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, depth, pcihp_evaluate_rmv,
+> +                           NULL, &removable, NULL);
+> +       return !!removable;
+> +}
+
+
+--
+With Best Regards,
+Andy Shevchenko
