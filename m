@@ -1,162 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab3FYOvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:51:31 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:50608 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab3FYOuP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751865Ab3FYOuP (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Jun 2013 10:50:15 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 5/6] drbd: Constants should be UPPERCASE
-Date: Tue, 25 Jun 2013 16:50:07 +0200
-Message-Id: <1372171808-30515-6-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372171808-30515-1-git-send-email-philipp.reisner@linbit.com>
-References: <1372171808-30515-1-git-send-email-philipp.reisner@linbit.com>
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39329 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182Ab3FYOuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 10:50:12 -0400
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+In-Reply-To: <20130601192125.5966.35563.sendpatchset@codeblue>
+References: <20130601192125.5966.35563.sendpatchset@codeblue>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Jun 2013 09:50:02 -0500
+Message-ID: <1372171802.3804.30.camel@oc2024037011.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062514-5806-0000-0000-000021DE8DD1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
----
- drivers/block/drbd/drbd_int.h      |    7 ++++++-
- drivers/block/drbd/drbd_nl.c       |   20 ++++++++++----------
- drivers/block/drbd/drbd_receiver.c |    6 +++---
- 3 files changed, 19 insertions(+), 14 deletions(-)
+On Sun, 2013-06-02 at 00:51 +0530, Raghavendra K T wrote:
+> This series replaces the existing paravirtualized spinlock mechanism
+> with a paravirtualized ticketlock mechanism. The series provides
+> implementation for both Xen and KVM.
+> 
+> Changes in V9:
+> - Changed spin_threshold to 32k to avoid excess halt exits that are
+>    causing undercommit degradation (after PLE handler improvement).
+> - Added  kvm_irq_delivery_to_apic (suggested by Gleb)
+> - Optimized halt exit path to use PLE handler
+> 
+> V8 of PVspinlock was posted last year. After Avi's suggestions to look
+> at PLE handler's improvements, various optimizations in PLE handling
+> have been tried.
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index f104328..4519d63 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -1467,7 +1467,12 @@ extern void drbd_suspend_io(struct drbd_conf *mdev);
- extern void drbd_resume_io(struct drbd_conf *mdev);
- extern char *ppsize(char *buf, unsigned long long size);
- extern sector_t drbd_new_dev_size(struct drbd_conf *, struct drbd_backing_dev *, sector_t, int);
--enum determine_dev_size { dev_size_error = -1, unchanged = 0, shrunk = 1, grew = 2 };
-+enum determine_dev_size {
-+	DS_ERROR = -1,
-+	DS_UNCHANGED = 0,
-+	DS_SHRUNK = 1,
-+	DS_GREW = 2
-+};
- extern enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *, enum dds_flags) __must_hold(local);
- extern void resync_after_online_grow(struct drbd_conf *);
- extern void drbd_reconsider_max_bio_size(struct drbd_conf *mdev);
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index e25803b..45d1275 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -835,7 +835,7 @@ enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *mdev, enum dds
- 	char ppb[10];
- 
- 	int md_moved, la_size_changed;
--	enum determine_dev_size rv = unchanged;
-+	enum determine_dev_size rv = DS_UNCHANGED;
- 
- 	/* race:
- 	 * application request passes inc_ap_bio,
-@@ -878,7 +878,7 @@ enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *mdev, enum dds
- 				    "Leaving size unchanged at size = %lu KB\n",
- 				    (unsigned long)size);
- 			}
--			rv = dev_size_error;
-+			rv = DS_ERROR;
- 		}
- 		/* racy, see comments above. */
- 		drbd_set_my_capacity(mdev, size);
-@@ -886,7 +886,7 @@ enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *mdev, enum dds
- 		dev_info(DEV, "size = %s (%llu KB)\n", ppsize(ppb, size>>1),
- 		     (unsigned long long)size>>1);
- 	}
--	if (rv == dev_size_error)
-+	if (rv == DS_ERROR)
- 		goto out;
- 
- 	la_size_changed = (la_size_sect != mdev->ldev->md.la_size_sect);
-@@ -905,16 +905,16 @@ enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *mdev, enum dds
- 		err = drbd_bitmap_io(mdev, md_moved ? &drbd_bm_write_all : &drbd_bm_write,
- 				     "size changed", BM_LOCKED_MASK);
- 		if (err) {
--			rv = dev_size_error;
-+			rv = DS_ERROR;
- 			goto out;
- 		}
- 		drbd_md_mark_dirty(mdev);
- 	}
- 
- 	if (size > la_size_sect)
--		rv = grew;
-+		rv = DS_GREW;
- 	if (size < la_size_sect)
--		rv = shrunk;
-+		rv = DS_SHRUNK;
- out:
- 	lc_unlock(mdev->act_log);
- 	wake_up(&mdev->al_wait);
-@@ -1619,10 +1619,10 @@ int drbd_adm_attach(struct sk_buff *skb, struct genl_info *info)
- 		set_bit(USE_DEGR_WFC_T, &mdev->flags);
- 
- 	dd = drbd_determine_dev_size(mdev, 0);
--	if (dd == dev_size_error) {
-+	if (dd == DS_ERROR) {
- 		retcode = ERR_NOMEM_BITMAP;
- 		goto force_diskless_dec;
--	} else if (dd == grew)
-+	} else if (dd == DS_GREW)
- 		set_bit(RESYNC_AFTER_NEG, &mdev->flags);
- 
- 	if (drbd_md_test_flag(mdev->ldev, MDF_FULL_SYNC) ||
-@@ -2387,13 +2387,13 @@ int drbd_adm_resize(struct sk_buff *skb, struct genl_info *info)
- 	dd = drbd_determine_dev_size(mdev, ddsf);
- 	drbd_md_sync(mdev);
- 	put_ldev(mdev);
--	if (dd == dev_size_error) {
-+	if (dd == DS_ERROR) {
- 		retcode = ERR_NOMEM_BITMAP;
- 		goto fail;
- 	}
- 
- 	if (mdev->state.conn == C_CONNECTED) {
--		if (dd == grew)
-+		if (dd == DS_GREW)
- 			set_bit(RESIZE_PENDING, &mdev->flags);
- 
- 		drbd_send_uuids(mdev);
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index adee58e..26852b8 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -3545,7 +3545,7 @@ static int receive_sizes(struct drbd_tconn *tconn, struct packet_info *pi)
- {
- 	struct drbd_conf *mdev;
- 	struct p_sizes *p = pi->data;
--	enum determine_dev_size dd = unchanged;
-+	enum determine_dev_size dd = DS_UNCHANGED;
- 	sector_t p_size, p_usize, my_usize;
- 	int ldsc = 0; /* local disk size changed */
- 	enum dds_flags ddsf;
-@@ -3619,7 +3619,7 @@ static int receive_sizes(struct drbd_tconn *tconn, struct packet_info *pi)
- 	if (get_ldev(mdev)) {
- 		dd = drbd_determine_dev_size(mdev, ddsf);
- 		put_ldev(mdev);
--		if (dd == dev_size_error)
-+		if (dd == DS_ERROR)
- 			return -EIO;
- 		drbd_md_sync(mdev);
- 	} else {
-@@ -3647,7 +3647,7 @@ static int receive_sizes(struct drbd_tconn *tconn, struct packet_info *pi)
- 			drbd_send_sizes(mdev, 0, ddsf);
- 		}
- 		if (test_and_clear_bit(RESIZE_PENDING, &mdev->flags) ||
--		    (dd == grew && mdev->state.conn == C_CONNECTED)) {
-+		    (dd == DS_GREW && mdev->state.conn == C_CONNECTED)) {
- 			if (mdev->state.pdsk >= D_INCONSISTENT &&
- 			    mdev->state.disk >= D_INCONSISTENT) {
- 				if (ddsf & DDSF_NO_RESYNC)
--- 
-1.7.9.5
+Sorry for not posting this sooner.  I have tested the v9 pv-ticketlock
+patches in 1x and 2x over-commit with 10-vcpu and 20-vcpu VMs.  I have
+tested these patches with and without PLE, as PLE is still not scalable
+with large VMs.
+
+System: x3850X5, 40 cores, 80 threads
+
+
+1x over-commit with 10-vCPU VMs (8 VMs) all running dbench:
+----------------------------------------------------------
+						Total
+Configuration				Throughput(MB/s)	Notes
+
+3.10-default-ple_on			22945			5% CPU in host kernel, 2% spin_lock in guests
+3.10-default-ple_off			23184			5% CPU in host kernel, 2% spin_lock in guests
+3.10-pvticket-ple_on			22895			5% CPU in host kernel, 2% spin_lock in guests
+3.10-pvticket-ple_off			23051			5% CPU in host kernel, 2% spin_lock in guests
+[all 1x results look good here]
+
+
+2x over-commit with 10-vCPU VMs (16 VMs) all running dbench:
+-----------------------------------------------------------
+						Total
+Configuration				Throughput		Notes
+
+3.10-default-ple_on			 6287			55% CPU  host kernel, 17% spin_lock in guests
+3.10-default-ple_off			 1849			2% CPU in host kernel, 95% spin_lock in guests
+3.10-pvticket-ple_on			 6691			50% CPU in host kernel, 15% spin_lock in guests
+3.10-pvticket-ple_off			16464			8% CPU in host kernel, 33% spin_lock in guests
+[PLE hinders pv-ticket improvements, but even with PLE off,
+ we still off from ideal throughput (somewhere >20000)]
+
+
+1x over-commit with 20-vCPU VMs (4 VMs) all running dbench:
+----------------------------------------------------------
+						Total
+Configuration				Throughput		Notes
+
+3.10-default-ple_on			22736			6% CPU in host kernel, 3% spin_lock in guests
+3.10-default-ple_off			23377			5% CPU in host kernel, 3% spin_lock in guests
+3.10-pvticket-ple_on			22471			6% CPU in host kernel, 3% spin_lock in guests
+3.10-pvticket-ple_off			23445			5% CPU in host kernel, 3% spin_lock in guests
+[1x looking fine here]
+
+
+2x over-commit with 20-vCPU VMs (8 VMs) all running dbench:
+----------------------------------------------------------
+						Total
+Configuration				Throughput		Notes
+
+3.10-default-ple_on			 1965			70% CPU in host kernel, 34% spin_lock in guests		
+3.10-default-ple_off			  226			2% CPU in host kernel, 94% spin_lock in guests
+3.10-pvticket-ple_on			 1942			70% CPU in host kernel, 35% spin_lock in guests
+3.10-pvticket-ple_off			 8003			11% CPU in host kernel, 70% spin_lock in guests
+[quite bad all around, but pv-tickets with PLE off the best so far.
+ Still quite a bit off from ideal throughput]
+
+In summary, I would state that the pv-ticket is an overall win, but the
+current PLE handler tends to "get in the way" on these larger guests.
+
+-Andrew
 
