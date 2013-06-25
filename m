@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab3FYQq1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:46:27 -0400
-Received: from www.sr71.net ([198.145.64.142]:42449 "EHLO blackbird.sr71.net"
+	id S1751446Ab3FYQuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:50:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47002 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab3FYQq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:46:26 -0400
-Message-ID: <51C9C960.6070706@sr71.net>
-Date: Tue, 25 Jun 2013 09:46:24 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751029Ab3FYQun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:50:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
+   d="scan'208";a="322388355"
+Date: Tue, 25 Jun 2013 21:40:04 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        alsa-devel@alsa-project.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Dan Williams <djbw@fb.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Padmavathi Venna <padma.v@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: Re: [RFC PATCH v2 05/12] dmaengine: PL08x: Add support for
+ different maximum transfer size
+Message-ID: <20130625161003.GQ23141@intel.com>
+References: <1371933764-24875-1-git-send-email-tomasz.figa@gmail.com>
+ <1371933764-24875-6-git-send-email-tomasz.figa@gmail.com>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 27/39] x86-64, mm: proper alignment mappings with hugepages
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-28-git-send-email-kirill.shutemov@linux.intel.com> <519BFBA9.7040007@sr71.net> <20130625145655.68DCBE0090@blue.fi.intel.com>
-In-Reply-To: <20130625145655.68DCBE0090@blue.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371933764-24875-6-git-send-email-tomasz.figa@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 07:56 AM, Kirill A. Shutemov wrote:
-> Dave Hansen wrote:
->> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
->>> +static inline unsigned long mapping_align_mask(struct address_space *mapping)
->>> +{
->>> +	if (mapping_can_have_hugepages(mapping))
->>> +		return PAGE_MASK & ~HPAGE_MASK;
->>> +	return get_align_mask();
->>> +}
->>
->> get_align_mask() appears to be a bit more complicated to me than just a
->> plain old mask.  Are you sure you don't need to pick up any of its
->> behavior for the mapping_can_have_hugepages() case?
+On Sat, Jun 22, 2013 at 10:42:37PM +0200, Tomasz Figa wrote:
+> PL080S has separate register to store transfer size in, allowing single
+> transfer to be much larger than in standard PL080.
 > 
-> get_align_mask() never returns more strict mask then we do in
-> mapping_can_have_hugepages() case.
+> This patch makes the amba-pl08x driver aware of this and removes writing
+> transfer size to reserved bits of CH_CONTROL register on PL080S, which
+> was not a problem witn transfer sizes fitting the original bitfield
+> of PL080, but now would overwrite other fields.
 > 
-> I can modify it this way:
-> 
->         unsigned long mask = get_align_mask();
-> 
->         if (mapping_can_have_hugepages(mapping))
->                 mask &= PAGE_MASK & ~HPAGE_MASK;
->         return mask;
-> 
-> But it looks more confusing for me. What do you think?
+> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+Acked by: Vinod Koul <vinod.koul@intel.com>
 
-Personally, I find that a *LOT* more clear.  The &= pretty much spells
-out what you said in your explanation: get_align_mask()'s mask can only
-be made more strict when we encounter a huge page.
-
-The relationship between the two masks is not apparent at all in your
-original code.  This is all nitpicking though, I just wanted to make
-sure you'd considered if you were accidentally changing behavior.
+--
+~Vinod
