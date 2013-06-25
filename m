@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab3FYSui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:50:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41208 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab3FYSfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:35:48 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 01/27] ALSA: usb-audio: Fix invalid volume resolution for Logitech HD Webcam c310
-Date: Tue, 25 Jun 2013 11:35:20 -0700
-Message-Id: <20130625183517.847716107@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
-References: <20130625183517.651770593@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1753674Ab3FYSup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:50:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51464 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753455Ab3FYSul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:50:41 -0400
+Date: Tue, 25 Jun 2013 20:46:19 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] epoll_[p]wait: fix spurious -EINTR on ptrace attach
+Message-ID: <20130625184619.GA4003@redhat.com>
+References: <1372172737-18726-1-git-send-email-dvlasenk@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372172737-18726-1-git-send-email-dvlasenk@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 06/25, Denys Vlasenko wrote:
+>
+> Before this change, epoll_wait and epoll_pwait
+> spuriously return with -EINTR on ptrace attach.
+>
+> By analogy with poll syscall family, epoll_[p]wait should be interruptible
+> by signals regardless of SA_RESTART, therefore, this change
+> makes them return -ERESTARTNOHAND if timeout has expired.
 
-------------------
+Denys, I am not even going to actuallu read this patch, but I think
+you should redo it in any case... And you need to cc maintainers.
 
-From: Takashi Iwai <tiwai@suse.de>
+Because I believe we should cleanup fs/eventpoll.c first, I'll try
+to send the patch(es) soon.
 
-commit 36691e1be6ec551eef4a5225f126a281f8c051c2 upstream.
+> In order to define a "sigset_t ksigmask" member,
 
-Just like the previous fix for LogitechHD Webcam c270 in commit
-11e7064f35bb87da8f427d1aa4bbd8b7473a3993, c310 model also requires the
-same workaround for avoiding the kernel warning.
+You do not need it. But the reason is not clear until the cleanup.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=59741
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> +	if (sigmask) {
+> +		ksigmask = *sigmask;
+> +		sigdelsetmask(&ksigmask, sigmask(SIGKILL) | sigmask(SIGSTOP));
+> +		sigprocmask(SIG_SETMASK, &ksigmask, &ksigsaved);
 
----
- sound/usb/mixer.c |    1 +
- 1 file changed, 1 insertion(+)
+sigprocmask() should not be used. Again, we need cleanup.
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -821,6 +821,7 @@ static void volume_control_quirks(struct
- 
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
-+	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
- 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
- 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
- 	case USB_ID(0x046d, 0x0991):
+> +	}
+> +	else
+> +	/*
+> +	 * If we changed the signal mask, we need to restore the original one.
+> +	 */
+> +	if (sigmask) {
+> +		sigprocmask(SIG_SETMASK, &ksigsaved, NULL);
+> +	}
 
+cough.. in this case you should also update Documentation/CodingStyle ;)
+
+Oleg.
 
