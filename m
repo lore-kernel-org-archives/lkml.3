@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab3FYGAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 02:00:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60513 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab3FYF76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 01:59:58 -0400
+	id S1751917Ab3FYGAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 02:00:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43693 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab3FYGAl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 02:00:41 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
         <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
@@ -19,9 +20,9 @@ CC: <rob.herring@calxeda.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
         <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <nsekhar@ti.com>, <balajitk@ti.com>,
         <george.cherian@ti.com>
-Subject: [PATCH v8 2/8] usb: phy: omap-usb2: use the new generic PHY framework
-Date: Tue, 25 Jun 2013 11:28:40 +0530
-Message-ID: <1372139926-3719-3-git-send-email-kishon@ti.com>
+Subject: [PATCH v8 8/8] usb: phy: twl4030-usb: remove *set_suspend* and *phy_init* ops
+Date: Tue, 25 Jun 2013 11:28:46 +0530
+Message-ID: <1372139926-3719-9-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1372139926-3719-1-git-send-email-kishon@ti.com>
 References: <1372139926-3719-1-git-send-email-kishon@ti.com>
@@ -31,119 +32,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used the generic PHY framework API to create the PHY. Now the power off and
-power on are done in omap_usb_power_off and omap_usb_power_on respectively.
-
-However using the old USB PHY library cannot be completely removed
-because OTG is intertwined with PHY and moving to the new framework
-will break OTG. Once we have a separate OTG state machine, we
-can get rid of the USB PHY library.
+Now that twl4030-usb is adapted to the new generic PHY framework,
+*set_suspend* and *phy_init* ops can be removed from twl4030-usb driver.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 ---
- drivers/usb/phy/Kconfig         |    1 +
- drivers/usb/phy/phy-omap-usb2.c |   43 +++++++++++++++++++++++++++++++++++----
- 2 files changed, 40 insertions(+), 4 deletions(-)
+ drivers/usb/phy/phy-twl4030-usb.c |   57 +++++++++----------------------------
+ 1 file changed, 13 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 7ef3eb8..5caeafd 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -69,6 +69,7 @@ config OMAP_CONTROL_USB
- config OMAP_USB2
- 	tristate "OMAP USB2 PHY Driver"
- 	depends on ARCH_OMAP2PLUS
-+	depends on GENERIC_PHY
- 	select OMAP_CONTROL_USB
- 	help
- 	  Enable this to support the transceiver that is part of SOC. This
-diff --git a/drivers/usb/phy/phy-omap-usb2.c b/drivers/usb/phy/phy-omap-usb2.c
-index 844ab68..ecdf1ac 100644
---- a/drivers/usb/phy/phy-omap-usb2.c
-+++ b/drivers/usb/phy/phy-omap-usb2.c
-@@ -28,6 +28,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/delay.h>
- #include <linux/usb/omap_control_usb.h>
-+#include <linux/phy/phy.h>
- 
- /**
-  * omap_usb2_set_comparator - links the comparator present in the sytem with
-@@ -119,10 +120,36 @@ static int omap_usb2_suspend(struct usb_phy *x, int suspend)
- 	return 0;
+diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl4030-usb.c
+index 3f09b7b..f32e503 100644
+--- a/drivers/usb/phy/phy-twl4030-usb.c
++++ b/drivers/usb/phy/phy-twl4030-usb.c
+@@ -422,25 +422,20 @@ static void twl4030_phy_power(struct twl4030_usb *twl, int on)
+ 	}
  }
  
-+static int omap_usb_power_off(struct phy *x)
-+{
-+	struct omap_usb *phy = dev_get_drvdata(&x->dev);
-+
-+	omap_control_usb_phy_power(phy->control_dev, 0);
-+
-+	return 0;
-+}
-+
-+static int omap_usb_power_on(struct phy *x)
-+{
-+	struct omap_usb *phy = dev_get_drvdata(&x->dev);
-+
-+	omap_control_usb_phy_power(phy->control_dev, 1);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops ops = {
-+	.power_on	= omap_usb_power_on,
-+	.power_off	= omap_usb_power_off,
-+	.owner		= THIS_MODULE,
-+};
-+
- static int omap_usb2_probe(struct platform_device *pdev)
+-static void twl4030_phy_suspend(struct twl4030_usb *twl, int controller_off)
++static int twl4030_phy_power_off(struct phy *phy)
  {
- 	struct omap_usb			*phy;
-+	struct phy			*generic_phy;
- 	struct usb_otg			*otg;
-+	struct phy_provider		*phy_provider;
- 
- 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
- 	if (!phy) {
-@@ -144,6 +171,11 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	phy->phy.otg		= otg;
- 	phy->phy.type		= USB_PHY_TYPE_USB2;
- 
-+	phy_provider = devm_of_phy_provider_register(phy->dev,
-+			of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
++	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
 +
- 	phy->control_dev = omap_get_control_dev();
- 	if (IS_ERR(phy->control_dev)) {
- 		dev_dbg(&pdev->dev, "Failed to get control device\n");
-@@ -159,6 +191,13 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	otg->start_srp		= omap_usb_start_srp;
- 	otg->phy		= &phy->phy;
+ 	if (twl->asleep)
+-		return;
++		return 0;
  
-+	platform_set_drvdata(pdev, phy);
-+	pm_runtime_enable(phy->dev);
-+
-+	generic_phy = devm_phy_create(phy->dev, 0, &ops, "omap-usb2", phy);
-+	if (IS_ERR(generic_phy))
-+		return PTR_ERR(generic_phy);
-+
- 	phy->wkupclk = devm_clk_get(phy->dev, "usb_phy_cm_clk32k");
- 	if (IS_ERR(phy->wkupclk)) {
- 		dev_err(&pdev->dev, "unable to get usb_phy_cm_clk32k\n");
-@@ -174,10 +213,6 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 
- 	usb_add_phy_dev(&phy->phy);
- 
--	platform_set_drvdata(pdev, phy);
+ 	twl4030_phy_power(twl, 0);
+ 	twl->asleep = 1;
+ 	dev_dbg(twl->dev, "%s\n", __func__);
+-}
 -
--	pm_runtime_enable(phy->dev);
+-static int twl4030_phy_power_off(struct phy *phy)
+-{
+-	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
 -
+-	twl4030_phy_suspend(twl, 0);
  	return 0;
  }
  
+-static void __twl4030_phy_resume(struct twl4030_usb *twl)
++static void __twl4030_phy_power_on(struct twl4030_usb *twl)
+ {
+ 	twl4030_phy_power(twl, 1);
+ 	twl4030_i2c_access(twl, 1);
+@@ -449,11 +444,13 @@ static void __twl4030_phy_resume(struct twl4030_usb *twl)
+ 		twl4030_i2c_access(twl, 0);
+ }
+ 
+-static void twl4030_phy_resume(struct twl4030_usb *twl)
++static int twl4030_phy_power_on(struct phy *phy)
+ {
++	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
++
+ 	if (!twl->asleep)
+-		return;
+-	__twl4030_phy_resume(twl);
++		return 0;
++	__twl4030_phy_power_on(twl);
+ 	twl->asleep = 0;
+ 	dev_dbg(twl->dev, "%s\n", __func__);
+ 
+@@ -466,13 +463,6 @@ static void twl4030_phy_resume(struct twl4030_usb *twl)
+ 		cancel_delayed_work(&twl->id_workaround_work);
+ 		schedule_delayed_work(&twl->id_workaround_work, HZ);
+ 	}
+-}
+-
+-static int twl4030_phy_power_on(struct phy *phy)
+-{
+-	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
+-
+-	twl4030_phy_resume(twl);
+ 	return 0;
+ }
+ 
+@@ -604,9 +594,9 @@ static void twl4030_id_workaround_work(struct work_struct *work)
+ 	}
+ }
+ 
+-static int twl4030_usb_phy_init(struct usb_phy *phy)
++static int twl4030_phy_init(struct phy *phy)
+ {
+-	struct twl4030_usb *twl = phy_to_twl(phy);
++	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
+ 	enum omap_musb_vbus_id_status status;
+ 
+ 	/*
+@@ -621,32 +611,13 @@ static int twl4030_usb_phy_init(struct usb_phy *phy)
+ 
+ 	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID) {
+ 		omap_musb_mailbox(twl->linkstat);
+-		twl4030_phy_resume(twl);
++		twl4030_phy_power_on(phy);
+ 	}
+ 
+ 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
+ 	return 0;
+ }
+ 
+-static int twl4030_phy_init(struct phy *phy)
+-{
+-	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
+-
+-	return twl4030_usb_phy_init(&twl->phy);
+-}
+-
+-static int twl4030_set_suspend(struct usb_phy *x, int suspend)
+-{
+-	struct twl4030_usb *twl = phy_to_twl(x);
+-
+-	if (suspend)
+-		twl4030_phy_suspend(twl, 1);
+-	else
+-		twl4030_phy_resume(twl);
+-
+-	return 0;
+-}
+-
+ static int twl4030_set_peripheral(struct usb_otg *otg,
+ 					struct usb_gadget *gadget)
+ {
+@@ -717,8 +688,6 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	twl->phy.label		= "twl4030";
+ 	twl->phy.otg		= otg;
+ 	twl->phy.type		= USB_PHY_TYPE_USB2;
+-	twl->phy.set_suspend	= twl4030_set_suspend;
+-	twl->phy.init		= twl4030_usb_phy_init;
+ 
+ 	otg->phy		= &twl->phy;
+ 	otg->set_host		= twl4030_set_host;
 -- 
 1.7.10.4
 
