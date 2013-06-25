@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab3FYSgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:36:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41276 "EHLO
+	id S1753367Ab3FYSj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:39:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41299 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab3FYSgB (ORCPT
+	with ESMTP id S1753212Ab3FYSgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:36:01 -0400
+	Tue, 25 Jun 2013 14:36:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
+        Guillaume Nault <g.nault@alphalink.fr>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/27] ipv6: assign rt6_info to inet6_ifaddr in init_loopback
-Date: Tue, 25 Jun 2013 11:35:36 -0700
-Message-Id: <20130625183519.668636076@linuxfoundation.org>
+Subject: [ 22/27] l2tp: Fix sendmsg() return value
+Date: Tue, 25 Jun 2013 11:35:41 -0700
+Message-Id: <20130625183520.231210396@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
@@ -28,40 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: Guillaume Nault <g.nault@alphalink.fr>
 
-[ Upstream commit 534c877928a16ae5f9776436a497109639bf67dc ]
+[ Upstream commit a6f79d0f26704214b5b702bbac525cb72997f984 ]
 
-Commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
-"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
-forgot to assign rt6_info to the inet6_ifaddr.
-When disable the net device, the rt6_info which allocated
-in init_loopback will not be destroied in __ipv6_ifa_notify.
+PPPoL2TP sockets should comply with the standard send*() return values
+(i.e. return number of bytes sent instead of 0 upon success).
 
-This will trigger the waring message below
-[23527.916091] unregister_netdevice: waiting for tap0 to become free. Usage count = 1
-
-Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/addrconf.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/l2tp/l2tp_ppp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2432,8 +2432,10 @@ static void init_loopback(struct net_dev
- 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -362,7 +362,7 @@ static int pppol2tp_sendmsg(struct kiocb
+ 	sock_put(ps->tunnel_sock);
+ 	sock_put(sk);
  
- 			/* Failure cases are ignored */
--			if (!IS_ERR(sp_rt))
-+			if (!IS_ERR(sp_rt)) {
-+				sp_ifa->rt = sp_rt;
- 				ip6_ins_rt(sp_rt);
-+			}
- 		}
- 		read_unlock_bh(&idev->lock);
- 	}
+-	return error;
++	return total_len;
+ 
+ error_put_sess_tun:
+ 	sock_put(ps->tunnel_sock);
 
 
