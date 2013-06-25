@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab3FYHGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 03:06:19 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:44587 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab3FYHGR convert rfc822-to-8bit (ORCPT
+	id S1751968Ab3FYHHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 03:07:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54120 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab3FYHHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 03:06:17 -0400
+	Tue, 25 Jun 2013 03:07:10 -0400
+Date: Tue, 25 Jun 2013 09:07:06 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-sh@vger.kernel.org
+cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: [PATCH] regulator: max8973: fix a typo in documentation
+Message-ID: <Pine.LNX.4.64.1306250905050.30321@axis700.grange>
 MIME-Version: 1.0
-In-Reply-To: <51C8F948.2040204@asianux.com>
-References: <51C8F948.2040204@asianux.com>
-Date: Tue, 25 Jun 2013 09:06:17 +0200
-X-Google-Sender-Auth: tE1hYKobe5K5Zho_laV8bXEDQBM
-Message-ID: <CAMuHMdXngNACn+Qfw1ytJkWWLm_BC+g_PTDpHHbUQyeeyVu8Fg@mail.gmail.com>
-Subject: Re: [PATCH] arch: c6x: kernel: include "linux/console.h" when 'VT'
- and 'DUMMY_CONSOLE' enabled.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chen Gang <gang.chen@asianux.com>, Tony Breeds <tony@bakeyournoodle.com>
-Cc: Mark Salter <msalter@redhat.com>, "a-jacquiot@ti.com" <a-jacquiot@ti.com>,
-        jkc@redhat.com, linux-c6x-dev@linux-c6x.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:4+Vj/UTu+ZYpTVlcaCxurD0oHt5xCkOWpQSFWXTvNLZ
+ mFfYLdPg9tQPoGU9OWq2EXv8CqDLH6zfsSS6OtuHZ7h6LcwTIa
+ f5XNYsdPWZQAzL/UAJz21zNCAXGhtHM6CXu5tg/Bludme3VDaE
+ BiOLevuGe6uy7jP0WALemQ5xYUNuo3S/XnThiJLxl3gn5Zgdxr
+ p5t99SheCQ6pnH1tDyziEOK18drQVEXfm0S1jKq0tDLsWZbT7G
+ vSIBDrnmBw7dweRzNWYEmE084l4l4Jtfjno3Vc6NTKiO/MAlm/
+ uyuEPP/aFjq77pLLA6phQgnA0yIghJWPgzI+mD5S5/elA7UzUO
+ jkFTS+sPgnc0iHe/6j4tb1jpwxlhj/P/fpHcoNLz0aN5+kL4gG
+ OL+mO+OI5XquA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 3:58 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> Need include "linux/console.h" when 'VT' and 'DUMMY_CONSOLE' enabled
-> (e.g allmodconfig).
->
-> The related error:
->   arch/c6x/kernel/setup.c: In function ‘setup_arch’:
->   arch/c6x/kernel/setup.c:442:2: error: ‘conswitchp’ undeclared (first use in this function)
->   arch/c6x/kernel/setup.c:442:2: note: each undeclared identifier is reported only once for each function it appears in
->   arch/c6x/kernel/setup.c:442:16: error: ‘dummy_con’ undeclared (first use in this function)
+Fix a s/maxium/maxim/ typo in DT binding documentation.
 
-Ah, so you managed to obtain a c6x toolchain. There's none at
-https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/ yet :-(
+Reported-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
 
-Gr{oetje,eeting}s,
+Mark, if still possible, feel free to merge this with the original patch.
+Thanks
+Guennadi
 
-                        Geert
+ .../bindings/regulator/max8973-regulator.txt       |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --git a/Documentation/devicetree/bindings/regulator/max8973-regulator.txt b/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
+index 8d38ab2..4f15d8a 100644
+--- a/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/max8973-regulator.txt
+@@ -2,7 +2,7 @@
+ 
+ Required properties:
+ 
+-- compatible:	must be "maxium,max8973"
++- compatible:	must be "maxim,max8973"
+ - reg:		the i2c slave address of the regulator. It should be 0x1b.
+ 
+ Any standard regulator properties can be used to configure the single max8973
+@@ -11,7 +11,7 @@ DCDC.
+ Example:
+ 
+ 	max8973@1b {
+-		compatible = "maxium,max8973";
++		compatible = "maxim,max8973";
+ 		reg = <0x1b>;
+ 
+ 		regulator-min-microvolt = <935000>;
+-- 
+1.7.2.5
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
