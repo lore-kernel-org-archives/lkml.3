@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab3FYSd4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:33:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40951 "EHLO
+	id S1752929Ab3FYSee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:34:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41188 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab3FYSdx (ORCPT
+	with ESMTP id S1752865Ab3FYSe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:53 -0400
+	Tue, 25 Jun 2013 14:34:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 42/95] x86: Fix section mismatch on load_ucode_ap
-Date: Tue, 25 Jun 2013 11:32:29 -0700
-Message-Id: <20130625182158.391138063@linuxfoundation.org>
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [ 94/95] spi/pxa2xx: use GFP_ATOMIC in sg table allocation
+Date: Tue, 25 Jun 2013 11:33:21 -0700
+Message-Id: <20130625182204.273910254@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -29,65 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-commit 949785996ec2250fa958fc3a924e5186e9a8fa2c upstream.
+commit 5548f98c46538d1da04eff179a52e50537d11465 upstream.
 
-We are in the process of removing all the __cpuinit annotations.
-While working on making that change, an existing problem was
-made evident:
+pxa2xx_spi_map_dma_buffer() gets called in tasklet context so we can't
+sleep when we allocate a new sg table. Use GFP_ATOMIC here instead.
 
-  WARNING: arch/x86/kernel/built-in.o(.text+0x198f2): Section mismatch
-  in reference from the function cpu_init() to the function
-  .init.text:load_ucode_ap()   The function cpu_init() references
-  the function __init load_ucode_ap().  This is often because cpu_init
-  lacks a __init annotation or the annotation of load_ucode_ap is wrong.
-
-This now appears because in my working tree, cpu_init() is no longer
-tagged as __cpuinit, and so the audit picks up the mismatch.  The 2nd
-hypothesis from the audit is the correct one, as there was an incorrect
-__init tag on the prototype in the header (but __cpuinit was used on
-the function itself.)
-
-The audit is telling us that the prototype's __init annotation took
-effect and the function did land in the .init.text section.  Checking
-with objdump on a mainline tree that still has __cpuinit shows that
-the __cpuinit on the function takes precedence over the __init on the
-prototype, but that won't be true once we make __cpuinit a no-op.
-
-Even though we are removing __cpuinit, we temporarily align both
-the function and the prototype on __cpuinit so that the changeset
-can be applied to stable trees  if desired.
-
-[ hpa: build fix only, no object code change ]
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/1371654926-11729-1-git-send-email-paul.gortmaker@windriver.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/microcode.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/spi/spi-pxa2xx-dma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/microcode.h
-+++ b/arch/x86/include/asm/microcode.h
-@@ -60,11 +60,11 @@ static inline void __exit exit_amd_micro
- #ifdef CONFIG_MICROCODE_EARLY
- #define MAX_UCODE_COUNT 128
- extern void __init load_ucode_bsp(void);
--extern __init void load_ucode_ap(void);
-+extern void __cpuinit load_ucode_ap(void);
- extern int __init save_microcode_in_initrd(void);
- #else
- static inline void __init load_ucode_bsp(void) {}
--static inline __init void load_ucode_ap(void) {}
-+static inline void __cpuinit load_ucode_ap(void) {}
- static inline int __init save_microcode_in_initrd(void)
- {
- 	return 0;
+--- a/drivers/spi/spi-pxa2xx-dma.c
++++ b/drivers/spi/spi-pxa2xx-dma.c
+@@ -59,7 +59,7 @@ static int pxa2xx_spi_map_dma_buffer(str
+ 		int ret;
+ 
+ 		sg_free_table(sgt);
+-		ret = sg_alloc_table(sgt, nents, GFP_KERNEL);
++		ret = sg_alloc_table(sgt, nents, GFP_ATOMIC);
+ 		if (ret)
+ 			return ret;
+ 	}
 
 
