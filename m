@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab3FYTF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:05:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40941 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3FYSdv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752411Ab3FYSdv (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Jun 2013 14:33:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40891 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211Ab3FYSdn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:33:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joshua Covington <joshuacov@googlemail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 40/95] x86, mtrr: Fix original mtrr range get for mtrr_cleanup
-Date: Tue, 25 Jun 2013 11:32:27 -0700
-Message-Id: <20130625182158.146905628@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [ 28/95] parisc: provide pci_mmap_page_range() for parisc
+Date: Tue, 25 Jun 2013 11:32:15 -0700
+Message-Id: <20130625182156.842578037@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -28,67 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
 
-commit d8d386c10630d8f7837700f4c466443d49e12cc0 upstream.
+commit 2cc7138f4347df939ce03f313e3d87794bab36f8 upstream.
 
-Joshua reported: Commit cd7b304dfaf1 (x86, range: fix missing merge
-during add range) broke mtrr cleanup on his setup in 3.9.5.
-corresponding commit in upstream is fbe06b7bae7c.
+pci_mmap_page_range() is needed for X11-server support on C8000 with ATI
+FireGL card.
 
-  *BAD*gran_size: 64K chunk_size: 16M num_reg: 6 lose cover RAM: -0G
-
-https://bugzilla.kernel.org/show_bug.cgi?id=59491
-
-So it rejects new var mtrr layout.
-
-It turns out we have some problem with initial mtrr range retrieval.
-The current sequence is:
-	x86_get_mtrr_mem_range
-		==> bunchs of add_range_with_merge
-		==> bunchs of subract_range
-		==> clean_sort_range
-	add_range_with_merge for [0,1M)
-	sort_range()
-
-add_range_with_merge could have blank slots, so we can not just
-sort only, that will have final result have extra blank slot in head.
-
-So move that calling add_range_with_merge for [0,1M), with that we
-could avoid extra clean_sort_range calling.
-
-Reported-by: Joshua Covington <joshuacov@googlemail.com>
-Tested-by: Joshua Covington <joshuacov@googlemail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1371154622-8929-2-git-send-email-yinghai@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/mtrr/cleanup.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/parisc/include/asm/pci.h |    5 +++++
+ arch/parisc/kernel/pci.c      |   27 +++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+)
 
---- a/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -714,15 +714,15 @@ int __init mtrr_cleanup(unsigned address
- 	if (mtrr_tom2)
- 		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
+--- a/arch/parisc/include/asm/pci.h
++++ b/arch/parisc/include/asm/pci.h
+@@ -225,4 +225,9 @@ static inline int pci_get_legacy_ide_irq
+ 	return channel ? 15 : 14;
+ }
  
--	nr_range = x86_get_mtrr_mem_range(range, 0, x_remove_base, x_remove_size);
- 	/*
- 	 * [0, 1M) should always be covered by var mtrr with WB
- 	 * and fixed mtrrs should take effect before var mtrr for it:
- 	 */
--	nr_range = add_range_with_merge(range, RANGE_NUM, nr_range, 0,
-+	nr_range = add_range_with_merge(range, RANGE_NUM, 0, 0,
- 					1ULL<<(20 - PAGE_SHIFT));
--	/* Sort the ranges: */
--	sort_range(range, nr_range);
-+	/* add from var mtrr at last */
-+	nr_range = x86_get_mtrr_mem_range(range, nr_range,
-+					  x_remove_base, x_remove_size);
++#define HAVE_PCI_MMAP
++
++extern int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
++	enum pci_mmap_state mmap_state, int write_combine);
++
+ #endif /* __ASM_PARISC_PCI_H */
+--- a/arch/parisc/kernel/pci.c
++++ b/arch/parisc/kernel/pci.c
+@@ -220,6 +220,33 @@ resource_size_t pcibios_align_resource(v
+ }
  
- 	range_sums = sum_ranges(range, nr_range);
- 	printk(KERN_INFO "total RAM covered: %ldM\n",
+ 
++int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
++			enum pci_mmap_state mmap_state, int write_combine)
++{
++	unsigned long prot;
++
++	/*
++	 * I/O space can be accessed via normal processor loads and stores on
++	 * this platform but for now we elect not to do this and portable
++	 * drivers should not do this anyway.
++	 */
++	if (mmap_state == pci_mmap_io)
++		return -EINVAL;
++
++	if (write_combine)
++		return -EINVAL;
++
++	/*
++	 * Ignore write-combine; for now only return uncached mappings.
++	 */
++	prot = pgprot_val(vma->vm_page_prot);
++	prot |= _PAGE_NO_CACHE;
++	vma->vm_page_prot = __pgprot(prot);
++
++	return remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
++		vma->vm_end - vma->vm_start, vma->vm_page_prot);
++}
++
+ /*
+  * A driver is enabling the device.  We make sure that all the appropriate
+  * bits are set to allow the device to operate as the driver is expecting.
 
 
