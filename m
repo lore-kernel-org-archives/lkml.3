@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab3FYRtZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:49:25 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:20873 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab3FYRtX (ORCPT
+	id S1751788Ab3FYRtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:49:24 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59919 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3FYRtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 13:49:23 -0400
-Message-ID: <51C9D818.1090702@atmel.com>
-Date: Tue, 25 Jun 2013 18:49:12 +0100
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <devel@linuxdriverproject.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <shigekatsu.tateno@atmel.com>
-Subject: Re: [PATCH] staging: ozwpan: Convert printk to dev_dbg()
-References: <1372177802-11360-1-git-send-email-rupesh.gujare@atmel.com> <20130625170205.GA21328@kroah.com>
-In-Reply-To: <20130625170205.GA21328@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Message-ID: <1372182534.7497.129.camel@marge.simpson.net>
+Subject: Re: Scheduler accounting inflated for io bound processes.
+From: Mike Galbraith <bitbucket@online.de>
+To: Dave Chiluk <chiluk@canonical.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 25 Jun 2013 19:48:54 +0200
+In-Reply-To: <1372176104.7497.86.camel@marge.simpson.net>
+References: <51C35C05.1070005@canonical.com>
+	 <1372176104.7497.86.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:kY7Yb+5mWGtbhOzmhFyQbKyn8bfLW9bWVzb6uFZQte9
+ OkUBluUW2KU6h9ZDaXHITnSHuaASrObmg0+j8/NsSvS6nR/DvV
+ y0HHfuzRNdtifqO38MXxMELVErsORVb6+dhfyWR0qi0YuG+gZN
+ cVED8Q5qkxUlsbkV10Q70STdZcOH+He4NGCweGy8Ajom2ZVpXv
+ 4ysJ8qTERhlqE5gxTODe790bLTefPckuqBlyFezO+/neE7kGno
+ 9bFjTzBIoTJRR4w532ff2ex2k2A7E6FvlNm2nz+YXJXh5ZLg5r
+ KGYtITYO3HrPyvYgt6HSXEuklvjkEYzCsqA7bGmhrh+WJR3HU8
+ Tv+9TGJXtIT3/BoV+u/16Q7GI/+MobYjQz/5Zb+k/f1jx64h33
+ Mcw92sxcJ0RVA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/13 18:02, Greg KH wrote:
-> On Tue, Jun 25, 2013 at 05:30:02PM +0100, Rupesh Gujare wrote:
->> convert all debug messages from printk to dev_dbg() & add kernel config to
->> enable/disable these messages during compilation.
-> No, just use the built-in dynamic debug code in the kernel, no need to
-> provide any new macros or functions or most importantly, no new Kconfig
-> options.
->
+On Tue, 2013-06-25 at 18:01 +0200, Mike Galbraith wrote: 
+> On Thu, 2013-06-20 at 14:46 -0500, Dave Chiluk wrote: 
+> > Running the below testcase shows each process consuming 41-43% of it's
+> > respective cpu while per core idle numbers show 63-65%, a disparity of
+> > roughly 4-8%.  Is this a bug, known behaviour, or consequence of the
+> > process being io bound?
+> 
+> All three I suppose.
 
-New macro (oz_trace) is being used as pointer to "struct device *" is 
-not available in all functions for dev_dbg() function.
-Please let me know if there is better way to handle this, I will be 
-happy to rework on this.
+P.S.
 
-As well new Kconfig option was added to pass CFLAGS to compiler, so that 
-dev_dbg will get compiled on system where DYNAMIC_DEBUG is not defined.
-I was assuming that it is a standard practice, as I can find similar 
-Kconfig option for other drivers. Or am I wrong in my understanding ?
+perf top --sort=comm -C 3 -d 5 -F 250 (my tick freq)
+56.65%    netserver
+43.35%         pert
 
-Main idea here is to replace printk with dev_dbg(), which gives us 
-option to enable individual log during runtime if DYNAMIC_DEBUG is 
-enabled & provide mechanism to compile this when DYNAMIC_DEBUG is not 
-enabled.
+perf top --sort=comm -C 3 -d 5
+67.16%  netserver
+32.84%       pert
 
-Again many of these logs will be removed in future, as currently there 
-are too many logs which are not required, hence idea is to only change 
-macro & then remove remaining logs in future.
+If you sample a high freq signal (netperf TCP_RR) at low freq (tick),
+then try to reproduce the original signal, (very familiar) distortion
+results.  Perf doesn't even care about softirq yada yada, so seems it's
+a pure sample rate thing.
 
--- 
-Regards,
-Rupesh Gujare
+-Mike
 
