@@ -1,53 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab3FYNct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 09:32:49 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:38251 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab3FYNcs convert rfc822-to-8bit (ORCPT
+	id S1752099Ab3FYNdB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 09:33:01 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49960 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab3FYNc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 09:32:48 -0400
+	Tue, 25 Jun 2013 09:32:58 -0400
+Date: Tue, 25 Jun 2013 16:32:45 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: g@dastard, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] vfs: check for integer overflows in posix_acl_alloc()
+Message-ID: <20130625133245.GI5714@mwanda>
+References: <20130624162719.GB32503@elgon.mountain>
+ <20130624213709.GT29338@dastard>
 MIME-Version: 1.0
-In-Reply-To: <51C99AB5.1080002@imgtec.com>
-References: <201306251455.01540.heiko@sntech.de>
-	<201306251456.36499.heiko@sntech.de>
-	<51C99581.2010403@imgtec.com>
-	<201306251521.55634.heiko@sntech.de>
-	<51C99AB5.1080002@imgtec.com>
-Date: Tue, 25 Jun 2013 15:32:47 +0200
-Message-ID: <CACRpkdbdwvmBYFX=ppdM_RmGwyTcWVeTCMj60F4sh6YEVRE2Uw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] pinctrl: remove slew-rate parameter from tz1090
-From: Linus Walleij <linus.walleij@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624213709.GT29338@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 3:27 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> On 25/06/13 14:21, Heiko Stübner wrote:
+Yeah.  You're right.  When I look at it more closely the ext4
+example is capped ext4_get_acl().  Sorry for the noise.
 
->> My thoughts were that this code would never be reached when the parsing was
->> removed and to not cause confusion to the driver when an acceptable binding
->> was found for slew-rate.
->>
->> But it of course also doesn't hurt to stay in.
->
-> Okay, fair enough.
->
-> Acked-by: James Hogan <james.hogan@imgtec.com>
+regards,
+dan carpenter
 
-OK applied this so we have a clean slate.
-
-Patches adding it back in with SI measures will be welcomed!
-
-Yours,
-Linus Walleij
