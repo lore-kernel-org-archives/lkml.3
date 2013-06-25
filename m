@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab3FYVjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 17:39:41 -0400
-Received: from 100.204.216.81.static.g-hkn.siw.siwnet.net ([81.216.204.100]:52499
-	"EHLO iko.pp.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752054Ab3FYVjj (ORCPT
+	id S1752399Ab3FYVkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 17:40:13 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54678 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab3FYViD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 17:39:39 -0400
-Message-Id: <201306252139.r5PLdQpP017104@eskarina.iko.pp.se>
-X-Face: ^"+mumOlNwo;yI>`\39\txuVze?eiR9uqpo2*mE!9MWXgXI0v(3ArwymNWe'.q:eLl!=guD
- x{jGFEWN6,#HoN%2qRW;7.CL]9%Ap,067"u1%!NUqS.MhV'+,6$Fj-;W2Z}Y,JUZ'L+f<?~E{ID*=T
- V\NxAOu>)|B@3k3n;gLl*#i[(J-os#fNnDJ8m["|JWNwpORh|_.MGkR#|a~QS!"4hEQ{O{[Ii14{xD
- PU/:5wuv7m1=TK=.>G8wdfpY~]{H(Qa\1`%|Hz:!)c3f9UOW|WgE"4d\E7?oDu9.
-From: Anders Hammarquist <iko@iko.pp.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [ 17/17] USB: serial: ti_usb_3410_5052: new device id for Abbot strip port cable
-In-Reply-To: Message from Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-   of "Tue, 25 Jun 2013 11:39:32 -0700." <20130625183917.373592561@linuxfoundation.org>
-References: <20130625183915.443950649@linuxfoundation.org><20130625183917.373592561@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <17102.1372196366.1@eskarina.iko.pp.se>
-Date: Tue, 25 Jun 2013 23:39:26 +0200
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (iko.pp.se [127.0.0.1]); Tue, 25 Jun 2013 23:39:30 +0200 (MEST)
+	Tue, 25 Jun 2013 17:38:03 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC nohz_full 5/8] nohz_full: Add full-system idle states and variables
+Date: Tue, 25 Jun 2013 14:37:48 -0700
+Message-Id: <1372196271-20393-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1372196271-20393-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130625213721.GA19452@linux.vnet.ibm.com>
+ <1372196271-20393-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062521-3620-0000-0000-000003494AC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a message of Tue, 25 Jun 2013 11:39:32 -0700, Greg Kroah-Hartman writes:
->3.0-stable review patch.  If anyone has any objections, please let me know.
->
->From: Anders Hammarquist <iko@iko.pp.se>
->
->commit 35a2fbc941accd0e9f1bfadd669311786118d874 upstream.
->
->Add product id for Abbott strip port cable for Precision meter which
->uses the TI 3410 chip.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Given the statically sized arrays, I think this patch should not go in
-alone. It needs to go together with the later patches I sent you that
-fix the array sizing.
+This commit adds control variables and states for full-system idle.
+The system will progress through the states in numerical order when
+the system is fully idle (other than the timekeeping CPU), and reset
+down to the initial state if any non-timekeeping CPU goes non-idle.
+The current state is kept in full_sysidle_state.
 
-(this applies to all trees)
+A RCU_SYSIDLE_SMALL macro is defined, and systems with this number
+of CPUs or fewer move through the states more aggressively.  The idea
+is that the resulting memory contention is less of a problem on small
+systems.  Architectures can adjust this value (which defaults to 8)
+using CONFIG_ARCH_RCU_SYSIDLE_SMALL.
 
-/Anders
+One flavor of RCU will be in charge of driving the state machine,
+defined by rcu_sysidle_state.  This should be the busiest flavor of RCU.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rcutree_plugin.h | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index a00d5c9..349f426 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2380,6 +2380,33 @@ static void rcu_kick_nohz_cpu(int cpu)
+ #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
+ 
+ /*
++ * Handle small systems specially, accelerating their transition into
++ * full idle state.  Allow arches to override this code's idea of
++ * what constitutes a "small" system.
++ */
++#ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL
++#define RCU_SYSIDLE_SMALL CONFIG_ARCH_RCU_SYSIDLE_SMALL
++#else /* #ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL */
++#define RCU_SYSIDLE_SMALL 8
++#endif
++
++/*
++ * Define RCU flavor that holds sysidle state.  This needs to be the
++ * most active flavor of RCU.
++ */
++#ifdef CONFIG_PREEMPT_RCU
++static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_preempt_state;
++#else /* #ifdef CONFIG_PREEMPT_RCU */
++static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_sched_state;
++#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
++
++static int __maybe_unused full_sysidle_state; /* Current system-idle state. */
++#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
++#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
++#define RCU_SYSIDLE_FULL	2	/* All CPUs idle, ready for sysidle. */
++#define RCU_SYSIDLE_FULL_NOTED	3	/* Actually entered sysidle state. */
++
++/*
+  * Invoked to note exit from irq or task transition to idle.  Note that
+  * usermode execution does -not- count as idle here!  The caller must
+  * have disabled interrupts.
+-- 
+1.8.1.5
+
