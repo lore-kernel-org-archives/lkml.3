@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab3FYSyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:54:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41117 "EHLO
+	id S1752758Ab3FYSeT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:34:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab3FYSeU (ORCPT
+	with ESMTP id S1752597Ab3FYSeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:20 -0400
+	Tue, 25 Jun 2013 14:34:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerry Chu <hkchu@google.com>, Wei Yongjun <weiyj.lk@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 76/95] tuntap: correct the return value in tun_set_iff()
-Date: Tue, 25 Jun 2013 11:33:03 -0700
-Message-Id: <20130625182202.162577566@linuxfoundation.org>
+Subject: [ 67/95] net: sctp: fix NULL pointer dereference in socket destruction
+Date: Tue, 25 Jun 2013 11:32:54 -0700
+Message-Id: <20130625182201.152885933@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -29,45 +29,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit e8dbad66ef56074eadb41ed5998acd2320447018 ]
+[ Upstream commit 1abd165ed757db1afdefaac0a4bc8a70f97d258c ]
 
-commit (3be8fbab tuntap: fix error return code in tun_set_iff()) breaks the
-creation of multiqueue tuntap since it forbids to create more than one queues
-for a multiqueue tuntap device. We need return 0 instead -EBUSY here since we
-don't want to re-initialize the device when one or more queues has been already
-attached. Add a comment and correct the return value to zero.
+While stress testing sctp sockets, I hit the following panic:
 
-Reported-by: Jerry Chu <hkchu@google.com>
-Cc: Jerry Chu <hkchu@google.com>
-Cc: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by:  Jerry Chu <hkchu@google.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+IP: [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+PGD 7cead067 PUD 7ce76067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: sctp(F) libcrc32c(F) [...]
+CPU: 7 PID: 2950 Comm: acc Tainted: GF            3.10.0-rc2+ #1
+Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
+task: ffff88007ce0e0c0 ti: ffff88007b568000 task.ti: ffff88007b568000
+RIP: 0010:[<ffffffffa0490c4e>]  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+RSP: 0018:ffff88007b569e08  EFLAGS: 00010292
+RAX: 0000000000000000 RBX: ffff88007db78a00 RCX: dead000000200200
+RDX: ffffffffa049fdb0 RSI: ffff8800379baf38 RDI: 0000000000000000
+RBP: ffff88007b569e18 R08: ffff88007c230da0 R09: 0000000000000001
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+R13: ffff880077990d00 R14: 0000000000000084 R15: ffff88007db78a00
+FS:  00007fc18ab61700(0000) GS:ffff88007fc60000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000020 CR3: 000000007cf9d000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffff88007b569e38 ffff88007db78a00 ffff88007b569e38 ffffffffa049fded
+ ffffffff81abf0c0 ffff88007db78a00 ffff88007b569e58 ffffffff8145b60e
+ 0000000000000000 0000000000000000 ffff88007b569eb8 ffffffff814df36e
+Call Trace:
+ [<ffffffffa049fded>] sctp_destroy_sock+0x3d/0x80 [sctp]
+ [<ffffffff8145b60e>] sk_common_release+0x1e/0xf0
+ [<ffffffff814df36e>] inet_create+0x2ae/0x350
+ [<ffffffff81455a6f>] __sock_create+0x11f/0x240
+ [<ffffffff81455bf0>] sock_create+0x30/0x40
+ [<ffffffff8145696c>] SyS_socket+0x4c/0xc0
+ [<ffffffff815403be>] ? do_page_fault+0xe/0x10
+ [<ffffffff8153cb32>] ? page_fault+0x22/0x30
+ [<ffffffff81544e02>] system_call_fastpath+0x16/0x1b
+Code: 0c c9 c3 66 2e 0f 1f 84 00 00 00 00 00 e8 fb fe ff ff c9 c3 66 0f
+      1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 <48>
+      8b 47 20 48 89 fb c6 47 1c 01 c6 40 12 07 e8 9e 68 01 00 48
+RIP  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+ RSP <ffff88007b569e08>
+CR2: 0000000000000020
+---[ end trace e0d71ec1108c1dd9 ]---
+
+I did not hit this with the lksctp-tools functional tests, but with a
+small, multi-threaded test program, that heavily allocates, binds,
+listens and waits in accept on sctp sockets, and then randomly kills
+some of them (no need for an actual client in this case to hit this).
+Then, again, allocating, binding, etc, and then killing child processes.
+
+This panic then only occurs when ``echo 1 > /proc/sys/net/sctp/auth_enable''
+is set. The cause for that is actually very simple: in sctp_endpoint_init()
+we enter the path of sctp_auth_init_hmacs(). There, we try to allocate
+our crypto transforms through crypto_alloc_hash(). In our scenario,
+it then can happen that crypto_alloc_hash() fails with -EINTR from
+crypto_larval_wait(), thus we bail out and release the socket via
+sk_common_release(), sctp_destroy_sock() and hit the NULL pointer
+dereference as soon as we try to access members in the endpoint during
+sctp_endpoint_free(), since endpoint at that time is still NULL. Now,
+if we have that case, we do not need to do any cleanup work and just
+leave the destruction handler.
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/tun.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/sctp/socket.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1600,8 +1600,12 @@ static int tun_set_iff(struct net *net,
- 			return err;
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -4002,6 +4002,12 @@ SCTP_STATIC void sctp_destroy_sock(struc
  
- 		if (tun->flags & TUN_TAP_MQ &&
--		    (tun->numqueues + tun->numdisabled > 1))
--			return -EBUSY;
-+		    (tun->numqueues + tun->numdisabled > 1)) {
-+			/* One or more queue has already been attached, no need
-+			 * to initialize the device again.
-+			 */
-+			return 0;
-+		}
- 	}
- 	else {
- 		char *name;
+ 	/* Release our hold on the endpoint. */
+ 	sp = sctp_sk(sk);
++	/* This could happen during socket init, thus we bail out
++	 * early, since the rest of the below is not setup either.
++	 */
++	if (sp->ep == NULL)
++		return;
++
+ 	if (sp->do_auto_asconf) {
+ 		sp->do_auto_asconf = 0;
+ 		list_del(&sp->auto_asconf_list);
 
 
