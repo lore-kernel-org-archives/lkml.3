@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab3FYOML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:12:11 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:42701 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab3FYOMJ (ORCPT
+	id S1751916Ab3FYOMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:12:16 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:14738 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751742Ab3FYOMO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:12:09 -0400
-Date: Tue, 25 Jun 2013 16:12:02 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [GIT PULL] s390 patches for the 3.9-rc6
-Message-ID: <20130625161202.4d0a0075@mschwide>
-In-Reply-To: <CACxGe6uOf+TONiCu27w9TsXmo2VVYXKS1+RZckAtxAdshtPDgQ@mail.gmail.com>
-References: <20130403172534.528d04c5@mschwide>
-	<CACxGe6sYM8QPB-ZZkgB0+f81CZHULPi5zPAsWb5dzHiRgU+w6Q@mail.gmail.com>
-	<20130625141508.6c391fd8@mschwide>
-	<CACxGe6s3RqOkf=M4zwpJGEEVa9XjJvP2q5xeLKewGo6np5C-3g@mail.gmail.com>
-	<20130625151151.73aaba28@mschwide>
-	<CACxGe6uOf+TONiCu27w9TsXmo2VVYXKS1+RZckAtxAdshtPDgQ@mail.gmail.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062514-5024-0000-0000-0000066BB098
+	Tue, 25 Jun 2013 10:12:14 -0400
+Date: Tue, 25 Jun 2013 16:11:43 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver
+Message-ID: <20130625141141.GA1720@ab42.lan>
+References: <20130530211944.05F4D3E0A90@localhost>
+ <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com>
+ <alpine.DEB.2.02.1306251551020.4013@ionos.tec.linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.DEB.2.02.1306251551020.4013@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jun 2013 14:30:20 +0100
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> On Tue, Jun 25, 2013 at 2:11 PM, Martin Schwidefsky
-> <schwidefsky@de.ibm.com> wrote:
-> > On Tue, 25 Jun 2013 13:42:23 +0100
-> > Grant Likely <grant.likely@secretlab.ca> wrote:
-> >
-> >> On Tue, Jun 25, 2013 at 1:15 PM, Martin Schwidefsky
-> >> <schwidefsky@de.ibm.com> wrote:
-> >> > On Tue, 25 Jun 2013 13:09:51 +0100
-> >> > Grant Likely <grant.likely@secretlab.ca> wrote:
-> >> >
-> >> >> On Wed, Apr 3, 2013 at 4:25 PM, Martin Schwidefsky
-> >> >> <schwidefsky@de.ibm.com> wrote:
-> >> >> > Hi Linus,
-> >> >> >
-> >> >> > please pull from the 'for-linus' branch of
-> >> >> >
-> >> >> >         git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
-> >> >> >
-> >> >> > to receive the following updates: Just a bunch of bugfixes.
-> >> >> >
-> >> >> > Heiko Carstens (4):
-> >> >> >       drivers/Kconfig: add several missing GENERIC_HARDIRQS dependencies
-> >> >>
-> >> >> Is anyone currently working on fixing this? s390 is the only
-> >> >> architecture left that does not enable GENERIC_HARDIRQS. It's painful
-> >> >> to keep adding dependencies on GENERIC_HARDIRQS to driver configs.
-> >> >
-> >> > I am working on it. The hardest part is MSI irqs for PCI. Chances are
-> >> > that I get it done for the merge window of 3.12.
-> >>
-> >> How are you handling the MSIs? I've just been looking at some code for
-> >> irq_domain to handle MSI mapping. What's the part that is getting you
-> >> hung up?
-> >
-> > Basically a name-space thing. The current code allocates 64 interrupts numbers
-> > for each PCI device, starting at 0. With GENERIC_HARDIRQS=y irq #0 is used for
-> > for external interrupts, irq #1 for I/O interrupts and irq #2 for adapter
-> > interrupts. The adapter interrupt handler for PCI has to scan the interrupt
-> > vectors and call generic_handle_irq for the MSI interrupts starting at irq #3.
-> > As I don't want to create a huge irq_desc array the number of allocatable
-> > interrupts for MSI will be limited and I can not simply assign 64 interrupts
-> > numbers to each device anymore.
+On Tue, Jun 25, 2013 at 03:58:43PM +0200, Thomas Gleixner wrote:
+> On Fri, 31 May 2013, Christian Ruppert wrote:
+> > The SOC interrupt controller driver for the Abilis Systems TB10x series of
+> > SOCs based on ARC700 CPUs.
+> > 
+> > This patch depends on commits eb76bdd407d8a90e59a06cb0158886df390e5d1c and
+> > 712bc93df9e7f14b8a163148d2aa7c778e151627 from branch irq/for-arm of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git.
 > 
-> Have you looked at irq_domain? It was created to solve that exact
-> problem. irq_descs can get allocated dynamically as irqs are
-> requested.
+> This should go below --- as it is not part of the changelog.
 
-That is one option I am considering. The PCI support for System z can have multiple
-PCI function groups, each with up to 2048 MSI interrupts. It is quite a good match.
+OK, I will change that.
+
+> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+> 
+> Why is Pierrick in the SOB chain? 
+
+We work on the platform port together and review and test each others'
+patches. It is planned submitting several of his patches as soon as
+basic platform is in.
+
+> > ---
+> >  .../interrupt-controller/abilis,tb10x-ictl.txt     |   38 ++++
+> >  arch/arc/boot/dts/abilis_tb100.dtsi                |   32 ++--
+> >  arch/arc/boot/dts/abilis_tb101.dtsi                |   32 ++--
+> >  arch/arc/boot/dts/abilis_tb10x.dtsi                |   32 ++--
+> >  arch/arc/plat-tb10x/Kconfig                        |    1 +
+> >  drivers/irqchip/Kconfig                            |    5 +
+> >  drivers/irqchip/Makefile                           |    1 +
+> >  drivers/irqchip/irq-tb10x.c                        |  195 ++++++++++++++++++++
+> 
+> I can pick it up, but I'm not so fond of carrying arch/arc patches
+> which might conflict with other stuff in the arc tree. Veenet, if I
+> should pick the whole thing up, I'd like to have an acked-by at least.
+
+Would you prefer if we separated everything in arch/arc from this patch
+and push it through Vineet's channel?
+
+Greetings,
+  Christian
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
