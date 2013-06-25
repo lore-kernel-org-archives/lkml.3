@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab3FYKTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 06:19:20 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:43817 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752685Ab3FYKTP (ORCPT
+	id S1752874Ab3FYKTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 06:19:50 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:51085 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab3FYKTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 06:19:15 -0400
-Message-ID: <51C96D85.7080507@st.com>
-Date: Tue, 25 Jun 2013 11:14:29 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 25 Jun 2013 06:19:49 -0400
+Message-ID: <51C96EC3.4040104@hitachi.com>
+Date: Tue, 25 Jun 2013 19:19:47 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jiri Slaby <jslaby@suse.cz>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v5] serial:st-asc: Add ST ASC driver.
-References: <1372058503-30505-1-git-send-email-srinivas.kandagatla@gmail.com> <20130624233813.GA4108@kroah.com>
-In-Reply-To: <20130624233813.GA4108@kroah.com>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 2/2 v3] tracing/uprobes: Support soft-mode disabling
+References: <51C90ED1.5070209@huawei.com>
+In-Reply-To: <51C90ED1.5070209@huawei.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/13 00:38, Greg Kroah-Hartman wrote:
-> On Mon, Jun 24, 2013 at 08:21:43AM +0100, Srinivas KANDAGATLA wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>
->> This patch adds support to ASC (asynchronous serial controller)
->> driver, which is basically a standard serial driver. This IP is common
->> across all the ST parts for settop box platforms.
->>
->> ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
->> It support all industry standard baud rates.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->> CC: Stephen Gallimore <stephen.gallimore@st.com>
->> CC: Stuart Menefy <stuart.menefy@st.com>
->> CC: Arnd Bergmann <arnd@arndb.de>
->> ---
->> Hi Greg,
->>
->> This patch is the part of the driver support for Stixxxx SOCs.
->> This patch undergone 3-4 cycles of review in arm-kernel mailing list.
->> As Arnd prefered to take only SOC support patches via arm-soc, Am 
->> sending this patch seperately.
->>
->> If its not too late, can you consider this patch for 3.11 via tty tree?
+(2013/06/25 12:30), zhangwei(Jovi) wrote:
+> Support soft-mode disabling on uprobe-based dynamic events.
+> Soft-disabling is just ignoring recording if the soft disabled
+> flag is set.
 > 
-> I would have taken it, but it breaks the build on my machine:
-Thanks Greg,
+> Signed-off-by: zhangwei(Jovi) <jovi.zhangwe@huawei.com>
 
-I know the problem, some of the members in struct device are conditional
-with PINCTRL support.
-I think that's breaking build on your machine.
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-I will fix it and resend as you suggested.
+Thank you!
 
-Thanks,
-srini
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  kernel/trace/trace_uprobe.c |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> drivers/tty/serial/st-asc.c: In function ‘asc_serial_resume’:
-> drivers/tty/serial/st-asc.c:774:15: error: ‘struct device’ has no member named ‘pins’
-> drivers/tty/serial/st-asc.c:775:3: error: implicit declaration of function ‘pinctrl_select_state’ [-Werror=implicit-function-declaration]
-> drivers/tty/serial/st-asc.c:775:37: error: ‘struct device’ has no member named ‘pins’
-> drivers/tty/serial/st-asc.c:776:16: error: ‘struct device’ has no member named ‘pins’
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index dbbb4a9..d2da3ea 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -530,6 +530,9 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
 > 
-> Please test your patches out on a "normal" Linux system.
+>  	WARN_ON(call != ftrace_file->event_call);
+> 
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+> +		return;
+> +
+>  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+>  	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
+>  						call->event.type,
+> 
 
-> 
-> Please feel free to resend this after 3.11-rc1 is out, for inclusion in
-> 3.12, after you have fixed the build problems.
-> 
-> greg k-h
-> 
-> 
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
