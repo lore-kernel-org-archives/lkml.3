@@ -1,556 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab3FYNqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 09:46:51 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:24138 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab3FYNqt (ORCPT
+	id S1751816Ab3FYNrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 09:47:12 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:50693 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751326Ab3FYNrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 09:46:49 -0400
-X-AuditID: cbfec7f4-b7fd76d0000035e1-05-51c99f4774f4
-From: Tomasz Figa <t.figa@samsung.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Grant Likely <grant.likely@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Masanari Iida <standby24x7@gmail.com>,
+	Tue, 25 Jun 2013 09:47:11 -0400
+Message-ID: <51C99E33.4070009@st.com>
+Date: Tue, 25 Jun 2013 14:42:11 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        rtc-linux@googlegroups.com, Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH v4 3/3] mfd: max8998: Add support for Device Tree
-Date: Tue, 25 Jun 2013 15:46:45 +0200
-Message-id: <5758433.ddjIqm43WP@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.10.3 (Linux/3.8.8-gentoo; KDE/4.10.3; x86_64; ; )
-In-reply-to: <CAK9yfHx+DrhkGiJMahKotc37_ubYxyuiyFTtcW=Znu1LF1pojg@mail.gmail.com>
-References: <1372077594-17052-1-git-send-email-t.figa@samsung.com>
- <1372077594-17052-4-git-send-email-t.figa@samsung.com>
- <CAK9yfHx+DrhkGiJMahKotc37_ubYxyuiyFTtcW=Znu1LF1pojg@mail.gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsVy+t/xa7ru808GGsxol7RYcvEqu8XUh0/Y
-	LA782cFosXvOYhaL3gVX2Sy+Xelgstj0+BqrxeVdc9gsZpzfx2Rx+zKvxeNZ89gsDq84wGSx
-	7uV0Fov9nR2MFif/9DJanO5mtbg04zq7g6BHS3MPm8eCz1fYPXbOusvusWfiSTaPTas62Txe
-	rZ7J6nHn2h42j3knAz02L6n3uNCV7dG3ZRWjx5kFR9g9ps/7yeTxeZNcAF8Ul01Kak5mWWqR
-	vl0CV8arqXEFv9sYKz5tusHYwDg3t4uRk0NCwETixNvzjBC2mMSFe+vZQGwhgaWMEp+PO3Ux
-	cgHZXUwS5xt6WUASbAJqEp8bHoEViQhoSbzsXs4EUsQscI1FYmH7NLCEsICjxNlZi8FsFgFV
-	ieNTXoLZvAKaEj82PQQbxC+gLvFu21MmEFtUwFXi/erDQHEODk6BYIn+P7wQiw8xSrxZugCq
-	V1Dix+R7YL3MAvIS+/ZPZYWwtSTW7zzONIFRcBaSsllIymYhKVvAyLyKUTS1NLmgOCk911Cv
-	ODG3uDQvXS85P3cTIyRmv+xgXHzM6hCjAAejEg/vx7gTgUKsiWXFlblA13AwK4nwHso6GSjE
-	m5JYWZValB9fVJqTWnyIkYmDU6qBMfFNuMI7IVE7wT/TP55f8yw73JDh2WT7PzeVWs7XHYsx
-	cjcUnv6XX70ol3uSZGnsxAkiT3I91tTMuT4xXatnh8tsF78Fx8JOX7qg9sx9JcvEM6wev6K3
-	HGgI6ojg1PhxcsnZF5zLncx4bu7V0Z34S8dJel4Rn6dC/qOqaxdWcb85HvxlSardXCWW4oxE
-	Qy3mouJEADrbPWi3AgAA
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v6] clocksource:arm_global_timer: Add ARM global timer
+ support.
+References: <1372152678-29530-1-git-send-email-srinivas.kandagatla@st.com> <alpine.DEB.2.02.1306251459160.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306251459160.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Device Tree support to max8998 driver.
+Thanks for the comments.
+On 25/06/13 14:17, Thomas Gleixner wrote:
+> On Tue, 25 Jun 2013, Srinivas KANDAGATLA wrote:
+>> If its not too late can this patch be considered for 3.11 via clocksource tree?
+> 
+> Sure. No worry, though I noticed a little detail when reading through it
+> again. See below.
+> 
+>> +/**
+>> + * To ensure that updates to comparator value register do not set the
+>> + * Interrupt Status Register proceed as follows:
+>> + * 1. Clear the Comp Enable bit in the Timer Control Register.
+>> + * 2. Write the lower 32-bit Comparator Value Register.
+>> + * 3. Write the upper 32-bit Comparator Value Register.
+>> + * 4. Set the Comp Enable bit and, if necessary, the IRQ enable bit.
+>> + */
+>> +static void gt_compare_set(unsigned long delta, int periodic)
+>> +{
+>> +	u64 counter = gt_counter_read();
+>> +	unsigned long ctrl = readl(gt_base + GT_CONTROL);
+> 
+> Why are you reading the control register back over and over? All you
+> need to preserve is the GT_CONTROL_TIMER_ENABLE bit. So you can spare
+> that read out and just do
+> 
+> 	ctrl = GT_CONTROL_TIMER_ENABLE;
+> 	writel(ctrl, gt_base + GT_CONTROL);
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
----
- Documentation/devicetree/bindings/mfd/max8998.txt | 119 ++++++++++++++++++++
- drivers/mfd/max8998.c                             |  67 ++++++++++-
- drivers/regulator/max8998.c                       | 130 +++++++++++++++++++++-
- drivers/rtc/rtc-max8998.c                         |   2 +-
- include/linux/mfd/max8998-private.h               |   2 +
- include/linux/mfd/max8998.h                       |   2 +
- 6 files changed, 315 insertions(+), 7 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/max8998.txt
+Logically you are right we could do as you suggested, However its not
+implicit that which bits are going to be cleared. Its more to do with
+readability of the code.
+If you still insist I can change it.
 
-Changes since v3:
- - Addressed Sachin's comments:
-    - fixed typos in documentation
-    - removed redundant error messages
-    - and other minor stylistic fixes
- - Reworded parts of the documentation and improved formatting a bit
- - Simplified device tree parsing code even more
- - Replaced most of #ifdef CONFIG_OF with if (IS_ENABLED(CONFIG_OF))
-    to move responsibility of dropping unused code to compiler and avoid
-    unnecessary function stubs
+> 
+>> +static irqreturn_t gt_clockevent_interrupt(int irq, void *dev_id)
+>> +{
+>> +	struct clock_event_device *evt = dev_id;
+>> +
+>> +	if (readl_relaxed(gt_base + GT_INT_STATUS) &
+>> +				GT_INT_STATUS_EVENT_FLAG) {
+> 
+> If you negate the check and return IRQ_NONE, you save one indent level
+> for the real code.
+> 
+Am ok either way, I will do it in the next version.
+>> +		/**
+>> +		 * ERRATA 740657( Global Timer can send 2 interrupts for
+>> +		 * the same event in single-shot mode)
+>> +		 * Workaround:
+>> +		 *	Either disable single-shot mode.
+>> +		 *	Or
+>> +		 *	Modify the Interrupt Handler to avoid the
+>> +		 *	offending sequence. This is achieved by clearing
+>> +		 *	the Global Timer flag _after_ having incremented
+>> +		 *	the Comparator register	value to a higher value.
+>> +		 */
+>> +		if (!(readl_relaxed(gt_base + GT_CONTROL) &
+>> +						GT_CONTROL_AUTO_INC))
+> 
+> Again, no need to read from the hardware.
+> 
+>        if (evt->mode == CLOCK_EVT_MODE_ONESHOT)
+Yes, we can get it from evt->mode. I will do it in next version.
 
-diff --git a/Documentation/devicetree/bindings/mfd/max8998.txt b/Documentation/devicetree/bindings/mfd/max8998.txt
-new file mode 100644
-index 0000000..23a3650
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/max8998.txt
-@@ -0,0 +1,119 @@
-+* Maxim MAX8998, National/TI LP3974 multi-function device
-+
-+The Maxim MAX8998 is a multi-function device which includes voltage/current
-+regulators, real time clock, battery charging controller and several
-+other sub-blocks. It is interfaced using an I2C interface. Each sub-block
-+is addressed by the host system using different i2c slave address.
-+
-+PMIC sub-block
-+--------------
-+
-+The PMIC sub-block contains a number of voltage and current regulators,
-+with controllable parameters and dynamic voltage scaling capability.
-+In addition, it includes a real time clock and battery charging controller
-+as well. It is accessible at I2C address 0x66.
-+
-+Required properties:
-+- compatible: Should be one of the following:
-+    - "maxim,max8998" for Maxim MAX8998
-+    - "national,lp3974" or "ti,lp3974" for National/TI LP3974.
-+- reg: Specifies the i2c slave address of the pmic block. It should be 0x66.
-+
-+Optional properties:
-+- interrupt-parent: Specifies the phandle of the interrupt controller to which
-+  the interrupts from MAX8998 are routed to.
-+- interrupts: Interrupt specifiers for two interrupt sources.
-+  - First interrupt specifier is for main interrupt.
-+  - Second interrupt specifier is for power-on/-off interrupt.
-+- max8998,pmic-buck1-dvs-gpios: GPIO specifiers for two host gpios used
-+  for buck 1 dvs. The format of the gpio specifier depends on the gpio
-+  controller.
-+- max8998,pmic-buck2-dvs-gpio: GPIO specifier for host gpio used
-+  for buck 2 dvs. The format of the gpio specifier depends on the gpio
-+  controller.
-+- max8998,pmic-buck1-default-dvs-idx: Default voltage setting selected from
-+  the possible 4 options selectable by the dvs gpios. The value of this
-+  property should be 0, 1, 2 or 3. If not specified or out of range,
-+  a default value of 0 is taken.
-+- max8998,pmic-buck2-default-dvs-idx: Default voltage setting selected from
-+  the possible 2 options selectable by the dvs gpios. The value of this
-+  property should be 0 or 1. If not specified or out of range, a default
-+  value of 0 is taken.
-+- max8998,pmic-buck-voltage-lock: If present, disallows changing of
-+  preprogrammed buck dvfs voltages.
-+
-+Additional properties required if max8998,pmic-buck1-dvs-gpios is defined:
-+- max8998,pmic-buck1-dvs-voltage: An array of 4 voltage values in microvolts
-+  for buck1 regulator that can be selected using dvs gpio.
-+
-+Additional properties required if max8998,pmic-buck2-dvs-gpio is defined:
-+- max8998,pmic-buck2-dvs-voltage: An array of 2 voltage values in microvolts
-+  for buck2 regulator that can be selected using dvs gpio.
-+
-+Regulators: All the regulators of MAX8998 to be instantiated shall be
-+listed in a child node named 'regulators'. Each regulator is represented
-+by a child node of the 'regulators' node.
-+
-+	regulator-name {
-+		/* standard regulator bindings here */
-+	};
-+
-+Following regulators of the MAX8998 PMIC block are supported. Note that
-+the 'n' in regulator name, as in LDOn or BUCKn, represents the LDO or BUCK
-+number as described in MAX8998 datasheet.
-+
-+	- LDOn
-+		  - valid values for n are 2 to 17
-+		  - Example: LDO2, LDO10, LDO17
-+	- BUCKn
-+		  - valid values for n are 1 to 4.
-+		  - Example: BUCK1, BUCK2, BUCK3, BUCK4
-+
-+	- ENVICHG: Battery Charging Current Monitor Output. This is a fixed
-+		   voltage type regulator
-+
-+	- ESAFEOUT1: (ldo19)
-+	- ESAFEOUT2: (ld020)
-+
-+Standard regulator bindings are used inside regulator subnodes. Check
-+  Documentation/devicetree/bindings/regulator/regulator.txt
-+for more details.
-+
-+Example:
-+
-+	pmic@66 {
-+		compatible = "maxim,max8998-pmic";
-+		reg = <0x66>;
-+		interrupt-parent = <&wakeup_eint>;
-+		interrupts = <4 0>, <3 0>;
-+
-+		/* Buck 1 DVS settings */
-+		max8998,pmic-buck1-default-dvs-idx = <0>;
-+		max8998,pmic-buck1-dvs-gpios = <&gpx0 0 1 0 0>, /* SET1 */
-+					       <&gpx0 1 1 0 0>; /* SET2 */
-+		max8998,pmic-buck1-dvs-voltage = <1350000>, <1300000>,
-+						 <1000000>, <950000>;
-+
-+		/* Buck 2 DVS settings */
-+		max8998,pmic-buck2-default-dvs-idx = <0>;
-+		max8998,pmic-buck2-dvs-gpio = <&gpx0 0 3 0 0>; /* SET3 */
-+		max8998,pmic-buck2-dvs-voltage = <1350000>, <1300000>;
-+
-+		/* Regulators to instantiate */
-+		regulators {
-+			ldo2_reg: LDO2 {
-+				regulator-name = "VDD_ALIVE_1.1V";
-+				regulator-min-microvolt = <1100000>;
-+				regulator-max-microvolt = <1100000>;
-+				regulator-always-on;
-+			};
-+
-+			buck1_reg: BUCK1 {
-+				regulator-name = "VDD_ARM_1.2V";
-+				regulator-min-microvolt = <950000>;
-+				regulator-max-microvolt = <1350000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+		};
-+	};
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index d7218cc..21af51a 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -20,12 +20,15 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- 
-+#include <linux/err.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/i2c.h>
- #include <linux/interrupt.h>
-+#include <linux/of.h>
-+#include <linux/of_irq.h>
- #include <linux/pm_runtime.h>
- #include <linux/mutex.h>
- #include <linux/mfd/core.h>
-@@ -128,6 +131,56 @@ int max8998_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask)
- }
- EXPORT_SYMBOL(max8998_update_reg);
- 
-+#ifdef CONFIG_OF
-+static struct of_device_id max8998_dt_match[] = {
-+	{ .compatible = "maxim,max8998", .data = (void *)TYPE_MAX8998 },
-+	{ .compatible = "national,lp3974", .data = (void *)TYPE_LP3974 },
-+	{ .compatible = "ti,lp3974", .data = (void *)TYPE_LP3974 },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, max8998_dt_match);
-+#endif
-+
-+/*
-+ * Only the common platform data elements for max8998 are parsed here from the
-+ * device tree. Other sub-modules of max8998 such as pmic, rtc and others have
-+ * to parse their own platform data elements from device tree.
-+ *
-+ * The max8998 platform data structure is instantiated here and the drivers for
-+ * the sub-modules need not instantiate another instance while parsing their
-+ * platform data.
-+ */
-+static struct max8998_platform_data *max8998_i2c_parse_dt_pdata(
-+							struct device *dev)
-+{
-+	struct max8998_platform_data *pd;
-+
-+	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
-+	if (!pd)
-+		return ERR_PTR(-ENOMEM);
-+
-+	pd->ono = irq_of_parse_and_map(dev->of_node, 1);
-+
-+	/*
-+	 * ToDo: the 'wakeup' member in the platform data is more of a linux
-+	 * specfic information. Hence, there is no binding for that yet and
-+	 * not parsed here.
-+	 */
-+	return pd;
-+}
-+
-+static inline int max8998_i2c_get_driver_data(struct i2c_client *i2c,
-+						const struct i2c_device_id *id)
-+{
-+	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node) {
-+		const struct of_device_id *match;
-+		match = of_match_node(max8998_dt_match, i2c->dev.of_node);
-+		return (int)match->data;
-+	}
-+
-+	return (int)id->driver_data;
-+}
-+
- static int max8998_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
-@@ -139,11 +192,20 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 	if (max8998 == NULL)
- 		return -ENOMEM;
- 
-+	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node) {
-+		pdata = max8998_i2c_parse_dt_pdata(&i2c->dev);
-+		if (IS_ERR(pdata)) {
-+			ret = PTR_ERR(pdata);
-+			goto err;
-+		}
-+	}
-+
- 	i2c_set_clientdata(i2c, max8998);
- 	max8998->dev = &i2c->dev;
- 	max8998->i2c = i2c;
- 	max8998->irq = i2c->irq;
--	max8998->type = id->driver_data;
-+	max8998->type = max8998_i2c_get_driver_data(i2c, id);
-+	max8998->pdata = pdata;
- 	if (pdata) {
- 		max8998->ono = pdata->ono;
- 		max8998->irq_base = pdata->irq_base;
-@@ -158,7 +220,7 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 
- 	pm_runtime_set_active(max8998->dev);
- 
--	switch (id->driver_data) {
-+	switch (max8998->type) {
- 	case TYPE_LP3974:
- 		ret = mfd_add_devices(max8998->dev, -1,
- 				      lp3974_devs, ARRAY_SIZE(lp3974_devs),
-@@ -314,6 +376,7 @@ static struct i2c_driver max8998_i2c_driver = {
- 		   .name = "max8998",
- 		   .owner = THIS_MODULE,
- 		   .pm = &max8998_pm,
-+		   .of_match_table = of_match_ptr(max8998_dt_match),
- 	},
- 	.probe = max8998_i2c_probe,
- 	.remove = max8998_i2c_remove,
-diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-index 8c45b93..e87bc80 100644
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -28,8 +28,11 @@
- #include <linux/slab.h>
- #include <linux/interrupt.h>
- #include <linux/mutex.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/mfd/max8998.h>
- #include <linux/mfd/max8998-private.h>
- 
-@@ -589,13 +592,13 @@ static struct regulator_desc regulators[] = {
- 		.type		= REGULATOR_VOLTAGE,
- 		.owner		= THIS_MODULE,
- 	}, {
--		.name		= "EN32KHz AP",
-+		.name		= "EN32KHz-AP",
- 		.id		= MAX8998_EN32KHZ_AP,
- 		.ops		= &max8998_others_ops,
- 		.type		= REGULATOR_VOLTAGE,
- 		.owner		= THIS_MODULE,
- 	}, {
--		.name		= "EN32KHz CP",
-+		.name		= "EN32KHz-CP",
- 		.id		= MAX8998_EN32KHZ_CP,
- 		.ops		= &max8998_others_ops,
- 		.type		= REGULATOR_VOLTAGE,
-@@ -621,10 +624,121 @@ static struct regulator_desc regulators[] = {
- 	}
- };
- 
-+static int max8998_pmic_dt_parse_dvs_gpio(struct max8998_dev *iodev,
-+			struct max8998_platform_data *pdata,
-+			struct device_node *pmic_np)
-+{
-+	int gpio;
-+
-+	gpio = of_get_named_gpio(pmic_np, "max8998,pmic-buck1-dvs-gpios", 0);
-+	if (!gpio_is_valid(gpio)) {
-+		dev_err(iodev->dev, "invalid buck1 gpio[0]: %d\n", gpio);
-+		return -EINVAL;
-+	}
-+	pdata->buck1_set1 = gpio;
-+
-+	gpio = of_get_named_gpio(pmic_np, "max8998,pmic-buck1-dvs-gpios", 1);
-+	if (!gpio_is_valid(gpio)) {
-+		dev_err(iodev->dev, "invalid buck1 gpio[1]: %d\n", gpio);
-+		return -EINVAL;
-+	}
-+	pdata->buck1_set2 = gpio;
-+
-+	gpio = of_get_named_gpio(pmic_np, "max8998,pmic-buck2-dvs-gpio", 0);
-+	if (!gpio_is_valid(gpio)) {
-+		dev_err(iodev->dev, "invalid buck 2 gpio: %d\n", gpio);
-+		return -EINVAL;
-+	}
-+	pdata->buck2_set3 = gpio;
-+
-+	return 0;
-+}
-+
-+static int max8998_pmic_dt_parse_pdata(struct max8998_dev *iodev,
-+					struct max8998_platform_data *pdata)
-+{
-+	struct device_node *pmic_np = iodev->dev->of_node;
-+	struct device_node *regulators_np, *reg_np;
-+	struct max8998_regulator_data *rdata;
-+	unsigned int i;
-+	int ret;
-+
-+	regulators_np = of_get_child_by_name(pmic_np, "regulators");
-+	if (!regulators_np) {
-+		dev_err(iodev->dev, "could not find regulators sub-node\n");
-+		return -EINVAL;
-+	}
-+
-+	/* count the number of regulators to be supported in pmic */
-+	pdata->num_regulators = of_get_child_count(regulators_np);
-+
-+	rdata = devm_kzalloc(iodev->dev, sizeof(*rdata) *
-+				pdata->num_regulators, GFP_KERNEL);
-+	if (!rdata)
-+		return -ENOMEM;
-+
-+	pdata->regulators = rdata;
-+	for (i = 0; i < ARRAY_SIZE(regulators); ++i) {
-+		reg_np = of_get_child_by_name(regulators_np,
-+							regulators[i].name);
-+		if (!reg_np)
-+			continue;
-+
-+		rdata->id = regulators[i].id;
-+		rdata->initdata = of_get_regulator_init_data(
-+							iodev->dev, reg_np);
-+		rdata->reg_node = reg_np;
-+		++rdata;
-+	}
-+
-+	ret = max8998_pmic_dt_parse_dvs_gpio(iodev, pdata, pmic_np);
-+	if (ret)
-+		return -EINVAL;
-+
-+	if (of_find_property(pmic_np, "max8998,pmic-buck-voltage-lock", NULL))
-+		pdata->buck_voltage_lock = true;
-+
-+	ret = of_property_read_u32(pmic_np,
-+					"max8998,pmic-buck1-default-dvs-idx",
-+					&pdata->buck1_default_idx);
-+	if (!ret && pdata->buck1_default_idx >= 4) {
-+		pdata->buck1_default_idx = 0;
-+		dev_warn(iodev->dev, "invalid value for default dvs index, using 0 instead\n");
-+	}
-+
-+	ret = of_property_read_u32(pmic_np,
-+					"max8998,pmic-buck2-default-dvs-idx",
-+					&pdata->buck2_default_idx);
-+	if (!ret && pdata->buck2_default_idx >= 2) {
-+		pdata->buck2_default_idx = 0;
-+		dev_warn(iodev->dev, "invalid value for default dvs index, using 0 instead\n");
-+	}
-+
-+	ret = of_property_read_u32_array(pmic_np,
-+					"max8998,pmic-buck1-dvs-voltage",
-+					pdata->buck1_voltage,
-+					ARRAY_SIZE(pdata->buck1_voltage));
-+	if (ret) {
-+		dev_err(iodev->dev, "buck1 voltages not specified\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = of_property_read_u32_array(pmic_np,
-+					"max8998,pmic-buck2-dvs-voltage",
-+					pdata->buck2_voltage,
-+					ARRAY_SIZE(pdata->buck2_voltage));
-+	if (ret) {
-+		dev_err(iodev->dev, "buck2 voltages not specified\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int max8998_pmic_probe(struct platform_device *pdev)
- {
- 	struct max8998_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct max8998_platform_data *pdata = dev_get_platdata(iodev->dev);
-+	struct max8998_platform_data *pdata = iodev->pdata;
- 	struct regulator_config config = { };
- 	struct regulator_dev **rdev;
- 	struct max8998_data *max8998;
-@@ -637,6 +751,12 @@ static int max8998_pmic_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
-+	if (IS_ENABLED(CONFIG_OF) && iodev->dev->of_node) {
-+		ret = max8998_pmic_dt_parse_pdata(iodev, pdata);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	max8998 = devm_kzalloc(&pdev->dev, sizeof(struct max8998_data),
- 			       GFP_KERNEL);
- 	if (!max8998)
-@@ -750,13 +870,15 @@ static int max8998_pmic_probe(struct platform_device *pdev)
- 		}
- 
- 		config.dev = max8998->dev;
-+		config.of_node = pdata->regulators[i].reg_node;
- 		config.init_data = pdata->regulators[i].initdata;
- 		config.driver_data = max8998;
- 
- 		rdev[i] = regulator_register(&regulators[index], &config);
- 		if (IS_ERR(rdev[i])) {
- 			ret = PTR_ERR(rdev[i]);
--			dev_err(max8998->dev, "regulator init failed\n");
-+			dev_err(max8998->dev, "regulator %s init failed (%d)\n",
-+						regulators[index].name, ret);
- 			rdev[i] = NULL;
- 			goto err;
- 		}
-diff --git a/drivers/rtc/rtc-max8998.c b/drivers/rtc/rtc-max8998.c
-index 46f2301..042a873 100644
---- a/drivers/rtc/rtc-max8998.c
-+++ b/drivers/rtc/rtc-max8998.c
-@@ -253,7 +253,7 @@ static const struct rtc_class_ops max8998_rtc_ops = {
- static int max8998_rtc_probe(struct platform_device *pdev)
- {
- 	struct max8998_dev *max8998 = dev_get_drvdata(pdev->dev.parent);
--	struct max8998_platform_data *pdata = dev_get_platdata(max8998->dev);
-+	struct max8998_platform_data *pdata = max8998->pdata;
- 	struct max8998_rtc_info *info;
- 	int ret;
- 
-diff --git a/include/linux/mfd/max8998-private.h b/include/linux/mfd/max8998-private.h
-index bfb48b6..84844e0 100644
---- a/include/linux/mfd/max8998-private.h
-+++ b/include/linux/mfd/max8998-private.h
-@@ -137,6 +137,7 @@ struct irq_domain;
- /**
-  * struct max8998_dev - max8998 master device for sub-drivers
-  * @dev: master device of the chip (can be used to access platform data)
-+ * @pdata: platform data for the driver and subdrivers
-  * @i2c: i2c client private data for regulator
-  * @rtc: i2c client private data for rtc
-  * @iolock: mutex for serializing io access
-@@ -150,6 +151,7 @@ struct irq_domain;
-  */
- struct max8998_dev {
- 	struct device *dev;
-+	struct max8998_platform_data *pdata;
- 	struct i2c_client *i2c;
- 	struct i2c_client *rtc;
- 	struct mutex iolock;
-diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
-index ca56bb0..e3956a6 100644
---- a/include/linux/mfd/max8998.h
-+++ b/include/linux/mfd/max8998.h
-@@ -58,10 +58,12 @@ enum {
-  * max8998_regulator_data - regulator data
-  * @id: regulator id
-  * @initdata: regulator init data (contraints, supplies, ...)
-+ * @reg_node: DT node of regulator (unused on non-DT platforms)
-  */
- struct max8998_regulator_data {
- 	int				id;
- 	struct regulator_init_data	*initdata;
-+	struct device_node		*reg_node;
- };
- 
- /**
--- 
-1.8.2.1
-
+> 
+> tells you what you need to know.
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> 
 
