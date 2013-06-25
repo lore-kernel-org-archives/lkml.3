@@ -1,135 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab3FYPJv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:09:51 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:50441 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab3FYPJt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:09:49 -0400
-Date: Tue, 25 Jun 2013 16:09:41 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: scripts/kallsyms: Avoid ARM veneer symbols
-Message-ID: <20130625150941.GF2327@linaro.org>
-References: <2983817.Xe2505Drlj@wuerfel>
+	id S1752105Ab3FYPKt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:10:49 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:46712 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446Ab3FYPKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 11:10:48 -0400
+Message-ID: <51C9B2F6.6020109@imgtec.com>
+Date: Tue, 25 Jun 2013 16:10:46 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2983817.Xe2505Drlj@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 15/32] metag: delete __cpuinit usage from all metag files
+References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com> <1372102237-8757-16-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1372102237-8757-16-git-send-email-paul.gortmaker@windriver.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_06_25_16_10_47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 04:01:43PM +0200, Arnd Bergmann wrote:
-> When building ARM kernels that exceed a certain size, the linker
-> will add "veneers" that allow long branches. Unfortunately,
-> using a longer kallsyms section may lead to the extra veneers
-> being needed, which leads to inconsistent kallsyms data with the
-> message
+On 24/06/13 20:30, Paul Gortmaker wrote:
+> The __cpuinit type of throwaway sections might have made sense
+> some time ago when RAM was more constrained, but now the savings
+> do not offset the cost and complications.  For example, the fix in
+> commit 5e427ec2d0 ("x86: Fix bit corruption at CPU resume time")
+> is a good example of the nasty type of bugs that can be created
+> with improper use of the various __init prefixes.
 > 
-> Inconsistent kallsyms data
-> Try make KALLSYMS_EXTRA_PASS=1 as a workaround
+> After a discussion on LKML[1] it was decided that cpuinit should go
+> the way of devinit and be phased out.  Once all the users are gone,
+> we can then finally remove the macros themselves from linux/init.h.
 > 
-> In some case, not just one but up to three extra passes were
-> needed before getting to a state that needed no extra veneers.
-
-Do you understand why this was happening?  It sounds like there
-must have been branches crossing from one side of the kallsyms
-data to the other, triggering veneer insertion any time the
-kallsyms data grows.
-
-Branches between .{init,exit}.text and .text (crossing .rodata) seem the
-likeliest culprits, but that's guesswork on my part.
-
-
-If that's whats going on, multiple kallsyms passes is actually a correct
-approach here: I think they should terminate after a number of steps
-roughly proportional to log(number of branches across .rodata). We
-could come up with a heuristic which allows us to choose the right
-limit with a high degree of reliability, since branch density in
-compiled C code is likely to be roughly.
-
-But including the veneer symbols in kallsyms is arguably not all
-that useful.
-
-The main potential effect is that profiling might occasionally
-sample the PC as being in a completely bogus function which it
-never passed through at all, because of the way kallsyms tracks
-only symbol locations and not sizes (if I remember right) --
-so a veneer will actually get accounted against some arbitrary
-adjacent function.
-
-I don't know how much this matters.
-
-> The easiest solution is to skip veneers in kallsyms in the
-> same way we already skip a couple of other symbols.
-
-The other symbols are not stripped for the purpose of making
-kallsyms terminate quickly.  The mapping symbols are rather
-different: masses of symbols with duplicate names which are
-not very interesting for most people.
-
+> Note that some harmless section mismatch warnings may result, since
+> notify_cpu_starting() and cpu_up() are arch independent (kernel/cpu.c)
+> are flagged as __cpuinit  -- so if we remove the __cpuinit from
+> arch specific callers, we will also get section mismatch warnings.
+> As an intermediate step, we intend to turn the linux/init.h cpuinit
+> content into no-ops as early as possible, since that will get rid
+> of these warnings.  In any case, they are temporary and harmless.
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-> index 487ac6f..53ec0bb 100644
-> --- a/scripts/kallsyms.c
-> +++ b/scripts/kallsyms.c
-> @@ -69,14 +69,32 @@ static void usage(void)
->  	exit(1);
->  }
->  
-> -/*
-> - * This ignores the intensely annoying "mapping symbols" found
-> - * in ARM ELF files: $a, $t and $d.
-> - */
->  static inline int is_arm_mapping_symbol(const char *str)
-
-The function's name is now wrong.  Should it be renamed or split up?
-
-Cheers
----Dave
-
->  {
-> -	return str[0] == '$' && strchr("atd", str[1])
-> -	       && (str[2] == '\0' || str[2] == '.');
-> +	size_t len;
-> +
-> +	/*
-> +	 * This ignores the intensely annoying "mapping symbols" found
-> +	 * in ARM ELF files: $a, $t and $d.
-> +	 */
-> +	if (str[0] == '$' && strchr("atd", str[1])
-> +	       && (str[2] == '\0' || str[2] == '.'))
-> +		return 1;
-> +
-> +	len = strlen(str);
-> +	if (len < 10)
-> +		return 0;
-> +
-> +	/*
-> +	 * This ignores any __.*_veneer symbol, which get
-> +	 * inserted for large kernels, in order to avoid
-> +	 * inconsistent data.
-> +	 */
-> +	if (str[0] == '_' && str[1] == '_' &&
-> +	    strcmp(str + len - 7, "_veneer") == 0)
-> +		return 1; 
-> +
-> +	return 0;
->  }
->  
->  static int read_symbol_tr(const char *sym, unsigned long long addr)
+> This removes all the arch/metag uses of the __cpuinit macros from
+> all C files.  Currently metag does not have any __CPUINIT used in
+> assembly files.
 > 
+> [1] https://lkml.org/lkml/2013/5/20/589
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+Acked-by: James Hogan <james.hogan@imgtec.com>
+
+Thanks
+James
+
