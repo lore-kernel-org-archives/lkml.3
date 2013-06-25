@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab3FYJZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 05:25:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32221 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054Ab3FYJZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 05:25:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,935,1363158000"; 
-   d="scan'208";a="355361216"
-Date: Tue, 25 Jun 2013 14:16:06 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        b.brezillon@overkiz.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [GIT PULL v2] dmaengine: at_hdmac: updates for 3.11
-Message-ID: <20130625084606.GL23141@intel.com>
-References: <1372149389-18544-1-git-send-email-nicolas.ferre@atmel.com>
+	id S1752200Ab3FYJ03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 05:26:29 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:37030 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab3FYJ01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 05:26:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372149389-18544-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <201306251121.53862.yann.morin.1998@free.fr>
+References: <20130625184420.b811089a069c63ccd3721d68@canb.auug.org.au>
+	<CA+icZUUH7AeR7OSm-SB56AGRiE815tTkQW9fFkKzyrSvzs3Etg@mail.gmail.com>
+	<201306251121.53862.yann.morin.1998@free.fr>
+Date: Tue, 25 Jun 2013 11:26:25 +0200
+Message-ID: <CA+icZUU06C43bxyX2UGtDxRQqcyqeAQgt7fZHq7H7HgcJ6sHzQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jun 25
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 10:36:29AM +0200, Nicolas Ferre wrote:
-> Vinod,
-> 
-> As said previously, I have collected the patches that can reach sdma git tree
-> for 3.11.
-> 
-> This is the patch series that has already been sent by Ludovic and myself.
-> It is the part of the series that is dedicated to dmaengine. It is based on
-> slave-dma/next. 
-> This set of patches update the dt dma binding for at_hdmac since we need one
-> more parameter. In order to keep backward compatibility, an existing cell will
-> be used to add this parameter. Since the content of that cell will become a
-> magic value due to the concatenation of the two parameters, it is time to
-> use macros.
-> 
-> I have also stacked some cleanup and trivial patches that were arround for some
-> time plus the more recent conversion to the clock routines with
-> prepare/unprepare variants.
-> 
-> Thanks, best regards,
-> 
-> v2 of pull-request: update of patch (dmaengine: at_hdmac: prepare clk before
->                     calling enable): removal of failing return code handling.
-> 
-> The following changes since commit fdf3303434787a4ba00a37a6748eb68974c63b0d:
-> 
->   Merge branch 'for-linus' into next (2013-06-21 19:44:03 +0530)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-sdma
-Pulled thanks
+On Tue, Jun 25, 2013 at 11:21 AM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
+> Sedat, All,
+>
+> On Tuesday 25 June 2013 10:55:20 Sedat Dilek wrote:
+>> Not sure what's going on, but I get this with today's Linux-Next.
+>> ( Yesterday's next-20130624 was OK. )
+>>
+>> $ LANG=C LC_ALL=C  yes "" | make oldconfig && LANG=C LC_ALL=C make
+>> silentoldconfig </dev/null
+> [--SNIP--]
+>> RapidIO support (RAPIDIO) [Y/n/?] y
+>>   IDT Tsi721 PCI Express SRIO Controller support (RAPIDIO_TSI721) [Y/n/?] y
+>>   Discovery timeout duration (seconds) (RAPIDIO_DISC_TIMEOUT) [30] 30
+>>   Enable RapidIO Input/Output Ports (RAPIDIO_ENABLE_RX_TX_PORTS) [N/y/?] n
+>>   DMA Engine support for RapidIO (RAPIDIO_DMA_ENGINE) [Y/n/?] y
+>>   RapidIO subsystem debug messages (RAPIDIO_DEBUG) [N/y/?] n
+>>   Enumeration method [M/y/?] (NEW) aborted!
+>>
+>> Console input/output is redirected. Run 'make oldconfig' to update
+>> configuration.
+>
+> Yes, the same error as reported by Fengguang earlier:
+>     http://marc.info/?l=linux-kbuild&m=137214773928335&w=4
+>
 
---
-~Vinod
+Hmm, I read that posting, but was not aware it affects me.
 
-> 
-> for you to fetch changes up to ee92c15c3a6244e51faa520c4e2ef6daeca80792:
-> 
->   dmaengine: at_hdmac: prepare clk before calling enable (2013-06-25 10:27:18 +0200)
-> 
-> ----------------------------------------------------------------
-> dmaengine updates for Atmel AT91 driver: at_hdmac.c
-> - Device Tree binding update adding the use of header file for coding FIFO
->   configuration values
-> - a warning removal
-> - use of clk_prepare_enable/disable_unprepare in driver
-> 
-> ----------------------------------------------------------------
-> Boris BREZILLON (1):
->       dmaengine: at_hdmac: prepare clk before calling enable
-> 
-> Ludovic Desroches (2):
->       ARM: at91: dt: add header to define at_hdmac configuration
->       dmaengine: at_hdmac: add FIFO configuration parameter to DMA DT binding
-> 
-> Nicolas Ferre (2):
->       dmaengine: at_hdmac: remove unsuded atc_cleanup_descriptors()
->       dmaengine/trivial: at_hdmac: add curly brackets to if/else expressions
-> 
->  .../devicetree/bindings/dma/atmel-dma.txt          |  7 +-
->  drivers/dma/at_hdmac.c                             | 79 ++++++++++------------
->  include/dt-bindings/dma/at91.h                     | 27 ++++++++
->  3 files changed, 68 insertions(+), 45 deletions(-)
->  create mode 100644 include/dt-bindings/dma/at91.h
-> 
-> -- 
-> Nicolas Ferre
+> And caused by (yet once more):
+>     8357b48: kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+>
+> Basically, the issue is:
+>
+>   - 'Enumeration method' is a tristate choice
 
--- 
+Yupp.
+
+http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=a11650e11093ed57dca78bf16e7836517c599098
+
+>   - for tristate choices, it is possible to select zero, one or more of the
+>     symbols in the choice
+>   - if no symbol is selected (randomly or otherwise) in a tristate choice,
+>     then the choice symbol itself has no assigned 'value'
+>   - then silentoldconfig whines
+
+Bad bad bad Yann, didn't Marek told you to test always with...
+
+    $ yes "" | make oldconfig; make silentoldconfig </dev/null
+
+Anyway, have fun.
+
+- Sedat -
+
+>
+> It worked so far as a side effect of another bug (which 8357b48 tries to
+> fix), and now this new one has been exposed.
+>
+> I have to think in a calm place tonight, when I'm back from work...
+>
+> This one is starting to drive me crazy, really... :-(
+>
+> Regards,
+> Yann E. MORIN.
+>
+> --
+> .-----------------.--------------------.------------------.--------------------.
+> |  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+> | +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
+> | --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
+> | http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
+> '------------------------------'-------'------------------'--------------------'
