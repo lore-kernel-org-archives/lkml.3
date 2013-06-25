@@ -1,99 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3FYUd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:33:27 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:60174 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab3FYUdU (ORCPT
+	id S1753698Ab3FYUdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:33:41 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:20332 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab3FYUdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:33:20 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 24/45] [SCSI] fcoe: Use get/put_online_cpus_atomic() to
- prevent CPU offline
-To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com
-Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
-        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Robert Love <robert.w.love@intel.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>, devel@open-fcoe.org,
-        linux-scsi@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 01:59:57 +0530
-Message-ID: <20130625202956.16593.29123.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
-References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 25 Jun 2013 16:33:39 -0400
+Message-ID: <1372192414.1888.8.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: linux-next: Tree for Jun 21 [ BROKEN ipc/ipc-msg ]
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: sedat.dilek@gmail.com
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
+        Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Jonathan Gonzalez <jgonzalez@linets.cl>
+Date: Tue, 25 Jun 2013 13:33:34 -0700
+In-Reply-To: <CA+icZUVbUD1tUa_ORtn_ZZebpp3gXXHGAcNe0NdYPXPMPoABuA@mail.gmail.com>
+References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
+	 <CA+icZUVbUD1tUa_ORtn_ZZebpp3gXXHGAcNe0NdYPXPMPoABuA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062520-9574-0000-0000-00000875C0DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able
-to depend on disabling preemption to prevent CPUs from going offline
-from under us.
+On Tue, 2013-06-25 at 18:10 +0200, Sedat Dilek wrote:
+[...]
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
-offline, while invoking from atomic context.
+> I did some more testing with Linux-Testing-Project (release:
+> ltp-full-20130503) and next-20130624 (Monday) which has still the
+> issue, here.
+> 
+> If I revert the mentioned two commits from my local
+> revert-ipc-next20130624-5089fd1c6a6a-ab9efc2d0db5 GIT repo, everything
+> is fine.
+> 
+> I have tested the LTP ***IPC*** and ***SYSCALLS*** testcases.
+> 
+>    root# ./runltp -f ipc
+> 
+>    root# ./runltp -f syscalls
 
-Cc: Robert Love <robert.w.love@intel.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: devel@open-fcoe.org
-Cc: linux-scsi@vger.kernel.org
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+These are nice test cases!
 
- drivers/scsi/fcoe/fcoe.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+So I was able to reproduce the issue with LTP and manually running
+msgctl08. We seemed to be racing at find_msg(), so take to q_perm lock
+before calling it. The following changes fixes the issue and passes all
+'runltp -f syscall' tests, could you give it a try?
 
-diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
-index 292b24f..a107d3c 100644
---- a/drivers/scsi/fcoe/fcoe.c
-+++ b/drivers/scsi/fcoe/fcoe.c
-@@ -1484,6 +1484,7 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
- 	 * was originated, otherwise select cpu using rx exchange id
- 	 * or fcoe_select_cpu().
- 	 */
-+	get_online_cpus_atomic();
- 	if (ntoh24(fh->fh_f_ctl) & FC_FC_EX_CTX)
- 		cpu = ntohs(fh->fh_ox_id) & fc_cpu_mask;
- 	else {
-@@ -1493,8 +1494,10 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
- 			cpu = ntohs(fh->fh_rx_id) & fc_cpu_mask;
- 	}
+Thanks,
+Davidlohr
+
+diff --git a/ipc/msg.c b/ipc/msg.c
+index a1cf70e..a1f7d84 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -895,6 +895,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
+                if (ipcperms(ns, &msq->q_perm, S_IRUGO))
+                        goto out_unlock1;
  
--	if (cpu >= nr_cpu_ids)
-+	if (cpu >= nr_cpu_ids) {
-+		put_online_cpus_atomic();
- 		goto err;
-+	}
++               ipc_lock_object(&msq->q_perm);
+                msg = find_msg(msq, &msgtyp, mode);
+                if (!IS_ERR(msg)) {
+                        /*
+@@ -903,7 +904,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
+                         */
+                        if ((bufsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
+                                msg = ERR_PTR(-E2BIG);
+-                               goto out_unlock1;
++                               goto out_unlock0;
+                        }
+                        /*
+                         * If we are copying, then do not unlink message and do
+@@ -911,10 +912,9 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
+                         */
+                        if (msgflg & MSG_COPY) {
+                                msg = copy_msg(msg, copy);
+-                               goto out_unlock1;
++                               goto out_unlock0;
+                        }
  
- 	fps = &per_cpu(fcoe_percpu, cpu);
- 	spin_lock(&fps->fcoe_rx_list.lock);
-@@ -1514,6 +1517,7 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
- 		spin_lock(&fps->fcoe_rx_list.lock);
- 		if (!fps->thread) {
- 			spin_unlock(&fps->fcoe_rx_list.lock);
-+			put_online_cpus_atomic();
- 			goto err;
- 		}
- 	}
-@@ -1535,6 +1539,7 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
- 	if (fps->thread->state == TASK_INTERRUPTIBLE)
- 		wake_up_process(fps->thread);
- 	spin_unlock(&fps->fcoe_rx_list.lock);
-+	put_online_cpus_atomic();
+-                       ipc_lock_object(&msq->q_perm);
+                        list_del(&msg->m_list);
+                        msq->q_qnum--;
+                        msq->q_rtime = get_seconds();
+@@ -930,10 +930,9 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
+                /* No message waiting. Wait for a message */
+                if (msgflg & IPC_NOWAIT) {
+                        msg = ERR_PTR(-ENOMSG);
+-                       goto out_unlock1;
++                       goto out_unlock0;
+                }
  
- 	return 0;
- err:
+-               ipc_lock_object(&msq->q_perm);
+                list_add_tail(&msr_d.r_list, &msq->q_receivers);
+                msr_d.r_tsk = current;
+                msr_d.r_msgtype = msgtyp;
+
+
+Thanks,
+Davidlohr
+> 
+> IPC seems to be fine for both -1 (UNPATCHED) and -2 (with attached two
+> REVERTED patches) kernel, but -1 hangs in the SYSCALLS/msgctl08 test.
+> 
+> Previous msgctl07 is OK, but ***msgctl08*** produces this:
+> ...
+> <<<test_start>>>
+> tag=msgctl07 stime=1372174934
+> cmdline="msgctl07"
+> contacts=""
+> analysis=exit
+> <<<test_output>>>
+> msgctl07    1  TPASS  :  msgctl07 ran successfully!
+> <<<execution_status>>>
+> initiation_status="ok"
+> duration=20 termination_type=exited termination_id=0 corefile=no
+> cutime=1995 cstime=3
+> <<<test_end>>>
+> <<<test_start>>>
+> tag=msgctl08 stime=1372174954
+> cmdline="msgctl08"
+> contacts=""
+> analysis=exit
+> <<<test_output>>>
+> msgctl08    0  TWARN  :  Verify error in child 0, *buf = 28, val = 27, size = 8
+> msgctl08    1  TFAIL  :  in child 0 read # = 73,key =  127
+> msgctl08    0  TWARN  :  Verify error in child 3, *buf = ffffff8a, val
+> = ffffff89, size = 52
+> msgctl08    1  TFAIL  :  in child 3 read # = 157,key =  189
+> msgctl08    0  TWARN  :  Verify error in child 2, *buf = ffffff87, val
+> = ffffff86, size = 71
+> msgctl08    1  TFAIL  :  in child 2 read # = 15954,key =  3e86
+> msgctl08    0  TWARN  :  Verify error in child 12, *buf = ffffffa9,
+> val = ffffffa8, size = 22
+> msgctl08    1  TFAIL  :  in child 12 read # = 12904,key =  32a8
+> msgctl08    0  TWARN  :  Verify error in child 13, *buf = 36, val =
+> 35, size = 27
+> msgctl08    1  TFAIL  :  in child 13 read # = 10442,key =  2935
+> msgctl08    0  TWARN  :  Verify error in child 10, *buf = ffffff86,
+> val = ffffff85, size = 63
+> msgctl08    1  TFAIL  :  in child 10 read # = 19713,key =  4d85
+> msgctl08    0  TWARN  :  Verify error in child 4, *buf = 4c, val = 4b, size = 83
+> msgctl08    1  TFAIL  :  in child 4 read # = 23082,key =  5a4b
+> msgctl08    0  TWARN  :  Verify error in child 15, *buf = 61, val =
+> 60, size = 94
+> msgctl08    1  TFAIL  :  in child 15 read # = 23554,key =  5c60
+> msgctl08    0  TWARN  :  Verify error in child 11, *buf = 3b, val =
+> 3a, size = 22
+> msgctl08    1  TFAIL  :  in child 11 read # = 26468,key =  683a
+> msgctl08    0  TWARN  :  Verify error in child 5, *buf = ffffffb5, val
+> = ffffffb4, size = 41
+> msgctl08    1  TFAIL  :  in child 5 read # = 31867,key =  7cb4
+> msgctl08    0  TWARN  :  Verify error in child 1, *buf = 7d, val = 7c, size = 59
+> msgctl08    1  TFAIL  :  in child 1 read # = 41063,key =  a07c
+> msgctl08    0  TWARN  :  Verify error in child 7, *buf = fffffff2, val
+> = fffffff1, size = 83
+> msgctl08    1  TFAIL  :  in child 7 read # = 38476,key =  96f1
+> msgctl08    0  TWARN  :  Verify error in child 9, *buf = ffffff8b, val
+> = ffffff8a, size = 40
+> msgctl08    1  TFAIL  :  in child 9 read # = 90438,key =  1618a
+> msgctl08    0  TWARN  :  Verify error in child 8, *buf = ffffffcd, val
+> = ffffffcc, size = 38
+> msgctl08    1  TFAIL  :  in child 8 read # = 88712,key =  15acc
+> msgctl08    0  TWARN  :  Verify error in child 6, *buf = 6, val = 5, size = 1
+> msgctl08    1  TFAIL  :  in child 6 read # = 83297,key =  14605
+> ***** STOPPED *****
+> 
+> See "ltp-full-20130503.git/testcases/kernel/syscalls/ipc/msgctl/msgctl08.c" [1].
+> 
+> NOTE: Debian/Ubuntu users with dash as default shell require the patch from [2].
+> 
+> - Sedat -
+> 
+> P.S.: Unfortunately, fakeroot DEBUG doc file is outdated.
+> 
+> [1] https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/syscalls/ipc/msgctl/msgctl08.c
+> [2] https://github.com/linux-test-project/ltp/commit/b88fa5b6ec5a29834a0e52df7b22b9bb47fe0379
+
 
