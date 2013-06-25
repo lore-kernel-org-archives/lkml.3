@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab3FYNRq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 09:17:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55802 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab3FYNRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 09:17:43 -0400
-Date: Tue, 25 Jun 2013 15:17:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-cc: John Stultz <john.stultz@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v6] clocksource:arm_global_timer: Add ARM global timer
- support.
-In-Reply-To: <1372152678-29530-1-git-send-email-srinivas.kandagatla@st.com>
-Message-ID: <alpine.DEB.2.02.1306251459160.4013@ionos.tec.linutronix.de>
-References: <1372152678-29530-1-git-send-email-srinivas.kandagatla@st.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751617Ab3FYNTD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 09:19:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751255Ab3FYNTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 09:19:00 -0400
+Date: Tue, 25 Jun 2013 15:18:26 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/15] perf tools: validate perf event header size
+Message-ID: <20130625131826.GD23329@krava.brq.redhat.com>
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
+ <1372079772-20803-10-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372079772-20803-10-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jun 2013, Srinivas KANDAGATLA wrote:
-> If its not too late can this patch be considered for 3.11 via clocksource tree?
+On Mon, Jun 24, 2013 at 04:16:06PM +0300, Adrian Hunter wrote:
+> 'size' includes the header so must be at least
+> 'sizeof(struct perf_event_header)'.  Error out
+> immediately if that is not the case.  Also
+> don't byte-swap the header until it is actually
+> "fetched" from the mmap region.
+> 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/util/session.c | 14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 19ea888..7e0d605 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -1094,8 +1094,10 @@ more:
+>  		perf_event_header__bswap(&event->header);
+>  
+>  	size = event->header.size;
+> -	if (size == 0)
+> -		size = 8;
+> +	if (size < sizeof(struct perf_event_header)) {
+> +		pr_err("bad event header size\n");
+> +		goto out_err;
+> +	}
+>  
+>  	if (size > cur_size) {
+>  		void *new = realloc(buf, size);
+> @@ -1161,12 +1163,12 @@ fetch_mmaped_event(struct perf_session *session,
+>  
+>  	event = (union perf_event *)(buf + head);
+>  
+> -	if (session->header.needs_swap)
+> -		perf_event_header__bswap(&event->header);
+> -
+>  	if (head + event->header.size > mmap_size)
+>  		return NULL;
 
-Sure. No worry, though I noticed a little detail when reading through it
-again. See below.
+dont we need to swap first before using event->header.size?
 
-> +/**
-> + * To ensure that updates to comparator value register do not set the
-> + * Interrupt Status Register proceed as follows:
-> + * 1. Clear the Comp Enable bit in the Timer Control Register.
-> + * 2. Write the lower 32-bit Comparator Value Register.
-> + * 3. Write the upper 32-bit Comparator Value Register.
-> + * 4. Set the Comp Enable bit and, if necessary, the IRQ enable bit.
-> + */
-> +static void gt_compare_set(unsigned long delta, int periodic)
-> +{
-> +	u64 counter = gt_counter_read();
-> +	unsigned long ctrl = readl(gt_base + GT_CONTROL);
-
-Why are you reading the control register back over and over? All you
-need to preserve is the GT_CONTROL_TIMER_ENABLE bit. So you can spare
-that read out and just do
-
-	ctrl = GT_CONTROL_TIMER_ENABLE;
-	writel(ctrl, gt_base + GT_CONTROL);
-
-> +static irqreturn_t gt_clockevent_interrupt(int irq, void *dev_id)
-> +{
-> +	struct clock_event_device *evt = dev_id;
-> +
-> +	if (readl_relaxed(gt_base + GT_INT_STATUS) &
-> +				GT_INT_STATUS_EVENT_FLAG) {
-
-If you negate the check and return IRQ_NONE, you save one indent level
-for the real code.
-
-> +		/**
-> +		 * ERRATA 740657( Global Timer can send 2 interrupts for
-> +		 * the same event in single-shot mode)
-> +		 * Workaround:
-> +		 *	Either disable single-shot mode.
-> +		 *	Or
-> +		 *	Modify the Interrupt Handler to avoid the
-> +		 *	offending sequence. This is achieved by clearing
-> +		 *	the Global Timer flag _after_ having incremented
-> +		 *	the Comparator register	value to a higher value.
-> +		 */
-> +		if (!(readl_relaxed(gt_base + GT_CONTROL) &
-> +						GT_CONTROL_AUTO_INC))
-
-Again, no need to read from the hardware.
-
-       if (evt->mode == CLOCK_EVT_MODE_ONESHOT)
-
-tells you what you need to know.
-
-Thanks,
-
-	tglx
+jirka
