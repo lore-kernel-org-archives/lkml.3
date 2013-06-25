@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab3FYCPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 22:15:32 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:61064 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3FYCPb (ORCPT
+	id S1751952Ab3FYCQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 22:16:59 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:63015 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab3FYCQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 22:15:31 -0400
-Date: Mon, 24 Jun 2013 22:16:01 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, <x86@kernel.org>
-Subject: Re: [PATCH 23/32] x86: delete __cpuinit usage from all x86 files
-Message-ID: <20130625021601.GC26481@windriver.com>
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
- <1372102237-8757-24-git-send-email-paul.gortmaker@windriver.com>
- <51C8D24A.1000202@zytor.com>
+	Mon, 24 Jun 2013 22:16:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <51C8D24A.1000202@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 25 Jun 2013 10:16:56 +0800
+Message-ID: <CAPgLHd89RzJrpMEs+zR8cQvGHruWvne8e0kGb1LeCqoHdKogHA@mail.gmail.com>
+Subject: [PATCH -next] ASoC: mid-x86: Convert to use devm_* APIs
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        wfp5p@virginia.edu, vinod.koul@linux.intel.com, ramesh.babu@intel.com,
+        namartax.kohli@intel.com
+Cc: yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH 23/32] x86: delete __cpuinit usage from all x86 files] On 24/06/2013 (Mon 16:12) H. Peter Anvin wrote:
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-> On 06/24/2013 12:30 PM, Paul Gortmaker wrote:
-> > The __cpuinit type of throwaway sections might have made sense
-> > some time ago when RAM was more constrained, but now the savings
-> > do not offset the cost and complications.  For example, the fix in
-> > commit 5e427ec2d0 ("x86: Fix bit corruption at CPU resume time")
-> > is a good example of the nasty type of bugs that can be created
-> > with improper use of the various __init prefixes.
-> > 
-> > After a discussion on LKML[1] it was decided that cpuinit should go
-> > the way of devinit and be phased out.  Once all the users are gone,
-> > we can then finally remove the macros themselves from linux/init.h.
-> > 
-> > Note that some harmless section mismatch warnings may result, since
-> > notify_cpu_starting() and cpu_up() are arch independent (kernel/cpu.c)
-> > are flagged as __cpuinit  -- so if we remove the __cpuinit from
-> > arch specific callers, we will also get section mismatch warnings.
-> > As an intermediate step, we intend to turn the linux/init.h cpuinit
-> > content into no-ops as early as possible, since that will get rid
-> > of these warnings.  In any case, they are temporary and harmless.
-> > 
-> > This removes all the arch/x86 uses of the __cpuinit macros from
-> > all C files.  x86 only had the one __CPUINIT used in assembly files,
-> > and it wasn't paired off with a .previous or a __FINIT, so we can
-> > delete it directly w/o any corresponding additional change there.
-> > 
-> > [1] https://lkml.org/lkml/2013/5/20/589
-> > 
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Ingo Molnar <mingo@redhat.com>
-> > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > Cc: x86@kernel.org
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > ---
-> > 
-> 
-> Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-> 
-> Do you want me to carry this or are you planning to push the entire
-> thing as a single patchset?
+devm_* APIs are device managed and make code simpler.
 
-Short answer -- I'll carry it unless you expect massive changes
-still pending to arch/x86 (which I highly doubt) and really want
-to carry it.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ sound/soc/mid-x86/mfld_machine.c | 29 ++++++++++-------------------
+ 1 file changed, 10 insertions(+), 19 deletions(-)
 
-I'm fine with carrying most/all of it as a patch queue, however
-some folks expected significant churn in their tree and wanted to
-handle the conflicts/refreshes themselves.  But I'm fine with keeping
-things up to date with the latest linux-next and doing the trivial
-refreshes on the series until the merge window closes out and the
-remaining 99% of it goes in tree.
+diff --git a/sound/soc/mid-x86/mfld_machine.c b/sound/soc/mid-x86/mfld_machine.c
+index 78d5825..e16bcd1 100644
+--- a/sound/soc/mid-x86/mfld_machine.c
++++ b/sound/soc/mid-x86/mfld_machine.c
+@@ -371,7 +371,7 @@ static int snd_mfld_mc_probe(struct platform_device *pdev)
+ 
+ 	/* audio interrupt base of SRAM location where
+ 	 * interrupts are stored by System FW */
+-	mc_drv_ctx = kzalloc(sizeof(*mc_drv_ctx), GFP_ATOMIC);
++	mc_drv_ctx = devm_kzalloc(&pdev->dev, sizeof(*mc_drv_ctx), GFP_ATOMIC);
+ 	if (!mc_drv_ctx) {
+ 		pr_err("allocation failed\n");
+ 		return -ENOMEM;
+@@ -381,40 +381,33 @@ static int snd_mfld_mc_probe(struct platform_device *pdev)
+ 				pdev, IORESOURCE_MEM, "IRQ_BASE");
+ 	if (!irq_mem) {
+ 		pr_err("no mem resource given\n");
+-		ret_val = -ENODEV;
+-		goto unalloc;
++		return -ENODEV;
+ 	}
+-	mc_drv_ctx->int_base = ioremap_nocache(irq_mem->start,
+-					resource_size(irq_mem));
++	mc_drv_ctx->int_base = devm_ioremap_nocache(&pdev->dev, irq_mem->start,
++						    resource_size(irq_mem));
+ 	if (!mc_drv_ctx->int_base) {
+ 		pr_err("Mapping of cache failed\n");
+-		ret_val = -ENOMEM;
+-		goto unalloc;
++		return -ENOMEM;
+ 	}
+ 	/* register for interrupt */
+-	ret_val = request_threaded_irq(irq, snd_mfld_jack_intr_handler,
++	ret_val = devm_request_threaded_irq(&pdev->dev, irq,
++			snd_mfld_jack_intr_handler,
+ 			snd_mfld_jack_detection,
+ 			IRQF_SHARED, pdev->dev.driver->name, mc_drv_ctx);
+ 	if (ret_val) {
+ 		pr_err("cannot register IRQ\n");
+-		goto unalloc;
++		return ret_val;
+ 	}
+ 	/* register the soc card */
+ 	snd_soc_card_mfld.dev = &pdev->dev;
+ 	ret_val = snd_soc_register_card(&snd_soc_card_mfld);
+ 	if (ret_val) {
+ 		pr_debug("snd_soc_register_card failed %d\n", ret_val);
+-		goto freeirq;
++		return ret_val;
+ 	}
+ 	platform_set_drvdata(pdev, mc_drv_ctx);
+ 	pr_debug("successfully exited probe\n");
+-	return ret_val;
+-
+-freeirq:
+-	free_irq(irq, mc_drv_ctx);
+-unalloc:
+-	kfree(mc_drv_ctx);
+-	return ret_val;
++	return 0;
+ }
+ 
+ static int snd_mfld_mc_remove(struct platform_device *pdev)
+@@ -422,9 +415,7 @@ static int snd_mfld_mc_remove(struct platform_device *pdev)
+ 	struct mfld_mc_private *mc_drv_ctx = platform_get_drvdata(pdev);
+ 
+ 	pr_debug("snd_mfld_mc_remove called\n");
+-	free_irq(platform_get_irq(pdev, 0), mc_drv_ctx);
+ 	snd_soc_unregister_card(&snd_soc_card_mfld);
+-	kfree(mc_drv_ctx);
+ 	return 0;
+ }
+ 
 
-Paul.
---
-
-> 
-> 	-hpa
-> 
-> 
