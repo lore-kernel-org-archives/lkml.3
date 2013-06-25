@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab3FYTH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:07:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40924 "EHLO
+	id S1753863Ab3FYTHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:07:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40919 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab3FYSdt (ORCPT
+	with ESMTP id S1752349Ab3FYSds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:49 -0400
+	Tue, 25 Jun 2013 14:33:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 36/95] drm/prime: Honor requested file flags when exporting a buffer
-Date: Tue, 25 Jun 2013 11:32:23 -0700
-Message-Id: <20130625182157.721591509@linuxfoundation.org>
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [ 35/95] ACPI / PM: Fix error code path for power resources initialization
+Date: Tue, 25 Jun 2013 11:32:22 -0700
+Message-Id: <20130625182157.599952566@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,32 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit ebc0bad4a05ad63979e8bc115cea3b8abdf814c7 upstream.
+commit 6ee22e9d59151550a55d370b14109bdae8b58bda upstream.
 
-The DRM PRIME API passes file flags to the driver for the exported
-buffer. Honor them instead of hardcoding 0600.
+Commit 781d737 (ACPI: Drop power resources driver) introduced a
+bug in the power resources initialization error code path causing
+a NULL pointer to be referenced in acpi_release_power_resource()
+if there's an error triggering a jump to the 'err' label in
+acpi_add_power_resource().  This happens because the list_node
+field of struct acpi_power_resource has not been initialized yet
+at this point and doing a list_del() on it is a bad idea.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+To prevent this problem from occuring, initialize the list_node
+field of struct acpi_power_resource upfront.
+
+Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Tested-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_prime.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/acpi/power.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/drm_prime.c
-+++ b/drivers/gpu/drm/drm_prime.c
-@@ -190,8 +190,7 @@ struct dma_buf *drm_gem_prime_export(str
- 		if (ret)
- 			return ERR_PTR(ret);
- 	}
--	return dma_buf_export(obj, &drm_gem_prime_dmabuf_ops, obj->size,
--			      0600);
-+	return dma_buf_export(obj, &drm_gem_prime_dmabuf_ops, obj->size, flags);
- }
- EXPORT_SYMBOL(drm_gem_prime_export);
- 
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -865,6 +865,7 @@ int acpi_add_power_resource(acpi_handle
+ 				ACPI_STA_DEFAULT);
+ 	mutex_init(&resource->resource_lock);
+ 	INIT_LIST_HEAD(&resource->dependent);
++	INIT_LIST_HEAD(&resource->list_node);
+ 	resource->name = device->pnp.bus_id;
+ 	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
+ 	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
 
 
