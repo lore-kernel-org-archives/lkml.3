@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab3FYQTY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:19:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12477 "EHLO mga02.intel.com"
+	id S1752522Ab3FYQUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:20:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53741 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846Ab3FYQTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:19:23 -0400
+	id S1752268Ab3FYQTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:19:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="355551813"
+   d="scan'208";a="359356487"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
@@ -21,75 +21,60 @@ Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Yinghai Lu <yinghai@kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         x86@kernel.org
-Subject: [PATCH 3/6] PCI: introduce pci_trim_stale_devices()
-Date: Tue, 25 Jun 2013 19:22:07 +0300
-Message-Id: <1372177330-28013-4-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH 0/6] Thunderbolt workarounds take 2
+Date: Tue, 25 Jun 2013 19:22:04 +0300
+Message-Id: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Hi all,
 
-The new function stops and removes the device if it doesn't respond.
-If the device responds and it's a bus we apply the function to all
-subdevices recursively.
+This is the second iteration of the patches first posted here quite a while
+ago:
 
-It's useful for hotplug bus check case, when you need drop all unplugged
-devices before looking for new ones.
+	https://lkml.org/lkml/2012/12/13/589
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/pci/remove.c | 20 ++++++++++++++++++++
- include/linux/pci.h  |  1 +
- 2 files changed, 21 insertions(+)
+With Thunderbolt devices we might see pretty complex PCIe hierarchies that
+the current ACPI hotplug code was not able to handle properly but instead
+failed to scan the whole hierarchy. This series tries to address these
+problems. In addition to that there's a possibility that only part of the
+chain is disconnected so we don't want to leave behind stale PCI devices.
 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 8fc54b7..77b7a64 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -112,6 +112,26 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
- }
- EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
- 
-+/**
-+ * pci_trim_stale_devices - remove stale device or any stale child
-+ */
-+void pci_trim_stale_devices(struct pci_dev *dev)
-+{
-+	struct pci_bus *bus = dev->subordinate;
-+	struct pci_dev *child, *tmp;
-+	bool alive;
-+	u32 l;
-+
-+	/* check if the device responds */
-+	alive = pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &l, 0);
-+	if (!alive)
-+		pci_stop_and_remove_bus_device(dev);
-+
-+	if (alive && bus)
-+		list_for_each_entry_safe(child, tmp, &bus->devices, bus_list)
-+			pci_trim_stale_devices(child);
-+}
-+
- void pci_stop_root_bus(struct pci_bus *bus)
- {
- 	struct pci_dev *child, *tmp;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 3a24e4f..8f6e7a0 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -754,6 +754,7 @@ struct pci_dev *pci_dev_get(struct pci_dev *dev);
- void pci_dev_put(struct pci_dev *dev);
- void pci_remove_bus(struct pci_bus *b);
- void pci_stop_and_remove_bus_device(struct pci_dev *dev);
-+void pci_trim_stale_devices(struct pci_dev *dev);
- void pci_stop_root_bus(struct pci_bus *bus);
- void pci_remove_root_bus(struct pci_bus *bus);
- void pci_setup_cardbus(struct pci_bus *bus);
+We have tested this on Acer Aspire S5 with the largest chain looking like
+this:
+
+  PC +--+ eSata Hub #0 +--+ eSata Hub #1 +--+ Apple Thunderbolt display +--+ Apple ethernet dongle
+
+There are still problems with different device drivers because of the
+surprise hotplug nature of Thunderbolt, causing occasional hangs and
+failures that should be fixed per-driver later on (not addressed in this
+series).
+
+Currently Thunderbolt on Apple hardware like Macbooks is not yet supported
+as they use some different mechanism than ACPI events to trigger hotplug
+events.
+
+The series is based on linux-pm.git/linux-next.
+
+Kirill A. Shutemov (4):
+  PCI: acpiphp: do not check for SLOT_ENABLED in enable_device()
+  PCI: acpiphp: enable_device(): rescan even if no new devices on slot
+  PCI: introduce pci_trim_stale_devices()
+  PCI: acpiphp: check for new devices on enabled host
+
+Mika Westerberg (2):
+  PCI: acpiphp: look _RMV method a bit deeper in the hierarhcy
+  x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
+
+ arch/x86/pci/fixup.c               | 51 ++++++++++++++++++++++++
+ drivers/pci/hotplug/acpi_pcihp.c   | 53 ++++++++++++++++++++++---
+ drivers/pci/hotplug/acpiphp_glue.c | 79 +++++++++++++++++---------------------
+ drivers/pci/remove.c               | 20 ++++++++++
+ include/linux/pci.h                |  1 +
+ 5 files changed, 156 insertions(+), 48 deletions(-)
+
 -- 
 1.8.3.1
 
