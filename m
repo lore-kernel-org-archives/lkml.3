@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab3FYTmN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:42:13 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:44063 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab3FYTmL (ORCPT
+	id S1752132Ab3FYTsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:48:33 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:44846 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab3FYTsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 15:42:11 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sam Creasey <sammy@sammy.net>,
-        Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/2] m68k/sun3: Dynamically allocate the table to track IOMMU use
-Date: Tue, 25 Jun 2013 21:42:06 +0200
-Message-Id: <1372189326-12230-2-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372189326-12230-1-git-send-email-geert@linux-m68k.org>
-References: <1372189326-12230-1-git-send-email-geert@linux-m68k.org>
+	Tue, 25 Jun 2013 15:48:31 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: johannes@sipsolutions.net, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] cfg80211/mac80211: fix doc compilation warnings
+Date: Tue, 25 Jun 2013 21:48:20 +0200
+Message-Id: <1372189700-6247-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Sun 3 kernels cannot be multi-platform due to the different Sun 3 MMU
-type, it made sense to statically allocate the table to track IOMMU use.
+This patch fixes countless "No description found for parameter"
+warnings generating documentation (running "make htmldocs"),
+because the comments do not match the actual prototypes in the code.
 
-However, Sun 3x kernels can be multi-platform. Furthermore, Sun 3x uses
-a larger table than Sun 3 (8192 bytes instead of 512 bytes).
+This issue didn't exist in 3.9. It may we worth fixing in 3.10
+(if it's not too late).
 
-Hence switch to dynamic allocation of this table to avoid wasting 8192
-bytes when not running on a Sun 3x.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
-Untested due to lack of hardware
+ include/net/cfg80211.h | 1 +
+ include/net/mac80211.h | 4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
- arch/m68k/sun3/sun3dvma.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/m68k/sun3/sun3dvma.c b/arch/m68k/sun3/sun3dvma.c
-index ca57966..e0a3d36 100644
---- a/arch/m68k/sun3/sun3dvma.c
-+++ b/arch/m68k/sun3/sun3dvma.c
-@@ -6,6 +6,7 @@
-  * Contains common routines for sun3/sun3x DVMA management.
+diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
+index 26b5b69..3949642 100644
+--- a/include/net/cfg80211.h
++++ b/include/net/cfg80211.h
+@@ -4153,6 +4153,7 @@ void cfg80211_report_wowlan_wakeup(struct wireless_dev *wdev,
+  * cfg80211_crit_proto_stopped() - indicate critical protocol stopped by driver.
+  *
+  * @wdev: the wireless device for which critical protocol is stopped.
++ * @gfp: the type of memory to allocate (see kmalloc).
+  *
+  * This function can be called by the driver to indicate it has reverted
+  * operation back to normal. One reason could be that the duration given
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index 885898a..79f5fa7 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1235,7 +1235,7 @@ enum ieee80211_sta_rx_bandwidth {
+  * struct ieee80211_sta_rates - station rate selection table
+  *
+  * @rcu_head: RCU head used for freeing the table on update
+- * @rates: transmit rates/flags to be used by default.
++ * @rate: transmit rates/flags to be used by default.
+  *	Overriding entries per-packet is possible by using cb tx control.
   */
- 
-+#include <linux/bootmem.h>
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
-@@ -31,7 +32,7 @@ static inline void dvma_unmap_iommu(unsigned long a, int b)
- extern void sun3_dvma_init(void);
- #endif
- 
--static unsigned long iommu_use[IOMMU_TOTAL_ENTRIES];
-+static unsigned long *iommu_use;
- 
- #define dvma_index(baddr) ((baddr - DVMA_START) >> DVMA_PAGE_SHIFT)
- 
-@@ -266,6 +267,7 @@ void __init dvma_init(void)
- 
- 	list_add(&(hole->list), &hole_list);
- 
-+	iommu_use = alloc_bootmem(IOMMU_TOTAL_ENTRIES * sizeof(unsigned long));
- 	memset(iommu_use, 0, sizeof(iommu_use));
- 
- 	dvma_unmap_iommu(DVMA_START, DVMA_SIZE);
+ struct ieee80211_sta_rates {
+@@ -1276,7 +1276,7 @@ struct ieee80211_sta_rates {
+  *	notifications and capabilities. The value is only valid after
+  *	the station moves to associated state.
+  * @smps_mode: current SMPS mode (off, static or dynamic)
+- * @tx_rates: rate control selection table
++ * @rates: station rate selection table
+  */
+ struct ieee80211_sta {
+ 	u32 supp_rates[IEEE80211_NUM_BANDS];
 -- 
-1.7.9.5
+1.8.1.2
 
