@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab3FYHHi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 03:07:38 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:57682 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab3FYHHh (ORCPT
+	id S1751947Ab3FYHLm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 03:11:42 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:37281 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab3FYHLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 03:07:37 -0400
-Message-ID: <51C941B1.6000305@acm.org>
-Date: Tue, 25 Jun 2013 09:07:29 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 25 Jun 2013 03:11:41 -0400
+Message-ID: <51C942A9.9070904@collabora.co.uk>
+Date: Tue, 25 Jun 2013 09:11:37 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@redhat.com>,
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
-References: <20130620201713.GV8211@linux.intel.com> <20130623100920.GA19021@gmail.com> <CA+55aFy+COdk5+ucwxtc1At=PAYTJxeUaUV6rP9XstHdNV0hbQ@mail.gmail.com> <20130624080750.GA21768@gmail.com> <20130625031809.GB8211@linux.intel.com>
-In-Reply-To: <20130625031809.GB8211@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        linux-mips <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 0/7] genirq: add irq_get_trigger_type() to get IRQ flags
+References: <1371228049-27080-1-git-send-email-javier.martinez@collabora.co.uk> <CACxGe6smNZofiGdO=nBM88MiWyoDvCTiPGFG5enEUwP_zCn17A@mail.gmail.com>
+In-Reply-To: <CACxGe6smNZofiGdO=nBM88MiWyoDvCTiPGFG5enEUwP_zCn17A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/13 05:18, Matthew Wilcox wrote:
-> On Mon, Jun 24, 2013 at 10:07:51AM +0200, Ingo Molnar wrote:
->> I'm wondering, how will this scheme work if the IO completion latency is a
->> lot more than the 5 usecs in the testcase? What if it takes 20 usecs or
->> 100 usecs or more?
->
-> There's clearly a threshold at which it stops making sense, and our
-> current NAND-based SSDs are almost certainly on the wrong side of that
-> threshold!  I can't wait for one of the "post-NAND" technologies to make
-> it to market in some form that makes it economical to use in an SSD.
->
-> The problem is that some of the people who are looking at those
-> technologies are crazy.  They want to "bypass the kernel" and "do user
-> space I/O" because "the kernel is too slow".  This patch is part of an
-> effort to show them how crazy they are.  And even if it doesn't convince
-> them, at least users who refuse to rewrite their applications to take
-> advantage of magical userspace I/O libraries will see real performance
-> benefits.
+On 06/18/2013 12:29 AM, Grant Likely wrote:
+> On Fri, Jun 14, 2013 at 5:40 PM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
+>> Drivers that want to get the trigger edge/level type flags for a
+>> given interrupt have to first call irq_get_irq_data(irq) to get
+>> the struct irq_data and then irqd_get_trigger_type(irq_data) to
+>> obtain the IRQ flags.
+>>
+>> This is not only error prone but also unnecessary exposes the
+>> struct irq_data to callers. This patch-set adds a new function
+>> irq_get_trigger_type() to obtain the edge/level flags for an IRQ
+>> and updates the places where irq_get_irq_data(irq) was called
+>> just to obtain the flags from the struct irq_data.
+>>
+>> The patch-set is composed of the following patches:
+>>
+>> [PATCH 1/7] genirq: add irq_get_trigger_type() to get IRQ flags
+>> [PATCH 2/7] gpio: mvebu: use irq_get_trigger_type() to get IRQ flags
+>> [PATCH 3/7] mfd: twl4030-irq: use irq_get_trigger_type() to get IRQ flags
+>> [PATCH 4/7] mfd: stmpe: use irq_get_trigger_type() to get IRQ flags
+>> [PATCH 5/7] arm: orion: use irq_get_trigger_type() to get IRQ flags
+>> [PATCH 6/7] MIPS: octeon: use irq_get_trigger_type() to get IRQ flags
+>> [PATCH 7/7] irqdomain: use irq_get_trigger_type() to get IRQ flags
+> 
+> For the whole series:
+> Acked-by: Grant Likely <grant.likely@linaro.org>
+> 
 
-Recently I attended an interesting talk about this subject in which it 
-was proposed not only to bypass the kernel for access to high-IOPS 
-devices but also to allow byte-addressability for block devices. The 
-slides that accompanied that talk can be found here (includes a 
-performance comparison with the traditional block driver API):
+Hello Thomas,
 
-Bernard Metzler, On Suitability of High-Performance Networking API for 
-Storage, OFA Int'l Developer Workshop, April 24, 2013 
-(http://www.openfabrics.org/ofa-documents/presentations/doc_download/559-on-suitability-of-high-performance-networking-api-for-storage.html).
+Do you have any comments on this patch-set?
 
-This approach leaves the choice of whether to use polling or an 
-interrupt-based completion notification to the user of the new API, 
-something the Linux InfiniBand RDMA verbs API already allows today.
+It has been ack'ed by a lot of people so I wonder if you could take it.
 
-Bart.
+Thanks a lot and best regards,
+Javier
+
