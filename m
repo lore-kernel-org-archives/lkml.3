@@ -1,123 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab3FYSlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:41:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41390 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab3FYSjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:39:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/17] net: sctp: fix NULL pointer dereference in socket destruction
-Date: Tue, 25 Jun 2013 11:39:28 -0700
-Message-Id: <20130625183916.917864917@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130625183915.443950649@linuxfoundation.org>
-References: <20130625183915.443950649@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1753589Ab3FYSmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:42:10 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:52639 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753475Ab3FYSmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:42:07 -0400
+Message-ID: <51C9E47B.3020302@sgi.com>
+Date: Tue, 25 Jun 2013 11:42:03 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <20130621165142.GA32125@kroah.com> <51C48745.9030304@zytor.com> <CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com> <20130621185056.GA23473@kroah.com> <51C4C5F3.3050800@sgi.com> <CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com> <51C9D4ED.5070805@sgi.com> <CAE9FiQV+3gEZKPC0sthniGKceSfxV942m+DbyGHa-93Uj6wd1w@mail.gmail.com>
+In-Reply-To: <CAE9FiQV+3gEZKPC0sthniGKceSfxV942m+DbyGHa-93Uj6wd1w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Daniel Borkmann <dborkman@redhat.com>
-
-[ Upstream commit 1abd165ed757db1afdefaac0a4bc8a70f97d258c ]
-
-While stress testing sctp sockets, I hit the following panic:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-IP: [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
-PGD 7cead067 PUD 7ce76067 PMD 0
-Oops: 0000 [#1] SMP
-Modules linked in: sctp(F) libcrc32c(F) [...]
-CPU: 7 PID: 2950 Comm: acc Tainted: GF            3.10.0-rc2+ #1
-Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
-task: ffff88007ce0e0c0 ti: ffff88007b568000 task.ti: ffff88007b568000
-RIP: 0010:[<ffffffffa0490c4e>]  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
-RSP: 0018:ffff88007b569e08  EFLAGS: 00010292
-RAX: 0000000000000000 RBX: ffff88007db78a00 RCX: dead000000200200
-RDX: ffffffffa049fdb0 RSI: ffff8800379baf38 RDI: 0000000000000000
-RBP: ffff88007b569e18 R08: ffff88007c230da0 R09: 0000000000000001
-R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-R13: ffff880077990d00 R14: 0000000000000084 R15: ffff88007db78a00
-FS:  00007fc18ab61700(0000) GS:ffff88007fc60000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000020 CR3: 000000007cf9d000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- ffff88007b569e38 ffff88007db78a00 ffff88007b569e38 ffffffffa049fded
- ffffffff81abf0c0 ffff88007db78a00 ffff88007b569e58 ffffffff8145b60e
- 0000000000000000 0000000000000000 ffff88007b569eb8 ffffffff814df36e
-Call Trace:
- [<ffffffffa049fded>] sctp_destroy_sock+0x3d/0x80 [sctp]
- [<ffffffff8145b60e>] sk_common_release+0x1e/0xf0
- [<ffffffff814df36e>] inet_create+0x2ae/0x350
- [<ffffffff81455a6f>] __sock_create+0x11f/0x240
- [<ffffffff81455bf0>] sock_create+0x30/0x40
- [<ffffffff8145696c>] SyS_socket+0x4c/0xc0
- [<ffffffff815403be>] ? do_page_fault+0xe/0x10
- [<ffffffff8153cb32>] ? page_fault+0x22/0x30
- [<ffffffff81544e02>] system_call_fastpath+0x16/0x1b
-Code: 0c c9 c3 66 2e 0f 1f 84 00 00 00 00 00 e8 fb fe ff ff c9 c3 66 0f
-      1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 <48>
-      8b 47 20 48 89 fb c6 47 1c 01 c6 40 12 07 e8 9e 68 01 00 48
-RIP  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
- RSP <ffff88007b569e08>
-CR2: 0000000000000020
----[ end trace e0d71ec1108c1dd9 ]---
-
-I did not hit this with the lksctp-tools functional tests, but with a
-small, multi-threaded test program, that heavily allocates, binds,
-listens and waits in accept on sctp sockets, and then randomly kills
-some of them (no need for an actual client in this case to hit this).
-Then, again, allocating, binding, etc, and then killing child processes.
-
-This panic then only occurs when ``echo 1 > /proc/sys/net/sctp/auth_enable''
-is set. The cause for that is actually very simple: in sctp_endpoint_init()
-we enter the path of sctp_auth_init_hmacs(). There, we try to allocate
-our crypto transforms through crypto_alloc_hash(). In our scenario,
-it then can happen that crypto_alloc_hash() fails with -EINTR from
-crypto_larval_wait(), thus we bail out and release the socket via
-sk_common_release(), sctp_destroy_sock() and hit the NULL pointer
-dereference as soon as we try to access members in the endpoint during
-sctp_endpoint_free(), since endpoint at that time is still NULL. Now,
-if we have that case, we do not need to do any cleanup work and just
-leave the destruction handler.
-
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/socket.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -3809,6 +3809,12 @@ SCTP_STATIC void sctp_destroy_sock(struc
- 
- 	/* Release our hold on the endpoint. */
- 	ep = sctp_sk(sk)->ep;
-+	/* This could happen during socket init, thus we bail out
-+	 * early, since the rest of the below is not setup either.
-+	 */
-+	if (ep == NULL)
-+		return;
-+
- 	sctp_endpoint_free(ep);
- 	local_bh_disable();
- 	percpu_counter_dec(&sctp_sockets_allocated);
 
 
+On 6/25/2013 11:38 AM, Yinghai Lu wrote:
+> On Tue, Jun 25, 2013 at 10:35 AM, Mike Travis <travis@sgi.com> wrote:
+>>
+>>
+>> On 6/21/2013 5:23 PM, Yinghai Lu wrote:
+>>> On Fri, Jun 21, 2013 at 2:30 PM, Mike Travis <travis@sgi.com> wrote:
+>>>> Exactly.  That's why I left both low and high memory on each node.
+>>>
+>>> looks like you assume every node have same ram, and before booting you
+>>> you need to know memory layout to append the boot command line.
+>>>
+>>> We have patchset that moving srat table parse early.
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>>> for-x86-mm
+>>> https://git.kernel.org/cgit/linux/kernel/git/yinghai/linux-yinghai.git/log/?h=for-x86-mm
+>>>
+>>> on top that, we could make your patch pass more simple command like
+>>> 1/2^n of every node, and only need to pass n instead.
+>>
+>> The two params that I couldn't figure out how to provide except via kernel
+>> param option was the memory block size (128M or 2G) and the physical
+>> address space per node.  The other 3 params can be automatically
+>> setup by a script when the total system size is known.  As soon as we
+>> verify on the 32TB system and surmise what will be needed for 64TB,
+>> then those 3 params can probably disappear.
+> 
+> our "numa parsing early" patchset could provide "physical address
+> space per node",
+> also can calculate memory block size via alignment detection from numa info.
+
+Thanks!  I'll try it out.
+> 
+> with that, user only can pass "delay_init_mem" only.
+> 
+> Thanks
+> 
+> Yinghai
+> 
