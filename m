@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab3FYSnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:43:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41367 "EHLO
+	id S1753477Ab3FYSoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:44:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab3FYSjj (ORCPT
+	with ESMTP id S1753392Ab3FYSjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:39:39 -0400
+	Tue, 25 Jun 2013 14:39:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 08/17] tcp: xps: fix reordering issues
-Date: Tue, 25 Jun 2013 11:39:23 -0700
-Message-Id: <20130625183916.398348479@linuxfoundation.org>
+Subject: [ 05/17] gianfar: add missing iounmap() on error in gianfar_ptp_probe()
+Date: Tue, 25 Jun 2013 11:39:20 -0700
+Message-Id: <20130625183916.086758273@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183915.443950649@linuxfoundation.org>
 References: <20130625183915.443950649@linuxfoundation.org>
@@ -29,47 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-[ Upstream commit 547669d483e5783d722772af1483fa474da7caf9 ]
+[ Upstream commit e5f5e380e0f3bb11f04ca5bc66a551e58e0ad26e ]
 
-commit 3853b5841c01a ("xps: Improvements in TX queue selection")
-introduced ooo_okay flag, but the condition to set it is slightly wrong.
+Add the missing iounmap() before return from gianfar_ptp_probe()
+in the error handling case.
 
-In our traces, we have seen ACK packets being received out of order,
-and RST packets sent in response.
-
-We should test if we have any packets still in host queue.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_output.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/gianfar_ptp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -833,11 +833,13 @@ static int tcp_transmit_skb(struct sock
- 							   &md5);
- 	tcp_header_size = tcp_options_size + sizeof(struct tcphdr);
+--- a/drivers/net/gianfar_ptp.c
++++ b/drivers/net/gianfar_ptp.c
+@@ -521,6 +521,7 @@ static int gianfar_ptp_probe(struct plat
+ 	return 0;
  
--	if (tcp_packets_in_flight(tp) == 0) {
-+	if (tcp_packets_in_flight(tp) == 0)
- 		tcp_ca_event(sk, CA_EVENT_TX_START);
--		skb->ooo_okay = 1;
--	} else
--		skb->ooo_okay = 0;
-+
-+	/* if no packet is in qdisc/device queue, then allow XPS to select
-+	 * another queue.
-+	 */
-+	skb->ooo_okay = sk_wmem_alloc_get(sk) == 0;
- 
- 	skb_push(skb, tcp_header_size);
- 	skb_reset_transport_header(skb);
+ no_clock:
++	iounmap(etsects->regs);
+ no_ioremap:
+ 	release_resource(etsects->rsrc);
+ no_resource:
 
 
