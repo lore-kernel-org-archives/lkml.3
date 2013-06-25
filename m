@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab3FYAWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 20:22:14 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:14417 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044Ab3FYAVr (ORCPT
+	id S1752476Ab3FYAaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jun 2013 20:30:15 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:58426 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3FYAaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 20:21:47 -0400
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: mingo@kernel.org, akpm@linux-foundation.org
-Cc: walken@google.com, alex.shi@intel.com, tim.c.chen@linux.intel.com,
-        a.p.zijlstra@chello.nl, riel@redhat.com, peter@hurleysoftware.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-Subject: [PATCH 1/5] mm,fs: introduce helpers around i_mmap_mutex
-Date: Mon, 24 Jun 2013 17:21:34 -0700
-Message-Id: <1372119698-13147-2-git-send-email-davidlohr.bueso@hp.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1372119698-13147-1-git-send-email-davidlohr.bueso@hp.com>
-References: <1372119698-13147-1-git-send-email-davidlohr.bueso@hp.com>
+	Mon, 24 Jun 2013 20:30:13 -0400
+Date: Tue, 25 Jun 2013 02:30:10 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf sort: Separate out memory-specific sort
+ keys
+Message-ID: <20130625003010.GU6123@two.firstfloor.org>
+References: <1364991979-3008-3-git-send-email-namhyung@kernel.org>
+ <tip-afab87b91f3f331d55664172dad8e476e6ffca9d@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-afab87b91f3f331d55664172dad8e476e6ffca9d@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various parts of the kernel acquire and release this mutex,
-so add i_mmap_lock_write() and immap_unlock_write() helper
-functions that will encapsulate this logic. The next patch
-will make use of these.
+On Fri, May 31, 2013 at 04:20:20AM -0700, tip-bot for Namhyung Kim wrote:
+> perf sort: Separate out memory-specific sort keys
+> 
+> Since they're used only for perf mem, separate out them to a different
+> dimension so that normal user cannot access them by any chance.
+> 
+> For global/local weights, I'm not entirely sure to place them into the
+> memory dimension.  But it's the only user at this time.
 
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
----
- include/linux/fs.h | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+So I was finally able to test with this patch, but 
+I found it completely breaks TSX weight abort profiling.
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 65c2be2..1ea6c68 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -475,6 +475,16 @@ struct block_device {
- 
- int mapping_tagged(struct address_space *mapping, int tag);
- 
-+static inline void i_mmap_lock_write(struct address_space *mapping)
-+{
-+	mutex_lock(&mapping->i_mmap_mutex);
-+}
-+
-+static inline void i_mmap_unlock_write(struct address_space *mapping)
-+{
-+	mutex_unlock(&mapping->i_mmap_mutex);
-+}
-+
- /*
-  * Might pages of this file be mapped into userspace?
-  */
--- 
-1.7.11.7
+It uses weight (global/local), but it's not 
+running in memory mode.
+
+I'll send a patch to move weight back into
+the common keys.
+
+-Andi
 
