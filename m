@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab3FYQlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:41:07 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:53210 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab3FYQlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 12:41:05 -0400
+	id S1751410Ab3FYQq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:46:27 -0400
+Received: from www.sr71.net ([198.145.64.142]:42449 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223Ab3FYQq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 12:46:26 -0400
+Message-ID: <51C9C960.6070706@sr71.net>
+Date: Tue, 25 Jun 2013 09:46:24 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130625090253.26584.65072.stgit@aruna-ThinkPad-T420>
-References: <20130625090253.26584.65072.stgit@aruna-ThinkPad-T420>
-Date: Tue, 25 Jun 2013 09:41:03 -0700
-X-Google-Sender-Auth: 7GU4sBjfNNxzSwKVWVvWFGHPd8M
-Message-ID: <CAGXu5jKSMtaLsTGYqpxnEM-dW+99SYhE1+SzLsD3gngxhxYN7w@mail.gmail.com>
-Subject: Re: [PATCH v2] pstore: Fail to unlink if a driver has not defined pstore_erase
-From: Kees Cook <keescook@chromium.org>
-To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        jkenisto@linux.vnet.ibm.com, ananth@in.ibm.com,
-        mahesh@linux.vnet.ibm.com, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Colin Cross <ccross@android.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 27/39] x86-64, mm: proper alignment mappings with hugepages
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-28-git-send-email-kirill.shutemov@linux.intel.com> <519BFBA9.7040007@sr71.net> <20130625145655.68DCBE0090@blue.fi.intel.com>
+In-Reply-To: <20130625145655.68DCBE0090@blue.fi.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 2:03 AM, Aruna Balakrishnaiah
-<aruna@linux.vnet.ibm.com> wrote:
-> pstore_erase is used to erase the record from the persistent store.
-> So if a driver has not defined pstore_erase callback return
-> -EPERM instead of unlinking a file as deleting the file without
-> erasing its record in persistent store will give a wrong impression
-> to customers.
->
-> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+On 06/25/2013 07:56 AM, Kirill A. Shutemov wrote:
+> Dave Hansen wrote:
+>> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+>>> +static inline unsigned long mapping_align_mask(struct address_space *mapping)
+>>> +{
+>>> +	if (mapping_can_have_hugepages(mapping))
+>>> +		return PAGE_MASK & ~HPAGE_MASK;
+>>> +	return get_align_mask();
+>>> +}
+>>
+>> get_align_mask() appears to be a bit more complicated to me than just a
+>> plain old mask.  Are you sure you don't need to pick up any of its
+>> behavior for the mapping_can_have_hugepages() case?
+> 
+> get_align_mask() never returns more strict mask then we do in
+> mapping_can_have_hugepages() case.
+> 
+> I can modify it this way:
+> 
+>         unsigned long mask = get_align_mask();
+> 
+>         if (mapping_can_have_hugepages(mapping))
+>                 mask &= PAGE_MASK & ~HPAGE_MASK;
+>         return mask;
+> 
+> But it looks more confusing for me. What do you think?
 
-Acked-by: Kees Cook <keescook@chromium.org>
+Personally, I find that a *LOT* more clear.  The &= pretty much spells
+out what you said in your explanation: get_align_mask()'s mask can only
+be made more strict when we encounter a huge page.
 
-Thanks!
-
--Kees
-
---
-Kees Cook
-Chrome OS Security
+The relationship between the two masks is not apparent at all in your
+original code.  This is all nitpicking though, I just wanted to make
+sure you'd considered if you were accidentally changing behavior.
