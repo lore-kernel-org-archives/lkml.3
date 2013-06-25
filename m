@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab3FYOSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:18:43 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:55677 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab3FYOSl (ORCPT
+	id S1751716Ab3FYOTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:19:50 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:55160 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750990Ab3FYOTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:18:41 -0400
+	Tue, 25 Jun 2013 10:19:49 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Landley <rob@landley.net>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Subject: [PATCH] pinctrl: elaborate a bit on arrangements in doc
+Date: Tue, 25 Jun 2013 16:19:12 +0200
+Message-ID: <1372169952-22439-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-In-Reply-To: <20130625161202.4d0a0075@mschwide>
-References: <20130403172534.528d04c5@mschwide> <CACxGe6sYM8QPB-ZZkgB0+f81CZHULPi5zPAsWb5dzHiRgU+w6Q@mail.gmail.com>
- <20130625141508.6c391fd8@mschwide> <CACxGe6s3RqOkf=M4zwpJGEEVa9XjJvP2q5xeLKewGo6np5C-3g@mail.gmail.com>
- <20130625151151.73aaba28@mschwide> <CACxGe6uOf+TONiCu27w9TsXmo2VVYXKS1+RZckAtxAdshtPDgQ@mail.gmail.com>
- <20130625161202.4d0a0075@mschwide>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 25 Jun 2013 15:18:21 +0100
-X-Google-Sender-Auth: FpS8ei7KFBdWoWwXwiA758yLxb0
-Message-ID: <CACxGe6ujRoZkB9V6L_Zi1pVoaRganMDfZ70RKJJP1pF-NGNv=A@mail.gmail.com>
-Subject: Re: [GIT PULL] s390 patches for the 3.9-rc6
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 3:12 PM, Martin Schwidefsky
-<schwidefsky@de.ibm.com> wrote:
-> On Tue, 25 Jun 2013 14:30:20 +0100
-> Grant Likely <grant.likely@secretlab.ca> wrote:
->
->> On Tue, Jun 25, 2013 at 2:11 PM, Martin Schwidefsky
->> <schwidefsky@de.ibm.com> wrote:
->> > On Tue, 25 Jun 2013 13:42:23 +0100
->> > Grant Likely <grant.likely@secretlab.ca> wrote:
->> >
->> >> On Tue, Jun 25, 2013 at 1:15 PM, Martin Schwidefsky
->> >> <schwidefsky@de.ibm.com> wrote:
->> >> > On Tue, 25 Jun 2013 13:09:51 +0100
->> >> > Grant Likely <grant.likely@secretlab.ca> wrote:
->> >> >
->> >> >> On Wed, Apr 3, 2013 at 4:25 PM, Martin Schwidefsky
->> >> >> <schwidefsky@de.ibm.com> wrote:
->> >> >> > Hi Linus,
->> >> >> >
->> >> >> > please pull from the 'for-linus' branch of
->> >> >> >
->> >> >> >         git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
->> >> >> >
->> >> >> > to receive the following updates: Just a bunch of bugfixes.
->> >> >> >
->> >> >> > Heiko Carstens (4):
->> >> >> >       drivers/Kconfig: add several missing GENERIC_HARDIRQS dependencies
->> >> >>
->> >> >> Is anyone currently working on fixing this? s390 is the only
->> >> >> architecture left that does not enable GENERIC_HARDIRQS. It's painful
->> >> >> to keep adding dependencies on GENERIC_HARDIRQS to driver configs.
->> >> >
->> >> > I am working on it. The hardest part is MSI irqs for PCI. Chances are
->> >> > that I get it done for the merge window of 3.12.
->> >>
->> >> How are you handling the MSIs? I've just been looking at some code for
->> >> irq_domain to handle MSI mapping. What's the part that is getting you
->> >> hung up?
->> >
->> > Basically a name-space thing. The current code allocates 64 interrupts numbers
->> > for each PCI device, starting at 0. With GENERIC_HARDIRQS=y irq #0 is used for
->> > for external interrupts, irq #1 for I/O interrupts and irq #2 for adapter
->> > interrupts. The adapter interrupt handler for PCI has to scan the interrupt
->> > vectors and call generic_handle_irq for the MSI interrupts starting at irq #3.
->> > As I don't want to create a huge irq_desc array the number of allocatable
->> > interrupts for MSI will be limited and I can not simply assign 64 interrupts
->> > numbers to each device anymore.
->>
->> Have you looked at irq_domain? It was created to solve that exact
->> problem. irq_descs can get allocated dynamically as irqs are
->> requested.
->
-> That is one option I am considering. The PCI support for System z can have multiple
-> PCI function groups, each with up to 2048 MSI interrupts. It is quite a good match.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-:-) It was designed to support exactly that use-case on PowerPC.
+This elaborates a bit on the pinctrl vs GPIO arangements
+in the hardware.
 
-g.
+Inspired by some drawings in a mail from Christian
+Ruppert.
+
+Cc: Rob Landley <rob@landley.net>
+Cc: Christian Ruppert <christian.ruppert@abilis.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ Documentation/pinctrl.txt | 37 ++++++++++++++++++++++++++++++++-----
+ 1 file changed, 32 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index 447fd4c..41ecad0 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -784,11 +784,38 @@ special GPIO-handler is registered.
+ GPIO mode pitfalls
+ ==================
+ 
+-Sometime the developer may be confused by a datasheet talking about a pin
+-being possible to set into "GPIO mode". It appears that what hardware
+-engineers mean with "GPIO mode" is not necessarily the use case that is
+-implied in the kernel interface <linux/gpio.h>: a pin that you grab from
+-kernel code and then either listen for input or drive high/low to
++The GPIO portions of a pin and its relation to a certain pin controller
++logic can be constructed in several ways. Here are three examples:
++
++(A)
++
++                                         +- SPI
++     Physical pins --- GPIO --- pinctrl -+- I2C
++                                         +- mmc
++
++(B)
++                    +- GPIO
++     Physical pins -+           +- SPI
++                    +- pinctrl -+- I2C
++                                +- mmc
++
++(C)
++                                +- SPI
++     Physical pins --- pinctrl -+- I2C
++                                +- mmc
++                                +- GPIO
++
++In (A) the GPIO-like functionality of the pin is *always* available.
++For example it is possible to read the GPIO input register to "spy" on
++the SPI, I2C or MMC line while it is being used by the peripheral.
++In (B) the GPIO functionality is orthogonal to any device using the
++pin, and in (C) the GPIO case is the same as "some peripheral".
++
++For this reason the developer may be confused by a datasheet talking
++about a pin being possible to set into "GPIO mode". It appears that what
++hardware engineers mean with "GPIO mode" is not necessarily the use case
++that is implied in the kernel interface <linux/gpio.h>: a pin that you
++grab from kernel code and then either listen for input or drive high/low to
+ assert/deassert some external line.
+ 
+ Rather hardware engineers think that "GPIO mode" means that you can
+-- 
+1.7.11.3
+
