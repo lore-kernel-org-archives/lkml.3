@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab3FYIri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:47:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47567 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab3FYIre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:47:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,935,1363158000"; 
-   d="scan'208";a="359143549"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
-        andi@firstfloor.org, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 7/7] perf, x86: Discard zero length call entries in LBR call stack
-Date: Tue, 25 Jun 2013 16:47:19 +0800
-Message-Id: <1372150039-15151-8-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
-References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
+	id S1752910Ab3FYIrs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:47:48 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:58721 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab3FYIrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 04:47:45 -0400
+Date: Tue, 25 Jun 2013 10:47:40 +0200
+From: Robert Richter <rric@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH v2 03/14] perf: Add persistent event facilities
+Message-ID: <20130625084740.GC21579@rric.localhost>
+References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+ <1370968960-22527-4-git-send-email-rric@kernel.org>
+ <20130624093204.GN28407@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624093204.GN28407@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On 24.06.13 11:32:04, Peter Zijlstra wrote:
+> I generally disapprove of indented labels. None of the perf code has
+> that and the tools are easy to 'fix'.
+> 
+> My quiltrc contains:
+> 
+> QUILT_DIFF_OPTS="-F ^[[:alpha:]\$_].*[^:]\$"
+> 
+> my .gitconfig contains:
+> 
+> [diff "default"]
+>                 xfuncname = "^[[:alpha:]$_].*[^:]$"
+> 
+> Both avoid diff thinking labels are function names.
 
-"Zero length call" uses the attribute of the call instruction to push
-the immediate instruction pointer on to the stack and then pops off
-that address into a register. This is accomplished without any matching
-return instruction. It confuses the hardware and make the recorded call
-stack incorrect. Try fixing the call stack by discarding zero length
-call entries.
+Right, we will use your coding style. ;)
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 3be2d7b..f28fd23 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -94,7 +94,8 @@ enum {
- 	X86_BR_ABORT		= 1 << 12,/* transaction abort */
- 	X86_BR_IN_TX		= 1 << 13,/* in transaction */
- 	X86_BR_NO_TX		= 1 << 14,/* not in transaction */
--	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
-+	X86_BR_ZERO_CALL	= 1 << 15,/* zero length call */
-+	X86_BR_CALL_STACK	= 1 << 16,/* call stack */
- };
- 
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-@@ -111,13 +112,15 @@ enum {
- 	 X86_BR_JMP	 |\
- 	 X86_BR_IRQ	 |\
- 	 X86_BR_ABORT	 |\
--	 X86_BR_IND_CALL)
-+	 X86_BR_IND_CALL |\
-+	 X86_BR_ZERO_CALL)
- 
- #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
- 
- #define X86_BR_ANY_CALL		 \
- 	(X86_BR_CALL		|\
- 	 X86_BR_IND_CALL	|\
-+	 X86_BR_ZERO_CALL	|\
- 	 X86_BR_SYSCALL		|\
- 	 X86_BR_IRQ		|\
- 	 X86_BR_INT)
-@@ -643,6 +646,12 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
- 		ret = X86_BR_INT;
- 		break;
- 	case 0xe8: /* call near rel */
-+		insn_get_immediate(&insn);
-+		if (insn.immediate1.value == 0) {
-+			/* zero length call */
-+			ret = X86_BR_ZERO_CALL;
-+			break;
-+		}
- 	case 0x9a: /* call far absolute */
- 		ret = X86_BR_CALL;
- 		break;
--- 
-1.8.1.4
-
+-Robert
