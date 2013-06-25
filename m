@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709Ab3FYSX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:23:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36356 "EHLO mga02.intel.com"
+	id S1751619Ab3FYS1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:27:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23443 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751559Ab3FYSX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:23:58 -0400
+	id S1751005Ab3FYS1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:27:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="359424569"
-Date: Tue, 25 Jun 2013 11:23:56 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] usb: host: xhci-plat: release mem region while removing
- module
-Message-ID: <20130625182356.GB28833@xanatos>
-References: <1371803348-9807-1-git-send-email-george.cherian@ti.com>
- <20130624142224.GI21889@arwen.pp.htv.fi>
+   d="scan'208";a="260015777"
+Date: Tue, 25 Jun 2013 21:31:23 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 5/6] PCI: acpiphp: look _RMV method a bit deeper in the
+ hierarhcy
+Message-ID: <20130625183123.GJ9294@intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
+ <CAHp75Vd2Torku6zy2awLHRTed9mx94a6RAu+oHJYb+rVgZKBDQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130624142224.GI21889@arwen.pp.htv.fi>
+In-Reply-To: <CAHp75Vd2Torku6zy2awLHRTed9mx94a6RAu+oHJYb+rVgZKBDQ@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 05:22:24PM +0300, Felipe Balbi wrote:
-> On Fri, Jun 21, 2013 at 01:59:08PM +0530, George Cherian wrote:
-> > Do a release_mem_region of the hcd resource. Without this the
-> > subsequent insertion of module fails in request_mem_region.
-> > 
-> > Signed-off-by: George Cherian <george.cherian@ti.com>
+On Tue, Jun 25, 2013 at 09:15:47PM +0300, Andy Shevchenko wrote:
+> On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
 > 
-> very nice catch.
+> > The acpiphp driver finds out whether the device is hotpluggable by checking
+> > whether it has _RMV method behind it (and if it returns 1). However, at
+> > least Acer Aspire S5 with Thunderbolt host router has this method placed
+> > behind device called EPUP (endpoint upstream port?) and not directly behind
+> > the root port as can be seen from the ASL code below:
 > 
-> Acked-by: Felipe Balbi <balbi@ti.com>
+> []
 > 
-> You need to resend with:
 > 
-> 	Cc: <stable@vger.kernel.org> # v3.4+
+> > +static acpi_status pcihp_evaluate_rmv(acpi_handle handle, u32 lvl,
+> > +                                     void *context, void **return_not_used)
+> > +{
+> > +       unsigned long long *removable = context;
+> > +       unsigned long long value;
+> > +       acpi_status status;
+> > +
+> > +       status = acpi_evaluate_integer(handle, "_RMV", NULL, &value);
+> > +       if (ACPI_SUCCESS(status) && value) {
 > 
-> Not sure if Sarah wants to take care of the stable tagging, though.
+> So, there is a chance the caller gets back uninitialized *context.
+> Let's assume that is by design.
+> 
+> > +               *removable = value;
+> > +               return AE_CTRL_TERMINATE;
+> > +       }
+> > +       return AE_OK;
+> > +}
+> 
+> 
+> > +static bool pcihp_is_removable(acpi_handle handle, size_t depth)
+> > +{
+> > +       unsigned long long removable = 0;
+> > +       acpi_status status;
+> > +
+> > +       status = pcihp_evaluate_rmv(handle, 0, &removable, NULL);
+> > +       if ((status == AE_CTRL_TERMINATE) && removable)
+> 
+> Here you already have removable not equal zero.
 
-I'll take care of the stable tagging.
+Hmm, removable is initialized to zero just few lines above... Did I miss
+something obvious?
 
-Sarah Sharp
+> Internal braces could be removed, but it's up top you.
+
+I'll remove them in the next revision.
+
+Thanks.
