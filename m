@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab3FYLUz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 07:20:55 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:47789 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752902Ab3FYLUx (ORCPT
+	id S1752984Ab3FYLVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 07:21:12 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:46983 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752954Ab3FYLVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 07:20:53 -0400
+	Tue, 25 Jun 2013 07:21:09 -0400
 From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
@@ -16,9 +16,9 @@ Cc: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
         Arnd Bergmann <arnd@arndb.de>,
         Stephen Gallimore <stephen.gallimore@st.com>,
         Olof Johansson <olof@lixom.net>
-Subject: [PATCH v5 5/7] ARM:sti: Add sti options to multi_v7_defconfig
-Date: Tue, 25 Jun 2013 12:15:53 +0100
-Message-Id: <1372158953-19811-1-git-send-email-srinivas.kandagatla@st.com>
+Subject: [PATCH v5 6/7] ARM:stih41x: Add B2000 board support
+Date: Tue, 25 Jun 2013 12:16:04 +0100
+Message-Id: <1372158964-19854-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1372158822-19160-1-git-send-email-srinivas.kandagatla@st.com>
 References: <1372158822-19160-1-git-send-email-srinivas.kandagatla@st.com>
@@ -28,41 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-This patch adds stih415 and stih416 support to multi_v7_defconfig.
-CONFIG_ARM_ERRATA_754322 is removed as it is selected by the sti
-mach level kconfig.
+B2000 board is reference board for STIH415/416 SOCs, it has
+2 x UART, 4x USB, 2 x Ethernet, 1 x SATA, 1 x PCIe, and 1GB RAM.
+
+This patch add initial support to b2000 with STiH415/416 with UART2 as
+console and a heard beat LED.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+CC: Stephen Gallimore <stephen.gallimore@st.com>
+CC: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/configs/multi_v7_defconfig |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ arch/arm/boot/dts/Makefile           |    2 +
+ arch/arm/boot/dts/stih415-b2000.dts  |   15 ++++++++++++
+ arch/arm/boot/dts/stih416-b2000.dts  |   16 +++++++++++++
+ arch/arm/boot/dts/stih41x-b2000.dtsi |   41 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 74 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/stih415-b2000.dts
+ create mode 100644 arch/arm/boot/dts/stih416-b2000.dts
+ create mode 100644 arch/arm/boot/dts/stih41x-b2000.dtsi
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index f2b4957..319ab71 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -9,11 +9,11 @@ CONFIG_PLAT_SPEAR=y
- CONFIG_ARCH_SPEAR13XX=y
- CONFIG_MACH_SPEAR1310=y
- CONFIG_MACH_SPEAR1340=y
-+CONFIG_ARCH_STI=y
- CONFIG_ARCH_SUNXI=y
- CONFIG_ARCH_SIRF=y
- CONFIG_ARCH_WM8850=y
- CONFIG_ARCH_ZYNQ=y
--CONFIG_ARM_ERRATA_754322=y
- CONFIG_SMP=y
- CONFIG_AEABI=y
- CONFIG_HIGHMEM=y
-@@ -43,6 +43,8 @@ CONFIG_SERIAL_SIRFSOC_CONSOLE=y
- CONFIG_SERIAL_VT8500=y
- CONFIG_SERIAL_VT8500_CONSOLE=y
- CONFIG_SERIAL_OF_PLATFORM=y
-+CONFIG_SERIAL_ST_ASC=y
-+CONFIG_SERIAL_ST_ASC_CONSOLE=y
- CONFIG_IPMI_HANDLER=y
- CONFIG_IPMI_SI=y
- CONFIG_I2C=y
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index f0895c5..53ee542 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -177,6 +177,8 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
+ 	spear320-evb.dtb \
+ 	spear320-hmi.dtb
+ dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
++dtb-$(CONFIG_ARCH_STI)+= stih415-b2000.dtb \
++	stih416-b2000.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += \
+ 	sun4i-a10-cubieboard.dtb \
+ 	sun4i-a10-mini-xplus.dtb \
+diff --git a/arch/arm/boot/dts/stih415-b2000.dts b/arch/arm/boot/dts/stih415-b2000.dts
+new file mode 100644
+index 0000000..d4af531
+--- /dev/null
++++ b/arch/arm/boot/dts/stih415-b2000.dts
+@@ -0,0 +1,15 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * publishhed by the Free Software Foundation.
++ */
++/dts-v1/;
++#include "stih415.dtsi"
++#include "stih41x-b2000.dtsi"
++/ {
++	model = "STiH415 B2000 Board";
++	compatible = "st,stih415", "st,stih415-b2000";
++};
+diff --git a/arch/arm/boot/dts/stih416-b2000.dts b/arch/arm/boot/dts/stih416-b2000.dts
+new file mode 100644
+index 0000000..a5eb6ee
+--- /dev/null
++++ b/arch/arm/boot/dts/stih416-b2000.dts
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * publishhed by the Free Software Foundation.
++ */
++/dts-v1/;
++#include "stih416.dtsi"
++#include "stih41x-b2000.dtsi"
++
++/ {
++	compatible = "st,stih416", "st,stih416-b2000";
++	model = "STiH416 B2000";
++};
+diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
+new file mode 100644
+index 0000000..8e694d2
+--- /dev/null
++++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
+@@ -0,0 +1,41 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * publishhed by the Free Software Foundation.
++ */
++/ {
++
++	memory{
++		device_type = "memory";
++		reg = <0x60000000 0x40000000>;
++	};
++
++	chosen {
++		bootargs = "console=ttyAS0,115200";
++		linux,stdout-path = &serial2;
++	};
++
++	aliases {
++		ttyAS0 = &serial2;
++	};
++
++	soc {
++		serial2: serial@fed32000 {
++			status = "okay";
++		};
++
++		leds {
++			compatible	= "gpio-leds";
++			fp_led {
++				#gpio-cells = <1>;
++				label	= "Front Panel LED";
++				gpios	= <&PIO105 7>;
++				linux,default-trigger	= "heartbeat";
++			};
++		};
++
++	};
++};
 -- 
 1.7.6.5
 
