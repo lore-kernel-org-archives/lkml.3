@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676Ab3FYG0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 02:26:15 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:63172 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab3FYG0N (ORCPT
+	id S1751411Ab3FYGdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 02:33:14 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:37582 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab3FYGdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 02:26:13 -0400
+	Tue, 25 Jun 2013 02:33:13 -0400
+Date: Tue, 25 Jun 2013 12:02:57 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+To: Chen Gong <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/MCE: Update MCE severity condition check
+Message-ID: <20130625063257.GA2274@naverao1-tp.in.ibm.com>
+References: <1371719773-27572-1-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130624152553.GT27646@sirena.org.uk>
-References: <1372066617-23518-1-git-send-email-sachin.kamat@linaro.org>
-	<20130624152553.GT27646@sirena.org.uk>
-Date: Tue, 25 Jun 2013 11:56:12 +0530
-Message-ID: <CAK9yfHzBPO1Yr7_qLtw3oZKVVtqDBK_Yj7_r=HrU+94pod+XVA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] of/documentation: Update s5m8767-regulator bindings document
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371719773-27572-1-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062506-2000-0000-0000-00000CA0433E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 June 2013 20:55, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Jun 24, 2013 at 03:06:57PM +0530, Sachin Kamat wrote:
->> s5m8767 regulator is used on Exynos platforms which use pin controller
->> to configure GPIOs. Update the example accordingly.
->
-> This smells bad, why does a driver using GPIOs through the GPIO API see
-> a change in the binding?
+On 2013/06/20 05:16AM, Chen Gong wrote:
+> Update some SRAR severity conditions check to make it clearer,
+> according to latest Intel SDM Vol 3(June 2013), table 15-20.
+> 
+> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce-severity.c |   15 +++++----------
+>  1 file changed, 5 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> index beb1f16..1fa12ea 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> @@ -110,22 +110,17 @@ static struct severity {
+>  	/* known AR MCACODs: */
+>  #ifdef	CONFIG_MEMORY_FAILURE
+>  	MCESEV(
+> -		KEEP, "HT thread notices Action required: data load error",
+> -		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
+> -		MCGMASK(MCG_STATUS_EIPV, 0)
+> +		KEEP, "Action required but non-affected thread is continuable",
 
-There is no change in the bindings, but just a correction in the
-documentation to reflect the
-implementation. Earlier when Samsung platforms did not have pinctrl
-driver, legacy GPIO driver
-was used which took those 5 parameters. Now since we are using
-pinctrl, we need only 3 parameters.
-The document was somehow not updated to reflect this change.
+The SDM talks about "non-affected" logical processors, but perhaps we
+can call this an "unaffected" thread?
 
--- 
-With warm regards,
-Sachin
+- Naveen
+
