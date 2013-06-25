@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab3FYSdn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:33:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40885 "EHLO
+	id S1752486Ab3FYSd4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:33:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40951 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab3FYSdl (ORCPT
+	with ESMTP id S1752252Ab3FYSdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:41 -0400
+	Tue, 25 Jun 2013 14:33:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [ 25/95] parisc: parport0: fix this legacy no-device port driver!
-Date: Tue, 25 Jun 2013 11:32:12 -0700
-Message-Id: <20130625182156.494533371@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 42/95] x86: Fix section mismatch on load_ucode_ap
+Date: Tue, 25 Jun 2013 11:32:29 -0700
+Message-Id: <20130625182158.391138063@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,67 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 4edb38695d9a3cd62739f8595e21f36f0aabf4c2 upstream.
+commit 949785996ec2250fa958fc3a924e5186e9a8fa2c upstream.
 
-Fix the above kernel error from parport_announce_port() on 32bit GSC
-machines (e.g. B160L). The parport driver requires now a pointer to the
-device struct.
+We are in the process of removing all the __cpuinit annotations.
+While working on making that change, an existing problem was
+made evident:
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+  WARNING: arch/x86/kernel/built-in.o(.text+0x198f2): Section mismatch
+  in reference from the function cpu_init() to the function
+  .init.text:load_ucode_ap()   The function cpu_init() references
+  the function __init load_ucode_ap().  This is often because cpu_init
+  lacks a __init annotation or the annotation of load_ucode_ap is wrong.
+
+This now appears because in my working tree, cpu_init() is no longer
+tagged as __cpuinit, and so the audit picks up the mismatch.  The 2nd
+hypothesis from the audit is the correct one, as there was an incorrect
+__init tag on the prototype in the header (but __cpuinit was used on
+the function itself.)
+
+The audit is telling us that the prototype's __init annotation took
+effect and the function did land in the .init.text section.  Checking
+with objdump on a mainline tree that still has __cpuinit shows that
+the __cpuinit on the function takes precedence over the __init on the
+prototype, but that won't be true once we make __cpuinit a no-op.
+
+Even though we are removing __cpuinit, we temporarily align both
+the function and the prototype on __cpuinit so that the changeset
+can be applied to stable trees  if desired.
+
+[ hpa: build fix only, no object code change ]
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1371654926-11729-1-git-send-email-paul.gortmaker@windriver.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/parport/parport_gsc.c |    6 +++---
- drivers/parport/parport_gsc.h |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/microcode.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/parport/parport_gsc.c
-+++ b/drivers/parport/parport_gsc.c
-@@ -234,7 +234,7 @@ static int parport_PS2_supported(struct
- 
- struct parport *parport_gsc_probe_port(unsigned long base,
- 				       unsigned long base_hi, int irq,
--				       int dma, struct pci_dev *dev)
-+				       int dma, struct parisc_device *padev)
+--- a/arch/x86/include/asm/microcode.h
++++ b/arch/x86/include/asm/microcode.h
+@@ -60,11 +60,11 @@ static inline void __exit exit_amd_micro
+ #ifdef CONFIG_MICROCODE_EARLY
+ #define MAX_UCODE_COUNT 128
+ extern void __init load_ucode_bsp(void);
+-extern __init void load_ucode_ap(void);
++extern void __cpuinit load_ucode_ap(void);
+ extern int __init save_microcode_in_initrd(void);
+ #else
+ static inline void __init load_ucode_bsp(void) {}
+-static inline __init void load_ucode_ap(void) {}
++static inline void __cpuinit load_ucode_ap(void) {}
+ static inline int __init save_microcode_in_initrd(void)
  {
- 	struct parport_gsc_private *priv;
- 	struct parport_operations *ops;
-@@ -258,7 +258,6 @@ struct parport *parport_gsc_probe_port(u
- 	priv->ctr_writable = 0xff;
- 	priv->dma_buf = 0;
- 	priv->dma_handle = 0;
--	priv->dev = dev;
- 	p->base = base;
- 	p->base_hi = base_hi;
- 	p->irq = irq;
-@@ -282,6 +281,7 @@ struct parport *parport_gsc_probe_port(u
- 		return NULL;
- 	}
- 
-+	p->dev = &padev->dev;
- 	p->base_hi = base_hi;
- 	p->modes = tmp.modes;
- 	p->size = (p->modes & PARPORT_MODE_EPP)?8:3;
-@@ -373,7 +373,7 @@ static int parport_init_chip(struct pari
- 	}
- 	
- 	p = parport_gsc_probe_port(port, 0, dev->irq,
--			/* PARPORT_IRQ_NONE */ PARPORT_DMA_NONE, NULL);
-+			/* PARPORT_IRQ_NONE */ PARPORT_DMA_NONE, dev);
- 	if (p)
- 		parport_count++;
- 	dev_set_drvdata(&dev->dev, p);
---- a/drivers/parport/parport_gsc.h
-+++ b/drivers/parport/parport_gsc.h
-@@ -217,6 +217,6 @@ extern void parport_gsc_dec_use_count(vo
- extern struct parport *parport_gsc_probe_port(unsigned long base,
- 						unsigned long base_hi,
- 						int irq, int dma,
--						struct pci_dev *dev);
-+						struct parisc_device *padev);
- 
- #endif	/* __DRIVERS_PARPORT_PARPORT_GSC_H */
+ 	return 0;
 
 
