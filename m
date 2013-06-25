@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab3FYMNf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 08:13:35 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:23740 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab3FYMNe (ORCPT
+	id S1751735Ab3FYMPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 08:15:17 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:35304 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3FYMPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 08:13:34 -0400
-Message-ID: <51C98817.4070002@huawei.com>
-Date: Tue, 25 Jun 2013 20:07:51 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: Yijing Wang <wangyijing@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <xjtuwjp@gmail.com>, <lindar_liu@usish.com>,
-        <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 8/9] scsi/pm8001: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
-References: <1371543816-15192-1-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1371543816-15192-1-git-send-email-wangyijing@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 25 Jun 2013 08:15:15 -0400
+Date: Tue, 25 Jun 2013 14:15:08 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [GIT PULL] s390 patches for the 3.9-rc6
+Message-ID: <20130625141508.6c391fd8@mschwide>
+In-Reply-To: <CACxGe6sYM8QPB-ZZkgB0+f81CZHULPi5zPAsWb5dzHiRgU+w6Q@mail.gmail.com>
+References: <20130403172534.528d04c5@mschwide>
+	<CACxGe6sYM8QPB-ZZkgB0+f81CZHULPi5zPAsWb5dzHiRgU+w6Q@mail.gmail.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062512-6892-0000-0000-000005842DEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  Any comments?
+On Tue, 25 Jun 2013 13:09:51 +0100
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-On 2013/6/18 16:23, Yijing Wang wrote:
-> Pci core has been saved pm cap register offset by pdev->pm_cap in pci_pm_init()
-> in init path. So we can use pdev->pm_cap instead of using
-> pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and simplified code.
+> On Wed, Apr 3, 2013 at 4:25 PM, Martin Schwidefsky
+> <schwidefsky@de.ibm.com> wrote:
+> > Hi Linus,
+> >
+> > please pull from the 'for-linus' branch of
+> >
+> >         git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+> >
+> > to receive the following updates: Just a bunch of bugfixes.
+> >
+> > Heiko Carstens (4):
+> >       drivers/Kconfig: add several missing GENERIC_HARDIRQS dependencies
 > 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> Cc: xjtuwjp@gmail.com
-> Cc: lindar_liu@usish.com
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/scsi/pm8001/pm8001_init.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-> index e4b9bc7..3861aa1 100644
-> --- a/drivers/scsi/pm8001/pm8001_init.c
-> +++ b/drivers/scsi/pm8001/pm8001_init.c
-> @@ -912,14 +912,13 @@ static int pm8001_pci_suspend(struct pci_dev *pdev, pm_message_t state)
->  {
->  	struct sas_ha_struct *sha = pci_get_drvdata(pdev);
->  	struct pm8001_hba_info *pm8001_ha;
-> -	int i , pos;
-> +	int i;
->  	u32 device_state;
->  	pm8001_ha = sha->lldd_ha;
->  	flush_workqueue(pm8001_wq);
->  	scsi_block_requests(pm8001_ha->shost);
-> -	pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
-> -	if (pos == 0) {
-> -		printk(KERN_ERR " PCI PM not supported\n");
-> +	if (!pdev->pm_cap) {
-> +		dev_err(&pdev->dev, " PCI PM not supported\n");
->  		return -ENODEV;
->  	}
->  	PM8001_CHIP_DISP->interrupt_disable(pm8001_ha, 0xFF);
-> 
+> Is anyone currently working on fixing this? s390 is the only
+> architecture left that does not enable GENERIC_HARDIRQS. It's painful
+> to keep adding dependencies on GENERIC_HARDIRQS to driver configs.
 
+I am working on it. The hardest part is MSI irqs for PCI. Chances are
+that I get it done for the merge window of 3.12.
 
 -- 
-Thanks!
-Yijing
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
