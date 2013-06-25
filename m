@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab3FYXgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 19:36:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35063 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab3FYXgP (ORCPT
+	id S1752175Ab3FYXjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 19:39:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44001 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab3FYXjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 19:36:15 -0400
-Date: Tue, 25 Jun 2013 16:36:14 -0700 (PDT)
-Message-Id: <20130625.163614.1867701213174099145.davem@davemloft.net>
-To: eliezer.tamir@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
-        e1000-devel@lists.sourceforge.net, willemb@google.com,
-        erdnetdev@gmail.com, bhutchings@solarflare.com, andi@firstfloor.org,
-        hpa@zytor.com, eilong@broadcom.com, or.gerlitz@gmail.com,
-        amirv@mellanox.com, alexr@mellanox.com, eliezer@tamir.org.il
-Subject: Re: [PATCH v4 net-next] net: poll/select low latency socket support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130624072803.26134.41593.stgit@ladj378.jer.intel.com>
-References: <20130624072751.26134.78163.stgit@ladj378.jer.intel.com>
-	<20130624072803.26134.41593.stgit@ladj378.jer.intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Jun 2013 19:39:12 -0400
+Date: Tue, 25 Jun 2013 16:39:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anders Hammarquist <iko@iko.pp.se>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 0/2] *** SUBJECT HERE ***
+Message-ID: <20130625233911.GA1087@kroah.com>
+References: <201306190012.r5J0CNJZ031854@eskarina.iko.pp.se>
+ <20130619225315.GB12282@kroah.com>
+ <201306212308.r5LN8C7M020720@eskarina.iko.pp.se>
+ <20130621235603.GA1603@kroah.com>
+ <201306221854.r5MIshv5013882@eskarina.iko.pp.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201306221854.r5MIshv5013882@eskarina.iko.pp.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Date: Mon, 24 Jun 2013 10:28:03 +0300
+On Sat, Jun 22, 2013 at 08:54:43PM +0200, Anders Hammarquist wrote:
+> In a message of Fri, 21 Jun 2013 16:56:03 -0700, Greg KH writes:
+> >Please resend this in a format that I can apply it in (i.e. one that
+> >does not require me to edit it by hand...)
+> 
+> After more fighting with git, I belive I now made it spit out what I
+> wanted. Patch 1/2 ahead.
+> 
+> >> -static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
+> >> +static struct usb_device_id ti_id_table_3410[16+TI_EXTRA_VID_PID_COUNT+1] = {
+> >
+> >That's a mess, why have it be a static array at all?  Just include an
+> >empty one at the end.
+> 
+> Indeed. I'd already had some (failed) thoughts about how to handle it
+> nicely. Now I've had another think through, and I have something which
+> deals with it and at least complains if TI_EXTRA_VID_PID_COUNT is changed
+> without changing the initializer. Patch 2/2
 
-> select/poll busy-poll support.
-> 
-> Split sysctl value into two separate ones, one for read and one for poll.
-> updated Documentation/sysctl/net.txt
-> 
-> Add a new poll flag POLL_LL. When this flag is set, sock_poll will call
-> sk_poll_ll if possible. sock_poll sets this flag in its return value
-> to indicate to select/poll when a socket that can busy poll is found.
-> 
-> When poll/select have nothing to report, call the low-level
-> sock_poll again until we are out of time or we find something.
-> 
-> Once the system call finds something, it stops setting POLL_LL, so it can
-> return the result to the user ASAP.
-> 
-> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Why don't we just drop the extra id thing entirely?  The usb-serial
+subsystem handles new device ids being added dynamically from sysfs for
+a long time now.  Removing this module option would clean up the code a
+lot, and prevent these errors from ever happening again.
 
-Looks good, applied, thanks!
+thanks,
+
+greg k-h
