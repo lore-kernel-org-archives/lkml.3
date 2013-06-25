@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab3FYOuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:50:16 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:50484 "EHLO
+	id S1752197Ab3FYOuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:50:22 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:50481 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab3FYOuN (ORCPT
+	with ESMTP id S1751455Ab3FYOuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 10:50:13 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 1/6] drbd: Do not sleep inside rcu
-Date: Tue, 25 Jun 2013 16:50:03 +0200
-Message-Id: <1372171808-30515-2-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 2/6] drbd: fix error return code in drbd_init()
+Date: Tue, 25 Jun 2013 16:50:04 +0200
+Message-Id: <1372171808-30515-3-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1372171808-30515-1-git-send-email-philipp.reisner@linbit.com>
 References: <1372171808-30515-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,35 +20,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
+Fix to return a negative error code from the error handling
+case instead of 0, as returned elsewhere in this function.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_main.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 4222aff..adee58e 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -1039,6 +1039,8 @@ randomize:
- 	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		kref_get(&mdev->kref);
-+		rcu_read_unlock();
-+
- 		/* Prevent a race between resync-handshake and
- 		 * being promoted to Primary.
- 		 *
-@@ -1049,8 +1051,6 @@ randomize:
- 		mutex_lock(mdev->state_mutex);
- 		mutex_unlock(mdev->state_mutex);
- 
--		rcu_read_unlock();
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index a5dca6a..49040a3 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2762,8 +2762,6 @@ int __init drbd_init(void)
+ 	/*
+ 	 * allocate all necessary structs
+ 	 */
+-	err = -ENOMEM;
 -
- 		if (discard_my_data)
- 			set_bit(DISCARD_MY_DATA, &mdev->flags);
- 		else
+ 	init_waitqueue_head(&drbd_pp_wait);
+ 
+ 	drbd_proc = NULL; /* play safe for drbd_cleanup */
+@@ -2773,6 +2771,7 @@ int __init drbd_init(void)
+ 	if (err)
+ 		goto fail;
+ 
++	err = -ENOMEM;
+ 	drbd_proc = proc_create_data("drbd", S_IFREG | S_IRUGO , NULL, &drbd_proc_fops, NULL);
+ 	if (!drbd_proc)	{
+ 		printk(KERN_ERR "drbd: unable to register proc file\n");
+@@ -2803,7 +2802,6 @@ int __init drbd_init(void)
+ fail:
+ 	drbd_cleanup();
+ 	if (err == -ENOMEM)
+-		/* currently always the case */
+ 		printk(KERN_ERR "drbd: ran out of memory\n");
+ 	else
+ 		printk(KERN_ERR "drbd: initialization failure\n");
 -- 
 1.7.9.5
 
