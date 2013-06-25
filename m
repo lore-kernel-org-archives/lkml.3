@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3FYTK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:10:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40878 "EHLO
+	id S1752119Ab3FYSdi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:33:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40862 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab3FYSdj (ORCPT
+	with ESMTP id S1751957Ab3FYSdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:39 -0400
+	Tue, 25 Jun 2013 14:33:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, Helge Deller <deller@gmx.de>
-Subject: [ 23/95] parisc: rename "CONFIG_PA7100" to "CONFIG_PA7000"
-Date: Tue, 25 Jun 2013 11:32:10 -0700
-Message-Id: <20130625182156.260633202@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [ 18/95] parisc: show number of FPE and unaligned access handler calls in /proc/interrupts
+Date: Tue, 25 Jun 2013 11:32:05 -0700
+Message-Id: <20130625182155.703552446@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,33 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Helge Deller <deller@gmx.de>
 
-commit 766039022a480ede847659daaa78772bdcc598ae upstream.
+commit d0c3be806a3fe7f4abdb0f7e7287addb55e73f35 upstream.
 
-There's a Makefile line setting cflags for CONFIG_PA7100. But that
-Kconfig macro doesn't exist. There is a Kconfig symbol PA7000, which
-covers both PA7000 and PA7100 processors. So let's use the corresponding
-Kconfig macro.
+Show number of floating point assistant and unaligned access fixup
+handler in /proc/interrupts file.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/parisc/include/asm/hardirq.h |    2 ++
+ arch/parisc/kernel/irq.c          |    8 ++++++++
+ arch/parisc/kernel/traps.c        |    1 +
+ arch/parisc/kernel/unaligned.c    |    3 +++
+ 4 files changed, 14 insertions(+)
 
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -66,7 +66,7 @@ KBUILD_CFLAGS_KERNEL += -mlong-calls
- endif
+--- a/arch/parisc/include/asm/hardirq.h
++++ b/arch/parisc/include/asm/hardirq.h
+@@ -28,6 +28,8 @@ typedef struct {
+ 	unsigned int irq_resched_count;
+ 	unsigned int irq_call_count;
+ #endif
++	unsigned int irq_unaligned_count;
++	unsigned int irq_fpassist_count;
+ 	unsigned int irq_tlb_count;
+ } ____cacheline_aligned irq_cpustat_t;
  
- # select which processor to optimise for
--cflags-$(CONFIG_PA7100)		+= -march=1.1 -mschedule=7100
-+cflags-$(CONFIG_PA7000)		+= -march=1.1 -mschedule=7100
- cflags-$(CONFIG_PA7200)		+= -march=1.1 -mschedule=7200
- cflags-$(CONFIG_PA7100LC)	+= -march=1.1 -mschedule=7100LC
- cflags-$(CONFIG_PA7300LC)	+= -march=1.1 -mschedule=7300
+--- a/arch/parisc/kernel/irq.c
++++ b/arch/parisc/kernel/irq.c
+@@ -188,6 +188,14 @@ int arch_show_interrupts(struct seq_file
+ 		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
+ 	seq_puts(p, "  Function call interrupts\n");
+ #endif
++	seq_printf(p, "%*s: ", prec, "UAH");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_unaligned_count);
++	seq_puts(p, "  Unaligned access handler traps\n");
++	seq_printf(p, "%*s: ", prec, "FPA");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_fpassist_count);
++	seq_puts(p, "  Floating point assist traps\n");
+ 	seq_printf(p, "%*s: ", prec, "TLB");
+ 	for_each_online_cpu(j)
+ 		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -652,6 +652,7 @@ void notrace handle_interruption(int cod
+ 	case 14:
+ 		/* Assist Exception Trap, i.e. floating point exception. */
+ 		die_if_kernel("Floating point exception", regs, 0); /* quiet */
++		__inc_irq_stat(irq_fpassist_count);
+ 		handle_fpe(regs);
+ 		return;
+ 		
+--- a/arch/parisc/kernel/unaligned.c
++++ b/arch/parisc/kernel/unaligned.c
+@@ -27,6 +27,7 @@
+ #include <linux/signal.h>
+ #include <linux/ratelimit.h>
+ #include <asm/uaccess.h>
++#include <asm/hardirq.h>
+ 
+ /* #define DEBUG_UNALIGNED 1 */
+ 
+@@ -454,6 +455,8 @@ void handle_unaligned(struct pt_regs *re
+ 	struct siginfo si;
+ 	register int flop=0;	/* true if this is a flop */
+ 
++	__inc_irq_stat(irq_unaligned_count);
++
+ 	/* log a message with pacing */
+ 	if (user_mode(regs)) {
+ 		if (current->thread.flags & PARISC_UAC_SIGBUS) {
 
 
