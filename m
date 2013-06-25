@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab3FYRrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:47:47 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:54080 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab3FYRrq (ORCPT
+	id S1751865Ab3FYRtZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:49:25 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:20873 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab3FYRtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:47:46 -0400
+	Tue, 25 Jun 2013 13:49:23 -0400
+Message-ID: <51C9D818.1090702@atmel.com>
+Date: Tue, 25 Jun 2013 18:49:12 +0100
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1372177330-28013-4-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1372177330-28013-4-git-send-email-mika.westerberg@linux.intel.com>
-Date: Tue, 25 Jun 2013 20:47:45 +0300
-Message-ID: <CAHp75Vfw5WO+6+_NB1mbgma7KVo-b7pyr6XA=LM1ozg580kbrg@mail.gmail.com>
-Subject: Re: [PATCH 3/6] PCI: introduce pci_trim_stale_devices()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <devel@linuxdriverproject.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <shigekatsu.tateno@atmel.com>
+Subject: Re: [PATCH] staging: ozwpan: Convert printk to dev_dbg()
+References: <1372177802-11360-1-git-send-email-rupesh.gujare@atmel.com> <20130625170205.GA21328@kroah.com>
+In-Reply-To: <20130625170205.GA21328@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-
-> The new function stops and removes the device if it doesn't respond.
-> If the device responds and it's a bus we apply the function to all
-> subdevices recursively.
+On 25/06/13 18:02, Greg KH wrote:
+> On Tue, Jun 25, 2013 at 05:30:02PM +0100, Rupesh Gujare wrote:
+>> convert all debug messages from printk to dev_dbg() & add kernel config to
+>> enable/disable these messages during compilation.
+> No, just use the built-in dynamic debug code in the kernel, no need to
+> provide any new macros or functions or most importantly, no new Kconfig
+> options.
 >
-> It's useful for hotplug bus check case, when you need drop all unplugged
-> devices before looking for new ones.
 
-One comment below.
+New macro (oz_trace) is being used as pointer to "struct device *" is 
+not available in all functions for dev_dbg() function.
+Please let me know if there is better way to handle this, I will be 
+happy to rework on this.
 
-> +void pci_trim_stale_devices(struct pci_dev *dev)
-> +{
-> +       struct pci_bus *bus = dev->subordinate;
-> +       struct pci_dev *child, *tmp;
-> +       bool alive;
-> +       u32 l;
-> +
-> +       /* check if the device responds */
-> +       alive = pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &l, 0);
-> +       if (!alive)
-> +               pci_stop_and_remove_bus_device(dev);
-> +
-> +       if (alive && bus)
-> +               list_for_each_entry_safe(child, tmp, &bus->devices, bus_list)
-> +                       pci_trim_stale_devices(child);
+As well new Kconfig option was added to pass CFLAGS to compiler, so that 
+dev_dbg will get compiled on system where DYNAMIC_DEBUG is not defined.
+I was assuming that it is a standard practice, as I can find similar 
+Kconfig option for other drivers. Or am I wrong in my understanding ?
 
-It's not a tail call anyway, so, what about
+Main idea here is to replace printk with dev_dbg(), which gives us 
+option to enable individual log during runtime if DYNAMIC_DEBUG is 
+enabled & provide mechanism to compile this when DYNAMIC_DEBUG is not 
+enabled.
 
-   if (!pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &l, 0)) {
-             pci_stop_and_remove_bus_device(dev);
-   } else if (bus) {
-             list_for_each_entry_safe(child, tmp, &bus->devices, bus_list)
-                     pci_trim_stale_devices(child);
-   }
+Again many of these logs will be removed in future, as currently there 
+are too many logs which are not required, hence idea is to only change 
+macro & then remove remaining logs in future.
 
-> +}
+-- 
+Regards,
+Rupesh Gujare
 
---
-With Best Regards,
-Andy Shevchenko
