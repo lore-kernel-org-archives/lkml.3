@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab3FYUyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 16:54:36 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59255 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab3FYUye (ORCPT
+	id S1752271Ab3FYUze (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 16:55:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29038 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751805Ab3FYUzc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 16:54:34 -0400
-Date: Tue, 25 Jun 2013 21:54:30 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Yves-Alexis Perez <corsac@debian.org>
-Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
-        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
-        Henrique de Moraes Holschuh <hmh@debian.org>
-Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
-Message-ID: <20130625205430.GA2438@srcf.ucam.org>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
- <1371937599.17761.19.camel@scapa>
- <20130625160848.GA27123@srcf.ucam.org>
- <1372193037.8189.24.camel@scapa>
+	Tue, 25 Jun 2013 16:55:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,939,1363158000"; 
+   d="scan'208";a="335434114"
+From: "Love, Robert W" <robert.w.love@intel.com>
+To: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@redhat.com>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "fcoe-devel@open-fcoe.org" <fcoe-devel@open-fcoe.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: fcoe pull request for 3.9-rc
+Thread-Topic: fcoe pull request for 3.9-rc
+Thread-Index: AQHOceZTUhudfXOeMUiQto/NC5I3wQ==
+Date: Tue, 25 Jun 2013 20:55:30 +0000
+Message-ID: <51CA03C1.1040901@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329
+ Thunderbird/17.0.5
+x-originating-ip: [10.19.9.42]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <BD103AD665EDD848B3732F06C1EDA6D8@intel.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372193037.8189.24.camel@scapa>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 10:43:57PM +0200, Yves-Alexis Perez wrote:
-> On mar., 2013-06-25 at 17:08 +0100, Matthew Garrett wrote:
-> > Right, the kernel has special-casing to hook the backlight keys up to 
-> > the ACPI backlight control. This is an awful thing, because there's no 
-> > way to detect this case other than parsing a single driver-specific 
-> > module parameter.
-> 
-> I'm not sure what that means. To detect what case exactly? That the
-> brightness is handled by video.ko?
+The following changes since commit 1e876e3b1a9df25bb04682b0d48aaa7e8ae1fc82:
 
-That the kernel will automatically handle backlight key presses.
+   Merge branch 'for-linus' of 
+git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux (2013-06-25 
+09:08:07 -1000)
 
-> > Could this functionality be duplicated across other backlight drivers? 
-> > Not easily. The ACPI driver receives keypresses and performs backlight 
-> > control. The i915 driver doesn't receive keypresses. We could easily tie 
-> > certain keycodes into backlight events, but which backlight should they 
-> > control? You're really starting to get into the kind of complex policy 
-> > decision that's best left to userspace, which is where it should have 
-> > been to begin with.
-> > 
-> Well, I get the reasoning, but I'm not sure I agree. That means
-> userspace behavior is inconsistent depending on who does it
-> (gnome-power-manager, gnome-setting-daemon, whatever), and it usually
-> means there's nothing handling the brightness before those are running,
-> not to mention people not running them because they don't run a full
-> blown desktop environment (until someone starts thinking it's a good
-> idea to handle brightness in systemd).
+are available in the git repository at:
 
-The behaviour is already inconsistent. If you have an ACPI backlight 
-interface, hitting the keys makes your brightness change without any 
-userspace help. If you don't, it doesn't.
+   git://git.kernel.org/pub/scm/linux/kernel/git/rwlove/fcoe.git 
+tags/critical_fix_for_3.9
 
-> And in the end, the user just want the brightness keys to correctly
-> handle the brightness, full stop. Having multiple brightness daemons
-> using different policies on different hardware is a nightmare for the
-> end user, imho. From a user point of view, having it handled all in the
-> kernel works really pretty fine and is completely transparent (I have to
-> admit that from that point of view, it was even better when it was
-> handled by the EC but those times seem long gone).
+for you to fetch changes up to 2884d4230867c8a46cf701214051e923301e7429:
 
-I agree, we should standardise the behaviour. And the only way we can 
-standardise the behaviour is to leave it up to userspace.
+   fcoe: Use correct API to set vlan tag for FCoE Ethertype skbs 
+(2013-06-25 12:23:19 -0700)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+----------------------------------------------------------------
+This patch fixes a critical bug that was introduced in 3.9
+related to VLAN tagging FCoE frames.
+
+----------------------------------------------------------------
+Robert Love (1):
+       fcoe: Use correct API to set vlan tag for FCoE Ethertype skbs
+
+  drivers/scsi/fcoe/fcoe.c |    7 +++++--
+  1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
+index 292b24f..32ae6c6 100644
+--- a/drivers/scsi/fcoe/fcoe.c
++++ b/drivers/scsi/fcoe/fcoe.c
+@@ -1656,9 +1656,12 @@ static int fcoe_xmit(struct fc_lport *lport, 
+struct fc_frame *fp)
+
+      if (fcoe->netdev->priv_flags & IFF_802_1Q_VLAN &&
+          fcoe->realdev->features & NETIF_F_HW_VLAN_CTAG_TX) {
+-        skb->vlan_tci = VLAN_TAG_PRESENT |
+-                vlan_dev_vlan_id(fcoe->netdev);
++        /* must set skb->dev before calling vlan_put_tag */
+          skb->dev = fcoe->realdev;
++        skb = __vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
++                         vlan_dev_vlan_id(fcoe->netdev));
++        if (!skb)
++            return -ENOMEM;
+      } else
+          skb->dev = fcoe->netdev;
+
