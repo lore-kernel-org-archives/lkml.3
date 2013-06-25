@@ -1,117 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab3FYTjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:39:23 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58027 "EHLO
+	id S1752080Ab3FYTjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:39:48 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53020 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3FYTjV (ORCPT
+	with ESMTP id S1751256Ab3FYTjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 15:39:21 -0400
+	Tue, 25 Jun 2013 15:39:46 -0400
 X-Originating-IP: 108.223.40.66
-Date: Tue, 25 Jun 2013 12:39:25 -0700
+Date: Tue, 25 Jun 2013 12:39:51 -0700
 From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/27] 3.4.51-stable review
-Message-ID: <20130625193925.GB10427@roeck-us.net>
-References: <20130625183517.651770593@linuxfoundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org
+Subject: Re: [ 00/17] 3.0.84-stable review
+Message-ID: <20130625193951.GF15184@roeck-us.net>
+References: <20130625183915.443950649@linuxfoundation.org>
+ <20130625192300.GA10427@roeck-us.net>
+ <CAMuHMdVzqOLTVWHeGEFpkpDTt8hpor9zQpnn4bPDaNEGWnb=SQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdVzqOLTVWHeGEFpkpDTt8hpor9zQpnn4bPDaNEGWnb=SQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 11:35:19AM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.51 release.
-> There are 27 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Tue, Jun 25, 2013 at 09:32:26PM +0200, Geert Uytterhoeven wrote:
+> Hi Günther,
 > 
-> Responses should be made by Thu Jun 27 18:33:29 UTC 2013.
-> Anything received after that time might be too late.
+> On Tue, Jun 25, 2013 at 9:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > Build m68k:defconfig passed
+> > Build m68k:apollo_defconfig passed
+> > Build m68k:m5272c3_defconfig failed
+> > Build m68k:m5307c3_defconfig failed
+> > Build m68k:m5249evb_defconfig failed
+> > Build m68k:m5407c3_defconfig failed
+> > Build m68k:mac_defconfig passed
+> > Build m68k:multi_defconfig passed
+> > Build m68k:sun3_defconfig passed
+> > Build m68k:sun3x_defconfig passed
+> > Build m68k:mvme16x_defconfig passed
+> > Build m68k:hp300_defconfig passed
 > 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.51-rc1.gz
-> and the diffstat can be found below.
+> m68k:defconfig is an alias for m68k:multi_defconfig, so you can drop
+> one of them.
 > 
-Build results are as follows. Most failures are due to
+> Furthermore, m68k:multi_defconfig is the union of all m68k "classic MMU"
+> defconfigs, except for sun3_defconfig (due to the incompatible MMU type).
+> Hence dropping apollo_defconfig, mac_defconfig, sun3x_defconfig,
+> mvme16x_defconfig, and hp300_defconfig would reduce your build coverage
+> only marginally. Of course, if you have too many spare cycles ;-)
+> 
+Thanks, I'll do that. The complete build for three releases takes 15+ hours
+with i7-3700k, so reducing that a bit doesn't hurt.
 
-	bonding: rlb mode of bond should not alter ARP originating via bridge
+Would there be any useful builds to add ?
 
+Thanks,
 Guenter
-
---
-
-Build reference: v3.4.50-27-g3a37cd2
-
-Build x86_64:defconfig passed
-Build x86_64:allyesconfig passed
-Build x86_64:allmodconfig passed
-Build x86_64:allnoconfig passed
-Build x86_64:alldefconfig passed
-Build i386:defconfig passed
-Build i386:allyesconfig passed
-Build i386:allmodconfig passed
-Build i386:allnoconfig passed
-Build i386:alldefconfig passed
-Build mips:defconfig failed
-Build mips:bcm47xx_defconfig failed
-Build mips:bcm63xx_defconfig failed
-Build mips:nlm_xlp_defconfig failed
-Build mips:ar7_defconfig failed
-Build mips:fuloong2e_defconfig failed
-Build mips:e55_defconfig passed
-Build mips:powertv_defconfig failed
-Build mips:malta_defconfig failed
-Build powerpc:defconfig passed
-Build powerpc:allyesconfig failed
-Build powerpc:allmodconfig passed
-Build powerpc:chroma_defconfig failed
-Build powerpc:maple_defconfig passed
-Build powerpc:ppc6xx_defconfig passed
-Build powerpc:mpc83xx_defconfig passed
-Build powerpc:mpc85xx_defconfig passed
-Build powerpc:mpc85xx_smp_defconfig passed
-Build powerpc:tqm8xx_defconfig passed
-Build powerpc:85xx/sbc8548_defconfig passed
-Build powerpc:83xx/mpc834x_mds_defconfig passed
-Build powerpc:86xx/sbc8641d_defconfig passed
-Build arm:defconfig failed
-Build arm:allyesconfig failed
-Build arm:allmodconfig failed
-Build arm:exynos4_defconfig passed
-Build arm:kirkwood_defconfig failed
-Build arm:omap2plus_defconfig failed
-Build arm:tegra_defconfig failed
-Build arm:u8500_defconfig failed
-Build arm:at91sam9rl_defconfig failed
-Build arm:ap4evb_defconfig passed
-Build arm:bonito_defconfig passed
-Build arm:pxa910_defconfig failed
-Build m68k:defconfig failed
-Build m68k:apollo_defconfig failed
-Build m68k:m5272c3_defconfig failed
-Build m68k:m5307c3_defconfig failed
-Build m68k:m5249evb_defconfig failed
-Build m68k:m5407c3_defconfig failed
-Build m68k:mac_defconfig failed
-Build m68k:multi_defconfig failed
-Build m68k:sun3_defconfig failed
-Build m68k:sun3x_defconfig failed
-Build m68k:mvme16x_defconfig failed
-Build m68k:hp300_defconfig failed
-Build sparc:defconfig failed
-Build sparc:sparc64_defconfig failed
-Build xtensa:defconfig failed
-Build xtensa:iss_defconfig failed
-Build microblaze:mmu_defconfig failed
-Build microblaze:nommu_defconfig failed
-Build blackfin:defconfig failed
-Build parisc:defconfig failed
-
------------------------
-Total builds: 64 Total build errors: 39
