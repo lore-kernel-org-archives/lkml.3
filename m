@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3FYH0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 03:26:44 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:62780 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab3FYH0m (ORCPT
+	id S1751569Ab3FYHba (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 03:31:30 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:52955 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab3FYHb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 03:26:42 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C945FE.2030305@asianux.com>
-Date: Tue, 25 Jun 2013 15:25:50 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 25 Jun 2013 03:31:28 -0400
+Date: Tue, 25 Jun 2013 09:31:22 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, holt@sgi.com, travis@sgi.com,
+        rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
+        yinghai@kernel.org, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
+Message-ID: <20130625073122.GB11420@gmail.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
+ <1371831934-156971-3-git-send-email-nzimmer@sgi.com>
+ <20130623092840.GB13445@gmail.com>
+ <20130623093250.GA13776@gmail.com>
+ <51C88400.7090907@zytor.com>
+ <20130624193959.GB4065@gmail.com>
+ <51C8A728.8010409@zytor.com>
 MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        cornelia.huck@de.ibm.com, mtosatti@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-s390@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [Suggestion] arch: s390: mm: the warnings with allmodconfig and
- "EXTRA_CFLAGS=-W"
-References: <51C8F685.6000209@asianux.com> <51C8F861.9010101@asianux.com> <20130625085006.01a7f368@mschwide>
-In-Reply-To: <20130625085006.01a7f368@mschwide>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C8A728.8010409@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 02:50 PM, Martin Schwidefsky wrote:
-> On Tue, 25 Jun 2013 09:54:41 +0800
-> Chen Gang <gang.chen@asianux.com> wrote:
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 06/24/2013 12:39 PM, Ingo Molnar wrote:
+> > 
+> > That might be a bit too granular: if we hit such an uninitialized block of 
+> > memory we'd have to process 262,144 pages - potentially from an IRQ 
+> > handler that does GFP_ATOMIC... or other latency critical code.
+> > 
+> > With 2MB we'd have to on-demand initialize 512 pages, which shouldn't show 
+> > up during normal use.
+> > 
 > 
->> > Hello Maintainers:
->> > 
->> > When allmodconfig for " IBM zSeries model z800 and z900"
->> > 
->> > It will report the related warnings ("EXTRA_CFLAGS=-W"):
->> >   mm/slub.c:1875:1: warning: ‘deactivate_slab’ uses dynamic stack allocation [enabled by default]
->> >   mm/slub.c:1941:1: warning: ‘unfreeze_partials.isra.32’ uses dynamic stack allocation [enabled by default]
->> >   mm/slub.c:2575:1: warning: ‘__slab_free’ uses dynamic stack allocation [enabled by default]
->> >   mm/slub.c:1582:1: warning: ‘get_partial_node.isra.34’ uses dynamic stack allocation [enabled by default]
->> >   mm/slub.c:2311:1: warning: ‘__slab_alloc.constprop.42’ uses dynamic stack allocation [enabled by default]
->> > 
->> > Is it OK ?
-> Yes, these warnings should be ok. They are enabled by CONFIG_WARN_DYNAMIC_STACK,
-> the purpose is to find all functions with dynamic stack allocations. The check
-> if the allocations are truly ok needs to be done manually as the compiler
-> can not find out the maximum allocation size automatically.
+> No... you split the gigabyte page into 511 2M pages and 512 4K pages.
 
-Thank you very much for your details information.
+Oh, double deferred initialization. That should solve the 32 exabyte 
+problem as well I guess ;-)
 
--- 
-Chen Gang
+Thanks,
 
-Asianux Corporation
+	Ingo
