@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab3FYXEn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 19:04:43 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:63562 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3FYXEm (ORCPT
+	id S1752012Ab3FYXFb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 19:05:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34726 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab3FYXF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 19:04:42 -0400
-Message-ID: <51CA2205.4040006@gmail.com>
-Date: Tue, 25 Jun 2013 17:04:37 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
-References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-13-git-send-email-adrian.hunter@intel.com> <51C9BDB2.7060905@gmail.com> <CABPqkBQK5PdcULwtAefsVKvV+Ne6kaaH2_jeoba8kz3Ui_EqAw@mail.gmail.com>
-In-Reply-To: <CABPqkBQK5PdcULwtAefsVKvV+Ne6kaaH2_jeoba8kz3Ui_EqAw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 25 Jun 2013 19:05:29 -0400
+Date: Tue, 25 Jun 2013 16:05:27 -0700 (PDT)
+Message-Id: <20130625.160527.623885667817641809.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2013-06-25
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130625174507.GB31220@tuxdriver.com>
+References: <20130625174507.GB31220@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/25/13 10:03 AM, Stephane Eranian wrote:
->> Stephane: are you looking at allowing sample_types per event?
->> >
-> Yes, this is what I need. I have a kernel patch to do this. I don't
-> know how to update perf to handle it correctly. So maybe you can
-> help. My patch is useful to drastically reduce the size of the perf.data
-> file in case we use the branch-stack with lots of events which is
-> what our Gooda tool would like to do.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Tue, 25 Jun 2013 13:45:07 -0400
 
-Refreshing my memory on the root problem here. It's a chicken-and-egg 
-problem: we need the id in the sample to find the event (evsel) that 
-generated it (perf_evlist__id2evsel). To get the id we need the 
-sample_type to parse it and we want the sample_type to be per event.
+> A few more late-breaking fixes hoping for 3.10...
+> 
+> Regarding the Bluetooth fix, Gustavo says:
+> 
+> "A important fix to 3.10, this patch fixes an issues that was preventing
+> the l2cap info response command to be handled properly."
+> 
+> Also for that Bluetooth fix, Johan adds:
+> 
+> "Once the code gives up parsing this PDU it also gives up essential
+> parts of the L2CAP connection creation process, i.e. without this
+> patch the stack will fail to establish connections properly."
+> 
+> Moving onto ath9k, Felix Fietkau fixes an RCU locking issue in
+> the transmit path.  As for ath9k_htc, Sujith Manoharan fixes some
+> authentication timeouts by ensuring that a chip reset is done when
+> IDLE is turned off.
+> 
+> I think these are all micro-fixes that shouldn't cause any trouble.
+> Please let me know if there are problems!
 
-As I recall this is where the conversation turns to per-event data files...
-
-David
+Pulled, thanks John.
