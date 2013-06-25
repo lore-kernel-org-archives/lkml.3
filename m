@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab3FYTMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 15:12:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40847 "EHLO
+	id S1753982Ab3FYTMk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 15:12:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3FYSdd (ORCPT
+	with ESMTP id S1752013Ab3FYSde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:33:33 -0400
+	Tue, 25 Jun 2013 14:33:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [ 14/95] parisc: tlb flush counting fix for SMP and UP
-Date: Tue, 25 Jun 2013 11:32:01 -0700
-Message-Id: <20130625182155.265685059@linuxfoundation.org>
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 15/95] parisc: remove the second argument of kmap_atomic()
+Date: Tue, 25 Jun 2013 11:32:02 -0700
+Message-Id: <20130625182155.370346465@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -26,88 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 
-commit 0fc537d1d655cdae69b489dbba46ad617cfc1373 upstream.
+commit 1ab4ce762370b82870834899e49c08129d7ae271 upstream.
 
-Fix up build error on UP and show correctly number of function call
-(ipi) irqs.
+kmap_atomic() requires only one argument now.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/hardirq.h  |    6 +-----
- arch/parisc/include/asm/tlbflush.h |    2 ++
- arch/parisc/kernel/irq.c           |    5 ++---
- arch/parisc/kernel/smp.c           |   11 -----------
- 4 files changed, 5 insertions(+), 19 deletions(-)
+ arch/parisc/kernel/cache.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/parisc/include/asm/hardirq.h
-+++ b/arch/parisc/include/asm/hardirq.h
-@@ -19,12 +19,8 @@ typedef struct {
- #ifdef CONFIG_SMP
- 	unsigned int irq_resched_count;
- 	unsigned int irq_call_count;
--	/*
--	 * irq_tlb_count is double-counted in irq_call_count, so it must be
--	 * subtracted from irq_call_count when displaying irq_call_count
--	 */
--	unsigned int irq_tlb_count;
- #endif
-+	unsigned int irq_tlb_count;
- } ____cacheline_aligned irq_cpustat_t;
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -606,7 +606,7 @@ void clear_user_highpage(struct page *pa
+ 	/* Clear using TMPALIAS region.  The page doesn't need to
+ 	   be flushed but the kernel mapping needs to be purged.  */
  
- DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
---- a/arch/parisc/include/asm/tlbflush.h
-+++ b/arch/parisc/include/asm/tlbflush.h
-@@ -22,6 +22,8 @@ extern spinlock_t pa_tlb_lock;
- extern void flush_tlb_all(void);
- extern void flush_tlb_all_local(void *);
+-	vto = kmap_atomic(page, KM_USER0);
++	vto = kmap_atomic(page);
  
-+#define smp_flush_tlb_all()	flush_tlb_all()
-+
- /*
-  * flush_tlb_mm()
-  *
---- a/arch/parisc/kernel/irq.c
-+++ b/arch/parisc/kernel/irq.c
-@@ -175,14 +175,13 @@ int arch_show_interrupts(struct seq_file
- 	seq_printf(p, "  Rescheduling interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "CAL");
- 	for_each_online_cpu(j)
--		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count -
--					irq_stats(j)->irq_tlb_count);
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
- 	seq_printf(p, "  Function call interrupts\n");
-+#endif
- 	seq_printf(p, "%*s: ", prec, "TLB");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
- 	seq_printf(p, "  TLB shootdowns\n");
--#endif
- 	return 0;
- }
+ 	/* The PA-RISC 2.0 Architecture book states on page F-6:
+ 	   "Before a write-capable translation is enabled, *all*
+@@ -641,8 +641,8 @@ void copy_user_highpage(struct page *to,
+ 	   the `to' page must be flushed in copy_user_page_asm since
+ 	   it can be used to bring in executable code.  */
  
---- a/arch/parisc/kernel/smp.c
-+++ b/arch/parisc/kernel/smp.c
-@@ -264,17 +264,6 @@ void arch_send_call_function_single_ipi(
- }
+-	vfrom = kmap_atomic(from, KM_USER0);
+-	vto = kmap_atomic(to, KM_USER1);
++	vfrom = kmap_atomic(from);
++	vto = kmap_atomic(to);
  
- /*
-- * Flush all other CPU's tlb and then mine.  Do this with on_each_cpu()
-- * as we want to ensure all TLB's flushed before proceeding.
-- */
--
--void
--smp_flush_tlb_all(void)
--{
--	on_each_cpu(flush_tlb_all_local, NULL, 1);
--}
--
--/*
-  * Called by secondaries to update state and initialize CPU registers.
-  */
- static void __init
+ 	purge_kernel_dcache_page_asm((unsigned long)vto);
+ 	purge_tlb_start(flags);
 
 
