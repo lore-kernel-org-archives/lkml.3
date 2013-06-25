@@ -1,46 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab3FYRKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 13:10:20 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:39112 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab3FYRKT (ORCPT
+	id S1751676Ab3FYRQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 13:16:05 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:45318 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab3FYRQD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 13:10:19 -0400
+	Tue, 25 Jun 2013 13:16:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKSMtaLsTGYqpxnEM-dW+99SYhE1+SzLsD3gngxhxYN7w@mail.gmail.com>
-References: <20130625090253.26584.65072.stgit@aruna-ThinkPad-T420>
-	<CAGXu5jKSMtaLsTGYqpxnEM-dW+99SYhE1+SzLsD3gngxhxYN7w@mail.gmail.com>
-Date: Tue, 25 Jun 2013 10:10:18 -0700
-Message-ID: <CA+8MBbJ5Fa_q0_iS34g+5A5ghm087feODsCgMUJZJAGWTo_ZPg@mail.gmail.com>
-Subject: Re: [PATCH v2] pstore: Fail to unlink if a driver has not defined pstore_erase
-From: Tony Luck <tony.luck@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>, ananth@in.ibm.com,
-        mahesh@linux.vnet.ibm.com, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Colin Cross <ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CA+G9fYv_9EQUmpRNPUwioSwJVXnXJC5odEKiMd=vKHNWYRT8xw@mail.gmail.com>
+References: <CA+G9fYv_9EQUmpRNPUwioSwJVXnXJC5odEKiMd=vKHNWYRT8xw@mail.gmail.com>
+Date: Tue, 25 Jun 2013 22:46:02 +0530
+Message-ID: <CA+G9fYupw8Gi=5p2nKVJ9GqfhwBcTw7hyzGA8+K+gHmdL96mJg@mail.gmail.com>
+Subject: Re: linux-next: panda build failed at arch/arm/mach-omap2/omap4-restart.c
+From: Naresh Kamboju <naresh.kamboju@linaro.org>
+To: Robin Holt <holt@sgi.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Andrey Konovalov <andrey.konovalov@linaro.org>,
+        Russ Anderson <rja@sgi.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org,
+        Milosz Wasilewski <milosz.wasilewski@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 9:41 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Tue, Jun 25, 2013 at 2:03 AM, Aruna Balakrishnaiah
-> <aruna@linux.vnet.ibm.com> wrote:
->> pstore_erase is used to erase the record from the persistent store.
->> So if a driver has not defined pstore_erase callback return
+ping
 
-How do people manage devices like this?  With no erase function
-they just keep getting more and more pstore entries. Eventually
-they fill up.
-
-
->> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+On 23 June 2013 13:53, Naresh Kamboju <naresh.kamboju@linaro.org> wrote:
+> Hi,
 >
-> Acked-by: Kees Cook <keescook@chromium.org>
-
-Applied - thanks.
-
--Tony
+> panda build broken on linux-next branch
+>
+> kernel_config=omap2plus_defconfig
+> KERNEL_VERSION=3.10.0-rc6
+> KERNEL_GIT=git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> KERNEL_COMMIT=e1a86578747376f08985627c84df088a5d0d1e92
+>
+> Build error log :
+> -------------------
+> 04:43:18   CC      arch/arm/mach-omap2/omap4-restart.o
+> 04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:28:
+> warning: ‘enum reboot_mode’ declared inside parameter list [enabled by
+> default]
+> 04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
+> 04:43:18                             ^
+> 04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:28:
+> warning: its scope is only this definition or declaration, which is
+> probably not what you want [enabled by default]
+> 04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:40:
+> error: parameter 1 (‘mode’) has incomplete type
+> 04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
+> 04:43:18                                         ^
+> 04:43:18 /mnt/ci_build/workspace/linux-next/hwpack/panda/label/kernel_cloud/arch/arm/mach-omap2/omap4-restart.c:21:6:
+> warning: function declaration isn’t a prototype [-Wstrict-prototypes]
+> 04:43:18  void omap44xx_restart(enum reboot_mode mode, const char *cmd)
+> 04:43:18       ^
+> 04:43:18 make[2]: *** [arch/arm/mach-omap2/omap4-restart.o] Error 1
+> 04:43:18 make[1]: *** [arch/arm/mach-omap2] Error 2
+>
+> Full build log:
+> ------------------
+> https://ci.linaro.org/jenkins/job/linux-next/hwpack=panda,label=kernel_cloud/lastBuild/console
+>
+> Suspecting patch which caused build failed:
+> --------------------------------------------------------
+> commit b61cdf2aebc5cd2f4efc4e0cbebeb8a91884a43e
+> Author: Robin Holt <holt@sgi.com>
+> Date:   Wed Jun 19 10:08:43 2013 +1000
+>
+> reboot: arm: change reboot_mode to use enum reboot_mode
+>
+> Preparing to move the parsing of reboot= to generic kernel code forces the
+> change in reboot_mode handling to use the enum.
+>
+> Signed-off-by: Robin Holt <holt@sgi.com>
+>
+> ...
+> diff --git a/arch/arm/mach-omap2/omap4-restart.c
+> b/arch/arm/mach-omap2/omap4-restart.c
+> index f90e02e..652adde 100644
+> --- a/arch/arm/mach-omap2/omap4-restart.c
+> +++ b/arch/arm/mach-omap2/omap4-restart.c
+> @@ -18,7 +18,7 @@
+>   * Resets the SoC.  For @cmd, see the 'reboot' syscall in
+>   * kernel/sys.c.  No return value.
+>   */
+> -void omap44xx_restart(char mode, const char *cmd)
+> +void omap44xx_restart(enum reboot_mode mode, const char *cmd)
+>  {
+>         /* XXX Should save 'cmd' into scratchpad for use after reboot */
+>         omap4_prminst_global_warm_sw_reset(); /* never returns */
+> ...
+>
+> Best regards
+> Naresh Kamboju
