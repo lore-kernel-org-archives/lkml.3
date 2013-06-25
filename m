@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab3FYSzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:55:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41112 "EHLO
+	id S1753144Ab3FYSzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:55:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41117 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab3FYSeT (ORCPT
+	with ESMTP id S1752742Ab3FYSeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:19 -0400
+	Tue, 25 Jun 2013 14:34:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joern Engel <joern@logfs.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 89/95] target/iscsi: dont corrupt bh_count in iscsit_stop_time2retain_timer()
-Date: Tue, 25 Jun 2013 11:33:16 -0700
-Message-Id: <20130625182203.701777004@linuxfoundation.org>
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Mikael Pettersson <mikpe@it.uu.se>
+Subject: [ 88/95] tty: Fix transient pty write() EIO
+Date: Tue, 25 Jun 2013 11:33:15 -0700
+Message-Id: <20130625182203.590304094@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,81 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joern Engel <joern@logfs.org>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 574780fd5e6ec52bd43e0bdb777a19e4c4c6aa9c upstream.
+commit 7c61c3d8f44d5d822f758754287af644307b4af9 upstream.
 
-Here is a fun one.  Bug seems to have been introduced by commit 140854cb,
-almost two years ago.  I have no idea why we only started seeing it now,
-but we did.
+Commit 699390354da6c258b65bf8fa79cfd5feaede50b6
+('pty: Ignore slave pty close() if never successfully opened')
+introduced a bug with ptys whereby a write() in parallel with an
+open() on an existing pty could mistakenly indicate an I/O error.
 
-Rough callgraph:
-core_tpg_set_initiator_node_queue_depth()
-`-> spin_lock_irqsave(&tpg->session_lock, flags);
-`-> lio_tpg_shutdown_session()
-    `-> iscsit_stop_time2retain_timer()
-        `-> spin_unlock_bh(&se_tpg->session_lock);
-        `-> spin_lock_bh(&se_tpg->session_lock);
-`-> spin_unlock_irqrestore(&tpg->session_lock, flags);
+Only indicate an I/O error if the condition on open() actually exists.
 
-core_tpg_set_initiator_node_queue_depth() used to call spin_lock_bh(),
-but 140854cb changed that to spin_lock_irqsave().  However,
-lio_tpg_shutdown_session() still claims to be called with spin_lock_bh()
-held, as does iscsit_stop_time2retain_timer():
- *      Called with spin_lock_bh(&struct se_portal_group->session_lock) held
-
-Stale documentation is mostly annoying, but in this case the dropping
-the lock with the _bh variant is plain wrong.  It is also wrong to drop
-locks two functions below the lock-holder, but I will ignore that bit
-for now.
-
-After some more locking and unlocking we eventually hit this backtrace:
-------------[ cut here ]------------
-WARNING: at kernel/softirq.c:159 local_bh_enable_ip+0xe8/0x100()
-Pid: 24645, comm: lio_helper.py Tainted: G           O 3.6.11+
-Call Trace:
- [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
- [<ffffffffa040ae37>] ? iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
- [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff810472f8>] local_bh_enable_ip+0xe8/0x100
- [<ffffffff815b8365>] _raw_spin_unlock_bh+0x15/0x20
- [<ffffffffa040ae37>] iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
- [<ffffffffa041149a>] iscsit_stop_session+0xfa/0x1c0 [iscsi_target_mod]
- [<ffffffffa0417fab>] lio_tpg_shutdown_session+0x7b/0x90 [iscsi_target_mod]
- [<ffffffffa033ede4>] core_tpg_set_initiator_node_queue_depth+0xe4/0x290 [target_core_mod]
- [<ffffffffa0409032>] iscsit_tpg_set_initiator_node_queue_depth+0x12/0x20 [iscsi_target_mod]
- [<ffffffffa0415c29>] lio_target_nacl_store_cmdsn_depth+0xa9/0x180 [iscsi_target_mod]
- [<ffffffffa0331b49>] target_fabric_nacl_base_attr_store+0x39/0x40 [target_core_mod]
- [<ffffffff811b857d>] configfs_write_file+0xbd/0x120
- [<ffffffff81148f36>] vfs_write+0xc6/0x180
- [<ffffffff81149251>] sys_write+0x51/0x90
- [<ffffffff815c0969>] system_call_fastpath+0x16/0x1b
----[ end trace 3747632b9b164652 ]---
-
-As a pure band-aid, this patch drops the _bh.
-
-Signed-off-by: Joern Engel <joern@logfs.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Tested-by: Mikael Pettersson <mikpe@it.uu.se>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_erl0.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/pty.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_erl0.c
-+++ b/drivers/target/iscsi/iscsi_target_erl0.c
-@@ -842,11 +842,11 @@ int iscsit_stop_time2retain_timer(struct
- 		return 0;
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -244,14 +244,9 @@ static void pty_flush_buffer(struct tty_
  
- 	sess->time2retain_timer_flags |= ISCSI_TF_STOP;
--	spin_unlock_bh(&se_tpg->session_lock);
-+	spin_unlock(&se_tpg->session_lock);
+ static int pty_open(struct tty_struct *tty, struct file *filp)
+ {
+-	int	retval = -ENODEV;
+-
+ 	if (!tty || !tty->link)
+-		goto out;
+-
+-	set_bit(TTY_IO_ERROR, &tty->flags);
++		return -ENODEV;
  
- 	del_timer_sync(&sess->time2retain_timer);
+-	retval = -EIO;
+ 	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
+ 		goto out;
+ 	if (test_bit(TTY_PTY_LOCK, &tty->link->flags))
+@@ -262,9 +257,11 @@ static int pty_open(struct tty_struct *t
+ 	clear_bit(TTY_IO_ERROR, &tty->flags);
+ 	clear_bit(TTY_OTHER_CLOSED, &tty->link->flags);
+ 	set_bit(TTY_THROTTLED, &tty->flags);
+-	retval = 0;
++	return 0;
++
+ out:
+-	return retval;
++	set_bit(TTY_IO_ERROR, &tty->flags);
++	return -EIO;
+ }
  
--	spin_lock_bh(&se_tpg->session_lock);
-+	spin_lock(&se_tpg->session_lock);
- 	sess->time2retain_timer_flags &= ~ISCSI_TF_RUNNING;
- 	pr_debug("Stopped Time2Retain Timer for SID: %u\n",
- 			sess->sid);
+ static void pty_set_termios(struct tty_struct *tty,
 
 
