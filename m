@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab3FYNvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 09:51:09 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:33919 "EHLO multi.imgtec.com"
+	id S1752043Ab3FYNzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 09:55:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63900 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab3FYNvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 09:51:06 -0400
-Message-ID: <51C9A039.4090804@imgtec.com>
-Date: Tue, 25 Jun 2013 14:50:49 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/4] pinctrl: remove slew-rate parameter from tz1090
-References: <201306251455.01540.heiko@sntech.de> <201306251456.36499.heiko@sntech.de> <51C99581.2010403@imgtec.com> <201306251521.55634.heiko@sntech.de> <51C99AB5.1080002@imgtec.com> <CACRpkdbdwvmBYFX=ppdM_RmGwyTcWVeTCMj60F4sh6YEVRE2Uw@mail.gmail.com>
-In-Reply-To: <CACRpkdbdwvmBYFX=ppdM_RmGwyTcWVeTCMj60F4sh6YEVRE2Uw@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_06_25_14_50_50
+	id S1751250Ab3FYNy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 09:54:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,937,1363158000"; 
+   d="scan'208";a="335247866"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+In-Reply-To: <20130617153120.6EADFE0090@blue.fi.intel.com>
+References: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130617153120.6EADFE0090@blue.fi.intel.com>
+Subject: [PING] Transparent huge page cache: phase 0, prep work
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130625135746.E6506E0090@blue.fi.intel.com>
+Date: Tue, 25 Jun 2013 16:57:46 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/13 14:32, Linus Walleij wrote:
-> On Tue, Jun 25, 2013 at 3:27 PM, James Hogan <james.hogan@imgtec.com> wrote:
->> On 25/06/13 14:21, Heiko Stübner wrote:
+Kirill A. Shutemov wrote:
+> Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > My patchset which introduces transparent huge page cache is pretty big and
+> > hardly reviewable. Dave Hansen suggested to split it in few parts.
+> > 
+> > This is the first part: preparation work. I think it's useful without rest
+> > patches.
+> > 
+> > There's one fix for bug in lru_add_page_tail(). I doubt it's possible to
+> > trigger it on current code, but nice to have it upstream anyway.
+> > Rest is cleanups.
+> > 
+> > Patch 8 depends on patch 7. Other patches are independent and can be
+> > applied separately.
+> > 
+> > Please, consider applying.
 > 
->>> My thoughts were that this code would never be reached when the parsing was
->>> removed and to not cause confusion to the driver when an acceptable binding
->>> was found for slew-rate.
->>>
->>> But it of course also doesn't hurt to stay in.
->>
->> Okay, fair enough.
->>
->> Acked-by: James Hogan <james.hogan@imgtec.com>
-> 
-> OK applied this so we have a clean slate.
-> 
-> Patches adding it back in with SI measures will be welcomed!
+> Andrew, Andrea, any feedback?
 
-Okay.
+Ping?
 
-So the most descriptive documentation I can find for the slew rate in
-the TZ1090 pin config hardware is basically:
-
-0: slow (half frequency)
-1: fast
-
-Sounds like this pretty much precludes it from having a generic DT
-binding unless it can be mapped to some physical value, so I'll add a
-tz1090,slew-rate and use PIN_CONFIG_END+1 instead of PIN_CONFIG_SLEW_RATE.
-
-Anybody object to me adding an argument to
-pinconf_generic_parse_dt_config() so that an additional
-pinconf_generic_dt_params array can be optionally passed in? That way I
-can share the generic pinconf dt parsing code.
-
-Cheers
-James
-
+-- 
+ Kirill A. Shutemov
