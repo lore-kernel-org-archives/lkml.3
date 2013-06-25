@@ -1,110 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab3FYPew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 11:34:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38989 "EHLO mga03.intel.com"
+	id S1752559Ab3FYPfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 11:35:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41816 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab3FYPev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 11:34:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="259934962"
-Message-ID: <51C9B88C.1080401@linux.intel.com>
-Date: Tue, 25 Jun 2013 18:34:36 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1750971Ab3FYPfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 11:35:19 -0400
+Date: Tue, 25 Jun 2013 17:34:17 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <ak@linux.jf.intel.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/5] perf tools: Introduce new -P/--parent-deep report
+ option
+Message-ID: <20130625153417.GM23329@krava.brq.redhat.com>
+References: <1372161253-22081-1-git-send-email-jolsa@redhat.com>
+ <1372161253-22081-5-git-send-email-jolsa@redhat.com>
+ <20130625151826.GQ5643@tassilo.jf.intel.com>
 MIME-Version: 1.0
-To: yaniv saar <yaniv.mellanox@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH RFC] net: lls epoll support
-References: <20130619100421.22132.99447.stgit@ladj378.jer.intel.com> <51C1993C.9030204@linux.intel.com> <CALuTh9E5CvV1sfjMJRs7mWwfTm2HpaFFMJWEP10sbSpA8qBMsg@mail.gmail.com>
-In-Reply-To: <CALuTh9E5CvV1sfjMJRs7mWwfTm2HpaFFMJWEP10sbSpA8qBMsg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130625151826.GQ5643@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/2013 17:26, yaniv saar wrote:
-> On Wed, Jun 19, 2013 at 2:42 PM, Eliezer Tamir
-> <eliezer.tamir@linux.intel.com> wrote:
->>
->> [this patch needs the poll patch to be applied first]
->> with sockperf doing epoll on 1000 sockets I see an avg latency of 6us
->>
->
-> hi eliezer,
->
-> please consider the following solution for epoll that is based on
-> polling dev+queue.
-> instead of looping over the socket as in LLS, maintain in eventpool
-> struct a list of device+queues (qdlist).
+On Tue, Jun 25, 2013 at 08:18:26AM -0700, Andi Kleen wrote:
+> On Tue, Jun 25, 2013 at 01:54:12PM +0200, Jiri Olsa wrote:
+> > Introducing new -P/--parent-deep report option. It does the
+> > same as '-p' but it force the deep search of the callchain
+> > and looks for the deepest possible match.
+> 
+> This doesn't make sense to me as an option.
+> 
+> If it's a more correct callgraph it should be default, not 
+> an option.
+> 
+> A option like "give me correct data" doesn't make sense.
 
-Thanks for looking into this.
-I'm currently working on a solution that has a lot similar to what you 
-are proposing.
+I thought the '-p' behaviour was for a reason not a bug,
+but I can change it to do the deep search and dont add '-P'
 
-We don't need a new id mechanism, we already have the napi_id.
-The nice thing about the napi_id is that the only locking it needs
-is an rcu_read_lock when dereferencing.
-
-we don't need to remember the ll_usec value of each socket because
-the patch for select/poll (currently waiting for review) added
-a separate sysctl value for poll.
-
-I would like to find a way for the user to specify how long to busy
-wait, directly from the system call, but I was not able to find
-a simple way of adding this without a change to the system call
-prototype.
-
-we do however need to track when a socket's napi_id changes.
-But for that we can hook into sk_mark_ll().
-
-so here is a list of proposed changes:
-
-1. add a linked list of unique napi_id's to struct eventpoll.
-each id will have a collision list of sockets that have the same id.
--a hash is gratuitous, we expect the unique list to have 0 to 2
-  elements in most cases.
-
-2. when a new socket is added, if its id is new it gets added to the 
-unique list, otherwise to the collision list of that id.
-
-3. when a socket is removed, if it's on the unique list, replace it
-with the first on its former collision list.
-
-4. add callback mechanism to sk_mark_ll() which will be activated when
-  the mark changes, update the lists.
-(a socket may be polled by more than one epoll so be careful)
-
-5. add  and remove to/from the lists in ep_insert and ep_remove
-  respectively. check if we need to do something for ep_modify().
-
-6. add an ep_poll helper that will round robin polling on the
-files in the unique list.
-
-7. init everything from epoll_create.
-
-locking:
-
-napi_id's are great since they don't need locking except for an
-rcu_read_lock when polling on one.
-
-the lists need a spinlock for adding/removing, maybe they
-can use ep->lock.
-
-callback registration/removal needs to use the same mechanism that
-ep_add / ep_remove use to protect themselves from the rest of epoll.
-
-
+jirka
