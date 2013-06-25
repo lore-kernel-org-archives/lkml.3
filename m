@@ -1,97 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab3FYD56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jun 2013 23:57:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35800 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751473Ab3FYD54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jun 2013 23:57:56 -0400
-Message-ID: <1372132661.30572.354.camel@ul30vt.home>
-Subject: Re: [PATCH] PCI: avoid NULL deref in alloc_pcie_link_state
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Radim =?UTF-8?Q?Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>
-Date: Mon, 24 Jun 2013 21:57:41 -0600
-In-Reply-To: <CAErSpo5m_6cJEBO56_uEAMbUjYL6pPwZ9dqz59RPBfZqCLuFBg@mail.gmail.com>
-References: <1371668174-32115-1-git-send-email-rkrcmar@redhat.com>
-	 <CAErSpo7O2YUUq-Ninu+BdmnrDGcU_h5=h=v1MBCoLorSDZW=Ow@mail.gmail.com>
-	 <1372129109.30572.335.camel@ul30vt.home>
-	 <CAErSpo5m_6cJEBO56_uEAMbUjYL6pPwZ9dqz59RPBfZqCLuFBg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1751004Ab3FYEIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 00:08:12 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:40410 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3FYEIJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 00:08:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130625000118.GT1918@mtj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org> <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
+ <20130422214159.GG12543@htj.dyndns.org> <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
+ <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org>
+From: Tim Hockin <thockin@hockin.org>
+Date: Mon, 24 Jun 2013 21:07:47 -0700
+X-Google-Sender-Auth: 1-QVuPSXN45sNCBXRGNoaeLDuW8
+Message-ID: <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+Subject: Re: cgroup: status-quo and userland efforts
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-24 at 21:35 -0600, Bjorn Helgaas wrote:
-> On Mon, Jun 24, 2013 at 8:58 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > On Mon, 2013-06-24 at 19:38 -0600, Bjorn Helgaas wrote:
-> >> [+cc Michael, Alex, Isaku]
-> >>
-> >> On Wed, Jun 19, 2013 at 12:56 PM, Radim Krčmář <rkrcmar@redhat.com> wrote:
-> >> > PCIe switch upstream port can be connected directly to the PCIe root bus
-> >> > in QEMU; ASPM does not expect this topology and dereferences NULL pointer
-> >> > when initializing.
-> >> >
-> >> > I have not confirmed this can happen on real hardware, but it is presented
-> >> > as a feature in QEMU, so there is no reason to panic if we can recover.
-> >>
-> >> This doesn't seem like a valid hardware topology to me.  If this *can*
-> >> occur on real hardware, we should fix it in Linux.  If not, maybe QEMU
-> >> should be changed to disallow it.
-> >
-> > I think a quad-port 82576 plugged into an express slot is likely the
-> > same topology.
-> 
-> I don't think that would be the same topology Radim described.  In
-> Radim's case, we have this:
-> 
->   00:03.0 upstream port
->   01:00.0 downstream port
-> 
-> and when we call alloc_pcie_link_state() for 01:00.0,
-> 
->   pdev is 01:00.0
->   pdev->bus is bus 01
->   pdev->bus->parent is bus 00
->   pdev->bus->parent->self (the bridge device leading to bus 00) is NULL
-> 
-> But in the case of a quad 82576 plugged into a slot, there would be a
-> root port or a downstream port leading to the slot's link, so my guess
-> is we'd have something like this (based on lspci output I found at
-> [1]):
-> 
->   00:05.0 root port leading to slot (bridge to [bus 01-08])
->   01:00.0 upstream port of switch on card (bridge to [bus 02-08])
->   02:02.0 downstream port (bridge to [bus 03-05])
->   02:04.0 downstream port (bridge to [bus 06-08])
->   03:00.0 82576 port 0
->   03:00.1 82576 port 1
->   06:00.0 82576 port 2
->   06:00.1 82576 port 3
-> 
-> So when we call alloc_pcie_link_state() for 02:02.0,
-> 
->   pdev is 02:02.0
->   pdev->bus is bus 02
->   pdev->bus->parent is bus 01
->   pdev->bus->parent->self (the bridge leading to bus 01) is 00:05.0
+On Mon, Jun 24, 2013 at 5:01 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Tim.
+>
+> On Sat, Jun 22, 2013 at 04:13:41PM -0700, Tim Hockin wrote:
+>> I'm very sorry I let this fall off my plate.  I was pointed at a
+>> systemd-devel message indicating that this is done.  Is it so?  It
+>
+> It's progressing pretty fast.
+>
+>> seems so completely ass-backwards to me. Below is one of our use-cases
+>> that I just don't see how we can reproduce in a single-heierarchy.
+>
+> Configurations which depend on orthogonal multiple hierarchies of
+> course won't be replicated under unified hierarchy.  It's unfortunate
+> but those just have to go.  More on this later.
 
+I really want to understand why this is SO IMPORTANT that you have to
+break userspace compatibility?  I mean, isn't Linux supposed to be the
+OS with the stable kernel interface?  I've seen Linus rant time and
+time again about this - why is it OK now?
 
-Oops, I misread his statement.  I don't think an upstream port connected
-directly to a root complex is valid.  I thought he was having problems
-with an upstream port connected to a root port, which is obviously
-valid.  QEMU lets us attach nearly anything to the root complex, most of
-them aren't valid.  Thanks,
+>> We're also long into the model that users can control their own
+>> sub-cgroups (moderated by permissions decided by admin SW up front).
+>
+> If you're in control of the base system, nothing prevents you from
+> doing so.  It's utterly broken security and policy-enforcement point
+> of view but if you can trust each software running on your system to
+> do the right thing, it's gonna be fine.
 
-Alex
+Examples?  we obviously don't grant full access, but our kernel gang
+and security gang seem to trust the bits we're enabling well enough...
 
+>> This gives us 4 combinations:
+>>   1) { production, DTF }
+>>   2) { production, non-DTF }
+>>   3) { batch, DTF }
+>>   4) { batch non-DTF }
+>>
+>> Of these, (3) is sort of nonsense, but the others are actually used
+>> and needed.  This is only
+>> possible because of split hierarchies.  In fact, we undertook a very painful
+>> process to move from a unified cgroup hierarchy to split hierarchies in large
+>> part _because of_ these examples.
+>
+> You can create three sibling cgroups and configure cpuset and blkio
+> accordingly.  For cpuset, the setup wouldn't make any different.  For
+> blkio, the two non-DTFs would now belong to different cgroups and
+> compete with each other as two groups, which won't matter at all as
+> non-DTFs are given what's left over after serving DTFs anyway, IIRC.
+
+The non-DTF jobs have a combined share that is small but non-trivial.
+If we cut that share in half, giving one slice to prod and one slice
+to batch, we get bad sharing under contention.  We tried this.  We
+could add control loops in userspace code which try to balance the
+shares in proportion to the load.  We did that with CPU, and it's sort
+of horrible.  We're moving AWAY from all this craziness in favor of
+well-defined hierarchical behaviors.
+
+>> Making cgroups composable allows us to build a higher level abstraction that
+>> is very powerful and flexible.  Moving back to unified hierarchies goes
+>> against everything that we're doing here, and will cause us REAL pain.
+>
+> Categorizing processes into hierarchical groups of tasks is a
+> fundamental idea and a fundamental idea is something to base things on
+> top of as it's something people can agree upon relatively easily and
+> establish a structure by.  I'd go as far as saying that it's the
+> failure on the part of workload design if they in general can't be
+> categorized hierarchically.
+
+It's a bit naive to think that this is some absolute truth, don't you
+think?  It just isn't so.  You should know better than most what
+craziness our users do, and what (legit) rationales they can produce.
+I have $large_number of machines running $huge_number of jobs from
+thousands of developers running for years upon years backing up my
+worldview.
+
+> Even at the practical level, the orthogonal hierarchy encouraged, at
+> the very least, the blkcg writeback support which can't be upstreamed
+> in any reasonable manner because it is impossible to say that a
+> resource can't be said to belong to a cgroup irrespective of who's
+> looking at it.
+
+I'm not sure I really grok that statement.  I'm OK with defining new
+rules that bring some order to the chaos.  Give us new rules to live
+by.  All-or-nothing would be fine.  What if mounting cgroupfs gives me
+N sub-dirs, one for each compiled-in controller?  You could make THAT
+the mount option - you can have either a unified hierarchy of all
+controllers or fully disjoint hierarchies.  Or some other rule.
+
+> It's something fundamentally broken and I have very difficult time
+> believing google's workload is so different that it can't be
+> categorized in a single hierarchy for the purpose of resource
+> distribution.  I'm sure there are cases where some compromises are
+> necessary but the laternative is much worse here.  As I wrote multiple
+> times now, multiple orthogonal hierarchy support is gonna be around
+> for some time, so I don't think there's any rason for panic; that
+> said, please at least plan to move on.
+
+The time frame you talk about IS reason for panic.  If I know that
+you're going to completely screw me in a a year and a half, I have to
+start moving NOW to find new ways to hack around the mess you're
+making, make my userspace mesh with it, test those things with
+critical customers, find a way to deploy it safely to a bajillion
+machines, handle inevitable rollback issues, and so on and so on.
+Moving from single hierarchy to split hierarchy LITERALLY took 2
+years.
+
+So yeah, I'm in a bit of a panic.  You're making a huge amount of work
+for us.  You're breaking binary compatibility of the (probably)
+largest single installation of Linux in the world.  And you're being
+kind of flip about the reality of it, which is so weird to me,
+considering you have first-hand experience with it all.
+
+Tim
