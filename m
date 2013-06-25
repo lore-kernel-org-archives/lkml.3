@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab3FYOuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:50:22 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:50481 "EHLO
+	id S1752132Ab3FYOuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:50:20 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:50483 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab3FYOuN (ORCPT
+	with ESMTP id S1751446Ab3FYOuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 10:50:13 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 2/6] drbd: fix error return code in drbd_init()
-Date: Tue, 25 Jun 2013 16:50:04 +0200
-Message-Id: <1372171808-30515-3-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 3/6] drbd: Fix rcu_read_lock balance on error path
+Date: Tue, 25 Jun 2013 16:50:05 +0200
+Message-Id: <1372171808-30515-4-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1372171808-30515-1-git-send-email-philipp.reisner@linbit.com>
 References: <1372171808-30515-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,48 +20,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Andreas Gruenbacher <agruen@linbit.com>
 
-Fix to return a negative error code from the error handling
-case instead of 0, as returned elsewhere in this function.
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/block/drbd/drbd_main.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/block/drbd/drbd_nl.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index a5dca6a..49040a3 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -2762,8 +2762,6 @@ int __init drbd_init(void)
- 	/*
- 	 * allocate all necessary structs
- 	 */
--	err = -ENOMEM;
--
- 	init_waitqueue_head(&drbd_pp_wait);
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 9e3f441..0936d6a 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -2658,7 +2658,6 @@ int nla_put_status_info(struct sk_buff *skb, struct drbd_conf *mdev,
+ 		const struct sib_info *sib)
+ {
+ 	struct state_info *si = NULL; /* for sizeof(si->member); */
+-	struct net_conf *nc;
+ 	struct nlattr *nla;
+ 	int got_ldev;
+ 	int err = 0;
+@@ -2688,13 +2687,19 @@ int nla_put_status_info(struct sk_buff *skb, struct drbd_conf *mdev,
+ 		goto nla_put_failure;
  
- 	drbd_proc = NULL; /* play safe for drbd_cleanup */
-@@ -2773,6 +2771,7 @@ int __init drbd_init(void)
+ 	rcu_read_lock();
+-	if (got_ldev)
+-		if (disk_conf_to_skb(skb, rcu_dereference(mdev->ldev->disk_conf), exclude_sensitive))
+-			goto nla_put_failure;
++	if (got_ldev) {
++		struct disk_conf *disk_conf;
+ 
+-	nc = rcu_dereference(mdev->tconn->net_conf);
+-	if (nc)
+-		err = net_conf_to_skb(skb, nc, exclude_sensitive);
++		disk_conf = rcu_dereference(mdev->ldev->disk_conf);
++		err = disk_conf_to_skb(skb, disk_conf, exclude_sensitive);
++	}
++	if (!err) {
++		struct net_conf *nc;
++
++		nc = rcu_dereference(mdev->tconn->net_conf);
++		if (nc)
++			err = net_conf_to_skb(skb, nc, exclude_sensitive);
++	}
+ 	rcu_read_unlock();
  	if (err)
- 		goto fail;
- 
-+	err = -ENOMEM;
- 	drbd_proc = proc_create_data("drbd", S_IFREG | S_IRUGO , NULL, &drbd_proc_fops, NULL);
- 	if (!drbd_proc)	{
- 		printk(KERN_ERR "drbd: unable to register proc file\n");
-@@ -2803,7 +2802,6 @@ int __init drbd_init(void)
- fail:
- 	drbd_cleanup();
- 	if (err == -ENOMEM)
--		/* currently always the case */
- 		printk(KERN_ERR "drbd: ran out of memory\n");
- 	else
- 		printk(KERN_ERR "drbd: initialization failure\n");
+ 		goto nla_put_failure;
 -- 
 1.7.9.5
 
