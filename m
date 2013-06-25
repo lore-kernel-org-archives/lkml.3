@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab3FYOzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 10:55:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50872 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3FYOzb (ORCPT
+	id S1752479Ab3FYO4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 10:56:32 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:65193 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3FYO4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 10:55:31 -0400
-Date: Tue, 25 Jun 2013 16:55:20 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org, linux-scsi@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
-Message-ID: <20130625145520.GK5594@kernel.dk>
-References: <20130620201713.GV8211@linux.intel.com>
- <20130623100920.GA19021@gmail.com>
- <20130624071544.GR9422@kernel.dk>
- <20130625030140.GZ8211@linux.intel.com>
+	Tue, 25 Jun 2013 10:56:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130625030140.GZ8211@linux.intel.com>
+In-Reply-To: <51C4C2ED.5090505@wwwdotorg.org>
+References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com>
+	<1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
+	<51BA3BC1.3090109@wwwdotorg.org>
+	<20130614091241.GA23745@ab42.lan>
+	<51C1F42E.5090107@wwwdotorg.org>
+	<51C1F82C.4020502@wwwdotorg.org>
+	<20130620115710.GB942@ab42.lan>
+	<51C4C2ED.5090505@wwwdotorg.org>
+Date: Tue, 25 Jun 2013 16:56:29 +0200
+Message-ID: <CACRpkdb5uVMBg96T5_CLYDMzs5KGB7a+njWd-OKewTm5D2mz1g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Christian Ruppert <christian.ruppert@abilis.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24 2013, Matthew Wilcox wrote:
-> On Mon, Jun 24, 2013 at 09:15:45AM +0200, Jens Axboe wrote:
-> > Willy, I think the general design is fine, hooking in via the bdi is the
-> > only way to get back to the right place from where you need to sleep.
-> > Some thoughts:
-> > 
-> > - This should be hooked in via blk-iopoll, both of them should call into
-> >   the same driver hook for polling completions.
-> 
-> I actually started working on this, then I realised that it's actually
-> a bad idea.  blk-iopoll's poll function is to poll the single I/O queue
-> closest to this CPU.  The iowait poll function is to poll all queues
-> that the I/O for this address_space might complete on.
+On Fri, Jun 21, 2013 at 11:17 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/20/2013 05:57 AM, Christian Ruppert wrote:
 
-blk_iopoll can be tied to "whatever". It was originally designed to be
-tied to the queue, which would make it driver-wide. So there's no intent
-for it to poll only a subset of the device, though if you tie it to a
-completion queue (which would be most natural), then it'd only find
-completions there.
-
-I didn't look at your nvme end of the implementation - if you could
-reliably map to the right completion queue, then it would have the same
-mapping as iopoll on a per-completion queue basis. If you can't, then
-you have to poll all of them. That doesn't seem like it would scale well
-for having more than a few applications banging on a device.
-
-> I'm reluctant to ask drivers to define two poll functions, but I'm even
-> more reluctant to ask them to define one function with two purposes.
+>> Your remark seems to reflect one of the following two hardware
+>> architectures:
+>>
+>>                                                      +- SPI
+>>                  Physical pins --- GPIO --- pinctrl -+- I2C
+>>                                                      +- mmc
 >
-> > - It needs to be more intelligent in when you want to poll and when you
-> >   want regular irq driven IO.
-> 
-> Oh yeah, absolutely.  While the example patch didn't show it, I wouldn't
-> enable it for all NVMe devices; only ones with sufficiently low latency.
-> There's also the ability for the driver to look at the number of
-> outstanding I/Os and return an error (eg -EBUSY) to stop spinning.
+> (that's diagram 1)
+>
+>>
+>>                                 +- GPIO
+>>                  Physical pins -+           +- SPI
+>>                                 +- pinctrl -+- I2C
+>>                                             +- mmc
+>
+> (that's diagram 2)
+>
+>> TB10x hardware architecture:
+>>
+>>                                             +- SPI
+>>                  Physical pins --- pinctrl -+- I2C
+>>                                             +- mmc
+>>                                             +- GPIO
+>
+> (that's diagram 3)
+>
+> No, I was thinking of diagram 3 above. I'm not sure if diagrams (1) or
+> (2) are common or exist?
 
-There might also be read vs write differences. Say some devices complete
-writes very quickly, but reads are slower. Or vice versa. And then
-there's the inevitable "some IOs are slow, but usually very fast". But
-that can't really be handled except giving up on the polling at some
-point.
+The U300 pin controller is obviously of type (1) as it can spy on
+the signals.
 
-> > - With the former note, the app either needs to opt in (and hence
-> >   willingly sacrifice CPU cycles of its scheduling slice) or it needs to
-> >   be nicer in when it gives up and goes back to irq driven IO.
-> 
-> Yup.  I like the way you framed it.  If the task *wants* to spend its
-> CPU cycles on polling for I/O instead of giving up the remainder of its
-> time slice, then it should be able to do that.  After all, it already can;
-> it can submit an I/O request via AIO, and then call io_getevents in a
-> tight loop.
+The Nomadik pin controller is basically type (2).
 
-Exactly, that was my point. Or it can busy loop just checking the aio
-ring, at which point it's really stupid to be IRQ driven at all. It'd be
-much better to have the app reap the completion directly.
+Maybe this is part of the explanation to why we sometimes tend
+to talk past each other :-D
 
-> So maybe the right way to do this is with a task flag?  If we go that
-> route, I'd like to further develop this option to allow I/Os to be
-> designated as "low latency" vs "normal".  Taking a page fault would be
-> "low latency" for all tasks, not just ones that choose to spin for I/O.
+(I would replace the string "pinctrl" with "pinmux" above,
+as I just did in my documentation patch adding these
+diagrams.)
 
-Not sure, I'd have to think about it some more. It's a mix of what the
-application decides to do, but also what the underlying device can do.
-And there might be fs implications, etc.
-
--- 
-Jens Axboe
-
+Yours,
+Linus Walleij
