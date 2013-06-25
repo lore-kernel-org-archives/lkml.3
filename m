@@ -1,148 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751004Ab3FYEIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 00:08:12 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:40410 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3FYEIJ (ORCPT
+	id S1751059Ab3FYEOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 00:14:33 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:39554 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab3FYEOb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 00:08:09 -0400
+	Tue, 25 Jun 2013 00:14:31 -0400
+Date: Mon, 24 Jun 2013 23:14:27 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC 1/2] x86_64, mm: Delay initializing large portion of
+ memory
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: holt@sgi.com, travis@sgi.com, nzimmer@sgi.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, yinghai@kernel.org,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1371831934-156971-2-git-send-email-nzimmer@sgi.com> (from
+	nzimmer@sgi.com on Fri Jun 21 11:25:33 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1372133667.2776.145@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <20130625000118.GT1918@mtj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org> <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
- <20130422214159.GG12543@htj.dyndns.org> <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
- <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org>
-From: Tim Hockin <thockin@hockin.org>
-Date: Mon, 24 Jun 2013 21:07:47 -0700
-X-Google-Sender-Auth: 1-QVuPSXN45sNCBXRGNoaeLDuW8
-Message-ID: <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
-Subject: Re: cgroup: status-quo and userland efforts
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 5:01 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Tim.
->
-> On Sat, Jun 22, 2013 at 04:13:41PM -0700, Tim Hockin wrote:
->> I'm very sorry I let this fall off my plate.  I was pointed at a
->> systemd-devel message indicating that this is done.  Is it so?  It
->
-> It's progressing pretty fast.
->
->> seems so completely ass-backwards to me. Below is one of our use-cases
->> that I just don't see how we can reproduce in a single-heierarchy.
->
-> Configurations which depend on orthogonal multiple hierarchies of
-> course won't be replicated under unified hierarchy.  It's unfortunate
-> but those just have to go.  More on this later.
+On 06/21/2013 11:25:33 AM, Nathan Zimmer wrote:
+> On a 16TB system it can takes upwards of two hours to boot the system  
+> with
+> about 60% of the time being spent initializing memory.  This patch  
+> delays
+> initializing a large portion of memory until after the system is  
+> booted.
+> This can significantly reduce the time it takes the boot the system  
+> down
+> to the 15 to 30 minute range.
 
-I really want to understand why this is SO IMPORTANT that you have to
-break userspace compatibility?  I mean, isn't Linux supposed to be the
-OS with the stable kernel interface?  I've seen Linus rant time and
-time again about this - why is it OK now?
+Why is this conditional? Initialize the minimum amount of memory to  
+bring up each NUMA node, and then have each processor initialize its  
+own memory. I would have thought it was already doing this...
 
->> We're also long into the model that users can control their own
->> sub-cgroups (moderated by permissions decided by admin SW up front).
->
-> If you're in control of the base system, nothing prevents you from
-> doing so.  It's utterly broken security and policy-enforcement point
-> of view but if you can trust each software running on your system to
-> do the right thing, it's gonna be fine.
 
-Examples?  we obviously don't grant full access, but our kernel gang
-and security gang seem to trust the bits we're enabling well enough...
+> +	delay_mem_init=B:M:n:l:h
+> +			This delays the initialization of a large  
+> portion of
+> +			memory by inserting it into the "absent" memory  
+> list.
+> +			This allows the system to boot up much faster  
+> at the
+> +			expense of the time needed to add this absent  
+> memory
+> +			after the system has booted.  That however can  
+> be done
+> +			in parallel with other operations.
 
->> This gives us 4 combinations:
->>   1) { production, DTF }
->>   2) { production, non-DTF }
->>   3) { batch, DTF }
->>   4) { batch non-DTF }
->>
->> Of these, (3) is sort of nonsense, but the others are actually used
->> and needed.  This is only
->> possible because of split hierarchies.  In fact, we undertook a very painful
->> process to move from a unified cgroup hierarchy to split hierarchies in large
->> part _because of_ these examples.
->
-> You can create three sibling cgroups and configure cpuset and blkio
-> accordingly.  For cpuset, the setup wouldn't make any different.  For
-> blkio, the two non-DTFs would now belong to different cgroups and
-> compete with each other as two groups, which won't matter at all as
-> non-DTFs are given what's left over after serving DTFs anyway, IIRC.
+This seems like a giant advertisement primarily aimed at repeating why  
+you think we need to merge the patch, not explaining what it is or how  
+to use it.
 
-The non-DTF jobs have a combined share that is small but non-trivial.
-If we cut that share in half, giving one slice to prod and one slice
-to batch, we get bad sharing under contention.  We tried this.  We
-could add control loops in userspace code which try to balance the
-shares in proportion to the load.  We did that with CPU, and it's sort
-of horrible.  We're moving AWAY from all this craziness in favor of
-well-defined hierarchical behaviors.
+I would rephrase:
 
->> Making cgroups composable allows us to build a higher level abstraction that
->> is very powerful and flexible.  Moving back to unified hierarchies goes
->> against everything that we're doing here, and will cause us REAL pain.
->
-> Categorizing processes into hierarchical groups of tasks is a
-> fundamental idea and a fundamental idea is something to base things on
-> top of as it's something people can agree upon relatively easily and
-> establish a structure by.  I'd go as far as saying that it's the
-> failure on the part of workload design if they in general can't be
-> categorized hierarchically.
+			Defer memory initialization until after SMP  
+init (so
+			large memory ranges can be initialized in  
+parallel) by
+			moving memory not needed during boot to the  
+"absent" list.
 
-It's a bit naive to think that this is some absolute truth, don't you
-think?  It just isn't so.  You should know better than most what
-craziness our users do, and what (legit) rationales they can produce.
-I have $large_number of machines running $huge_number of jobs from
-thousands of developers running for years upon years backing up my
-worldview.
+And I repeat: why do we need to micromanage this? It sounds like all  
+NUMA systems should do something like this. (Single-threaded memory  
+initialization in an SMP system is kind of weird.)
 
-> Even at the practical level, the orthogonal hierarchy encouraged, at
-> the very least, the blkcg writeback support which can't be upstreamed
-> in any reasonable manner because it is impossible to say that a
-> resource can't be said to belong to a cgroup irrespective of who's
-> looking at it.
+> +			Format: B:M:n:l:h
+> +			    (1 << B) is the block size (bsize)
+> +			    	     ['0' indicates use the default  
+> 128M]
+> +			    (1 << M) is the address space per node
+> +			    (n * bsize) is minimum sized node memory to  
+> slice
+> +			    (l * bisze) is low memory to leave on node
+> +			    (h * bisze) is high memory to leave on node
 
-I'm not sure I really grok that statement.  I'm OK with defining new
-rules that bring some order to the chaos.  Give us new rules to live
-by.  All-or-nothing would be fine.  What if mounting cgroupfs gives me
-N sub-dirs, one for each compiled-in controller?  You could make THAT
-the mount option - you can have either a unified hierarchy of all
-controllers or fully disjoint hierarchies.  Or some other rule.
+I don't understand this in the slightest. I understand "low memory to  
+leave on the node", I have no idea why there are four other parameters.
 
-> It's something fundamentally broken and I have very difficult time
-> believing google's workload is so different that it can't be
-> categorized in a single hierarchy for the purpose of resource
-> distribution.  I'm sure there are cases where some compromises are
-> necessary but the laternative is much worse here.  As I wrote multiple
-> times now, multiple orthogonal hierarchy support is gonna be around
-> for some time, so I don't think there's any rason for panic; that
-> said, please at least plan to move on.
 
-The time frame you talk about IS reason for panic.  If I know that
-you're going to completely screw me in a a year and a half, I have to
-start moving NOW to find new ways to hack around the mess you're
-making, make my userspace mesh with it, test those things with
-critical customers, find a way to deploy it safely to a bajillion
-machines, handle inevitable rollback issues, and so on and so on.
-Moving from single hierarchy to split hierarchy LITERALLY took 2
-years.
+> +config DELAY_MEM_INIT
+> +	bool "Delay memory initialization"
+> +	depends on EFI && MEMORY_HOTPLUG_SPARSE
+> +	---help---
+> +	  This  option delays initializing a large portion of memory
+> +	  until after the system is booted.  This can significantly
+> +	  reduce the time it takes the boot the system when there
+> +	  is a significant amount of memory present.  Systems with
+> +	  8TB or more of memory benefit the most.
 
-So yeah, I'm in a bit of a panic.  You're making a huge amount of work
-for us.  You're breaking binary compatibility of the (probably)
-largest single installation of Linux in the world.  And you're being
-kind of flip about the reality of it, which is so weird to me,
-considering you have first-hand experience with it all.
+I can see an SMP phone wanting to use this to shave a quarter second  
+off its boot time. Your "large portion of memory" description is a bit  
+myopic.
 
-Tim
+Rob
