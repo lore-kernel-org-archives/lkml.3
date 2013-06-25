@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab3FYSgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:36:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41329 "EHLO
+	id S1753302Ab3FYSgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:36:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41286 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab3FYSgI (ORCPT
+	with ESMTP id S1753193Ab3FYSgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:36:08 -0400
+	Tue, 25 Jun 2013 14:36:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guillaume Nault <g.nault@alphalink.fr>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/27] l2tp: Fix PPP header erasure and memory leak
-Date: Tue, 25 Jun 2013 11:35:40 -0700
-Message-Id: <20130625183520.118939897@linuxfoundation.org>
+        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 19/27] team: check return value of team_get_port_by_index_rcu() for NULL
+Date: Tue, 25 Jun 2013 11:35:38 -0700
+Message-Id: <20130625183519.858491807@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625183517.651770593@linuxfoundation.org>
 References: <20130625183517.651770593@linuxfoundation.org>
@@ -27,37 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+From: Jiri Pirko <jiri@resnulli.us>
 
-[ Upstream commit 55b92b7a11690bc377b5d373872a6b650ae88e64 ]
+[ Upstream commit 76c455decbbad31de21c727edb184a963f42b40b ]
 
-Copy user data after PPP framing header. This prevents erasure of the
-added PPP header and avoids leaking two bytes of uninitialised memory
-at the end of skb's data buffer.
+team_get_port_by_index_rcu() might return NULL due to race between port
+removal and skb tx path. Panic is easily triggeable when txing packets
+and adding/removing port in a loop.
 
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
+introduced by commit 3d249d4ca "net: introduce ethernet teaming device"
+and commit 753f993911b "team: introduce random mode" (for random mode)
+
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/l2tp/l2tp_ppp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/team/team_mode_roundrobin.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -350,12 +350,12 @@ static int pppol2tp_sendmsg(struct kiocb
- 	skb_put(skb, 2);
+--- a/drivers/net/team/team_mode_roundrobin.c
++++ b/drivers/net/team/team_mode_roundrobin.c
+@@ -52,6 +52,8 @@ static bool rr_transmit(struct team *tea
  
- 	/* Copy user data into skb */
--	error = memcpy_fromiovec(skb->data, m->msg_iov, total_len);
-+	error = memcpy_fromiovec(skb_put(skb, total_len), m->msg_iov,
-+				 total_len);
- 	if (error < 0) {
- 		kfree_skb(skb);
- 		goto error_put_sess_tun;
- 	}
--	skb_put(skb, total_len);
- 
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
- 
+ 	port_index = rr_priv(team)->sent_packets++ % team->port_count;
+ 	port = team_get_port_by_index_rcu(team, port_index);
++	if (unlikely(!port))
++		goto drop;
+ 	port = __get_first_port_up(team, port);
+ 	if (unlikely(!port))
+ 		goto drop;
 
 
