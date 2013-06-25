@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab3FYSeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:34:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41183 "EHLO
+	id S1753045Ab3FYSfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:35:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41196 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab3FYSe2 (ORCPT
+	with ESMTP id S1752871Ab3FYSea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:34:28 -0400
+	Tue, 25 Jun 2013 14:34:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 93/95] drivers: uio: Fix UIO device registration failure
-Date: Tue, 25 Jun 2013 11:33:20 -0700
-Message-Id: <20130625182204.176739943@linuxfoundation.org>
+        Chris Dunlop <chris@onthe.net.au>,
+        Josh Durgin <josh.durgin@inktank.com>, Sage Weil <sage@inktank.com>,
+        Lingzhu Xiang <lxiang@redhat.com>, Zhouping Liu <zliu@redhat.com>
+Subject: [ 90/95] rbd: use the correct length for format 2 object names
+Date: Tue, 25 Jun 2013 11:33:17 -0700
+Message-Id: <20130625182203.811404199@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -27,34 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+From: Josh Durgin <josh.durgin@inktank.com>
 
-commit 5ed0505c713805f89473cdc0bbfb5110dfd840cb upstream.
+commit 3a96d5cd7bdce45d5dded75c3a62d4fb98050280 upstream.
 
-Until recently uio_get_minor() returned 0 for success and
-a negative value on failure.  This became non-negative for suceess and
-negative for failure.  Restore the original return value spec so that we can
-successfully initialize UIO devices with a non-zero minor device
-number.
+[Backported for 3.9-stable.
+'kmalloc(MAX_OBJ_NAME_SIZE + 1, GFP_NOIO)' was changed as
+'kmem_cache_alloc(rbd_segment_name_cache, GFP_NOIO)' in 78c2a44
+since 3.10-rc1, and 78c2a44 is relied on a big patchset, so restore
+it as 3.9 did.]
 
-Signed-off-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Format 2 objects use 16 characters for the object name suffix to be
+able to express the full 64-bit range of object numbers. Format 1
+images only use 12 characters for this. Using 12-character names for
+format 2 caused userspace and kernel rbd clients to read differently
+named objects, which made an image written by one client look empty to
+the other client.
+
+Reported-by: Chris Dunlop <chris@onthe.net.au>
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Zhouping Liu <zliu@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/uio/uio.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/block/rbd.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -374,6 +374,7 @@ static int uio_get_minor(struct uio_devi
- 	retval = idr_alloc(&uio_idr, idev, 0, UIO_MAX_DEVICES, GFP_KERNEL);
- 	if (retval >= 0) {
- 		idev->minor = retval;
-+		retval = 0;
- 	} else if (retval == -ENOSPC) {
- 		dev_err(idev->dev, "too many uio devices\n");
- 		retval = -EINVAL;
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -833,12 +833,16 @@ static const char *rbd_segment_name(stru
+ 	char *name;
+ 	u64 segment;
+ 	int ret;
++	char *name_format;
+ 
+ 	name = kmalloc(MAX_OBJ_NAME_SIZE + 1, GFP_NOIO);
+ 	if (!name)
+ 		return NULL;
+ 	segment = offset >> rbd_dev->header.obj_order;
+-	ret = snprintf(name, MAX_OBJ_NAME_SIZE + 1, "%s.%012llx",
++	name_format = "%s.%012llx";
++	if (rbd_dev->image_format == 2)
++		name_format = "%s.%016llx";
++	ret = snprintf(name, MAX_OBJ_NAME_SIZE + 1, name_format,
+ 			rbd_dev->header.object_prefix, segment);
+ 	if (ret < 0 || ret > MAX_OBJ_NAME_SIZE) {
+ 		pr_err("error formatting segment name for #%llu (%d)\n",
 
 
