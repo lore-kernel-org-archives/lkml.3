@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab3FYQU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 12:20:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29715 "EHLO mga14.intel.com"
+	id S1752508Ab3FYQVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 12:21:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16532 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab3FYQTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752037Ab3FYQTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 12:19:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,938,1363158000"; 
-   d="scan'208";a="322373891"
+   d="scan'208";a="360258458"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
@@ -21,9 +21,9 @@ Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Yinghai Lu <yinghai@kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         x86@kernel.org
-Subject: [PATCH 4/6] PCI: acpiphp: check for new devices on enabled host
-Date: Tue, 25 Jun 2013 19:22:08 +0300
-Message-Id: <1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH 2/6] PCI: acpiphp: enable_device(): rescan even if no new devices on slot
+Date: Tue, 25 Jun 2013 19:22:06 +0300
+Message-Id: <1372177330-28013-3-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -33,104 +33,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Current acpiphp_check_bridge() implementation is pretty dumb:
- - it enables the slot if it's not enabled and the slot status is
-   ACPI_STA_ALL;
- - it disables the slot if it's enabled and slot is not in ACPI_STA_ALL
-   state.
+pci_scan_slot() returns number of new devices connected *directly*
+connected to the slot. Current enable_device() checks the return value
+and stops if it doesn't see a new device.
 
-This behavior is not enough to handle Thunderbolt chaining case
-properly. We need to actually rescan for new devices even if a device
-has already in the slot.
+In Thunderbolt chaining case the new device can be deeper in hierarchy, so
+do the rescan anyway.
 
-The new implementation disables and stops the slot if it's not in
-ACPI_STA_ALL state.
-
-For ACPI_STA_ALL state we first trim devices which don't respond and
-look for the ones after that. We do that even if slot already enabled
-(SLOT_ENABLED).
+Because of that we must make sure that pcibios_resource_survey_bus() and
+check_hotplug_bridge() get called only for a just found bus and not the
+ones already added to the system. Failure to do so will lead to resource
+conflicts.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c | 56 ++++++++++++++++++--------------------
- 1 file changed, 27 insertions(+), 29 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c | 18 +++++++-----------
+ 1 file changed, 7 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 80a6ea1..82a4ec9 100644
+index b983e29..80a6ea1 100644
 --- a/drivers/pci/hotplug/acpiphp_glue.c
 +++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -868,43 +868,41 @@ int acpiphp_eject_slot(struct acpiphp_slot *slot)
-  * Iterate over all slots under this bridge and make sure that if a
-  * card is present they are enabled, and if not they are disabled.
-  */
--static int acpiphp_check_bridge(struct acpiphp_bridge *bridge)
-+static void acpiphp_check_bridge(struct acpiphp_bridge *bridge)
- {
- 	struct acpiphp_slot *slot;
--	int retval = 0;
--	int enabled, disabled;
--
--	enabled = disabled = 0;
+@@ -685,18 +685,13 @@ static int __ref enable_device(struct acpiphp_slot *slot)
+ 	struct pci_dev *dev;
+ 	struct pci_bus *bus = slot->bridge->pci_bus;
+ 	struct acpiphp_func *func;
+-	int num, max, pass;
++	int max, pass;
+ 	LIST_HEAD(add_list);
  
- 	list_for_each_entry(slot, &bridge->slots, node) {
--		unsigned int status = get_slot_status(slot);
--		if (slot->flags & SLOT_ENABLED) {
--			if (status == ACPI_STA_ALL)
--				continue;
--			retval = acpiphp_disable_slot(slot);
--			if (retval) {
--				err("Error occurred in disabling\n");
--				goto err_exit;
--			} else {
--				acpiphp_eject_slot(slot);
-+		struct pci_bus *bus = slot->bridge->pci_bus;
-+		struct pci_dev *dev, *tmp;
-+		int retval;
-+
-+		mutex_lock(&slot->crit_sect);
-+		/* wake up all functions */
-+		retval = power_on_slot(slot);
-+		if (retval)
-+			goto unlock;
-+
-+		if (get_slot_status(slot) == ACPI_STA_ALL) {
-+			/* remove stale devices if any */
-+			list_for_each_entry_safe(dev, tmp,
-+					&bus->devices, bus_list) {
-+				if (PCI_SLOT(dev->devfn) != slot->device)
-+					continue;
-+				pci_trim_stale_devices(dev);
- 			}
--			disabled++;
-+
-+			/* configure all functions */
-+			retval = enable_device(slot);
-+			if (retval)
-+				power_off_slot(slot);
- 		} else {
--			if (status != ACPI_STA_ALL)
--				continue;
--			retval = acpiphp_enable_slot(slot);
--			if (retval) {
--				err("Error occurred in enabling\n");
--				goto err_exit;
--			}
--			enabled++;
-+			disable_device(slot);
-+			power_off_slot(slot);
+ 	list_for_each_entry(func, &slot->funcs, sibling)
+ 		acpiphp_bus_add(func);
+ 
+-	num = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
+-	if (num == 0) {
+-		/* Maybe only part of funcs are added. */
+-		dbg("No new device found\n");
+-		goto err_exit;
+-	}
++	pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
+ 
+ 	max = acpiphp_max_busnr(bus);
+ 	for (pass = 0; pass < 2; pass++) {
+@@ -707,8 +702,11 @@ static int __ref enable_device(struct acpiphp_slot *slot)
+ 			    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
+ 				max = pci_scan_bridge(bus, dev, max, pass);
+ 				if (pass && dev->subordinate) {
+-					check_hotplug_bridge(slot, dev);
+-					pcibios_resource_survey_bus(dev->subordinate);
++					if (!dev->subordinate->is_added) {
++						check_hotplug_bridge(slot, dev);
++						pcibios_resource_survey_bus(
++							dev->subordinate);
++					}
+ 					__pci_bus_size_bridges(dev->subordinate,
+ 							       &add_list);
+ 				}
+@@ -742,8 +740,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
  		}
-+unlock:
-+		mutex_unlock(&slot->crit_sect);
  	}
--
--	dbg("%s: %d enabled, %d disabled\n", __func__, enabled, disabled);
+ 
 -
 - err_exit:
--	return retval;
+ 	return 0;
  }
  
- static void acpiphp_set_hpp_values(struct pci_bus *bus)
 -- 
 1.8.3.1
 
