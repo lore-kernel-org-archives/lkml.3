@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab3FYS6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:58:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41061 "EHLO
+	id S1752776Ab3FYS7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:59:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab3FYSeK (ORCPT
+	with ESMTP id S1752618Ab3FYSeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 14:34:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Boris Zhmurov <zhmurov@yandex-team.ru>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dmitry Kravkov <dkravkov@gmail.com>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 62/95] net: force a reload of first item in hlist_nulls_for_each_entry_rcu
-Date: Tue, 25 Jun 2013 11:32:49 -0700
-Message-Id: <20130625182200.598413703@linuxfoundation.org>
+Subject: [ 61/95] udp6: Fix udp fragmentation for tunnel traffic.
+Date: Tue, 25 Jun 2013 11:32:48 -0700
+Message-Id: <20130625182200.499292003@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
 References: <20130625182153.605455184@linuxfoundation.org>
@@ -30,53 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Pravin B Shelar <pshelar@nicira.com>
 
-[ Upstream commit c87a124a5d5e8cf8e21c4363c3372bcaf53ea190 ]
+[ Upstream commit 1e2bd517c108816220f262d7954b697af03b5f9c ]
 
-Roman Gushchin discovered that udp4_lib_lookup2() was not reloading
-first item in the rcu protected list, in case the loop was restarted.
+udp6 over GRE tunnel does not work after to GRE tso changes. GRE
+tso handler passes inner packet but keeps track of outer header
+start in SKB_GSO_CB(skb)->mac_offset.  udp6 fragment need to
+take care of outer header, which start at the mac_offset, while
+adding fragment header.
+This bug is introduced by commit 68c3316311 (GRE: Add TCP
+segmentation offload for GRE).
 
-This produced soft lockups as in https://lkml.org/lkml/2013/4/16/37
-
-rcu_dereference(X)/ACCESS_ONCE(X) seem to not work as intended if X is
-ptr->field :
-
-In some cases, gcc caches the value or ptr->field in a register.
-
-Use a barrier() to disallow such caching, as documented in
-Documentation/atomic_ops.txt line 114
-
-Thanks a lot to Roman for providing analysis and numerous patches.
-
-Diagnosed-by: Roman Gushchin <klamm@yandex-team.ru>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reported-by: Dmitry Kravkov <dkravkov@gmail.com>
+Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+Tested-by: Dmitry Kravkov <dmitry@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/rculist_nulls.h |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ include/linux/skbuff.h |   15 +++++++++++++++
+ net/ipv6/udp_offload.c |   20 ++++++++++++--------
+ 2 files changed, 27 insertions(+), 8 deletions(-)
 
---- a/include/linux/rculist_nulls.h
-+++ b/include/linux/rculist_nulls.h
-@@ -105,9 +105,14 @@ static inline void hlist_nulls_add_head_
-  * @head:	the head for your list.
-  * @member:	the name of the hlist_nulls_node within the struct.
-  *
-+ * The barrier() is needed to make sure compiler doesn't cache first element [1],
-+ * as this loop can be restarted [2]
-+ * [1] Documentation/atomic_ops.txt around line 114
-+ * [2] Documentation/RCU/rculist_nulls.txt around line 146
-  */
- #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)			\
--	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
-+	for (({barrier();}),							\
-+	     pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
- 		(!is_a_nulls(pos)) &&						\
- 		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
- 		pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2761,6 +2761,21 @@ static inline int skb_tnl_header_len(con
+ 		SKB_GSO_CB(inner_skb)->mac_offset;
+ }
+ 
++static inline int gso_pskb_expand_head(struct sk_buff *skb, int extra)
++{
++	int new_headroom, headroom;
++	int ret;
++
++	headroom = skb_headroom(skb);
++	ret = pskb_expand_head(skb, extra, 0, GFP_ATOMIC);
++	if (ret)
++		return ret;
++
++	new_headroom = skb_headroom(skb);
++	SKB_GSO_CB(skb)->mac_offset += (new_headroom - headroom);
++	return 0;
++}
++
+ static inline bool skb_is_gso(const struct sk_buff *skb)
+ {
+ 	return skb_shinfo(skb)->gso_size;
+--- a/net/ipv6/udp_offload.c
++++ b/net/ipv6/udp_offload.c
+@@ -42,11 +42,12 @@ static struct sk_buff *udp6_ufo_fragment
+ 	unsigned int mss;
+ 	unsigned int unfrag_ip6hlen, unfrag_len;
+ 	struct frag_hdr *fptr;
+-	u8 *mac_start, *prevhdr;
++	u8 *packet_start, *prevhdr;
+ 	u8 nexthdr;
+ 	u8 frag_hdr_sz = sizeof(struct frag_hdr);
+ 	int offset;
+ 	__wsum csum;
++	int tnl_hlen;
+ 
+ 	mss = skb_shinfo(skb)->gso_size;
+ 	if (unlikely(skb->len <= mss))
+@@ -77,9 +78,11 @@ static struct sk_buff *udp6_ufo_fragment
+ 	skb->ip_summed = CHECKSUM_NONE;
+ 
+ 	/* Check if there is enough headroom to insert fragment header. */
+-	if ((skb_mac_header(skb) < skb->head + frag_hdr_sz) &&
+-	    pskb_expand_head(skb, frag_hdr_sz, 0, GFP_ATOMIC))
+-		goto out;
++	tnl_hlen = skb_tnl_header_len(skb);
++	if (skb_headroom(skb) < (tnl_hlen + frag_hdr_sz)) {
++		if (gso_pskb_expand_head(skb, tnl_hlen + frag_hdr_sz))
++			goto out;
++	}
+ 
+ 	/* Find the unfragmentable header and shift it left by frag_hdr_sz
+ 	 * bytes to insert fragment header.
+@@ -87,11 +90,12 @@ static struct sk_buff *udp6_ufo_fragment
+ 	unfrag_ip6hlen = ip6_find_1stfragopt(skb, &prevhdr);
+ 	nexthdr = *prevhdr;
+ 	*prevhdr = NEXTHDR_FRAGMENT;
+-	unfrag_len = skb_network_header(skb) - skb_mac_header(skb) +
+-		     unfrag_ip6hlen;
+-	mac_start = skb_mac_header(skb);
+-	memmove(mac_start-frag_hdr_sz, mac_start, unfrag_len);
++	unfrag_len = (skb_network_header(skb) - skb_mac_header(skb)) +
++		     unfrag_ip6hlen + tnl_hlen;
++	packet_start = (u8 *) skb->head + SKB_GSO_CB(skb)->mac_offset;
++	memmove(packet_start-frag_hdr_sz, packet_start, unfrag_len);
+ 
++	SKB_GSO_CB(skb)->mac_offset -= frag_hdr_sz;
+ 	skb->mac_header -= frag_hdr_sz;
+ 	skb->network_header -= frag_hdr_sz;
+ 
 
 
