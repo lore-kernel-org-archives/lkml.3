@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3FYIpu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 04:45:50 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:56669 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752559Ab3FYIpp (ORCPT
+	id S1752718Ab3FYIqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 04:46:10 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:51273 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab3FYIqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 04:45:45 -0400
-Date: Tue, 25 Jun 2013 09:45:39 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 09/32] arm64: delete __cpuinit usage from all users
-Message-ID: <20130625084539.GA2939@arm.com>
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
- <1372102237-8757-10-git-send-email-paul.gortmaker@windriver.com>
+	Tue, 25 Jun 2013 04:46:07 -0400
+Date: Tue, 25 Jun 2013 10:46:00 +0200
+From: Robert Richter <rric@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH v2 02/14] perf: Add persistent events
+Message-ID: <20130625084600.GB21579@rric.localhost>
+References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+ <1370968960-22527-3-git-send-email-rric@kernel.org>
+ <20130624092807.GM28407@twins.programming.kicks-ass.net>
+ <20130624192404.GA24827@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372102237-8757-10-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130624192404.GA24827@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 08:30:14PM +0100, Paul Gortmaker wrote:
-> The __cpuinit type of throwaway sections might have made sense
-> some time ago when RAM was more constrained, but now the savings
-> do not offset the cost and complications.  For example, the fix in
-> commit 5e427ec2d0 ("x86: Fix bit corruption at CPU resume time")
-> is a good example of the nasty type of bugs that can be created
-> with improper use of the various __init prefixes.
+On 24.06.13 21:24:04, Borislav Petkov wrote:
+> On Mon, Jun 24, 2013 at 11:28:07AM +0200, Peter Zijlstra wrote:
+> > I find this patch incomplete for its asymmetric; there a dec, but not an
+> > implied inc.
 > 
-> After a discussion on LKML[1] it was decided that cpuinit should go
-> the way of devinit and be phased out.  Once all the users are gone,
-> we can then finally remove the macros themselves from linux/init.h.
+> There's one in perf_mmap_open.
 > 
-> Note that some harmless section mismatch warnings may result, since
-> notify_cpu_starting() and cpu_up() are arch independent (kernel/cpu.c)
-> are flagged as __cpuinit  -- so if we remove the __cpuinit from
-> arch specific callers, we will also get section mismatch warnings.
-> As an intermediate step, we intend to turn the linux/init.h cpuinit
-> content into no-ops as early as possible, since that will get rid
-> of these warnings.  In any case, they are temporary and harmless.
-> 
-> This removes all the arch/arm64 uses of the __cpuinit macros from
-> all C files.  Currently arm64 does not have any __CPUINIT used in
-> assembly files.
-> 
-> [1] https://lkml.org/lkml/2013/5/20/589
-> 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Basically the idea was to pull up the ->mmap_count decrement (haha,
+> sounds like excrement :-)) and not deallocate the ring buffers for a
+> persistent event.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+The asymmetry comes from rb_alloc() in add_persistent_event_on_cpu()
+which is usually implemented in the mmap functions. We might better
+improve functions to attach/detach events and buffers for more
+symmetric code.
+
+-Robert
