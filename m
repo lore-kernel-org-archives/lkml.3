@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab3FYSv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 14:51:57 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:37398 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab3FYSvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 14:51:52 -0400
-Date: Tue, 25 Jun 2013 11:51:46 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rculist: list_first_or_null_rcu() should use
- list_entry_rcu()
-Message-ID: <20130625185146.GE20051@mtj.dyndns.org>
-References: <20130621003244.GD11837@mtj.dyndns.org>
+	id S1753771Ab3FYSwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 14:52:06 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:55022 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751490Ab3FYSwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 14:52:04 -0400
+Message-ID: <51C9E6CD.5080508@sgi.com>
+Date: Tue, 25 Jun 2013 11:51:57 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130621003244.GD11837@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@kernel.org>, Nathan Zimmer <nzimmer@sgi.com>,
+        holt@sgi.com, rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
+        yinghai@kernel.org, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130625073819.GC11420@gmail.com> <51C9D1D6.20405@sgi.com> <51C9E4B7.2000007@zytor.com>
+In-Reply-To: <51C9E4B7.2000007@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 05:32:44PM -0700, Tejun Heo wrote:
-> list_first_or_null() should test whether the list is empty and return
-> pointer to the first entry if not in a RCU safe manner.  It's broken
-> in two ways.
-> 
-> * It compares __kernel @__ptr with __rcu @__next triggering the
->   following sparse warning.
-> 
->   net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
-> 
-> * It doesn't perform rcu_dereference*() and computes the entry address
->   using container_of() directly from the __rcu pointer which is
->   inconsitent with other rculist interface.  As a result, all three
->   in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
->   dereference the pointer w/o going through read barrier.
-> 
-> Fix it by making list_first_or_null_rcu() dereference ->next directly
-> and then use list_entry_rcu() on it like other rculist accessors.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Cc: Dipankar Sarma <dipankar@in.ibm.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: stable@vger.kernel.org
 
-Paul, ping.
 
--- 
-tejun
+On 6/25/2013 11:43 AM, H. Peter Anvin wrote:
+> On 06/25/2013 10:22 AM, Mike Travis wrote:
+>>
+>> On 6/25/2013 12:38 AM, Ingo Molnar wrote:
+>>>
+>>> * Nathan Zimmer <nzimmer@sgi.com> wrote:
+>>>
+>>>> On Sun, Jun 23, 2013 at 11:28:40AM +0200, Ingo Molnar wrote:
+>>>>>
+>>>>> That's 4.5 GB/sec initialization speed - that feels a bit slow and the 
+>>>>> boot time effect should be felt on smaller 'a couple of gigabytes' 
+>>>>> desktop boxes as well. Do we know exactly where the 2 hours of boot 
+>>>>> time on a 32 TB system is spent?
+>>>>
+>>>> There are other several spots that could be improved on a large system 
+>>>> but memory initialization is by far the biggest.
+>>>
+>>> My feeling is that deferred/on-demand initialization triggered from the 
+>>> buddy allocator is the better long term solution.
+>>
+>> I haven't caught up with all of Nathan's changes yet (just
+>> got back from vacation), but there was an option to either
+>> start the memory insertion on boot, or trigger it later
+>> using the /sys/.../memory interface.  There is also a monitor
+>> program that calculates the memory insertion rate.  This was
+>> extremely useful to determine how changes in the kernel
+>> affected the rate.
+>>
+> 
+> Sorry, I *totally* did not follow that comment.  It seemed like a
+> complete non-sequitur?
+> 
+> 	-hpa
+
+It was I who was not following the question.  I'm still reverting
+back to "work mode".
+
+[There is more code in a separate patch that Nate has not sent
+yet that instructs the kernel to start adding memory as early
+as possible, or not.  That way you can start the insertion process
+later and monitor it's progress to determine how changes in the
+kernel affect that process.  It is controlled by a separate
+CONFIG option.]
+
+
+> 
+> 
