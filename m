@@ -1,152 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751190Ab3FYLmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 07:42:03 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:38198 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab3FYLmA (ORCPT
+	id S1751263Ab3FYLrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 07:47:16 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:52626 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab3FYLrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 07:42:00 -0400
+	Tue, 25 Jun 2013 07:47:14 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH RESEND V7 20/30] thermal: exynos: use device resource management infrastructure
-Date: Tue, 25 Jun 2013 17:11:42 +0530
-Message-Id: <1372160502-14555-1-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH RESEND V7 25/30] thermal: exynos: Add hardware mode thermal calibration support
+Date: Tue, 25 Jun 2013 17:16:58 +0530
+Message-Id: <1372160818-14607-1-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1372071051-3167-21-git-send-email-amit.daniel@samsung.com>
-References: <1372071051-3167-21-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1372071051-3167-26-git-send-email-amit.daniel@samsung.com>
+References: <1372071051-3167-26-git-send-email-amit.daniel@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses the device pointer stored in the configuration structure
-and converts to dev_* prints and devm API's.
+This patch adds support for h/w mode calibration in the TMU controller.
+Soc's like 5440 support this features. The h/w supports two point calibration
+and one point calibration at 85C and 25C.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_thermal_common.c |   36 ++++++++++++++--------
- 1 files changed, 23 insertions(+), 13 deletions(-)
+Changes in this patch fixes a setting up of wrong calibration mode by defining
+trim type for 25 and 85C. This will be only used in H/W based calibration.
 
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
-index ecf95da..211262a 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.c
-+++ b/drivers/thermal/samsung/exynos_thermal_common.c
-@@ -53,7 +53,8 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
- {
- 	struct exynos_thermal_zone *th_zone = thermal->devdata;
- 	if (!th_zone) {
--		pr_notice("thermal zone not registered\n");
-+		dev_err(th_zone->sensor_conf->dev,
-+			"thermal zone not registered\n");
- 		return 0;
+ drivers/thermal/samsung/exynos_tmu.c      |   33 ++++++++++++++++++++++++++++-
+ drivers/thermal/samsung/exynos_tmu.h      |    8 +++++++
+ drivers/thermal/samsung/exynos_tmu_data.c |    2 +
+ drivers/thermal/samsung/exynos_tmu_data.h |    2 +
+ 4 files changed, 44 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index 3fac0f9..a6fc379 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -73,6 +73,9 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
+ 	struct exynos_tmu_platform_data *pdata = data->pdata;
+ 	int temp_code;
+ 
++	if (pdata->cal_mode == HW_MODE)
++		return temp;
++
+ 	if (data->soc == SOC_ARCH_EXYNOS4210)
+ 		/* temp should range between 25 and 125 */
+ 		if (temp < 25 || temp > 125) {
+@@ -107,6 +110,9 @@ static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code)
+ 	struct exynos_tmu_platform_data *pdata = data->pdata;
+ 	int temp;
+ 
++	if (pdata->cal_mode == HW_MODE)
++		return temp_code;
++
+ 	if (data->soc == SOC_ARCH_EXYNOS4210)
+ 		/* temp_code should range between 75 and 175 */
+ 		if (temp_code < 75 || temp_code > 175) {
+@@ -155,6 +161,9 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
+ 		__raw_writel(1, data->base + reg->triminfo_ctrl);
+ 
++	if (pdata->cal_mode == HW_MODE)
++		goto skip_calib_data;
++
+ 	/* Save trimming info in order to perform calibration */
+ 	if (data->soc == SOC_ARCH_EXYNOS5440) {
+ 		/*
+@@ -190,6 +199,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 			(pdata->efuse_value >> reg->triminfo_85_shift) &
+ 			EXYNOS_TMU_TEMP_MASK;
+ 
++skip_calib_data:
+ 	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
+ 		dev_err(&pdev->dev, "Invalid max trigger level\n");
+ 		goto out;
+@@ -297,7 +307,7 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+ 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+ 	struct exynos_tmu_platform_data *pdata = data->pdata;
+ 	const struct exynos_tmu_registers *reg = pdata->registers;
+-	unsigned int con, interrupt_en;
++	unsigned int con, interrupt_en, cal_val;
+ 
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
+@@ -320,6 +330,27 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+ 		con |= (pdata->noise_cancel_mode << reg->therm_trip_mode_shift);
  	}
  
-@@ -69,8 +70,9 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
++	if (pdata->cal_mode == HW_MODE) {
++		con &= ~(reg->calib_mode_mask << reg->calib_mode_shift);
++		cal_val = 0;
++		switch (pdata->cal_type) {
++		case TYPE_TWO_POINT_TRIMMING:
++			cal_val = 3;
++			break;
++		case TYPE_ONE_POINT_TRIMMING_85:
++			cal_val = 2;
++			break;
++		case TYPE_ONE_POINT_TRIMMING_25:
++			cal_val = 1;
++			break;
++		case TYPE_NONE:
++			break;
++		default:
++			dev_err(&pdev->dev, "Invalid calibration type, using none\n");
++		}
++		con |= cal_val << reg->calib_mode_shift;
++	}
++
+ 	if (on) {
+ 		con |= (1 << reg->core_en_shift);
+ 		interrupt_en =
+diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+index 25c48d4..b364c9e 100644
+--- a/drivers/thermal/samsung/exynos_tmu.h
++++ b/drivers/thermal/samsung/exynos_tmu.h
+@@ -28,6 +28,8 @@
  
- 	th_zone->mode = mode;
- 	thermal_zone_device_update(thermal);
--	pr_info("thermal polling set for duration=%d msec\n",
--				thermal->polling_delay);
-+	dev_dbg(th_zone->sensor_conf->dev,
-+		"thermal polling set for duration=%d msec\n",
-+		thermal->polling_delay);
- 	return 0;
- }
+ enum calibration_type {
+ 	TYPE_ONE_POINT_TRIMMING,
++	TYPE_ONE_POINT_TRIMMING_25,
++	TYPE_ONE_POINT_TRIMMING_85,
+ 	TYPE_TWO_POINT_TRIMMING,
+ 	TYPE_NONE,
+ };
+@@ -90,6 +92,10 @@ enum soc_type {
+  * @buf_slope_sel_shift: shift bits of amplifier gain value in tmu_ctrl
+ 	register.
+  * @buf_slope_sel_mask: mask bits of amplifier gain value in tmu_ctrl register.
++ * @calib_mode_shift: shift bits of calibration mode value in tmu_ctrl
++	register.
++ * @calib_mode_mask: mask bits of calibration mode value in tmu_ctrl
++	register.
+  * @therm_trip_tq_en_shift: shift bits of thermal trip enable by TQ pin in
+ 	tmu_ctrl register.
+  * @core_en_shift: shift bits of TMU core enable bit in tmu_ctrl register.
+@@ -151,6 +157,8 @@ struct exynos_tmu_registers {
+ 	u32	therm_trip_en_shift;
+ 	u32	buf_slope_sel_shift;
+ 	u32	buf_slope_sel_mask;
++	u32	calib_mode_shift;
++	u32	calib_mode_mask;
+ 	u32	therm_trip_tq_en_shift;
+ 	u32	core_en_shift;
  
-@@ -162,7 +164,8 @@ static int exynos_bind(struct thermal_zone_device *thermal,
- 		case WARN_ZONE:
- 			if (thermal_zone_bind_cooling_device(thermal, i, cdev,
- 								level, 0)) {
--				pr_err("error binding cdev inst %d\n", i);
-+				dev_err(data->dev,
-+					"error unbinding cdev inst=%d\n", i);
- 				ret = -EINVAL;
- 			}
- 			th_zone->bind = true;
-@@ -207,7 +210,8 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
- 		case WARN_ZONE:
- 			if (thermal_zone_unbind_cooling_device(thermal, i,
- 								cdev)) {
--				pr_err("error unbinding cdev inst=%d\n", i);
-+				dev_err(data->dev,
-+					"error unbinding cdev inst=%d\n", i);
- 				ret = -EINVAL;
- 			}
- 			th_zone->bind = false;
-@@ -227,7 +231,8 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
- 	void *data;
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 5952915..9002499 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -189,6 +189,8 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+ 	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
+ 	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
+ 	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
++	.calib_mode_shift = EXYNOS_TMU_CALIB_MODE_SHIFT,
++	.calib_mode_mask = EXYNOS_TMU_CALIB_MODE_MASK,
+ 	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
+ 	.tmu_status = EXYNOS5440_TMU_S0_7_STATUS,
+ 	.tmu_cur_temp = EXYNOS5440_TMU_S0_7_TEMP,
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+index 43ce5fb..dc7feb5 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.h
++++ b/drivers/thermal/samsung/exynos_tmu_data.h
+@@ -75,6 +75,8 @@
+ #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
+ #define EXYNOS_TMU_TRIP_MODE_MASK	0x7
+ #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
++#define EXYNOS_TMU_CALIB_MODE_SHIFT	4
++#define EXYNOS_TMU_CALIB_MODE_MASK	0x3
  
- 	if (!th_zone->sensor_conf) {
--		pr_info("Temperature sensor not initialised\n");
-+		dev_err(th_zone->sensor_conf->dev,
-+			"Temperature sensor not initialised\n");
- 		return -EINVAL;
- 	}
- 	data = th_zone->sensor_conf->driver_data;
-@@ -246,7 +251,8 @@ static int exynos_set_emul_temp(struct thermal_zone_device *thermal,
- 	struct exynos_thermal_zone *th_zone = thermal->devdata;
- 
- 	if (!th_zone->sensor_conf) {
--		pr_info("Temperature sensor not initialised\n");
-+		dev_err(th_zone->sensor_conf->dev,
-+			"Temperature sensor not initialised\n");
- 		return -EINVAL;
- 	}
- 	data = th_zone->sensor_conf->driver_data;
-@@ -351,7 +357,8 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
- 		return -EINVAL;
- 	}
- 
--	th_zone = kzalloc(sizeof(struct exynos_thermal_zone), GFP_KERNEL);
-+	th_zone = devm_kzalloc(sensor_conf->dev,
-+				sizeof(struct exynos_thermal_zone), GFP_KERNEL);
- 	if (!th_zone)
- 		return -ENOMEM;
- 
-@@ -366,7 +373,8 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
- 		th_zone->cool_dev[th_zone->cool_dev_size] =
- 					cpufreq_cooling_register(&mask_val);
- 		if (IS_ERR(th_zone->cool_dev[th_zone->cool_dev_size])) {
--			pr_err("Failed to register cpufreq cooling device\n");
-+			dev_err(sensor_conf->dev,
-+				"Failed to register cpufreq cooling device\n");
- 			ret = -EINVAL;
- 			goto err_unregister;
- 		}
-@@ -380,14 +388,16 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
- 			IDLE_INTERVAL);
- 
- 	if (IS_ERR(th_zone->therm_dev)) {
--		pr_err("Failed to register thermal zone device\n");
-+		dev_err(sensor_conf->dev,
-+			"Failed to register thermal zone device\n");
- 		ret = PTR_ERR(th_zone->therm_dev);
- 		goto err_unregister;
- 	}
- 	th_zone->mode = THERMAL_DEVICE_ENABLED;
- 	sensor_conf->pzone_data = th_zone;
- 
--	pr_info("Exynos: Kernel Thermal management registered\n");
-+	dev_info(sensor_conf->dev,
-+		"Exynos: Thermal zone(%s) registered\n", sensor_conf->name);
- 
- 	return 0;
- 
-@@ -417,6 +427,6 @@ void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf)
- 			cpufreq_cooling_unregister(th_zone->cool_dev[i]);
- 	}
- 
--	kfree(th_zone);
--	pr_info("Exynos: Kernel Thermal management unregistered\n");
-+	dev_info(sensor_conf->dev,
-+		"Exynos: Kernel Thermal management unregistered\n");
- }
+ #define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
+ #define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
 -- 
 1.7.1
 
