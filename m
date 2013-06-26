@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab3FZOzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:55:46 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:40807 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab3FZOzo (ORCPT
+	id S1751591Ab3FZO7C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:59:02 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:42307 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab3FZO7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:55:44 -0400
+	Wed, 26 Jun 2013 10:59:00 -0400
+Date: Wed, 26 Jun 2013 11:58:53 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: perf tools: Introduce new -P/--parent-deep report option
+Message-ID: <20130626145853.GA2309@ghostprotocols.net>
 MIME-Version: 1.0
-In-Reply-To: <51CB1A5902000078000E0D82@nat28.tlf.novell.com>
-References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com>
-	<1372255575-29567-3-git-send-email-benjamin.guthro@citrix.com>
-	<51CB1A5902000078000E0D82@nat28.tlf.novell.com>
-Date: Wed, 26 Jun 2013 10:55:43 -0400
-X-Google-Sender-Auth: AWdBg4bQApYADGrwOqeLnsXDe_s
-Message-ID: <CAOvdn6UyPDBLPg5Q-RW-VZp5FBkj+qDWrNZV-HEY3oj05CovrQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] x86/tboot: Fail extended mode reduced hardware sleep
-From: Ben Guthro <benjamin.guthro@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Ben Guthro <benjamin.guthro@citrix.com>, Gang Wei <gang.wei@intel.com>,
-        tboot-devel@lists.sourceforge.net, xen-devel@lists.xen.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Rafaell J . Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 10:44 AM, Jan Beulich <JBeulich@suse.com> wrote:
->>>> On 26.06.13 at 16:06, Ben Guthro <benjamin.guthro@citrix.com> wrote:
->> --- a/arch/x86/kernel/tboot.c
->> +++ b/arch/x86/kernel/tboot.c
->> @@ -273,7 +273,8 @@ static void tboot_copy_fadt(const struct acpi_table_fadt *fadt)
->>               offsetof(struct acpi_table_facs, firmware_waking_vector);
->>  }
->>
->> -static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
->> +static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control,
->> +                    u8 extended)
->
-> I don't see why this couldn't remain "bool" - the only complain was
-> that ACPI CA shouldn't use it.
->
-> Jan
+Hi Jiri,
 
-I changed it, in order to keep the prototypes consistent.
-Having the function pointer be defined with one signature in the
-acpica code, and another in the os implementation seems like a
-maintenance problem.
+	About the patch below, can't this be solved by using a regex
+instead of a simple substring search instead of adding a new command
+line option?
 
-Ben
+- Arnaldo
 
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+commit 5b42ff035ec784c5c42c4a6bb9e7fada882f097e
+Author: Jiri Olsa <jolsa@redhat.com>
+Date:   Tue Jun 18 18:31:50 2013 +0200
+
+    perf tools: Introduce new -P/--parent-deep report option
+    
+    Introducing new -P/--parent-deep report option. It does the
+    same as '-p' but it force the deep search of the callchain
+    and looks for the deepest possible match.
+    
+    The -p option searches for the first match of the parent
+    pattern in the callchain.
+    
+      $ perf report -i perf.data.delete -p perf_session__delete -s parent
+    
+      +  99.51%  [other]
+      +   0.46%  perf_session__delete_dead_threads
+      +   0.03%  perf_session__delete
+      +   0.00%  perf_session__delete_threads
+    
+    so we got multiple 'different' matches instancies, while
+    they all belong under perf_session__delete function:
+    
+      $ perf report -i perf.data.delete -P perf_session__delete -s parent
+    
+      +  99.51%  [other]
+      +   0.49%  perf_session__delete
+    
+    NOTE the 'p' vs 'P' difference in above commands above.
+
