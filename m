@@ -1,182 +1,431 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab3FZMkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 08:40:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44980 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab3FZMjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 08:39:33 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/2] Reduce system disruption due to kswapd more followup
-Date: Wed, 26 Jun 2013 13:39:22 +0100
-Message-Id: <1372250364-20640-1-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
+	id S1751685Ab3FZMmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 08:42:21 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:65043 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab3FZMmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 08:42:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1372150039-15151-7-git-send-email-zheng.z.yan@intel.com>
+References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
+	<1372150039-15151-7-git-send-email-zheng.z.yan@intel.com>
+Date: Wed, 26 Jun 2013 14:42:19 +0200
+Message-ID: <CABPqkBR7L0xp1Lk8CArtB0gYk2Z3E-EqP0O3H5OqxfRhmGDh+Q@mail.gmail.com>
+Subject: Re: [PATCH 6/7] perf, x86: Use LBR call stack to get user callchain
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Further testing revealed that swapping was still higher than expected for
-the parallel IO tests. There was also a performance regression reported
-building kernels but there appears to be multiple sources of that problem.
-This follow-up series primarily addresses the first swapping issue.
+On Tue, Jun 25, 2013 at 10:47 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>
+> Try enabling the LBR call stack feature if event request recording
+> callchain. Try utilizing the LBR call stack to get user callchain
+> in case of there is no frame pointer.
+>
+> This patch also adds a cpu pmu attribute to enable/disable this
+> feature.
+>
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c           | 128 +++++++++++++++++++++--------
+>  arch/x86/kernel/cpu/perf_event.h           |   7 ++
+>  arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
+>  include/linux/perf_event.h                 |   6 ++
+>  kernel/events/core.c                       |  11 ++-
+>  6 files changed, 126 insertions(+), 49 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 639aa4d..a07eb03 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -399,37 +399,49 @@ int x86_pmu_hw_config(struct perf_event *event)
+>
+>                 if (event->attr.precise_ip > precise)
+>                         return -EOPNOTSUPP;
+> +       }
+> +       /*
+> +        * check that PEBS LBR correction does not conflict with
+> +        * whatever the user is asking with attr->branch_sample_type
+> +        */
+> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+> +               u64 *br_type = &event->attr.branch_sample_type;
+> +
+> +               if (has_branch_stack(event)) {
+> +                       if (!precise_br_compat(event))
+> +                               return -EOPNOTSUPP;
+> +
+> +                       /* branch_sample_type is compatible */
+> +
+> +               } else {
+> +                       /*
+> +                        * user did not specify  branch_sample_type
+> +                        *
+> +                        * For PEBS fixups, we capture all
+> +                        * the branches at the priv level of the
+> +                        * event.
+> +                        */
+> +                       *br_type = PERF_SAMPLE_BRANCH_ANY;
+> +
+> +                       if (!event->attr.exclude_user)
+> +                               *br_type |= PERF_SAMPLE_BRANCH_USER;
+> +
+> +                       if (!event->attr.exclude_kernel)
+> +                               *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+> +               }
+> +       } else if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
+> +                  !has_branch_stack(event) &&
+> +                  x86_pmu.attr_lbr_callstack &&
+> +                  !event->attr.exclude_user &&
+> +                  (event->attach_state & PERF_ATTACH_TASK)) {
 
-The tests were based on three kernels
+Yes, that's the test but it is wrong. I can pass the test if
+I have exclude_user = exclude_kernel = 0.
 
-vanilla:        kernel 3.10-rc4 as that is what the current mmotm uses as a baseline
-mmotm-20130606  is mmotm as of that date.
-lessdisrupt-v1 is this follow-up series on top of the mmotm kernel
+You want:
+                 !event->attr.exclude_user && event->attr.exclude_kernel &&
 
-The first test used memcached+memcachetest while some background IO
-was in progress as implemented by the parallel IO tests implement in
-MM Tests. memcachetest benchmarks how many operations/second memcached
-can service. It starts with no background IO on a freshly created ext4
-filesystem and then re-runs the test with larger amounts of IO in the
-background to roughly simulate a large copy in progress. The expectation
-is that the IO should have little or no impact on memcachetest which is
-running entirely in memory.
+I tested that and it works.
 
-parallelio
-                                        3.10.0-rc4                  3.10.0-rc4                  3.10.0-rc4
-                                           vanilla          mm1-mmotm-20130606        mm1-lessdisrupt-v1
-Ops memcachetest-0M             23018.00 (  0.00%)          22412.00 ( -2.63%)          22556.00 ( -2.01%)
-Ops memcachetest-715M           23383.00 (  0.00%)          22810.00 ( -2.45%)          22431.00 ( -4.07%)
-Ops memcachetest-2385M          10989.00 (  0.00%)          23564.00 (114.43%)          23054.00 (109.79%)
-Ops memcachetest-4055M           3798.00 (  0.00%)          24004.00 (532.02%)          24050.00 (533.23%)
-Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops io-duration-715M               12.00 (  0.00%)              7.00 ( 41.67%)              7.00 ( 41.67%)
-Ops io-duration-2385M             133.00 (  0.00%)             21.00 ( 84.21%)             22.00 ( 83.46%)
-Ops io-duration-4055M             159.00 (  0.00%)             36.00 ( 77.36%)             36.00 ( 77.36%)
-Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swaptotal-715M             139693.00 (  0.00%)             19.00 ( 99.99%)              0.00 (  0.00%)
-Ops swaptotal-2385M            268541.00 (  0.00%)              0.00 (  0.00%)             19.00 ( 99.99%)
-Ops swaptotal-4055M            414269.00 (  0.00%)          22059.00 ( 94.68%)              2.00 (100.00%)
-Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-715M                     0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-2385M                73189.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-4055M               126292.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops minorfaults-0M            1536018.00 (  0.00%)        1533536.00 (  0.16%)        1607381.00 ( -4.65%)
-Ops minorfaults-715M          1789978.00 (  0.00%)        1616152.00 (  9.71%)        1533462.00 ( 14.33%)
-Ops minorfaults-2385M         1910448.00 (  0.00%)        1614060.00 ( 15.51%)        1661727.00 ( 13.02%)
-Ops minorfaults-4055M         1760518.00 (  0.00%)        1613980.00 (  8.32%)        1615116.00 (  8.26%)
-Ops majorfaults-0M                  0.00 (  0.00%)              0.00 (  0.00%)              5.00 (-99.00%)
-Ops majorfaults-715M              169.00 (  0.00%)            234.00 (-38.46%)             48.00 ( 71.60%)
-Ops majorfaults-2385M           14899.00 (  0.00%)            100.00 ( 99.33%)            222.00 ( 98.51%)
-Ops majorfaults-4055M           21853.00 (  0.00%)            150.00 ( 99.31%)            128.00 ( 99.41%)
-
-memcachetest is the transactions/second reported by memcachetest. In
-        the vanilla kernel note that performance drops from around
-        23K/sec to just over 4K/second when there is 2385M of IO going
-        on in the background. With current mmotm and the follow-on
-	series performance is good.
-
-swaptotal is the total amount of swap traffic. With mmotm the total amount
-	of swapping is much reduced. Note that with 4G of background IO that
-	this follow-up series almost completely eliminated swap IO.
-
-
-                            3.10.0-rc4  3.10.0-rc4  3.10.0-rc4
-                               vanillamm1-mmotm-20130606mm1-lessdisrupt-v1
-Minor Faults                  11230171    10689656    10650607
-Major Faults                     37255         786         705
-Swap Ins                        199724           0           0
-Swap Outs                       623022       22078          21
-Direct pages scanned                 0        5378       51660
-Kswapd pages scanned          15892718     1610408     1653629
-Kswapd pages reclaimed         1097093     1083339     1107652
-Direct pages reclaimed               0        5024       47241
-Kswapd efficiency                   6%         67%         66%
-Kswapd velocity              13633.275    1385.369    1420.058
-Direct efficiency                 100%         93%         91%
-Direct velocity                  0.000       4.626      44.363
-Percentage direct scans             0%          0%          3%
-Zone normal velocity         13474.405     671.123     697.927
-Zone dma32 velocity            158.870     718.872     766.494
-Zone dma velocity                0.000       0.000       0.000
-Page writes by reclaim     3065275.000   27259.000    6316.000
-Page writes file               2442253        5181        6295
-Page writes anon                623022       22078          21
-Page reclaim immediate            8019         429         318
-Sector Reads                    963320       99096      151864
-Sector Writes                 13057396    10887480    10878500
-Page rescued immediate               0           0           0
-Slabs scanned                    64896       23168       34176
-Direct inode steals                  0           0           0
-Kswapd inode steals               8668           0           0
-Kswapd skipped wait                  0           0           0
-
-Few observations
-
-1. Swap outs were almost completely eliminated and there were no swap-ins.
-
-2. Direct reclaim is active due to reduced activity from kswapd and the fact
-   that it is no longer reclaiming at priority 0
-
-3. Zone scanning is still relatively balanced.
-
-4. Page writes from reclaim context is still reasonable low.
-
-                  3.10.0-rc4  3.10.0-rc4  3.10.0-rc4
-                     vanillamm1-mmotm-20130606mm1-lessdisrupt-v1
-Mean sda-avgqz        168.05       34.64       35.60
-Mean sda-await        831.76      216.31      207.05
-Mean sda-r_await        7.88        9.68        7.25
-Mean sda-w_await     3088.32      223.90      218.28
-Max  sda-avgqz       1162.17      766.85      795.69
-Max  sda-await       6788.75     4130.01     3728.43
-Max  sda-r_await      106.93      242.00       65.97
-Max  sda-w_await    30565.93     4145.75     3959.87
-
-Wait times are marginally reduced by the follow-up and still a massive
-improve against the mainline kernel.
-
-I tested parallel kernel builds when booted with 1G of RAM. 12 kernels
-were built with 2 being compiled at any given time.
-
-multibuild
-                          3.10.0-rc4            3.10.0-rc4            3.10.0-rc4
-                             vanilla    mm1-mmotm-20130606  mm1-lessdisrupt-v1
-User    min         584.99 (  0.00%)      553.31 (  5.42%)      569.08 (  2.72%)
-User    mean        598.35 (  0.00%)      574.48 (  3.99%)      581.65 (  2.79%)
-User    stddev       10.01 (  0.00%)       17.90 (-78.78%)       10.03 ( -0.14%)
-User    max         614.64 (  0.00%)      598.94 (  2.55%)      597.97 (  2.71%)
-User    range        29.65 (  0.00%)       45.63 (-53.90%)       28.89 (  2.56%)
-System  min          35.78 (  0.00%)       35.05 (  2.04%)       35.54 (  0.67%)
-System  mean         36.12 (  0.00%)       35.69 (  1.20%)       35.88 (  0.69%)
-System  stddev        0.26 (  0.00%)        0.55 (-113.69%)        0.21 ( 17.51%)
-System  max          36.53 (  0.00%)       36.44 (  0.25%)       36.13 (  1.09%)
-System  range         0.75 (  0.00%)        1.39 (-85.33%)        0.59 ( 21.33%)
-Elapsed min         190.54 (  0.00%)      190.56 ( -0.01%)      192.99 ( -1.29%)
-Elapsed mean        197.58 (  0.00%)      203.30 ( -2.89%)      200.53 ( -1.49%)
-Elapsed stddev        4.65 (  0.00%)        5.26 (-13.16%)        5.66 (-21.79%)
-Elapsed max         203.72 (  0.00%)      210.23 ( -3.20%)      210.46 ( -3.31%)
-Elapsed range        13.18 (  0.00%)       19.67 (-49.24%)       17.47 (-32.55%)
-CPU     min         308.00 (  0.00%)      282.00 (  8.44%)      294.00 (  4.55%)
-CPU     mean        320.80 (  0.00%)      299.78 (  6.55%)      307.67 (  4.09%)
-CPU     stddev       10.44 (  0.00%)       13.83 (-32.50%)        9.71 (  7.01%)
-CPU     max         340.00 (  0.00%)      333.00 (  2.06%)      328.00 (  3.53%)
-CPU     range        32.00 (  0.00%)       51.00 (-59.38%)       34.00 ( -6.25%)
-
-Average kernel build times are still impacted but the follow-up series
-helps marginally (it's too noisy to be sure). A preliminary bisection
-indicated that there were multiple sources of the regression. The two
-other points are the patches that cause mark_page_accessed to be obeyed
-and the slab shrinker series. As there a number of patches in flight to
-mmotm at the moment in different areas it would be best to confirm this
-after this follow-up is merged.
-
- mm/vmscan.c | 26 ++++++++++----------------
- 1 file changed, 10 insertions(+), 16 deletions(-)
-
--- 
-1.8.1.4
-
+>                 /*
+> -                * check that PEBS LBR correction does not conflict with
+> -                * whatever the user is asking with attr->branch_sample_type
+> +                * user did not specify branch_sample_type,
+> +                * try using the LBR call stack facility to
+> +                * record call chains of user program.
+>                  */
+> -               if (event->attr.precise_ip > 1 &&
+> -                   x86_pmu.intel_cap.pebs_format < 2) {
+> -                       u64 *br_type = &event->attr.branch_sample_type;
+> -
+> -                       if (has_branch_stack(event)) {
+> -                               if (!precise_br_compat(event))
+> -                                       return -EOPNOTSUPP;
+> -
+> -                               /* branch_sample_type is compatible */
+> -
+> -                       } else {
+> -                               /*
+> -                                * user did not specify  branch_sample_type
+> -                                *
+> -                                * For PEBS fixups, we capture all
+> -                                * the branches at the priv level of the
+> -                                * event.
+> -                                */
+> -                               *br_type = PERF_SAMPLE_BRANCH_ANY;
+> -
+> -                               if (!event->attr.exclude_user)
+> -                                       *br_type |= PERF_SAMPLE_BRANCH_USER;
+> -
+> -                               if (!event->attr.exclude_kernel)
+> -                                       *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+> -                       }
+> -               }
+> +               event->attr.branch_sample_type =
+> +                       PERF_SAMPLE_BRANCH_USER |
+> +                       PERF_SAMPLE_BRANCH_CALL_STACK;
+>         }
+>
+>         /*
+> @@ -1825,10 +1837,34 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+>         return count;
+>  }
+>
+> +static ssize_t get_attr_lbr_callstack(struct device *cdev,
+> +                                     struct device_attribute *attr, char *buf)
+> +{
+> +       return snprintf(buf, 40, "%d\n", x86_pmu.attr_lbr_callstack);
+> +}
+> +
+> +static ssize_t set_attr_lbr_callstack(struct device *cdev,
+> +                                     struct device_attribute *attr,
+> +                                     const char *buf, size_t count)
+> +{
+> +       unsigned long val = simple_strtoul(buf, NULL, 0);
+> +
+> +       if (x86_pmu.attr_lbr_callstack != !!val) {
+> +               if (val && !x86_pmu_has_lbr_callstack())
+> +                       return -EOPNOTSUPP;
+> +               x86_pmu.attr_lbr_callstack = !!val;
+> +       }
+> +       return count;
+> +}
+> +
+>  static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
+> +static DEVICE_ATTR(lbr_callstack, S_IRUSR | S_IWUSR,
+> +                  get_attr_lbr_callstack, set_attr_lbr_callstack);
+> +
+>
+>  static struct attribute *x86_pmu_attrs[] = {
+>         &dev_attr_rdpmc.attr,
+> +       &dev_attr_lbr_callstack.attr,
+>         NULL,
+>  };
+>
+> @@ -1955,12 +1991,29 @@ static unsigned long get_segment_base(unsigned int segment)
+>         return get_desc_base(desc + idx);
+>  }
+>
+> +static inline void
+> +perf_callchain_lbr_callstack(struct perf_callchain_entry *entry,
+> +                            struct perf_sample_data *data)
+> +{
+> +       struct perf_branch_stack *br_stack = data->br_stack;
+> +
+> +       if (br_stack && br_stack->user_callstack &&
+> +           x86_pmu.attr_lbr_callstack) {
+> +               int i = 0;
+> +               while (i < br_stack->nr && entry->nr < PERF_MAX_STACK_DEPTH) {
+> +                       perf_callchain_store(entry, br_stack->entries[i].from);
+> +                       i++;
+> +               }
+> +       }
+> +}
+> +
+>  #ifdef CONFIG_COMPAT
+>
+>  #include <asm/compat.h>
+>
+>  static inline int
+> -perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+> +perf_callchain_user32(struct perf_callchain_entry *entry,
+> +                     struct pt_regs *regs, struct perf_sample_data *data)
+>  {
+>         /* 32-bit process in 64-bit kernel. */
+>         unsigned long ss_base, cs_base;
+> @@ -1989,11 +2042,16 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+>                 perf_callchain_store(entry, cs_base + frame.return_address);
+>                 fp = compat_ptr(ss_base + frame.next_frame);
+>         }
+> +
+> +       if (fp == compat_ptr(regs->bp))
+> +               perf_callchain_lbr_callstack(entry, data);
+> +
+>         return 1;
+>  }
+>  #else
+>  static inline int
+> -perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+> +perf_callchain_user32(struct perf_callchain_entry *entry,
+> +                     struct pt_regs *regs, struct perf_sample_data *data)
+>  {
+>      return 0;
+>  }
+> @@ -2023,12 +2081,12 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
+>         if (!current->mm)
+>                 return;
+>
+> -       if (perf_callchain_user32(regs, entry))
+> +       if (perf_callchain_user32(entry, regs, data))
+>                 return;
+>
+>         while (entry->nr < PERF_MAX_STACK_DEPTH) {
+>                 unsigned long bytes;
+> -               frame.next_frame             = NULL;
+> +               frame.next_frame = NULL;
+>                 frame.return_address = 0;
+>
+>                 bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
+> @@ -2041,6 +2099,10 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
+>                 perf_callchain_store(entry, frame.return_address);
+>                 fp = frame.next_frame;
+>         }
+> +
+> +       /* try LBR callstack if there is no frame pointer */
+> +       if (fp == (void __user *)regs->bp)
+> +               perf_callchain_lbr_callstack(entry, data);
+>  }
+>
+>  /*
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 0116970..536470d 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -390,6 +390,7 @@ struct x86_pmu {
+>          * sysfs attrs
+>          */
+>         int             attr_rdpmc;
+> +       int             attr_lbr_callstack;
+>         struct attribute **format_attrs;
+>         struct attribute **event_attrs;
+>
+> @@ -496,6 +497,12 @@ static struct perf_pmu_events_attr event_attr_##v = {                      \
+>
+>  extern struct x86_pmu x86_pmu __read_mostly;
+>
+> +static inline bool x86_pmu_has_lbr_callstack(void)
+> +{
+> +       return  x86_pmu.lbr_sel_map &&
+> +               x86_pmu.lbr_sel_map[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT] > 0;
+> +}
+> +
+>  DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+>
+>  int x86_perf_event_set_period(struct perf_event *event);
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index f59b46e..baa8384 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -882,15 +882,10 @@ static __initconst const u64 atom_hw_cache_event_ids
+>   },
+>  };
+>
+> -static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+> +static inline bool intel_pmu_needs_lbr_callstack(struct perf_event *event)
+>  {
+> -       /* user explicitly requested branch sampling */
+> -       if (has_branch_stack(event))
+> -               return true;
+> -
+> -       /* implicit branch sampling to correct PEBS skid */
+> -       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
+> -           x86_pmu.intel_cap.pebs_format < 2)
+> +       if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
+> +           (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK))
+>                 return true;
+>
+>         return false;
+> @@ -1054,7 +1049,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
+>          * must disable before any actual event
+>          * because any event may be combined with LBR
+>          */
+> -       if (intel_pmu_needs_lbr_smpl(event))
+> +       if (needs_branch_stack(event))
+>                 intel_pmu_lbr_disable(event);
+>
+>         if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
+> @@ -1115,7 +1110,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
+>          * must enabled before any actual event
+>          * because any event may be combined with LBR
+>          */
+> -       if (intel_pmu_needs_lbr_smpl(event))
+> +       if (needs_branch_stack(event))
+>                 intel_pmu_lbr_enable(event);
+>
+>         if (event->attr.exclude_host)
+> @@ -1237,7 +1232,8 @@ again:
+>
+>                 perf_sample_data_init(&data, 0, event->hw.last_period);
+>
+> -               if (has_branch_stack(event))
+> +               if (has_branch_stack(event) ||
+> +                   (event->ctx->task && intel_pmu_needs_lbr_callstack(event)))
+>                         data.br_stack = &cpuc->lbr_stack;
+>
+>                 if (perf_event_overflow(event, &data, regs))
+> @@ -1568,7 +1564,7 @@ static int intel_pmu_hw_config(struct perf_event *event)
+>         if (event->attr.precise_ip && x86_pmu.pebs_aliases)
+>                 x86_pmu.pebs_aliases(event);
+>
+> -       if (intel_pmu_needs_lbr_smpl(event)) {
+> +       if (needs_branch_stack(event)) {
+>                 ret = intel_pmu_setup_lbr_filter(event);
+>                 if (ret)
+>                         return ret;
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index 43b16b4..3be2d7b 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -709,6 +709,8 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+>         int i, j, type;
+>         bool compress = false;
+>
+> +       cpuc->lbr_stack.user_callstack = branch_user_callstack(br_sel);
+> +
+>         /* if sampling all branches, then nothing to filter */
+>         if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
+>                 return;
+> @@ -861,6 +863,7 @@ void intel_pmu_lbr_init_hsw(void)
+>
+>         x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
+>         x86_pmu.lbr_sel_map  = hsw_lbr_sel_map;
+> +       x86_pmu.attr_lbr_callstack = 1;
+>
+>         pr_cont("16-deep LBR, ");
+>  }
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index fa4c1bf..168e66e 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -97,6 +97,7 @@ struct perf_branch_entry {
+>   * recent branch.
+>   */
+>  struct perf_branch_stack {
+> +       unsigned                        user_callstack:1;
+>         __u64                           nr;
+>         struct perf_branch_entry        entries[0];
+>  };
+> @@ -759,6 +760,11 @@ static inline bool has_branch_stack(struct perf_event *event)
+>         return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
+>  }
+>
+> +static inline bool needs_branch_stack(struct perf_event *event)
+> +{
+> +       return event->attr.branch_sample_type != 0;
+> +}
+> +
+>  extern int perf_output_begin(struct perf_output_handle *handle,
+>                              struct perf_event *event, unsigned int size);
+>  extern void perf_output_end(struct perf_output_handle *handle);
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 4aad901..38eaa2b 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -1117,7 +1117,7 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+>         if (is_cgroup_event(event))
+>                 ctx->nr_cgroups++;
+>
+> -       if (has_branch_stack(event))
+> +       if (needs_branch_stack(event))
+>                 ctx->nr_branch_stack++;
+>
+>         list_add_rcu(&event->event_entry, &ctx->event_list);
+> @@ -1274,7 +1274,7 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+>                         cpuctx->cgrp = NULL;
+>         }
+>
+> -       if (has_branch_stack(event)) {
+> +       if (needs_branch_stack(event)) {
+>                 if (ctx->is_active)
+>                         __get_cpu_var(perf_branch_stack_events)--;
+>                 ctx->nr_branch_stack--;
+> @@ -3155,7 +3155,7 @@ static void free_event(struct perf_event *event)
+>                         static_key_slow_dec_deferred(&perf_sched_events);
+>                 }
+>
+> -               if (has_branch_stack(event))
+> +               if (needs_branch_stack(event))
+>                         static_key_slow_dec_deferred(&perf_sched_events);
+>         }
+>
+> @@ -6545,6 +6545,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+>         if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
+>                 goto done;
+>
+> +       if (!has_branch_stack(event))
+> +               event->attr.branch_sample_type = 0;
+> +
+>         pmu = perf_init_event(event);
+>
+>  done:
+> @@ -6577,7 +6580,7 @@ done:
+>                                 return ERR_PTR(err);
+>                         }
+>                 }
+> -               if (has_branch_stack(event))
+> +               if (needs_branch_stack(event))
+>                         static_key_slow_inc(&perf_sched_events.key);
+>         }
+>
+> --
+> 1.8.1.4
+>
