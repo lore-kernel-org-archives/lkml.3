@@ -1,408 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654Ab3FZH4U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:56:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52348 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab3FZH4T (ORCPT
+	id S1751568Ab3FZH45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:56:57 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:12926 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3FZH4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:56:19 -0400
-Date: Wed, 26 Jun 2013 17:56:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Subject: linux-next: build failure after merge of the final tree (net-next
- tree related)
-Message-Id: <20130626175610.8a8b6606fd9a5b6269398059@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Jun_2013_17_56_10_+1000_o8w9zzheYWHHBYrb"
+	Wed, 26 Jun 2013 03:56:55 -0400
+X-Spam-Score: -100.8
+Message-ID: <51CA9E92.4000107@asianux.com>
+Date: Wed, 26 Jun 2013 15:56:02 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
+        dhsharp@google.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
+References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at>
+In-Reply-To: <51CA900E.9020407@nod.at>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Jun_2013_17_56_10_+1000_o8w9zzheYWHHBYrb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/26/2013 02:54 PM, Richard Weinberger wrote:
+> Hi!
+> 
+> Am 26.06.2013 08:31, schrieb Chen Gang:
+>> For "User Mode Linux", it may enable 'MMU', but not need implement
+>> ioremap and iounmap, so "include/asm-generic/io.h" need notice this
+>> case to keep itself 'generic'.
+>>
+>> The related error (with allmodconfig, without pcap):
+>>
+>>     CC [M]  drivers/ptp/ptp_pch.o
+>>   drivers/ptp/ptp_pch.c: In function �pch_remove�:
+>>   drivers/ptp/ptp_pch.c:571:3: error: implicit declaration of function �iounmap� [-Werror=implicit-function-declaration]
+>>   drivers/ptp/ptp_pch.c: In function �pch_probe�:
+>>   drivers/ptp/ptp_pch.c:621:2: error: implicit declaration of function �ioremap� [-Werror=implicit-function-declaration]
+>>   drivers/ptp/ptp_pch.c:621:13: warning: assignment makes pointer from integer without a cast [enabled by default]
+>>   cc1: some warnings being treated as errors
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>  arch/um/include/asm/Kbuild |    1 +
+>>  include/asm-generic/io.h   |    6 +++---
+>>  2 files changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
+>> index b30f34a..a34ea5d 100644
+>> --- a/arch/um/include/asm/Kbuild
+>> +++ b/arch/um/include/asm/Kbuild
+>> @@ -3,3 +3,4 @@ generic-y += hw_irq.h irq_regs.h kdebug.h percpu.h sections.h topology.h xor.h
+>>  generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
+>>  generic-y += switch_to.h clkdev.h
+>>  generic-y += trace_clock.h
+>> +generic-y += io.h
+> 
+> We include that file already. See three lines above.
+> 
 
-Hi all,
+Oh, really it is, thanks.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+>> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+>> index d5afe96..e80331d 100644
+>> --- a/include/asm-generic/io.h
+>> +++ b/include/asm-generic/io.h
+>> @@ -303,10 +303,10 @@ static inline void *phys_to_virt(unsigned long address)
+>>  /*
+>>   * Change "struct page" to physical address.
+>>   *
+>> - * This implementation is for the no-MMU case only... if you have an MMU
+>> + * This implementation is for the no-MMU or UML case only... if you have an MMU
+>>   * you'll need to provide your own definitions.
+>>   */
+>> -#ifndef CONFIG_MMU
+>> +#if !CONFIG_MMU || CONFIG_UML
+>>  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>>  {
+>>  	return (void __iomem*) (unsigned long)offset;
+>> @@ -325,7 +325,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>>  static inline void iounmap(void __iomem *addr)
+>>  {
+>>  }
+>> -#endif /* CONFIG_MMU */
+>> +#endif /* !CONFIG_MMU || CONFIG_UML */
+>>  
+>>  #ifdef CONFIG_HAS_IOPORT
+>>  #ifndef CONFIG_GENERIC_IOMAP
+>>
+> 
+> UML has no io memory but a MMU, so I'd argue that you better fix drivers/ptp/ptp_pch.c dependencies.
+> _If_ ptp_pch.c really works without real io memory, you can look what I did in my GENERIC_IO series[1]
+> to make nandsim work on UML. Maybe this helps.
+> 
 
-In file included from arch/powerpc/include/asm/dma-mapping.h:123:0,
-                 from include/linux/dma-mapping.h:76,
-                 from include/linux/skbuff.h:33,
-                 from include/linux/if_ether.h:23,
-                 from include/linux/etherdevice.h:25,
-                 from drivers/net/ethernet/arc/emac_main.c:16:
-drivers/net/ethernet/arc/emac_main.c: In function 'arc_emac_tx_clean':
-include/linux/dma-mapping.h:227:56: error: request for member 'addr' in som=
-ething not a structure or union
- #define dma_unmap_addr(PTR, ADDR_NAME)           ((PTR)->ADDR_NAME)
-                                                        ^
-include/asm-generic/dma-mapping-common.h:175:64: note: in definition of mac=
-ro 'dma_unmap_single'
- #define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NU=
-LL)
-                                                                ^
-drivers/net/ethernet/arc/emac_main.c:174:32: note: in expansion of macro 'd=
-ma_unmap_addr'
-   dma_unmap_single(&ndev->dev, dma_unmap_addr(&tx_buff, addr),
-                                ^
-include/linux/dma-mapping.h:229:56: error: request for member 'len' in some=
-thing not a structure or union
- #define dma_unmap_len(PTR, LEN_NAME)             ((PTR)->LEN_NAME)
-                                                        ^
-include/asm-generic/dma-mapping-common.h:175:67: note: in definition of mac=
-ro 'dma_unmap_single'
- #define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NU=
-LL)
-                                                                   ^
-drivers/net/ethernet/arc/emac_main.c:175:6: note: in expansion of macro 'dm=
-a_unmap_len'
-      dma_unmap_len(&tx_buff, len), DMA_TO_DEVICE);
-      ^
-drivers/net/ethernet/arc/emac_main.c: In function 'arc_emac_rx':
-include/linux/dma-mapping.h:227:56: error: request for member 'addr' in som=
-ething not a structure or union
- #define dma_unmap_addr(PTR, ADDR_NAME)           ((PTR)->ADDR_NAME)
-                                                        ^
-include/asm-generic/dma-mapping-common.h:175:64: note: in definition of mac=
-ro 'dma_unmap_single'
- #define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NU=
-LL)
-                                                                ^
-drivers/net/ethernet/arc/emac_main.c:243:32: note: in expansion of macro 'd=
-ma_unmap_addr'
-   dma_unmap_single(&ndev->dev, dma_unmap_addr(&rx_buff, addr),
-                                ^
-include/linux/dma-mapping.h:229:56: error: request for member 'len' in some=
-thing not a structure or union
- #define dma_unmap_len(PTR, LEN_NAME)             ((PTR)->LEN_NAME)
-                                                        ^
-include/asm-generic/dma-mapping-common.h:175:67: note: in definition of mac=
-ro 'dma_unmap_single'
- #define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NU=
-LL)
-                                                                   ^
-drivers/net/ethernet/arc/emac_main.c:244:6: note: in expansion of macro 'dm=
-a_unmap_len'
-      dma_unmap_len(&rx_buff, len), DMA_FROM_DEVICE);
-      ^
-In file included from include/linux/skbuff.h:33:0,
-                 from include/linux/if_ether.h:23,
-                 from include/linux/etherdevice.h:25,
-                 from drivers/net/ethernet/arc/emac_main.c:16:
-include/linux/dma-mapping.h:228:57: error: request for member 'mapping' in =
-something not a structure or union
- #define dma_unmap_addr_set(PTR, ADDR_NAME, VAL)  (((PTR)->ADDR_NAME) =3D (=
-VAL))
-                                                         ^
-drivers/net/ethernet/arc/emac_main.c:267:3: note: in expansion of macro 'dm=
-a_unmap_addr_set'
-   dma_unmap_addr_set(&rx_buff, mapping, addr);
-   ^
-include/linux/dma-mapping.h:230:57: error: request for member 'len' in some=
-thing not a structure or union
- #define dma_unmap_len_set(PTR, LEN_NAME, VAL)    (((PTR)->LEN_NAME) =3D (V=
-AL))
-                                                         ^
-drivers/net/ethernet/arc/emac_main.c:268:3: note: in expansion of macro 'dm=
-a_unmap_len_set'
-   dma_unmap_len_set(&rx_buff, len, buflen);
-   ^
-In file included from include/linux/swab.h:4:0,
-                 from include/uapi/linux/byteorder/big_endian.h:12,
-                 from include/linux/byteorder/big_endian.h:4,
-                 from arch/powerpc/include/uapi/asm/byteorder.h:10,
-                 from include/asm-generic/bitops/le.h:5,
-                 from arch/powerpc/include/asm/bitops.h:278,
-                 from include/linux/bitops.h:22,
-                 from include/linux/kernel.h:10,
-                 from include/linux/skbuff.h:17,
-                 from include/linux/if_ether.h:23,
-                 from include/linux/etherdevice.h:25,
-                 from drivers/net/ethernet/arc/emac_main.c:16:
-include/uapi/linux/swab.h:115:24: warning: cast from pointer to integer of =
-different size [-Wpointer-to-int-cast]
-  (__builtin_constant_p((__u32)(x)) ? \
-                        ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:270:16: note: in expansion of macro 'c=
-pu_to_le32'
-   rxbd->data =3D cpu_to_le32(rx_buff->skb->data);
-                ^
-include/uapi/linux/swab.h:17:4: warning: cast from pointer to integer of di=
-fferent size [-Wpointer-to-int-cast]
-  (((__u32)(x) & (__u32)0x000000ffUL) << 24) |  \
-    ^
-include/uapi/linux/swab.h:116:2: note: in expansion of macro '___constant_s=
-wab32'
-  ___constant_swab32(x) :   \
-  ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:270:16: note: in expansion of macro 'c=
-pu_to_le32'
-   rxbd->data =3D cpu_to_le32(rx_buff->skb->data);
-                ^
-include/uapi/linux/swab.h:18:4: warning: cast from pointer to integer of di=
-fferent size [-Wpointer-to-int-cast]
-  (((__u32)(x) & (__u32)0x0000ff00UL) <<  8) |  \
-    ^
-include/uapi/linux/swab.h:116:2: note: in expansion of macro '___constant_s=
-wab32'
-  ___constant_swab32(x) :   \
-  ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:270:16: note: in expansion of macro 'c=
-pu_to_le32'
-   rxbd->data =3D cpu_to_le32(rx_buff->skb->data);
-                ^
-include/uapi/linux/swab.h:19:4: warning: cast from pointer to integer of di=
-fferent size [-Wpointer-to-int-cast]
-  (((__u32)(x) & (__u32)0x00ff0000UL) >>  8) |  \
-    ^
-include/uapi/linux/swab.h:116:2: note: in expansion of macro '___constant_s=
-wab32'
-  ___constant_swab32(x) :   \
-  ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:270:16: note: in expansion of macro 'c=
-pu_to_le32'
-   rxbd->data =3D cpu_to_le32(rx_buff->skb->data);
-                ^
-include/uapi/linux/swab.h:20:4: warning: cast from pointer to integer of di=
-fferent size [-Wpointer-to-int-cast]
-  (((__u32)(x) & (__u32)0xff000000UL) >> 24)))
-    ^
-include/uapi/linux/swab.h:116:2: note: in expansion of macro '___constant_s=
-wab32'
-  ___constant_swab32(x) :   \
-  ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:270:16: note: in expansion of macro 'c=
-pu_to_le32'
-   rxbd->data =3D cpu_to_le32(rx_buff->skb->data);
-                ^
-drivers/net/ethernet/arc/emac_main.c:270:3: warning: passing argument 1 of =
-'__fswab32' makes integer from pointer without a cast [enabled by default]
-   rxbd->data =3D cpu_to_le32(rx_buff->skb->data);
-   ^
-In file included from include/linux/swab.h:4:0,
-                 from include/uapi/linux/byteorder/big_endian.h:12,
-                 from include/linux/byteorder/big_endian.h:4,
-                 from arch/powerpc/include/uapi/asm/byteorder.h:10,
-                 from include/asm-generic/bitops/le.h:5,
-                 from arch/powerpc/include/asm/bitops.h:278,
-                 from include/linux/bitops.h:22,
-                 from include/linux/kernel.h:10,
-                 from include/linux/skbuff.h:17,
-                 from include/linux/if_ether.h:23,
-                 from include/linux/etherdevice.h:25,
-                 from drivers/net/ethernet/arc/emac_main.c:16:
-include/uapi/linux/swab.h:57:41: note: expected '__u32' but argument is of =
-type 'unsigned char *'
- static inline __attribute_const__ __u32 __fswab32(__u32 val)
-                                         ^
-drivers/net/ethernet/arc/emac_main.c: In function 'arc_emac_open':
-include/uapi/linux/swab.h:115:24: warning: cast from pointer to integer of =
-different size [-Wpointer-to-int-cast]
-  (__builtin_constant_p((__u32)(x)) ? \
-                        ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:406:14: note: in expansion of macro 'c=
-pu_to_le32'
-   bd->data =3D cpu_to_le32(skb->data);
-              ^
-include/uapi/linux/swab.h:17:4: warning: cast from pointer to integer of di=
-fferent size [-Wpointer-to-int-cast]
-  (((__u32)(x) & (__u32)0x000000ffUL) << 24) |  \
-    ^
-include/uapi/linux/swab.h:116:2: note: in expansion of macro '___constant_s=
-wab32'
-  ___constant_swab32(x) :   \
-  ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:406:14: note: in expansion of macro 'c=
-pu_to_le32'
-   bd->data =3D cpu_to_le32(skb->data);
-              ^
-include/uapi/linux/swab.h:18:4: warning: cast from pointer to integer of di=
-fferent size [-Wpointer-to-int-cast]
-  (((__u32)(x) & (__u32)0x0000ff00UL) <<  8) |  \
-    ^
-include/uapi/linux/swab.h:116:2: note: in expansion of macro '___constant_s=
-wab32'
-  ___constant_swab32(x) :   \
-  ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:406:14: note: in expansion of macro 'c=
-pu_to_le32'
-   bd->data =3D cpu_to_le32(skb->data);
-              ^
-include/uapi/linux/swab.h:19:4: warning: cast from pointer to integer of di=
-fferent size [-Wpointer-to-int-cast]
-  (((__u32)(x) & (__u32)0x00ff0000UL) >>  8) |  \
-    ^
-include/uapi/linux/swab.h:116:2: note: in expansion of macro '___constant_s=
-wab32'
-  ___constant_swab32(x) :   \
-  ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:406:14: note: in expansion of macro 'c=
-pu_to_le32'
-   bd->data =3D cpu_to_le32(skb->data);
-              ^
-include/uapi/linux/swab.h:20:4: warning: cast from pointer to integer of di=
-fferent size [-Wpointer-to-int-cast]
-  (((__u32)(x) & (__u32)0xff000000UL) >> 24)))
-    ^
-include/uapi/linux/swab.h:116:2: note: in expansion of macro '___constant_s=
-wab32'
-  ___constant_swab32(x) :   \
-  ^
-include/uapi/linux/byteorder/big_endian.h:32:43: note: in expansion of macr=
-o '__swab32'
- #define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-                                           ^
-include/linux/byteorder/generic.h:87:21: note: in expansion of macro '__cpu=
-_to_le32'
- #define cpu_to_le32 __cpu_to_le32
-                     ^
-drivers/net/ethernet/arc/emac_main.c:406:14: note: in expansion of macro 'c=
-pu_to_le32'
-   bd->data =3D cpu_to_le32(skb->data);
-              ^
-drivers/net/ethernet/arc/emac_main.c:406:3: warning: passing argument 1 of =
-'__fswab32' makes integer from pointer without a cast [enabled by default]
-   bd->data =3D cpu_to_le32(skb->data);
-   ^
-In file included from include/linux/swab.h:4:0,
-                 from include/uapi/linux/byteorder/big_endian.h:12,
-                 from include/linux/byteorder/big_endian.h:4,
-                 from arch/powerpc/include/uapi/asm/byteorder.h:10,
-                 from include/asm-generic/bitops/le.h:5,
-                 from arch/powerpc/include/asm/bitops.h:278,
-                 from include/linux/bitops.h:22,
-                 from include/linux/kernel.h:10,
-                 from include/linux/skbuff.h:17,
-                 from include/linux/if_ether.h:23,
-                 from include/linux/etherdevice.h:25,
-                 from drivers/net/ethernet/arc/emac_main.c:16:
-include/uapi/linux/swab.h:57:41: note: expected '__u32' but argument is of =
-type 'unsigned char *'
- static inline __attribute_const__ __u32 __fswab32(__u32 val)
-                                         ^
-In file included from include/linux/skbuff.h:33:0,
-                 from include/linux/if_ether.h:23,
-                 from include/linux/etherdevice.h:25,
-                 from drivers/net/ethernet/arc/emac_main.c:16:
-drivers/net/ethernet/arc/emac_main.c: In function 'arc_emac_tx':
-include/linux/dma-mapping.h:228:57: error: 'struct buffer_state' has no mem=
-ber named 'mapping'
- #define dma_unmap_addr_set(PTR, ADDR_NAME, VAL)  (((PTR)->ADDR_NAME) =3D (=
-VAL))
-                                                         ^
-drivers/net/ethernet/arc/emac_main.c:546:2: note: in expansion of macro 'dm=
-a_unmap_addr_set'
-  dma_unmap_addr_set(&priv->tx_buff[*txbd_curr], mapping, addr);
-  ^
+But "no io memory" is not the excuse to not define the related dummy
+function.
 
-Caused by commit e4f2379db6c6 ("ethernet/arc/arc_emac - Add new driver")
-from the net-next tree.
+The drivers internal code has already check the related return value,
+so it is the architecture's duty to 'tell' the driver whether support
+io memory (e.g. define ioremap, but return NULL).
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So all together, I recommend the fix like below
 
---Signature=_Wed__26_Jun_2013_17_56_10_+1000_o8w9zzheYWHHBYrb
-Content-Type: application/pgp-signature
+--------------------------diff begin------------------------------------
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
+index b30f34a..b282042 100644
+--- a/arch/um/include/asm/Kbuild
++++ b/arch/um/include/asm/Kbuild
+@@ -1,5 +1,5 @@
+ generic-y += bug.h cputime.h device.h emergency-restart.h futex.h hardirq.h
+ generic-y += hw_irq.h irq_regs.h kdebug.h percpu.h sections.h topology.h xor.h
+-generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
++generic-y += ftrace.h pci.h param.h delay.h mutex.h current.h exec.h
+ generic-y += switch_to.h clkdev.h
+ generic-y += trace_clock.h
+diff --git a/arch/um/include/asm/io.h b/arch/um/include/asm/io.h
+new file mode 100644
+index 0000000..00f3cd8
+--- /dev/null
++++ b/arch/um/include/asm/io.h
+@@ -0,0 +1,21 @@
++#ifndef UML_IO_H
++#define UML_IO_H
++
++#include <asm-generic/io.h>
++
++/*
++ * UML does not support io memory, so return NULL.
++ */
++static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
++{
++	return NULL;
++}
++
++#define ioremap_nocache ioremap
++#define ioremap_wc ioremap_nocache
++
++static inline void iounmap(void __iomem *addr)
++{
++}
++
++#endif /* UML_IO_H */
 
-iQIcBAEBCAAGBQJRyp6fAAoJEECxmPOUX5FErJ0P/1xDO1u8v63LMrF0dQms+hob
-88QvDMvzL2ZM+42jzQWfnXX+lBWfdQGTXC1rt/zq5FcBIhvaVYTRBEpiQ5mUGrQw
-/98iHEcN7Kqv6U0NXlQCMV9kqZKhv1xoJCR1G9R6EIqAcBVNZCS8byHDKUq/9In3
-BgSRE1Pcke3AplEPaC9lEzFnqeMLFhW3rD8g3VEnVeaYv4pLj5y1cpmDEh9GeliJ
-X5CsRncrck0k6A3IzALQjaBvSbI3ZF5RSHS80TYyKYXmneDug9WG0uQ28GXtJbUu
-ph5ogyfqsVBTyhpERDm60zED36QmeQi3xnakF+T6MN0GVCY96NlRdiI2tqxyDqxk
-ksvFk/fQec1fr0PxwLBoHP5P/+0CDpBmvPUgDlKJakun1hGYkQBmaMxxbZ7X0cmT
-W6VcOD7eNrjfuM8x4RyKiZNPn7HvhWv4vbNPhrIHC7/iRWOwdgQ6q9xY7vdtP1hf
-xrK/OG56eB3y1B+tvH9H+vteYaqMu+MPTdqBSKsTuoMXdakEO+LsgdTVo910pwxN
-mjy+KXB/Hg5V5FyE5AsJ3o3BQA0oF7CMLQLy1uwQG5ArGj2YPc3VV9hOf2+AtJPZ
-cGRsUhXVsvE409Hu2H2ojwJpMY4BJJRwtV2Oy6T957uc/7xTINV0U0z8XF2aaKO3
-jfqdnMD9ZzDl6wFWdj3L
-=hK27
------END PGP SIGNATURE-----
+--------------------------diff end------------------------------------
 
---Signature=_Wed__26_Jun_2013_17_56_10_+1000_o8w9zzheYWHHBYrb--
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
