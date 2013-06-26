@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab3FZFco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 01:32:44 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:33177 "EHLO
+	id S1751532Ab3FZFc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 01:32:56 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:33215 "EHLO
 	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab3FZFcm (ORCPT
+	with ESMTP id S1751374Ab3FZFcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 01:32:42 -0400
+	Wed, 26 Jun 2013 01:32:43 -0400
 X-Spam-Score: -100.8
-Message-ID: <51CA4C0E.9050909@asianux.com>
-Date: Wed, 26 Jun 2013 10:03:58 +0800
+Message-ID: <51CA5F71.207@asianux.com>
+Date: Wed, 26 Jun 2013 11:26:41 +0800
 From: Chen Gang <gang.chen@asianux.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mike Frysinger <vapier@gentoo.org>, takata@linux-m32r.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Arnd Bergmann <arnd@arndb.de>, realmz paranoid <realmz6@gmail.com>,
-        linux390@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-s390@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
-        Marc Gauthier <Marc.Gauthier@tensilica.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] arch: asm-generic: for atomic_set_mask() 1st param,
- use 'unsigned int' instead of 'unsigned long'
-References: <51B2E262.3030603@asianux.com> <CAErSpo5pg0EvJOR9nn3B0d+q0o6zsdwzM41AQx=AHfynRqX3hQ@mail.gmail.com> <51B4214E.6090007@asianux.com> <20130610092106.GA4697@osiris> <51B91E32.2040502@asianux.com>
-In-Reply-To: <51B91E32.2040502@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+To: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch: arm64: include: asm: add pci.h to pass compiling
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+Need add pci.h for compiling, the related error (with allmodconfig):
 
-Firstly thank the s390 maintainers again for their 'Acked-by' (in my
-memory, s390 is the most important business mainframe machine)
+  drivers/media/usb/b2c2/flexcop-usb.c: In function ‘flexcop_usb_transfer_exit’:
+  drivers/media/usb/b2c2/flexcop-usb.c:393:3: error: implicit declaration of function ‘pci_free_consistent’ [-Werror=implicit-function-declaration]
+  drivers/media/usb/b2c2/flexcop-usb.c: In function ‘flexcop_usb_transfer_init’:
+  drivers/media/usb/b2c2/flexcop-usb.c:410:2: error: implicit declaration of function ‘pci_alloc_consistent’ [-Werror=implicit-function-declaration]
+  drivers/media/usb/b2c2/flexcop-usb.c:410:21: warning: assignment makes pointer from integer without a cast [enabled by default]
+  cc1: some warnings being treated as errors
 
-Could another related maintainers give a glance for it, when you have time.
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arm64/include/asm/pci.h |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm64/include/asm/pci.h
 
-Thanks.
-
-On 06/13/2013 09:19 AM, Chen Gang wrote:
-> On 06/10/2013 05:21 PM, Heiko Carstens wrote:
->> On Sun, Jun 09, 2013 at 02:31:42PM +0800, Chen Gang wrote:
->>>>
->>>> atomic_set_mask() and atomic_clear_mask() are the pairs, so the related
->>>> parameters' type need match with each other.
->>>>
->>>> The type of 'addr->counter' is 'int', so use 'unsigned int' instead
->>>> of 'unsigned long', and let atomic_set_mask() match atomic_clear_mask().
->>>>
->>>>
->>>> For arch sub-system, currently, have 3 types of definition for them:
->>>> 1st for 'int', 2nd for 'long', 3rd is conflict to use 'int' and 'long'.
->>>>
->>>> At least, better to fix 3rd (conflict using 'int' and 'long').
->>>>
->>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>> ---
->>>>  arch/blackfin/include/asm/atomic.h |    4 ++--
->>>>  arch/m32r/include/asm/atomic.h     |    8 ++++----
->>>>  arch/s390/include/asm/atomic.h     |    4 ++--
->>>>  include/asm-generic/atomic.h       |    2 +-
->>>>  4 files changed, 9 insertions(+), 9 deletions(-)
->> For the s390 part:
->>
->> Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
->>
-> 
-> Thank you very much !!
-> 
-> 
-
-
+diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
+new file mode 100644
+index 0000000..2ed467f
+--- /dev/null
++++ b/arch/arm64/include/asm/pci.h
+@@ -0,0 +1,11 @@
++#ifndef ASMARM64_PCI_H
++#define ASMARM64_PCI_H
++
++#ifdef __KERNEL__
++
++#include <asm-generic/pci-dma-compat.h>
++#include <asm-generic/pci.h>
++
++#endif /* __KERNEL__ */
++
++#endif
 -- 
-Chen Gang
-
-Asianux Corporation
+1.7.7.6
