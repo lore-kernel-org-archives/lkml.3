@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab3FZHzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:55:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16241 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab3FZHzi convert rfc822-to-8bit (ORCPT
+	id S1751581Ab3FZHzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:55:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54872 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab3FZHzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:55:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,941,1363158000"; 
-   d="scan'208";a="322725981"
-Message-ID: <1372233328.24799.48.camel@smile>
-Subject: Re: [PATCH 5/8] minnowboard-gpio: Export MinnowBoard expansion GPIO
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
-        danders@circuitco.com, vishal.l.verma@intel.com,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        platform-driver-x86@vger.kernel.org
-Date: Wed, 26 Jun 2013 10:55:28 +0300
-In-Reply-To: <c7bed09378e5edf88872e277b238ecc3f52634aa.1372211451.git.dvhart@linux.intel.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
-	 <c7bed09378e5edf88872e277b238ecc3f52634aa.1372211451.git.dvhart@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Wed, 26 Jun 2013 03:55:44 -0400
+Date: Wed, 26 Jun 2013 09:55:42 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC V1] COMMIT 1: DA9210 driver files
+In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB71D6CABE7@SW-EX-MBX02.diasemi.com>
+Message-ID: <Pine.LNX.4.64.1306260952160.8856@axis700.grange>
+References: <201306201454.r5KEsAAS010978@swsrvapps-01.diasemi.com>
+ <Pine.LNX.4.64.1306211035210.27277@axis700.grange>
+ <6ED8E3B22081A4459DAC7699F3695FB71D6CABE7@SW-EX-MBX02.diasemi.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:mvvkR0WvaKke8amHvGvZAO1LCqGhnlsiTQMqPsY/IY7
+ bhSLmD//VXtUyyTv+FXE4kVaM+uiImgO2MGWKRWE6tIE7eZsR/
+ zWQdqp0fi295VLH3j3o2uLvOBRtNxAtZd0bsIA/HXQnFil8WV3
+ jfxSMvORey0FB0UnaArvSQj/YmsU3ACoqtY7OFMePV2nJUj7Uh
+ v7ojKxZz5C6Q3kuJREtTMV2vAZLJeSg9KJSC04SuJbUT9CJGYq
+ PMz/cPYviYIDXpJhO+eP2LdXbK399PXCe6jZBgXHgD4T7+35l9
+ lnm1/W0E7rwBADHz2HZF++8HEaTtcV68ieBsYgL3CP943U2+Xp
+ nM5Ro7gG/MXVRdehUP1fNSD0d6V3U36v8KVhEgso4PtXOjMVcU
+ rQFzCi9GNABWA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-25 at 18:53 -0700, Darren Hart wrote: 
-> Request and export the user-configurable GPIO lines to sysfs. This provides a
-> label readable in /debugfs/gpio and a simple interface for experimenting with
-> GPIO on the MinnowBoard.
-> 
-> This is separate from the minnowboard driver to provide users with the
-> flexibility to write kernel drivers for their own devices using these GPIO
-> lines.
+Hi Steve
 
-Few comments below.
+On Mon, 24 Jun 2013, Opensource [Steve Twiss] wrote:
 
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -35,6 +35,24 @@ config MINNOWBOARD
->  
->  	  If you have a MinnowBoard, say Y or M here.
->  
-> +if MINNOWBOARD
-> +config MINNOWBOARD_GPIO
-> +	tristate "MinnowBoard Expansion GPIO"
-> +	depends on MINNOWBOARD
-> +	default n
+[snip]
 
-Like you already had been told you don't need to have default n.
+> Thank you for the comments.
 
-> --- /dev/null
-> +++ b/drivers/platform/x86/minnowboard-gpio.c
+Thanks for your work on this! I've got one more question to you though: it 
+looks like you're doing Linux kernel driver open-sourcing for DiaSemi ATM. 
+In the past
 
-> +#include <linux/platform_device.h>
-> +#include <linux/module.h>
-> +#include <linux/gpio.h>
-> +#include <linux/gpio_keys.h>
-> +#include <linux/input.h>
-> +#include <linux/minnowboard.h>
+http://lwn.net/Articles/513859/
 
-+ empty line here?
+a patch series has been submitted by your employer to support the da9063 
+PMIC. Are there plans to continue that work and update the driver? Any 
+specific dates when a new submission can be expected?
 
-> +#include "minnowboard-gpio.h"
-
-> +static int __init minnow_gpio_module_init(void)
-> +{
-> +	int err;
-> +
-> +	err = -ENODEV;
-> +	if (!minnow_detect())
-> +		goto out;
-> +
-> +#ifdef MODULE
-> +#ifdef CONFIG_MINNOWBOARD_MODULE
-
-And less ifdefs with IS_MODULE().
-
-> +	if (request_module("minnowboard"))
-> +		goto out;
-> +#endif
-> +#endif
-> +
-> +	/* Auxillary Expansion GPIOs */
-> +	if (!minnow_lvds_detect()) {
-> +		pr_debug("LVDS_DETECT not asserted, configuring Aux GPIO lines\n");
-> +		err = gpio_request_array(expansion_aux_gpios,
-> +					 ARRAY_SIZE(expansion_aux_gpios));
-> +		if (err) {
-> +			pr_err("Failed to request expansion aux GPIO lines\n");
-> +			goto out;
-> +		}
-> +	} else {
-> +		pr_debug("LVDS_DETECT asserted, ignoring aux GPIO lines\n");
-> +	}
-> +
-> +	/* Expansion GPIOs */
-> +	err = gpio_request_array(expansion_gpios, ARRAY_SIZE(expansion_gpios));
-> +	if (err) {
-> +		pr_err("Failed to request expansion GPIO lines\n");
-> +		if (minnow_lvds_detect())
-> +			gpio_free_array(expansion_aux_gpios,
-> +					ARRAY_SIZE(expansion_aux_gpios));
-> +		goto out;
-> +	}
-> +
-> + out:
-> +	return err;
-
-Are you planning to add something else to 'out' path?
-Otherwise I think it will look better if you do return instead of
-[useless] gotos.
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
