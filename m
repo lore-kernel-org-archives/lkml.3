@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab3FZB2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 21:28:51 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:42140 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab3FZB2u (ORCPT
+	id S1752219Ab3FZB3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 21:29:00 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:62647 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977Ab3FZB26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 21:28:50 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH] firmwar loader: fix another compile warning with PM_SLEEP unset
-Date: Wed, 26 Jun 2013 09:28:17 +0800
-Message-Id: <1372210097-11840-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 25 Jun 2013 21:28:58 -0400
+X-AuditID: 9c93017d-b7c09ae000006fa0-b1-51ca43d840ee
+From: Namhyung Kim <namhyung@kernel.org>
+To: Greg Price <price@MIT.EDU>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf report: Add option to collapse undesired parts of call graph
+References: <20121207072726.GY22203@biohazard-cafe.mit.edu>
+	<20130111052736.GG3054@ghostprotocols.net>
+	<20130623031720.GW22203@biohazard-cafe.mit.edu>
+Date: Wed, 26 Jun 2013 10:28:56 +0900
+In-Reply-To: <20130623031720.GW22203@biohazard-cafe.mit.edu> (Greg Price's
+	message of "Sat, 22 Jun 2013 23:17:20 -0400")
+Message-ID: <871u7p3bjb.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes another compiling warning with PM_SLEEP unset:
+Hi Greg,
 
-drivers/base/firmware_class.c:221:29: warning: 'fw_lookup_buf' defined
-but not used [-Wunused-function]
+On Sat, 22 Jun 2013 23:17:20 -0400, Greg Price wrote:
+> For example, in an application with an expensive function
+> implemented with deeply nested recursive calls, the default
+> call-graph presentation is dominated by the different callchains
+> within that function.  By treating the function as a black box,
+> we can collect the callchains leading into the function and
+> compactly identify what to blame for expensive calls.
+>
+> For example, in this report the callers of garbage_collect() are
 
-This time I do build kernel with both PM_SLEEP set and unset, and no
-warning found any more with the patch.
+s/callers/callees/ ?
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/base/firmware_class.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+And it'd be better it shows more lines after garbage_collect so that one
+can see its callers also to understand what it does more clearly.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 2b91b11..a439602 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -218,18 +218,6 @@ static int fw_lookup_and_allocate_buf(const char *fw_name,
- 	return tmp ? 0 : -ENOMEM;
- }
- 
--static struct firmware_buf *fw_lookup_buf(const char *fw_name)
--{
--	struct firmware_buf *tmp;
--	struct firmware_cache *fwc = &fw_cache;
--
--	spin_lock(&fwc->lock);
--	tmp = __fw_lookup_buf(fw_name);
--	spin_unlock(&fwc->lock);
--
--	return tmp;
--}
--
- static void __fw_free_buf(struct kref *ref)
- {
- 	struct firmware_buf *buf = to_fwbuf(ref);
-@@ -1280,6 +1268,18 @@ static int cache_firmware(const char *fw_name)
- 	return ret;
- }
- 
-+static struct firmware_buf *fw_lookup_buf(const char *fw_name)
-+{
-+	struct firmware_buf *tmp;
-+	struct firmware_cache *fwc = &fw_cache;
-+
-+	spin_lock(&fwc->lock);
-+	tmp = __fw_lookup_buf(fw_name);
-+	spin_unlock(&fwc->lock);
-+
-+	return tmp;
-+}
-+
- /**
-  * uncache_firmware - remove one cached firmware image
-  * @fw_name: the firmware image name
--- 
-1.7.9.5
+
+> scattered across the tree:
+> $ perf report -d ruby 2>- | grep -m10 ^[^#]*[a-z]
+>     22.03%     ruby  [.] gc_mark
+>                --- gc_mark
+>                   |--59.40%-- mark_keyvalue
+>                   |          st_foreach
+>                   |          gc_mark_children
+>                   |          |--99.75%-- rb_gc_mark
+>                   |          |          rb_vm_mark
+>                   |          |          gc_mark_children
+>                   |          |          gc_marks
+>                   |          |          |--99.00%-- garbage_collect
+>
+> If we make garbage_collect() a black box, its callers are coalesced:
+
+Again, s/callers/callees/ ?
+
+
+> $ perf report --blackbox garbage_collect -d ruby 2>- | grep -m10 ^[^#]*[a-z]
+>     72.92%     ruby  [.] garbage_collect
+>                --- garbage_collect
+>                    vm_xmalloc
+>                   |--47.08%-- ruby_xmalloc
+>                   |          st_insert2
+>                   |          rb_hash_aset
+>                   |          |--98.45%-- features_index_add
+>                   |          |          rb_provide_feature
+>                   |          |          rb_require_safe
+>                   |          |          vm_call_method
+>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Signed-off-by: Greg Price <price@mit.edu>
+> ---
+>
+> On Fri, Jan 11, 2013 at 02:27:36AM -0300, Arnaldo Carvalho de Melo wrote:
+>> Looks like an interesting feature, will review this soon,
+>
+> Rebased on top of v3.10-rc7, please take a look at your convenience.
+>
+>
+>  tools/perf/builtin-report.c | 19 ++++++++++++++++---
+>  tools/perf/builtin-top.c    |  3 +--
+>  tools/perf/util/machine.c   | 26 +++++++++++++++++---------
+>  tools/perf/util/machine.h   |  9 ++++++++-
+>  tools/perf/util/session.c   |  3 +--
+
+You need to update the doc too.
+
+>  5 files changed, 43 insertions(+), 17 deletions(-)
+[SNIP]
+> @@ -1211,8 +1214,13 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+>  					   MAP__FUNCTION, ip, &al, NULL);
+>  		if (al.sym != NULL) {
+>  			if (sort__has_parent && !*parent &&
+> -			    symbol__match_parent_regex(al.sym))
+> +			    symbol__match_regex(al.sym, &parent_regex))
+>  				*parent = al.sym;
+> +			else if (have_blackbox && root_al &&
+> +			         symbol__match_regex(al.sym, &blackbox_regex)) {
+> +				*root_al = al;
+> +				callchain_cursor_reset(&callchain_cursor);
+
+Okay, this is where the magic happens. :)
+
+So it overwrites the original 'al' in process_sample_event() to
+blackboxed symbol and drop the callchain.  Wouldn't it deserve a
+comment? :)
+
+
+> +			}
+>  			if (!symbol_conf.use_callchain)
+>  				break;
+pp
+This is unrelated to this patch, but why is this line needed?  I guess
+this check should be done before calling this function.
+
+Thanks,
+Namhyung
 
