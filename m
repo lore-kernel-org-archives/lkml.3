@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab3FZVFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:05:10 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:56885 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3FZVFI (ORCPT
+	id S1752921Ab3FZVHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:07:22 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:10205 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab3FZVHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:05:08 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] proc: Document that /proc/<pid>/task/<tid>/children really is per-thread
-Date: Wed, 26 Jun 2013 14:05:01 -0700
-Message-Id: <5f9a6b3ab75b12f2c5ba61ea1f6f3b08e9952b55.1372280661.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <20130626155728.GA2141@redhat.com>
-References: <20130626155728.GA2141@redhat.com>
+	Wed, 26 Jun 2013 17:07:20 -0400
+Message-ID: <51CB57F6.6010003@hp.com>
+Date: Wed, 26 Jun 2013 17:07:02 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
+ update of refcount
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com> <1372268603-46748-2-git-send-email-Waiman.Long@hp.com> <20130626201713.GH6123@two.firstfloor.org>
+In-Reply-To: <20130626201713.GH6123@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was surprised to discover that a process can have a parent that isn't
-a thread group leader.  (The usual ppid interfaces hide this, but the
-children list exposes it.)
+On 06/26/2013 04:17 PM, Andi Kleen wrote:
+>> + * The combined data structure is 8-byte aligned. So proper placement of this
+>> + * structure in the larger embedding data structure is needed to ensure that
+>> + * there is no hole in it.
+> On i386 u64 is only 4 bytes aligned. So you need to explicitely align
+> it to 8 bytes. Otherwise you risk the two members crossing a cache line, which
+> would be really expensive with atomics.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- Documentation/filesystems/proc.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+Do you mean the original i386 or the i586 that are now used by most 
+distribution now? If it is the former, I recall that i386 is now no 
+longer supported.
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index fd8d0d5..205796a 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1623,6 +1623,12 @@ This file provides a fast way to retrieve first level children pids
- of a task pointed by <pid>/<tid> pair. The format is a space separated
- stream of pids.
- 
-+This really is a per-thread list.  If a process's parent is a thread,
-+then that process will appear in that thread's children list.  (This
-+means that, for any pid, /proc/pid/task/*/children are disjoint lists.)
-+This may be surprising, as /proc/pid/status's PPid field is parent's
-+tgid as opposed to the parent's tid.
-+
- Note the "first level" here -- if a child has own children they will
- not be listed here, one needs to read /proc/<children-pid>/task/<tid>/children
- to obtain the descendants.
--- 
-1.8.1.4
+I also look around some existing codes that use cmpxchg64. It doesn't 
+seem like they use explicit alignment. I will need more investigation to 
+see if it is a real problem.
+>> +	/*
+>> +	 * Code doesn't work if raw spinlock is larger than 4 bytes
+>> +	 * or is empty.
+>> +	 */
+>> +	BUG_ON((sizeof(arch_spinlock_t)>  4) || (sizeof(arch_spinlock_t) == 0));
+> BUILD_BUG_ON
 
+Thank for the suggestion, will make the change.
+
+>> +
+>> +	spin_unlock_wait(plock);	/* Wait until lock is released */
+>> +	old.__lock_count = ACCESS_ONCE(*plockcnt);
+>> +	get_lock = ((threshold>= 0)&&  (old.count == threshold));
+>> +	if (likely(!get_lock&&  spin_can_lock(&old.lock))) {
+> What is that for? Why can't you do the CMPXCHG unconditially ?
+
+An unconditional CMPXCHG can be as bad as acquiring the spinlock. So we 
+need to check the conditions are ready before doing an actual CMPXCHG.
+> If it's really needed, it is most likely a race?
+
+If there is a race going on between threads, the code will fall back to 
+the old way of acquiring the spinlock.
+
+> The duplicated code should be likely an inline.
+
+The duplicated code is only used once in the function. I don't think an 
+additional inline is really needed, but I can do it if other people also 
+think that is a good idea.
+
+>> +/*
+>> + * The presence of either one of the CONFIG_DEBUG_SPINLOCK or
+>> + * CONFIG_DEBUG_LOCK_ALLOC configuration parameter will force the
+>> + * spinlock_t structure to be 8-byte aligned.
+>> + *
+>> + * To support the spinlock/reference count combo data type for 64-bit SMP
+>> + * environment with spinlock debugging turned on, the reference count has
+>> + * to be integrated into the spinlock_t data structure in this special case.
+>> + * The spinlock_t data type will be 8 bytes larger if CONFIG_GENERIC_LOCKBREAK
+>> + * is also defined.
+> I would rather just disable the optimization when these CONFIGs are set
+
+Looking from the other perspective, we may want the locking code to have 
+the same behavior whether spinlock debugging is enabled or not. 
+Disabling the optimization will cause the code path to differ which may 
+not be what we want. Of course, I can change it if other people also 
+think it is the right way to do it.
+
+Regards,
+Longman
