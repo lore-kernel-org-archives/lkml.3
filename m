@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab3FZWz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 18:55:28 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:39288 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270Ab3FZWz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 18:55:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVCQKjPa1dVKhAubvD+d=rudOxLaRMYAr-GAC7eSSz09Q@mail.gmail.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
- <CAErSpo58bCG4=hwC73VY+nXPk9-dZUb5eWERZ_wTtAfrXtBVmg@mail.gmail.com>
- <CAE9FiQW9xuu6WjH59td6Jve10kokoxU4mNqj4DRyg7beqBzHDA@mail.gmail.com> <CAE9FiQVCQKjPa1dVKhAubvD+d=rudOxLaRMYAr-GAC7eSSz09Q@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Jun 2013 16:55:05 -0600
-Message-ID: <CAErSpo68p7_0zsnBjD=sb14vs0QyCZuN+RTvib2-ZOYUiZn6pw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753270Ab3FZW4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 18:56:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31996 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752065Ab3FZW4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 18:56:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,947,1363158000"; 
+   d="scan'208";a="360160146"
+Subject: Re: [PATCH v4 5/5] rwsem: do optimistic spinning for writer lock
+ acquisition
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <1372286407.3954.6.camel@buesod1.americas.hpqcorp.net>
+References: <cover.1372282738.git.tim.c.chen@linux.intel.com>
+	 <1372285687.22432.145.camel@schen9-DESK>
+	 <1372286407.3954.6.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Jun 2013 15:56:37 -0700
+Message-ID: <1372287397.22432.146.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 4:31 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Jun 26, 2013 at 3:26 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Wed, Jun 26, 2013 at 3:18 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>> On Tue, Jun 25, 2013 at 10:22 AM, Mika Westerberg
->>> <mika.westerberg@linux.intel.com> wrote:
->>>> Thunderbolt PCI-to-PCI bridges typically use BIOS "assisted" enumeration.
->>>> This means that the BIOS will allocate bridge resources based on some
->>>> assumptions of a maximum Thunderbolt chain. It also disables native PCIe
->>>> hotplug of the root port where the Thunderbolt host router is connected.
-> ...
-> During acpi hotplug, firmare could do extra help for us like assign
-> some resources to pci device bars, so it is NOT "boot-time".
+On Wed, 2013-06-26 at 15:40 -0700, Davidlohr Bueso wrote:
+> On Wed, 2013-06-26 at 15:28 -0700, Tim Chen wrote:
+> > We want to add optimistic spinning to rwsems because we've noticed that
+> > the writer rwsem does not perform as well as mutexes. Tim noticed that
+> > for exim (mail server) workloads, when reverting commit 4fc3f1d6 and Davidlohr
+> > noticed it when converting the i_mmap_mutex to a rwsem in some aim7
+> > workloads. We've noticed that the biggest difference, in a nutshell, is
+> > when we fail to acquire a mutex in the fastpath, optimistic spinning
+> > comes in to play and we can avoid a large amount of unnecessary sleeping
+> > and wait queue overhead.
+> > 
+> > For rwsems on the other hand, upon entering the writer slowpath in
+> > rwsem_down_write_failed(), we just acquire the ->wait_lock, add
+> > ourselves to the wait_queue and blocking until we get the lock.
+> > 
+> > Reviewed-by: Peter Zijlstra <peterz@infradead.org>
+> > Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > ---
+> >  include/linux/rwsem.h |    3 +
+> >  init/Kconfig          |    9 +++
+> >  kernel/rwsem.c        |   29 +++++++++-
+> >  lib/rwsem.c           |  150 +++++++++++++++++++++++++++++++++++++++++++++----
+> >  4 files changed, 179 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> > index 0616ffe..0c5933b 100644
+> > --- a/include/linux/rwsem.h
+> > +++ b/include/linux/rwsem.h
+> > @@ -29,6 +29,9 @@ struct rw_semaphore {
+> >  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+> >  	struct lockdep_map	dep_map;
+> >  #endif
+> > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> > +	struct task_struct	*owner;
+> > +#endif
+> >  };
+> >  
+> >  extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 9d3a788..1c582d1 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -1595,6 +1595,15 @@ config TRACEPOINTS
+> >  
+> >  source "arch/Kconfig"
+> >  
+> > +config RWSEM_SPIN_ON_WRITE_OWNER
+> > +	bool "Optimistic spin write acquisition for writer owned rw-sem"
+> > +	default n
+> > +	depends on SMP
+> > +	help
+> > +	  Allows a writer to perform optimistic spinning if another writer own
+> > +	  the read write semaphore.  This gives a greater chance for writer to
+> > +	  acquire a semaphore before blocking it and putting it to sleep.
+> > +
+> 
+> Quoting from kernel/mutex.c:
+> 
+> "The rationale is that if the lock owner is running, it is likely to
+> release the lock soon." 
+> 
+> It would be good to add that to the Kconfig.
 
-Really?  How can firmware assign BARs at hotplug-time?  I mean,
-obviously firmware *can* write things to the BARs before giving the
-device to the OS, but how would it know what to write?  I assume the
-OS owns the address space, and it can change the upstream bridge
-windows or the BARs of another device on the bus at any time, subject
-to the OS's own issues as far as quiescing or unbinding drivers, etc.,
-but without coordinating with the BIOS.
+Sounds good.
 
-Bjorn
+Tim
+
+
