@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab3FZCro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:47:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54111 "EHLO
+	id S1752468Ab3FZCrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:47:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54160 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751445Ab3FZCp0 (ORCPT
+	by vger.kernel.org with ESMTP id S1752189Ab3FZCp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 22:45:26 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jens Axboe" <axboe@kernel.dk>,
-        "Vivek Goyal" <vgoyal@redhat.com>
-Date: Wed, 26 Jun 2013 03:35:58 +0100
-Message-ID: <lsq.1372214158.568207111@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Gao feng" <gaofeng@cn.fujitsu.com>,
+        "Arkadiusz Miskiewicz" <a.miskiewicz@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 26 Jun 2013 03:35:59 +0100
+Message-ID: <lsq.1372214159.953040196@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [11/26] virtio-blk: Call revalidate_disk() upon online disk resize
+Subject: [21/26] ipv6: assign rt6_info to inet6_ifaddr in init_loopback
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,33 +32,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vivek Goyal <vgoyal@redhat.com>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-commit e9986f303dc0f285401de28cf96f42f4dd23a4a1 upstream.
+[ Upstream commit 534c877928a16ae5f9776436a497109639bf67dc ]
 
-If a virtio disk is open in guest and a disk resize operation is done,
-(virsh blockresize), new size is not visible to tools like "fdisk -l".
-This seems to be happening as we update only part->nr_sects and not
-bdev->bd_inode size.
+Commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
+"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
+forgot to assign rt6_info to the inet6_ifaddr.
+When disable the net device, the rt6_info which allocated
+in init_loopback will not be destroied in __ipv6_ifa_notify.
 
-Call revalidate_disk() which should take care of it. I tested growing disk
-size of already open disk and it works for me.
+This will trigger the waring message below
+[23527.916091] unregister_netdevice: waiting for tap0 to become free. Usage count = 1
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/virtio_blk.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv6/addrconf.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -343,6 +343,7 @@ static void virtblk_config_changed_work(
- 		  cap_str_10, cap_str_2);
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index d84033b..d603caa 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2437,8 +2437,10 @@ static void init_loopback(struct net_device *dev)
+ 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
  
- 	set_capacity(vblk->disk, capacity);
-+	revalidate_disk(vblk->disk);
- done:
- 	mutex_unlock(&vblk->config_lock);
- }
+ 			/* Failure cases are ignored */
+-			if (!IS_ERR(sp_rt))
++			if (!IS_ERR(sp_rt)) {
++				sp_ifa->rt = sp_rt;
+ 				ip6_ins_rt(sp_rt);
++			}
+ 		}
+ 		read_unlock_bh(&idev->lock);
+ 	}
 
