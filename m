@@ -1,69 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab3FZOke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:40:34 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57199 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab3FZOkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:40:31 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Nishanth Menon <nm@ti.com>
-Subject: [-next PATCH 0/2] ARM: OMAP5: fix build breakage due to SCU usage
-Date: Wed, 26 Jun 2013 09:39:45 -0500
-Message-ID: <1372257587-21720-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	id S1752709Ab3FZOlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:41:50 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:47635 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab3FZOlq convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
+	Wed, 26 Jun 2013 10:41:46 -0400
+Message-Id: <51CB19C602000078000E0D75@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 26 Jun 2013 15:41:42 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ben Guthro" <benjamin.guthro@citrix.com>
+Cc: "Bob Moore" <robert.moore@intel.com>, <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Rafaell J . Wysocki" <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
+ reduced hardware sleep path
+References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com>
+ <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com>
+In-Reply-To: <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>>> On 26.06.13 at 16:06, Ben Guthro <benjamin.guthro@citrix.com> wrote:
+> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+> reduced hardware sleep support, and the two changes didn't get
+> synchronized: The new code doesn't call the hook function (if so
+> requested). Fix this, requiring a parameter to be added to the
+> hook function to distinguish "extended" from "legacy" sleep.
+> 
+> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-Cortex-A15 based OMAP5 does not use Snoop Control Unit(SCU)[1].
-However, there is lot of code that is shared between Cortex-A9 based
-OMAP4 and OMAP5, hence functionality code is shared with runtime usage
-of SCU based on SoC worked on. However on building with OMAP5 only
-generates the following errors:
-arch/arm/mach-omap2/built-in.o: In function `scu_gp_set':
-arch/arm/mach-omap2/sleep44xx.S:132: undefined reference to `scu_power_mode'
-arch/arm/mach-omap2/built-in.o: In function `scu_gp_clear':
-arch/arm/mach-omap2/sleep44xx.S:229: undefined reference to `scu_power_mode'
-arch/arm/mach-omap2/built-in.o: In function `omap4_smp_init_cpus':
-arch/arm/mach-omap2/omap-smp.c:185: undefined reference to `scu_get_core_count'
-arch/arm/mach-omap2/built-in.o: In function `omap4_smp_prepare_cpus':
-arch/arm/mach-omap2/omap-smp.c:211: undefined reference to `scu_enable'
+I think these are intended to reflect the flow of things, so
+should be reversed (also in the other patches).
 
-This was attempted to be "fixed" in various attempts in the past [2] [3].
+> --- a/drivers/acpi/acpica/hwesleep.c
+> +++ b/drivers/acpi/acpica/hwesleep.c
+> @@ -43,6 +43,7 @@
+>   */
+>  
+>  #include <acpi/acpi.h>
+> +#include <linux/acpi.h>
 
-This series applies on top of the other fixes in discussion for linux-next [4] [5].
+This also got complaints, so I'd be very surprised if they took it now.
 
-Based on:
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git  next-20130626
+>  #include "accommon.h"
+>  
+>  #define _COMPONENT          ACPI_HARDWARE
+> @@ -128,6 +129,13 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
+>  
+>  	ACPI_FLUSH_CPU_CACHE();
+>  
+> +	status = acpi_os_prepare_sleep(sleep_state, acpi_gbl_sleep_type_a,
+> +				       acpi_gbl_sleep_type_b, true);
 
-Nishanth Menon (2):
-  ARM: OMAP4: sleep: build OMAP4 specific functions only for OMAP4
-  ARM: scu: provide inline dummy functions when SCU is not present
+Without using "bool", using "true" and "false" is wrong (should
+be TRUE and FALSE afaict).
 
- arch/arm/include/asm/smp_scu.h  |   13 ++++++++++++-
- arch/arm/mach-omap2/sleep44xx.S |    6 +++++-
- 2 files changed, 17 insertions(+), 2 deletions(-)
+> --- a/drivers/acpi/acpica/hwsleep.c
+> +++ b/drivers/acpi/acpica/hwsleep.c
+> @@ -153,7 +153,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
+>  	ACPI_FLUSH_CPU_CACHE();
+>  
+>  	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+> -				       pm1b_control);
+> +				       pm1b_control, false);
 
-[1] http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0407e/CHDFJICC.html
-[2] https://patchwork.kernel.org/patch/2568091/
-[3] http://marc.info/?t=137120115400001&r=1&w=2
-[4] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/178209.html
-[5] https://patchwork.kernel.org/patch/2781471/
+Same here.
 
-Regards,
-Nishanth Menon
--- 
-1.7.9.5
+>  	if (ACPI_SKIP(status))
+>  		return_ACPI_STATUS(AE_OK);
+>  	if (ACPI_FAILURE(status))
+
+And the split point ought to be here - everything below doesn't
+modify ACPI CA code. Which in particular means that ...
+
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -477,11 +477,11 @@ static inline bool acpi_driver_match_device(struct device *dev,
+>  #endif	/* !CONFIG_ACPI */
+>  
+>  #ifdef CONFIG_ACPI
+> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> -			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
+> +					   u32 val_b, u8 extended));
+>  
+> -acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> -				  u32 pm1a_control, u32 pm1b_control);
+> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
+> +				  u8 extended);
+
+... this needs to be moved elsewhere (under include/acpi/), but the
+two incarnations of acpi_os_set_prepare_sleep() should presumably
+remain here.
+
+Jan
+
+>  #ifdef CONFIG_X86
+>  void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
+>  #else
+> @@ -491,7 +491,7 @@ static inline void arch_reserve_mem_area(acpi_physical_address addr,
+>  }
+>  #endif /* CONFIG_X86 */
+>  #else
+> -#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
+> +#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { } while (0)
+>  #endif
+>  
+>  #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
+
 
