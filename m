@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab3FZIhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:37:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58936 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab3FZIho convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:37:44 -0400
-From: "B, Ravi" <ravibabu@ti.com>
-To: "Balbi, Felipe" <balbi@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v1 2/3] usb: musb: core: added babble recovery func-ptr
- to musb->ops
-Thread-Topic: [PATCH v1 2/3] usb: musb: core: added babble recovery func-ptr
- to musb->ops
-Thread-Index: AQHOXG1wggKnPGACD0+RUBnAlcCywJlHTrQAgACIfJA=
-Date: Wed, 26 Jun 2013 08:37:39 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EB18D85@DBDE04.ent.ti.com>
-References: <1369832824-29071-1-git-send-email-ravibabu@ti.com>
- <1369832824-29071-3-git-send-email-ravibabu@ti.com>
- <20130626082620.GN12640@arwen.pp.htv.fi>
-In-Reply-To: <20130626082620.GN12640@arwen.pp.htv.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751817Ab3FZIj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:39:58 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751401Ab3FZIjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:39:55 -0400
+Message-ID: <51CAA8D6.9000505@nod.at>
+Date: Wed, 26 Jun 2013 10:39:50 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Chen Gang <gang.chen@asianux.com>
+CC: Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
+        dhsharp@google.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
+References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at> <51CAA78C.5040900@asianux.com>
+In-Reply-To: <51CAA78C.5040900@asianux.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe
-
+Am 26.06.2013 10:34, schrieb Chen Gang:
+> On 06/26/2013 04:05 PM, Richard Weinberger wrote:
+>>>>>>>> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+>>>>>>>> index d5afe96..e80331d 100644
+>>>>>>>> --- a/include/asm-generic/io.h
+>>>>>>>> +++ b/include/asm-generic/io.h
+>>>>>>>> @@ -303,10 +303,10 @@ static inline void *phys_to_virt(unsigned long address)
+>>>>>>>>  /*
+>>>>>>>>   * Change "struct page" to physical address.
+>>>>>>>>   *
+>>>>>>>> - * This implementation is for the no-MMU case only... if you have an MMU
+>>>>>>>> + * This implementation is for the no-MMU or UML case only... if you have an MMU
+>>>>>>>>   * you'll need to provide your own definitions.
+>>>>>>>>   */
+>>>>>>>> -#ifndef CONFIG_MMU
+>>>>>>>> +#if !CONFIG_MMU || CONFIG_UML
+>>>>>>>>  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>>>>>>>>  {
+>>>>>>>>  	return (void __iomem*) (unsigned long)offset;
+>>>>>>>> @@ -325,7 +325,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>>>>>>>>  static inline void iounmap(void __iomem *addr)
+>>>>>>>>  {
+>>>>>>>>  }
+>>>>>>>> -#endif /* CONFIG_MMU */
+>>>>>>>> +#endif /* !CONFIG_MMU || CONFIG_UML */
+>>>>>>>>  
+>>>>>>>>  #ifdef CONFIG_HAS_IOPORT
+>>>>>>>>  #ifndef CONFIG_GENERIC_IOMAP
+>>>>>>>>
+>>>>>>
+>>>>>> UML has no io memory but a MMU, so I'd argue that you better fix drivers/ptp/ptp_pch.c dependencies.
+>>>>>> _If_ ptp_pch.c really works without real io memory, you can look what I did in my GENERIC_IO series[1]
+>>>>>> to make nandsim work on UML. Maybe this helps.
+>>>>>>
+>>>>
+>>>> But "no io memory" is not the excuse to not define the related dummy
+>>>> function.
+>> UML has no io memory, period.
+>> Same applies for s390, it also includes asm-generic/io.h in the !CONFIG_PCI
+>> case.
+>> UML and s390 are very special here.
+>>
 > 
-> On Wed, May 29, 2013 at 06:37:03PM +0530, Ravi Babu wrote:
-> > Adding babble_recovery operation as part of musb->ops, used to recover
-> > from babble condition during babble interrupt.
-> >
-> > Signed-off-by: Ravi Babu <ravibabu@ti.com>
-> > ---
-> >  drivers/usb/musb/musb_core.c |    6 ++++++
-> >  drivers/usb/musb/musb_core.h |    7 +++++++
-> >  2 files changed, 13 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/usb/musb/musb_core.c
-> > b/drivers/usb/musb/musb_core.c index ab6fa39..411c29d 100644
-> > --- a/drivers/usb/musb/musb_core.c
-> > +++ b/drivers/usb/musb/musb_core.c
-> > @@ -857,6 +857,12 @@ b_host:
-> >  		}
-> >  	}
-> >
-> > +	/* handle babble condition */
-> > +	if (int_usb & MUSB_INTR_BABBLE) {
-> > +		pr_info("babble: restarting the musb controller..");
-> > +		musb_babble_recovery(musb);
-> > +	}
-> > +
-> >  #if 0
-> >  /* REVISIT ... this would be for multiplexing periodic endpoints, or
-> >   * supporting transfer phasing to prevent exceeding ISO bandwidth
-> > diff --git a/drivers/usb/musb/musb_core.h
-> > b/drivers/usb/musb/musb_core.h index f96e899..bf37dc9 100644
-> > --- a/drivers/usb/musb/musb_core.h
-> > +++ b/drivers/usb/musb/musb_core.h
-> > @@ -213,6 +213,8 @@ struct musb_platform_ops {
-> >  	int	(*adjust_channel_params)(struct dma_channel *channel,
-> >  				u16 packet_sz, u8 *mode,
-> >  				dma_addr_t *dma_addr, u32 *len);
-> > +
-> > +	void	(*babble_recovery)(struct musb *musb);
+> Oh, yes, really the same.
 > 
-> I don't get why can't 'babble_recovery' be generic. Why do we need each glue
-> layer to implement it ?
+>>>> The drivers internal code has already check the related return value,
+>>>> so it is the architecture's duty to 'tell' the driver whether support
+>>>> io memory (e.g. define ioremap, but return NULL).
+>> It does so already by setting CONFIG_HAS_IOMEM=n
 > 
+> Excuse me, I use "grep -rn ioremap *" under "include/" and "arch/um/"
+> directory, but can not find the related definition for 'ioremap'.
+> 
+> Is there another declaration or definition way which I don't know ?
+> (maybe it is).
 
-Babble is generic, but recovery mechanism is nothing but "reset of usbss" which is SoC dependent and followed by generic restart of the musb controller. 
-That is why musb_restart() API is exported used by all glue in babble recovery.
+Both UML and s390 (in the !CONFIG_PCI) do not define ioremap() because
+without io memory you cannot have a ioremap().
 
---
-Ravi B
+> For our case, the ".config" file does not define 'CONFIG_HAS_IOMEM', can
+> I assume it means "CONFIG_HAS_IOMEM=n" ?
+
+If I'm not mistaken it works the other way around.
+All archs except UML and s390 set CONFIG_HAS_IOMEM=y.
+
+Thanks,
+//richard
