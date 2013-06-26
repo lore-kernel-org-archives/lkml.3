@@ -1,54 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab3FZImw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:42:52 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:50181 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab3FZImu (ORCPT
+	id S1752082Ab3FZIoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:44:32 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33408 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab3FZIo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:42:50 -0400
+	Wed, 26 Jun 2013 04:44:28 -0400
+Message-ID: <51CAA921.7030906@linux.vnet.ibm.com>
+Date: Wed, 26 Jun 2013 14:11:05 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Date: Wed, 26 Jun 2013 10:42:49 +0200
-Message-ID: <CABPqkBQ843gUmk596NrOyybBH63o02sz8-8qW0jOkEodrs1a7g@mail.gmail.com>
-Subject: [BUG] perf report: garbage output with event grouping
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        walken@google.com, mingo@kernel.org, linux-arch@vger.kernel.org,
+        vincent.guittot@linaro.org, kvm@vger.kernel.org, x86@kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, namhyung@kernel.org,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com,
+        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu, tj@kernel.org,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 29/45] kvm/vmx: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625203043.16593.1600.stgit@srivatsabhat.in.ibm.com> <51CA9C5E.1030609@redhat.com> <51CAA116.2060906@linux.vnet.ibm.com> <51CAA514.8050609@redhat.com>
+In-Reply-To: <51CAA514.8050609@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062608-2674-0000-0000-0000099066E0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/26/2013 01:53 PM, Paolo Bonzini wrote:
+> Il 26/06/2013 10:06, Srivatsa S. Bhat ha scritto:
+>> On 06/26/2013 01:16 PM, Paolo Bonzini wrote:
+>>> Il 25/06/2013 22:30, Srivatsa S. Bhat ha scritto:
+>>>> -	cpu = get_cpu();
+>>>> +	cpu = get_online_cpus_atomic();
+>>>>  	vmx_vcpu_load(&vmx->vcpu, cpu);
+>>>>  	vmx->vcpu.cpu = cpu;
+>>>>  	err = vmx_vcpu_setup(vmx);
+>>>>  	vmx_vcpu_put(&vmx->vcpu);
+>>>> -	put_cpu();
+>>>> +	put_online_cpus_atomic();
+>>>
+>>> The new API has a weird name.  Why are you adding new functions instead
+>>> of just modifying get/put_cpu?
+>>>
+>>
+>> Because the purpose of those two functions are distinctly different
+>> from each other.
+>>
+>> get/put_cpu() is used to disable preemption on the local CPU. (Which
+>> also disables offlining the local CPU during that critical section).
+> 
+> Ok, then I understood correctly... and I acked the other KVM patch.
+>
+
+Thank you!
+ 
+> However, keeping the code on the local CPU is exactly the point of this
+> particular use of get_cpu()/put_cpu().  Why does it need to synchronize
+> with offlining of other CPUs?
+> 
+
+Now that I looked at it again, I think you are right, get/put_cpu() is
+good enough here.
+
+But let me explain why I initially thought we needed full synchronization
+with CPU offline. In short, I wanted to synchronize the calls to
+__loaded_vmcs_clear(). We have the scenario shown below:
+
+CPU offline:
+	CPU_DYING:
+		hardware_disable();
+		->vmclear_local_loaded_vmcss();
+		  ->__loaded_vmcs_clear(v);
 
 
-$ perf record -e 'cpi{cycles,instructions}' noploop 5
 
-$ perf report --stdio --group
-# group: ^P^Q<A0>\{cycles,instructions}
-# ========
-#
-# Samples: 39K of event '^P^Q<A0>\ { cycles, instructions }'
-# Event count (approx.): 37782563692
-#
-#         Overhead  Command      Shared Object                       Symbol
-# ................  .......  .................  ...........................
-#
-    99.91%  99.98%  noploop  noploop            [.] main
-     0.06%   -nan%  noploop  [kernel.kallsyms]  [k] read_hpet
-     0.01%   0.01%  noploop  [kernel.kallsyms]  [k] __acct_update_integrals
-     0.01%   -nan%  noploop  [kernel.kallsyms]  [k] raise_softirq
-     0.01%   -nan%  noploop  [kernel.kallsyms]  [k] apic_timer_interrupt
-     0.01%   -nan%  noploop  [kernel.kallsyms]  [k] __do_softirq
-     0.01%   -nan%  noploop  [kernel.kallsyms]  [k] common_interrupt
-     0.00%   0.00%  noploop  [kernel.kallsyms]  [k] intel_pmu_enable_all
-     0.00%   0.01%  noploop  [kernel.kallsyms]  [k] cpuacct_account_field
-     0.00%   0.01%  noploop  [kernel.kallsyms]  [k] __local_bh_enable
+And vmx_vcpu_load() (among others) can do:
+       vmx_vcpu_load();
+       -> loaded_vmcs_clear();
+          -> __loaded_vmcs_clear();
 
 
-1. The group name is garbage if not anonymous group.
-2. arithmetic error in the overhead columns leading to NaN.
-3. I assume the Overhead column order is the group event order. Is that right?
+So I wanted to avoid this race-condition and hence wrapped the code with
+get/put_online_cpus_atomic().
+
+But the point I missed earlier is that loaded_vmcs_clear() calls
+__loaded_vmcs_clear() using smp_call_function_single(), which itself
+synchronizes properly with CPU hotplug. So there is no need to add full
+hotplug synchronization in the vmx code, as you noted above.
+
+So, please ignore this patch, and sorry for the noise!
+
+Regards,
+Srivatsa S. Bhat
+
