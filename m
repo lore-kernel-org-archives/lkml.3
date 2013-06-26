@@ -1,61 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab3FZVbE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:31:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40568 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753005Ab3FZVbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:31:01 -0400
-Message-ID: <51CB5D84.4080709@zytor.com>
-Date: Wed, 26 Jun 2013 14:30:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders@circuitco.com, vishal.l.verma@intel.com,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE
- ID
-References: <cover.1372211451.git.dvhart@linux.intel.com> <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com> <20130626163250.GA29299@google.com> <1372266904.8177.83.camel@envy.home> <CAErSpo6=1i76RRmJSUi+BpD9D0WrXaML4HkGLn0C=+6=ohB0uQ@mail.gmail.com>
-In-Reply-To: <CAErSpo6=1i76RRmJSUi+BpD9D0WrXaML4HkGLn0C=+6=ohB0uQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753167Ab3FZVc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:32:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23391 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab3FZVcZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 17:32:25 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: stable@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jiang Liu <jiang.liu@huawei.com>
+Cc: Gavin Guo <tuffkidtt@gmail.com>, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: 
+Date: Wed, 26 Jun 2013 14:31:51 -0700
+Message-Id: <1372282311-7268-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 12:37 PM, Bjorn Helgaas wrote:
-> 
-> Yeah, that's what I was thinking.
-> 
-> But Peter's comment makes more sense to me now.  The spec refers to
-> that config register as "Subsystem ID," not "Subsystem Device ID," but
-> I was confused because most existing usage treats it as a device ID.
-> For example, the field in struct pci_device_id is named "subdevice,"
-> and all the existing #defines in pci_ids.h are of the form
-> PCI_SUBDEVICE_ID_*.
-> 
-> Device IDs are pretty specific identifiers, so I was thinking that a
-> "sub-device ID" would be even more specific.  Then it would make no
-> sense to have a "sub-device ID" that was as generic as "MINNOWBOARD."
-> But the register is actually *not* a "sub-device ID," and I can see
-> that using the same Subsystem ID for all the devices on a board might
-> make sense.
-> 
+From: Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3.9 stable] PCI: acpiphp: Re-enumerate devices when host bridge receives Bus Check
+In-Reply-To: <20130605223852.GA16729@kroah.com>
 
-Subsystem IDs is basically a board ID in the traditional PC view, but
-they didn't call it that because it would have been confusing in other,
-nontraditional configurations.
+Backporting for v3.9 for 3f327e39b4 (PCI: acpiphp: Re-enumerate devices when host bridge receives Bus Check).
 
-Microsoft has a "best practices" document, which may end up becoming
-basis for a future PCI-SIG document clarifying the standard:
+When a PCI host bridge device receives a Bus Check notification, we
+must re-enumerate starting with the bridge to discover changes (devices
+that have been added or removed).
 
-http://msdn.microsoft.com/en-us/library/windows/hardware/gg463287.aspx
+Prior to 668192b678 ("PCI: acpiphp: Move host bridge hotplug to
+pci_root.c"), this happened in _handle_hotplug_event_bridge().  After that
+commit, _handle_hotplug_event_bridge() is not installed for host bridges,
+and the host bridge notify handler, _handle_hotplug_event_root() did not
+re-enumerate.
 
-	-hpa
+This patch adds re-enumeration to _handle_hotplug_event_root().
+
+This fixes cases where we don't notice the addition or removal of
+PCI devices, e.g., the PCI-to-USB ExpressCard in the bugzilla below.
+
+-v1: Backport of 3f327e39b4 to v3.9 by Bjorn Helgaas <bhelgaas@google.com>
+-v2: use request_module("acpiphp") for acpiphp as module instead of built-in.
+
+[bhelgaas: changelog, references]
+Reference: https://lkml.kernel.org/r/CAAh6nkmbKR3HTqm5ommevsBwhL_u0N8Rk7Wsms_LfP=nBgKNew@mail.gmail.com
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=57961
+Reported-by: Gavin Guo <tuffkidtt@gmail.com>
+Tested-by: Gavin Guo <tuffkidtt@gmail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+---
+ drivers/acpi/pci_root.c            |    7 ++++++-
+ drivers/pci/hotplug/acpiphp_glue.c |   14 ++++++++++++++
+ include/linux/pci-acpi.h           |    2 ++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
+
+Index: linux-3.9.4/drivers/acpi/pci_root.c
+===================================================================
+--- linux-3.9.4.orig/drivers/acpi/pci_root.c
++++ linux-3.9.4/drivers/acpi/pci_root.c
+@@ -665,6 +665,7 @@ static void handle_root_bridge_removal(s
+ 		kfree(ej_event);
+ }
+ 
++void (*acpiphp_check_host_bridge)(acpi_handle handle);
+ static void _handle_hotplug_event_root(struct work_struct *work)
+ {
+ 	struct acpi_pci_root *root;
+@@ -687,7 +688,11 @@ static void _handle_hotplug_event_root(s
+ 		/* bus enumerate */
+ 		printk(KERN_DEBUG "%s: Bus check notify on %s\n", __func__,
+ 				 (char *)buffer.pointer);
+-		if (!root)
++		if (root) {
++			request_module("acpiphp");
++			if (acpiphp_check_host_bridge)
++				acpiphp_check_host_bridge(handle);
++		} else
+ 			handle_root_bridge_insertion(handle);
+ 
+ 		break;
+Index: linux-3.9.4/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-3.9.4.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-3.9.4/drivers/pci/hotplug/acpiphp_glue.c
+@@ -1122,6 +1122,18 @@ check_sub_bridges(acpi_handle handle, u3
+ 	return AE_OK ;
+ }
+ 
++static void __acpiphp_check_host_bridge(acpi_handle handle)
++{
++	struct acpiphp_bridge *bridge;
++
++	bridge = acpiphp_handle_to_bridge(handle);
++	if (bridge)
++		acpiphp_check_bridge(bridge);
++
++	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
++		ACPI_UINT32_MAX, check_sub_bridges, NULL, NULL, NULL);
++}
++
+ static void _handle_hotplug_event_bridge(struct work_struct *work)
+ {
+ 	struct acpiphp_bridge *bridge;
+@@ -1305,6 +1317,7 @@ static struct acpi_pci_driver acpi_pci_h
+ int __init acpiphp_glue_init(void)
+ {
+ 	acpi_pci_register_driver(&acpi_pci_hp_driver);
++	acpiphp_check_host_bridge = __acpiphp_check_host_bridge;
+ 
+ 	return 0;
+ }
+@@ -1317,6 +1330,7 @@ int __init acpiphp_glue_init(void)
+  */
+ void  acpiphp_glue_exit(void)
+ {
++	acpiphp_check_host_bridge = NULL;
+ 	acpi_pci_unregister_driver(&acpi_pci_hp_driver);
+ }
+ 
+Index: linux-3.9.4/include/linux/pci-acpi.h
+===================================================================
+--- linux-3.9.4.orig/include/linux/pci-acpi.h
++++ linux-3.9.4/include/linux/pci-acpi.h
+@@ -43,6 +43,8 @@ static inline acpi_handle acpi_pci_get_b
+ }
+ #endif
+ 
++extern void (*acpiphp_check_host_bridge)(acpi_handle handle);
++
+ #ifdef CONFIG_ACPI_APEI
+ extern bool aer_acpi_firmware_first(void);
+ #else
 
