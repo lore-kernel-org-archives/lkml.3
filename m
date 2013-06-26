@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab3FZMuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 08:50:25 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:47879 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab3FZMuY (ORCPT
+	id S1751735Ab3FZMvp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 08:51:45 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:53069 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab3FZMvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 08:50:24 -0400
-Message-ID: <51CAE388.9030602@monstr.eu>
-Date: Wed, 26 Jun 2013 14:50:16 +0200
+	Wed, 26 Jun 2013 08:51:43 -0400
+Message-ID: <51CAE3DB.8060002@monstr.eu>
+Date: Wed, 26 Jun 2013 14:51:39 +0200
 From: Michal Simek <monstr@monstr.eu>
 Reply-To: monstr@monstr.eu
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3 1/2] uio: Use of_match_ptr() macro in uio_pdrv_genirq.c
-References: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com> <CAK9yfHzVSt1XN7=OZOtF_n_3jbpXObqoiay_t6n3EauTjUUX+w@mail.gmail.com> <51CAC0A7.7090708@monstr.eu> <CAK9yfHxuHuf1BnzR36c8Ucw_xrVcMW--jE-Gpng6tPNd17sB2A@mail.gmail.com> <51CACABF.4040902@monstr.eu> <CAK9yfHzuUhxUDhBRGJPvH8ftwaE3ZbauUgK=thMTbvc7LdMq7Q@mail.gmail.com>
-In-Reply-To: <CAK9yfHzuUhxUDhBRGJPvH8ftwaE3ZbauUgK=thMTbvc7LdMq7Q@mail.gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Timur Tabi <timur@tabi.org>, devicetree-discuss@lists.ozlabs.org,
+        linux-fbdev@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v4 0/7] xilinxfb changes
+References: <cover.1370254386.git.michal.simek@xilinx.com> <20130617085640.GE305@game.jcrosoft.org> <51BED093.1040207@monstr.eu> <201306172307.19114.arnd@arndb.de> <51CABC2A.50209@monstr.eu> <51CAD385.8060400@ti.com>
+In-Reply-To: <51CAD385.8060400@ti.com>
 X-Enigmail-Version: 1.5.1
 Content-Type: multipart/signed; micalg=pgp-sha1;
  protocol="application/pgp-signature";
- boundary="----enig2HBDHRBQXRXECAMXESBXJ"
+ boundary="----enig2FEHLABGMIBFNQDVDNGVV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2HBDHRBQXRXECAMXESBXJ
-Content-Type: text/plain; charset=ISO-8859-1
+------enig2FEHLABGMIBFNQDVDNGVV
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: quoted-printable
 
-On 06/26/2013 01:13 PM, Sachin Kamat wrote:
-> On 26 June 2013 16:34, Michal Simek <monstr@monstr.eu> wrote:
->> On 06/26/2013 12:51 PM, Sachin Kamat wrote:
->>> On 26 June 2013 15:51, Michal Simek <monstr@monstr.eu> wrote:
->>>> On 06/26/2013 12:00 PM, Sachin Kamat wrote:
->>>>> On 26 June 2013 15:22, Michal Simek <michal.simek@xilinx.com> wrote=
-:
->>>>>> This eliminates having an #ifdef returning NULL for the case
->>>>>> when OF is disabled.
->>>>>>
->>>>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->>>>>
->>>>> I have already submitted a similar patch for doing this:
->>>>> https://lkml.org/lkml/2013/3/14/169
->>>>
->>>> Ok. I don't care about it.
->>>> Greg: Can you please add any of this patch to your char-misc tree?
->>>>
->>>> For Sachin patch.
->>>> Acked-by: Michal Simek <monstr@monstr.eu>
->>>
->>> Thanks Michal. Since Hans wasn't active the patch has been pending
->>> since some time.
->>> The latest rebased version has been posted [1] for Greg to apply.
->>>
->>> [1] https://lkml.org/lkml/2013/6/25/7
->>
->>
->> Yeah. As I said I really don't care which version will be applied.
->> It is just necessary to have progress on this.
->>
->> Here is the first version I have sent
->> http://lkml.org/lkml/2013/5/23/311
->>
->> btw: do you agree about removing that uio_pdrv because
->> all functionality is already in uio_pdrv_genirq driver
->> and make no sense to have two drivers for the same thing?
+On 06/26/2013 01:41 PM, Tomi Valkeinen wrote:
+> Hi,
 >=20
-> Sorry, I have'nt  seen much of this code other than the obvious
-> cleanup for which I had sent the patch.
-
-ok. Fair enough.
+> On 26/06/13 13:02, Michal Simek wrote:
+>> On 06/17/2013 11:07 PM, Arnd Bergmann wrote:
+>>> On Monday 17 June 2013, Michal Simek wrote:
+>>>> On 06/17/2013 10:56 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>>>> On 07:23 Mon 17 Jun     , Michal Simek wrote:
+>>>>>> On 06/06/2013 06:23 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>>>>>> On 12:13 Mon 03 Jun     , Michal Simek wrote:
+>>>>>>>> Hi,
+>>>>>>>>
+>>>>>>>
+>>>>>>> Arnd can you take look on it again please
+>>>>>>>
+>>>>>>> I'll take a look on it next week
+>>>>>>
+>>>>>> Any update on this?
+>>>>> look ok but I want the Ack from Arnd
+>>>
+>>> Sorry for the delay, everything looks good to me.
+>>>
+>>> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>>
+>> Jean-Christophe: Will you apply this series?
+>> Or should I take it through my microblaze tree?
+>=20
+> I've added this to my fbdev-3.11 branch.
 
 Thanks,
 Michal
@@ -91,7 +77,7 @@ Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
 
-------enig2HBDHRBQXRXECAMXESBXJ
+------enig2FEHLABGMIBFNQDVDNGVV
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -100,9 +86,9 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1.4.10 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iEYEARECAAYFAlHK44wACgkQykllyylKDCFmVACdFkwbQ3V+mLpasw5mcoqVqueX
-qpQAniYgbkf1bx48uJacd2ZzX6210MEe
-=xNMm
+iEYEARECAAYFAlHK49sACgkQykllyylKDCHpkwCfcmGFZavhyTY4cSbMT45Lu5Lw
+aKEAmgLW1MPFxOEAZY5z+r/GvZAtFzku
+=vWNR
 -----END PGP SIGNATURE-----
 
-------enig2HBDHRBQXRXECAMXESBXJ--
+------enig2FEHLABGMIBFNQDVDNGVV--
