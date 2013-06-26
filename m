@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3FZW1B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 18:27:01 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:37741 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab3FZW1A (ORCPT
+	id S1753371Ab3FZW1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 18:27:41 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:47632 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752848Ab3FZW1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 18:27:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo58bCG4=hwC73VY+nXPk9-dZUb5eWERZ_wTtAfrXtBVmg@mail.gmail.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
-	<CAErSpo58bCG4=hwC73VY+nXPk9-dZUb5eWERZ_wTtAfrXtBVmg@mail.gmail.com>
-Date: Wed, 26 Jun 2013 15:26:59 -0700
-X-Google-Sender-Auth: 0kz_Y7GpsBoNjD7U92Z6vNnQL9A
-Message-ID: <CAE9FiQW9xuu6WjH59td6Jve10kokoxU4mNqj4DRyg7beqBzHDA@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Jun 2013 18:27:40 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH v3] power: Add warning message about incorrect system date and time after resume when pm_trace is enabled
+Date: Wed, 26 Jun 2013 16:27:35 -0600
+Message-Id: <1372285655-2450-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 3:18 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Jun 25, 2013 at 10:22 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
->> Thunderbolt PCI-to-PCI bridges typically use BIOS "assisted" enumeration.
->> This means that the BIOS will allocate bridge resources based on some
->> assumptions of a maximum Thunderbolt chain. It also disables native PCIe
->> hotplug of the root port where the Thunderbolt host router is connected.
+pm_trace uses the system's Real Time Clock (RTC) to save the magic number.
+Reason for this is that the RTC is the only reliably available piece of
+hardware during resume operations where a value can be set that will
+survive a reboot.
 
-We should not need tricks in this patch after
+Consequence is that after a resume (even if it is successful) your system
+clock will have a value corresponding to the magic number instead of the
+correct date/time! It is therefore advisable to use a program like ntp-date
+or rdate to reset the correct date/time from an external time source when
+using this trace option.
 
-https://patchwork.kernel.org/patch/2766521/
+There is no run-time message to warn users of the consequences of enabling
+pm_trace. Adding a warning message to pm_trace_store() will serve as a
+reminder to users to set the system date and time after resume.
 
-[2/3] PCI / ACPI: Use boot-time resource allocation rules during hotplug
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ kernel/power/main.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Thanks
+diff --git a/kernel/power/main.c b/kernel/power/main.c
+index d77663b..480fe06 100644
+--- a/kernel/power/main.c
++++ b/kernel/power/main.c
+@@ -528,6 +528,10 @@ pm_trace_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 
+ 	if (sscanf(buf, "%d", &val) == 1) {
+ 		pm_trace_enabled = !!val;
++		if (pm_trace_enabled) {
++			pr_warn("PM: Enabling pm_trace changes system date and time during resume.\n"
++				"PM: Correct system time has to be restored manually after resume.\n");
++		}
+ 		return n;
+ 	}
+ 	return -EINVAL;
+-- 
+1.7.10.4
 
-Yinghai
