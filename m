@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab3FZFio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 01:38:44 -0400
-Received: from [207.46.163.212] ([207.46.163.212]:28007 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751652Ab3FZFil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 01:38:41 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Darren Hart <dvhart@linux.intel.com>
-CC: Olof Johansson <olof@lixom.net>, "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "peter.p.waskiewicz.jr@intel.com" <peter.p.waskiewicz.jr@intel.com>,
-        "andriy.shevchenko@linux.intel.com" 
-	<andriy.shevchenko@linux.intel.com>,
-        "danders@circuitco.com" <danders@circuitco.com>,
-        "vishal.l.verma@intel.com" <vishal.l.verma@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the
- MinnowBoard
-Thread-Topic: [PATCH 4/8] minnowboard: Add base platform driver for the
- MinnowBoard
-Thread-Index: AQHOcg//k4Oo/fSkBUqc5+pwXHA5uZlHX0AAgAAMBgCAAAKYgIAACwsAgAABLAA=
-Date: Wed, 26 Jun 2013 05:36:29 +0000
-Message-ID: <1372224988.9179.5.camel@x230>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
-	 <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
-	 <20130626040026.GA23621@quad.lixom.net>
-	 <1372221808.8177.52.camel@envy.home> <1372222365.9179.4.camel@x230>
-	 <1372224736.8177.63.camel@envy.home>
-In-Reply-To: <1372224736.8177.63.camel@envy.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-x-forefront-prvs: 08897B549D
-x-forefront-antispam-report: SFV:NSPM;SFS:(51704005)(377424004)(24454002)(189002)(199002)(4396001)(50986001)(47976001)(54356001)(59766001)(69226001)(74876001)(65816001)(77982001)(46102001)(63696002)(76482001)(56776001)(54316002)(51856001)(47736001)(49866001)(80022001)(81342001)(79102001)(81542001)(74366001)(16406001)(31966008)(33646001)(33716001)(76796001)(47446002)(74662001)(74502001)(53806001)(56816003)(77096001)(74706001)(76786001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB224;H:BY2PR05MB222.namprd05.prod.outlook.com;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <2C06A9FFF7010348A32036CB5312020B@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1751505Ab3FZFjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 01:39:37 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:38784 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3FZFjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 01:39:35 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc/vfio: Add missing locks for take/release TCE table ownership
+Date: Wed, 26 Jun 2013 15:39:19 +1000
+Message-Id: <1372225159-30187-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5Q5crf9003645
 
-On Tue, 2013-06-25 at 22:32 -0700, Darren Hart wrote:
+VFIO IOMMU driver for sPAPR TCE locks the whole DMA window by setting
+ones to iommu_table.it_map. However this was not protected by the locks
+which other clients of iommu_table use.
 
-> are all board-specific. They map GPIO to their fixed functions and
-> provide an API for board-specific queries (minnowboard.c), they provide
-> example uses (minnowboard-gpio and minnowboard-keys) which aid in
-> experimentation and the development of new drivers.
-> 
-> Which of these make sense as ACPI devices in your opinion?
+The patch fixes this.
 
-Does the firmware contain a corresponding ACPI device with a specific
-_HID that defines the programming model? If so, it should have an ACPI
-driver. If not, it shouldn't.
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
+ arch/powerpc/kernel/iommu.c |   25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
+diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+index b20ff17..9f34742 100644
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -1076,25 +1076,41 @@ EXPORT_SYMBOL_GPL(iommu_put_tce_user_mode);
+ int iommu_take_ownership(struct iommu_table *tbl)
+ {
+ 	unsigned long sz = (tbl->it_size + 7) >> 3;
++	int i, ret = 0;
++
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_lock(&tbl->pools[i].lock);
++	spin_lock(&tbl->large_pool.lock);
+ 
+ 	if (tbl->it_offset == 0)
+ 		clear_bit(0, tbl->it_map);
+ 
+ 	if (!bitmap_empty(tbl->it_map, tbl->it_size)) {
+ 		pr_err("iommu_tce: it_map is not empty");
+-		return -EBUSY;
++		ret = -EBUSY;
++		goto unlock_exit;
+ 	}
+ 
+ 	memset(tbl->it_map, 0xff, sz);
+ 	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
+ 
+-	return 0;
++unlock_exit:
++	spin_unlock(&tbl->large_pool.lock);
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_unlock(&tbl->pools[i].lock);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(iommu_take_ownership);
+ 
+ void iommu_release_ownership(struct iommu_table *tbl)
+ {
+ 	unsigned long sz = (tbl->it_size + 7) >> 3;
++	int i;
++
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_lock(&tbl->pools[i].lock);
++	spin_lock(&tbl->large_pool.lock);
+ 
+ 	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
+ 	memset(tbl->it_map, 0, sz);
+@@ -1102,6 +1118,11 @@ void iommu_release_ownership(struct iommu_table *tbl)
+ 	/* Restore bit#0 set by iommu_init_table() */
+ 	if (tbl->it_offset == 0)
+ 		set_bit(0, tbl->it_map);
++
++	spin_unlock(&tbl->large_pool.lock);
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_unlock(&tbl->pools[i].lock);
++
+ }
+ EXPORT_SYMBOL_GPL(iommu_release_ownership);
+ 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.7.10.4
+
