@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab3FZCB2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:01:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5490 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab3FZCB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:01:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,940,1363158000"; 
-   d="scan'208";a="359623418"
-Message-ID: <51CA4B94.3040008@intel.com>
-Date: Wed, 26 Jun 2013 10:01:56 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751506Ab3FZCCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:02:34 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:21570 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab3FZCCd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 22:02:33 -0400
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>,
+        "Shen, Voice" <Voice.Shen@atmel.com>, "Wu, Josh" <Josh.wu@atmel.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
+Subject: RE: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
+Thread-Topic: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
+Thread-Index: AQHOcMaKAGpmq7nWiEK9hDRgNwiqQJlHP43g
+Date: Wed, 26 Jun 2013 01:59:22 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641687DF77C@penmbx01>
+References: <cover.1372069834.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1372069834.git.nicolas.ferre@atmel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Tejun Heo <tj@kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        Liu Jiang <liuj97@gmail.com>, Dirk Griesbach <spamthis@freenet.de>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liu Jiang <jiang.liu@huawei.com>
-Subject: Re: [PATCH] libata: remove dead code from libata-acpi.c
-References: <1371265368-7334-1-git-send-email-liuj97@gmail.com>  <51BE6B5C.70803@intel.com> <20130617180151.GG32663@mtj.dyndns.org>  <51C02571.3090100@intel.com> <51C26861.9050106@intel.com>  <51C2E12F.4000603@cogentembedded.com> <51C3A489.1050905@intel.com> <1371828346.3040.3.camel@dabdike>
-In-Reply-To: <1371828346.3040.3.camel@dabdike>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5Q22cwY002549
 
-On 06/21/2013 11:25 PM, James Bottomley wrote:
-> On Fri, 2013-06-21 at 08:55 +0800, Aaron Lu wrote:
->> On 06/20/2013 07:02 PM, Sergei Shtylyov wrote:
->>> Hello.
->>
->> Hi,
->>
->> Thanks for your comments.
->>
->>>
->>> On 20-06-2013 6:26, Aaron Lu wrote:
->>>>
->>>> +void ata_acpi_hotplug_init(struct ata_host *host)
->>>> +{
->>>> +	int i;
->>>> +
->>>> +	for (i = 0; i < host->n_ports; i++) {
->>>> +		struct ata_port *ap = host->ports[i];
->>>> +		acpi_handle handle;
->>>> +		struct ata_device *dev;
->>>> +
->>>> +		if (!ap)
->>>> +			continue;
->>>> +
->>>> +		handle = ata_ap_acpi_handle(ap);
->>>> +		if (handle) {
->>>> +			/* we might be on a docking station */
->>>> +			register_hotplug_dock_device(handle,
->>>> +					&ata_acpi_ap_dock_ops, ap);
->>>
->>>     Please indent this line under the next character after ( above.
->>
->> Is there a link about this rule? I might have missed something about
->> coding style.
+
+
+> -----Original Message-----
+> From: Nicolas Ferre [mailto:nicolas.ferre@atmel.com]
+> Sent: 2013Äê6ÔÂ24ÈÕ 18:35
+> To: Jean-Christophe PLAGNIOL-VILLARD; Desroches, Ludovic; Yang, Wenyou;
+> Shen, Voice; Wu, Josh
+> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Ferre,
+> Nicolas
+> Subject: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
 > 
-> The rule is follow the coding style in the file, unless there's
-> something really wrong with it (which there might be in the case of
-> really old drivers).  The reason is that a mixture of coding styles
-> makes the file much harder to read than a single consistent style.
-
-Oh right, that's the rule I missed. Thanks for letting me know.
-
+> This little series is for enabling the support of SPI on at91sam9n12 and
+> sama5d3 families.
 > 
-> In this case, if you look at libata-acpi.c you see all continuation
-> lines of function calls are aligned with open braces.
+> Nicolas Ferre (3):
+>   ARM: at91/DT: fix SPI compatibility string
+>   ARM: at91/DT: sama5d3: add SPI DMA client infos
+>   ARM: at91/DT: at91sam9n12: add SPI DMA client infos
+> 
+>  arch/arm/boot/dts/at91sam9n12.dtsi |  6 ++++++
+>  arch/arm/boot/dts/sama5d3.dtsi     | 10 ++++++++--
+>  2 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> --
+> 1.8.2.2
 
-Indeed.
+Tested on sama5d34ek, Linux-next: next-20130624
 
--Aaron
+Tested by Wenyou Yang <wenyou.yang@atmel.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
