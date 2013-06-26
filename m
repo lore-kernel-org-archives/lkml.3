@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab3FZHVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:21:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4061 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab3FZHVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:21:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,941,1363158000"; 
-   d="scan'208";a="360649340"
-Date: Wed, 26 Jun 2013 10:25:36 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 0/6] Thunderbolt workarounds take 2
-Message-ID: <20130626072536.GN9294@intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <12066786.EK0Z2aX1JA@vostro.rjw.lan>
+	id S1751711Ab3FZHYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:24:18 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45600 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab3FZHYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 03:24:17 -0400
+Message-ID: <51CA9700.3040600@ahsoftware.de>
+Date: Wed, 26 Jun 2013 09:23:44 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <12066786.EK0Z2aX1JA@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dean Jenkins <Dean_Jenkins@mentor.com>
+CC: Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: BUG: tty: memory corruption through tty_release/tty_ldisc_release
+References: <519480A1.6030909@ahsoftware.de> <5194E380.1030109@hurleysoftware.com> <5194E64A.3040003@ahsoftware.de> <5195553C.90608@hurleysoftware.com> <5195B561.3090503@ahsoftware.de> <51C9A6A9.3000202@mentor.com>
+In-Reply-To: <51C9A6A9.3000202@mentor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 01:24:25AM +0200, Rafael J. Wysocki wrote:
-> Would you please CC things touching ACPIPHP to linux-acpi?
+Am 25.06.2013 16:18, schrieb Dean Jenkins:
+> On 17/05/13 05:43, Alexander Holler wrote:
 
-Sorry about that -- It wasn't listed in the output of get_maintainers.pl so
-it kind of was forgotten.
+>> To reproduce it, call rfcomm connect /dev/rfcommN and after the
+>> connection to the remote device happened, power down the remote device
+>> and wait 20s (the timeout until a connection drop will be discovered).
+> I expect this behaviour depends on the remote device. Does the device
+> close the RFCOMM session cleanly ? Perhaps an out of range test would be
+> better so that the connection drops.
 
-Do you want me to resend this series with linux-acpi@ included?
+Yes. With power down I meant a hard power down, such that the remote 
+doesn't has the chance to close the session cleanly. It's easier to do 
+than putting it out of range, at least if the remote isn't a 
+battery-powered device. I should have described that more clearly.
+
+> Is there a bugzilla bug report that is tracking this issue ? If I can
+> reproduce this issue then I would like to add more information to a bug
+> report.
+
+I haven't written a bugzilla bug report and won't write one.
+
+Furthermore I've already found and described the problem, so more crash 
+reports should not be necessary.
+
+And they don't make much sense because they happen because of a 
+disastreous memory corruption, which means the BUGs can include almost 
+everything (hopefully nothing which eats your disk contents).
+
+Regards,
+
+Alexander Holler
+
