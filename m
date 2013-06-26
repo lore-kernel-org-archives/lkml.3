@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab3FZVAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:00:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3982 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557Ab3FZVAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:00:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,946,1363158000"; 
-   d="scan'208";a="356265112"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Subject: RE: [PATCH] x86/mce: Update MCE severity condition check
-Thread-Topic: [PATCH] x86/mce: Update MCE severity condition check
-Thread-Index: AQHObZf4dVtHLM6ankO4NgcMDQSyUJlGddGAgAAxdHCAAY8IAIAAL7UbgAASlMCAAHtKgP//jmxA
-Date: Wed, 26 Jun 2013 21:00:10 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31C56603@ORSMSX106.amr.corp.intel.com>
-References: <20130626091808.GA18468@gchen.bj.intel.com>
- <0134840@agluck-desk.sc.intel.com> <20130626190845.GK20274@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31C5653E@ORSMSX106.amr.corp.intel.com>
- <20130626203639.GM20274@pd.tnic>
-In-Reply-To: <20130626203639.GM20274@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
+	id S1753046Ab3FZVAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:00:23 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:44016 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab3FZVAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 17:00:17 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130626121757.GP9294@intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
+ <20130625141556.2f9de7b1@jbarnes-desktop> <20130626121757.GP9294@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 26 Jun 2013 14:59:56 -0600
+Message-ID: <CAErSpo6aQMtav89V8wyu+NZxro91o1MnB1ViG-4ExrCgLPKmjg@mail.gmail.com>
+Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5QL0RVh009492
 
-> And this obviously is the case for the hardware too, I assume, not only
-> the SDM?
+[+cc Alex]
 
-Yes - we have a magic process which reconfigures all deployed silicon whenever
-a new SDM is published :-)
+On Wed, Jun 26, 2013 at 6:17 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Tue, Jun 25, 2013 at 02:15:56PM -0700, Jesse Barnes wrote:
+>> On Tue, 25 Jun 2013 19:22:10 +0300
+>> Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+>>
+>> > +   if (!(pci_probe & PCI_NOASSIGN_ROMS)) {
+>> > +           pr_info("Thunderbolt host router detected disabling ROMs\n");
+>> > +           pci_probe |= PCI_NOASSIGN_ROMS;
+>> > +   }
+>>
+>> I wonder if this should just be the default on x86?  Or do we allocate
+>> ROM space to address some other platform where we need it and the BIOS
+>> doesn't do it for the devices we care about?
+>
+> Good question. In our case it definitely helps to have pci=norom the
+> default. Can't tell if it might break something that depends on the current
+> behaviour.
 
-Actually the SDM had been collecting new features for each generation ... each
-time just bolting on a new paragraph or table.  I snapped when I saw the table
-that was proposed for 15-20 to add "continuable" errors and complained that
-it had gotten way too complicated ... and proposed the version that you see in
-the current SDM.
+I think the current default behavior is that if the BIOS has assigned
+the ROM BAR, we keep that assignment, and if it hasn't, we allocate
+MEM space for it.  And "pci=norom" means that we don't allocate MEM
+space for it, even if the BIOS hasn't assigned it.
 
-It accurately portrays what older generations implemented, and adds the new
-continuable (EIPV=1, RIPV=1) while removing many rows and columns.
+"pci=norom" is only implemented on x86.  I think most other arches
+allocate MEM space for ROMs, with no way to turn that off.  PA-RISC
+seems to ignore ROMs (dino_fixup_bus()), but that looks like the
+exception.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I'm slightly concerned that if we make the x86 default be "never
+assign space for ROMs unless the BIOS has done it," we might break
+virtualized guests that need access to ROMs.  Alex?
+
+Bjorn
