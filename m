@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab3FZHmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:42:09 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34023 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3FZHmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:42:07 -0400
-Date: Wed, 26 Jun 2013 00:41:06 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: eranian@google.com, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@au1.ibm.com>, ellerman@au1.ibm.com,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, sukadev@us.ibm.com
-Subject: [RFC][PATCH 1/3][v2] perf: Move PERF_MEM*SHIFT macros up the block
-Message-ID: <20130626074106.GA3741@us.ibm.com>
+	id S1751935Ab3FZHmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:42:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36335 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751687Ab3FZHma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 03:42:30 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <linux-mtd@lists.infradead.org>, <spi-devel-general@lists.sourceforge.net>,
+        <broonie@kernel.org>, <dwmw2@infradead.org>, <manonuevo@micron.com>,
+        <tqnguyen@micron.com>, <grant.likely@linaro.org>
+CC: <balbi@ti.com>, <rnayak@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>
+Subject: [PATCH 0/3] spi/mtd generic framework,ti qspi controller and spansion driver
+Date: Wed, 26 Jun 2013 13:11:09 +0530
+Message-ID: <1372232472-2641-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062607-3620-0000-0000-0000034A48E8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series add support for the generic spi based flash
+framework(spinand_mtd), which can be used used by any spi based flash device to
+attach itself to mtd framework. 
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Fri, 21 Jun 2013 14:03:01 -0700
-Subject: [RFC][PATCH 1/3][v2] perf: Move PERF_MEM*SHIFT macros up the block
+The first patch of this series includes both the generic framework and the
+the micron device(spinand_lld) making use of the framework.
+I picked the first patch as a standalone patch. Can split the generic and
+the lld part based on community suggestions.
 
-Values for the PERF_MEM_*SHIFT macros depend on the block before
-them, so it would be more readable if they are in the beginning
-of the block.
+The second patch is the ti qspi controller driver.
+The third patch is the spansion s25fl256s driver, making use of the the
+generic spinand_mtd frameowrk.
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- include/uapi/linux/perf_event.h |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+Test info:
+Tested the generic framework(spinand_mtd.c) along with patch(2&3) on my dra7xx board 
+for write/erase/read using nand utils.
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index fb104e5..52697a3 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -632,14 +632,15 @@ union perf_mem_data_src {
- };
- 
- /* type of opcode (load/store/prefetch,code) */
-+#define PERF_MEM_OP_SHIFT	0
- #define PERF_MEM_OP_NA		0x01 /* not available */
- #define PERF_MEM_OP_LOAD	0x02 /* load instruction */
- #define PERF_MEM_OP_STORE	0x04 /* store instruction */
- #define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
- #define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
--#define PERF_MEM_OP_SHIFT	0
- 
- /* memory hierarchy (memory level, hit or miss) */
-+#define PERF_MEM_LVL_SHIFT	5
- #define PERF_MEM_LVL_NA		0x01  /* not available */
- #define PERF_MEM_LVL_HIT	0x02  /* hit level */
- #define PERF_MEM_LVL_MISS	0x04  /* miss level  */
-@@ -654,22 +655,22 @@ union perf_mem_data_src {
- #define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
- #define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
- #define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
--#define PERF_MEM_LVL_SHIFT	5
- 
- /* snoop mode */
-+#define PERF_MEM_SNOOP_SHIFT	19
- #define PERF_MEM_SNOOP_NA	0x01 /* not available */
- #define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
- #define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
- #define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
- #define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
--#define PERF_MEM_SNOOP_SHIFT	19
- 
- /* locked instruction */
-+#define PERF_MEM_LOCK_SHIFT	24
- #define PERF_MEM_LOCK_NA	0x01 /* not available */
- #define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
--#define PERF_MEM_LOCK_SHIFT	24
- 
- /* TLB access */
-+#define PERF_MEM_TLB_SHIFT	26
- #define PERF_MEM_TLB_NA		0x01 /* not available */
- #define PERF_MEM_TLB_HIT	0x02 /* hit level */
- #define PERF_MEM_TLB_MISS	0x04 /* miss level */
-@@ -677,7 +678,6 @@ union perf_mem_data_src {
- #define PERF_MEM_TLB_L2		0x10 /* L2 */
- #define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
- #define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
--#define PERF_MEM_TLB_SHIFT	26
- 
- #define PERF_MEM_S(a, s) \
- 	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
--- 
-1.7.1
+Compile tested(spinand_lld.c).
+
+Mona Anonuevo (1):
+  drivers: mtd: spinand: Add generic spinand frameowrk and micron
+    driver.
+
+Sourav Poddar (2):
+  drivers: spi: Add qspi flash controller
+  drivers: mtd: spinand: Add qspi spansion flash controller
+
+ drivers/mtd/Kconfig                 |    2 +
+ drivers/mtd/Makefile                |    2 +
+ drivers/mtd/spinand/Kconfig         |   31 ++
+ drivers/mtd/spinand/Makefile        |   10 +
+ drivers/mtd/spinand/spinand_lld.c   |  776 +++++++++++++++++++++++++++++++++++
+ drivers/mtd/spinand/spinand_mtd.c   |  690 +++++++++++++++++++++++++++++++
+ drivers/mtd/spinand/ti-qspi-flash.c |  373 +++++++++++++++++
+ drivers/spi/Kconfig                 |    6 +
+ drivers/spi/Makefile                |    1 +
+ drivers/spi/ti-qspi.c               |  352 ++++++++++++++++
+ include/linux/mtd/spinand.h         |  155 +++++++
+ 11 files changed, 2398 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mtd/spinand/Kconfig
+ create mode 100644 drivers/mtd/spinand/Makefile
+ create mode 100644 drivers/mtd/spinand/spinand_lld.c
+ create mode 100644 drivers/mtd/spinand/spinand_mtd.c
+ create mode 100644 drivers/mtd/spinand/ti-qspi-flash.c
+ create mode 100644 drivers/spi/ti-qspi.c
+ create mode 100644 include/linux/mtd/spinand.h
 
