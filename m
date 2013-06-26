@@ -1,119 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401Ab3FZGsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 02:48:30 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:49418 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab3FZGs2 (ORCPT
+	id S1751389Ab3FZGxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 02:53:00 -0400
+Received: from protonic.xs4all.nl ([213.84.116.84]:5777 "EHLO
+	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3FZGw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 02:48:28 -0400
+	Wed, 26 Jun 2013 02:52:59 -0400
+Message-ID: <51CA8FC8.50208@protonic.nl>
+Date: Wed, 26 Jun 2013 08:52:56 +0200
+From: Robin van der Gracht <robin@protonic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130625161935.GA10208@jshin-Toonie>
-References: <51C87ADC.4070409@canonical.com>
-	<CAKohponCrC93D88Fgg_3LKsLG0KMeCVKsTEoy-N3jsdUQdgWvA@mail.gmail.com>
-	<20130625161935.GA10208@jshin-Toonie>
-Date: Wed, 26 Jun 2013 12:18:27 +0530
-Message-ID: <CAKohpomSa0FRviZHkkJOeUUxubbzueVb3yyP5G8ASwpRB6wANQ@mail.gmail.com>
-Subject: Re: od_set_powersave_bias: NULL pointer dereference
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shawn.guo@linaro.org
+Subject: Re: [PATCH] pwm: pwm-mxs: Apply configuration before disabling PWM.
+References: <1371642686-10300-1-git-send-email-robin@protonic.nl> <20130621100254.GB12441@manwe>
+In-Reply-To: <20130621100254.GB12441@manwe>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 June 2013 21:49, Jacob Shin <jacob.shin@amd.com> wrote:
-> Yes, so sorry about that, it looks like I failed to test with:
+Hello Thierry,
 
-No problem, it happens :)
 
-> CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
-> CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
-> CONFIG_CPU_FREQ_GOV_ONDEMAND=y
-> CONFIG_X86_AMD_FREQ_SENSITIVITY=m
+On 06/21/2013 12:02 PM, Thierry Reding wrote:
+> Please use my new email address and Cc the linux-pwm mailing list.
 >
-> The following patch fixes this, Tim, could you please test ? :
+> The subject implies some active procedure is used to make sure the
+> configuration is applied, but you really only wait for some amount of
+> time. Perhaps something like:
 >
-> ---8<---
+> 	pwm: pwm-mxs: Wait for configuration to apply before disabling PWM
 >
-> From 3c727b1f775448599e67c5fb2121d79448e80c90 Mon Sep 17 00:00:00 2001
-> From: Jacob Shin <jacob.shin@amd.com>
-> Date: Tue, 25 Jun 2013 10:40:54 -0500
-> Subject: [PATCH 1/1] cpufreq: fix NULL pointer deference at
->  od_set_powersave_bias()
+> is more accurate?
+Agreed
 >
-> When initializing the default powersave_bias value, we need to first
-> make sure that this policy is running the ondemand governor.
+> On Wed, Jun 19, 2013 at 01:51:26PM +0200, Robin van der Gracht wrote:
+>> When disabling the pwm, the output state locks at its current state.
+> Please use the proper spelling "PWM" in prose.
+Ok
 >
-> Reported-by: Tim Gardner <tim.gardner@canonical.com>
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> ---
->  drivers/cpufreq/cpufreq_ondemand.c |   17 +++++++++++++----
->  1 file changed, 13 insertions(+), 4 deletions(-)
+>> We have to be sure the last configuration applied. Which in most
+>> cases sets duty cycle to 0%. To prevent the pwm from taking on
+>> 100% duty cycle when disabled during a high state.
+>>
+>> Configuration applies at the beginning of a new output period.
+> I have some trouble understanding this, but I think you mean:
 >
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index 4b9bb5d..93eb5cb 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -47,6 +47,8 @@ static struct od_ops od_ops;
->  static struct cpufreq_governor cpufreq_gov_ondemand;
->  #endif
+> We have to be sure that the last configuration has been applied. In most
+> cases drivers will have set the duty-cycle to 0%. To prevent the PWM
+> from locking at a 100% duty-cycle for example, we delay disabling the
+> PWM for a whole period to make sure any new configuration has been
+> latched.
+Yes that is correct.
 >
-> +static unsigned int default_powersave_bias;
-> +
->  static void ondemand_powersave_bias_init_cpu(int cpu)
->  {
->         struct od_cpu_dbs_info_s *dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
-> @@ -543,7 +545,7 @@ static int od_init(struct dbs_data *dbs_data)
+>> diff --git a/drivers/pwm/pwm-mxs.c b/drivers/pwm/pwm-mxs.c
+>> index 3febddd..4ddc063 100644
+>> --- a/drivers/pwm/pwm-mxs.c
+>> +++ b/drivers/pwm/pwm-mxs.c
+>> @@ -21,6 +21,7 @@
+>>   #include <linux/pwm.h>
+>>   #include <linux/slab.h>
+>>   #include <linux/stmp_device.h>
+>> +#include <linux/delay.h>
+> Please keep the includes sorted alphabetically.
+I'll update that.
 >
->         tuners->sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR;
->         tuners->ignore_nice = 0;
-> -       tuners->powersave_bias = 0;
-> +       tuners->powersave_bias = default_powersave_bias;
->         tuners->io_is_busy = should_io_be_busy();
+>>   
+>>   #define SET	0x4
+>>   #define CLR	0x8
+>> @@ -40,6 +41,7 @@ struct mxs_pwm_chip {
+>>   	struct pwm_chip chip;
+>>   	struct clk *clk;
+>>   	void __iomem *base;
+>> +	unsigned long period_ns;
+> This is not the proper place to put it. The period can be different for
+> each PWM channel. But you also don't need to store this separately as in
+> latest linux-next this is already done by the core. You can use the
+> pwm_get_period() function to obtain the current period from a PWM
+> device.
 >
->         dbs_data->tuners = tuners;
-> @@ -585,6 +587,7 @@ static void od_set_powersave_bias(unsigned int powersave_bias)
->         unsigned int cpu;
->         cpumask_t done;
+>> @@ -113,6 +116,11 @@ static void mxs_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+>>   {
+>>   	struct mxs_pwm_chip *mxs = to_mxs_pwm_chip(chip);
+>>   
+>> +	/*
+>> +	 * Ensure latest configuration applied.
+>> +	 */
+> This comment can go on a single line.
 >
-> +       default_powersave_bias = powersave_bias;
+>> +	ndelay(mxs->period_ns);
+> This introduces a potentially long delay. How about changing this to
+> something like:
+>
+> 	period = pwm_get_period(pwm);
+> 	period = DIV_ROUND_UP(period, 1000);
+> 	usleep_range(period, period + 1000);
+Thanks for the input, I agree on your comment. I'll resubmit the patch.
+>
+> ?
+>
+> Thierry
 
-Why are the above three changes required? And in case they are, then
-they must have been commited separately.
 
->         cpumask_clear(&done);
->
->         get_online_cpus();
-> @@ -593,11 +596,17 @@ static void od_set_powersave_bias(unsigned int powersave_bias)
->                         continue;
->
->                 policy = per_cpu(od_cpu_dbs_info, cpu).cdbs.cur_policy;
-> -               dbs_data = policy->governor_data;
-> -               od_tuners = dbs_data->tuners;
-> -               od_tuners->powersave_bias = powersave_bias;
-> +               if (!policy)
-> +                       continue;
+-- 
+Robin van der Gracht
+Protonic Holland.
+tel.: +31 (0) 229 212928
+fax.: +31 (0) 229 210930
+Factorij 36 / 1689 AL Zwaag
 
-I am not sure if this is enough. What if we had ondemand as the
-governor initially, then we changed it to something else. Now also
-cur_policy contains a address and isn't zero.
-
->                 cpumask_or(&done, &done, policy->cpus);
-> +
-> +               if (policy->governor != &cpufreq_gov_ondemand)
-> +                       continue;
-> +
-> +               dbs_data = policy->governor_data;
-> +               od_tuners = dbs_data->tuners;
-> +               od_tuners->powersave_bias = default_powersave_bias;
->         }
->         put_online_cpus();
->  }
-> --
-> 1.7.9.5
->
->
