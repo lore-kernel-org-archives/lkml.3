@@ -1,436 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab3FZHm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:42:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41707 "EHLO comal.ext.ti.com"
+	id S1752064Ab3FZHn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:43:27 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49750 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab3FZHmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:42:40 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <linux-mtd@lists.infradead.org>, <spi-devel-general@lists.sourceforge.net>,
-        <broonie@kernel.org>, <dwmw2@infradead.org>, <manonuevo@micron.com>,
-        <tqnguyen@micron.com>, <grant.likely@linaro.org>
-CC: <balbi@ti.com>, <rnayak@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>
-Subject: [PATCH 2/3] drivers: spi: Add qspi flash controller
-Date: Wed, 26 Jun 2013 13:11:11 +0530
-Message-ID: <1372232472-2641-3-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1372232472-2641-1-git-send-email-sourav.poddar@ti.com>
-References: <1372232472-2641-1-git-send-email-sourav.poddar@ti.com>
+	id S1751970Ab3FZHnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 03:43:24 -0400
+Date: Wed, 26 Jun 2013 00:42:27 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: eranian@google.com, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@au1.ibm.com>, ellerman@au1.ibm.com,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, sukadev@us.ibm.com
+Subject: [RFC][PATCH 3/3] perf/Power7: Export DCACHE_SRC field to userspace
+Message-ID: <20130626074226.GC3741@us.ibm.com>
+References: <20130626074106.GA3741@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130626074106.GA3741@us.ibm.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062607-7182-0000-0000-000007865B1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch add basic support for the quad spi controller.
 
-QSPI is a kind of spi module that allows single,
-dual and quad read access to external spi devices. The module
-has a memory mapped interface which provide direct interface
-for accessing data form external spi devices.
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Date: Tue, 25 Jun 2013 17:12:02 -0700
+Subject: [RFC][PATCH 3/3] perf/Power7: Export DCACHE_SRC field to userspace
 
-The patch will configure controller clocks, device control
-register and for defining low level transfer apis which
-will be used by the spi framework to transfer data to
-the slave spi device(flash in this case).
+On Power7, the DCACHE_SRC field (bits 9..12), in the MMCRA register
+identify the source from which a data-cache-miss for a marked instruction
+was satisified.
 
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+Map this source to the architecture-neutral memory hierarchy levels
+and add to the sample record so the source information is available to
+user space.
+
+    Arch-neutral levels         Power7 levels
+    -----------------------------------------------------------------------
+    local    LVL_L2		local (same core) L2 (FROM_L2)
+    local    LVL_L3		local (same core) L3 (FROM_L3)
+
+    1-hop    XLVL_REM_L2_CCE1*  different core on same chip (FROM_L2.1)
+    1-hop    XLVL_REM_L3_CCE1*  different core on same chip (FROM_L3.1)
+
+    2-hops   LVL_REM_CCE2	remote (different chip, same node) (FROM_RL2L3)
+    3-hops   XLVL_REM_CCE3*	distant (different node)  (FROM_DL2L3)
+
+    1-hop    LVL_REM_RAM1	unused
+    2-hops   LVL_REM_RAM2	remote (different chip, same node) (FROM_RMEM)
+
+    3-hops   XLVL_REM_RAM3*	distant (different node) (FROM_DMEM)
+
+As shown above, Power7 supports one extra level in the cache-hierarchy (i.e
+total of 3-hops).  To maintain consistency in terminology (i.e 2-hops = remote,
+3-hops = distant), we propose leaving the REM_RAM1 unused in Power7 and adding
+another level, REM_CCE3 and REM_RAM3.
+
+Further, in the REM_CCE1 case, Power7 can also identify if the data came from
+the L2 or L3 cache of another core on the same chip. To describe this add the
+levels:
+
+	PERF_MEM_XLVL_REM_L2_CCE1
+	PERF_MEM_XLVL_REM_L3_CCE1
+
+Finally, in the REM_CCE1 and REM_CCE2 cases, Power7 also indicates whether
+the entry found in the remote cache was modified (dirty). So we add a new
+state
+
+	PERF_MEM_XLVL_CCE_DIRTY
+
+Testing:
+
+memarray is a simple test case that creates a large 2D array and accesses
+elements in the array in strides of varying length. Using the perf event
+PM_MRK_LD_MISS_L1_CYC (r4003e) with memarrary, we get samples like:
+
+        4989704543010 0x1470 [0x38]: PERF_RECORD_SAMPLE(IP, 1): 10816/10816:
+        0xc0000000001ef514 period: 1 addr: 0xc0000001e64538d8
+         . data_src: 0x400
+         ... thread: memarray:10816
+         ...... dso: [kernel.kallsyms]
+
+        4990265034542 0x9a00 [0x38]: PERF_RECORD_SAMPLE(IP, 3): 10816/10816:
+        0x54696c period: 2996 addr: 0x8000000064a3001a
+         . data_src: 0x800
+         ... thread: memarray:10816
+         ...... dso: [hypervisor]
+
+        4990505534586 0xd2e0 [0x38]: PERF_RECORD_SAMPLE(IP, 1): 10816/10816:
+        0xc00000000019bb28 period: 2979 addr: 0xc0000001fffaba40
+         . data_src: 0x200000000000
+         ... thread: memarray:10816
+         ...... dso: [kernel.kallsyms]
+
+where, the 'data_src' values indicate:
+
+        0x400           PERF_MEM_LVL_L2,		FROM_L2
+        0x800           PERF_MEM_LVL_L3,		FROM_L3
+        0x200000000000  PERF_MEM_XLVL_REM_L2_CCE1	FROM_L2.1_SHR
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- drivers/spi/Kconfig   |    6 +
- drivers/spi/Makefile  |    1 +
- drivers/spi/ti-qspi.c |  352 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 359 insertions(+), 0 deletions(-)
- create mode 100644 drivers/spi/ti-qspi.c
 
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 92a9345..29a363b 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -285,6 +285,12 @@ config SPI_OMAP24XX
- 	  SPI master controller for OMAP24XX and later Multichannel SPI
- 	  (McSPI) modules.
+Changelog[v2]:
+	[Stephane Eranian] Define new levels rather than ORing the L2 and L3
+	with REM_CCE1 and REM_CCE2.
+	[Stephane Eranian] allocate a bit PERF_MEM_XLVL_NA for architectures
+	that don't use the ->mem_xlvl field.
+	Insert the TLB patch ahead so the new TLB bits are contigous with
+	existing TLB bits.
+
+ arch/powerpc/perf/power7-pmu.c  |   44 +++++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/perf_event.h |   13 ++++++++++-
+ 2 files changed, 56 insertions(+), 1 deletions(-)
+
+diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
+index c1cac96..8cb4cbc 100644
+--- a/arch/powerpc/perf/power7-pmu.c
++++ b/arch/powerpc/perf/power7-pmu.c
+@@ -209,6 +209,10 @@ static int power7_get_alternatives(u64 event, unsigned int flags, u64 alt[])
+ 	return nalt;
+ }
  
-+config QSPI_DRA7xxx
-+	tristate "DRA7xxx QSPI controller support"
-+	depends on ARCH_OMAP2PLUS
-+	help
-+	  QSPI master controller for DRA7xxx used for flash devices.
++#define POWER7_MMCRA_DCACHE_MISS        (0x1LL << 55)
++#define POWER7_MMCRA_DCACHE_SRC_SHIFT   51
++#define POWER7_MMCRA_DCACHE_SRC_MASK    (0xFLL << POWER7_MMCRA_DCACHE_SRC_SHIFT)
 +
- config SPI_OMAP_100K
- 	tristate "OMAP SPI 100K"
- 	depends on ARCH_OMAP850 || ARCH_OMAP730
-diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 33f9c09..ea14eff 100644
---- a/drivers/spi/Makefile
-+++ b/drivers/spi/Makefile
-@@ -46,6 +46,7 @@ obj-$(CONFIG_SPI_OCTEON)		+= spi-octeon.o
- obj-$(CONFIG_SPI_OMAP_UWIRE)		+= spi-omap-uwire.o
- obj-$(CONFIG_SPI_OMAP_100K)		+= spi-omap-100k.o
- obj-$(CONFIG_SPI_OMAP24XX)		+= spi-omap2-mcspi.o
-+obj-$(CONFIG_QSPI_DRA7xxx)              += ti-qspi.o
- obj-$(CONFIG_SPI_ORION)			+= spi-orion.o
- obj-$(CONFIG_SPI_PL022)			+= spi-pl022.o
- obj-$(CONFIG_SPI_PPC4xx)		+= spi-ppc4xx.o
-diff --git a/drivers/spi/ti-qspi.c b/drivers/spi/ti-qspi.c
-new file mode 100644
-index 0000000..b33646a
---- /dev/null
-+++ b/drivers/spi/ti-qspi.c
-@@ -0,0 +1,352 @@
+ #define	POWER7_MMCRA_MDTLB_MISS		(0x1LL << 50)
+ #define	POWER7_MMCRA_MDTLB_SRC_SHIFT	46
+ #define	POWER7_MMCRA_MDTLB_SRC_MASK	(0xFLL << POWER7_MMCRA_MDTLB_SRC_SHIFT)
+@@ -231,6 +235,7 @@ static int power7_get_alternatives(u64 event, unsigned int flags, u64 alt[])
+  */
+ #define P(a, b)			PERF_MEM_S(a, b)
+ #define TD(a, b)		(P(TLB, CCE_DIRTY) | P(a, b))
++#define XD(a, b)		(P(XLVL, CCE_DIRTY) | P(a, b))
+ 
+ static u64 mdtlb_src_map[] = {
+ 	P(TLB,  L2),			/* 00: FROM_L2 */
+@@ -258,6 +263,37 @@ static u64 mdtlb_src_map[] = {
+ 	P(TLB,  NA),			/* 15: Reserved */
+ };
+ 
 +/*
-+ * TI QSPI driver
-+ *
-+ * Copyright (C) 2013, Texas Instruments, Incorporated
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR /PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * Similar to mdtlb_src_map[] table above, use dcache_src_map[] to map
++ * the Power7 DCACHE_SRC field (bits 9..12) in MMCRA register to the
++ * Linux memory hierarchy levels.
 + */
++static u64 dcache_src_map[] = {
++	P(LVL,   L2),			/* 00: FROM_L2 */
++	P(LVL,   L3),			/* 01: FROM_L3 */
 +
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/delay.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/dmaengine.h>
-+#include <linux/omap-dma.h>
-+#include <linux/platform_device.h>
-+#include <linux/err.h>
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/pinctrl/consumer.h>
++	P(LVL,   NA),			/* 02: Reserved */
++	P(LVL,   NA),			/* 03: Reserved */
 +
-+#include <linux/spi/spi.h>
++	P(XLVL,  REM_L2_CCE1),		/* 04: FROM_L2.1_SHR */
++	XD(XLVL, REM_L2_CCE1),		/* 05: FROM_L2.1_MOD */
 +
-+struct dra7xxx_qspi {
-+	struct spi_master	*master;
-+	void __iomem            *base;
-+	int device_type;
-+	struct device           *dev;
-+	u32 spi_max_frequency;
-+	u32 cmd;
-+	u32 dc;
++	P(XLVL,  REM_L3_CCE1),		/* 06: FROM_L3.1_SHR */
++	XD(XLVL, REM_L3_CCE1),		/* 07: FROM_L3.1_MOD */
++
++	P(LVL,   REM_CCE2),		/* 08: FROM_RL2L3_SHR */
++	XD(LVL,  REM_CCE2),		/* 09: FROM_RL2L3_MOD */
++
++	P(XLVL,  REM_CCE3),		/* 10: FROM_DL2L3_SHR */
++	XD(XLVL, REM_CCE3),		/* 11: FROM_DL2L3_MOD */
++
++	P(LVL,   LOC_RAM),		/* 12: FROM_LMEM */
++	P(LVL,   REM_RAM2),		/* 13: FROM_RMEM */
++	P(XLVL,  REM_RAM3),		/* 14: FROM_DMEM */
++
++	P(LVL,   NA),			/* 15: Reserved */
 +};
 +
-+#define QSPI_PID			(0x0)
-+#define QSPI_SYSCONFIG			(0x10)
-+#define QSPI_INTR_STATUS_RAW_SET	(0x20)
-+#define QSPI_INTR_STATUS_ENABLED_CLEAR	(0x24)
-+#define QSPI_INTR_ENABLE_SET_REG	(0x28)
-+#define QSPI_INTR_ENABLE_CLEAR_REG	(0x2c)
-+#define QSPI_SPI_CLOCK_CNTRL_REG	(0x40)
-+#define QSPI_SPI_DC_REG			(0x44)
-+#define QSPI_SPI_CMD_REG		(0x48)
-+#define QSPI_SPI_STATUS_REG		(0x4c)
-+#define QSPI_SPI_DATA_REG		(0x50)
-+#define QSPI_SPI_SETUP0_REG		(0x54)
-+#define QSPI_SPI_SWITCH_REG		(0x64)
-+#define QSPI_SPI_SETUP1_REG		(0x58)
-+#define QSPI_SPI_SETUP2_REG		(0x5c)
-+#define QSPI_SPI_SETUP3_REG		(0x60)
-+#define QSPI_SPI_DATA_REG_1		(0x68)
-+#define QSPI_SPI_DATA_REG_2		(0x6c)
-+#define QSPI_SPI_DATA_REG_3		(0x70)
+ static void power7_get_mem_data_src(union perf_mem_data_src *dsrc,
+ 				struct pt_regs *regs)
+ {
+@@ -270,6 +306,14 @@ static void power7_get_mem_data_src(union perf_mem_data_src *dsrc,
+ 
+ 		dsrc->val |= mdtlb_src_map[idx];
+ 	}
 +
-+#define QSPI_TIMEOUT			2000000
++	if (mmcra & POWER7_MMCRA_DCACHE_MISS) {
++		idx = mmcra & POWER7_MMCRA_DCACHE_SRC_MASK;
++		idx >>= POWER7_MMCRA_DCACHE_SRC_SHIFT;
 +
-+#define QSPI_FCLK			192000000
-+
-+/* Clock Control */
-+#define QSPI_CLK_EN			(1 << 31)
-+#define QSPI_CLK_DIV_MAX		0xffff
-+
-+/* Command */
-+#define QSPI_EN_CS(n)			(n << 28)
-+#define QSPI_WLEN(n)			((n-1) << 19)
-+#define QSPI_3_PIN			(1 << 18)
-+#define QSPI_RD_SNGL			(1 << 16)
-+#define QSPI_WR_SNGL			(2 << 16)
-+#define QSPI_RD_QUAD			(7 << 16)
-+#define QSPI_INVAL			(4 << 16)
-+
-+/* Device Control */
-+#define QSPI_DD(m, n)			(m << (3 + n*8))
-+#define QSPI_CKPHA(n)			(1 << (2 + n*8))
-+#define QSPI_CSPOL(n)			(1 << (1 + n*8))
-+#define QSPI_CKPOL(n)			(1 << (n*8))
-+
-+/* Status */
-+#define QSPI_WC				(1 << 1)
-+#define QSPI_BUSY			(1 << 0)
-+#define QSPI_WC_BUSY			(QSPI_WC | QSPI_BUSY)
-+#define QSPI_XFER_DONE			QSPI_WC
-+
-+#define XFER_END			0x01
-+
-+#define SPI_AUTOSUSPEND_TIMEOUT         2000
-+
-+static inline unsigned long dra7xxx_readl(struct dra7xxx_qspi *qspi,
-+		unsigned long reg)
-+{
-+	return readl(qspi->base + reg);
-+}
-+
-+static inline void dra7xxx_writel(struct dra7xxx_qspi *qspi,
-+		unsigned long val, unsigned long reg)
-+{
-+	writel(val, qspi->base + reg);
-+}
-+
-+static int dra7xxx_qspi_setup(struct spi_device *spi)
-+{
-+	struct dra7xxx_qspi	*qspi =
-+			spi_master_get_devdata(spi->master);
-+
-+	int clk_div;
-+
-+	if (!qspi->spi_max_frequency)
-+		clk_div = 0;
-+	else
-+		clk_div = (QSPI_FCLK / qspi->spi_max_frequency) - 1;
-+
-+	pr_debug("%s: hz: %d, clock divider %d\n", __func__,
-+			qspi->spi_max_frequency, clk_div);
-+
-+	pm_runtime_get_sync(qspi->dev);
-+
-+	/* disable SCLK */
-+	dra7xxx_writel(qspi, dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG)
-+			& ~QSPI_CLK_EN, QSPI_SPI_CLOCK_CNTRL_REG);
-+
-+	if (clk_div < 0) {
-+		pr_debug("%s: clock divider < 0, using /1 divider\n", __func__);
-+		clk_div = 0;
++		dsrc->val |= dcache_src_map[idx];
 +	}
 +
-+	if (clk_div > QSPI_CLK_DIV_MAX) {
-+		pr_debug("%s: clock divider >%d , using /%d divider\n",
-+			__func__, QSPI_CLK_DIV_MAX, QSPI_CLK_DIV_MAX + 1);
-+		clk_div = QSPI_CLK_DIV_MAX;
-+	}
+ }
+ 
+ /*
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 815ee12..149b33d 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -627,7 +627,8 @@ union perf_mem_data_src {
+ 			mem_snoop:5,	/* snoop mode */
+ 			mem_lock:2,	/* lock instr */
+ 			mem_dtlb:17,	/* tlb access */
+-			mem_rsvd:21;
++			mem_xlvl:6,	/* memory hierarchy levels contd */
++			mem_rsvd:15;
+ 	};
+ };
+ 
+@@ -655,6 +656,7 @@ union perf_mem_data_src {
+ #define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
+ #define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
+ #define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
++/* memory hierarchy levels continued/extended below */
+ 
+ /* snoop mode */
+ #define PERF_MEM_SNOOP_SHIFT	19
+@@ -689,6 +691,15 @@ union perf_mem_data_src {
+ #define PERF_MEM_TLB_REM_RAM3	0x8000	/* Remote DRAM (3 hops) */
+ #define PERF_MEM_TLB_CCE_DIRTY	0x10000	/* Remote cache entry hit, but dirty */
+ 
++/* Extended levels i.e. continuation of PERF_MEM_LVL* values above. */
++#define PERF_MEM_XLVL_SHIFT		43
++#define PERF_MEM_XLVL_NA		0x01	/* not available */
++#define PERF_MEM_XLVL_CCE_DIRTY		0x02    /* cache entry hit, was dirty */
++#define PERF_MEM_XLVL_REM_L2_CCE1	0x04    /* Remote L2-cache (1 hop) */
++#define PERF_MEM_XLVL_REM_L3_CCE1	0x08    /* Remote L3-cache (1 hop) */
++#define PERF_MEM_XLVL_REM_CCE3		0x10    /* Remote cache (3 hops) */
++#define PERF_MEM_XLVL_REM_RAM3		0x20    /* Remote DRAM (3 hops) */
 +
-+	/* enable SCLK */
-+	dra7xxx_writel(qspi, QSPI_CLK_EN | clk_div, QSPI_SPI_CLOCK_CNTRL_REG);
-+
-+	pm_runtime_mark_last_busy(qspi->dev);
-+	pm_runtime_put_autosuspend(qspi->dev);
-+
-+	pr_debug("%s: spi_clock_cntrl %ld\n", __func__,
-+		dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG));
-+
-+	return 0;
-+}
-+
-+static int dra7xxx_qspi_prepare_xfer(struct spi_master *master)
-+{
-+	return 0;
-+}
-+
-+static int dra7xxx_qspi_unprepare_xfer(struct spi_master *master)
-+{
-+	return 0;
-+}
-+
-+static int qspi_transfer_msg(struct dra7xxx_qspi *qspi, unsigned count,
-+			const u8 *txbuf, u8 *rxbuf, bool flags)
-+{
-+	uint status;
-+	int timeout;
-+
-+	pm_runtime_get_sync(qspi->dev);
-+
-+	while (count--) {
-+		if (txbuf) {
-+			pr_debug("tx cmd %08x dc %08x data %02x\n",
-+				qspi->cmd | QSPI_WR_SNGL, qspi->dc, *txbuf);
-+			dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
-+			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
-+			dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
-+					QSPI_SPI_CMD_REG);
-+			status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
-+			timeout = QSPI_TIMEOUT;
-+			while ((status & QSPI_WC_BUSY) != QSPI_XFER_DONE) {
-+				if (--timeout < 0) {
-+					pr_debug("QSPI tx timed out\n");
-+					return -1;
-+				}
-+				status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
-+			}
-+			pr_debug("tx done, status %08x\n", status);
-+		}
-+		if (rxbuf) {
-+			pr_debug("rx cmd %08x dc %08x\n",
-+				qspi->cmd | QSPI_RD_SNGL, qspi->dc);
-+			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
-+			dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_SNGL,
-+					QSPI_SPI_CMD_REG);
-+			status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
-+			timeout = QSPI_TIMEOUT;
-+			while ((status & QSPI_WC_BUSY) != QSPI_XFER_DONE) {
-+				if (--timeout < 0) {
-+					pr_debug("QSPI rx timed out\n");
-+					return -1;
-+				}
-+				status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
-+			}
-+			*rxbuf++ = dra7xxx_readl(qspi, QSPI_SPI_DATA_REG);
-+			pr_debug("rx done, status %08x, read %02x\n",
-+				status, *(rxbuf-1));
-+		}
-+	}
-+
-+	if (flags & XFER_END)
-+		dra7xxx_writel(qspi, qspi->cmd | QSPI_INVAL, QSPI_SPI_CMD_REG);
-+
-+	pm_runtime_mark_last_busy(qspi->dev);
-+	pm_runtime_put_autosuspend(qspi->dev);
-+
-+	return 0;
-+}
-+
-+static int dra7xxx_qspi_start_transfer_one(struct spi_master *master,
-+		struct spi_message *m)
-+{
-+	struct dra7xxx_qspi *qspi = spi_master_get_devdata(master);
-+	struct spi_device *spi = m->spi;
-+	struct spi_transfer *t;
-+	int status = 0;
-+	int flags = 0;
-+
-+	/* setup command reg */
-+	qspi->cmd = 0;
-+	qspi->cmd |= QSPI_WLEN(8);
-+	qspi->cmd |= QSPI_EN_CS(0);
-+	qspi->cmd |= 0xfff;
-+
-+	/* setup device control reg */
-+	qspi->dc = 0;
-+
-+	if (spi->mode & SPI_CPHA)
-+		qspi->dc |= QSPI_CKPHA(0);
-+	if (spi->mode & SPI_CPOL)
-+		qspi->dc |= QSPI_CKPOL(0);
-+	if (spi->mode & SPI_CS_HIGH)
-+		qspi->dc |= QSPI_CSPOL(0);
-+
-+	list_for_each_entry(t, &m->transfers, transfer_list) {
-+		if (list_is_last(&t->transfer_list, &m->transfers))
-+			flags = XFER_END;
-+
-+		qspi_transfer_msg(qspi, t->len, t->tx_buf,
-+			t->rx_buf, flags);
-+
-+		m->actual_length += t->len;
-+	}
-+	m->status = status;
-+	spi_finalize_current_message(master);
-+
-+	return status;
-+}
-+
-+static int dra7xxx_qspi_probe(struct platform_device *pdev)
-+{
-+	struct  dra7xxx_qspi *qspi;
-+	struct spi_master *master;
-+	struct resource         *r;
-+	struct device_node *np = pdev->dev.of_node;
-+	u32 max_freq;
-+	int ret;
-+
-+	master = spi_alloc_master(&pdev->dev, sizeof(*qspi));
-+	if (!master)
-+		return -ENOMEM;
-+
-+	master->mode_bits = SPI_CPOL | SPI_CPHA;
-+
-+	master->num_chipselect = 1;
-+	master->bus_num = -1;
-+	master->setup = dra7xxx_qspi_setup;
-+	master->prepare_transfer_hardware = dra7xxx_qspi_prepare_xfer;
-+	master->transfer_one_message = dra7xxx_qspi_start_transfer_one;
-+	master->unprepare_transfer_hardware = dra7xxx_qspi_unprepare_xfer;
-+	master->dev.of_node = pdev->dev.of_node;
-+
-+	dev_set_drvdata(&pdev->dev, master);
-+
-+	qspi = spi_master_get_devdata(master);
-+	qspi->master = master;
-+	qspi->dev = &pdev->dev;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (r == NULL) {
-+		ret = -ENODEV;
-+		goto free_master;
-+	}
-+
-+	qspi->base = devm_request_and_ioremap(&pdev->dev, r);
-+	if (!qspi->base) {
-+		dev_dbg(&pdev->dev, "can't ioremap MCSPI\n");
-+		ret = -ENOMEM;
-+		goto free_master;
-+	}
-+
-+	pm_runtime_use_autosuspend(&pdev->dev);
-+	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
-+	pm_runtime_enable(&pdev->dev);
-+
-+	if (!of_property_read_u32(np, "spi-max-frequency", &max_freq))
-+		qspi->spi_max_frequency = max_freq;
-+
-+	ret = spi_register_master(master);
-+	if (ret)
-+		goto free_master;
-+
-+	return ret;
-+
-+free_master:
-+	spi_master_put(master);
-+	return ret;
-+}
-+
-+static int dra7xxx_qspi_remove(struct platform_device *pdev)
-+{
-+	struct  dra7xxx_qspi *qspi = platform_get_drvdata(pdev);
-+
-+	spi_unregister_master(qspi->master);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id dra7xxx_qspi_match[] = {
-+	{.compatible = "ti,dra7xxx-qspi" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, dra7xxx_qspi_match);
-+
-+static struct platform_driver dra7xxx_qspi_driver = {
-+	.probe	= dra7xxx_qspi_probe,
-+	.remove	= dra7xxx_qspi_remove,
-+	.driver = {
-+		.name	= "ti,dra7xxx-qspi",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = dra7xxx_qspi_match,
-+	}
-+};
-+
-+module_platform_driver(dra7xxx_qspi_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("TI QSPI controller driver");
+ #define PERF_MEM_S(a, s) \
+ 	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
+ 
 -- 
 1.7.1
 
