@@ -1,286 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab3FZJTR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:19:17 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:40673 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212Ab3FZJTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:19:13 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Subject: Re: [PATCH v2 2/6] misc: sram: add ability to mark sram sections as reserved
-Date: Wed, 26 Jun 2013 11:18:43 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201306251046.04873.heiko@sntech.de> <201306251047.12899.heiko@sntech.de> <1372155425.3981.67.camel@pizza.hi.pengutronix.de>
-In-Reply-To: <1372155425.3981.67.camel@pizza.hi.pengutronix.de>
+	id S1752088Ab3FZJVF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:21:05 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:35619 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3FZJVB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:21:01 -0400
+Message-ID: <51CAB27A.3080805@acm.org>
+Date: Wed, 26 Jun 2013 11:20:58 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306261118.44637.heiko@sntech.de>
+To: Maxim Uvarov <maxim.uvarov@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com
+Subject: Re: [PATCH] scsi_prep_fn() check for empty queue
+References: <1372237363-5156-1-git-send-email-maxim.uvarov@oracle.com>
+In-Reply-To: <1372237363-5156-1-git-send-email-maxim.uvarov@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+On 06/26/13 11:02, Maxim Uvarov wrote:
+> This fix:
+> end_request: I/O error, dev sdc, sector 976576
+>   rport-0:0-3: blocked FC remote port time out: removing target and saving
+> binding
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000400
+> IP: [<ffffffff812f0cc2>] scsi_prep_state_check+0xe/0x99
+>   [<ffffffff812f1f9d>] scsi_setup_blk_pc_cmnd+0x1b/0x115
+>   [<ffffffff812f20c0>] scsi_prep_fn+0x29/0x3b
+>   [<ffffffff8121cfb9>] blk_peek_request+0xe1/0x1b3
+>   [<ffffffff812f1400>] scsi_request_fn+0x3a/0x4d2
+>   [<ffffffff8121d916>] __generic_unplug_device+0x32/0x36
+>   [<ffffffff81220f4b>] blk_execute_rq_nowait+0x77/0x9e
+>   [<ffffffff81221018>] blk_execute_rq+0xa6/0xde
+>   [<ffffffff8144f24b>] ? printk+0x41/0x46
+>   [<ffffffffa00a21c5>] ? get_rdac_req+0x81/0xe8 [scsi_dh_rdac]
+>   [<ffffffffa00a273a>] send_mode_select+0x29f/0x489 [scsi_dh_rdac]
+>   [<ffffffff810c5d9b>] ? probe_workqueue_execution+0xb1/0xce
+>   [<ffffffff81071e38>] worker_thread+0x1a9/0x237
+>   [<ffffffffa00a249b>] ? send_mode_select+0x0/0x489 [scsi_dh_rdac]
+>   [<ffffffff8107651b>] ? autoremove_wake_function+0x0/0x39
+>   [<ffffffff81071c8f>] ? worker_thread+0x0/0x237
+>   [<ffffffff81076222>] kthread+0x7f/0x87
+>   [<ffffffff81012d2a>] child_rip+0xa/0x20
+>   [<ffffffff810761a3>] ? kthread+0x0/0x87
+>   [<ffffffff81012d20>] ? child_rip+0x0/0x20
+> Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+> ---
+>   drivers/scsi/scsi_lib.c |    3 +++
+>   1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 86d5220..8e89ed9 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -1295,6 +1295,9 @@ int scsi_prep_fn(struct request_queue *q, struct request *req)
+>   	struct scsi_device *sdev = q->queuedata;
+>   	int ret = BLKPREP_KILL;
+>
+> +	if (!sdev)
+> +		return ret;
+> +
+>   	if (req->cmd_type == REQ_TYPE_BLOCK_PC)
+>   		ret = scsi_setup_blk_pc_cmnd(sdev, req);
+>   	return scsi_prep_return(q, req, ret);
 
-Am Dienstag, 25. Juni 2013, 12:17:05 schrieb Philipp Zabel:
-> Hi Heiko,
-> 
-> Am Dienstag, den 25.06.2013, 10:47 +0200 schrieb Heiko Stübner:
-> > Some SoCs need parts of their sram for special purposes. So while being
-> > part of the periphal, it should not be part of the genpool controlling
-> > the sram.
-> > 
-> > Threfore add an option mmio-sram-reserved to keep arbitary portions of
-> > the sram from being part of the pool.
-> > 
-> > Suggested-by: Rob Herring <robherring2@gmail.com>
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > ---
-> > 
-> >  Documentation/devicetree/bindings/misc/sram.txt |    8 +++
-> >  drivers/misc/sram.c                             |   86
-> >  +++++++++++++++++++++-- 2 files changed, 88 insertions(+), 6
-> >  deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/misc/sram.txt
-> > b/Documentation/devicetree/bindings/misc/sram.txt index 4d0a00e..eae080e
-> > 100644
-> > --- a/Documentation/devicetree/bindings/misc/sram.txt
-> > +++ b/Documentation/devicetree/bindings/misc/sram.txt
-> > 
-> > @@ -8,9 +8,17 @@ Required properties:
-> >  - reg : SRAM iomem address range
-> > 
-> > +Optional properties:
-> > +
-> > +- mmio-sram-reserved: ordered list of reserved chunks inside the sram
-> > that +  should not become part of the genalloc pool.
-> > +  Format is <base size>, <base size>, ...; with base being relative to
-> > the +  reg property base.
-> > +
-> 
-> the keyword to reserve blocks of ram is /memreserve/ - should this
-> property name be aligned with that?
+Sorry but this patch does not look like a proper fix to me. What you 
+probably need is a scsi_device_get() call in scsi_dh_rdac.c somewhere 
+before the queue_work(kmpath_rdacd, &ctlr->ms_work) call and a 
+scsi_device_put() call once send_mode_select() has finished using the sdev.
 
-The mmio-sram-reserved name was suggested by Rob Herring, who I suppose has 
-some slight experience with devicetree :-) .
-
-I wasn't able to find real documentation on /memreserve/ but it looks more 
-like it's used to reserve generic memregions, not being node-specific.
-So reusing this might also cause confusion when the reserve-data now is 
-relative to it's node reg.
-
-
-> >  Example:
-> >  
-> >  sram: sram@5c000000 {
-> >  
-> >  	compatible = "mmio-sram";
-> >  	reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000 */
-> > 
-> > +	mmio-sram-reserved = <0x0 0x100>; /* reserve 0x5c000000-0x5c000100 */
-> > 
-> >  };
-> > 
-> > diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-> > index afe66571..5fccbe3 100644
-> > --- a/drivers/misc/sram.c
-> > +++ b/drivers/misc/sram.c
-> > @@ -42,6 +42,8 @@ static int sram_probe(struct platform_device *pdev)
-> > 
-> >  	struct sram_dev *sram;
-> >  	struct resource *res;
-> >  	unsigned long size;
-> > 
-> > +	const __be32 *reserved_list = NULL;
-> > +	int reserved_size = 0;
-> > 
-> >  	int ret;
-> >  	
-> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > 
-> > @@ -65,12 +67,89 @@ static int sram_probe(struct platform_device *pdev)
-> > 
-> >  	if (!sram->pool)
-> >  	
-> >  		return -ENOMEM;
-> > 
-> > -	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
-> > -				res->start, size, -1);
-> > -	if (ret < 0) {
-> > -		if (sram->clk)
-> > -			clk_disable_unprepare(sram->clk);
-> > -		return ret;
-> > +	if (pdev->dev.of_node) {
-> > +		reserved_list = of_get_property(pdev->dev.of_node,
-> > +						"mmio-sram-reserved",
-> > +						&reserved_size);
-> > +		if (reserved_list) {
-> > +			reserved_size /= sizeof(*reserved_list);
-> > +			if (!reserved_size || reserved_size % 2) {
-> > +				dev_warn(&pdev->dev, "wrong number of arguments in
-> > mmio-sram-reserved\n"); +				reserved_list = NULL;
-> > +			}
-> > +		}
-> > +	}
-> > +
-> > +	if (!reserved_list) {
-> > +		ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
-> > +					res->start, size, -1);
-> > +		if (ret < 0) {
-> > +			if (sram->clk)
-> > +				clk_disable_unprepare(sram->clk);
-> > +			return ret;
-> > +		}
-> 
-> Moving the clk_prepare_enable() further down would allow to avoid the
-> clk_disable_unprepare() in every error path,
-> 
-> > +	} else {
-> > +		unsigned int cur_start = 0;
-> > +		unsigned int cur_size;
-> > +		unsigned int rstart;
-> > +		unsigned int rsize;
-> > +		int i;
-> > +
-> > +		for (i = 0; i < reserved_size; i += 2) {
-> > +			/* get the next reserved block */
-> > +			rstart = be32_to_cpu(*reserved_list++);
-> > +			rsize = be32_to_cpu(*reserved_list++);
-> > +
-> > +			/* catch unsorted list entries */
-> > +			if (rstart < cur_start) {
-> > +				dev_err(&pdev->dev, "unsorted reserved list (0x%x before 
-current
-> > 0x%x)\n", +					rstart, cur_start);
-> > +				if (sram->clk)
-> > +					clk_disable_unprepare(sram->clk);
-> 
-> like here
-> 
-> > +				return -EINVAL;
-> > +			}
-> > +
-> > +			dev_dbg(&pdev->dev, "found reserved block 0x%x-0x%x\n",
-> > +				 rstart, rstart + rsize);
-> > +
-> > +			/* current start is in a reserved block */
-> > +			if (rstart <= cur_start) {
-> > +				cur_start = rstart + rsize;
-> > +				continue;
-> > +			}
-> > +
-> > +			/*
-> > +			 * allocate the space between the current starting
-> > +			 * address and the following reserved block
-> > +			 */
-> > +			cur_size = rstart - cur_start;
-> > +
-> > +			dev_dbg(&pdev->dev, "adding chunk 0x%x-0x%x\n",
-> > +				 cur_start, cur_start + cur_size);
-> > +			ret = gen_pool_add_virt(sram->pool,
-> > +					(unsigned long)virt_base + cur_start,
-> > +					res->start + cur_start, cur_size, -1);
-> > +			if (ret < 0) {
-> > +				if (sram->clk)
-> > +					clk_disable_unprepare(sram->clk);
-> 
-> and here.
-> 
-> > +				return ret;
-> > +			}
-> > +
-> > +			/* next allocation after this reserved block */
-> > +			cur_start = rstart + rsize;
-> > +		}
-> > +
-> > +		/* allocate the space after the last reserved block */
-> > +		if (cur_start < size) {
-> > +			cur_size = size - cur_start;
-> > +
-> > +			dev_dbg(&pdev->dev, "adding chunk 0x%x-0x%x\n",
-> > +				 cur_start, cur_start + cur_size);
-> > +			ret = gen_pool_add_virt(sram->pool,
-> > +					(unsigned long)virt_base + cur_start,
-> > +					res->start + cur_start, cur_size, -1);
-> > +		}
-> > +
-> > 
-> >  	}
-> >  	
-> >  	platform_set_drvdata(pdev, sram);
-> 
-> Also, I think you could reduce the duplication of gen_pool_add_virt()
-> function calls, somehow like this:
-> 
-> 	unsigned int cur_start = 0;
-> 	unsigned int cur_size;
-> 	unsigned int rstart;
-> 	unsigned int rsize;
-> 	int i = 0;
-> 
-> 	if (!reserved_list)
-> 		reserved_size = 0;
-> 
-> 	for (i = 0; i < (reserved_size + 2); i += 2) {
-> 		if (i < reserved_size) {
-> 			/* get the next reserved block */
-> 			rstart = be32_to_cpu(*reserved_list++);
-> 			rsize = be32_to_cpu(*reserved_list++);
-> 
-> 			/* catch unsorted list entries */
-> 			if (rstart < cur_start) {
-> 				dev_err(&pdev->dev,
-> 					"unsorted reserved list (0x%x before current 0x%x)\n",
-> 					rstart, cur_start);
-> 				return -EINVAL;
-> 			}
-> 
-> 			dev_dbg(&pdev->dev,
-> 				"found reserved block 0x%x-0x%x\n",
-> 				rstart, rstart + rsize);
-> 		} else {
-> 			/* the last chunk extends to the end of the region */
-> 			rstart = size;
-> 		}
-> 
-> 		/* current start is in a reserved block */
-> 		if (rstart <= cur_start) {
-> 			cur_start = rstart + rsize;
-> 			continue;
-> 		}
-> 
-> 		/*
-> 		 * allocate the space between the current starting
-> 		 * address and the following reserved block, or the
-> 		 * end of the region.
-> 		 */
-> 		cur_size = rstart - cur_start;
-> 
-> 		dev_dbg(&pdev->dev, "adding chunk 0x%x-0x%x\n",
-> 			cur_start, cur_start + cur_size);
-> 		ret = gen_pool_add_virt(sram->pool,
-> 				(unsigned long)virt_base + cur_start,
-> 				res->start + cur_start, cur_size, -1);
-> 		if (ret < 0)
-> 			return ret;
-> 	}
-
-yep, this looks nicer - same for moving the clk_prepare_enable to below this 
-loop to unclutter the error-path.
-
-So I will incorporate this in v3.
-
-
-Thanks
-Heiko
+Bart.
