@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759Ab3FZMRk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 08:17:40 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:54587 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3FZMRi (ORCPT
+	id S1751829Ab3FZMTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 08:19:13 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:33198 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab3FZMTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 08:17:38 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-c4-51cadbd68fdc
-Date: Wed, 26 Jun 2013 14:17:20 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH v4 3/7] cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to
- work with common boost solution
-Message-id: <20130626141720.24f6bcb0@amdc308.digital.local>
-In-reply-to: <CAKohpom2h3R4=B9e8ZvqEUmudB19-cnv3Lgp0=BkxgYdGA6CUA@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-4-git-send-email-l.majewski@samsung.com>
- <CAKohpom2h3R4=B9e8ZvqEUmudB19-cnv3Lgp0=BkxgYdGA6CUA@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jAd3rt08FGqy4xWzx5+1yVounTT/Y
-	LeZ9lrVYs/8nk0Xn2SfMFr0LrrJZvHnEbXF51xw2i8+9RxgtbjeuYLPoX9jLZPHkYR+bRceR
-	b8wWG796OPB5LN7zksnjzrU9bB7rpr1l9ujbsorR49HiFkaP4ze2M3l83iQXwB7FZZOSmpNZ
-	llqkb5fAlbGhQ7LgJGvF03f9LA2Mu1m6GDk5JARMJN6fbGSCsMUkLtxbz9bFyMUhJLCIUWLl
-	qa8sEE47k8TyzjeMXYwcHCwCqhJf9ruDNLAJ6El8vvuUCSQsIqAl8fJmKkg5s8B2FolLTbPY
-	QGqEBQol5q9tYQSxeQWsJY48280MUs8pECxxfLE/xPgWJokL03azg9TwC0hKtP/7wQxxkJ3E
-	uU8b2CF6BSV+TL4HdjQz0K7N25pYIWx5ic1r3jJPYBSchaRsFpKyWUjKFjAyr2IUTS1ILihO
-	Ss810itOzC0uzUvXS87P3cQIjqdn0jsYVzVYHGIU4GBU4uFV2HoyUIg1say4MvcQowQHs5II
-	75v5pwKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5stQ4UEkhPLEnNTk0tSC2CyTJxcEo1MNaG
-	X3lwM26ny31jtn53L45rL607TGd5nU33XmkqIrW16K9a1Gup+bUBf46meEWs31v+4FHddd0X
-	E3ZlpiUeXev/ZB2r/3Sz58lfXn6b+uaM/q5VVrU5lQ+8tl5ee5jB6lxM3ZF50tniwp6/jWZf
-	/rfkOpuB8YtcCWPBmI3B+5iTbz7d9MDTPk+JpTgj0VCLuag4EQAAoTsqowIAAA==
+	Wed, 26 Jun 2013 08:19:12 -0400
+Message-ID: <51CADC39.1070905@ozlabs.ru>
+Date: Wed, 26 Jun 2013 22:19:05 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] powerpc/vfio: Add missing locks for take/release TCE
+ table ownership
+References: <1372227662-28302-1-git-send-email-aik@ozlabs.ru>
+In-Reply-To: <1372227662-28302-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jun 2013 16:33:30 +0530, Viresh Kumar wrote:
-> On 19 June 2013 22:42, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > diff --git a/drivers/cpufreq/acpi-cpufreq.c
-> > b/drivers/cpufreq/acpi-cpufreq.c
-> 
-> >  static unsigned int acpi_pstate_strict;
-> > -static bool boost_enabled, boost_supported;
-> > +static bool boost_enabled;
-> 
-> Instead of this variable use cpufreq_boost_enabled() directly.
+Ben, please ignore this.
+Need some more code there.
 
-OK.
 
-> 
-> And then this patch may change as well..
-> 
-> I couldn't find any more issues with this patch but some Intel guy
-> must review it.
 
-Yes, indeed Intel review is welcome.
+On 06/26/2013 04:21 PM, Alexey Kardashevskiy wrote:
+> VFIO IOMMU driver for sPAPR TCE locks the whole DMA window by setting
+> ones to iommu_table.it_map. However this was not protected by the locks
+> which other clients of iommu_table use.
+> 
+> The patch fixes this.
+> 
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+> 
+> v1->v2:
+> * Fixed a potential warning from lockdep.
+> 
+> ---
+>  arch/powerpc/kernel/iommu.c |   25 +++++++++++++++++++++++--
+>  1 file changed, 23 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+> index b20ff17..5c1fc89 100644
+> --- a/arch/powerpc/kernel/iommu.c
+> +++ b/arch/powerpc/kernel/iommu.c
+> @@ -1076,25 +1076,42 @@ EXPORT_SYMBOL_GPL(iommu_put_tce_user_mode);
+>  int iommu_take_ownership(struct iommu_table *tbl)
+>  {
+>  	unsigned long sz = (tbl->it_size + 7) >> 3;
+> +	unsigned long i, flags;
+> +	int ret = 0;
+> +
+> +	spin_lock_irqsave(&tbl->large_pool.lock, flags);
+> +	for (i = 0; i < tbl->nr_pools; i++)
+> +		spin_lock(&tbl->pools[i].lock);
+>  
+>  	if (tbl->it_offset == 0)
+>  		clear_bit(0, tbl->it_map);
+>  
+>  	if (!bitmap_empty(tbl->it_map, tbl->it_size)) {
+>  		pr_err("iommu_tce: it_map is not empty");
+> -		return -EBUSY;
+> +		ret = -EBUSY;
+> +		goto unlock_exit;
+>  	}
+>  
+>  	memset(tbl->it_map, 0xff, sz);
+>  	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
+>  
+> -	return 0;
+> +unlock_exit:
+> +	for (i = 0; i < tbl->nr_pools; i++)
+> +		spin_unlock(&tbl->pools[i].lock);
+> +	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_take_ownership);
+>  
+>  void iommu_release_ownership(struct iommu_table *tbl)
+>  {
+>  	unsigned long sz = (tbl->it_size + 7) >> 3;
+> +	unsigned long i, flags;
+> +
+> +	spin_lock_irqsave(&tbl->large_pool.lock, flags);
+> +	for (i = 0; i < tbl->nr_pools; i++)
+> +		spin_lock(&tbl->pools[i].lock);
+>  
+>  	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
+>  	memset(tbl->it_map, 0, sz);
+> @@ -1102,6 +1119,10 @@ void iommu_release_ownership(struct iommu_table *tbl)
+>  	/* Restore bit#0 set by iommu_init_table() */
+>  	if (tbl->it_offset == 0)
+>  		set_bit(0, tbl->it_map);
+> +
+> +	for (i = 0; i < tbl->nr_pools; i++)
+> +		spin_unlock(&tbl->pools[i].lock);
+> +	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_release_ownership);
+>  
+> 
+
+
 -- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Alexey
