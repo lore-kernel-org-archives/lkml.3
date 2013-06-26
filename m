@@ -1,85 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab3FZRXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:23:10 -0400
-Received: from mga14.intel.com ([143.182.124.37]:24376 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752004Ab3FZRXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:23:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,945,1363158000"; 
-   d="scan'208";a="356156245"
-Message-ID: <1372267386.8177.87.camel@envy.home>
-Subject: Re: [PATCH 6/8] minnowboard-keys: Bind MinnowBoard buttons to arrow
- keys
-From: Darren Hart <dvhart@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Olof Johansson <olof@lixom.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
-        danders@circuitco.com, vishal.l.verma@intel.com,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        platform-driver-x86@vger.kernel.org
-Date: Wed, 26 Jun 2013 10:23:06 -0700
-In-Reply-To: <20130626171640.GA14661@kroah.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
-	 <1ded9714150de50fac7fb6ee82166fbcb5621f7d.1372211451.git.dvhart@linux.intel.com>
-	 <1372236386.24799.58.camel@smile> <1372264087.8177.80.camel@envy.home>
-	 <20130626171640.GA14661@kroah.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752709Ab3FZRZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:25:47 -0400
+Received: from mailrelay.tu-graz.ac.at ([129.27.2.202]:41477 "EHLO
+	mailrelay.tugraz.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab3FZRZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 13:25:46 -0400
+X-Greylist: delayed 1928 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jun 2013 13:25:45 EDT
+Message-ID: <51CB1C8B.1050701@htu.tugraz.at>
+Date: Wed, 26 Jun 2013 18:53:31 +0200
+From: Michael Gissing <mgissing@htu.tugraz.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: NULL pointer dereference in ext4_superblock_csum_set
+Content-Type: multipart/mixed;
+ boundary="------------010209090500090807080800"
+X-TUG-Backscatter-control: /E/VAccUv8Q3OmKEgerpxA
+X-Spam-Scanner: SpamAssassin 3.003000 
+X-Spam-Score-relay: 0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 10:16 -0700, Greg Kroah-Hartman wrote:
-> On Wed, Jun 26, 2013 at 09:28:07AM -0700, Darren Hart wrote:
-> > On Wed, 2013-06-26 at 11:46 +0300, Andy Shevchenko wrote:
-> > > On Tue, 2013-06-25 at 18:53 -0700, Darren Hart wrote: 
-> > > > Configure the four buttons tied to the E6XX GPIO lines on the
-> > > > MinnowBoard as keys using the gpio-keys-polled platform driver. From
-> > > > left to right, bind them to LEFT, DOWN, UP, RIGHT, similar to the VI
-> > > > directional keys.
-> > > > 
-> > > > This is separate from the minnowboard driver to provide users with the
-> > > > flexibility to write kernel drivers for their own devices using these GPIO
-> > > > lines.
-> > > 
-> > > I'm repeating my comment I did early to you.
-> > > 
-> > > I think this driver is a wrong approach, since you just use
-> > > gpio_keys_polling with custom platform data. So, it should go to the
-> > > platform code / board file under arch/x86/platform/minnow/...
-> > 
-> > 
-> > Olof mentinoed something similar. The reason this is separate is that I
-> > can easily see someone wanting to use these buttons in a different way
-> > when integrating the MinnowBoard into some kind of product. The
-> > minnowboard.c driver sets up the fixed functionality GPIO lines, such as
-> > the LEDs (which can be easily reconfigured via triggers) while this
-> > driver serves as an example of how the GPIO buttons could be used as
-> > keys, but if included in the minnowboard driver, users couldn't get the
-> > fixed functionality without also tying up these GPIO lines.
-> > 
-> > I could remedy that with driver command-line options, but I know I've
-> > heard Greg KH discourage their use in the past.
-> 
-> Ick, yes, never do that type of thing as a command-line option, that's
-> what device-tree is for :)
+This is a multi-part message in MIME format.
+--------------010209090500090807080800
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-I suppose when I convert to ACPI drivers I could merge them and have the
-ACPI table include some data that enabled or disabled things like the
-minnowboard-keys.... but that seems like more work for the user than it
-should be to disable the example keys driver.
+Hi,
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+tl,dr; I have a sd card which I suspect to have a corrupted fs. When I 
+insert the card into my laptop's reader, I get the following:
 
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff8123bb0d>] ext4_superblock_csum_set+0x4d/0xd0
+
+
+
+Long story: It seems like i got a corrupted SD card when running one of 
+my Raspberry pis in turbo mode. I wanted to check the card on my laptop, 
+I got a kernel error. (please find it in the attached .txt)
+
+The installed system is Linux Mint 14 Nadia (the one based on Ubuntu 12.10)
+
+uname -a:
+Linux x200t 3.5.0-34-generic #55-Ubuntu SMP Thu Jun 6 20:18:19 UTC 2013 
+x86_64 x86_64 x86_64 GNU/Linux
+
+Cinnamon gives me a popup too:
+
+Error mounting /dev/sdb2 at 
+/media/michael/41cd5baa-7a62-4706-b8e8-02c43ccee8d9: Command-line `mount 
+-t "ext4" -o "uhelper=udisks2,nodev,nosuid" "/dev/sdb2" 
+"/media/michael/41cd5baa-7a62-4706-b8e8-02c43ccee8d9"' was signaled with 
+signal SIGKILL (9):
+
+I couldn't reproduce the error, something must have changed the sd card. 
+I've created a dd image of the card, but I did it after the error 
+occured. I haven't tried whether the image causes the error yet, I need 
+the card at the moment.
+
+Is this something you want to look into? If so, let me know, I'll try to 
+help.
+
+Please CC me as I'm not subscribed to the list.
+
+Michael
+
+
+--------------010209090500090807080800
+Content-Type: text/plain; charset=UTF-8;
+ name="linux_kernel_null_pointer_ext4.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="linux_kernel_null_pointer_ext4.txt"
+
+WzMyOTk5Ljc4MDA1MV0gdXNiIDItNjogbmV3IGhpZ2gtc3BlZWQgVVNCIGRldmljZSBudW1i
+ZXIgNCB1c2luZyBlaGNpX2hjZApbMzI5OTkuOTIyMjU1XSB1c2IgMi02OiBOZXcgVVNCIGRl
+dmljZSBmb3VuZCwgaWRWZW5kb3I9MDVjYSwgaWRQcm9kdWN0PTE4ODAKWzMyOTk5LjkyMjI2
+MV0gdXNiIDItNjogTmV3IFVTQiBkZXZpY2Ugc3RyaW5nczogTWZyPTEsIFByb2R1Y3Q9Miwg
+U2VyaWFsTnVtYmVyPTMKWzMyOTk5LjkyMjI2NV0gdXNiIDItNjogUHJvZHVjdDogVVNCMi4w
+LUZMQVNIIE1lZGlhICAgIApbMzI5OTkuOTIyMjY4XSB1c2IgMi02OiBNYW51ZmFjdHVyZXI6
+IFJJQ09IICAgICAgICAgICAgIApbMzI5OTkuOTIyMjcyXSB1c2IgMi02OiBTZXJpYWxOdW1i
+ZXI6IFI1VTg4MC0wMDAwMwpbMzI5OTkuOTIyNzYzXSBzY3NpNSA6IHVzYi1zdG9yYWdlIDIt
+NjoxLjAKWzMzMDAwLjkyMDg4NF0gc2NzaSA1OjA6MDowOiBEaXJlY3QtQWNjZXNzICAgICBS
+SUNPSCAgICBSNVU4ODBGbGFzaE1lZGlhIDAwMDAgUFE6IDAgQU5TSTogMgpbMzMwMDAuOTIy
+OTg4XSBzZCA1OjA6MDowOiBBdHRhY2hlZCBzY3NpIGdlbmVyaWMgc2cyIHR5cGUgMApbMzMw
+MDEuMTE4OTg5XSBzZCA1OjA6MDowOiBbc2RiXSAzMTExNjI4OCA1MTItYnl0ZSBsb2dpY2Fs
+IGJsb2NrczogKDE1LjkgR0IvMTQuOCBHaUIpClszMzAwMS4xMTk2MjFdIHNkIDU6MDowOjA6
+IFtzZGJdIFdyaXRlIFByb3RlY3QgaXMgb2ZmClszMzAwMS4xMTk2MjZdIHNkIDU6MDowOjA6
+IFtzZGJdIE1vZGUgU2Vuc2U6IDBiIDAwIDAwIDA4ClszMzAwMS4xMjAyNDldIHNkIDU6MDow
+OjA6IFtzZGJdIE5vIENhY2hpbmcgbW9kZSBwYWdlIHByZXNlbnQKWzMzMDAxLjEyMDI1M10g
+c2QgNTowOjA6MDogW3NkYl0gQXNzdW1pbmcgZHJpdmUgY2FjaGU6IHdyaXRlIHRocm91Z2gK
+WzMzMDAxLjEyNTk2OV0gc2QgNTowOjA6MDogW3NkYl0gTm8gQ2FjaGluZyBtb2RlIHBhZ2Ug
+cHJlc2VudApbMzMwMDEuMTI1OTczXSBzZCA1OjA6MDowOiBbc2RiXSBBc3N1bWluZyBkcml2
+ZSBjYWNoZTogd3JpdGUgdGhyb3VnaApbMzMwMDEuMTI3NDg2XSAgc2RiOiBzZGIxIHNkYjIK
+WzMzMDAxLjEzMzU5Nl0gc2QgNTowOjA6MDogW3NkYl0gTm8gQ2FjaGluZyBtb2RlIHBhZ2Ug
+cHJlc2VudApbMzMwMDEuMTMzNjAxXSBzZCA1OjA6MDowOiBbc2RiXSBBc3N1bWluZyBkcml2
+ZSBjYWNoZTogd3JpdGUgdGhyb3VnaApbMzMwMDEuMTMzNjA1XSBzZCA1OjA6MDowOiBbc2Ri
+XSBBdHRhY2hlZCBTQ1NJIHJlbW92YWJsZSBkaXNrClszMzAwMS43MDgwNzFdIEJVRzogdW5h
+YmxlIHRvIGhhbmRsZSBrZXJuZWwgTlVMTCBwb2ludGVyIGRlcmVmZXJlbmNlIGF0ICAgICAg
+ICAgICAobnVsbCkKWzMzMDAxLjcwODEyNl0gSVA6IFs8ZmZmZmZmZmY4MTIzYmIwZD5dIGV4
+dDRfc3VwZXJibG9ja19jc3VtX3NldCsweDRkLzB4ZDAKWzMzMDAxLjcwODE2N10gUEdEIDc4
+M2VhMDY3IFBVRCA3ODBjMzA2NyBQTUQgMCAKWzMzMDAxLjcwODE5OV0gT29wczogMDAwMCBb
+IzFdIFNNUCAKWzMzMDAxLjcwODIyNV0gQ1BVIDAgClszMzAwMS43MDgyMzhdIE1vZHVsZXMg
+bGlua2VkIGluOiBubHNfaXNvODg1OV8xIHVzYl9zdG9yYWdlIGlwNnRhYmxlX2ZpbHRlciBp
+cDZfdGFibGVzIGVidGFibGVfbmF0IGVidGFibGVzIGlwdF9NQVNRVUVSQURFIGlwdGFibGVf
+bmF0IG5mX25hdCBuZl9jb25udHJhY2tfaXB2NCBuZl9kZWZyYWdfaXB2NCB4dF9zdGF0ZSBu
+Zl9jb25udHJhY2sgaXB0X1JFSkVDVCB4dF9DSEVDS1NVTSBpcHRhYmxlX21hbmdsZSB4dF90
+Y3B1ZHAgaXB0YWJsZV9maWx0ZXIgaXBfdGFibGVzIHhfdGFibGVzIGJyaWRnZSBzdHAgbGxj
+IHBhcnBvcnRfcGMgcHBkZXYgcmZjb21tIGJuZXAgYmx1ZXRvb3RoIHNuZF9oZGFfY29kZWNf
+Y29uZXhhbnQgY29yZXRlbXAga3ZtX2ludGVsIGt2bSBhcmM0IHNuZF9oZGFfaW50ZWwgc25k
+X2hkYV9jb2RlYyBzbmRfaHdkZXAgc25kX3BjbSB0aGlua3BhZF9hY3BpIHNuZF9zZXFfbWlk
+aSBzbmRfcmF3bWlkaSBzbmRfc2VxX21pZGlfZXZlbnQgc25kX3NlcSBtaWNyb2NvZGUgc25k
+X3RpbWVyIHV2Y3ZpZGVvIHZpZGVvYnVmMl9jb3JlIHBzbW91c2UgdmlkZW9kZXYgdmlkZW9i
+dWYyX3ZtYWxsb2Mgc25kX3NlcV9kZXZpY2UgbHBjX2ljaCBpd2x3aWZpIHNlcmlvX3JhdyB2
+aWRlb2J1ZjJfbWVtb3BzIHNuZCBtYWM4MDIxMSBzb3VuZGNvcmUgc25kX3BhZ2VfYWxsb2Mg
+Y2ZnODAyMTEgdHBtX3RpcyBudnJhbSB3bWkgaTkxNSBkcm1fa21zX2hlbHBlciBkcm0gaTJj
+X2FsZ29fYml0IHZpZGVvIG1laSBtYWNfaGlkIGxwIHBhcnBvcnQgaGlkX2dlbmVyaWMgdXNi
+aGlkIGhpZCBhaGNpIGxpYmFoY2kgZTEwMDBlClszMzAwMS43MDg4MjVdIApbMzMwMDEuNzA4
+ODMwXSBQaWQ6IDYzMzQsIGNvbW06IG1vdW50IE5vdCB0YWludGVkIDMuNS4wLTM0LWdlbmVy
+aWMgIzU1LVVidW50dSBMRU5PVk8gNzQ1M1dSSy83NDUzV1JLClszMzAwMS43MDg4ODJdIFJJ
+UDogMDAxMDpbPGZmZmZmZmZmODEyM2JiMGQ+XSAgWzxmZmZmZmZmZjgxMjNiYjBkPl0gZXh0
+NF9zdXBlcmJsb2NrX2NzdW1fc2V0KzB4NGQvMHhkMApbMzMwMDEuNzA4OTMxXSBSU1A6IDAw
+MDA6ZmZmZjg4MDAxZjQ2ZDZhOCAgRUZMQUdTOiAwMDAxMDIwMgpbMzMwMDEuNzA4OTYwXSBS
+QVg6IGZmZmY4ODAxMzBkODcwMDAgUkJYOiBmZmZmODgwMGE1OTVlNDAwIFJDWDogMDAwMDAw
+MDAwMDAwMDAwMgpbMzMwMDEuNzA4OTk2XSBSRFg6IDAwMDAwMDAwMDAwMDAwMDAgUlNJOiBm
+ZmZmODgwMGE1OTVlNDAwIFJESTogZmZmZjg4MDEzMTUyODgwMApbMzMwMDEuNzA5MDMyXSBS
+QlA6IGZmZmY4ODAwMWY0NmQ2YzggUjA4OiBmZmZmZmZmZjgxY2Q1NzIwIFIwOTogMDAwMDAw
+MDAwMDAwMDEwMApbMzMwMDEuNzA5MDY4XSBSMTA6IGZmOWZkMDA5M2JmOWQ0MDIgUjExOiAw
+MDAwMDAwMDAwMDAwMDAwIFIxMjogZmZmZjg4MDA0MjMwMDc1MApbMzMwMDEuNzA5MTA0XSBS
+MTM6IGZmZmY4ODAwMWY0NmQ2YTggUjE0OiAwMDAwMDAwMDAwMDAwMDAwIFIxNTogZmZmZjg4
+MDEzMTUyODgwMApbMzMwMDEuNzA5MTQxXSBGUzogIDAwMDA3ZmMzMDI4MGQ4MDAoMDAwMCkg
+R1M6ZmZmZjg4MDEzYmMwMDAwMCgwMDAwKSBrbmxHUzowMDAwMDAwMDAwMDAwMDAwClszMzAw
+MS43MDkxODNdIENTOiAgMDAxMCBEUzogMDAwMCBFUzogMDAwMCBDUjA6IDAwMDAwMDAwODAw
+NTAwM2IKWzMzMDAxLjcwOTIxM10gQ1IyOiAwMDAwMDAwMDAwMDAwMDAwIENSMzogMDAwMDAw
+MDAxYWFhOTAwMCBDUjQ6IDAwMDAwMDAwMDAwNDA3ZjAKWzMzMDAxLjcwOTI0OF0gRFIwOiAw
+MDAwMDAwMDAwMDAwMDAwIERSMTogMDAwMDAwMDAwMDAwMDAwMCBEUjI6IDAwMDAwMDAwMDAw
+MDAwMDAKWzMzMDAxLjcwOTI4NF0gRFIzOiAwMDAwMDAwMDAwMDAwMDAwIERSNjogMDAwMDAw
+MDBmZmZmMGZmMCBEUjc6IDAwMDAwMDAwMDAwMDA0MDAKWzMzMDAxLjcwOTMyMl0gUHJvY2Vz
+cyBtb3VudCAocGlkOiA2MzM0LCB0aHJlYWRpbmZvIGZmZmY4ODAwMWY0NmMwMDAsIHRhc2sg
+ZmZmZjg4MDBhMWVhMmUwMCkKWzMzMDAxLjcwOTM1N10gU3RhY2s6ClszMzAwMS43MDkzNzBd
+ICBmZmZmZmZmZjgxMTQwYjc5IDAwMDAwMDAwMDAwZTFlZWQgZmZmZjg4MDA0MjMwMDc1MCBm
+ZmZmODgwMGE1OTVlNDAwClszMzAwMS43MDk0MTNdICBmZmZmODgwMDFmNDZkNzE4IGZmZmZm
+ZmZmODEyM2MzMzMgMDAwMDAwMDEzNmNhMGY2MCAwMDAwMDAwMDAwNDBiNzQ1ClszMzAwMS43
+MDk0NTZdICBmZmZmODgwMDFmNDZkNzE4IGZmZmY4ODAxMzE1Mjg4MDAgMDAwMDAwMDAwMDAz
+MTFiNyBmZmZmZmZmZjgxODI3YmMwClszMzAwMS43MDk0OThdIENhbGwgVHJhY2U6ClszMzAw
+MS43MDk1MTNdICBbPGZmZmZmZmZmODExNDBiNzk+XSA/IHpvbmVfc3RhdGlzdGljcysweDk5
+LzB4YzAKWzMzMDAxLjcwOTU0MV0gIFs8ZmZmZmZmZmY4MTIzYzMzMz5dIGV4dDRfY29tbWl0
+X3N1cGVyKzB4MTczLzB4MjUwClszMzAwMS43MDk1NjhdICBbPGZmZmZmZmZmODEyM2M2MDM+
+XSBzYXZlX2Vycm9yX2luZm8rMHgyMy8weDMwClszMzAwMS43MDk1OTRdICBbPGZmZmZmZmZm
+ODEyM2Q3YTM+XSBleHQ0X2Vycm9yX2lub2RlKzB4NjMvMHgxMjAKWzMzMDAxLjcwOTYyM10g
+IFs8ZmZmZmZmZmY4MTIxYmRiOD5dIF9fY2hlY2tfYmxvY2tfdmFsaWRpdHkuY29uc3Rwcm9w
+LjQ4KzB4NzgvMHg4MApbMzMwMDEuNzA5NjU2XSAgWzxmZmZmZmZmZjgxMjFkOTgwPl0gZXh0
+NF9tYXBfYmxvY2tzKzB4MTkwLzB4MjUwClszMzAwMS43MDk2ODNdICBbPGZmZmZmZmZmODEy
+MWZjYjY+XSBfZXh0NF9nZXRfYmxvY2srMHhhNi8weDE2MApbMzMwMDEuNzA5NzEyXSAgWzxm
+ZmZmZmZmZjgxMjFmZGQ2Pl0gZXh0NF9nZXRfYmxvY2srMHgxNi8weDIwClszMzAwMS43MDk3
+NDBdICBbPGZmZmZmZmZmODExYjI1Y2Y+XSBnZW5lcmljX2Jsb2NrX2JtYXArMHgzZi8weDUw
+ClszMzAwMS43MDk3NzFdICBbPGZmZmZmZmZmODE2ODIxN2U+XSA/IF9yYXdfc3Bpbl9sb2Nr
+KzB4ZS8weDIwClszMzAwMS43MDk3OTldICBbPGZmZmZmZmZmODExMmNhOTI+XSA/IG1hcHBp
+bmdfdGFnZ2VkKzB4MTIvMHgyMApbMzMwMDEuNzA5ODI2XSAgWzxmZmZmZmZmZjgxMjFjYzZj
+Pl0gZXh0NF9ibWFwKzB4NmMvMHhlMApbMzMwMDEuNzA5ODUxXSAgWzxmZmZmZmZmZjgxMTli
+MWFlPl0gYm1hcCsweDFlLzB4MjAKWzMzMDAxLjcwOTg3Nl0gIFs8ZmZmZmZmZmY4MTI3MzFj
+Mz5dIGpiZDJfam91cm5hbF9ibWFwKzB4MzMvMHhiMApbMzMwMDEuNzA5OTA0XSAgWzxmZmZm
+ZmZmZjgxMjZjNGEwPl0ganJlYWQrMHg0MC8weDI3MApbMzMwMDEuNzA5OTI5XSAgWzxmZmZm
+ZmZmZjgxMWIzZWZjPl0gPyBfX2dldGJsaysweDJjLzB4MmUwClszMzAwMS43MDk5NTRdICBb
+PGZmZmZmZmZmODE2ODIxN2U+XSA/IF9yYXdfc3Bpbl9sb2NrKzB4ZS8weDIwClszMzAwMS43
+MDk5ODJdICBbPGZmZmZmZmZmODEwNzY3Nzc+XSA/IGJpdF93YWl0cXVldWUrMHgxNy8weGMw
+ClszMzAwMS43MTAwMDhdICBbPGZmZmZmZmZmODEyNmNiMGI+XSBkb19vbmVfcGFzcysweDQz
+Yi8weGMzMApbMzMwMDEuNzExMzQ3XSAgWzxmZmZmZmZmZjgxNjdmYTJjPl0gPyBvdXRfb2Zf
+bGluZV93YWl0X29uX2JpdCsweDdjLzB4OTAKWzMzMDAxLjcxMjAwN10gIFs8ZmZmZmZmZmY4
+MTI2ZDNkOT5dIGpiZDJfam91cm5hbF9yZWNvdmVyKzB4ZDkvMHgxMTAKWzMzMDAxLjcxMjAw
+N10gIFs8ZmZmZmZmZmY4MTI3MmNiZj5dIGpiZDJfam91cm5hbF9sb2FkKzB4ZGYvMHgzOTAK
+WzMzMDAxLjcxMjAwN10gIFs8ZmZmZmZmZmY4MTE2ZTRjNT5dID8ga21lbV9jYWNoZV9hbGxv
+Y190cmFjZSsweDM1LzB4MTEwClszMzAwMS43MTIwMDddICBbPGZmZmZmZmZmODEyNDExZTg+
+XSBleHQ0X2ZpbGxfc3VwZXIrMHgxZTg4LzB4MmUxMApbMzMwMDEuNzEyMDA3XSAgWzxmZmZm
+ZmZmZjgxMTg1ODhiPl0gbW91bnRfYmRldisweDFjYi8weDIxMApbMzMwMDEuNzEyMDA3XSAg
+WzxmZmZmZmZmZjgxMjNmMzYwPl0gPyBleHQ0X2NhbGN1bGF0ZV9vdmVyaGVhZCsweDQzMC8w
+eDQzMApbMzMwMDEuNzEyMDA3XSAgWzxmZmZmZmZmZjgxMjJlMTQ1Pl0gZXh0NF9tb3VudCsw
+eDE1LzB4MjAKWzMzMDAxLjcxMjAwN10gIFs8ZmZmZmZmZmY4MTE4NjNjMz5dIG1vdW50X2Zz
+KzB4NDMvMHgxYjAKWzMzMDAxLjcxMjAwN10gIFs8ZmZmZmZmZmY4MTE5Zjg3Mz5dID8gZmlu
+ZF9maWxlc3lzdGVtKzB4NjMvMHg4MApbMzMwMDEuNzEyMDA3XSAgWzxmZmZmZmZmZjgxMWEw
+NzM0Pl0gdmZzX2tlcm5fbW91bnQrMHg3NC8weDExMApbMzMwMDEuNzEyMDA3XSAgWzxmZmZm
+ZmZmZjgxMWExMGE0Pl0gZG9fa2Vybl9tb3VudCsweDU0LzB4MTEwClszMzAwMS43MTIwMDdd
+ICBbPGZmZmZmZmZmODExYTI5ZGE+XSBkb19tb3VudCsweDI2YS8weDg5MApbMzMwMDEuNzEy
+MDA3XSAgWzxmZmZmZmZmZjgxMTNlMzJiPl0gPyBzdHJuZHVwX3VzZXIrMHg1Yi8weDgwClsz
+MzAwMS43MTIwMDddICBbPGZmZmZmZmZmODExYTMxNGQ+XSBzeXNfbW91bnQrMHg4ZC8weGUw
+ClszMzAwMS43MTIwMDddICBbPGZmZmZmZmZmODE2OGE0Mjk+XSBzeXN0ZW1fY2FsbF9mYXN0
+cGF0aCsweDE2LzB4MWIKWzMzMDAxLjcxMjAwN10gQ29kZTogNTggNjggZjYgNDMgNjUgMDQg
+NzUgMTYgNDggOGIgNWQgZTggNGMgOGIgNjUgZjAgNGMgOGIgNmQgZjggYzkgYzMgMGYgMWYg
+ODQgMDAgMDAgMDAgMDAgMDAgNDggOGIgOTAgYTggMDMgMDAgMDAgNDkgODkgZTUgNDggODkg
+ZGUgPDhiPiAwMiA0OCA4MyBjMCAxNyA0OCA4MyBlMCBmOCA0OCA4MyBjMCAxNiA0OCBjMSBl
+OCAwNCA0OCBjMSBlMCAKWzMzMDAxLjcxMjAwN10gUklQICBbPGZmZmZmZmZmODEyM2JiMGQ+
+XSBleHQ0X3N1cGVyYmxvY2tfY3N1bV9zZXQrMHg0ZC8weGQwClszMzAwMS43MTIwMDddICBS
+U1AgPGZmZmY4ODAwMWY0NmQ2YTg+ClszMzAwMS43MTIwMDddIENSMjogMDAwMDAwMDAwMDAw
+MDAwMApbMzMwMDEuNzQ3NDI4XSAtLS1bIGVuZCB0cmFjZSBkN2MzNDEwMWIwNGNkZWRkIF0t
+LS0KCg==
+--------------010209090500090807080800--
