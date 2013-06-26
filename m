@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab3FZR5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:57:32 -0400
-Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:8186
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752759Ab3FZR5b (ORCPT
+	id S1752857Ab3FZSAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 14:00:04 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:51794 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752533Ab3FZSAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:57:31 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
-X-WSS-ID: 0MP0HVN-02-N88-02
-X-M-MSG: 
-Date: Wed, 26 Jun 2013 12:57:22 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Tim Gardner <tim.gardner@canonical.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: od_set_powersave_bias: NULL pointer dereference
-Message-ID: <20130626175722.GA20226@jshin-Toonie>
-References: <51C87ADC.4070409@canonical.com>
- <CAKohponCrC93D88Fgg_3LKsLG0KMeCVKsTEoy-N3jsdUQdgWvA@mail.gmail.com>
- <20130625161935.GA10208@jshin-Toonie>
- <CAKohpomSa0FRviZHkkJOeUUxubbzueVb3yyP5G8ASwpRB6wANQ@mail.gmail.com>
- <20130626142852.GA2326@jshin-Toonie>
- <CAKohpom_jHQeR2FKFS3-RkxpPrJvekw8pDb-qnApnzu-VqreBQ@mail.gmail.com>
+	Wed, 26 Jun 2013 14:00:02 -0400
+X-Greylist: delayed 535 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jun 2013 14:00:02 EDT
+Message-ID: <51CB2A09.8050906@akamai.com>
+Date: Wed, 26 Jun 2013 13:51:05 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAKohpom_jHQeR2FKFS3-RkxpPrJvekw8pDb-qnApnzu-VqreBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Joe Perches <joe@perches.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "shigekatsu.tateno@atmel.com" <shigekatsu.tateno@atmel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: ozwpan: Convert printk to dev_dbg()
+References: <1372177802-11360-1-git-send-email-rupesh.gujare@atmel.com>  <20130625170205.GA21328@kroah.com> <1372181390.1245.68.camel@joe-AO722>  <20130625173840.GA8930@kroah.com> <1372183005.1245.72.camel@joe-AO722> <1372183389.1245.74.camel@joe-AO722>
+In-Reply-To: <1372183389.1245.74.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 08:02:29PM +0530, Viresh Kumar wrote:
-> On 26 June 2013 19:58, Jacob Shin <jacob.shin@amd.com> wrote:
-> > On Wed, Jun 26, 2013 at 12:18:27PM +0530, Viresh Kumar wrote:
-> 
-> >> I am not sure if this is enough. What if we had ondemand as the
-> >> governor initially, then we changed it to something else. Now also
-> >> cur_policy contains a address and isn't zero.
+On 06/25/2013 02:03 PM, Joe Perches wrote:
+> (Using Jason Baron's most current email address)
+>
+> On Tue, 2013-06-25 at 10:56 -0700, Joe Perches wrote:
+>> On Tue, 2013-06-25 at 10:38 -0700, Greg KH wrote:
+>>> On Tue, Jun 25, 2013 at 10:29:50AM -0700, Joe Perches wrote:
+>>>> a long needed extension to dev_dbg is to enable classes
+>>>> of messages by level or mask.
+>>>>
+>>>> There are many existing macros like
+>>>>
+>>>> #define module_dbg(level, fmt, ...)
+>>>> do {
+>>>> 	if (level >= some_module_var)
+>>>> 		debug_something(...);
+>>>> } while (0)
+>>>>
+>>>> and
+>>>>
+>>>> #define module_dbg(mask, fmt, ...)
+>>>> do {
+>>>> 	if (mask & some_module_var)
+>>>> 		debug_something(...)
+>>>> } while (0)
+>>>>
+>>>> It'd be nice to consolidate those in dev_dbg
+>>> I'd almost recommend that all of them just be removed, because most of
+>>> them were only used for debugging the code the first time it was
+>>> developed, right?  Only for very limited usages would this type of thing
+>>> be needed.
+>> Maybe, though that's hard to know with certainty.
+>> How often module options are used isn't easy to find out.
+>>
+>> These forms are sometimes used to reduce object size.
+> Hey Jason.  Your redhat.com address is out of date.
+>
+> If you're still interested in dynamic_debug, you should
+> update your MAINTAINERS entry.
+>
+>
 
-I just tested this case with this patch applied, and did not have any
-problems.
+Hi Joe,
 
-> >>
-> >> >                 cpumask_or(&done, &done, policy->cpus);
-> >> > +
-> >> > +               if (policy->governor != &cpufreq_gov_ondemand)
-> >> > +                       continue;
-> >
-> > This should catch that case no ?
-> 
-> Policy might be freed and reallocated by then. And so doing
-> policy->governor is dangerous.
+Thanks for asking - I'll send out a patch to update it.
 
-Are you worried that after we have passed the above if check, and
-before we access ->tuner governor change might occur?
+Thanks,
 
-Is there something synonymous to get/put_online_cpus() for cpufreq to
-prevent governor change while we update ->tuner values?
+-Jason
 
-Otherwise, should just spinlock?
+
 
