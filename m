@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab3FZHcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:32:16 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47986 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab3FZHcO (ORCPT
+	id S1751848Ab3FZHeo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:34:44 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:64025 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3FZHem convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:32:14 -0400
-Message-ID: <51CA98EE.4050801@huawei.com>
-Date: Wed, 26 Jun 2013 15:31:58 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 03:34:42 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: LKML <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <trinity@vger.kernel.org>, Li Jinyue <lijinyue@huawei.com>
-Subject: [PATCH 2/2] dlci: validate the net device in dlci_del()
-References: <51CA9872.5050700@huawei.com>
-In-Reply-To: <51CA9872.5050700@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130625193951.GF15184@roeck-us.net>
+References: <20130625183915.443950649@linuxfoundation.org>
+	<20130625192300.GA10427@roeck-us.net>
+	<CAMuHMdVzqOLTVWHeGEFpkpDTt8hpor9zQpnn4bPDaNEGWnb=SQ@mail.gmail.com>
+	<20130625193951.GF15184@roeck-us.net>
+Date: Wed, 26 Jun 2013 09:34:42 +0200
+X-Google-Sender-Auth: 2TyaIIg9KadVk-p-5kVVI_MCwv8
+Message-ID: <CAMuHMdWK9xorBaTH+Zg9z1XU=JMsSffzGEfv5KHXnMZLX04PCw@mail.gmail.com>
+Subject: Re: [ 00/17] 3.0.84-stable review
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We triggered an oops while running trinity with 3.4 kernel:
+On Tue, Jun 25, 2013 at 9:39 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Tue, Jun 25, 2013 at 09:32:26PM +0200, Geert Uytterhoeven wrote:
+>> Hi Günther,
+>>
+>> On Tue, Jun 25, 2013 at 9:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> > Build m68k:defconfig passed
+>> > Build m68k:apollo_defconfig passed
+>> > Build m68k:m5272c3_defconfig failed
+>> > Build m68k:m5307c3_defconfig failed
+>> > Build m68k:m5249evb_defconfig failed
+>> > Build m68k:m5407c3_defconfig failed
+>> > Build m68k:mac_defconfig passed
+>> > Build m68k:multi_defconfig passed
+>> > Build m68k:sun3_defconfig passed
+>> > Build m68k:sun3x_defconfig passed
+>> > Build m68k:mvme16x_defconfig passed
+>> > Build m68k:hp300_defconfig passed
+>>
+>> m68k:defconfig is an alias for m68k:multi_defconfig, so you can drop
+>> one of them.
+>>
+>> Furthermore, m68k:multi_defconfig is the union of all m68k "classic MMU"
+>> defconfigs, except for sun3_defconfig (due to the incompatible MMU type).
+>> Hence dropping apollo_defconfig, mac_defconfig, sun3x_defconfig,
+>> mvme16x_defconfig, and hp300_defconfig would reduce your build coverage
+>> only marginally. Of course, if you have too many spare cycles ;-)
+>>
+> Thanks, I'll do that. The complete build for three releases takes 15+ hours
+> with i7-3700k, so reducing that a bit doesn't hurt.
 
-BUG: unable to handle kernel paging request at 0000000100000d07
-IP: [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-PGD 640c0d067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-CPU 3
-...
-Pid: 7302, comm: trinity-child3 Not tainted 3.4.24.09+ 40 Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
-RIP: 0010:[<ffffffffa0109738>]  [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-...
-Call Trace:
-  [<ffffffff8137c5c3>] sock_ioctl+0x153/0x280
-  [<ffffffff81195494>] do_vfs_ioctl+0xa4/0x5e0
-  [<ffffffff8118354a>] ? fget_light+0x3ea/0x490
-  [<ffffffff81195a1f>] sys_ioctl+0x4f/0x80
-  [<ffffffff81478b69>] system_call_fastpath+0x16/0x1b
-...
+FYI, you still built m68k:mvme16x_defconfig for v3.9.7-95-g6a2f14b.
 
-It's because the net device is not a dlci device.
+> Would there be any useful builds to add ?
 
-Reported-by: Li Jinyue <lijinyue@huawei.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: stable@vger.kernel.org
----
- drivers/net/wan/dlci.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+You could add m68k:m5475evb_defconfig, which is the only Coldfire
+defconfig with MMU=y.
 
-diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
-index 1f6e053..6a8a382 100644
---- a/drivers/net/wan/dlci.c
-+++ b/drivers/net/wan/dlci.c
-@@ -384,6 +384,7 @@ static int dlci_del(struct dlci_add *dlci)
- 	struct frad_local	*flp;
- 	struct net_device	*master, *slave;
- 	int			err;
-+	bool			found = false;
- 
- 	rtnl_lock();
- 
-@@ -394,6 +395,17 @@ static int dlci_del(struct dlci_add *dlci)
- 		goto out;
- 	}
- 
-+	list_for_each_entry(dlp, &dlci_devs, list) {
-+		if (dlp->master == master) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	if (!found) {
-+		err = -ENODEV;
-+		goto out;
-+	}
-+
- 	if (netif_running(master)) {
- 		err = -EBUSY;
- 		goto out;
--- 
-1.8.0.2
+Greg: Any other advice for Coldfire?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
