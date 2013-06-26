@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254Ab3FZI7B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:59:01 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:47120 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab3FZI67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:58:59 -0400
-X-Spam-Score: -100.8
-Message-ID: <51CAAD1D.8050801@asianux.com>
-Date: Wed, 26 Jun 2013 16:58:05 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752392Ab3FZI7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:59:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39931 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752355Ab3FZI7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:59:05 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-usb@vger.kernel.org>
+CC: <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <sarah.a.sharp@linux.intel.com>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH] usb: host: xhci-plat: Enable XHCI_SPURIOUS_SUCCESS quirk for xhci-plat
+Date: Wed, 26 Jun 2013 14:28:57 +0530
+Message-ID: <1372237137-17351-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
-        dhsharp@google.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
-References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at> <51CAA78C.5040900@asianux.com> <51CAA8D6.9000505@nod.at>
-In-Reply-To: <51CAA8D6.9000505@nod.at>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 04:39 PM, Richard Weinberger wrote:
->>>>> >>>> The drivers internal code has already check the related return value,
->>>>> >>>> so it is the architecture's duty to 'tell' the driver whether support
->>>>> >>>> io memory (e.g. define ioremap, but return NULL).
->>> >> It does so already by setting CONFIG_HAS_IOMEM=n
->> > 
->> > Excuse me, I use "grep -rn ioremap *" under "include/" and "arch/um/"
->> > directory, but can not find the related definition for 'ioremap'.
->> > 
->> > Is there another declaration or definition way which I don't know ?
->> > (maybe it is).
-> Both UML and s390 (in the !CONFIG_PCI) do not define ioremap() because
-> without io memory you cannot have a ioremap().
-> 
+Synopsis xhci controllers with hci_version > 0.96 gives spurious success
+events on short packet completion. During webcam capture the
+"ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+The same application works fine with synopsis controllers hci_version 0.96.
 
-I assume if ioremap() return NULL, it means "without io memory", is it
-correct ?
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/host/xhci-plat.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-If it is correct, "define a dummy ioremap(), and return NULL" is just
-the meaning that you mentioned above.
-
-If so, for UML, it is not requirement, but recommend to define a dummy
-ioremap() which return NULL, so can be generic enough to mach all cases.
-
-
->> > For our case, the ".config" file does not define 'CONFIG_HAS_IOMEM', can
->> > I assume it means "CONFIG_HAS_IOMEM=n" ?
-> If I'm not mistaken it works the other way around.
-> All archs except UML and s390 set CONFIG_HAS_IOMEM=y.
-
-I guess so, too.
-
-
-Thanks.
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 93ad67e..e63c6d3 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -25,6 +25,16 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 	 * dev struct in order to setup MSI
+ 	 */
+ 	xhci->quirks |= XHCI_BROKEN_MSI;
++
++	/*
++	 * In some xhci controllers which follows xhci 1.0 spec gives a spurious
++	 * success event after a short transfer. This quirk will ignore such
++	 * spurious event. Hit this issue in synopsis xhci controllers with
++	 * hci_version > 0.96
++	 */
++
++	if (xhci->hci_version > 0x96)
++		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+ }
+ 
+ /* called during probe() after chip reset completes */
 -- 
-Chen Gang
+1.8.1.4
 
-Asianux Corporation
