@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab3FZQN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:13:29 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:57416 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab3FZQN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:13:28 -0400
-Message-ID: <51CB1323.6090305@gmail.com>
-Date: Wed, 26 Jun 2013 10:13:23 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752740Ab3FZQPO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:15:14 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:47146 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752654Ab3FZQPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 12:15:11 -0400
+Message-ID: <51CB138B.5010500@sgi.com>
+Date: Wed, 26 Jun 2013 09:15:07 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
 To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        Dave Chiluk <chiluk@canonical.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Scheduler accounting inflated for io bound processes.
-References: <51C35C05.1070005@canonical.com> <1372176104.7497.86.camel@marge.simpson.net> <1372182534.7497.129.camel@marge.simpson.net> <20130626093713.GA27385@gmail.com> <20130626104243.GE28407@twins.programming.kicks-ass.net> <20130626155048.GA7399@gmail.com> <51CB110E.6010707@gmail.com> <20130626161051.GA8207@gmail.com>
-In-Reply-To: <20130626161051.GA8207@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Nathan Zimmer <nzimmer@sgi.com>,
+        holt@sgi.com, rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
+        yinghai@kernel.org, gregkh@linuxfoundation.org, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC] Transparent on-demand memory setup initialization embedded
+ in the (GFP) buddy allocator
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130625073819.GC11420@gmail.com> <51C9D1D6.20405@sgi.com> <51C9E4B7.2000007@zytor.com> <51C9E6CD.5080508@sgi.com> <20130626092248.GB27025@gmail.com> <20130626062850.a7ce5806.akpm@linux-foundation.org> <20130626133715.GA6424@gmail.com>
+In-Reply-To: <20130626133715.GA6424@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/26/13 10:10 AM, Ingo Molnar wrote:
->> Sampled H/W events have an adaptive period that converges to the desired
->> sampling rate. The first few samples come in 10 usecs are so apart and
->> the time period expands to the desired rate. As I recall that adaptive
->> algorithm starts over every time the event is scheduled in.
->
-> Yes, but last I checked it (2 years ago? :-) the auto-freq code was
-> converging pretty well to the time clock, with little jitter - in essence
-> turning it into a fixed-period, fixed-frequency sampling method. That
-> would explain Mike's results.
 
-It does converge quickly and stay there for CPU-based events. My point 
-was more along the lines that the code is there. Perhaps a tweak to add 
-jitter to the period would address fixed period sampling affects.
 
-David
+On 6/26/2013 6:37 AM, Ingo Molnar wrote:
+> 
+> * Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+>> On Wed, 26 Jun 2013 11:22:48 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+>>
+>>> except that on 32 TB 
+>>> systems we don't spend ~2 hours initializing 8,589,934,592 page heads.
+>>
+>> That's about a million a second which is crazy slow - even my 
+>> prehistoric desktop is 100x faster than that.
+>>
+>> Where's all this time actually being spent?
+> 
+> See the earlier part of the thread - apparently it's spent initializing 
+> the page heads - remote NUMA node misses from a single boot CPU, going 
+> across a zillion cross-connects? I guess there's some other low hanging 
+> fruits as well - so making this easier to profile would be nice. The 
+> profile posted was not really usable.
+
+This is one advantage of delayed memory init.  I can do it under
+the profiler.  I will put everything together to accomplish this
+and then send a perf report.
+
+> 
+> Btw., NUMA locality would be another advantage of on-demand 
+> initialization: actual users of RAM tend to allocate node-local 
+> (especially on large clusters), so any overhead will be naturally lower.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
