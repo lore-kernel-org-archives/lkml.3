@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab3FZLJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 07:09:22 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:32888 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab3FZLJT (ORCPT
+	id S1752215Ab3FZLNp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 07:13:45 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:55430 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3FZLNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 07:09:19 -0400
+	Wed, 26 Jun 2013 07:13:44 -0400
 MIME-Version: 1.0
-Date: Wed, 26 Jun 2013 19:09:18 +0800
-Message-ID: <CAAfg0W5BoDLN_O9PwGTQC-0uFp+ZEgqAH2A9sSbbvOHsHutPkQ@mail.gmail.com>
-Subject: 3.10-rc6 "perf test" seems unhappy
-From: Andy Green <andy.green@linaro.org>
-To: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <51CACABF.4040902@monstr.eu>
+References: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com>
+	<CAK9yfHzVSt1XN7=OZOtF_n_3jbpXObqoiay_t6n3EauTjUUX+w@mail.gmail.com>
+	<51CAC0A7.7090708@monstr.eu>
+	<CAK9yfHxuHuf1BnzR36c8Ucw_xrVcMW--jE-Gpng6tPNd17sB2A@mail.gmail.com>
+	<51CACABF.4040902@monstr.eu>
+Date: Wed, 26 Jun 2013 16:43:43 +0530
+Message-ID: <CAK9yfHzuUhxUDhBRGJPvH8ftwaE3ZbauUgK=thMTbvc7LdMq7Q@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] uio: Use of_match_ptr() macro in uio_pdrv_genirq.c
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: monstr@monstr.eu
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi -
+On 26 June 2013 16:34, Michal Simek <monstr@monstr.eu> wrote:
+> On 06/26/2013 12:51 PM, Sachin Kamat wrote:
+>> On 26 June 2013 15:51, Michal Simek <monstr@monstr.eu> wrote:
+>>> On 06/26/2013 12:00 PM, Sachin Kamat wrote:
+>>>> On 26 June 2013 15:22, Michal Simek <michal.simek@xilinx.com> wrote:
+>>>>> This eliminates having an #ifdef returning NULL for the case
+>>>>> when OF is disabled.
+>>>>>
+>>>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>>>>
+>>>> I have already submitted a similar patch for doing this:
+>>>> https://lkml.org/lkml/2013/3/14/169
+>>>
+>>> Ok. I don't care about it.
+>>> Greg: Can you please add any of this patch to your char-misc tree?
+>>>
+>>> For Sachin patch.
+>>> Acked-by: Michal Simek <monstr@monstr.eu>
+>>
+>> Thanks Michal. Since Hans wasn't active the patch has been pending
+>> since some time.
+>> The latest rebased version has been posted [1] for Greg to apply.
+>>
+>> [1] https://lkml.org/lkml/2013/6/25/7
+>
+>
+> Yeah. As I said I really don't care which version will be applied.
+> It is just necessary to have progress on this.
+>
+> Here is the first version I have sent
+> http://lkml.org/lkml/2013/5/23/311
+>
+> btw: do you agree about removing that uio_pdrv because
+> all functionality is already in uio_pdrv_genirq driver
+> and make no sense to have two drivers for the same thing?
 
-Running perf test on 3.10-rc6 gives some unexpected behaviours.
+Sorry, I have'nt  seen much of this code other than the obvious
+cleanup for which I had sent the patch.
 
-This is on a dual Cortex A9 board with perf userland cross-built from
-same tree as the kernel.
-
-root@aa9-eb:~# perf test
- 1: vmlinux symtab matches kallsyms                        : FAILED!
- 2: detect open syscall event                              : Ok
- 3: detect open syscall event on all cpus                  : Ok
- 4: read samples using the mmap interface                  : Ok
- 5: parse events tests                                     :  Warning:
-function sizeof not defined
-  Warning: function sizeof not defined
-  Warning: function scsi_trace_parse_cdb not defined
-  Warning: function scsi_trace_parse_cdb not defined
-  Warning: function scsi_trace_parse_cdb not defined
-  Warning: function scsi_trace_parse_cdb not defined
-  Warning: function jiffies_to_msecs not defined
-  Warning: function jiffies_to_msecs not defined
-  Warning: bad op token {
-  Warning: bad op token {
-  Warning: bad op token {
-  Warning: Error: expected type 4 but read 0
-  Warning: bad op token {
-  Warning: Error: expected type 4 but read 0
-  Warning: bad op token {
-  Warning: bad op token {
-  Warning: bad op token {
-  Warning: bad op token {
-  Warning: bad op token {
-  Warning: unknown op '{'
-  Warning: unknown op '{'
- Ok
- 6: Validate PERF_RECORD_* events & perf_sample fields     : FAILED!
- 7: Test perf pmu format parsing                           : Ok
- 8: Test dso data interface                                : Ok
- 9: roundtrip evsel->name check                            : Ok
-10: Check parsing of sched tracepoints fields              : FAILED!
-11: Generate and check syscalls:sys_enter_open event fields: Ok
-12: struct perf_event_attr setup                           : (omitted) Ok
-13: Test matching and linking mutliple hists               : Ok
-14: Try 'use perf' in python, checking link problems       : FAILED!
-15: Test breakpoint overflow signal handler                : FAILED!
-16: Test breakpoint overflow sampling                      : FAILED!
-17: Test number of exit event of a simple workload         : FAILED!
-18: Test software clock events have valid period values    : Ok
-
-
-I started tracing the first failure... it stops because it can't find
-"_stext" in /proc/kallsyms.  But it is there
-
-root@aa9-eb:~# cat /proc/kallsyms | grep _stext
-800081c0 T _stext
-
-test 5 (parse event tests) seems to be badly broken.
-
-The others may be due to missing some config somewhere.
-
-Any ideas what I am (or perf is) doing wrong?
-
--Andy
+-- 
+With warm regards,
+Sachin
