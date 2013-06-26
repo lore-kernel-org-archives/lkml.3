@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab3FZBad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 21:30:33 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:49260 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab3FZBab (ORCPT
+	id S1751977Ab3FZBcm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 21:32:42 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49952 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab3FZBck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 21:30:31 -0400
-From: Olof Johansson <olof@lixom.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] ARM: ux500: check platform in ux500_l2x0_init
-Date: Tue, 25 Jun 2013 18:30:31 -0700
-Message-Id: <1372210231-22900-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.8.1.192.gc4361b8
+	Tue, 25 Jun 2013 21:32:40 -0400
+From: Joel A Fernandes <joelagnel@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Balaji TK <balajitk@ti.com>,
+        Chris Ball <cjb@laptop.org>
+CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 1/2] ARM: configs: Enable TI_EDMA in omap2plus_defconfig
+Date: Tue, 25 Jun 2013 20:32:00 -0500
+Message-ID: <1372210320-7148-1-git-send-email-joelagnel@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add compatible checks for ux500. This should probably be moved to generic
-DT-based probing whenever DT is populated instead, but until then at
-least don't panic all non-ux500 multiplatform machines.
+From: Joel A Fernandes <agnel.joel@gmail.com>
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Build EDMA in my default to avoid fewer people stepping on their toes
+with broken DMA on drivers needing EDMA.
+
+Signed-off-by: Joel A Fernandes <agnel.joel@gmail.com>
 ---
+ arch/arm/configs/omap2plus_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Linus, I'll apply this directly if you ack it, let me know.
-
-
--Olof
-
- arch/arm/mach-ux500/cache-l2x0.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/arch/arm/mach-ux500/cache-l2x0.c b/arch/arm/mach-ux500/cache-l2x0.c
-index f58615b..3facc1e 100644
---- a/arch/arm/mach-ux500/cache-l2x0.c
-+++ b/arch/arm/mach-ux500/cache-l2x0.c
-@@ -39,6 +39,15 @@ static int __init ux500_l2x0_init(void)
- {
- 	u32 aux_val = 0x3e000000;
- 
-+	/* Ick. I wish there was a single compatible value to compare for,
-+	 * but there isn't.
-+	 */
-+	if (!of_machine_is_compatible("st-ericsson,u8500") &&
-+	    !of_machine_is_compatible("st-ericsson,u8540") &&
-+	    !of_machine_is_compatible("st-ericsson,u9500") &&
-+	    !of_machine_is_compatible("st-ericsson,u8540"))
-+		return -ENODEV;
-+
- 	if (cpu_is_u8500_family() || cpu_is_ux540_family())
- 		l2x0_base = __io_address(U8500_L2CC_BASE);
- 	else
+diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+index abbe319..7e00deb 100644
+--- a/arch/arm/configs/omap2plus_defconfig
++++ b/arch/arm/configs/omap2plus_defconfig
+@@ -236,6 +236,7 @@ CONFIG_RTC_DRV_TWL92330=y
+ CONFIG_RTC_DRV_TWL4030=y
+ CONFIG_RTC_DRV_OMAP=y
+ CONFIG_DMADEVICES=y
++CONFIG_TI_EDMA=y
+ CONFIG_DMA_OMAP=y
+ CONFIG_EXT2_FS=y
+ CONFIG_EXT3_FS=y
 -- 
-1.8.1.192.gc4361b8
+1.7.9.5
 
