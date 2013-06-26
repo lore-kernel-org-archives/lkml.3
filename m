@@ -1,157 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab3FZVU6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:20:58 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:58867 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab3FZVU4 (ORCPT
+	id S1753091Ab3FZVWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:22:25 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:38878 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab3FZVWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:20:56 -0400
-Date: Wed, 26 Jun 2013 14:20:47 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tim Hockin <thockin@hockin.org>
-Cc: Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-Message-ID: <20130626212047.GB4536@htj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org>
- <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
- <20130422214159.GG12543@htj.dyndns.org>
- <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
- <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
- <20130625000118.GT1918@mtj.dyndns.org>
- <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+	Wed, 26 Jun 2013 17:22:23 -0400
+Date: Wed, 26 Jun 2013 23:22:21 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
+ update of refcount
+Message-ID: <20130626212221.GI6123@two.firstfloor.org>
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com>
+ <1372268603-46748-2-git-send-email-Waiman.Long@hp.com>
+ <20130626201713.GH6123@two.firstfloor.org>
+ <51CB57F6.6010003@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51CB57F6.6010003@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tim.
-
-On Mon, Jun 24, 2013 at 09:07:47PM -0700, Tim Hockin wrote:
-> I really want to understand why this is SO IMPORTANT that you have to
-> break userspace compatibility?  I mean, isn't Linux supposed to be the
-> OS with the stable kernel interface?  I've seen Linus rant time and
-> time again about this - why is it OK now?
-
-What the hell are you talking about?  Nobody is breaking userland
-interface.  A new version of interface is being phased in and the old
-one will stay there for the foreseeable future.  It will be phased out
-eventually but that's gonna take a long time and it will have to be
-something hardly noticeable.  Of course new features will only be
-available with the new interface and there will be efforts to nudge
-people away from the old one but the existing interface will keep
-working it does.
-
-> Examples?  we obviously don't grant full access, but our kernel gang
-> and security gang seem to trust the bits we're enabling well enough...
-
-Then the security gang doesn't have any clue what's going on, or at
-least operating on very different assumptions (ie. the workloads are
-trusted by default).  You can OOM the whole kernel by creating many
-cgroups, completely mess up controllers by creating deep hierarchies,
-affect your siblings by adjusting your weight and so on.  It's really
-easy to DoS the whole system if you have write access to a cgroup
-directory.
-
-> The non-DTF jobs have a combined share that is small but non-trivial.
-> If we cut that share in half, giving one slice to prod and one slice
-> to batch, we get bad sharing under contention.  We tried this.  We
-
-Why is that tho?  It *should* work fine and I can't think of a reason
-why that would behave particularly badly off the top of my head.
-Maybe I forgot too much of the iosched modification used in google.
-Anyways, if there's a problem, that should be fixable, right?  And
-controller-specific issues like that should really dictate the
-architectural design too much.
-
-> could add control loops in userspace code which try to balance the
-> shares in proportion to the load.  We did that with CPU, and it's sort
-
-Yeah, that is horrible.
-
-> of horrible.  We're moving AWAY from all this craziness in favor of
-> well-defined hierarchical behaviors.
-
-But I don't follow the conclusion here.  For short term workaround,
-sure, but having that dictate the whole architecture decision seems
-completely backwards to me.
-
-> It's a bit naive to think that this is some absolute truth, don't you
-> think?  It just isn't so.  You should know better than most what
-> craziness our users do, and what (legit) rationales they can produce.
-> I have $large_number of machines running $huge_number of jobs from
-> thousands of developers running for years upon years backing up my
-> worldview.
-
-If so, you aren't communicating it very well.  I've talked with quite
-a few people about multiple orthogonal hierarchies including people
-inside google.  Sure, some are using it as it is there but I couldn't
-find strong enough rationale to continue that way given the amount of
-crazys it implies / encourages.  On the other hand, most people agreed
-that having a unified hierarchy with differing level of granularities
-would serve their cases well enough while not being crazy.
-
-Really, I have $huge_number of machines configured certain way isn't
-much of an argument when unified hierarchy isn't gonna break them and
-many people involved in cgroup both on kernel and userland sides share
-the view that the whole thing is a hellish mess which can only be used
-by crafting very specialized configurations for each setup.
-
-> I'm not sure I really grok that statement.  I'm OK with defining new
-
-That's about google's blkcg modifications to support blkcg on
-writeback IOs.  It works but can't be upstreamed as it requires
-tagging each page both with memcg and blkcg tags.
-
-> rules that bring some order to the chaos.  Give us new rules to live
-> by.  All-or-nothing would be fine.  What if mounting cgroupfs gives me
-> N sub-dirs, one for each compiled-in controller?  You could make THAT
-> the mount option - you can have either a unified hierarchy of all
-> controllers or fully disjoint hierarchies.  Or some other rule.
-
-Now I'm lost what you're talking about.  But the summary is, in the
-future, use a single unified hierarchy with differing granularities.
-It's still being worked on, so, for now, try not to depend on creating
-completely orthogonal hierarchies for different controllers.
-
-> The time frame you talk about IS reason for panic.  If I know that
-
-What time frame are you referring to?
-
-> you're going to completely screw me in a a year and a half, I have to
-
-How the hell am I gonna screw you in a year and half?  What are you
-talking about?  Where is this coming from?
-
-> start moving NOW to find new ways to hack around the mess you're
-> making, make my userspace mesh with it, test those things with
-> critical customers, find a way to deploy it safely to a bajillion
-> machines, handle inevitable rollback issues, and so on and so on.
-> Moving from single hierarchy to split hierarchy LITERALLY took 2
-> years.
+On Wed, Jun 26, 2013 at 05:07:02PM -0400, Waiman Long wrote:
+> On 06/26/2013 04:17 PM, Andi Kleen wrote:
+> >>+ * The combined data structure is 8-byte aligned. So proper placement of this
+> >>+ * structure in the larger embedding data structure is needed to ensure that
+> >>+ * there is no hole in it.
+> >On i386 u64 is only 4 bytes aligned. So you need to explicitely align
+> >it to 8 bytes. Otherwise you risk the two members crossing a cache line, which
+> >would be really expensive with atomics.
 > 
-> So yeah, I'm in a bit of a panic.  You're making a huge amount of work
-> for us.  You're breaking binary compatibility of the (probably)
-> largest single installation of Linux in the world.  And you're being
-> kind of flip about the reality of it, which is so weird to me,
-> considering you have first-hand experience with it all.
+> Do you mean the original i386 or the i586 that are now used by most
+> distribution now? If it is the former, I recall that i386 is now no
+> longer supported.
 
-I frankly have no idea what you're talking about.  Calm down and try
-to understand what's actually going on.
+I mean i386, as in the 32bit x86 architecture.
 
-Thanks.
+> 
+> I also look around some existing codes that use cmpxchg64. It
+> doesn't seem like they use explicit alignment. I will need more
+> investigation to see if it is a real problem.
 
--- 
-tejun
+Adding the alignment is basically free. If 32bit users don't enforce
+it they're likely potentially broken yes, but they may be lucky.
+> >>+	get_lock = ((threshold>= 0)&&  (old.count == threshold));
+> >>+	if (likely(!get_lock&&  spin_can_lock(&old.lock))) {
+> >What is that for? Why can't you do the CMPXCHG unconditially ?
+> 
+> An unconditional CMPXCHG can be as bad as acquiring the spinlock. So
+> we need to check the conditions are ready before doing an actual
+> CMPXCHG.
+
+But this isn't a cheap check. Especially spin_unlock_wait can be 
+very expensive.
+
+And all these functions have weird semantics. Perhaps just a quick
+spin_is_locked.
+
+> 
+> Looking from the other perspective, we may want the locking code to
+> have the same behavior whether spinlock debugging is enabled or not.
+> Disabling the optimization will cause the code path to differ which
+> may not be what we want. Of course, I can change it if other people
+> also think it is the right way to do it.
+
+Lock debugging already has quite different timing/lock semantics.
+
+-Andi
