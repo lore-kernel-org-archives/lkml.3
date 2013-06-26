@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab3FZCt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:49:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54116 "EHLO
+	id S1752594Ab3FZCt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:49:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54110 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751853Ab3FZCpY (ORCPT
+	by vger.kernel.org with ESMTP id S1751631Ab3FZCpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 22:45:24 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guillaume Nault" <g.nault@alphalink.fr>,
+CC: akpm@linux-foundation.org, "Vlad Halilov" <vlad.halilov@gmail.com>,
+        "Paul Moore" <pmoore@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Date: Wed, 26 Jun 2013 03:35:59 +0100
-Message-ID: <lsq.1372214159.34128801@decadent.org.uk>
+Date: Wed, 26 Jun 2013 03:35:58 +0100
+Message-ID: <lsq.1372214158.710022056@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [24/26] l2tp: Fix PPP header erasure and memory leak
+Subject: [15/26] netlabel: improve domain mapping validation
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,38 +32,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+From: Paul Moore <pmoore@redhat.com>
 
-[ Upstream commit 55b92b7a11690bc377b5d373872a6b650ae88e64 ]
+[ Upstream commit 6b21e1b77d1a3d58ebfd513264c885695e8a0ba5 ]
 
-Copy user data after PPP framing header. This prevents erasure of the
-added PPP header and avoids leaking two bytes of uninitialised memory
-at the end of skb's data buffer.
+The net/netlabel/netlabel_domainhash.c:netlbl_domhsh_add() function
+does not properly validate new domain hash entries resulting in
+potential problems when an administrator attempts to add an invalid
+entry.  One such problem, as reported by Vlad Halilov, is a kernel
+BUG (found in netlabel_domainhash.c:netlbl_domhsh_audit_add()) when
+adding an IPv6 outbound mapping with a CIPSO configuration.
 
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
+This patch corrects this problem by adding the necessary validation
+code to netlbl_domhsh_add() via the newly created
+netlbl_domhsh_validate() function.
+
+Ideally this patch should also be pushed to the currently active
+-stable trees.
+
+Reported-by: Vlad Halilov <vlad.halilov@gmail.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/l2tp/l2tp_ppp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/netlabel/netlabel_domainhash.c | 69 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 69 insertions(+)
 
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 6f60175..8ab041b 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -350,12 +350,12 @@ static int pppol2tp_sendmsg(struct kiocb *iocb, struct socket *sock, struct msgh
- 	skb_put(skb, 2);
- 
- 	/* Copy user data into skb */
--	error = memcpy_fromiovec(skb->data, m->msg_iov, total_len);
-+	error = memcpy_fromiovec(skb_put(skb, total_len), m->msg_iov,
-+				 total_len);
- 	if (error < 0) {
- 		kfree_skb(skb);
- 		goto error_put_sess_tun;
+diff --git a/net/netlabel/netlabel_domainhash.c b/net/netlabel/netlabel_domainhash.c
+index e5330ed..bf99567 100644
+--- a/net/netlabel/netlabel_domainhash.c
++++ b/net/netlabel/netlabel_domainhash.c
+@@ -245,6 +245,71 @@ static void netlbl_domhsh_audit_add(struct netlbl_dom_map *entry,
  	}
--	skb_put(skb, total_len);
+ }
  
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
++/**
++ * netlbl_domhsh_validate - Validate a new domain mapping entry
++ * @entry: the entry to validate
++ *
++ * This function validates the new domain mapping entry to ensure that it is
++ * a valid entry.  Returns zero on success, negative values on failure.
++ *
++ */
++static int netlbl_domhsh_validate(const struct netlbl_dom_map *entry)
++{
++	struct netlbl_af4list *iter4;
++	struct netlbl_domaddr4_map *map4;
++#if IS_ENABLED(CONFIG_IPV6)
++	struct netlbl_af6list *iter6;
++	struct netlbl_domaddr6_map *map6;
++#endif /* IPv6 */
++
++	if (entry == NULL)
++		return -EINVAL;
++
++	switch (entry->type) {
++	case NETLBL_NLTYPE_UNLABELED:
++		if (entry->type_def.cipsov4 != NULL ||
++		    entry->type_def.addrsel != NULL)
++			return -EINVAL;
++		break;
++	case NETLBL_NLTYPE_CIPSOV4:
++		if (entry->type_def.cipsov4 == NULL)
++			return -EINVAL;
++		break;
++	case NETLBL_NLTYPE_ADDRSELECT:
++		netlbl_af4list_foreach(iter4, &entry->type_def.addrsel->list4) {
++			map4 = netlbl_domhsh_addr4_entry(iter4);
++			switch (map4->type) {
++			case NETLBL_NLTYPE_UNLABELED:
++				if (map4->type_def.cipsov4 != NULL)
++					return -EINVAL;
++				break;
++			case NETLBL_NLTYPE_CIPSOV4:
++				if (map4->type_def.cipsov4 == NULL)
++					return -EINVAL;
++				break;
++			default:
++				return -EINVAL;
++			}
++		}
++#if IS_ENABLED(CONFIG_IPV6)
++		netlbl_af6list_foreach(iter6, &entry->type_def.addrsel->list6) {
++			map6 = netlbl_domhsh_addr6_entry(iter6);
++			switch (map6->type) {
++			case NETLBL_NLTYPE_UNLABELED:
++				break;
++			default:
++				return -EINVAL;
++			}
++		}
++#endif /* IPv6 */
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ /*
+  * Domain Hash Table Functions
+  */
+@@ -311,6 +376,10 @@ int netlbl_domhsh_add(struct netlbl_dom_map *entry,
+ 	struct netlbl_af6list *tmp6;
+ #endif /* IPv6 */
  
++	ret_val = netlbl_domhsh_validate(entry);
++	if (ret_val != 0)
++		return ret_val;
++
+ 	/* XXX - we can remove this RCU read lock as the spinlock protects the
+ 	 *       entire function, but before we do we need to fixup the
+ 	 *       netlbl_af[4,6]list RCU functions to do "the right thing" with
 
