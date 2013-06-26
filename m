@@ -1,113 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab3FZV11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:27:27 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60546 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3FZV10 (ORCPT
+	id S1753180Ab3FZVaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:30:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33428 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab3FZVaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:27:26 -0400
-Message-ID: <51CB5CC7.7000308@linaro.org>
-Date: Wed, 26 Jun 2013 23:27:35 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 17:30:18 -0400
+Message-ID: <51CB5D67.3090701@wwwdotorg.org>
+Date: Wed, 26 Jun 2013 15:30:15 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 2/8] clocksource: sun4i: Add clocksource and sched clock
- drivers
-References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com> <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [RFC 0/6] SimpleDRM Driver (was: dvbe driver)
+References: <1372112849-670-1-git-send-email-dh.herrmann@gmail.com>
+In-Reply-To: <1372112849-670-1-git-send-email-dh.herrmann@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 11:16 PM, Maxime Ripard wrote:
-> The A10 and the A13 has a 64 bits free running counter that we can use
-> as a clocksource and a sched clock, that were both not used yet on these
-> platforms.
+On 06/24/2013 04:27 PM, David Herrmann wrote:
+> Hi
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/clocksource/sun4i_timer.c | 27 +++++++++++++++++++++++++++
->  1 file changed, 27 insertions(+)
+> This is my second revision of the dvbe driver. I renamed it to SimpleDRM to
+> show the resemblence with the recently introduced simplefb.c fbdev driver. The
+> driver is supposed to be the most basic DRM driver similar to efifb.c, vesafb.c,
+> offb.c, simplefb.c, ...
+> It provides a single virtual CRTC+encoder+connector and allows user-space to
+> create one dumb-buffer at a time and attach it.
 > 
-> diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-> index bdf34d9..1d2eaa0 100644
-> --- a/drivers/clocksource/sun4i_timer.c
-> +++ b/drivers/clocksource/sun4i_timer.c
-> @@ -23,6 +23,8 @@
->  #include <linux/of_address.h>
->  #include <linux/of_irq.h>
->  
-> +#include <asm/sched_clock.h>
-> +
->  #define TIMER_IRQ_EN_REG	0x00
->  #define TIMER_IRQ_EN(val)		BIT(val)
->  #define TIMER_IRQ_ST_REG	0x04
-> @@ -34,6 +36,11 @@
->  #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
->  
->  #define TIMER_SCAL		16
-> +#define TIMER_CNT64_CTL_REG	0xa0
-> +#define TIMER_CNT64_CTL_CLR		BIT(0)
-> +#define TIMER_CNT64_CTL_RL		BIT(1)
-> +#define TIMER_CNT64_LOW_REG	0xa4
-> +#define TIMER_CNT64_HIGH_REG	0xa8
->  
->  static void __iomem *timer_base;
->  
-> @@ -96,6 +103,20 @@ static struct irqaction sun4i_timer_irq = {
->  	.dev_id = &sun4i_clockevent,
->  };
->  
-> +static u32 sun4i_timer_sched_read(void)
-> +{
-> +	u32 reg = readl(timer_base + TIMER_CNT64_CTL_REG);
-> +	writel(reg | TIMER_CNT64_CTL_RL, timer_base + TIMER_CNT64_CTL_REG);
-> +	while (readl(timer_base + TIMER_CNT64_CTL_REG) & TIMER_CNT64_CTL_REG);
+> The setup changed slightly. It no longer uses shadow buffers but instead maps
+> the framebuffer directly into userspace. Furthermore, a new infrastructure is
+> used to unload firmware drivers during real hardware drivers probe cycles. Only
+> nouveau was changed to use it, yet.
+> 
+> I still have an odd problem when unloading DRM drivers (not just SimpleDRM) with
+> an fbdev fallback. If I call printk() directly after unregister_framebufer(), I
+> get a NULL-deref somewhere in the VT layer (most times hide_cursor()). I haven't
+> figured out exactly where that happens, but I am also very reluctant to spend
+> more time debugging the VT layer.
 
-Isn't a cpu_relax missing here ?
+I tested this on a Tegra ARM system, and it basically worked.
 
-> +
-> +	return readl(timer_base + TIMER_CNT64_LOW_REG);
-> +}
-> +
-> +static cycle_t sun4i_timer_clksrc_read(struct clocksource *c)
-> +{
-> +	return sun4i_timer_sched_read();
-> +}
-> +
->  static void __init sun4i_timer_init(struct device_node *node)
->  {
->  	unsigned long rate = 0;
-> @@ -117,6 +138,12 @@ static void __init sun4i_timer_init(struct device_node *node)
->  
->  	rate = clk_get_rate(clk);
->  
-> +	writel(TIMER_CNT64_CTL_CLR, timer_base + TIMER_CNT64_CTL_REG);
-> +	setup_sched_clock(sun4i_timer_sched_read, 32, clk_get_rate(clk));
-> +	clocksource_mmio_init(timer_base + TIMER_CNT64_LOW_REG, node->name,
-> +			      clk_get_rate(clk), 300, 32,
-> +			      sun4i_timer_clksrc_read);
-> +
->  	writel(rate / (TIMER_SCAL * HZ),
+I have one question: With the simplefb driver, and console=tty1 on the
+kernel command-line, I see both the penguins logo and Linux's boot
+messages on the LCD panel that's hooked up through simplefb. However,
+with simpledrm, I only see the penguins logo, but no boot messages. Is
+that expected? How would I solve that if so?
 
-DIV_ROUND_CLOSEST(rate, (TIMER_SCAL * HZ)), ?
+Note: I needed to apply the following patch to get it to compile:
 
->  	       timer_base + TIMER_INTVAL_REG(0));
+diff --git a/drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
+b/drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
+index 40a2696..39885c8 100644
+--- a/drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
++++ b/drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
+@@ -159,7 +159,7 @@ void sdrm_fbdev_cleanup(struct sdrm_device *sdrm)
+ {
+        struct fb_info *info;
+
+-       if (!sdrm->info)
++       if (!sdrm->fbdev)
+                return;
+
+        dev_info(sdrm->ddev->dev, "fbdev cleanup\n");
 
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
