@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab3FZIzo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:55:44 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:63557 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3FZIzk (ORCPT
+	id S1752110Ab3FZIzn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:55:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30535 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab3FZIzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:55:40 -0400
-Message-ID: <51CAAC88.7070106@suse.cz>
-Date: Wed, 26 Jun 2013 10:55:36 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
-MIME-Version: 1.0
-To: channing <chao.bi@intel.com>, gregkh@linuxfoundation.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] TTY: memory leakage in tty_buffer_find()
-References: <1372236670.2390.12.camel@bichao>
-In-Reply-To: <1372236670.2390.12.camel@bichao>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 04:55:39 -0400
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, JBottomley@parallels.com
+Subject: [PATCH] scsi_prep_fn() check for empty queue
+Date: Wed, 26 Jun 2013 13:02:43 +0400
+Message-Id: <1372237363-5156-1-git-send-email-maxim.uvarov@oracle.com>
+X-Mailer: git-send-email 1.8.3.1.378.g9926f66
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 10:51 AM, channing wrote:
-> 
-> In tty_buffer_find(), it scans all tty buffers in
-> free buffer queue, if it finds matched one,
-> tty->buf.free will point to matched one's next buffer,
+This fix:
+end_request: I/O error, dev sdc, sector 976576
+ rport-0:0-3: blocked FC remote port time out: removing target and saving
+binding
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000400
+IP: [<ffffffff812f0cc2>] scsi_prep_state_check+0xe/0x99
+ [<ffffffff812f1f9d>] scsi_setup_blk_pc_cmnd+0x1b/0x115
+ [<ffffffff812f20c0>] scsi_prep_fn+0x29/0x3b
+ [<ffffffff8121cfb9>] blk_peek_request+0xe1/0x1b3
+ [<ffffffff812f1400>] scsi_request_fn+0x3a/0x4d2
+ [<ffffffff8121d916>] __generic_unplug_device+0x32/0x36
+ [<ffffffff81220f4b>] blk_execute_rq_nowait+0x77/0x9e
+ [<ffffffff81221018>] blk_execute_rq+0xa6/0xde
+ [<ffffffff8144f24b>] ? printk+0x41/0x46
+ [<ffffffffa00a21c5>] ? get_rdac_req+0x81/0xe8 [scsi_dh_rdac]
+ [<ffffffffa00a273a>] send_mode_select+0x29f/0x489 [scsi_dh_rdac]
+ [<ffffffff810c5d9b>] ? probe_workqueue_execution+0xb1/0xce
+ [<ffffffff81071e38>] worker_thread+0x1a9/0x237
+ [<ffffffffa00a249b>] ? send_mode_select+0x0/0x489 [scsi_dh_rdac]
+ [<ffffffff8107651b>] ? autoremove_wake_function+0x0/0x39
+ [<ffffffff81071c8f>] ? worker_thread+0x0/0x237
+ [<ffffffff81076222>] kthread+0x7f/0x87
+ [<ffffffff81012d2a>] child_rip+0xa/0x20
+ [<ffffffff810761a3>] ? kthread+0x0/0x87
+ [<ffffffff81012d20>] ? child_rip+0x0/0x20
+Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+---
+ drivers/scsi/scsi_lib.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Oh, how is that true? tbh is moved with every iteration, right? Then:
-  *tbh = t->next;
-'t' is what we return, 't->next' is the next one and '*tbh' is where
-'next' of the previous one will point. So we just set it so we remove
-'t' from the list, or am I missing something?
-
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 86d5220..8e89ed9 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1295,6 +1295,9 @@ int scsi_prep_fn(struct request_queue *q, struct request *req)
+ 	struct scsi_device *sdev = q->queuedata;
+ 	int ret = BLKPREP_KILL;
+ 
++	if (!sdev)
++		return ret;
++
+ 	if (req->cmd_type == REQ_TYPE_BLOCK_PC)
+ 		ret = scsi_setup_blk_pc_cmnd(sdev, req);
+ 	return scsi_prep_return(q, req, ret);
 -- 
-js
-suse labs
+1.7.9.5
+
