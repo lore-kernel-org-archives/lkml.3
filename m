@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3FZSFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 14:05:12 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:45445 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383Ab3FZSFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 14:05:10 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 3/3] watchdog: dw_wdt: add a devicetree binding
-Date: Wed, 26 Jun 2013 20:05:05 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Jamie Iles <jamie@jamieiles.com>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-References: <201306262003.13256.heiko@sntech.de>
-In-Reply-To: <201306262003.13256.heiko@sntech.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306262005.05765.heiko@sntech.de>
+	id S1752937Ab3FZSFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 14:05:44 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:39250 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3FZSFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 14:05:43 -0400
+From: James Georgas <soulpa7ch@gmail.com>
+To: megaraidlinux@lsi.com, JBottomley@parallels.com
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        James Georgas <soulpa7ch@gmail.com>
+Subject: [PATCH 1/1] scsi/megaraid: minor cut and paste error fixed.
+Date: Wed, 26 Jun 2013 12:03:19 -0600
+Message-Id: <1372269799-9835-1-git-send-email-soulpa7ch@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_wdt does not use any platform-specific data, so no new properties
-need to be introduced. The dw-apb-wdt naming follows other designware
-components in the kernel and is also written like this in documentation
-describing the component.
+This looks like a cut and paste typo to me. Both of the
+megasas_read_fw_status_reg_* functions involved are identical though, so
+there was no bad behaviour. I changed it for consistency and clarity.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: James Georgas <soulpa7ch@gmail.com>
 ---
- .../devicetree/bindings/watchdog/snps-dw-apb-wdt.txt |   18 ++++++++++++++++++
- drivers/watchdog/dw_wdt.c                            |   10 ++++++++++
- 2 files changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt
+ drivers/scsi/megaraid/megaraid_sas_base.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt b/Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt
-new file mode 100644
-index 0000000..c20cdd1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt
-@@ -0,0 +1,18 @@
-+* Synosis DesignWare APB Watchdog
-+
-+The Watchdog controller is used for resuming system operation
-+after a preset amount of time during which the WDT reset event has not
-+occurred.
-+
-+Required properties:
-+- compatible : "snps,dw-apb-wdt"
-+- reg : offset and length of the register set for the device.
-+- clocks : the periphal clock of the controller.
-+
-+Example:
-+
-+	watchdog@2004c000 {
-+		compatible = "snps,dw-apb-wdt";
-+		reg = <0x2004c000 0x100>;
-+		clocks = <&wdt_clock>;
-+	};
-diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-index b922bec..829e148 100644
---- a/drivers/watchdog/dw_wdt.c
-+++ b/drivers/watchdog/dw_wdt.c
-@@ -35,6 +35,7 @@
- #include <linux/timer.h>
- #include <linux/uaccess.h>
- #include <linux/watchdog.h>
-+#include <linux/of.h>
- 
- #define WDOG_CONTROL_REG_OFFSET		    0x00
- #define WDOG_CONTROL_REG_WDT_EN_MASK	    0x01
-@@ -337,12 +338,21 @@ static int dw_wdt_drv_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id dw_wdt_of_match[] = {
-+	{ .compatible = "snps,dw-apb-wdt", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, dw_i2c_of_match);
-+#endif
-+
- static struct platform_driver dw_wdt_driver = {
- 	.probe		= dw_wdt_drv_probe,
- 	.remove		= dw_wdt_drv_remove,
- 	.driver		= {
- 		.name	= "dw_wdt",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(dw_wdt_of_match),
- 		.pm	= &dw_wdt_pm_ops,
- 	},
- };
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index 3a9ddae..87591cd 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -583,7 +583,7 @@ megasas_clear_intr_skinny(struct megasas_register_set __iomem *regs)
+ 	/*
+ 	 * Check if it is our interrupt
+ 	 */
+-	if ((megasas_read_fw_status_reg_gen2(regs) & MFI_STATE_MASK) ==
++	if ((megasas_read_fw_status_reg_skinny(regs) & MFI_STATE_MASK) ==
+ 	    MFI_STATE_FAULT) {
+ 		mfiStatus = MFI_INTR_FLAG_FIRMWARE_STATE_CHANGE;
+ 	} else
 -- 
-1.7.10.4
+1.8.1.5
 
