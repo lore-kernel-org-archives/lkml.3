@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab3FZU0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 16:26:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56235 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab3FZU0x (ORCPT
+	id S1753013Ab3FZU2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 16:28:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47673 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab3FZU2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 16:26:53 -0400
-Date: Wed, 26 Jun 2013 15:26:47 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, "Daniel P. Berrange" <berrange@redhat.com>,
-        containers@lists.linux-foundation.org,
-        Colin Ian King <colin.king@canonical.com>,
-        =?iso-8859-1?Q?St=E9phane?= Graber <stgraber@ubuntu.com>
-Subject: Re: [PATCH RFC] procfs: add pidnr file
-Message-ID: <20130626202647.GA3001@sergelap>
-References: <20130626161820.GA32142@tp>
- <877ghg4q6i.fsf@xmission.com>
+	Wed, 26 Jun 2013 16:28:23 -0400
+Date: Wed, 26 Jun 2013 13:28:21 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [RFC/PATCH 11/11] ARM: msm: Move MSM's DT based hardware to
+ multi-platform support
+Message-ID: <20130626202821.GB11625@codeaurora.org>
+References: <1371600281-6118-1-git-send-email-sboyd@codeaurora.org>
+ <1371600281-6118-12-git-send-email-sboyd@codeaurora.org>
+ <1372260541.6211.12.camel@iivanov-dev.int.mm-sol.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <877ghg4q6i.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372260541.6211.12.camel@iivanov-dev.int.mm-sol.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> Serge Hallyn <serge.hallyn@ubuntu.com> writes:
+On 06/26, Ivan T. Ivanov wrote:
 > 
-> > Add a file called pidnr under /proc/task/.  Reading this file gives the
-> > pid of /proc/task in the reading task's namespace (or 0 if there is no
-> > valid pid).
-> >
-> > This fills a need currently not solvable at all.  The particular need I
-> > have for it is so that a task inside a container can pass requests to a
-> > task outside the container (using an open fd for /proc/task) to have the
-> > target task moved to a new cgroup.  Others have asked for this ability
-> > for other reasons.
+> You probably already know, but this patch causes compile error:
 > 
-> This is solvable today.  Just pass the pid using SCM_CREDENTIALS over a
-> unix domain socket between the two processes.  That is actually better
-> because a task can't claim to be a member of another task.  You already
-> have the unix domain socket if you are using SCM_RIGHTS to pass file
-> descriptors.
+> arch/arm/mach-msm/board-dt-8660.c:20:24: fatal error: mach/board.h: No such file or directory
+> 
+> I have fixed it locally like this:
 
-Hm, yeah, that should work.  (I was thinking I had to do a
-getpeercon-like thing where I could only get the ucreds of the
-task which opened the socket).  I'll try it to see if there are 
-any gotchas.
+Thanks. I think I'll just remove <mach/board.h> instead.
 
-Note though that this doesn't help the general admin case, because
-it requires a program (and not a one-liner) running in the container.
-So I can't just do
-
-	cat /proc/`pidof container-init`/root/proc/200/pidnr"
-
-to figure out the corresponding pid in my own ns.  Whereas that cat
-doesn't require me to execute anything inside that container.
-
-Wonder if coreutils should ship a program which clones a task in
-same netns but target pidns, and sends ucred.pid = atoi(argv[1])
-from that pidns to the first task which prints out what it reads.
-
-That should be a tidy, purely userspace solution to the general admin
-problem.  Only downside being that it requires the rights to setns to
-the pidns, instead of just read access to its /proc.
-
-thanks,
--serge
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
