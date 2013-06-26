@@ -1,70 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab3FZPxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:53:30 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:60314 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3FZPx3 (ORCPT
+	id S1752186Ab3FZPyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:54:10 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:55248 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab3FZPyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:53:29 -0400
-Date: Wed, 26 Jun 2013 17:53:25 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v5 0/9] liblockdep: userspace lockdep
-Message-ID: <20130626155325.GB7399@gmail.com>
-References: <1371163284-6346-1-git-send-email-sasha.levin@oracle.com>
- <20130626122408.GJ28407@twins.programming.kicks-ass.net>
+	Wed, 26 Jun 2013 11:54:07 -0400
+Message-ID: <51CB0E9C.50408@lwfinger.net>
+Date: Wed, 26 Jun 2013 10:54:04 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626122408.GJ28407@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard GENOUD <richard.genoud@gmail.com>
+CC: Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: rtl8192cu: slow path warning
+References: <20130611123814.GA9854@lnx-rg> <20130626142241.GA13107@lnx-rg>
+In-Reply-To: <20130626142241.GA13107@lnx-rg>
+Content-Type: multipart/mixed;
+ boundary="------------040103060308080909040200"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------040103060308080909040200
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+On 06/26/2013 09:22 AM, Richard GENOUD wrote:
+> Using 3.10-rc7, I'm still seeing the warning, BUT ONLY on the first
+> connection.
+>
+> [   40.312500] usb 2-2: default language 0x0409
+> [   40.312500] usb 2-2: udev 2, busnum 2, minor = 129
+> [   40.320312] usb 2-2: New USB device found, idVendor=0bda, idProduct=8176
+> [   40.328125] usb 2-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+> [   40.328125] usb 2-2: Product: 802.11n WLAN Adapter
+> [   40.335937] usb 2-2: Manufacturer: Realtek
+> [   40.343750] usb 2-2: SerialNumber: 00e04c000001
+> [   40.343750] usb 2-2: usb_probe_device
+> [   40.351562] usb 2-2: configuration #1 chosen from 1 choice
+> [   40.351562] usb 2-2: adding 2-2:1.0 (config #1, interface 0)
+> [   40.500000] cfg80211: Calling CRDA to update world regulatory domain
+> [   40.648437] rtl8192cu 2-2:1.0: usb_probe_interface
+> [   40.656250] rtl8192cu 2-2:1.0: usb_probe_interface - got id
+> [   40.664062] rtl8192cu: Chip version 0x10
+> [   40.757812] rtl8192cu: MAC address: a0:f3:c1:1e:02:a0
+> [   40.765625] rtl8192cu: Board Type 0
+> [   40.773437] rtlwifi: rx_max_size 15360, rx_urb_num 8, in_ep 1
+> [   40.773437] rtl8192cu: Loading firmware rtlwifi/rtl8192cufw.bin
+> [   40.781250] usbcore: registered new interface driver rtl8192cu
+> [   40.835937] ieee80211 phy0: Selected rate control algorithm 'rtl_rc'
+> [   40.843750] rtlwifi: wireless switch is on
+> # ip link set wlan0 up
+> [   59.921875] rtl8192cu: MAC auto ON okay!
+> [   59.960937] rtl8192cu: Tx queue select: 0x05
+> # iw wlan0 connect test
+> [   75.390625] wlan0: authenticate with f8:1a:67:1a:df:88
+> [   75.421875] wlan0: send auth to f8:1a:67:1a:df:88 (try 1/3)
+> [   75.437500] wlan0: authenticated
+> [   75.453125] wlan0: associate with f8:1a:67:1a:df:88 (try 1/3)
+> [   75.460937] wlan0: RX AssocResp from f8:1a:67:1a:df:88 (capab=0x401 status=0 aid=2)
+> [   75.468750] wlan0: associated
+> [   76.375000] ------------[ cut here ]------------
+> [   76.375000] WARNING: at kernel/workqueue.c:1365 __queue_work+0x168/0x200()
+> [   76.375000] Modules linked in: rtl8192cu rtl8192c_common rtlwifi mac80211 cfg80211 rfkill ehci_atmel ehci_hcd atmel_usba_udc udc_core ohci_hcd
+> [   76.375000] CPU: 0 PID: 308 Comm: kworker/0:1 Not tainted 3.10.0-rc7 #36
+> [   76.375000] Workqueue: rtl92c_usb rtl_watchdog_wq_callback [rtlwifi]
+> [   76.375000] [<c000d9bc>] (unwind_backtrace+0x0/0xf0) from [<c000b9ec>] (show_stack+0x10/0x14)
+> [   76.375000] [<c000b9ec>] (show_stack+0x10/0x14) from [<c0015c00>] (warn_slowpath_common+0x4c/0x68)
+> [   76.375000] [<c0015c00>] (warn_slowpath_common+0x4c/0x68) from [<c0015c38>] (warn_slowpath_null+0x1c/0x24)
+> [   76.375000] [<c0015c38>] (warn_slowpath_null+0x1c/0x24) from [<c0029e40>] (__queue_work+0x168/0x200)
+> [   76.375000] [<c0029e40>] (__queue_work+0x168/0x200) from [<c0029f2c>] (queue_work_on+0x44/0x50)
+> [   76.375000] [<c0029f2c>] (queue_work_on+0x44/0x50) from [<bf09bb54>] (rtl_watchdog_wq_callback+0x320/0x404 [rtlwifi])
+> [   76.375000] [<bf09bb54>] (rtl_watchdog_wq_callback+0x320/0x404 [rtlwifi]) from [<c002b168>] (process_one_work+0x10c/0x354)
+> [   76.375000] [<c002b168>] (process_one_work+0x10c/0x354) from [<c002b784>] (worker_thread+0x130/0x380)
+> [   76.375000] [<c002b784>] (worker_thread+0x130/0x380) from [<c0030330>] (kthread+0xa4/0xb0)
+> [   76.375000] [<c0030330>] (kthread+0xa4/0xb0) from [<c00092f0>] (ret_from_fork+0x14/0x24)
+> [   76.375000] ---[ end trace e116b4b3d671f3d2 ]---
 
-> On Thu, Jun 13, 2013 at 06:41:15PM -0400, Sasha Levin wrote:
-> > liblockdep is a tiny wrapper built around kernel/lockdep.c. The aim is to
-> > provide the same functionality the kernel gets from lockdep to userspace.
-> > 
-> > The bulk of the code here is the LD_PRELOAD support which provides users
-> > an easy way to test their code without having to integrate liblockdep into
-> > said code. Simply doing:
-> > 
-> >         lockdep my_app
-> > 
-> > Would provide lockdep support to my_app.
-> > 
-> > There is also a small test suite to test both mutexes and rwlocks, it's
-> > based on the tests in lib/locking-selftest.c.
-> > 
-> > This entire patch series was reviewed by lockdep maintainers and accepted to
-> > the tip tree previously. It was pulled out so that the potential merge of
-> > liblockdep won't delay the rest of the commits in the tip locking tree.
-> > 
-> > For some more background about this entire thing, the folks at LWN did
-> > an awesome overview: http://lwn.net/Articles/536363/
-> > 
-> 
-> Ingo, I don't think I see anything holding this back; however I remember 
-> reading some email about people not liking stuff like this living in the 
-> tools/ directory or such.
-> 
-> Will you pick this up?
+The WARNING is the result of a workqueue not being initialized for the USB driver.
 
-So I'd really be interested in how interesting/useful this is to userspace 
-developers? Does it work for something complex as Firefox, or Apache, to 
-the extent they make use of these locking APIs?
-
-'people' not liking the in-tree solution was for example Linus, who's on 
-Cc:, so if Linus you still have a strong opinion against it I won't merge 
-it against you.
+Please try the attached patch. As you have posted on a public mailing list, May 
+I assume that it will be OK to use your address in Reported-by/Tested-by lines 
+in the patch submission?
 
 Thanks,
 
-	Ingo
+Larry
+
+
+--------------040103060308080909040200
+Content-Type: text/plain; charset=UTF-8;
+ name="rtl8192cu_init_work"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="rtl8192cu_init_work"
+
+Index: wireless-testing-save/drivers/net/wireless/rtlwifi/pci.c
+===================================================================
+--- wireless-testing-save.orig/drivers/net/wireless/rtlwifi/pci.c
++++ wireless-testing-save/drivers/net/wireless/rtlwifi/pci.c
+@@ -1008,7 +1008,7 @@ static void _rtl_pci_prepare_bcn_tasklet
+ 	return;
+ }
+ 
+-static void rtl_lps_change_work_callback(struct work_struct *work)
++void rtl_lps_change_work_callback(struct work_struct *work)
+ {
+ 	struct rtl_works *rtlworks =
+ 	    container_of(work, struct rtl_works, lps_change_work);
+Index: wireless-testing-save/drivers/net/wireless/rtlwifi/ps.h
+===================================================================
+--- wireless-testing-save.orig/drivers/net/wireless/rtlwifi/ps.h
++++ wireless-testing-save/drivers/net/wireless/rtlwifi/ps.h
+@@ -49,5 +49,6 @@ void rtl_swlps_rf_awake(struct ieee80211
+ void rtl_swlps_rf_sleep(struct ieee80211_hw *hw);
+ void rtl_p2p_ps_cmd(struct ieee80211_hw *hw, u8 p2p_ps_state);
+ void rtl_p2p_info(struct ieee80211_hw *hw, void *data, unsigned int len);
++void rtl_lps_change_work_callback(struct work_struct *work);
+ 
+ #endif
+Index: wireless-testing-save/drivers/net/wireless/rtlwifi/usb.c
+===================================================================
+--- wireless-testing-save.orig/drivers/net/wireless/rtlwifi/usb.c
++++ wireless-testing-save/drivers/net/wireless/rtlwifi/usb.c
+@@ -1070,6 +1070,8 @@ int rtl_usb_probe(struct usb_interface *
+ 	spin_lock_init(&rtlpriv->locks.usb_lock);
+ 	INIT_WORK(&rtlpriv->works.fill_h2c_cmd,
+ 		  rtl_fill_h2c_cmd_work_callback);
++	INIT_WORK(&rtlpriv->works.lps_change_work,
++		  rtl_lps_change_work_callback);
+ 
+ 	rtlpriv->usb_data_index = 0;
+ 	init_completion(&rtlpriv->firmware_loading_complete);
+
+--------------040103060308080909040200--
