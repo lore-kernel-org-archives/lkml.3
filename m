@@ -1,149 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab3FZOmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:42:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35391 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab3FZOmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:42:07 -0400
-Message-ID: <51CAFC7C.2020504@ti.com>
-Date: Wed, 26 Jun 2013 17:36:44 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [RFC] ARM: OMAP2+: omap_device: add pinctrl handling
-References: <1371826990-25820-1-git-send-email-grygorii.strashko@ti.com> <CACRpkdY=m1b9Lh27+wHP8FQ4SbVZKmAOCGhxe59aP+TcuR9QaA@mail.gmail.com> <20130625065811.GZ5523@atomide.com> <51CAEA90.90200@ti.com>
-In-Reply-To: <51CAEA90.90200@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752275Ab3FZOiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:38:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50900 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751581Ab3FZOiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 10:38:11 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/8] mm: numa: Document automatic NUMA balancing sysctls
+Date: Wed, 26 Jun 2013 15:38:00 +0100
+Message-Id: <1372257487-9749-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Picture format fixed. Sorry for that.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ Documentation/sysctl/kernel.txt | 66 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
-On 06/26/2013 04:20 PM, Grygorii Strashko wrote:
-> Hi All,
->
-> On 06/25/2013 09:58 AM, Tony Lindgren wrote:
->> * Linus Walleij <linus.walleij@linaro.org> [130624 05:13]:
->>> On Fri, Jun 21, 2013 at 5:03 PM, Grygorii Strashko
->>> <grygorii.strashko@ti.com> wrote:
->>>
->>>> Hence, add pinctrl handling in omap_device core:
->>>> 1) on PM runtime resume
->>>> - switch pinctrl state to "default" (todo: "active")
->>>> 2) on PM runtime suspend
->>>> - switch pinctrl state to "idle"
->>>> 3) during system wide suspend
->>>> - switch pinctrl state to "sleep" or "idle" if omap_device core
->>>> disables device
->>>> - switch pinctrl state to "sleep" if device is disabled already
->> Do you need a separate setting for "idle" and "sleep", or are
->> they the same?
->>
->>>> 4) during system wide resume
->>>> - switch pinctrl state to "default" (todo: "active") if omap_device
->>>> core has
->>>>    disabled  device during suspend
->>>> - switch pinctrl state to "idle" if device was already disabled
->>>> before suspend
->>> I don't understand step 4.
->>>
->>> I get the creeps about whether the system is runtime suspended
->>> or runtime resumed when we come to resume proper, so I need
->>> Kevin to have a look at this.
->>>
->>> Apart from that it looks good.
->>>
->>> Stephen and Tony are trying to figure out the details of whether
->>> "active"
->>> is necessary or not in a related thread I think.
-> Thanks for your comments.
->
-> I've prepared diagram to illustrate how does this work:
->                                          +
->                                          |
->                                          |  .probe()
->                                          |
->                                    +-----v--------+
->                                    |              |
->                                    |  default     |
->                                    |              |
->                                    +----+--+------+
->                                         |  |
->                         pm_runtime_get()|  | pm_runtime_put()
->                        +----------------+  +------------+
->                        |                                |
->                 +------v------+ pm_runtime_put()+-------v-----+
->                 |             +----------------->             |
->     +----------->  Active     |pm_runtime_get() |   Idle      <----------+
->     |           |             <-----------------+             |          |
->     |           +-------+-----+                 +-------+-----+          |
->     |                   |.suspend_noirq()               |.suspend_noirq()|
->     |                   |                               |                |
->     |                   |                               |                |
->     |                   |                               |                |
->     |                   |                               |                |
->     |           +-------v-----+                 +-------v-----+          |
->     |           |             |                 |             |          |
->     +-----------+  Sleep      ------+           |  Sleep      +----------+
-> .resume_noirq() |             |     |           |             |.resume_noirq()
->                 +-------|-----+     |           +-------------+
->                         |  Idle     |
->                         +-----------+
->
-> The "Sleep" pinctrl state is optional - if "sleep" state isn't defined
-> then "Idle" pinctrl state will be used during suspend.
->
-> As per above pinctrl state transition diagram - I think, that:
-> - if "idle" or "sleep" states are defined then "active" state have to be
-> defined too.
-> So, pinctrl core should detect such situation and generate a warning.
->
->  From my point of view, we should have "active" state - it would allow
-> to avoid additional
-> runtime overhead and handle properly the case when drivers are used as
-> loadable modules.
-> In this case, after boot, device's pinctrl registers can have HW default
-> values (after reset) or
-> can be configured to some safe (off) state from board file (board's
-> "default" configuration).
-> Driver module will activate its PINs when loaded and need to restore
-> safe (off) PINs state when
-> unloaded.
-> As result, it seems, we should have "off" state which can be used when
-> driver's module is removed.
->
-> So, final list of default pnctrl states may be defined as "default",
-> "active", "idle", "sleep", "off":
-> - "active", "idle", "sleep": will be handled by omap_device core
-> - "default", "off": will be handled by driver itself (or Device core).
->
->
->
->> Yes we should have that sorted out over next few weeks, so let's
->> just wait a little while on all these dynamic remuxing patches
->> to avoid churn.
->>
->> Regards,
->>
->> Tony
->
-> Regards,
-> - grygorii
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index ccd4258..0fe678c 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -354,6 +354,72 @@ utilize.
+ 
+ ==============================================================
+ 
++numa_balancing
++
++Enables/disables automatic page fault based NUMA memory
++balancing. Memory is moved automatically to nodes
++that access it often.
++
++Enables/disables automatic NUMA memory balancing. On NUMA machines, there
++is a performance penalty if remote memory is accessed by a CPU. When this
++feature is enabled the kernel samples what task thread is accessing memory
++by periodically unmapping pages and later trapping a page fault. At the
++time of the page fault, it is determined if the data being accessed should
++be migrated to a local memory node.
++
++The unmapping of pages and trapping faults incur additional overhead that
++ideally is offset by improved memory locality but there is no universal
++guarantee. If the target workload is already bound to NUMA nodes then this
++feature should be disabled. Otherwise, if the system overhead from the
++feature is too high then the rate the kernel samples for NUMA hinting
++faults may be controlled by the numa_balancing_scan_period_min_ms,
++numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
++numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
++
++==============================================================
++
++numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
++numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
++numa_balancing_scan_size_mb
++
++Automatic NUMA balancing scans tasks address space and unmaps pages to
++detect if pages are properly placed or if the data should be migrated to a
++memory node local to where the task is running.  Every "scan delay" the task
++scans the next "scan size" number of pages in its address space. When the
++end of the address space is reached the scanner restarts from the beginning.
++
++In combination, the "scan delay" and "scan size" determine the scan rate.
++When "scan delay" decreases, the scan rate increases.  The scan delay and
++hence the scan rate of every task is adaptive and depends on historical
++behaviour. If pages are properly placed then the scan delay increases,
++otherwise the scan delay decreases.  The "scan size" is not adaptive but
++the higher the "scan size", the higher the scan rate.
++
++Higher scan rates incur higher system overhead as page faults must be
++trapped and potentially data must be migrated. However, the higher the scan
++rate, the more quickly a tasks memory is migrated to a local node if the
++workload pattern changes and minimises performance impact due to remote
++memory accesses. These sysctls control the thresholds for scan delays and
++the number of pages scanned.
++
++numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
++between scans. It effectively controls the maximum scanning rate for
++each task.
++
++numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
++when it initially forks.
++
++numa_balancing_scan_period_max_ms is the maximum delay between scans. It
++effectively controls the minimum scanning rate for each task.
++
++numa_balancing_scan_size_mb is how many megabytes worth of pages are
++scanned for a given scan.
++
++numa_balancing_scan_period_reset is a blunt instrument that controls how
++often a tasks scan delay is reset to detect sudden changes in task behaviour.
++
++==============================================================
++
+ osrelease, ostype & version:
+ 
+ # cat osrelease
+-- 
+1.8.1.4
 
