@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3FZCpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:45:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54130 "EHLO
+	id S1752486Ab3FZCpc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:45:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54135 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752126Ab3FZCp3 (ORCPT
+	by vger.kernel.org with ESMTP id S1751963Ab3FZCp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:45:29 -0400
+	Tue, 25 Jun 2013 22:45:27 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
-        "Daniel Petre" <daniel.petre@rcs-rds.ro>,
+CC: akpm@linux-foundation.org, "Andy Lutomirski" <luto@amacapital.net>,
         "David S. Miller" <davem@davemloft.net>
 Date: Wed, 26 Jun 2013 03:35:58 +0100
-Message-ID: <lsq.1372214158.172204640@decadent.org.uk>
+Message-ID: <lsq.1372214158.904571556@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [18/26] ip_tunnel: fix kernel panic with icmp_dest_unreach
+Subject: [19/26] net: Block MSG_CMSG_COMPAT in send(m)msg and  recv(m)msg
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,75 +31,272 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-[ Upstream commit a622260254ee481747cceaaa8609985b29a31565 ]
+[ Upstream commits 1be374a0518a288147c6a7398792583200a67261 and
+  a7526eb5d06b0084ef12d7b168d008fcf516caab ]
 
-Daniel Petre reported crashes in icmp_dst_unreach() with following call
-graph:
+MSG_CMSG_COMPAT is (AFAIK) not intended to be part of the API --
+it's a hack that steals a bit to indicate to other networking code
+that a compat entry was used.  So don't allow it from a non-compat
+syscall.
 
-Daniel found a similar problem mentioned in
- http://lkml.indiana.edu/hypermail/linux/kernel/1007.0/00961.html
+This prevents an oops when running this code:
 
-And indeed this is the root cause : skb->cb[] contains data fooling IP
-stack.
+int main()
+{
+	int s;
+	struct sockaddr_in addr;
+	struct msghdr *hdr;
 
-We must clear IPCB in ip_tunnel_xmit() sooner in case dst_link_failure()
-is called. Or else skb->cb[] might contain garbage from GSO segmentation
-layer.
+	char *highpage = mmap((void*)(TASK_SIZE_MAX - 4096), 4096,
+	                      PROT_READ | PROT_WRITE,
+	                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+	if (highpage == MAP_FAILED)
+		err(1, "mmap");
 
-A similar fix was tested on linux-3.9, but gre code was refactored in
-linux-3.10. I'll send patches for stable kernels as well.
+	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (s == -1)
+		err(1, "socket");
 
-Many thanks to Daniel for providing reports, patches and testing !
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(1);
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	if (connect(s, (struct sockaddr*)&addr, sizeof(addr)) != 0)
+		err(1, "connect");
 
-Reported-by: Daniel Petre <daniel.petre@rcs-rds.ro>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+	void *evil = highpage + 4096 - COMPAT_MSGHDR_SIZE;
+	printf("Evil address is %p\n", evil);
+
+	if (syscall(__NR_sendmmsg, s, evil, 1, MSG_CMSG_COMPAT) < 0)
+		err(1, "sendmmsg");
+
+	return 0;
+}
+
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/ip_gre.c | 2 +-
- net/ipv4/ipip.c   | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/socket.h |  3 +++
+ net/compat.c           | 13 ++++++++--
+ net/socket.c           | 67 +++++++++++++++++++++++++++++++++-----------------
+ 3 files changed, 59 insertions(+), 24 deletions(-)
 
-diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-index d55110e..5f28fab 100644
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -716,6 +716,7 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
- 		tiph = &tunnel->parms.iph;
- 	}
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index 2acd2e2..7e9f2d3 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -336,6 +336,9 @@ extern int put_cmsg(struct msghdr*, int level, int type, int len, void *data);
  
-+	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	if ((dst = tiph->daddr) == 0) {
- 		/* NBMA tunnel */
+ struct timespec;
  
-@@ -851,7 +852,6 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
- 	skb_reset_transport_header(skb);
- 	skb_push(skb, gre_hlen);
- 	skb_reset_network_header(skb);
--	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
- 			      IPSKB_REROUTED);
- 	skb_dst_drop(skb);
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index 17ad951..5dc5137 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -448,6 +448,7 @@ static netdev_tx_t ipip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
- 	if (tos & 1)
- 		tos = old_iph->tos;
++/* The __sys_...msg variants allow MSG_CMSG_COMPAT */
++extern long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags);
++extern long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags);
+ extern int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ 			  unsigned int flags, struct timespec *timeout);
+ extern int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg,
+diff --git a/net/compat.c b/net/compat.c
+index 6def90e..8c979cc 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -733,19 +733,25 @@ static unsigned char nas[21] = {
  
-+	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	if (!dst) {
- 		/* NBMA tunnel */
- 		if ((rt = skb_rtable(skb)) == NULL) {
-@@ -531,7 +532,6 @@ static netdev_tx_t ipip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
- 	skb->transport_header = skb->network_header;
- 	skb_push(skb, sizeof(struct iphdr));
- 	skb_reset_network_header(skb);
--	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
- 			      IPSKB_REROUTED);
- 	skb_dst_drop(skb);
+ asmlinkage long compat_sys_sendmsg(int fd, struct compat_msghdr __user *msg, unsigned flags)
+ {
+-	return sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++	return __sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
+ }
+ 
+ asmlinkage long compat_sys_sendmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+ 				    unsigned vlen, unsigned int flags)
+ {
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
+ 	return __sys_sendmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 			      flags | MSG_CMSG_COMPAT);
+ }
+ 
+ asmlinkage long compat_sys_recvmsg(int fd, struct compat_msghdr __user *msg, unsigned int flags)
+ {
+-	return sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++	return __sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
+ }
+ 
+ asmlinkage long compat_sys_recv(int fd, void __user *buf, size_t len, unsigned flags)
+@@ -767,6 +773,9 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+ 	int datagrams;
+ 	struct timespec ktspec;
+ 
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++
+ 	if (timeout == NULL)
+ 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				      flags | MSG_CMSG_COMPAT, NULL);
+diff --git a/net/socket.c b/net/socket.c
+index 68879db..cf546a3 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1876,9 +1876,9 @@ struct used_address {
+ 	unsigned int name_len;
+ };
+ 
+-static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+-			 struct msghdr *msg_sys, unsigned flags,
+-			 struct used_address *used_address)
++static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
++			  struct msghdr *msg_sys, unsigned flags,
++			  struct used_address *used_address)
+ {
+ 	struct compat_msghdr __user *msg_compat =
+ 	    (struct compat_msghdr __user *)msg;
+@@ -1998,22 +1998,30 @@ out:
+  *	BSD sendmsg interface
+  */
+ 
+-SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned, flags)
++long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags)
+ {
+ 	int fput_needed, err;
+ 	struct msghdr msg_sys;
+-	struct socket *sock = sockfd_lookup_light(fd, &err, &fput_needed);
++	struct socket *sock;
+ 
++	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (!sock)
+ 		goto out;
+ 
+-	err = __sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
++	err = ___sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
+ 
+ 	fput_light(sock->file, fput_needed);
+ out:
+ 	return err;
+ }
+ 
++SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
++{
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++	return __sys_sendmsg(fd, msg, flags);
++}
++
+ /*
+  *	Linux sendmmsg interface
+  */
+@@ -2044,15 +2052,16 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ 
+ 	while (datagrams < vlen) {
+ 		if (MSG_CMSG_COMPAT & flags) {
+-			err = __sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
+-					    &msg_sys, flags, &used_address);
++			err = ___sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
++					     &msg_sys, flags, &used_address);
+ 			if (err < 0)
+ 				break;
+ 			err = __put_user(err, &compat_entry->msg_len);
+ 			++compat_entry;
+ 		} else {
+-			err = __sys_sendmsg(sock, (struct msghdr __user *)entry,
+-					    &msg_sys, flags, &used_address);
++			err = ___sys_sendmsg(sock,
++					     (struct msghdr __user *)entry,
++					     &msg_sys, flags, &used_address);
+ 			if (err < 0)
+ 				break;
+ 			err = put_user(err, &entry->msg_len);
+@@ -2076,11 +2085,13 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ SYSCALL_DEFINE4(sendmmsg, int, fd, struct mmsghdr __user *, mmsg,
+ 		unsigned int, vlen, unsigned int, flags)
+ {
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
+ 	return __sys_sendmmsg(fd, mmsg, vlen, flags);
+ }
+ 
+-static int __sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
+-			 struct msghdr *msg_sys, unsigned flags, int nosec)
++static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
++			  struct msghdr *msg_sys, unsigned flags, int nosec)
+ {
+ 	struct compat_msghdr __user *msg_compat =
+ 	    (struct compat_msghdr __user *)msg;
+@@ -2177,23 +2188,31 @@ out:
+  *	BSD recvmsg interface
+  */
+ 
+-SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
+-		unsigned int, flags)
++long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags)
+ {
+ 	int fput_needed, err;
+ 	struct msghdr msg_sys;
+-	struct socket *sock = sockfd_lookup_light(fd, &err, &fput_needed);
++	struct socket *sock;
+ 
++	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (!sock)
+ 		goto out;
+ 
+-	err = __sys_recvmsg(sock, msg, &msg_sys, flags, 0);
++	err = ___sys_recvmsg(sock, msg, &msg_sys, flags, 0);
+ 
+ 	fput_light(sock->file, fput_needed);
+ out:
+ 	return err;
+ }
+ 
++SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
++		unsigned int, flags)
++{
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++	return __sys_recvmsg(fd, msg, flags);
++}
++
+ /*
+  *     Linux recvmmsg interface
+  */
+@@ -2231,17 +2250,18 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ 		 * No need to ask LSM for more than the first datagram.
+ 		 */
+ 		if (MSG_CMSG_COMPAT & flags) {
+-			err = __sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
+-					    &msg_sys, flags & ~MSG_WAITFORONE,
+-					    datagrams);
++			err = ___sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
++					     &msg_sys, flags & ~MSG_WAITFORONE,
++					     datagrams);
+ 			if (err < 0)
+ 				break;
+ 			err = __put_user(err, &compat_entry->msg_len);
+ 			++compat_entry;
+ 		} else {
+-			err = __sys_recvmsg(sock, (struct msghdr __user *)entry,
+-					    &msg_sys, flags & ~MSG_WAITFORONE,
+-					    datagrams);
++			err = ___sys_recvmsg(sock,
++					     (struct msghdr __user *)entry,
++					     &msg_sys, flags & ~MSG_WAITFORONE,
++					     datagrams);
+ 			if (err < 0)
+ 				break;
+ 			err = put_user(err, &entry->msg_len);
+@@ -2308,6 +2328,9 @@ SYSCALL_DEFINE5(recvmmsg, int, fd, struct mmsghdr __user *, mmsg,
+ 	int datagrams;
+ 	struct timespec timeout_sys;
+ 
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++
+ 	if (!timeout)
+ 		return __sys_recvmmsg(fd, mmsg, vlen, flags, NULL);
+ 
 
