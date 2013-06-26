@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab3FZCtZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:49:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54120 "EHLO
+	id S1752186Ab3FZCpX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:45:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54107 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751469Ab3FZCpY (ORCPT
+	by vger.kernel.org with ESMTP id S1751408Ab3FZCpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:45:24 -0400
+	Tue, 25 Jun 2013 22:45:21 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Neal Cardwell" <ncardwell@google.com>,
-        "Yuchung Cheng" <ycheng@google.com>,
-        "Eric Dumazet" <edumazet@google.com>,
-        "Tom Herbert" <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Chris Metcalf" <cmetcalf@tilera.com>
 Date: Wed, 26 Jun 2013 03:35:58 +0100
-Message-ID: <lsq.1372214158.646183620@decadent.org.uk>
+Message-ID: <lsq.1372214158.488670597@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [17/26] tcp: xps: fix reordering issues
+Subject: [01/26] tilepro: work around module link error with gcc 4.7
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,48 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-[ Upstream commit 547669d483e5783d722772af1483fa474da7caf9 ]
+commit 3cb3f839d306443f3d1e79b0bde1a2ad2c12b555 upstream.
 
-commit 3853b5841c01a ("xps: Improvements in TX queue selection")
-introduced ooo_okay flag, but the condition to set it is slightly wrong.
+gcc 4.7.x is emitting calls to __ffsdi2 where previously
+it used to inline the appropriate ctz instructions.
+While this needs to be fixed in gcc, it's also easy to avoid
+having it cause build failures when building with those
+compilers by exporting __ffsdi2 to modules.
 
-In our traces, we have seen ACK packets being received out of order,
-and RST packets sent in response.
-
-We should test if we have any packets still in host queue.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_output.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/tile/lib/exports.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 5c1807c..3add486 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -835,11 +835,13 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
- 							   &md5);
- 	tcp_header_size = tcp_options_size + sizeof(struct tcphdr);
- 
--	if (tcp_packets_in_flight(tp) == 0) {
-+	if (tcp_packets_in_flight(tp) == 0)
- 		tcp_ca_event(sk, CA_EVENT_TX_START);
--		skb->ooo_okay = 1;
--	} else
--		skb->ooo_okay = 0;
-+
-+	/* if no packet is in qdisc/device queue, then allow XPS to select
-+	 * another queue.
-+	 */
-+	skb->ooo_okay = sk_wmem_alloc_get(sk) == 0;
- 
- 	skb_push(skb, tcp_header_size);
- 	skb_reset_transport_header(skb);
+--- a/arch/tile/lib/exports.c
++++ b/arch/tile/lib/exports.c
+@@ -90,4 +90,6 @@ uint64_t __ashrdi3(uint64_t, unsigned in
+ EXPORT_SYMBOL(__ashrdi3);
+ uint64_t __ashldi3(uint64_t, unsigned int);
+ EXPORT_SYMBOL(__ashldi3);
++int __ffsdi2(uint64_t);
++EXPORT_SYMBOL(__ffsdi2);
+ #endif
 
