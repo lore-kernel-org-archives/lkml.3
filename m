@@ -1,167 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab3FZIJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:09:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60887 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751857Ab3FZII3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:08:29 -0400
-Date: Wed, 26 Jun 2013 10:08:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, minchan@kernel.org,
-        anton@enomsg.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] vmpressure: implement strict mode
-Message-ID: <20130626080827.GE28748@dhcp22.suse.cz>
-References: <20130625175129.7c0d79e1@redhat.com>
+	id S1751891Ab3FZIKn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:10:43 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33884 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab3FZIKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:10:09 -0400
+Message-ID: <51CAA116.2060906@linux.vnet.ibm.com>
+Date: Wed, 26 Jun 2013 13:36:46 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130625175129.7c0d79e1@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 29/45] kvm/vmx: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625203043.16593.1600.stgit@srivatsabhat.in.ibm.com> <51CA9C5E.1030609@redhat.com>
+In-Reply-To: <51CA9C5E.1030609@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062608-5816-0000-0000-000008A24B15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 25-06-13 17:51:29, Luiz Capitulino wrote:
-> Currently, applications are notified for the level they registered for
-> _plus_ higher levels.
+On 06/26/2013 01:16 PM, Paolo Bonzini wrote:
+> Il 25/06/2013 22:30, Srivatsa S. Bhat ha scritto:
+>> -	cpu = get_cpu();
+>> +	cpu = get_online_cpus_atomic();
+>>  	vmx_vcpu_load(&vmx->vcpu, cpu);
+>>  	vmx->vcpu.cpu = cpu;
+>>  	err = vmx_vcpu_setup(vmx);
+>>  	vmx_vcpu_put(&vmx->vcpu);
+>> -	put_cpu();
+>> +	put_online_cpus_atomic();
 > 
-> This is a problem if the application wants to implement different
-> actions for different levels. For example, an application might want
-> to release 10% of its cache on level low, 50% on medium and 100% on
-> critical. To do this, the application has to register a different fd
-> for each event. However, fd low is always going to be notified and
-> and all fds are going to be notified on level critical.
-
-OK, I am not user of this interface but I thought that the application
-would take an action of the highest level it gets notification. But yes
-this might get clumsy to implement.
-
-> Strict mode solves this problem by strictly notifiying the event
-> an fd has registered for. It's optional. By default we still notify
-> on higher levels.
-
-OK, makes some sense to me and it should work with the proposed edge
-trigerring as well.
-
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> ---
+> The new API has a weird name.  Why are you adding new functions instead
+> of just modifying get/put_cpu?
 > 
-> PS: I'm following the discussion on the event storm problem, but I believe
->     strict mode is orthogonal to what has been suggested (although the
->     patches conflict)
-> 
->  Documentation/cgroups/memory.txt | 10 ++++++----
->  mm/vmpressure.c                  | 19 +++++++++++++++++--
->  2 files changed, 23 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index ddf4f93..3c589cf 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -807,12 +807,14 @@ register a notification, an application must:
->  
->  - create an eventfd using eventfd(2);
->  - open memory.pressure_level;
-> -- write string like "<event_fd> <fd of memory.pressure_level> <level>"
-> +- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
->    to cgroup.event_control.
->  
-> -Application will be notified through eventfd when memory pressure is at
-> -the specific level (or higher). Read/write operations to
-> -memory.pressure_level are no implemented.
-> +Applications will be notified through eventfd when memory pressure is at
-> +the specific level or higher. If strict is passed, then applications
-> +will only be notified when memory pressure reaches the specified level.
 
-It would be good to describe when is strick and when the default
-appropriate.
+Because the purpose of those two functions are distinctly different
+from each other.
 
-> +
-> +Read/write operations to memory.pressure_level are no implemented.
->  
->  Test:
->  
-> diff --git a/mm/vmpressure.c b/mm/vmpressure.c
-> index 736a601..6289ede 100644
-> --- a/mm/vmpressure.c
-> +++ b/mm/vmpressure.c
-> @@ -137,6 +137,7 @@ static enum vmpressure_levels vmpressure_calc_level(unsigned long scanned,
->  struct vmpressure_event {
->  	struct eventfd_ctx *efd;
->  	enum vmpressure_levels level;
-> +	bool strict_mode;
+get/put_cpu() is used to disable preemption on the local CPU. (Which
+also disables offlining the local CPU during that critical section).
 
-Any reason to not using a flag for this? If there are any other modes to
-come them we would end up with zilions of bools which is not very nice.
+What this patchset deals with is synchronizing with offline of *any*
+CPU. Typically, we use get_online_cpus()/put_online_cpus() for that
+purpose. But they can't be used in atomic context, because they take
+mutex locks and hence can sleep.
 
->  	struct list_head node;
->  };
->  
-> @@ -153,6 +154,9 @@ static bool vmpressure_event(struct vmpressure *vmpr,
->  
->  	list_for_each_entry(ev, &vmpr->events, node) {
->  		if (level >= ev->level) {
-> +			/* strict mode ensures level == ev->level */
-> +			if (ev->strict_mode && level != ev->level)
-> +				continue;
->  			eventfd_signal(ev->efd, 1);
->  			signalled = true;
->  		}
-> @@ -292,7 +296,7 @@ void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
->   * infrastructure, so that the notifications will be delivered to the
->   * @eventfd. The @args parameter is a string that denotes pressure level
->   * threshold (one of vmpressure_str_levels, i.e. "low", "medium", or
-> - * "critical").
-> + * "critical") and optionally a different operating mode (i.e. "strict")
->   *
->   * This function should not be used directly, just pass it to (struct
->   * cftype).register_event, and then cgroup core will handle everything by
-> @@ -303,22 +307,33 @@ int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
->  {
->  	struct vmpressure *vmpr = cg_to_vmpressure(cg);
->  	struct vmpressure_event *ev;
-> +	bool smode = false;
-> +	const char *p;
->  	int level;
->  
->  	for (level = 0; level < VMPRESSURE_NUM_LEVELS; level++) {
-> -		if (!strcmp(vmpressure_str_levels[level], args))
-> +		p = vmpressure_str_levels[level];
-> +		if (!strncmp(p, args, strlen(p)))
->  			break;
->  	}
->  
->  	if (level >= VMPRESSURE_NUM_LEVELS)
->  		return -EINVAL;
->  
-> +	p = strchr(args, ' ');
-> +	if (p) {
-> +		if (strncmp(++p, "strict", 6))
-> +			return -EINVAL;
-> +		smode = true;
-> +	}
-> +
->  	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
->  	if (!ev)
->  		return -ENOMEM;
->  
->  	ev->efd = eventfd;
->  	ev->level = level;
-> +	ev->strict_mode = smode;
->  
->  	mutex_lock(&vmpr->events_lock);
->  	list_add(&ev->node, &vmpr->events);
-> -- 
-> 1.8.1.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+So the code that executes in atomic context and which wants to prevent
+*any* CPU from going offline, used to disable preemption around its
+critical section. Disabling preemption prevents stop_machine(), and
+CPU offline (of *any* CPU) was done via stop_machine(). So disabling
+preemption disabled any CPU from going offline, as a *side-effect*.
 
--- 
-Michal Hocko
-SUSE Labs
+And this patchset prepares the ground for getting rid of stop_machine()
+in the CPU offline path. Which means, disabling preemption only prevents
+the *local* CPU from going offline. So if code in atomic context wants
+to prevent any CPU from going offline, we need a new set of APIs, like
+get/put_online_cpus(), but which can be invoked from atomic context.
+That's why I named it as get/put_online_cpus_atomic().
+
+One of the key points here is that we want to preserve get/put_cpu()
+as it is, since its purpose is different - disable preemption and
+offline of the local CPU. There is no reason to change that API, its
+useful as it is.
+
+Regards,
+Srivatsa S. Bhat
+
