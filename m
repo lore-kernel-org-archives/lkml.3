@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab3FZPhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:37:34 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40234 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752118Ab3FZPhb (ORCPT
+	id S1751516Ab3FZPkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:40:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33213 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab3FZPkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:37:31 -0400
-Message-ID: <1372261045.2168.33.camel@dabdike>
-Subject: Re: [PATCH 1/1] bfa: Fixes for 0-terminated strncpy and possible
- null pointer dereference
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Jakob Normark <jakobnormark@gmail.com>
-Cc: Anil Gurumurthy <agurumur@brocade.com>,
-        Vijaya Mohan Guvva <vmohan@brocade.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 26 Jun 2013 08:37:25 -0700
-In-Reply-To: <1368646911-22620-1-git-send-email-jakobnormark@gmail.com>
-References: <1368646911-22620-1-git-send-email-jakobnormark@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 11:40:04 -0400
+Date: Wed, 26 Jun 2013 15:05:11 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [RFC PATCH 4/4] sched: Consolidate open coded preemptible()
+ checks
+Message-ID: <20130626130511.GL28407@twins.programming.kicks-ass.net>
+References: <1371761141-25386-1-git-send-email-fweisbec@gmail.com>
+ <1371761141-25386-5-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371761141-25386-5-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-15 at 21:41 +0200, Jakob Normark wrote:
-> This patch fixes two cppcheck errors in drivers/scsi/bfa/bfad_im.c
+On Thu, Jun 20, 2013 at 10:45:41PM +0200, Frederic Weisbecker wrote:
+> preempt_schedule() and preempt_schedule_context() open
+> code their preemptability checks.
 > 
-> Signed-off-by: Jakob Normark <jakobnormark@gmail.com>
+> Use the standard API instead for consolidation.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Alex Shi <alex.shi@intel.com>
+> Cc: Paul Turner <pjt@google.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Vincent Guittot <vincent.guittot@linaro.org>
 > ---
->  drivers/scsi/bfa/bfad_im.c |    9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
+>  kernel/context_tracking.c |    3 +--
+>  kernel/sched/core.c       |    4 +---
+>  2 files changed, 2 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/scsi/bfa/bfad_im.c b/drivers/scsi/bfa/bfad_im.c
-> index 5864f98..9489c56 100644
-> --- a/drivers/scsi/bfa/bfad_im.c
-> +++ b/drivers/scsi/bfa/bfad_im.c
-> @@ -944,13 +944,15 @@ static int
->  bfad_im_slave_alloc(struct scsi_device *sdev)
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index 6667700..08db730 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -88,10 +88,9 @@ void user_enter(void)
+>   */
+>  void __sched notrace preempt_schedule_context(void)
 >  {
->  	struct fc_rport *rport = starget_to_rport(scsi_target(sdev));
-> -	struct bfad_itnim_data_s *itnim_data =
-> -				(struct bfad_itnim_data_s *) rport->dd_data;
-> -	struct bfa_s *bfa = itnim_data->itnim->bfa_itnim->bfa;
-> +	struct bfad_itnim_data_s *itnim_data;
-> +	struct bfa_s *bfa;
+> -	struct thread_info *ti = current_thread_info();
+>  	enum ctx_state prev_ctx;
 >  
->  	if (!rport || fc_remote_port_chkready(rport))
->  		return -ENXIO;
+> -	if (likely(ti->preempt_count || irqs_disabled()))
+> +	if (likely(!preemptible()))
+>  		return;
 >  
-> +	itnim_data = (struct bfad_itnim_data_s *) rport->dd_data;
-> +	bfa = itnim_data->itnim->bfa_itnim->bfa;
-> +
->  	if (bfa_get_lun_mask_status(bfa) == BFA_LUNMASK_ENABLED) {
->  		/*
->  		 * We should not mask LUN 0 - since this will translate
-> @@ -1037,6 +1039,7 @@ bfad_fc_host_init(struct bfad_im_port_s *im_port)
->  
->  	strncpy(symname, bfad->bfa_fcs.fabric.bport.port_cfg.sym_name.symname,
->  		BFA_SYMNAME_MAXLEN);
-> +	symname[BFA_SYMNAME_MAXLEN - 1] = '\0';
 
-This isn't correct, it's effectively a handrolled version of strlcpy.
-The correct fix is to replace strncpy with strlcpy.  I fixed it up in
-the patch version.
-
-James
+#ifdef CONFIG_PREEMPT_COUNT
+# define preemptible()  (preempt_count() == 0 && !irqs_disabled())
+#else
+# define preemptible()  0
+#endif
 
 
+Wouldn't that give a problem for !PREEMPT_COUNT?
