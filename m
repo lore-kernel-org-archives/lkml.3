@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742Ab3FZIaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:30:11 -0400
-Received: from 100.204.216.81.static.g-hkn.siw.siwnet.net ([81.216.204.100]:52975
-	"EHLO iko.pp.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751841Ab3FZIaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:30:05 -0400
-Message-Id: <201306260829.r5Q8Txm5003881@eskarina.iko.pp.se>
-X-Face: ^"+mumOlNwo;yI>`\39\txuVze?eiR9uqpo2*mE!9MWXgXI0v(3ArwymNWe'.q:eLl!=guD
- x{jGFEWN6,#HoN%2qRW;7.CL]9%Ap,067"u1%!NUqS.MhV'+,6$Fj-;W2Z}Y,JUZ'L+f<?~E{ID*=T
- V\NxAOu>)|B@3k3n;gLl*#i[(J-os#fNnDJ8m["|JWNwpORh|_.MGkR#|a~QS!"4hEQ{O{[Ii14{xD
- PU/:5wuv7m1=TK=.>G8wdfpY~]{H(Qa\1`%|Hz:!)c3f9UOW|WgE"4d\E7?oDu9.
-From: Anders Hammarquist <iko@iko.pp.se>
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 0/2] *** SUBJECT HERE ***
-In-Reply-To: Message from Greg KH <gregkh@linuxfoundation.org>
-   of "Tue, 25 Jun 2013 16:39:11 -0700." <20130625233911.GA1087@kroah.com>
-References: <201306190012.r5J0CNJZ031854@eskarina.iko.pp.se> <20130619225315.GB12282@kroah.com> <201306212308.r5LN8C7M020720@eskarina.iko.pp.se> <20130621235603.GA1603@kroah.com> <201306221854.r5MIshv5013882@eskarina.iko.pp.se><20130625233911.GA1087@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <3879.1372235399.1@eskarina.iko.pp.se>
-Date: Wed, 26 Jun 2013 10:29:59 +0200
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (iko.pp.se [127.0.0.1]); Wed, 26 Jun 2013 10:30:00 +0200 (MEST)
+	id S1751678Ab3FZIcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:32:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:32315 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751285Ab3FZIcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:32:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,941,1363158000"; 
+   d="scan'208";a="260300316"
+Subject: [PATCH] TTY: memory leakage in tty_buffer_find()
+From: channing <chao.bi@intel.com>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Jun 2013 16:51:10 +0800
+Message-ID: <1372236670.2390.12.camel@bichao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a message of Tue, 25 Jun 2013 16:39:11 -0700, Greg KH writes:
->> Indeed. I'd already had some (failed) thoughts about how to handle it
->> nicely. Now I've had another think through, and I have something which
->> deals with it and at least complains if TI_EXTRA_VID_PID_COUNT is changed
->> without changing the initializer. Patch 2/2
->
->Why don't we just drop the extra id thing entirely?  The usb-serial
->subsystem handles new device ids being added dynamically from sysfs for
->a long time now.  Removing this module option would clean up the code a
->lot, and prevent these errors from ever happening again.
 
-Aha, yes, I'm all for that (had I only known I'd have done that to start
-with). I'll look in to it.
+In tty_buffer_find(), it scans all tty buffers in
+free buffer queue, if it finds matched one,
+tty->buf.free will point to matched one's next buffer,
+so tty buffers that ahead of matched one are removed
+from free queue, they will never be used but they
+are not released, then memory leak happen.
 
-/Anders
+This patch is to make tty_buffer_find() only extract
+the matched tty buffer, and keep others left inside
+free queue, so that they could be found and used next
+time.
+
+Signed-off-by: Chao Bi <chao.bi@intel.com>
+---
+ drivers/tty/tty_buffer.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 9121c1f..7b10f7a 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -178,10 +178,14 @@ void tty_buffer_flush(struct tty_struct *tty)
+ static struct tty_buffer *tty_buffer_find(struct tty_port *port, size_t size)
+ {
+ 	struct tty_buffer **tbh = &port->buf.free;
++	struct tty_buffer *prev = NULL;
+ 	while ((*tbh) != NULL) {
+ 		struct tty_buffer *t = *tbh;
+ 		if (t->size >= size) {
+-			*tbh = t->next;
++			if (prev == NULL)
++				*tbh = t->next;
++			else
++				prev->next = t->next;
+ 			t->next = NULL;
+ 			t->used = 0;
+ 			t->commit = 0;
+@@ -189,6 +193,7 @@ static struct tty_buffer *tty_buffer_find(struct tty_port *port, size_t size)
+ 			port->buf.memory_used += t->size;
+ 			return t;
+ 		}
++		prev = t;
+ 		tbh = &((*tbh)->next);
+ 	}
+ 	/* Round the buffer size out */
+-- 
+1.7.1
+
+
+
