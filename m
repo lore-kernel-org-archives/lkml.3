@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab3FZCsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:48:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54139 "EHLO
+	id S1752414Ab3FZCtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:49:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54150 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752028Ab3FZCpZ (ORCPT
+	by vger.kernel.org with ESMTP id S1752144Ab3FZCpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 22:45:25 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dave Chiluk" <chiluk@canonical.com>,
-        "Petr Vandrovec" <petr@vandrovec.name>,
-        "Al Viro" <viro@zeniv.linux.org.uk>
-Date: Wed, 26 Jun 2013 03:35:59 +0100
-Message-ID: <lsq.1372214159.879690280@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Wei Yongjun" <yongjun_wei@trendmicro.com.cn>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 26 Jun 2013 03:35:58 +0100
+Message-ID: <lsq.1372214158.243974283@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [26/26] ncpfs: fix rmdir returns Device or resource busy
+Subject: [13/26] gianfar: add missing iounmap() on error in 
+ gianfar_ptp_probe()
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,43 +32,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chiluk <chiluk@canonical.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 698b8223631472bf982ed570b0812faa61955683 upstream.
+[ Upstream commit e5f5e380e0f3bb11f04ca5bc66a551e58e0ad26e ]
 
-1d2ef5901483004d74947bbf78d5146c24038fe7 caused a regression in ncpfs such that
-directories could no longer be removed.  This was because ncp_rmdir checked
-to see if a dentry could be unhashed before allowing it to be removed. Since
-1d2ef5901483004d74947bbf78d5146c24038fe7 introduced a change that incremented
-dentry->d_count causing it to always be greater than 1 unhash would always
-fail.  Thus causing the error path in ncp_rmdir to always be taken.  Removing
-this error path is safe as unhashing is still accomplished by calls to dput
-from vfs_rmdir.
+Add the missing iounmap() before return from gianfar_ptp_probe()
+in the error handling case.
 
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
-Signed-off-by: Petr Vandrovec <petr@vandrovec.name>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ncpfs/dir.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/net/ethernet/freescale/gianfar_ptp.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ncpfs/dir.c
-+++ b/fs/ncpfs/dir.c
-@@ -1033,15 +1033,6 @@ static int ncp_rmdir(struct inode *dir,
- 	DPRINTK("ncp_rmdir: removing %s/%s\n",
- 		dentry->d_parent->d_name.name, dentry->d_name.name);
+diff --git a/drivers/net/ethernet/freescale/gianfar_ptp.c b/drivers/net/ethernet/freescale/gianfar_ptp.c
+index 69c3adf..c2ab21c 100644
+--- a/drivers/net/ethernet/freescale/gianfar_ptp.c
++++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
+@@ -520,6 +520,7 @@ static int gianfar_ptp_probe(struct platform_device *dev)
+ 	return 0;
  
--	/*
--	 * fail with EBUSY if there are still references to this
--	 * directory.
--	 */
--	dentry_unhash(dentry);
--	error = -EBUSY;
--	if (!d_unhashed(dentry))
--		goto out;
--
- 	len = sizeof(__name);
- 	error = ncp_io2vol(server, __name, &len, dentry->d_name.name,
- 			   dentry->d_name.len, !ncp_preserve_case(dir));
+ no_clock:
++	iounmap(etsects->regs);
+ no_ioremap:
+ 	release_resource(etsects->rsrc);
+ no_resource:
 
