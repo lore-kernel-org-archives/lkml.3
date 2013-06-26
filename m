@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab3FZXKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 19:10:04 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37586 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab3FZXKC (ORCPT
+	id S1753313Ab3FZXMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 19:12:23 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:32637 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753037Ab3FZXMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 19:10:02 -0400
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, Zoran Markovic <zoran.markovic@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        John Stultz <john.stultz@linaro.org>,
-        Arve Hjonnevag <arve@android.com>, Todd Poynor <toddpoynor@google.com>
-Subject: [RFC PATCH] rtc: keep system awake until all expired RTC timers are handled
-Date: Wed, 26 Jun 2013 16:09:13 -0700
-Message-Id: <1372288153-4731-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 26 Jun 2013 19:12:21 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjQPACJ1y1F5LKwQ/2dsb2JhbABbgwmDF7c5hSkEAYEEF3SCIwEBBAE6HCMFCwgDGAklDwUlAyETiAgFuhUWjhiBHQeDAmEDl0SKH4cngyMq
+Date: Thu, 27 Jun 2013 09:11:43 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tux3@tux3.org
+Subject: Re: [PATCH] Optimize wait_sb_inodes()
+Message-ID: <20130626231143.GC28426@dastard>
+References: <87ehbpntuk.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ehbpntuk.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation of RTC interface allows for system suspend to
-occur in the following cases:
-(a) if a timer is set in the past and rtc_timer_do_work() is scheduled
-to handle it, and
-(b) if rtc_timer_do_work() is called to handle expired timers whose
-handlers implement a preemption point.
+On Wed, Jun 26, 2013 at 05:45:23PM +0900, OGAWA Hirofumi wrote:
+> Hi,
+> 
+> On the following stress, sync(2) became top of cpu load.
+> 
+> 	fsstress -s 1 -n 50000 -p 3 -d `pwd`
+> 
+> After profile by perf, cpu load was lock contention of inode_sb_list_lock.
+> 
+> sync(2) is data integrity operation, so it has to make sure all dirty
+> data was written before sync(2) point. The bdi flusher flushes current
+> dirty data and wait those. But, if there is in-flight I/O before
+> sync_inodes_sb(), sync_inodes_sb() can be done before prior in-flight I/O.
+> 
+> So, wait_sb_inodes() is walking the all inodes on sb to make sure
+> in-flight I/O was done too. When it is walking inodes,
+> inode_sb_list_lock is contending with other operations like
+> create(2). This is the cause of cpu load.
 
-A pending suspend request may be honoured in the above cases causing
-timer handling to be delayed until after the next resume. This is
-undesirable since timer handlers may have time-critical code to execute.
+Sure, but avoiding wait_sb_inodes() doesn't address the fast-path
+lock contention inode_sb_list_lock has which is in the create and
+evict paths. The problems caused by wait_sb_inodes() are background
+noise compared to contention multiple CPUs can put on this lock just
+walking large directory structures in parallel.  Hence hacking
+around wait_sb_inodes() doesn't address the underlying lock
+contention problem.
 
-This patch makes sure that the system stays awake until all expired
-timers are handled.
+> On another view, wait_sb_inodes() would (arguably) be necessary for
+> legacy FSes. But, for example, if data=journal on ext*, wait_sb_inodes()
+> would be more than useless, because ext* can be done it by own
+> transaction list (and more efficient way).
+> 
+> Likewise, on tux3, the state is same with data=journal.
+> 
+> Also, even if data=ordered, ext* might be able to check in-flight I/O by
+> ordered data list (with some new additional check, I'm not sure).
 
-Note that all calls to pm_stay_awake() are eventually paired with
-the single pm_relax() call in rtc_timer_do_work(), which is launched
-using schedule_work().
+Why would you bother solving this problem differently in every
+single filesystem? It's solvable at the VFS by tracking inodes that
+are no longer dirty but still under writeback on the BDI. Then
+converting wait_sb_inodes() to walk all the dirty and writeback
+inodes would be sufficient for data integrity purposes, and it would
+be done under the bdi writeback lock, not the inode_sb_list_lock....
 
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Arve Hjonnevag <arve@android.com>
-Cc: Todd Poynor <toddpoynor@google.com>
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
----
- drivers/rtc/interface.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+Alternatively, splitting up the inode sb list and lock (say via the
+per-node list_lru structures in -mm and -next that are being added
+for exactly this purpose) would also significantly reduce lock
+contention on both the create/evict fast paths and the
+wait_sb_inodes() walk that is currently done....
 
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index 42bd57d..dace26e 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -72,6 +72,7 @@ int rtc_set_time(struct rtc_device *rtc, struct rtc_time *tm)
- 	} else
- 		err = -EINVAL;
- 
-+	pm_stay_awake(rtc->dev.parent);
- 	mutex_unlock(&rtc->ops_lock);
- 	/* A timer might have just expired */
- 	schedule_work(&rtc->irqwork);
-@@ -113,6 +114,7 @@ int rtc_set_mmss(struct rtc_device *rtc, unsigned long secs)
- 	else
- 		err = -EINVAL;
- 
-+	pm_stay_awake(rtc->dev.parent);
- 	mutex_unlock(&rtc->ops_lock);
- 	/* A timer might have just expired */
- 	schedule_work(&rtc->irqwork);
-@@ -771,9 +773,10 @@ static int rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer)
- 		alarm.time = rtc_ktime_to_tm(timer->node.expires);
- 		alarm.enabled = 1;
- 		err = __rtc_set_alarm(rtc, &alarm);
--		if (err == -ETIME)
-+		if (err == -ETIME) {
-+			pm_stay_awake(rtc->dev.parent);
- 			schedule_work(&rtc->irqwork);
--		else if (err) {
-+		} else if (err) {
- 			timerqueue_del(&rtc->timerqueue, &timer->node);
- 			timer->enabled = 0;
- 			return err;
-@@ -818,8 +821,10 @@ static void rtc_timer_remove(struct rtc_device *rtc, struct rtc_timer *timer)
- 		alarm.time = rtc_ktime_to_tm(next->expires);
- 		alarm.enabled = 1;
- 		err = __rtc_set_alarm(rtc, &alarm);
--		if (err == -ETIME)
-+		if (err == -ETIME) {
-+			pm_stay_awake(rtc->dev.parent);
- 			schedule_work(&rtc->irqwork);
-+		}
- 	}
- }
- 
-@@ -845,7 +850,6 @@ void rtc_timer_do_work(struct work_struct *work)
- 
- 	mutex_lock(&rtc->ops_lock);
- again:
--	pm_relax(rtc->dev.parent);
- 	__rtc_read_time(rtc, &tm);
- 	now = rtc_tm_to_ktime(tm);
- 	while ((next = timerqueue_getnext(&rtc->timerqueue))) {
-@@ -880,6 +884,7 @@ again:
- 	} else
- 		rtc_alarm_disable(rtc);
- 
-+	pm_relax(rtc->dev.parent);
- 	mutex_unlock(&rtc->ops_lock);
- }
- 
+So I think that you should address the problem properly at the VFS
+level so everyone benefits, not push interfaces that allow
+filesystem specific hacks to work around VFS level deficiencies...
+
+Cheers,
+
+Dave.
 -- 
-1.7.9.5
-
+Dave Chinner
+david@fromorbit.com
