@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab3FZIfP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:35:15 -0400
-Received: from luce.ironicdesign.com ([206.166.194.239]:50000 "EHLO
-	luce.ironicdesign.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab3FZIfL (ORCPT
+	id S1751916Ab3FZIfg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:35:36 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:64828 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab3FZIfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:35:11 -0400
-X-Greylist: delayed 640 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jun 2013 04:35:11 EDT
-X-AnteSpam-Report: http://antespam.com/missed/8d84cd5c4197be64e6b1cf5ef2cc06b240bf86589ce93b78ee24deeef68e59a7
-X-AnteSpam-From: lorenz@badgers.com
-X-AnteSpam-Score: -0.199
-Message-ID: <20130626102429.98761g4lt34cnnzx@mail.badgers.com>
-Date: Wed, 26 Jun 2013 10:24:29 +0200
-From: Lorenz Kernel <lorenz@badgers.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@linuxdriverproject.org, puff65537@bansheeslibrary.com,
-        viro@zeniv.linux.org.uk, michael.banken@mathe.stud.uni-erlangen.de,
-        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        linux-kernel@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 2/2 v3] silicom: checkpatch: assignments in if
- conditions
-References: <20130618183212.GA8182@kroah.com>
- <1371631444-27789-1-git-send-email-lorenz@badgers.com>
- <20130624231400.GA17306@kroah.com>
-In-Reply-To: <20130624231400.GA17306@kroah.com>
+	Wed, 26 Jun 2013 04:35:13 -0400
+X-Spam-Score: -100.8
+Message-ID: <51CAA78C.5040900@asianux.com>
+Date: Wed, 26 Jun 2013 16:34:20 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+To: Richard Weinberger <richard@nod.at>
+CC: Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
+        dhsharp@google.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
+References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at>
+In-Reply-To: <51CAA0C6.60007@nod.at>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Greg KH <gregkh@linuxfoundation.org>:
+On 06/26/2013 04:05 PM, Richard Weinberger wrote:
+>>>> >>> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+>>>> >>> index d5afe96..e80331d 100644
+>>>> >>> --- a/include/asm-generic/io.h
+>>>> >>> +++ b/include/asm-generic/io.h
+>>>> >>> @@ -303,10 +303,10 @@ static inline void *phys_to_virt(unsigned long address)
+>>>> >>>  /*
+>>>> >>>   * Change "struct page" to physical address.
+>>>> >>>   *
+>>>> >>> - * This implementation is for the no-MMU case only... if you have an MMU
+>>>> >>> + * This implementation is for the no-MMU or UML case only... if you have an MMU
+>>>> >>>   * you'll need to provide your own definitions.
+>>>> >>>   */
+>>>> >>> -#ifndef CONFIG_MMU
+>>>> >>> +#if !CONFIG_MMU || CONFIG_UML
+>>>> >>>  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>>>> >>>  {
+>>>> >>>  	return (void __iomem*) (unsigned long)offset;
+>>>> >>> @@ -325,7 +325,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>>>> >>>  static inline void iounmap(void __iomem *addr)
+>>>> >>>  {
+>>>> >>>  }
+>>>> >>> -#endif /* CONFIG_MMU */
+>>>> >>> +#endif /* !CONFIG_MMU || CONFIG_UML */
+>>>> >>>  
+>>>> >>>  #ifdef CONFIG_HAS_IOPORT
+>>>> >>>  #ifndef CONFIG_GENERIC_IOMAP
+>>>> >>>
+>>> >>
+>>> >> UML has no io memory but a MMU, so I'd argue that you better fix drivers/ptp/ptp_pch.c dependencies.
+>>> >> _If_ ptp_pch.c really works without real io memory, you can look what I did in my GENERIC_IO series[1]
+>>> >> to make nandsim work on UML. Maybe this helps.
+>>> >>
+>> > 
+>> > But "no io memory" is not the excuse to not define the related dummy
+>> > function.
+> UML has no io memory, period.
+> Same applies for s390, it also includes asm-generic/io.h in the !CONFIG_PCI
+> case.
+> UML and s390 are very special here.
+> 
 
-> On Wed, Jun 19, 2013 at 10:44:04AM +0200, Lorenz Haspel wrote:
->> Fixes checkpatch error:
->> There were assignments in if conditions, so I extracted them.
->>
->> Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
->> Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
->> ---
->> v2: removed some buggy extra lines and fixed white space issues
->> v3: fixed some more extra lines
->
-> This patch doesn't apply at all to my tree :(
->
-> greg k-h
->
+Oh, yes, really the same.
 
-This patch doesn't apply, because Chad Williamson already sent a patch  
-fixing the problem.
-His patch is already in next-tree, so my patch is not longer necessary.
+>> > The drivers internal code has already check the related return value,
+>> > so it is the architecture's duty to 'tell' the driver whether support
+>> > io memory (e.g. define ioremap, but return NULL).
+> It does so already by setting CONFIG_HAS_IOMEM=n
 
-Lorenz Haspel
+Excuse me, I use "grep -rn ioremap *" under "include/" and "arch/um/"
+directory, but can not find the related definition for 'ioremap'.
+
+Is there another declaration or definition way which I don't know ?
+(maybe it is).
+
+For our case, the ".config" file does not define 'CONFIG_HAS_IOMEM', can
+I assume it means "CONFIG_HAS_IOMEM=n" ?
 
 
+Thanks
+-- 
+Chen Gang
 
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program,
-part of the Horde framework and provided by HomeFreeMail.com.
-
-
-
+Asianux Corporation
