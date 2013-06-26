@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab3FZJiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:38:06 -0400
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:41683 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab3FZJiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:38:03 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: <netdev@vger.kernel.org>
-CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "Joe Perches" <joe@perches.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: [PATCH] arch/arc: angel4.dts - add description for "arc_emac"
-Date: Wed, 26 Jun 2013 13:37:49 +0400
-Message-ID: <1372239469-28537-1-git-send-email-abrodkin@synopsys.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752264Ab3FZJi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:38:28 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752030Ab3FZJi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:38:26 -0400
+Message-ID: <51CAB689.70008@nod.at>
+Date: Wed, 26 Jun 2013 11:38:17 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.121.8.30]
+To: Chen Gang <gang.chen@asianux.com>
+CC: Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
+        dhsharp@google.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
+References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at> <51CAA78C.5040900@asianux.com> <51CAA8D6.9000505@nod.at> <51CAAD1D.8050801@asianux.com> <51CAAE7C.9090003@nod.at> <51CAB556.4070700@asianux.com>
+In-Reply-To: <51CAB556.4070700@asianux.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this patch we introduce DT "arc_emac" description for ARCangel4.
-Description is based on info/example in
-"Documentation/devicetree/bindings/net/arc_emac.txt".
+Am 26.06.2013 11:33, schrieb Chen Gang:
+> On 06/26/2013 05:03 PM, Richard Weinberger wrote:
+>> Am 26.06.2013 10:58, schrieb Chen Gang:
+>>>> On 06/26/2013 04:39 PM, Richard Weinberger wrote:
+>>>>>>>>>>>>>>>>>>>>>> The drivers internal code has already check the related return value,
+>>>>>>>>>>>>>>>>>>>>>> so it is the architecture's duty to 'tell' the driver whether support
+>>>>>>>>>>>>>>>>>>>>>> io memory (e.g. define ioremap, but return NULL).
+>>>>>>>>>>>>>> It does so already by setting CONFIG_HAS_IOMEM=n
+>>>>>>>>>>
+>>>>>>>>>> Excuse me, I use "grep -rn ioremap *" under "include/" and "arch/um/"
+>>>>>>>>>> directory, but can not find the related definition for 'ioremap'.
+>>>>>>>>>>
+>>>>>>>>>> Is there another declaration or definition way which I don't know ?
+>>>>>>>>>> (maybe it is).
+>>>>>> Both UML and s390 (in the !CONFIG_PCI) do not define ioremap() because
+>>>>>> without io memory you cannot have a ioremap().
+>>>>>>
+>>>>
+>>>> I assume if ioremap() return NULL, it means "without io memory", is it
+>>>> correct ?
+>>>>
+>>>> If it is correct, "define a dummy ioremap(), and return NULL" is just
+>>>> the meaning that you mentioned above.
+>>>>
+>>>> If so, for UML, it is not requirement, but recommend to define a dummy
+>>>> ioremap() which return NULL, so can be generic enough to mach all cases.
+>> No.
+>> Not setting CONFIG_HAS_IOMEM=y means "This arch has no io memory and therefore no
+>> functions to mess with it".
+>>
+> 
+> Since the API itself already contents the meaning: "return NULL means
+> the arch has no related io memory",
+> 
+> Why not define a generic dummy one in "include/asm-generic/io.h" instead
+> of "HAS_IOMEM" (which has already spread many various places, and also,
+> most of new drivers have to know about it).
+> 
+> e.g: in "include/asm-generic/io.h", if "CONFIG_HAS_IOMEM=n", define a
+> dummy ioremap() which return NULL ... (also need consider more details).
 
-Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+Because we don't even want to build these drivers and not make them fail while
+executing io memory related functions.
 
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Mischa Jonker <mjonker@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: Florian Fainelli <florian@openwrt.org>
----
- arch/arc/boot/dts/angel4.dts |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+> 
+> All together, I think: it is the duty of "asm-generic/io.h" to process
+> this issue, not the duty of many drivers and some architectures.
+> 
+> 
+>> Let's get back to the real problem,
+>> drivers/ptp/ptp_pch.c does not build on UML (and I'm very sure also not on S390).
+>> Fix the issue by making it depend on HAS_IOMEM.
+>>
+> 
+> At least now, it seems it is the only suitable way to fix this issue.  :-(
+> 
+> 
+>> Btw: Did you actually look at this driver? There is *zero* reason to have it on UML.
+>> ..like 99.9% of all other drivers which use io memory.
+> 
+> Excuse me, I did not look at the details of this driver. Maybe it just
+> like you said above.
 
-diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
-index bae4f93..4fb2d6f 100644
---- a/arch/arc/boot/dts/angel4.dts
-+++ b/arch/arc/boot/dts/angel4.dts
-@@ -51,5 +51,21 @@
- 			current-speed = <115200>;
- 			status = "okay";
- 		};
-+
-+		ethernet@c0fc2000 {
-+			compatible = "snps,arc-emac";
-+			reg = <0xc0fc2000 0x3c>;
-+			interrupts = <6>;
-+			mac-address = [ 00 11 22 33 44 55 ];
-+			clock-frequency = <80000000>;
-+			max-speed = <100>;
-+			phy = <&phy0>;
-+
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			phy0: ethernet-phy@0 {
-+				reg = <1>;
-+			};
-+		};
- 	};
- };
--- 
-1.7.10.4
+It is.
+
+Thanks,
+//richard
 
