@@ -1,119 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab3FZKCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 06:02:36 -0400
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:38871 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab3FZKCe (ORCPT
+	id S1751893Ab3FZKH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 06:07:29 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:11351 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab3FZKH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 06:02:34 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: <netdev@vger.kernel.org>
-CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "Joe Perches" <joe@perches.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: [PATCH v2] arch/arc: angel4.dts - add description for "arc_emac"
-Date: Wed, 26 Jun 2013 14:02:18 +0400
-Message-ID: <1372240938-28733-1-git-send-email-abrodkin@synopsys.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 26 Jun 2013 06:07:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 26 Jun 2013 03:04:01 -0700
+From: Wei Ni <wni@nvidia.com>
+To: <a.zummo@towertech.it>, <ldewangan@nvidia.com>
+CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        Wei Ni <wni@nvidia.com>
+Subject: [PATCH] rtc: palmas: init wakeup before device register
+Date: Wed, 26 Jun 2013 18:05:37 +0800
+Message-ID: <1372241137-8175-1-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.121.8.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this patch we introduce DT "arc_emac" description for ARCangel4.
-Description is based on info/example in
-"Documentation/devicetree/bindings/net/arc_emac.txt".
+Enable dev as wakeup device before calling rtc_device_register(),
+so that it can create the "wakealarm" sysfs.
 
-Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
-
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Mischa Jonker <mjonker@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: Florian Fainelli <florian@openwrt.org>
-
+Signed-off-by: Wei Ni <wni@nvidia.com>
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
+ drivers/rtc/rtc-palmas.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This re-spin also removes obsolete mentions of IRQ number and
-base-address of arc_emac from "plat_arcfpga".
----
- arch/arc/boot/dts/angel4.dts                |   16 ++++++++++++++++
- arch/arc/plat-arcfpga/include/plat/irq.h    |    2 --
- arch/arc/plat-arcfpga/include/plat/memmap.h |    2 --
- 3 files changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
-index bae4f93..4fb2d6f 100644
---- a/arch/arc/boot/dts/angel4.dts
-+++ b/arch/arc/boot/dts/angel4.dts
-@@ -51,5 +51,21 @@
- 			current-speed = <115200>;
- 			status = "okay";
- 		};
-+
-+		ethernet@c0fc2000 {
-+			compatible = "snps,arc-emac";
-+			reg = <0xc0fc2000 0x3c>;
-+			interrupts = <6>;
-+			mac-address = [ 00 11 22 33 44 55 ];
-+			clock-frequency = <80000000>;
-+			max-speed = <100>;
-+			phy = <&phy0>;
-+
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			phy0: ethernet-phy@0 {
-+				reg = <1>;
-+			};
-+		};
- 	};
- };
-diff --git a/arch/arc/plat-arcfpga/include/plat/irq.h b/arch/arc/plat-arcfpga/include/plat/irq.h
-index 41e3356..6adbc53 100644
---- a/arch/arc/plat-arcfpga/include/plat/irq.h
-+++ b/arch/arc/plat-arcfpga/include/plat/irq.h
-@@ -16,8 +16,6 @@
- #define UART1_IRQ	10
- #define UART2_IRQ	11
+diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
+index 50204d4..a1fecc8 100644
+--- a/drivers/rtc/rtc-palmas.c
++++ b/drivers/rtc/rtc-palmas.c
+@@ -265,6 +265,7 @@ static int palmas_rtc_probe(struct platform_device *pdev)
  
--#define VMAC_IRQ	6
--
- #define IDE_IRQ		13
- #define PCI_IRQ		14
- #define PS2_IRQ		15
-diff --git a/arch/arc/plat-arcfpga/include/plat/memmap.h b/arch/arc/plat-arcfpga/include/plat/memmap.h
-index 1663f33..5c78e61 100644
---- a/arch/arc/plat-arcfpga/include/plat/memmap.h
-+++ b/arch/arc/plat-arcfpga/include/plat/memmap.h
-@@ -15,8 +15,6 @@
- #define UART0_BASE              0xC0FC1000
- #define UART1_BASE              0xC0FC1100
+ 	palmas_rtc->irq = platform_get_irq(pdev, 0);
  
--#define VMAC_REG_BASEADDR       0xC0FC2000
--
- #define IDE_CONTROLLER_BASE     0xC0FC9000
++	device_init_wakeup(&pdev->dev, 1);
+ 	palmas_rtc->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
+ 				&palmas_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(palmas_rtc->rtc)) {
+@@ -283,7 +284,6 @@ static int palmas_rtc_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
  
- #define AHB_PCI_HOST_BRG_BASE   0xC0FD0000
+-	device_set_wakeup_capable(&pdev->dev, 1);
+ 	return 0;
+ }
+ 
 -- 
-1.7.10.4
+1.7.9.5
 
