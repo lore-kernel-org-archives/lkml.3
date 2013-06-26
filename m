@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab3FZUgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 16:36:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38076 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751893Ab3FZUgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 16:36:44 -0400
-Date: Wed, 26 Jun 2013 22:36:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Subject: Re: [PATCH] x86/mce: Update MCE severity condition check
-Message-ID: <20130626203639.GM20274@pd.tnic>
-References: <20130626091808.GA18468@gchen.bj.intel.com>
- <0134840@agluck-desk.sc.intel.com>
- <20130626190845.GK20274@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31C5653E@ORSMSX106.amr.corp.intel.com>
+	id S1753042Ab3FZUjW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 16:39:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37550 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab3FZUjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 16:39:21 -0400
+Message-ID: <51CB5176.5000404@wwwdotorg.org>
+Date: Wed, 26 Jun 2013 14:39:18 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31C5653E@ORSMSX106.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [RFC 1/6] fbdev: simplefb: add init through platform_data
+References: <1372112849-670-1-git-send-email-dh.herrmann@gmail.com> <1372112849-670-2-git-send-email-dh.herrmann@gmail.com>
+In-Reply-To: <1372112849-670-2-git-send-email-dh.herrmann@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 08:23:47PM +0000, Luck, Tony wrote:
-> 	MCESEV(
-> > -		KEEP, "HT thread notices Action required: data load error",
-> > -		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
-> > -		MCGMASK(MCG_STATUS_EIPV, 0)
-> > +		KEEP, "Action required but unaffected thread is continuable",
-> > +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR),
+On 06/24/2013 04:27 PM, David Herrmann wrote:
+> If we create proper platform-devices in x86 boot-code, we can use simplefb
+> for VBE or EFI framebuffers, too. However, there is normally no OF support
+> so we introduce a platform_data object so x86 boot-code can pass the
+> paramaters via plain old platform-data.
 > 
-> > Why did we lose MCACOD_DATA from the MASK above? Was this intentional?
+> This also removes the OF dependency as it is not needed. The headers
+> provide proper dummies for the case OF is disabled.
 > 
-> 
-> We used to have separate entries for "HT thread notices ... data load" and "HT thread notices ... instruction load"
-> because the old SDM had a complex table calling out the bit settings for each type of recoverable machine check.
-> 
-> Latest SDM simplifies the table making it clear that for every SRAR (software recoverable action required) error
-> we'll have the same bits in MCG_STATUS (EIPV=0, RIPV=1) ... so we don't need to check for the MCACOD value.
-> See attached snapshot of the new table.
+> Furthermore, we move the FORMAT-definitions to the common platform header
+> so initialization code can use it to transform "struct screen_info" to
+> the right format-name.
 
-And this obviously is the case for the hardware too, I assume, not only
-the SDM?
+> diff --git a/include/linux/platform_data/simplefb.h b/include/linux/platform_data/simplefb.h
 
--- 
-Regards/Gruss,
-    Boris.
+> +/* the framebuffer size and location is available as IORESOURCE_MEM */
+> +struct simplefb_platform_data {
+> +	u32 width;
+> +	u32 height;
+> +	u32 stride;
+> +	char format[64];
+> +};
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Any reason not to make format:
+
+const char *format;
+
+You should be able to initialize that just as easily in platform code,
+either as static data or at runtime, I think.
