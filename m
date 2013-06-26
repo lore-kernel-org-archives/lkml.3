@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab3FZPp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:45:57 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:52992 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab3FZPp4 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
-	Wed, 26 Jun 2013 11:45:56 -0400
-Message-Id: <51CB28D102000078000E0DF8@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 26 Jun 2013 16:45:53 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ben Guthro" <benjamin.guthro@citrix.com>
-Cc: "Bob Moore" <robert.moore@intel.com>, <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Rafaell J . Wysocki" <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
- reduced hardware sleep path
-References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com>
- <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com>
- <51CB19C602000078000E0D75@nat28.tlf.novell.com>
- <CAOvdn6V0TJRF6r_2=CETPsiqawMpKxos+rCn8+aQ+SqU2p1WiQ@mail.gmail.com>
-In-Reply-To: <CAOvdn6V0TJRF6r_2=CETPsiqawMpKxos+rCn8+aQ+SqU2p1WiQ@mail.gmail.com>
+	id S1751875Ab3FZPrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:47:04 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:49383 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab3FZPrC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 11:47:02 -0400
+Date: Wed, 26 Jun 2013 17:46:56 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: sedat.dilek@gmail.com, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: linux-next: Tree for Jun 26 [ vfs | block | fuse (cpuidle)
+ releated? ]
+Message-ID: <20130626174656.6d9e2d2a@skate>
+In-Reply-To: <20130626153236.GA29455@kroah.com>
+References: <CA+icZUWDDCsXBK4+s4fEbM_AGj3EnfCRAe2=yE+8_MT4mauPXg@mail.gmail.com>
+	<CA+icZUXtTxVUfOmFak9GzyUdGa7bBuxTr2CJEY0vNn0bH2-4Vw@mail.gmail.com>
+	<20130626172446.51f0bd5f@skate>
+	<20130626153236.GA29455@kroah.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.06.13 at 17:03, Ben Guthro <benjamin.guthro@citrix.com> wrote:
-> On Wed, Jun 26, 2013 at 10:41 AM, Jan Beulich <JBeulich@suse.com> wrote:
->>>>> On 26.06.13 at 16:06, Ben Guthro <benjamin.guthro@citrix.com> wrote:
->>> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
->>> reduced hardware sleep support, and the two changes didn't get
->>> synchronized: The new code doesn't call the hook function (if so
->>> requested). Fix this, requiring a parameter to be added to the
->>> hook function to distinguish "extended" from "legacy" sleep.
->>>
->>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
->>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->>
->> I think these are intended to reflect the flow of things, so
->> should be reversed (also in the other patches).
->>
->>> --- a/drivers/acpi/acpica/hwesleep.c
->>> +++ b/drivers/acpi/acpica/hwesleep.c
->>> @@ -43,6 +43,7 @@
->>>   */
->>>
->>>  #include <acpi/acpi.h>
->>> +#include <linux/acpi.h>
->>
->> This also got complaints, so I'd be very surprised if they took it now.
+Dear Greg Kroah-Hartman,
+
+On Wed, 26 Jun 2013 08:32:36 -0700, Greg Kroah-Hartman wrote:
+
+> > Ok. My understanding is that the misc device registered by
+> > fs/fuse/dev.c:fuse_dev_init() makes the assumption that
+> > file->private_data == NULL when a misc device is opened. But I'm not
+> > sure to fully understand the code flow of the FUSE filesystem.
+> > 
+> > And since it doesn't provide its own implementation of the ->open()
+> > operation, the misc infrastructure was leaving the file->private_data
+> > defined to NULL before my patch.
+> > 
+> > With my patch, the file->private_data gets assigned unconditionally
+> > (regardless of whether the misc driver provides or does not provide a
+> > ->open() operation) which modifies the unwritten assumption that fuse
+> > was making about the initial value of file->private_data. I believe the
+> > assumption made by fuse over the initial value of this variable is a
+> > bit fragile.
+> > 
+> > Maybe the FUSE code needs to be slightly adjusted to not make this
+> > assumption?
 > 
-> I did see these complaints in the last version.
-> However, the file drivers/acpi/acpica/hwsleep.c contains this include,
-> and has since
-> 
-> commit 09f98a825a821f7a3f1b162f9ed023f37213a63b
-> Author: Tang Liang <liang.tang@oracle.com>
-> Date:   Fri Dec 9 10:05:54 2011 +0800
-> 
-> So since this is the extended sleep file, vs the standard one - I
-> don't see why such a restriction would be placed on the former, but
-> not the latter.
+> As the FUSE code was working properly before this change, I think this
+> misc core change needs to be reverted, so I'll go do that in a bit.
 
-In essence they said (in the same thread I pointed you to) that
-according to the current policy this include is wrong and should
-be dropped.
+Yes, sure, that's the right immediate action to take.
 
-Now, if you can get along without dropping it that'll likely be fine,
-but I doubt they'll allow you to add another instance of this.
+Long term, I believe the FUSE code seems to be making a fragile
+assumption, and that might require some additional investigation.
 
-Jan
+Best regards,
 
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
