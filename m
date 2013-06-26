@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab3FZMvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 08:51:45 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:53069 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab3FZMvn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 08:51:43 -0400
-Message-ID: <51CAE3DB.8060002@monstr.eu>
-Date: Wed, 26 Jun 2013 14:51:39 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1751776Ab3FZMwq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 08:52:46 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51823 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349Ab3FZMwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 08:52:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>
+Subject: [GIT PULL] Late power management and ACPI fixes for v3.10
+Date: Wed, 26 Jun 2013 15:02:12 +0200
+Message-ID: <1540341.1JlJme4nI6@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Timur Tabi <timur@tabi.org>, devicetree-discuss@lists.ozlabs.org,
-        linux-fbdev@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v4 0/7] xilinxfb changes
-References: <cover.1370254386.git.michal.simek@xilinx.com> <20130617085640.GE305@game.jcrosoft.org> <51BED093.1040207@monstr.eu> <201306172307.19114.arnd@arndb.de> <51CABC2A.50209@monstr.eu> <51CAD385.8060400@ti.com>
-In-Reply-To: <51CAD385.8060400@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2FEHLABGMIBFNQDVDNGVV"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2FEHLABGMIBFNQDVDNGVV
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-On 06/26/2013 01:41 PM, Tomi Valkeinen wrote:
-> Hi,
->=20
-> On 26/06/13 13:02, Michal Simek wrote:
->> On 06/17/2013 11:07 PM, Arnd Bergmann wrote:
->>> On Monday 17 June 2013, Michal Simek wrote:
->>>> On 06/17/2013 10:56 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>> On 07:23 Mon 17 Jun     , Michal Simek wrote:
->>>>>> On 06/06/2013 06:23 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>>>> On 12:13 Mon 03 Jun     , Michal Simek wrote:
->>>>>>>> Hi,
->>>>>>>>
->>>>>>>
->>>>>>> Arnd can you take look on it again please
->>>>>>>
->>>>>>> I'll take a look on it next week
->>>>>>
->>>>>> Any update on this?
->>>>> look ok but I want the Ack from Arnd
->>>
->>> Sorry for the delay, everything looks good to me.
->>>
->>> Acked-by: Arnd Bergmann <arnd@arndb.de>
->>
->> Jean-Christophe: Will you apply this series?
->> Or should I take it through my microblaze tree?
->=20
-> I've added this to my fbdev-3.11 branch.
+Please pull from the git repository at
 
-Thanks,
-Michal
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.10-late
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+to receive late power management and ACPI fixes for v3.10 with top-most commit
+45e00374db944b1c12987b501bcaa279b3e36d93
+
+  Merge branch 'pm-fixes'
+
+on top of commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d
+
+  Linux 3.10-rc7
+
+Sorry about the timing of this, but ACPI-based docking stations with PCI
+devices on them and ATA bays would be hardly usable with 3.10 without it.
+We've been working on these fixes for the last couple of weeks and
+everyone involved appears to be reasonably comfortable with them now.
+
+The PM part is one fix for a cpufreq regression introduced recently.
+
+Specifics:
+
+- Fix for an ACPI dock regression introduced by the recent rework of
+  the ACPI-based PCI hotplug code (acpiphp) that caused it to be
+  initialized before the ACPI dock driver, which is incorrect (ACPI
+  dock has to be initialized before acpiphp so that acpiphp can
+  register PCI devices on docking stations with it for PCI hotplug on
+  re-dock to work).  From Jiang Liu.
+
+- Fix for PCI resources allocation in the ACPI-based PCI hotplug code
+  (acpiphp) that makes it use the same PCI resources assignment rules
+  during runtime hotplug that are used during boot (the BIOS' choices
+  are now respected in both cases).  This prevents PCI resource
+  allocation failures during hotplug from happening in some cases.
+  From Jiang Liu.
+
+- Fix for ordering and synchronization issues during hot-removal of
+  PCI devices on docking stations.  It makes the ACPI dock code carry
+  out the PCI devices removal synchronously during undock instead of
+  spawning a separate asynchronous work item to remove each of them
+  without even bothering to wait for all those work items to complete.
+  The hot-addition part is changed analogously.
+
+- Fix for a regression (introduced a few releases ago) that removed
+  the code to register a hotplug notificaion handler for for ATA
+  ports/devices inadvertently which prevented ATA bays hotplug from
+  working.  The missing code is added back with some improvements.
+  From Aaron Lu.
+
+- Fix for a recent cpufreq regression causing a NULL pointer
+  dereference to trigger in od_set_powersave_bias() in some
+  situations from Jacob Shin.
+
+Thanks!
 
 
+---------------
 
-------enig2FEHLABGMIBFNQDVDNGVV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Aaron Lu (1):
+      libata-acpi: add back ACPI based hotplug functionality
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Jacob Shin (1):
+      cpufreq: fix NULL pointer deference at od_set_powersave_bias()
 
-iEYEARECAAYFAlHK49sACgkQykllyylKDCHpkwCfcmGFZavhyTY4cSbMT45Lu5Lw
-aKEAmgLW1MPFxOEAZY5z+r/GvZAtFzku
-=vWNR
------END PGP SIGNATURE-----
+Jiang Liu (2):
+      ACPI / dock: Initialize ACPI dock subsystem upfront
+      PCI / ACPI: Use boot-time resource allocation rules during hotplug
 
-------enig2FEHLABGMIBFNQDVDNGVV--
+Rafael J. Wysocki (1):
+      ACPI / dock / PCI: Synchronous handling of dock events for PCI devices
+
+---------------
+
+ drivers/acpi/dock.c                |  179 ++++++++++++++++++++++++--------------------
+ drivers/acpi/internal.h            |    5 ++
+ drivers/acpi/scan.c                |    1 +
+ drivers/ata/libata-acpi.c          |   37 ++++++++-
+ drivers/ata/libata-core.c          |    2 +
+ drivers/ata/libata.h               |    2 +
+ drivers/cpufreq/cpufreq_ondemand.c |   17 ++++-
+ drivers/pci/hotplug/acpiphp_glue.c |   53 +++++++++----
+ drivers/pci/pci.h                  |    5 ++
+ drivers/pci/setup-bus.c            |    8 +-
+ include/acpi/acpi_drivers.h        |    8 +-
+ 11 files changed, 207 insertions(+), 110 deletions(-)
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
