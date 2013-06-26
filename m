@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab3FZFfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 01:35:43 -0400
-Received: from [213.199.154.253] ([213.199.154.253]:25669 "EHLO
-	db9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751490Ab3FZFfk (ORCPT
+	id S1751774Ab3FZFfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 01:35:52 -0400
+Received: from [216.32.180.188] ([216.32.180.188]:38904 "EHLO
+	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751212Ab3FZFfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 01:35:40 -0400
+	Wed, 26 Jun 2013 01:35:50 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 3
 X-BigFish: VS3(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1155h)
@@ -17,729 +17,138 @@ To: <kvm-ppc@vger.kernel.org>, <kvm@vger.kernel.org>, <agraf@suse.de>,
         <linux-kernel@vger.kernel.org>, <mikey@neuling.org>
 CC: Bharat Bhushan <Bharat.Bhushan@freescale.com>,
         Bharat Bhushan <bharat.bhushan@freescale.com>
-Subject: [PATCH 2/6 v5] powerpc: move debug registers in a structure
-Date: Wed, 26 Jun 2013 11:12:22 +0530
-Message-ID: <1372225346-5029-3-git-send-email-Bharat.Bhushan@freescale.com>
+Subject: [PATCH 4/6 v5] KVM: PPC: exit to user space on "ehpriv" instruction
+Date: Wed, 26 Jun 2013 11:12:24 +0530
+Message-ID: <1372225346-5029-5-git-send-email-Bharat.Bhushan@freescale.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1372225346-5029-1-git-send-email-Bharat.Bhushan@freescale.com>
 References: <1372225346-5029-1-git-send-email-Bharat.Bhushan@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way we can use same data type struct with KVM and
-also help in using other debug related function.
+"ehpriv" instruction is used for setting software breakpoints
+by user space. This patch adds support to exit to user space
+with "run->debug" have relevant information.
+
+As this is the first point we are using run->debug, also defined
+the run->debug structure.
 
 Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
 ---
- arch/powerpc/include/asm/processor.h |   38 +++++----
- arch/powerpc/include/asm/reg_booke.h |    8 +-
- arch/powerpc/kernel/asm-offsets.c    |    2 +-
- arch/powerpc/kernel/process.c        |   42 +++++-----
- arch/powerpc/kernel/ptrace.c         |  154 +++++++++++++++++-----------------
- arch/powerpc/kernel/signal_32.c      |    6 +-
- arch/powerpc/kernel/traps.c          |   35 ++++----
- 7 files changed, 146 insertions(+), 139 deletions(-)
+ arch/powerpc/include/asm/disassemble.h |    4 ++++
+ arch/powerpc/include/uapi/asm/kvm.h    |   21 +++++++++++++++++----
+ arch/powerpc/kvm/e500_emulate.c        |   27 +++++++++++++++++++++++++++
+ 3 files changed, 48 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
-index d7e67ca..5b8a7f1 100644
---- a/arch/powerpc/include/asm/processor.h
-+++ b/arch/powerpc/include/asm/processor.h
-@@ -147,22 +147,7 @@ typedef struct {
- #define TS_FPR(i) fpr[i][TS_FPROFFSET]
- #define TS_TRANS_FPR(i) transact_fpr[i][TS_FPROFFSET]
- 
--struct thread_struct {
--	unsigned long	ksp;		/* Kernel stack pointer */
--	unsigned long	ksp_limit;	/* if ksp <= ksp_limit stack overflow */
--
--#ifdef CONFIG_PPC64
--	unsigned long	ksp_vsid;
--#endif
--	struct pt_regs	*regs;		/* Pointer to saved register state */
--	mm_segment_t	fs;		/* for get_fs() validation */
--#ifdef CONFIG_BOOKE
--	/* BookE base exception scratch space; align on cacheline */
--	unsigned long	normsave[8] ____cacheline_aligned;
--#endif
--#ifdef CONFIG_PPC32
--	void		*pgdir;		/* root of page-table tree */
--#endif
-+struct debug_reg {
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
- 	/*
- 	 * The following help to manage the use of Debug Control Registers
-@@ -199,6 +184,27 @@ struct thread_struct {
- 	unsigned long	dvc2;
- #endif
- #endif
-+};
-+
-+struct thread_struct {
-+	unsigned long	ksp;		/* Kernel stack pointer */
-+	unsigned long	ksp_limit;	/* if ksp <= ksp_limit stack overflow */
-+
-+#ifdef CONFIG_PPC64
-+	unsigned long	ksp_vsid;
-+#endif
-+	struct pt_regs	*regs;		/* Pointer to saved register state */
-+	mm_segment_t	fs;		/* for get_fs() validation */
-+#ifdef CONFIG_BOOKE
-+	/* BookE base exception scratch space; align on cacheline */
-+	unsigned long	normsave[8] ____cacheline_aligned;
-+#endif
-+#ifdef CONFIG_PPC32
-+	void		*pgdir;		/* root of page-table tree */
-+#endif
-+	/* Debug Registers */
-+	struct debug_reg debug;
-+
- 	/* FP and VSX 0-31 register set */
- 	double		fpr[32][TS_FPRWIDTH];
- 	struct {
-diff --git a/arch/powerpc/include/asm/reg_booke.h b/arch/powerpc/include/asm/reg_booke.h
-index b417de3..455dc89 100644
---- a/arch/powerpc/include/asm/reg_booke.h
-+++ b/arch/powerpc/include/asm/reg_booke.h
-@@ -381,7 +381,7 @@
- #define DBCR0_IA34T	0x00004000	/* Instr Addr 3-4 range Toggle */
- #define DBCR0_FT	0x00000001	/* Freeze Timers on debug event */
- 
--#define dbcr_iac_range(task)	((task)->thread.dbcr0)
-+#define dbcr_iac_range(task)	((task)->thread.debug.dbcr0)
- #define DBCR_IAC12I	DBCR0_IA12			/* Range Inclusive */
- #define DBCR_IAC12X	(DBCR0_IA12 | DBCR0_IA12X)	/* Range Exclusive */
- #define DBCR_IAC12MODE	(DBCR0_IA12 | DBCR0_IA12X)	/* IAC 1-2 Mode Bits */
-@@ -395,7 +395,7 @@
- #define DBCR1_DAC1W	0x20000000	/* DAC1 Write Debug Event */
- #define DBCR1_DAC2W	0x10000000	/* DAC2 Write Debug Event */
- 
--#define dbcr_dac(task)	((task)->thread.dbcr1)
-+#define dbcr_dac(task)	((task)->thread.debug.dbcr1)
- #define DBCR_DAC1R	DBCR1_DAC1R
- #define DBCR_DAC1W	DBCR1_DAC1W
- #define DBCR_DAC2R	DBCR1_DAC2R
-@@ -441,7 +441,7 @@
- #define DBCR0_CRET	0x00000020	/* Critical Return Debug Event */
- #define DBCR0_FT	0x00000001	/* Freeze Timers on debug event */
- 
--#define dbcr_dac(task)	((task)->thread.dbcr0)
-+#define dbcr_dac(task)	((task)->thread.debug.dbcr0)
- #define DBCR_DAC1R	DBCR0_DAC1R
- #define DBCR_DAC1W	DBCR0_DAC1W
- #define DBCR_DAC2R	DBCR0_DAC2R
-@@ -475,7 +475,7 @@
- #define DBCR1_IAC34MX	0x000000C0	/* Instr Addr 3-4 range eXclusive */
- #define DBCR1_IAC34AT	0x00000001	/* Instr Addr 3-4 range Toggle */
- 
--#define dbcr_iac_range(task)	((task)->thread.dbcr1)
-+#define dbcr_iac_range(task)	((task)->thread.debug.dbcr1)
- #define DBCR_IAC12I	DBCR1_IAC12M	/* Range Inclusive */
- #define DBCR_IAC12X	DBCR1_IAC12MX	/* Range Exclusive */
- #define DBCR_IAC12MODE	DBCR1_IAC12MX	/* IAC 1-2 Mode Bits */
-diff --git a/arch/powerpc/kernel/asm-offsets.c b/arch/powerpc/kernel/asm-offsets.c
-index b51a97c..c241c60 100644
---- a/arch/powerpc/kernel/asm-offsets.c
-+++ b/arch/powerpc/kernel/asm-offsets.c
-@@ -106,7 +106,7 @@ int main(void)
- #else /* CONFIG_PPC64 */
- 	DEFINE(PGDIR, offsetof(struct thread_struct, pgdir));
- #if defined(CONFIG_4xx) || defined(CONFIG_BOOKE)
--	DEFINE(THREAD_DBCR0, offsetof(struct thread_struct, dbcr0));
-+	DEFINE(THREAD_DBCR0, offsetof(struct thread_struct, debug.dbcr0));
- #endif
- #ifdef CONFIG_SPE
- 	DEFINE(THREAD_EVR0, offsetof(struct thread_struct, evr[0]));
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 639a8de..01ff496 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -312,49 +312,49 @@ static DEFINE_PER_CPU(struct arch_hw_breakpoint, current_brk);
-  */
- static void set_debug_reg_defaults(struct thread_struct *thread)
- {
--	thread->iac1 = thread->iac2 = 0;
-+	thread->debug.iac1 = thread->debug.iac2 = 0;
- #if CONFIG_PPC_ADV_DEBUG_IACS > 2
--	thread->iac3 = thread->iac4 = 0;
-+	thread->debug.iac3 = thread->debug.iac4 = 0;
- #endif
--	thread->dac1 = thread->dac2 = 0;
-+	thread->debug.dac1 = thread->debug.dac2 = 0;
- #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
--	thread->dvc1 = thread->dvc2 = 0;
-+	thread->debug.dvc1 = thread->debug.dvc2 = 0;
- #endif
--	thread->dbcr0 = 0;
-+	thread->debug.dbcr0 = 0;
- #ifdef CONFIG_BOOKE
- 	/*
- 	 * Force User/Supervisor bits to b11 (user-only MSR[PR]=1)
- 	 */
--	thread->dbcr1 = DBCR1_IAC1US | DBCR1_IAC2US |
-+	thread->debug.dbcr1 = DBCR1_IAC1US | DBCR1_IAC2US |
- 			DBCR1_IAC3US | DBCR1_IAC4US;
- 	/*
- 	 * Force Data Address Compare User/Supervisor bits to be User-only
- 	 * (0b11 MSR[PR]=1) and set all other bits in DBCR2 register to be 0.
- 	 */
--	thread->dbcr2 = DBCR2_DAC1US | DBCR2_DAC2US;
-+	thread->debug.dbcr2 = DBCR2_DAC1US | DBCR2_DAC2US;
- #else
--	thread->dbcr1 = 0;
-+	thread->debug.dbcr1 = 0;
- #endif
+diff --git a/arch/powerpc/include/asm/disassemble.h b/arch/powerpc/include/asm/disassemble.h
+index 9b198d1..856f8de 100644
+--- a/arch/powerpc/include/asm/disassemble.h
++++ b/arch/powerpc/include/asm/disassemble.h
+@@ -77,4 +77,8 @@ static inline unsigned int get_d(u32 inst)
+ 	return inst & 0xffff;
  }
  
- static void prime_debug_regs(struct thread_struct *thread)
- {
--	mtspr(SPRN_IAC1, thread->iac1);
--	mtspr(SPRN_IAC2, thread->iac2);
-+	mtspr(SPRN_IAC1, thread->debug.iac1);
-+	mtspr(SPRN_IAC2, thread->debug.iac2);
- #if CONFIG_PPC_ADV_DEBUG_IACS > 2
--	mtspr(SPRN_IAC3, thread->iac3);
--	mtspr(SPRN_IAC4, thread->iac4);
-+	mtspr(SPRN_IAC3, thread->debug.iac3);
-+	mtspr(SPRN_IAC4, thread->debug.iac4);
- #endif
--	mtspr(SPRN_DAC1, thread->dac1);
--	mtspr(SPRN_DAC2, thread->dac2);
-+	mtspr(SPRN_DAC1, thread->debug.dac1);
-+	mtspr(SPRN_DAC2, thread->debug.dac2);
- #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
--	mtspr(SPRN_DVC1, thread->dvc1);
--	mtspr(SPRN_DVC2, thread->dvc2);
-+	mtspr(SPRN_DVC1, thread->debug.dvc1);
-+	mtspr(SPRN_DVC2, thread->debug.dvc2);
- #endif
--	mtspr(SPRN_DBCR0, thread->dbcr0);
--	mtspr(SPRN_DBCR1, thread->dbcr1);
-+	mtspr(SPRN_DBCR0, thread->debug.dbcr0);
-+	mtspr(SPRN_DBCR1, thread->debug.dbcr1);
- #ifdef CONFIG_BOOKE
--	mtspr(SPRN_DBCR2, thread->dbcr2);
-+	mtspr(SPRN_DBCR2, thread->debug.dbcr2);
- #endif
- }
- /*
-@@ -364,8 +364,8 @@ static void prime_debug_regs(struct thread_struct *thread)
-  */
- static void switch_booke_debug_regs(struct thread_struct *new_thread)
- {
--	if ((current->thread.dbcr0 & DBCR0_IDM)
--		|| (new_thread->dbcr0 & DBCR0_IDM))
-+	if ((current->thread.debug.dbcr0 & DBCR0_IDM)
-+		|| (new_thread->debug.dbcr0 & DBCR0_IDM))
- 			prime_debug_regs(new_thread);
- }
- #else	/* !CONFIG_PPC_ADV_DEBUG_REGS */
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index 3b14d32..80b902f 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -853,8 +853,8 @@ void user_enable_single_step(struct task_struct *task)
++static inline unsigned int get_oc(u32 inst)
++{
++	return (inst >> 11) & 0x7fff;
++}
+ #endif /* __ASM_PPC_DISASSEMBLE_H__ */
+diff --git a/arch/powerpc/include/uapi/asm/kvm.h b/arch/powerpc/include/uapi/asm/kvm.h
+index 0fb1a6e..ded0607 100644
+--- a/arch/powerpc/include/uapi/asm/kvm.h
++++ b/arch/powerpc/include/uapi/asm/kvm.h
+@@ -269,7 +269,24 @@ struct kvm_fpu {
+ 	__u64 fpr[32];
+ };
  
- 	if (regs != NULL) {
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
--		task->thread.dbcr0 &= ~DBCR0_BT;
--		task->thread.dbcr0 |= DBCR0_IDM | DBCR0_IC;
-+		task->thread.debug.dbcr0 &= ~DBCR0_BT;
-+		task->thread.debug.dbcr0 |= DBCR0_IDM | DBCR0_IC;
- 		regs->msr |= MSR_DE;
- #else
- 		regs->msr &= ~MSR_BE;
-@@ -870,8 +870,8 @@ void user_enable_block_step(struct task_struct *task)
++/*
++ * Defines for h/w breakpoint, watchpoint (read, write or both) and
++ * software breakpoint.
++ * These are used as "type" in KVM_SET_GUEST_DEBUG ioctl and "status"
++ * for KVM_DEBUG_EXIT.
++ */
++#define KVMPPC_DEBUG_NONE		0x0
++#define KVMPPC_DEBUG_BREAKPOINT		(1UL << 1)
++#define KVMPPC_DEBUG_WATCH_WRITE	(1UL << 2)
++#define KVMPPC_DEBUG_WATCH_READ		(1UL << 3)
+ struct kvm_debug_exit_arch {
++	__u64 address;
++	/*
++	 * exiting to userspace because of h/w breakpoint, watchpoint
++	 * (read, write or both) and software breakpoint.
++	 */
++	__u32 status;
++	__u32 reserved;
+ };
  
- 	if (regs != NULL) {
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
--		task->thread.dbcr0 &= ~DBCR0_IC;
--		task->thread.dbcr0 = DBCR0_IDM | DBCR0_BT;
-+		task->thread.debug.dbcr0 &= ~DBCR0_IC;
-+		task->thread.debug.dbcr0 = DBCR0_IDM | DBCR0_BT;
- 		regs->msr |= MSR_DE;
- #else
- 		regs->msr &= ~MSR_SE;
-@@ -893,16 +893,16 @@ void user_disable_single_step(struct task_struct *task)
- 		 * And, after doing so, if all debug flags are off, turn
- 		 * off DBCR0(IDM) and MSR(DE) .... Torez
+ /* for KVM_SET_GUEST_DEBUG */
+@@ -281,10 +298,6 @@ struct kvm_guest_debug_arch {
+ 		 * Type denotes h/w breakpoint, read watchpoint, write
+ 		 * watchpoint or watchpoint (both read and write).
  		 */
--		task->thread.dbcr0 &= ~DBCR0_IC;
-+		task->thread.debug.dbcr0 &= ~DBCR0_IC;
- 		/*
- 		 * Test to see if any of the DBCR_ACTIVE_EVENTS bits are set.
- 		 */
--		if (!DBCR_ACTIVE_EVENTS(task->thread.dbcr0,
--					task->thread.dbcr1)) {
-+		if (!DBCR_ACTIVE_EVENTS(task->thread.debug.dbcr0,
-+					task->thread.debug.dbcr1)) {
- 			/*
- 			 * All debug events were off.....
- 			 */
--			task->thread.dbcr0 &= ~DBCR0_IDM;
-+			task->thread.debug.dbcr0 &= ~DBCR0_IDM;
- 			regs->msr &= ~MSR_DE;
- 		}
- #else
-@@ -1030,14 +1030,14 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
- 	 */
+-#define KVMPPC_DEBUG_NONE		0x0
+-#define KVMPPC_DEBUG_BREAKPOINT		(1UL << 1)
+-#define KVMPPC_DEBUG_WATCH_WRITE	(1UL << 2)
+-#define KVMPPC_DEBUG_WATCH_READ		(1UL << 3)
+ 		__u32 type;
+ 		__u32 reserved;
+ 	} bp[16];
+diff --git a/arch/powerpc/kvm/e500_emulate.c b/arch/powerpc/kvm/e500_emulate.c
+index b10a012..dab9d07 100644
+--- a/arch/powerpc/kvm/e500_emulate.c
++++ b/arch/powerpc/kvm/e500_emulate.c
+@@ -26,6 +26,8 @@
+ #define XOP_TLBRE   946
+ #define XOP_TLBWE   978
+ #define XOP_TLBILX  18
++#define XOP_EHPRIV  270
++#define EHPRIV_OC_DEBUG 0
  
- 	/* DAC's hold the whole address without any mode flags */
--	task->thread.dac1 = data & ~0x3UL;
-+	task->thread.debug.dac1 = data & ~0x3UL;
+ #ifdef CONFIG_KVM_E500MC
+ static int dbell2prio(ulong param)
+@@ -82,6 +84,26 @@ static int kvmppc_e500_emul_msgsnd(struct kvm_vcpu *vcpu, int rb)
+ }
+ #endif
  
--	if (task->thread.dac1 == 0) {
-+	if (task->thread.debug.dac1 == 0) {
- 		dbcr_dac(task) &= ~(DBCR_DAC1R | DBCR_DAC1W);
--		if (!DBCR_ACTIVE_EVENTS(task->thread.dbcr0,
--					task->thread.dbcr1)) {
-+		if (!DBCR_ACTIVE_EVENTS(task->thread.debug.dbcr0,
-+					task->thread.debug.dbcr1)) {
- 			task->thread.regs->msr &= ~MSR_DE;
--			task->thread.dbcr0 &= ~DBCR0_IDM;
-+			task->thread.debug.dbcr0 &= ~DBCR0_IDM;
- 		}
- 		return 0;
- 	}
-@@ -1049,7 +1049,7 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
- 
- 	/* Set the Internal Debugging flag (IDM bit 1) for the DBCR0
- 	   register */
--	task->thread.dbcr0 |= DBCR0_IDM;
-+	task->thread.debug.dbcr0 |= DBCR0_IDM;
- 
- 	/* Check for write and read flags and set DBCR0
- 	   accordingly */
-@@ -1079,10 +1079,10 @@ static long set_instruction_bp(struct task_struct *child,
- 			      struct ppc_hw_breakpoint *bp_info)
++static int kvmppc_e500_emul_ehpriv(struct kvm_run *run, struct kvm_vcpu *vcpu,
++				   unsigned int inst, int *advance)
++{
++	int emulated = EMULATE_DONE;
++
++	switch (get_oc(inst)) {
++	case EHPRIV_OC_DEBUG:
++		run->exit_reason = KVM_EXIT_DEBUG;
++		run->debug.arch.address = vcpu->arch.pc;
++		run->debug.arch.status = 0;
++		kvmppc_account_exit(vcpu, DEBUG_EXITS);
++		emulated = EMULATE_EXIT_USER;
++		*advance = 0;
++		break;
++	default:
++		emulated = EMULATE_FAIL;
++	}
++	return emulated;
++}
++
+ int kvmppc_core_emulate_op(struct kvm_run *run, struct kvm_vcpu *vcpu,
+                            unsigned int inst, int *advance)
  {
- 	int slot;
--	int slot1_in_use = ((child->thread.dbcr0 & DBCR0_IAC1) != 0);
--	int slot2_in_use = ((child->thread.dbcr0 & DBCR0_IAC2) != 0);
--	int slot3_in_use = ((child->thread.dbcr0 & DBCR0_IAC3) != 0);
--	int slot4_in_use = ((child->thread.dbcr0 & DBCR0_IAC4) != 0);
-+	int slot1_in_use = ((child->thread.debug.dbcr0 & DBCR0_IAC1) != 0);
-+	int slot2_in_use = ((child->thread.debug.dbcr0 & DBCR0_IAC2) != 0);
-+	int slot3_in_use = ((child->thread.debug.dbcr0 & DBCR0_IAC3) != 0);
-+	int slot4_in_use = ((child->thread.debug.dbcr0 & DBCR0_IAC4) != 0);
- 
- 	if (dbcr_iac_range(child) & DBCR_IAC12MODE)
- 		slot2_in_use = 1;
-@@ -1101,9 +1101,9 @@ static long set_instruction_bp(struct task_struct *child,
- 		/* We need a pair of IAC regsisters */
- 		if ((!slot1_in_use) && (!slot2_in_use)) {
- 			slot = 1;
--			child->thread.iac1 = bp_info->addr;
--			child->thread.iac2 = bp_info->addr2;
--			child->thread.dbcr0 |= DBCR0_IAC1;
-+			child->thread.debug.iac1 = bp_info->addr;
-+			child->thread.debug.iac2 = bp_info->addr2;
-+			child->thread.debug.dbcr0 |= DBCR0_IAC1;
- 			if (bp_info->addr_mode ==
- 					PPC_BREAKPOINT_MODE_RANGE_EXCLUSIVE)
- 				dbcr_iac_range(child) |= DBCR_IAC12X;
-@@ -1112,9 +1112,9 @@ static long set_instruction_bp(struct task_struct *child,
- #if CONFIG_PPC_ADV_DEBUG_IACS > 2
- 		} else if ((!slot3_in_use) && (!slot4_in_use)) {
- 			slot = 3;
--			child->thread.iac3 = bp_info->addr;
--			child->thread.iac4 = bp_info->addr2;
--			child->thread.dbcr0 |= DBCR0_IAC3;
-+			child->thread.debug.iac3 = bp_info->addr;
-+			child->thread.debug.iac4 = bp_info->addr2;
-+			child->thread.debug.dbcr0 |= DBCR0_IAC3;
- 			if (bp_info->addr_mode ==
- 					PPC_BREAKPOINT_MODE_RANGE_EXCLUSIVE)
- 				dbcr_iac_range(child) |= DBCR_IAC34X;
-@@ -1134,30 +1134,30 @@ static long set_instruction_bp(struct task_struct *child,
- 			 */
- 			if (slot2_in_use || (slot3_in_use == slot4_in_use)) {
- 				slot = 1;
--				child->thread.iac1 = bp_info->addr;
--				child->thread.dbcr0 |= DBCR0_IAC1;
-+				child->thread.debug.iac1 = bp_info->addr;
-+				child->thread.debug.dbcr0 |= DBCR0_IAC1;
- 				goto out;
- 			}
- 		}
- 		if (!slot2_in_use) {
- 			slot = 2;
--			child->thread.iac2 = bp_info->addr;
--			child->thread.dbcr0 |= DBCR0_IAC2;
-+			child->thread.debug.iac2 = bp_info->addr;
-+			child->thread.debug.dbcr0 |= DBCR0_IAC2;
- #if CONFIG_PPC_ADV_DEBUG_IACS > 2
- 		} else if (!slot3_in_use) {
- 			slot = 3;
--			child->thread.iac3 = bp_info->addr;
--			child->thread.dbcr0 |= DBCR0_IAC3;
-+			child->thread.debug.iac3 = bp_info->addr;
-+			child->thread.debug.dbcr0 |= DBCR0_IAC3;
- 		} else if (!slot4_in_use) {
- 			slot = 4;
--			child->thread.iac4 = bp_info->addr;
--			child->thread.dbcr0 |= DBCR0_IAC4;
-+			child->thread.debug.iac4 = bp_info->addr;
-+			child->thread.debug.dbcr0 |= DBCR0_IAC4;
- #endif
- 		} else
- 			return -ENOSPC;
- 	}
- out:
--	child->thread.dbcr0 |= DBCR0_IDM;
-+	child->thread.debug.dbcr0 |= DBCR0_IDM;
- 	child->thread.regs->msr |= MSR_DE;
- 
- 	return slot;
-@@ -1167,49 +1167,49 @@ static int del_instruction_bp(struct task_struct *child, int slot)
- {
- 	switch (slot) {
- 	case 1:
--		if ((child->thread.dbcr0 & DBCR0_IAC1) == 0)
-+		if ((child->thread.debug.dbcr0 & DBCR0_IAC1) == 0)
- 			return -ENOENT;
- 
- 		if (dbcr_iac_range(child) & DBCR_IAC12MODE) {
- 			/* address range - clear slots 1 & 2 */
--			child->thread.iac2 = 0;
-+			child->thread.debug.iac2 = 0;
- 			dbcr_iac_range(child) &= ~DBCR_IAC12MODE;
- 		}
--		child->thread.iac1 = 0;
--		child->thread.dbcr0 &= ~DBCR0_IAC1;
-+		child->thread.debug.iac1 = 0;
-+		child->thread.debug.dbcr0 &= ~DBCR0_IAC1;
- 		break;
- 	case 2:
--		if ((child->thread.dbcr0 & DBCR0_IAC2) == 0)
-+		if ((child->thread.debug.dbcr0 & DBCR0_IAC2) == 0)
- 			return -ENOENT;
- 
- 		if (dbcr_iac_range(child) & DBCR_IAC12MODE)
- 			/* used in a range */
- 			return -EINVAL;
--		child->thread.iac2 = 0;
--		child->thread.dbcr0 &= ~DBCR0_IAC2;
-+		child->thread.debug.iac2 = 0;
-+		child->thread.debug.dbcr0 &= ~DBCR0_IAC2;
- 		break;
- #if CONFIG_PPC_ADV_DEBUG_IACS > 2
- 	case 3:
--		if ((child->thread.dbcr0 & DBCR0_IAC3) == 0)
-+		if ((child->thread.debug.dbcr0 & DBCR0_IAC3) == 0)
- 			return -ENOENT;
- 
- 		if (dbcr_iac_range(child) & DBCR_IAC34MODE) {
- 			/* address range - clear slots 3 & 4 */
--			child->thread.iac4 = 0;
-+			child->thread.debug.iac4 = 0;
- 			dbcr_iac_range(child) &= ~DBCR_IAC34MODE;
- 		}
--		child->thread.iac3 = 0;
--		child->thread.dbcr0 &= ~DBCR0_IAC3;
-+		child->thread.debug.iac3 = 0;
-+		child->thread.debug.dbcr0 &= ~DBCR0_IAC3;
- 		break;
- 	case 4:
--		if ((child->thread.dbcr0 & DBCR0_IAC4) == 0)
-+		if ((child->thread.debug.dbcr0 & DBCR0_IAC4) == 0)
- 			return -ENOENT;
- 
- 		if (dbcr_iac_range(child) & DBCR_IAC34MODE)
- 			/* Used in a range */
- 			return -EINVAL;
--		child->thread.iac4 = 0;
--		child->thread.dbcr0 &= ~DBCR0_IAC4;
-+		child->thread.debug.iac4 = 0;
-+		child->thread.debug.dbcr0 &= ~DBCR0_IAC4;
- 		break;
- #endif
- 	default:
-@@ -1239,18 +1239,18 @@ static int set_dac(struct task_struct *child, struct ppc_hw_breakpoint *bp_info)
- 			dbcr_dac(child) |= DBCR_DAC1R;
- 		if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_WRITE)
- 			dbcr_dac(child) |= DBCR_DAC1W;
--		child->thread.dac1 = (unsigned long)bp_info->addr;
-+		child->thread.debug.dac1 = (unsigned long)bp_info->addr;
- #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
- 		if (byte_enable) {
--			child->thread.dvc1 =
-+			child->thread.debug.dvc1 =
- 				(unsigned long)bp_info->condition_value;
--			child->thread.dbcr2 |=
-+			child->thread.debug.dbcr2 |=
- 				((byte_enable << DBCR2_DVC1BE_SHIFT) |
- 				 (condition_mode << DBCR2_DVC1M_SHIFT));
- 		}
- #endif
- #ifdef CONFIG_PPC_ADV_DEBUG_DAC_RANGE
--	} else if (child->thread.dbcr2 & DBCR2_DAC12MODE) {
-+	} else if (child->thread.debug.dbcr2 & DBCR2_DAC12MODE) {
- 		/* Both dac1 and dac2 are part of a range */
- 		return -ENOSPC;
- #endif
-@@ -1260,19 +1260,19 @@ static int set_dac(struct task_struct *child, struct ppc_hw_breakpoint *bp_info)
- 			dbcr_dac(child) |= DBCR_DAC2R;
- 		if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_WRITE)
- 			dbcr_dac(child) |= DBCR_DAC2W;
--		child->thread.dac2 = (unsigned long)bp_info->addr;
-+		child->thread.debug.dac2 = (unsigned long)bp_info->addr;
- #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
- 		if (byte_enable) {
--			child->thread.dvc2 =
-+			child->thread.debug.dvc2 =
- 				(unsigned long)bp_info->condition_value;
--			child->thread.dbcr2 |=
-+			child->thread.debug.dbcr2 |=
- 				((byte_enable << DBCR2_DVC2BE_SHIFT) |
- 				 (condition_mode << DBCR2_DVC2M_SHIFT));
- 		}
- #endif
- 	} else
- 		return -ENOSPC;
--	child->thread.dbcr0 |= DBCR0_IDM;
-+	child->thread.debug.dbcr0 |= DBCR0_IDM;
- 	child->thread.regs->msr |= MSR_DE;
- 
- 	return slot + 4;
-@@ -1284,32 +1284,32 @@ static int del_dac(struct task_struct *child, int slot)
- 		if ((dbcr_dac(child) & (DBCR_DAC1R | DBCR_DAC1W)) == 0)
- 			return -ENOENT;
- 
--		child->thread.dac1 = 0;
-+		child->thread.debug.dac1 = 0;
- 		dbcr_dac(child) &= ~(DBCR_DAC1R | DBCR_DAC1W);
- #ifdef CONFIG_PPC_ADV_DEBUG_DAC_RANGE
--		if (child->thread.dbcr2 & DBCR2_DAC12MODE) {
--			child->thread.dac2 = 0;
--			child->thread.dbcr2 &= ~DBCR2_DAC12MODE;
-+		if (child->thread.debug.dbcr2 & DBCR2_DAC12MODE) {
-+			child->thread.debug.dac2 = 0;
-+			child->thread.debug.dbcr2 &= ~DBCR2_DAC12MODE;
- 		}
--		child->thread.dbcr2 &= ~(DBCR2_DVC1M | DBCR2_DVC1BE);
-+		child->thread.debug.dbcr2 &= ~(DBCR2_DVC1M | DBCR2_DVC1BE);
- #endif
- #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
--		child->thread.dvc1 = 0;
-+		child->thread.debug.dvc1 = 0;
- #endif
- 	} else if (slot == 2) {
- 		if ((dbcr_dac(child) & (DBCR_DAC2R | DBCR_DAC2W)) == 0)
- 			return -ENOENT;
- 
- #ifdef CONFIG_PPC_ADV_DEBUG_DAC_RANGE
--		if (child->thread.dbcr2 & DBCR2_DAC12MODE)
-+		if (child->thread.debug.dbcr2 & DBCR2_DAC12MODE)
- 			/* Part of a range */
- 			return -EINVAL;
--		child->thread.dbcr2 &= ~(DBCR2_DVC2M | DBCR2_DVC2BE);
-+		child->thread.debug.dbcr2 &= ~(DBCR2_DVC2M | DBCR2_DVC2BE);
- #endif
- #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
--		child->thread.dvc2 = 0;
-+		child->thread.debug.dvc2 = 0;
- #endif
--		child->thread.dac2 = 0;
-+		child->thread.debug.dac2 = 0;
- 		dbcr_dac(child) &= ~(DBCR_DAC2R | DBCR_DAC2W);
- 	} else
- 		return -EINVAL;
-@@ -1351,22 +1351,22 @@ static int set_dac_range(struct task_struct *child,
- 			return -EIO;
- 	}
- 
--	if (child->thread.dbcr0 &
-+	if (child->thread.debug.dbcr0 &
- 	    (DBCR0_DAC1R | DBCR0_DAC1W | DBCR0_DAC2R | DBCR0_DAC2W))
- 		return -ENOSPC;
- 
- 	if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_READ)
--		child->thread.dbcr0 |= (DBCR0_DAC1R | DBCR0_IDM);
-+		child->thread.debug.dbcr0 |= (DBCR0_DAC1R | DBCR0_IDM);
- 	if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_WRITE)
--		child->thread.dbcr0 |= (DBCR0_DAC1W | DBCR0_IDM);
--	child->thread.dac1 = bp_info->addr;
--	child->thread.dac2 = bp_info->addr2;
-+		child->thread.debug.dbcr0 |= (DBCR0_DAC1W | DBCR0_IDM);
-+	child->thread.debug.dac1 = bp_info->addr;
-+	child->thread.debug.dac2 = bp_info->addr2;
- 	if (mode == PPC_BREAKPOINT_MODE_RANGE_INCLUSIVE)
--		child->thread.dbcr2  |= DBCR2_DAC12M;
-+		child->thread.debug.dbcr2  |= DBCR2_DAC12M;
- 	else if (mode == PPC_BREAKPOINT_MODE_RANGE_EXCLUSIVE)
--		child->thread.dbcr2  |= DBCR2_DAC12MX;
-+		child->thread.debug.dbcr2  |= DBCR2_DAC12MX;
- 	else	/* PPC_BREAKPOINT_MODE_MASK */
--		child->thread.dbcr2  |= DBCR2_DAC12MM;
-+		child->thread.debug.dbcr2  |= DBCR2_DAC12MM;
- 	child->thread.regs->msr |= MSR_DE;
- 
- 	return 5;
-@@ -1504,9 +1504,9 @@ static long ppc_del_hwdebug(struct task_struct *child, long data)
- 		rc = del_dac(child, (int)data - 4);
- 
- 	if (!rc) {
--		if (!DBCR_ACTIVE_EVENTS(child->thread.dbcr0,
--					child->thread.dbcr1)) {
--			child->thread.dbcr0 &= ~DBCR0_IDM;
-+		if (!DBCR_ACTIVE_EVENTS(child->thread.debug.dbcr0,
-+					child->thread.debug.dbcr1)) {
-+			child->thread.debug.dbcr0 &= ~DBCR0_IDM;
- 			child->thread.regs->msr &= ~MSR_DE;
- 		}
- 	}
-@@ -1688,7 +1688,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 		if (addr > 0)
+@@ -130,6 +152,11 @@ int kvmppc_core_emulate_op(struct kvm_run *run, struct kvm_vcpu *vcpu,
+ 			emulated = kvmppc_e500_emul_tlbivax(vcpu, ea);
  			break;
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
--		ret = put_user(child->thread.dac1, datalp);
-+		ret = put_user(child->thread.debug.dac1, datalp);
- #else
- 		dabr_fake = ((child->thread.hw_brk.address & (~HW_BRK_TYPE_DABR)) |
- 			     (child->thread.hw_brk.type & HW_BRK_TYPE_DABR));
-diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
-index 95068bf..3e46b2c 100644
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -1294,7 +1294,7 @@ int sys_debug_setcontext(struct ucontext __user *ctx,
- 	unsigned char tmp;
- 	unsigned long new_msr = regs->msr;
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
--	unsigned long new_dbcr0 = current->thread.dbcr0;
-+	unsigned long new_dbcr0 = current->thread.debug.dbcr0;
- #endif
  
- 	for (i=0; i<ndbg; i++) {
-@@ -1309,7 +1309,7 @@ int sys_debug_setcontext(struct ucontext __user *ctx,
- 			} else {
- 				new_dbcr0 &= ~DBCR0_IC;
- 				if (!DBCR_ACTIVE_EVENTS(new_dbcr0,
--						current->thread.dbcr1)) {
-+						current->thread.debug.dbcr1)) {
- 					new_msr &= ~MSR_DE;
- 					new_dbcr0 &= ~DBCR0_IDM;
- 				}
-@@ -1344,7 +1344,7 @@ int sys_debug_setcontext(struct ucontext __user *ctx,
- 	   the user is really doing something wrong. */
- 	regs->msr = new_msr;
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
--	current->thread.dbcr0 = new_dbcr0;
-+	current->thread.debug.dbcr0 = new_dbcr0;
- #endif
- 
- 	if (!access_ok(VERIFY_READ, ctx, sizeof(*ctx))
-diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
-index 83efa2f..86d5bd8 100644
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -350,8 +350,8 @@ static inline int check_io_access(struct pt_regs *regs)
- #define REASON_TRAP		ESR_PTR
- 
- /* single-step stuff */
--#define single_stepping(regs)	(current->thread.dbcr0 & DBCR0_IC)
--#define clear_single_step(regs)	(current->thread.dbcr0 &= ~DBCR0_IC)
-+#define single_stepping(regs)	(current->thread.debug.dbcr0 & DBCR0_IC)
-+#define clear_single_step(regs)	(current->thread.debug.dbcr0 &= ~DBCR0_IC)
- 
- #else
- /* On non-4xx, the reason for the machine check or program
-@@ -1389,7 +1389,7 @@ static void handle_debug(struct pt_regs *regs, unsigned long debug_status)
- 	if (debug_status & (DBSR_DAC1R | DBSR_DAC1W)) {
- 		dbcr_dac(current) &= ~(DBCR_DAC1R | DBCR_DAC1W);
- #ifdef CONFIG_PPC_ADV_DEBUG_DAC_RANGE
--		current->thread.dbcr2 &= ~DBCR2_DAC12MODE;
-+		current->thread.debug.dbcr2 &= ~DBCR2_DAC12MODE;
- #endif
- 		do_send_trap(regs, mfspr(SPRN_DAC1), debug_status, TRAP_HWBKPT,
- 			     5);
-@@ -1400,24 +1400,24 @@ static void handle_debug(struct pt_regs *regs, unsigned long debug_status)
- 			     6);
- 		changed |= 0x01;
- 	}  else if (debug_status & DBSR_IAC1) {
--		current->thread.dbcr0 &= ~DBCR0_IAC1;
-+		current->thread.debug.dbcr0 &= ~DBCR0_IAC1;
- 		dbcr_iac_range(current) &= ~DBCR_IAC12MODE;
- 		do_send_trap(regs, mfspr(SPRN_IAC1), debug_status, TRAP_HWBKPT,
- 			     1);
- 		changed |= 0x01;
- 	}  else if (debug_status & DBSR_IAC2) {
--		current->thread.dbcr0 &= ~DBCR0_IAC2;
-+		current->thread.debug.dbcr0 &= ~DBCR0_IAC2;
- 		do_send_trap(regs, mfspr(SPRN_IAC2), debug_status, TRAP_HWBKPT,
- 			     2);
- 		changed |= 0x01;
- 	}  else if (debug_status & DBSR_IAC3) {
--		current->thread.dbcr0 &= ~DBCR0_IAC3;
-+		current->thread.debug.dbcr0 &= ~DBCR0_IAC3;
- 		dbcr_iac_range(current) &= ~DBCR_IAC34MODE;
- 		do_send_trap(regs, mfspr(SPRN_IAC3), debug_status, TRAP_HWBKPT,
- 			     3);
- 		changed |= 0x01;
- 	}  else if (debug_status & DBSR_IAC4) {
--		current->thread.dbcr0 &= ~DBCR0_IAC4;
-+		current->thread.debug.dbcr0 &= ~DBCR0_IAC4;
- 		do_send_trap(regs, mfspr(SPRN_IAC4), debug_status, TRAP_HWBKPT,
- 			     4);
- 		changed |= 0x01;
-@@ -1427,19 +1427,20 @@ static void handle_debug(struct pt_regs *regs, unsigned long debug_status)
- 	 * Check all other debug flags and see if that bit needs to be turned
- 	 * back on or not.
- 	 */
--	if (DBCR_ACTIVE_EVENTS(current->thread.dbcr0, current->thread.dbcr1))
-+	if (DBCR_ACTIVE_EVENTS(current->thread.debug.dbcr0,
-+			       current->thread.debug.dbcr1))
- 		regs->msr |= MSR_DE;
- 	else
- 		/* Make sure the IDM flag is off */
--		current->thread.dbcr0 &= ~DBCR0_IDM;
-+		current->thread.debug.dbcr0 &= ~DBCR0_IDM;
- 
- 	if (changed & 0x01)
--		mtspr(SPRN_DBCR0, current->thread.dbcr0);
-+		mtspr(SPRN_DBCR0, current->thread.debug.dbcr0);
- }
- 
- void __kprobes DebugException(struct pt_regs *regs, unsigned long debug_status)
- {
--	current->thread.dbsr = debug_status;
-+	current->thread.debug.dbsr = debug_status;
- 
- 	/* Hack alert: On BookE, Branch Taken stops on the branch itself, while
- 	 * on server, it stops on the target of the branch. In order to simulate
-@@ -1456,8 +1457,8 @@ void __kprobes DebugException(struct pt_regs *regs, unsigned long debug_status)
- 
- 		/* Do the single step trick only when coming from userspace */
- 		if (user_mode(regs)) {
--			current->thread.dbcr0 &= ~DBCR0_BT;
--			current->thread.dbcr0 |= DBCR0_IDM | DBCR0_IC;
-+			current->thread.debug.dbcr0 &= ~DBCR0_BT;
-+			current->thread.debug.dbcr0 |= DBCR0_IDM | DBCR0_IC;
- 			regs->msr |= MSR_DE;
- 			return;
++		case XOP_EHPRIV:
++			emulated = kvmppc_e500_emul_ehpriv(run, vcpu, inst,
++							   advance);
++			break;
++
+ 		default:
+ 			emulated = EMULATE_FAIL;
  		}
-@@ -1485,13 +1486,13 @@ void __kprobes DebugException(struct pt_regs *regs, unsigned long debug_status)
- 			return;
- 
- 		if (user_mode(regs)) {
--			current->thread.dbcr0 &= ~DBCR0_IC;
--			if (DBCR_ACTIVE_EVENTS(current->thread.dbcr0,
--					       current->thread.dbcr1))
-+			current->thread.debug.dbcr0 &= ~DBCR0_IC;
-+			if (DBCR_ACTIVE_EVENTS(current->thread.debug.dbcr0,
-+					       current->thread.debug.dbcr1))
- 				regs->msr |= MSR_DE;
- 			else
- 				/* Make sure the IDM bit is off */
--				current->thread.dbcr0 &= ~DBCR0_IDM;
-+				current->thread.debug.dbcr0 &= ~DBCR0_IDM;
- 		}
- 
- 		_exception(SIGTRAP, regs, TRAP_TRACE, regs->nip);
 -- 
 1.7.0.4
 
