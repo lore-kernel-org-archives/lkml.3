@@ -1,162 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab3FZVfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:35:33 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:49583 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab3FZVfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:35:30 -0400
-Message-ID: <51CB5E6B.109@ahsoftware.de>
-Date: Wed, 26 Jun 2013 23:34:35 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: rtc-linux@googlegroups.com
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] Re: [PATCH 3/9 v2] rtc: rtc-hid-sensor-time: delay
- registering as rtc into a work
-References: <1371228732-5749-4-git-send-email-holler@ahsoftware.de> <1371724776-5572-1-git-send-email-holler@ahsoftware.de> <20130626125501.3d64408309a6f63100cc7d08@linux-foundation.org>
-In-Reply-To: <20130626125501.3d64408309a6f63100cc7d08@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753098Ab3FZVgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:36:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53078 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753053Ab3FZVgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 17:36:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,946,1363158000"; 
+   d="scan'208";a="336030449"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20130626095108.GB29181@gmail.com>
+References: <1371165992.27102.573.camel@schen9-DESK>
+	 <20130619131611.GC24957@gmail.com> <1371660831.27102.663.camel@schen9-DESK>
+	 <1372205996.22432.119.camel@schen9-DESK> <20130626095108.GB29181@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Jun 2013 14:36:00 -0700
+Message-ID: <1372282560.22432.139.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.06.2013 21:55, schrieb Andrew Morton:
-> On Thu, 20 Jun 2013 12:39:36 +0200 Alexander Holler <holler@ahsoftware.de> wrote:
+On Wed, 2013-06-26 at 11:51 +0200, Ingo Molnar wrote: 
+> * Tim Chen <tim.c.chen@linux.intel.com> wrote:
 > 
->> rtc_device_register() might want to read the clock which doesn't work
->> before the hid device is registered. Therefor we delay the registration of
->> the rtc driver by moving it to a work.
->>
+> > On Wed, 2013-06-19 at 09:53 -0700, Tim Chen wrote: 
+> > > On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
+> > > 
+> > > > > vmstat for mutex implementation: 
+> > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+> > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > > > > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
+> > > > > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
+> > > > > 
+> > > > > vmstat for rw-sem implementation (3.10-rc4)
+> > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+> > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > > > > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
+> > > > > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
+> > > > 
+> > > > It appears the main difference is that the rwsem variant context-switches 
+> > > > about 36% more than the mutex version, right?
+> > > > 
+> > > > I'm wondering how that's possible - the lock is mostly write-locked, 
+> > > > correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
+> > > > ought to have brought roughly the same lock-stealing behavior as mutexes 
+> > > > do, right?
+> > > > 
+> > > > So the next analytical step would be to figure out why rwsem lock-stealing 
+> > > > is not behaving in an equivalent fashion on this workload. Do readers come 
+> > > > in frequently enough to disrupt write-lock-stealing perhaps?
+> > 
+> > Ingo, 
+> > 
+> > I did some instrumentation on the write lock failure path.  I found that
+> > for the exim workload, there are no readers blocking for the rwsem when
+> > write locking failed.  The lock stealing is successful for 9.1% of the
+> > time and the rest of the write lock failure caused the writer to go to
+> > sleep.  About 1.4% of the writers sleep more than once. Majority of the
+> > writers sleep once.
+> > 
+> > It is weird that lock stealing is not successful more often.
 > 
+> For this to be comparable to the mutex scalability numbers you'd have to 
+> compare wlock-stealing _and_ adaptive spinning for failed-wlock rwsems.
 > 
->> --- a/drivers/rtc/rtc-hid-sensor-time.c
->> +++ b/drivers/rtc/rtc-hid-sensor-time.c
->> @@ -37,6 +37,11 @@ enum hid_time_channel {
->>  	TIME_RTC_CHANNEL_MAX,
->>  };
->>  
->> +struct hid_time_workts {
-> 	
-> Strange name.  I can't work out what the "ts" means.
-
-It's just a name
-
-> 	
->> +	struct work_struct work;
->> +	struct hid_time_state *time_state;
->> +};
-
-and stands for work + time_state. Peronally I would use
-hid_time_work_time_state, but then I would get even more problems to go
-conform with CGA restrictions on line widths.
-
->> +
->>  struct hid_time_state {
->>  	struct hid_sensor_hub_callbacks callbacks;
->>  	struct hid_sensor_common common_attributes;
->>
->> ...
->>
->> @@ -237,6 +243,36 @@ static const struct rtc_class_ops hid_time_rtc_ops = {
->>  	.read_time = hid_rtc_read_time,
->>  };
->>  
->> +static void hid_time_register_rtc_work(struct work_struct *work)
->> +{
->> +	struct hid_time_state *time_state =
->> +		container_of(work, struct hid_time_workts, work)
->> +			->time_state;
->> +	struct platform_device *pdev = time_state->callbacks.pdev;
-> 
-> Ick.  When the initialisers overflow 80 cols, the fix is easy: don't
-> use initalisers:
-> 
-> 	struct hid_time_state *time_state;
-> 	struct platform_device *pdev;
-> 
-> 	time_state = container_of(work, struct hid_time_workts, work)->time_state;
-> 	pdev = time_state->callbacks.pdev;
+> Are both techniques applied in the kernel you are running your tests on?
 > 
 
-Sorry, but it's long ago since I had to use a DOS machine and I still
-don't use a phone to write source, therefor I'm not very skilled in
-writing readable source with meaningfull names in max. 72 (80-8) chars
-per line. But I will work hard to relearn those long forgotten skills,
-they might become handy again, when PCs with monitors got finally
-replaced by phones and tablets with small screens. ;)
+Ingo,
 
->> +	time_state->rtc = devm_rtc_device_register(&pdev->dev,
->> +					"hid-sensor-time", &hid_time_rtc_ops,
->> +					THIS_MODULE);
->> +	if (IS_ERR_OR_NULL(time_state->rtc)) {
->> +		struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-> 
-> Newline after end-of-definitions and before start-of-code, please.
-> 
->> +		sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
->> +		time_state->rtc = NULL;
->> +		dev_err(&pdev->dev, "rtc device register failed!\n");
->> +		/*
->> +		 *  I haven't a found a way to remove only this device from
->> +		 *  hid-sensor-hub. Removing the device a level above (the
->> +		 *  complete HID device) doesn't work, because a sensor-hub
->> +		 *  might provide more than just a time-sensor and thus we
->> +		 *  would remove all sensors not just this one.
->> +		 *  So we just leave this driver idling around until I or
->> +		 *  someone else has figured out how to remove this device
->> +		 *  from hid-sensor-hub.
->> +		 */
->> +	}
->> +	time_state->workts = NULL;
->> +	kfree(work);
->> +}
->> +
->>  static int hid_time_probe(struct platform_device *pdev)
->>  {
->>  	int ret = 0;
->> @@ -279,22 +315,34 @@ static int hid_time_probe(struct platform_device *pdev)
->>  		return ret;
->>  	}
->>  
->> -	time_state->rtc = devm_rtc_device_register(&pdev->dev,
->> -					"hid-sensor-time", &hid_time_rtc_ops,
->> -					THIS_MODULE);
->> -
->> -	if (IS_ERR(time_state->rtc)) {
->> -		dev_err(&pdev->dev, "rtc device register failed!\n");
->> -		return PTR_ERR(time_state->rtc);
->> +	/*
->> +	 * The HID device has to be registered to read the clock.
->> +	 * Because rtc_device_register() might read the time, we have to delay
->> +	 * rtc_device_register() to a work in order to finish the probe before.
->> +	 */
->> +	time_state->workts = kmalloc(sizeof(struct hid_time_workts),
->> +		GFP_KERNEL);
->> +	if (time_state->workts == NULL) {
->> +		sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
->> +		return -ENOMEM;
->>  	}
->> +	time_state->workts->time_state = time_state;
->> +	INIT_WORK(&time_state->workts->work,
->> +			hid_time_register_rtc_work);
->> +	schedule_work(&time_state->workts->work);
-> 
-> This seems unreliable.  The scheduled work can run one nanosecond
-> later, on this or a different CPU.  What guarantees that the HID device
-> will then be fully registered?
+The previous experiment was done on a kernel without spinning. 
+I've redone the testing on two kernel for a 15 sec stretch of the
+workload run.  One with the adaptive (or optimistic) 
+spinning and the other without.  Both have the patches from Alex to avoid 
+cmpxchg induced cache bouncing.
 
-Nothing, but schedule_delayed_work() is as unreliable as without delay
-and I don't know of any callback after registration has happened. I have
-to dig through the hid-(sensor-)code, maybe I will find a callback I can
-(mis)use to register the rtc driver after the hid driver was registered.
+With the spinning, I sleep much less for lock acquisition (18.6% vs 91.58%).
+However, I've got doubling of write lock acquisition getting
+blocked.  So that offset the gain from spinning which may be why
+I didn't see gain for this particular workload.
 
-I will write a v3 if I've found something.
+						No Opt Spin	Opt Spin
+Writer acquisition blocked count		3448946		7359040
+Blocked by reader				0.00%		0.55%
+Lock acquired first attempt (lock stealing)	8.42%		16.92%
+Lock acquired second attempt (1 sleep)		90.26%		17.60%
+Lock acquired after more than 1 sleep		1.32%		1.00%
+Lock acquired with optimistic spin		N/A		64.48%
 
-Regards,
+Tim
 
-Alexander Holler
+
+
