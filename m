@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab3FZLmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 07:42:38 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:14968 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab3FZLmg convert rfc822-to-8bit (ORCPT
+	id S1752319Ab3FZLnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 07:43:35 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:42618 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab3FZLnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 07:42:36 -0400
-Date: Wed, 26 Jun 2013 13:42:01 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 1/4] Make non-linear GPIO ranges accesible from gpiolib
-Message-ID: <20130626114159.GA7095@ab42.lan>
-References: <20130618092516.GC18663@ab42.lan>
- <1371547751-13873-1-git-send-email-christian.ruppert@abilis.com>
- <CACRpkdbhTsRAGSkxQURd01_yd5arw7=ktVXAmeEo22gFg4U38Q@mail.gmail.com>
- <51C1F531.3050205@wwwdotorg.org>
+	Wed, 26 Jun 2013 07:43:33 -0400
+Date: Wed, 26 Jun 2013 13:43:27 +0200
+From: Jan Glauber <jan.glauber@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: siddhesh.poyarekar@gmail.com
+Subject: Ambigiuous thread stack annotation in /proc/pid/[s]maps
+Message-ID: <20130626114324.GA3538@hal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <51C1F531.3050205@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 12:15:13PM -0600, Stephen Warren wrote:
-> On 06/19/2013 06:03 AM, Linus Walleij wrote:
-> > On Tue, Jun 18, 2013 at 11:29 AM, Christian Ruppert
-> > <christian.ruppert@abilis.com> wrote:
-> > 
-> >> This patch adds the infrastructure required to register non-linear gpio
-> >> ranges through gpiolib and the standard GPIO device tree bindings.
-> >>
-> >> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > 
-> > I'm basically fine with this, but would like Stephen's ACK if possible.
-> > 
-> >> +In addition, named groups of pins can be mapped to pin groups of a given
-> >> +pin controller:
-> >> +
-> >> +       gpio_pio_g: gpio-controller@1480 {
-> >> +               #gpio-cells = <2>;
-> >> +               compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
-> >> +               reg = <0x1480 0x18>;
-> >> +               gpio-controller;
-> >> +               gpio-ranges = <&pinctrl1 0 0 0>, <&pinctrl2 3 0 0>;
-> >> +               gpio-ranges-group-names = "foo", "bar";
-> >> +       };
-> >> +
-> >> +where,
-> >> +   &pinctrl1 and &pinctrl2 is the phandle to the pinctrl DT node.
-> >> +
-> >> +   The following value specifies the base GPIO offset of the pin range with
-> >> +   respect to the GPIO controller's base. The remaining two values must be
-> >> +   0 to indicate that a named pin group should be used for the respective
-> >> +   range. The number of pins in the range is the number of pins in the pin
-> >> +   group.
-> > 
-> > So while this works, these zeroes seem a bit awkward, but maybe
-> > it's the only way?
-> > 
-> > I'm not good enough on device tree conventions, but isn't this possible:
-> > 
-> >               gpio-ranges = <&pinctrl1 0>, <&pinctrl2 3>;
-> >               gpio-ranges-group-names = "foo", "bar";
-> > 
-> > Since we don't have any #gpio-ranges-cells or anything like that I
-> > guess we can define this to have a flexible number of cells
-> > depending on use case?
-> 
-> If we're willing to have gpio-ranges be either *all* group names, or
-> *all* IDs, we can define the format of gpio-ranges to have two cells
-> (phandle and GPIO number) if the property gpio-ranges-group-names
-> exists, but four cells (phandle, GPIO number, pin number, count)
-> otherwise. However, that's a little restrictive, since then what if one
-> GPIO controller is hooked to two different pinmux controllers, and you
-> want to use different formats for the references to each. A
-> #gpio-ranges-cells in the target of the phandle would allow this, but I
-> don't think this is something the pinctrl node should dictate to those
-> who reference it; it's quite legitimate for a GPIO node to use the pure
-> numeric mapping even if the pin controller happens to expose some pin
-> groups that allow you to do the mapping by name.
+Commit b764375 added annotations of thread stacks. This annotation can be
+wrong depending on the memory layout of a task (will probably only happen
+under 32 bit).
 
-I actually had a version of the patch with #gpio-range-cells specifying
-the format (one argument for named ranges, three for classical ranges)
-before deciding to use a separate property and sending that version. As
-I said in a previous mail, I don't have a preference which of the
-following three possibilities to use and would be grateful for some
-guidance (if it matters at all).
+If a large allocation happens before the creation of a thread you can get:
 
-1.) separate property:
-	gpio {
-		gpio-ranges = <&pinctrl1 0 0 5>;
-		gpio-range-groups = <&pinctrl2 5>;
-		gpio-range-group-names = "gpios";
-	};
+root@box:~# cat /proc/2032/maps 
+08048000-08049000 r-xp 00000000 08:01 3407931    /root/pt
+08049000-0804a000 r--p 00000000 08:01 3407931    /root/pt
+0804a000-0804b000 rw-p 00001000 08:01 3407931    /root/pt
+093b8000-093d9000 rw-p 00000000 00:00 0          [heap]
+363fe000-363ff000 ---p 00000000 00:00 0 
+363ff000-b6c00000 rw-p 00000000 00:00 0          [stack:2036]
+b6c00000-b6c21000 rw-p 00000000 00:00 0 
+b6c21000-b6d00000 ---p 00000000 00:00 0 
+b6d31000-b6d32000 ---p 00000000 00:00 0 
+b6d32000-b7534000 rw-p 00000000 00:00 0          [stack:2033]
+b7534000-b76d7000 r-xp 00000000 08:01 3145793    /lib/i386-linux-gnu/libc-2.15.so
+b76d7000-b76d9000 r--p 001a3000 08:01 3145793    /lib/i386-linux-gnu/libc-2.15.so
+b76d9000-b76da000 rw-p 001a5000 08:01 3145793    /lib/i386-linux-gnu/libc-2.15.so
+b76da000-b76dd000 rw-p 00000000 00:00 0 
+b76dd000-b76f4000 r-xp 00000000 08:01 3149883    /lib/i386-linux-gnu/libpthread-2.15.so
+b76f4000-b76f5000 r--p 00016000 08:01 3149883    /lib/i386-linux-gnu/libpthread-2.15.so
+b76f5000-b76f6000 rw-p 00017000 08:01 3149883    /lib/i386-linux-gnu/libpthread-2.15.so
+b76f6000-b76f8000 rw-p 00000000 00:00 0 
+b7707000-b770b000 rw-p 00000000 00:00 0 
+b770b000-b770c000 r-xp 00000000 00:00 0          [vdso]
+b770c000-b772c000 r-xp 00000000 08:01 3149887    /lib/i386-linux-gnu/ld-2.15.so
+b772c000-b772d000 r--p 0001f000 08:01 3149887    /lib/i386-linux-gnu/ld-2.15.so
+b772d000-b772e000 rw-p 00020000 08:01 3149887    /lib/i386-linux-gnu/ld-2.15.so
+bfb15000-bfb36000 rw-p 00000000 00:00 0          [stack]
 
-2.) fixed number of three arguments:
-	gpio {
-		gpio-ranges = <&pinctrl1 0 0 5>, <&pinctrl2 5 0 0>;
-		gpio-range-names = "", "gpios";
-	};
+Now the stack for thread 2036 is amazingly large for a pthread. Actually it is
+the result of:
+1. malloc(2048 * 1024 * 1024)
+2. pthread_create (with attr=NULL)
 
-3.) pinctrl-defined format.
-	pinctrl1: pctl1 {
-		#gpio-range-cells = <3>;
-	};
-	pinctrl2: pctl2 {
-		#gpio-range-cells = <1>;
-	};
-	gpio {
-		gpio-ranges = <&pinctrl1 0 0 5>, <&pinctrl2 5>;
-		gpio-range-names = "", "gpios";
-	};
+My theory is that this can happen anytime because a thread stack is just created
+with mmap (MAP_PRIVATE | MAP_ANONYMOUS). The 1. malloc also resulted in a mmap 
+(libc fallback on brk failure) with the same flags (MAP_PRIVATE | MAP_ANONYMOUS).
 
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+The kernel does not care about thread stacks and tries to merge vma's which seems
+to happen here and which is correct from the kernel POV.
+
+Any ideas how that can be fixed? The only solution that comes to my mind
+is to prevent merging vma's that are used for thread stacks. There is already a
+flag (MAP_STACK) which is set by the libc for mmap'ing thread stacks but the
+kernel currently does not care. If the kernel gets an mmap request with
+MAP_STACK set we could mark the VMA and avoid merging it with others.
+
+Unfortunately there seems to be no bit left in the vm_flags to store the
+MAP_STACK information...
+
+--Jan
