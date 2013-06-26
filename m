@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab3FZNcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:32:23 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:38012 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751368Ab3FZNcV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:32:21 -0400
-Date: Wed, 26 Jun 2013 14:32:17 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, hpa@linux.intel.com, tglx@linutronix.de,
-        matt.fleming@intel.com
-Subject: Re: [PATCH 2/4] x86: efi: break efi_lookup_mapped_addr out to
- generic code
-Message-ID: <20130626133217.GO22026@console-pimps.org>
-References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
- <1372183863-11333-3-git-send-email-leif.lindholm@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372183863-11333-3-git-send-email-leif.lindholm@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751950Ab3FZNcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:32:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31872 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751368Ab3FZNct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 09:32:49 -0400
+Date: Wed, 26 Jun 2013 09:32:40 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
+        minchan@kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] vmpressure: implement strict mode
+Message-ID: <20130626093240.2b9c15ac@redhat.com>
+In-Reply-To: <20130626040331.GA7993@teo>
+References: <20130625175129.7c0d79e1@redhat.com>
+	<20130626040331.GA7993@teo>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jun, at 07:11:01PM, Leif Lindholm wrote:
-> efi_lookup_mapped_addr is a handy helper function for translating
-> a physical address to the corresponding virtual one by scanning
-> through memmap.map.
-> 
-> This patch breaks it out into a new file for use elsewhere.
-> 
-> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> ---
->  arch/x86/platform/efi/efi.c       |   28 ----------------------------
->  drivers/firmware/efi/Makefile     |    2 +-
->  drivers/firmware/efi/efi-helper.c |   33 +++++++++++++++++++++++++++++++++
->  3 files changed, 34 insertions(+), 29 deletions(-)
->  create mode 100644 drivers/firmware/efi/efi-helper.c
+On Tue, 25 Jun 2013 21:03:31 -0700
+Anton Vorontsov <anton@enomsg.org> wrote:
 
-I'm not sure this function needs its own file. drivers/firmware/efi/efi.c
-is a suitable place for this.
+> On Tue, Jun 25, 2013 at 05:51:29PM -0400, Luiz Capitulino wrote:
+> > Currently, applications are notified for the level they registered for
+> > _plus_ higher levels.
+> > 
+> > This is a problem if the application wants to implement different
+> > actions for different levels. For example, an application might want
+> > to release 10% of its cache on level low, 50% on medium and 100% on
+> > critical. To do this, the application has to register a different fd
+> > for each event. However, fd low is always going to be notified and
+> > and all fds are going to be notified on level critical.
+> > 
+> > Strict mode solves this problem by strictly notifiying the event
+> > an fd has registered for. It's optional. By default we still notify
+> > on higher levels.
+> > 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> 
+> In the documentation I would add more information about why exactly the
+> strict mode makes sense.
+> 
+> For example, the non-strict fd listener hooked onto the low level makes
+> sense for apps that just monitor reclaiming activity (like current Android
+> Activity Manager), hooking onto 'medium' non-strict mode makes sense for
+> simple load-balancing logic, and the new strict mode is for the cases when
+> an application wants to implement some fancy logic as it makes a decision
+> based on a concrete level.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+OK, I'll respin. But you said it all already, so I'll base my text on
+on what you wrote.
+
+> Otherwise, it looks good.
+> 
+> Acked-by: Anton Vorontsov <anton@enomsg.org>
+
+Thanks.
