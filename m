@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab3FZJJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:09:03 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40483 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751994Ab3FZJI7 convert rfc822-to-8bit (ORCPT
+	id S1752491Ab3FZJKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:10:53 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46541 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab3FZJKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:08:59 -0400
-From: "B, Ravi" <ravibabu@ti.com>
-To: "Balbi, Felipe" <balbi@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v1 2/3] usb: musb: core: added babble recovery func-ptr
- to musb->ops
-Thread-Topic: [PATCH v1 2/3] usb: musb: core: added babble recovery func-ptr
- to musb->ops
-Thread-Index: AQHOXG1wggKnPGACD0+RUBnAlcCywJlHTrQAgACIfJD//38gAIAAiAmQ
-Date: Wed, 26 Jun 2013 09:08:54 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EB18E34@DBDE04.ent.ti.com>
-References: <1369832824-29071-1-git-send-email-ravibabu@ti.com>
- <1369832824-29071-3-git-send-email-ravibabu@ti.com>
- <20130626082620.GN12640@arwen.pp.htv.fi>
- <6C6B28D4DC342643927BEAFCE8707BF63EB18D85@DBDE04.ent.ti.com>
- <20130626085334.GP12640@arwen.pp.htv.fi>
-In-Reply-To: <20130626085334.GP12640@arwen.pp.htv.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Jun 2013 05:10:51 -0400
+Date: Wed, 26 Jun 2013 10:10:33 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Oliver Schinagl <oliver+list@schinagl.nl>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        andy.shevchenko@gmail.com, linus.walleij@linaro.org,
+        linux-sunxi@googlegroups.com, Oliver Schinagl <oliver@schinagl.nl>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+Message-ID: <20130626091032.GE2718@n2100.arm.linux.org.uk>
+References: <1371502778-15849-1-git-send-email-oliver+list@schinagl.nl> <1371502778-15849-2-git-send-email-oliver+list@schinagl.nl> <20130617225847.GA9494@kroah.com> <20130624092942.GG26008@lukather> <20130624160440.GA15201@kroah.com> <51C87DC7.50005@schinagl.nl> <20130624181509.GA8847@kroah.com> <51C8B84C.3020200@schinagl.nl> <20130624214615.GA17604@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624214615.GA17604@kroah.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe
-
-> > > > @@ -213,6 +213,8 @@ struct musb_platform_ops {
-> > > >  	int	(*adjust_channel_params)(struct dma_channel *channel,
-> > > >  				u16 packet_sz, u8 *mode,
-> > > >  				dma_addr_t *dma_addr, u32 *len);
-> > > > +
-> > > > +	void	(*babble_recovery)(struct musb *musb);
-> > >
-> > > I don't get why can't 'babble_recovery' be generic. Why do we need
-> > > each glue layer to implement it ?
-> > >
-> >
-> > Babble is generic, but recovery mechanism is nothing but "reset of
-> > usbss" which is SoC dependent and followed by generic restart of the
-> > musb controller.
+On Mon, Jun 24, 2013 at 02:46:15PM -0700, Greg KH wrote:
+> Stick with a binary attribute, and attach that to the proper class
+> structure and all should be fine.
 > 
-> and that's what I don't get. Why do you need to reset usbss ?
-
-On babble condition, the session bit is removed by mentor, hence to make musb work
-1) setting the session alone will not help.
-2) restart the usbss and setting session also not helped.
-3) musb works only after usbss reset followed by epfifo table init and re-enable all interrupts, then set the session. 
-
-The mentor IP guys (synopsis) confirmed that during babble condition, controller is stopped. Only recover is to restart completely, usbss reset,  reinit epfifo table, & set the session. 
-
+> Ah crap, you're using a platform device.
 > 
-> --
-> balbi
+> {sigh}
+> 
+> Why?  Why not use a "real" device which has a "real" class, and then use
+> the interfaces there?
+
+And why aren't platform devices "real" devices?  If platform devices are
+second class devices then that's pretty crap because virtually all
+devices on ARM are platform devices, not something like "first class"
+PCI devices.
+
+We could make them PCI devices if you want us to totally fsck with the
+PCI code to bend it in ways it was never meant to, but I suspect that'll
+upset the PCI guys.
+
+No, platform devices must be first class devices just like any other.
