@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab3FZQK5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:10:57 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:46421 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab3FZQK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:10:56 -0400
-Date: Wed, 26 Jun 2013 18:10:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        Dave Chiluk <chiluk@canonical.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Scheduler accounting inflated for io bound processes.
-Message-ID: <20130626161051.GA8207@gmail.com>
-References: <51C35C05.1070005@canonical.com>
- <1372176104.7497.86.camel@marge.simpson.net>
- <1372182534.7497.129.camel@marge.simpson.net>
- <20130626093713.GA27385@gmail.com>
- <20130626104243.GE28407@twins.programming.kicks-ass.net>
- <20130626155048.GA7399@gmail.com>
- <51CB110E.6010707@gmail.com>
+	id S1752630Ab3FZQLm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:11:42 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:54551 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751380Ab3FZQLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 12:11:41 -0400
+Message-ID: <51CB12BC.9080708@sgi.com>
+Date: Wed, 26 Jun 2013 11:11:40 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CB110E.6010707@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Dave Hansen <dave.hansen@intel.com>, <holt@sgi.com>, <travis@sgi.com>,
+        <rob@landley.net>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <yinghai@kernel.org>, <akpm@linux-foundation.org>,
+        <gregkh@linuxfoundation.org>, <x86@kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130626121430.GA4980@gmail.com> <20130626144903.GA2210@asylum.americas.sgi.com> <51CB04C7.8060702@intel.com> <51CB06BD.8090202@sgi.com> <20130626155835.GC7399@gmail.com>
+In-Reply-To: <20130626155835.GC7399@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.140]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/26/2013 10:58 AM, Ingo Molnar wrote:
+> * Nathan Zimmer <nzimmer@sgi.com> wrote:
+>
+>> On 06/26/2013 10:12 AM, Dave Hansen wrote:
+>>> On 06/26/2013 07:49 AM, Nathan Zimmer wrote:
+>>>> My guess it is the NMIs overwhelming the system but I have not found a good way
+>>>> to profile perf gone wild so it is only a guess.
+>>> I've got an 80-core system and the symptoms sound similar to perf issues
+>>> I'm seeing.  Dropping the sample rate helped for me, and there's a patch
+>>> in -tip at the moment to do it automatically:
+>>>
+>>>> http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=14c63f17b1fde5a575a28e96547a22b451c71fb5
+>>> Looks like you've also found that debugging NMIs is fun. :)
+>> More fun then one person can handle.
+>> I'll have to take this patch for a spin.
+> Please try latest -tip:master, there's a series of patches from Dave that
+> address this problem category.
+>
+> Does it only happen with -g, or with regular perf record and/or with perf
+> top as well?
+>
+> Thanks,
+>
+> 	Ingo
 
-* David Ahern <dsahern@gmail.com> wrote:
+It happens in all those cases, but I notice it most when doing a perf 
+record -g -a
+I'll try the tip series and see how it compares.
 
-> On 6/26/13 9:50 AM, Ingo Molnar wrote:
-> >
-> >* Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> >>On Wed, Jun 26, 2013 at 11:37:13AM +0200, Ingo Molnar wrote:
-> >>>Would be very nice to randomize the sampling rate, by randomizing the
-> >>>intervals within a 1% range or so - perf tooling will probably recognize
-> >>>the different weights.
-> >>
-> >>You're suggesting adding noise to the regular kernel tick?
-> >
-> >No, to the perf interval (which I assumed Mike was using to profile this?)
-> >- although slightly randomizing the kernel tick might make sense as well,
-> >especially if it's hrtimer driven and reprogrammed anyway.
-> >
-> >I might have gotten it all wrong though ...
-> 
-> Sampled S/W events like cpu-clock have a fixed rate 
-> (perf_swevent_init_hrtimer converts freq to sample_period).
-> 
-> Sampled H/W events have an adaptive period that converges to the desired 
-> sampling rate. The first few samples come in 10 usecs are so apart and 
-> the time period expands to the desired rate. As I recall that adaptive 
-> algorithm starts over every time the event is scheduled in.
-
-Yes, but last I checked it (2 years ago? :-) the auto-freq code was 
-converging pretty well to the time clock, with little jitter - in essence 
-turning it into a fixed-period, fixed-frequency sampling method. That 
-would explain Mike's results.
-
-Thanks,
-
-	Ingo
+Thanks
+     Nate
