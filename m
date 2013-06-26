@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab3FZCvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:51:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54109 "EHLO
+	id S1752476Ab3FZCvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:51:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54118 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751819Ab3FZCpW (ORCPT
+	by vger.kernel.org with ESMTP id S1751461Ab3FZCpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 22:45:22 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
-Date: Wed, 26 Jun 2013 03:35:58 +0100
-Message-ID: <lsq.1372214158.469103387@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Daniel Borkmann" <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 26 Jun 2013 03:35:59 +0100
+Message-ID: <lsq.1372214159.186699797@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [03/26] ALSA: usb-audio: Fix invalid volume resolution for
- Logitech HD Webcam c310
+Subject: [23/26] packet: packet_getname_spkt: make sure string is  always
+ 0-terminated
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,29 +32,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 36691e1be6ec551eef4a5225f126a281f8c051c2 upstream.
+[ Upstream commit 2dc85bf323515e59e15dfa858d1472bb25cad0fe ]
 
-Just like the previous fix for LogitechHD Webcam c270 in commit
-11e7064f35bb87da8f427d1aa4bbd8b7473a3993, c310 model also requires the
-same workaround for avoiding the kernel warning.
+uaddr->sa_data is exactly of size 14, which is hard-coded here and
+passed as a size argument to strncpy(). A device name can be of size
+IFNAMSIZ (== 16), meaning we might leave the destination string
+unterminated. Thus, use strlcpy() and also sizeof() while we're
+at it. We need to memset the data area beforehand, since strlcpy
+does not padd the remaining buffer with zeroes for user space, so
+that we do not possibly leak anything.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=59741
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/mixer.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/packet/af_packet.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -821,6 +821,7 @@ static void volume_control_quirks(struct
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 5a70215..a2ac2c3 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -2820,12 +2820,11 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
+ 		return -EOPNOTSUPP;
  
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
-+	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
- 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
- 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
- 	case USB_ID(0x046d, 0x0991):
+ 	uaddr->sa_family = AF_PACKET;
++	memset(uaddr->sa_data, 0, sizeof(uaddr->sa_data));
+ 	rcu_read_lock();
+ 	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+ 	if (dev)
+-		strncpy(uaddr->sa_data, dev->name, 14);
+-	else
+-		memset(uaddr->sa_data, 0, 14);
++		strlcpy(uaddr->sa_data, dev->name, sizeof(uaddr->sa_data));
+ 	rcu_read_unlock();
+ 	*uaddr_len = sizeof(*uaddr);
+ 
 
