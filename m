@@ -1,154 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3FZRvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:51:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53544 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3FZRvp (ORCPT
+	id S1752696Ab3FZRyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:54:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46606 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab3FZRyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:51:45 -0400
-Date: Wed, 26 Jun 2013 10:51:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Oliver Schinagl <oliver+list@schinagl.nl>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        andy.shevchenko@gmail.com, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org, linux-sunxi@googlegroups.com,
-        Oliver Schinagl <oliver@schinagl.nl>
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-Message-ID: <20130626175144.GC2222@kroah.com>
-References: <1371502778-15849-1-git-send-email-oliver+list@schinagl.nl>
- <1371502778-15849-2-git-send-email-oliver+list@schinagl.nl>
- <20130617225847.GA9494@kroah.com>
- <20130624092942.GG26008@lukather>
- <20130624160440.GA15201@kroah.com>
- <51C87DC7.50005@schinagl.nl>
- <20130624181509.GA8847@kroah.com>
- <51C8B84C.3020200@schinagl.nl>
- <20130624214615.GA17604@kroah.com>
- <51CAA709.4060801@schinagl.nl>
+	Wed, 26 Jun 2013 13:54:46 -0400
+Date: Wed, 26 Jun 2013 18:54:30 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: ARM pagetable setting in Linux
+Message-ID: <20130626175430.GH2718@n2100.arm.linux.org.uk>
+References: <35FD53F367049845BC99AC72306C23D19441BF5863@CNBJMBX05.corpusers.net> <20130626171649.GG10333@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51CAA709.4060801@schinagl.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130626171649.GG10333@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 10:32:09AM +0200, Oliver Schinagl wrote:
-> On 24-06-13 23:46, Greg KH wrote:
-> >On Mon, Jun 24, 2013 at 11:21:16PM +0200, Oliver Schinagl wrote:
-> >>On 06/24/13 20:15, Greg KH wrote:
-> >>>On Mon, Jun 24, 2013 at 07:11:35PM +0200, Oliver Schinagl wrote:
-> >>>>Hey Greg,
-> >>>>On 06/24/13 18:04, Greg KH wrote:
-> >>>>>On Mon, Jun 24, 2013 at 11:29:42AM +0200, Maxime Ripard wrote:
-> >>>>>>Hi Greg,
-> >>>>>>
-> >>>>>>On Mon, Jun 17, 2013 at 03:58:47PM -0700, Greg KH wrote:
-> >>>>>>>On Mon, Jun 17, 2013 at 10:59:37PM +0200, Oliver Schinagl wrote:
-> >>>>>>
-> >>>>>>[..]
-> >>>>>>
-> >>>>>>>>+static int __init sunxi_sid_probe(struct platform_device *pdev)
-> >>>>>>>>+{
-> >>>>>>>>+	u8 entropy[SID_SIZE];
-> >>>>>>>>+	unsigned int i;
-> >>>>>>>>+	struct resource *res;
-> >>>>>>>>+	void __iomem *sid_reg_base;
-> >>>>>>>>+	int ret;
-> >>>>>>>>+
-> >>>>>>>>+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >>>>>>>>+	sid_reg_base = devm_ioremap_resource(&pdev->dev, res);
-> >>>>>>>>+	if (IS_ERR(sid_reg_base))
-> >>>>>>>>+		return PTR_ERR(sid_reg_base);
-> >>>>>>>>+	platform_set_drvdata(pdev, sid_reg_base);
-> >>>>>>>>+
-> >>>>>>>>+	ret = device_create_bin_file(&pdev->dev, &sid_bin_attr);
-> >>>>>>>>+	if (ret)
-> >>>>>>>>+		return ret;
-> >>>>>>>
-> >>>>>>>You just raced with userspace, having the file show up after the device
-> >>>>>>>was announced to users that it was there.  Please use the proper device
-> >>>>>>>file api to add default attributes to prevent this from happening.
-> >>>>>>
-> >>>>>>Sorry if the question looks dumb, but what kind of race can we generate
-> >>>>>>here?
-> >>>>>
-> >>>>>Userspace gets told about the device from the driver core, udev runs and
-> >>>>>reads all of the attributes, then your probe function comes along and
-> >>>>>adds a new attribute.  Userspace will then not know about it at all.
-> >>>>>
-> >>>>>>The device_create_bin_file is the last call that we make (if we except
-> >>>>>>the entropy stuff, but it doesn't really matter here), so after we
-> >>>>>>created the file, we have everything properly initialised so that our
-> >>>>>>functions can be called, right?
-> >>>>>>
-> >>>>>>And another dumb question for you, what is the "proper device file API"
-> >>>>>>you are referring to ? :)
-> >>>>>
-> >>>>>Please read Documentation/driver_model/device.txt and see the section on
-> >>>>>Attributes for what to do.  If you have specific questions after reading
-> >>>>>that, please let me know.
-> >>>>Since Maxime kinda asked for me, I hope you don't mind me following up.
-> >>>>
-> >>>>That doc doesn't mention the binary interface at all. Initially I
-> >>>>had both devices up, the 'read' device as a textual representation
-> >>>>and added the binary one later. Maxime and I decided the binary one
-> >>>>made more sense, as the only textual user would be a human and they
-> >>>>don't poke that entry that often.
-> >>>>
-> >>>>So what default way exists for binary files or how would that be solved?
-> >>>
-> >>>The same interface should work just fine for binary files, have you
-> >>>tried it?
-> >>I'll just take the plunge and make myself look stupid ;)
-> >>
-> >>I tried to change things around, used DEVICE_ATTR(eeprom, S_IRUGO,
-> >>sid_read, NULL); So far so good I'd hope.
-> >
-> >Ick, no.
-> >
-> >>Of course now I'll have to change the function's parameters from
-> >>
-> >>static ssize_t sid_read(struct file *fd, struct kobject *kobj,
-> >>			struct bin_attribute *attr, char *buf,
-> >>			loff_t pos, size_t size)
-> >>
-> >>to
-> >>
-> >>static ssize_t sid_read(struct device *dev,
-> >>			struct device_attribute *attr, char *buf)
-> >
-> >Which is what do you do not want, as you find out:
-> >
-> >>But now, I'm missing things like 'pos' and 'size', both which
-> >>determine the requested bytes. True, in this specific driver we are
-> >>talking about 'only' 16 bytes, but what if it weren't but a few MiB
-> >>and in sysfs we want to read some random byte, will we have to put
-> >>the entire blok into the buffer?
-> >>
-> >>So sorry for not understanding, but ... I don't understand :)
-> >
-> >Stick with a binary attribute, and attach that to the proper class
-> >structure and all should be fine.
-> >
-> >Ah crap, you're using a platform device.
-> >
-> >{sigh}
-> >
-> >Why?  Why not use a "real" device which has a "real" class, and then use
-> >the interfaces there?
-> Because, as I was told, this really is a platform device. If you
-> have some example code I can look at and learn from that would be
-> awesome. I'm still learning after all, and apparently I'm doing it
-> wrong now :)
+As I don't have the original mail (because it wasn't copied to the right
+list) I can't reply to the original author, so I'll do it like this
+instead.
 
-I was wrong, you can do this with a platform device just fine.  Set the
-"groups" field in your platform device->device structure, and all will
-work properly, right?
+On Wed, Jun 26, 2013 at 06:16:49PM +0100, Will Deacon wrote:
+> [adding the ARM list -- please try and remember to do that in future]
+> 
+> On Wed, Jun 26, 2013 at 03:41:40AM +0100, Wang, Yalin wrote:
+> > Hi  Will,
+> 
+> Hello,
+> 
+> > I have a question about  arm pagetable setting in Linux .
+> > 
+> > From armV6,  there is TTBR0 and TTBR1  translation base address registers  in mmu .
+> > But I  found linux only use TTBR0 for translation base address ,
+> > Could we use TTBR0 and TTBR1 to split user task and kernel pagetables (swapper_pg_dir)？ 
 
-thanks,
+We don't use TTBR1 because the configurable page table splits between
+TTBR0 and TTBR1 are not appropriate for Linux kernels.  The common
+configuration is to have 3GB of userspace and 1GB of kernel space.
 
-greg k-h
+However, the TTBR splits supported are 2GB, 1GB, 512MB etc.  As I had
+prior knowledge of ARMv6 before it was released, I raised this point
+with ARM Ltd because I knew that it would not be appropriate for Linux.
+Unfortunately, the response was basically that they didn't want to know.
+So, as the hardware provided support mismatches what we want, we don't
+use the feature.
+
+It's as simple as that; had we been listened to and the architecture
+altered to do what we required, then we'd be using it...
+
+> > 1. Because we don’t need copy kernel first –level pagetables into every 
+> > User task’s pagetables and flush tlb (for example fork() a new process).
+> 
+> Well, you still need the TLB maintenance for setting up CoW, so this win is
+> probably not very big.
+> 
+> > 2. And don’t need handle kernel page fault because that user task’s kernel 
+> > Pagetable when it is not set up , need copy again( for example vmalloc()  ioremap()  kmap()  will change 
+> > Kernel pagetables and need update to every task pagetables ) .
+> 
+> Is that really a fastpath?
+
+No it isn't, because for all of the above cases we're talking about copying
+L1 page table entries, not the individual L2 page table entries between
+threads.
+
+Every page table above TASK_SIZE gets shared between processes, and once
+it's been shared to a process, any new process forked from that gets its
+own pointer to that 2nd level page table immediately.
+
+So, during the initial boot there will be a number of the L1 copies, but
+the system will stabilize and there will be no further L1 faulted copies
+needed.
