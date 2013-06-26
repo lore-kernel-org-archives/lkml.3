@@ -1,141 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab3FZRks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:40:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57917 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab3FZRkq (ORCPT
+	id S1752619Ab3FZRn4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:43:56 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:38930 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab3FZRny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:40:46 -0400
-Message-ID: <51CB279A.1090404@wwwdotorg.org>
-Date: Wed, 26 Jun 2013 11:40:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 2/4] pinmux: Add TB10x pinmux driver
-References: <20130618092516.GC18663@ab42.lan> <1371547751-13873-2-git-send-email-christian.ruppert@abilis.com> <51C23222.2060906@wwwdotorg.org> <20130626115051.GC7095@ab42.lan>
-In-Reply-To: <20130626115051.GC7095@ab42.lan>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 13:43:54 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless update of refcount
+Date: Wed, 26 Jun 2013 13:43:22 -0400
+Message-Id: <1372268603-46748-2-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com>
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 05:50 AM, Christian Ruppert wrote:
-> On Wed, Jun 19, 2013 at 04:35:14PM -0600, Stephen Warren wrote:
->> On 06/18/2013 03:29 AM, Christian Ruppert wrote:
->>> The pinmux driver of the Abilis Systems TB10x platform based on ARC700 CPUs.
->>> Used to control the pinmux and is a prerequisite for the GPIO driver.
->>
->>> diff --git a/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt b/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt
->>
->>> +Port definitions
->>> +----------------
->>> +
->>> +Ports are defined (and referenced) by sub-nodes of the pin controller. Every
->>> +sub-node defines exactly one port (i.e. a set of pins). Ports are predefined
->>> +as named pin groups inside the pin controller driver and these names are used
->>> +to associate pin group predefinitions to pin controller sub-nodes.
->>> +
->>> +Required port definition subnode properties:
->>> +  - pingrp: should be set to the name of the port's pin group.
->>
->> This seems odd.... More on that where I comment on the example.
->>
->>> +The following pin groups are available:
->>> +  - GPIO ports: gpioa_pins, gpiob_pins, gpioc_pins, gpiod_pins, gpioe_pins,
->>> +                gpiof_pins, gpiog_pins, gpioh_pins, gpioi_pins, gpioj_pins,
->>> +                gpiok_pins, gpiol_pins, gpiom_pins, gpion_pins
->> ...
->>> +  - JTAG: jtag_pins
->>
->> I'd suggest removing "_pins" from all those names, since it's the same
->> in all names and hence isn't necessary.
->>
->>> +GPIO ranges definition
->>> +----------------------
->>> +
->>> +The named pin groups of GPIO ports can be used to define GPIO ranges as
->>> +explained in Documentation/devicetree/bindings/gpio/gpio.txt.
->>
->> I wouldn't mention that here; the GPIO node contains the gpio-ranges
->> property, not the pin controller node. Hence, the binding for the GPIO
->> DT node should describe the property, not the binding for this node.
->>
->>> +Example
->>> +-------
->>> +
->>> +iomux: iomux@FF10601c {
->>> +	compatible = "abilis,tb10x-iomux";
->>> +	reg = <0xFF10601c 0x4>;
->>> +	pctl_gpio_a: pctl-gpio-a {
->>> +		pingrp = "gpioa_pins";
->>> +	};
->>> +	pctl_uart0: pctl-uart0 {
->>> +		pingrp = "uart0_pins";
->>> +	};
->>> +};
->>
->> The two nodes pctl-gpio-a and pctl-uart0 seem to be missing data. The
->> idea here is that you define nodes that says:
->>
->> * This node applies to these pin(s)/group(s).
->> * Select mux function X on those pins/groups and/or apply these pin
->> configuration options to those pins/groups.
->>
->> The examples above don't include any mux/config options, nor does the
->> binding say how to do specify them.
->>
->> The set of pin groups defined by this binding should correspond directly
->> to the set of pin groups that actually exist in HW. So, if you have 3
->> pin groups (A, B, C) in HW each of which has two mux functions (X, Y),
->> your DT binding should define just 3 pin groups (A, B, C), not 6 (A_X,
->> A_Y, B_X, B_Y, C_X, C_Y). In other words, the pin group name shouldn't
->> imply the mux function.
-> 
-> Can we consider it as agreed now that this implementation is acceptable
-> for the TB10x pin controller?
+This patch introduces a new spinlock_refcount.h header file to be
+included by kernel code that want to do a lockless update of reference
+count protected by a spinlock.
 
-There are two issues here:
+To try to locklessly update the reference count while lock isn't
+acquired by others, the 32-bit count and 32-bit raw spinlock can be
+combined into a single 64-bit word to be updated atomically whenever
+the following conditions are true:
 
-1) What is a pin group:
+1. The lock is not taken, i.e. spin_can_lock() returns true.
+2. The value of the count isn't equal to the given non-negative
+   threshold value.
 
-1a) Must it solely represent a group of pins that actually exists in HW
-(e.g. it's an RTL port, or a set of pins all controlled at once by a
-single bit/field in a register)
+To maximize the chance of doing lockless update, the inlined
+__lockcnt_add_unless() function calls spin_unlock_wait() before trying
+to do the update.
 
-1b) A SW-defined group of pins, simply because it's convenient to talk
-about that set of pins at once, even though HW doesn't impose that those
-pins are in a group in any way.
+The new code also attempts to do lockless atomic update twice before
+falling back to the old code path of acquring a lock before doing
+the update. It is because there will still be some fair amount of
+contention with only one attempt.
 
-Defining groups for either of those reasons is fine, although this is
-the area where my preference and LinusW's differ.
+After including the header file, the LOCK_WITH_REFCOUNT() macro
+should be used to define the spinlock with reference count combo in
+an embedding data structure.  Then the __lockcnt_add_unless() inlined
+function can be used to locklessly update the reference count if the
+lock hasn't be acquired by others. Some predefined lockref_*() macros
+that call __lockcnt_add_unless() can also be used for this purpose.
 
-2) Can groups represent just a set of pins, or can it also imply that a
-particular mux function is selected on that group?
+Build and boot tests of the new code and the associated dcache changes
+were conducted for the following configurations:
+1. x86 64-bit SMP, CONFIG_DEBUG_SPINLOCK=n
+2. x86 64-bit SMP, CONFIG_DEBUG_SPINLOCK=y
+3. x86 32-bit UP , CONFIG_DEBUG_SPINLOCK=n
+4. x86 32-bit SMP, CONFIG_DEBUG_SPINLOCK=n
+5. x86 32-bit SMP, CONFIG_DEBUG_SPINLOCK=y
 
-I believe that both LinusW and I are in agreement that a group is simply
-a list/set/group of pins. You select mux functions onto groups. A
-groups's definition can't imply that a particular mux function is
-selected onto it.
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ include/linux/spinlock_refcount.h |  177 +++++++++++++++++++++++++++++++++++++
+ include/linux/spinlock_types.h    |   19 ++++
+ 2 files changed, 196 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/spinlock_refcount.h
 
-If we don't follow this rule, then you end up with a combinatorial
-explosion of groups; the cross-product of all possible groups of pins
-vs. the mux function to select on them, rather than simply having a list
-of groups of pins, which is a much smaller set/list.
+diff --git a/include/linux/spinlock_refcount.h b/include/linux/spinlock_refcount.h
+new file mode 100644
+index 0000000..0160861
+--- /dev/null
++++ b/include/linux/spinlock_refcount.h
+@@ -0,0 +1,177 @@
++/*
++ * Spinlock with reference count combo
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * (C) Copyright 2013 Hewlett-Packard Development Company, L.P.
++ *
++ * Authors: Waiman Long <waiman.long@hp.com>
++ */
++#ifndef __LINUX_SPINLOCK_REFCOUNT_H
++#define __LINUX_SPINLOCK_REFCOUNT_H
++
++#include <linux/spinlock.h>
++
++/*
++ * The raw __LOCK_WITH_REFCOUNT() macro defines the combined spinlock with
++ * reference count data structure to be embedded in a larger structure.
++ * With unnamed union, the lock and count names can be accessed directly if
++ * no field name is assigned to the structure. Otherwise, they will have to
++ * be accessed indirectly via the assigned field name of the combined
++ * structure.
++ *
++ * The combined data structure is 8-byte aligned. So proper placement of this
++ * structure in the larger embedding data structure is needed to ensure that
++ * there is no hole in it.
++ *
++ * @lock:   Name of the spinlock
++ * @count:  Name of the reference count
++ * @u_name: Name of combined data structure union (can be empty for unnamed
++ *	    union)
++ */
++#ifndef CONFIG_SMP
++#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
++	unsigned int count;				\
++	spinlock_t   lock
++
++#elif defined(__SPINLOCK_HAS_REFCOUNT)
++#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
++	union u_name {					\
++		u64		__lock_count;		\
++		spinlock_t	lock;			\
++		struct {				\
++			arch_spinlock_t __raw_lock;	\
++			unsigned int	count;		\
++		};					\
++	}
++
++#else /* __SPINLOCK_HAS_REFCOUNT */
++#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
++	union u_name {					\
++		u64		__lock_count;		\
++		struct {				\
++			unsigned int	count;		\
++			spinlock_t	lock;		\
++		};					\
++	}
++
++#endif /* __SPINLOCK_HAS_REFCOUNT */
++
++/*
++ * The LOCK_WITH_REFCOUNT() macro create an unnamed union structure
++ */
++#define LOCK_WITH_REFCOUNT(lock, count)			\
++	__LOCK_WITH_REFCOUNT(lock, count, /**/)
++
++#ifdef CONFIG_SMP
++#define	LOCKCNT_COMBO_PTR(s)	(&(s)->__lock_count)
++
++/*
++ * Define a "union _lock_refcnt" structure to be used by the helper function
++ */
++__LOCK_WITH_REFCOUNT(lock, count, __lock_refcnt);
++
++/**
++ *
++ * __lockcnt_add_unless - atomically add the given value to the count unless
++ *			  the lock was acquired or the count equals to the
++ *			  given threshold value.
++ *
++ * @plockcnt : pointer to the combined lock and count 8-byte data
++ * @plock    : pointer to the spinlock
++ * @pcount   : pointer to the reference count
++ * @value    : value to be added
++ * @threshold: threshold value for acquiring the lock
++ * Return    : 1 if operation succeed, 0 otherwise
++ *
++ * If the lock was not acquired, __lockcnt_add_unless() atomically adds the
++ * given value to the reference count unless the given threshold is reached.
++ * If the lock was acquired or the threshold was reached, 0 is returned and
++ * the caller will have to acquire the lock and update the count accordingly
++ * (can be done in a non-atomic way).
++ */
++static inline int
++__lockcnt_add_unless(u64 *plockcnt, spinlock_t *plock, unsigned int *pcount,
++		     int value, int threshold)
++{
++	union __lock_refcnt old, new;
++	int   get_lock;
++
++	/*
++	 * Code doesn't work if raw spinlock is larger than 4 bytes
++	 * or is empty.
++	 */
++	BUG_ON((sizeof(arch_spinlock_t) > 4) || (sizeof(arch_spinlock_t) == 0));
++
++	spin_unlock_wait(plock);	/* Wait until lock is released */
++	old.__lock_count = ACCESS_ONCE(*plockcnt);
++	get_lock = ((threshold >= 0) && (old.count == threshold));
++	if (likely(!get_lock && spin_can_lock(&old.lock))) {
++		new.__lock_count = old.__lock_count;
++		new.count += value;
++		if (cmpxchg64(plockcnt, old.__lock_count, new.__lock_count)
++		    == old.__lock_count)
++			return 1;
++		cpu_relax();
++		/*
++		 * Try one more time
++		 */
++		old.__lock_count = ACCESS_ONCE(*plockcnt);
++		get_lock = ((threshold >= 0) && (old.count == threshold));
++		if (likely(!get_lock && spin_can_lock(&old.lock))) {
++			new.__lock_count = old.__lock_count;
++			new.count += value;
++			if (cmpxchg64(plockcnt, old.__lock_count,
++				      new.__lock_count) == old.__lock_count)
++				return 1;
++			cpu_relax();
++		}
++	}
++	return 0;	/* The caller will need to acquire the lock */
++}
++#else /* CONFIG_SMP */
++#define	LOCKCNT_COMBO_PTR(s)	NULL
++
++/*
++ * Just add the value as the spinlock is a no-op
++ */
++static inline int
++__lockcnt_add_unless(u64 *plockcnt, spinlock_t *plock, unsigned int *pcount,
++		     int value, int threshold)
++{
++	if ((threshold >= 0) && (*pcount == threshold))
++		return 0;
++	(*pcount) += value;
++	return 1;
++}
++#endif /* CONFIG_SMP */
++
++/*
++ * Generic macros to increment and decrement reference count
++ * @sname : pointer to structure that embeds spinlock & reference count combo
++ * @lock  : name of spinlock in structure
++ * @count : name of reference count in structure
++ *
++ * lockref_get()  - increments count unless it is locked
++ * lockref_get0() - increments count unless it is locked or count is 0
++ * lockref_put()  - decrements count unless it is locked or count is 1
++ */
++#define lockref_get(sname, lock, count) 				\
++	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(sname), &(sname)->lock,	\
++			     &(sname)->count, 1, -1)
++#define lockref_get0(sname, lock, count) 				\
++	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(sname), &(sname)->lock,	\
++			     &(sname)->count, 1, 0)
++#define lockref_put(sname, lock, count) 				\
++	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(sname), &(sname)->lock,	\
++			     &(sname)->count, -1, 1)
++
++#endif /* __LINUX_SPINLOCK_REFCOUNT_H */
+diff --git a/include/linux/spinlock_types.h b/include/linux/spinlock_types.h
+index 73548eb..cc107ad 100644
+--- a/include/linux/spinlock_types.h
++++ b/include/linux/spinlock_types.h
+@@ -17,8 +17,27 @@
+ 
+ #include <linux/lockdep.h>
+ 
++/*
++ * The presence of either one of the CONFIG_DEBUG_SPINLOCK or
++ * CONFIG_DEBUG_LOCK_ALLOC configuration parameter will force the
++ * spinlock_t structure to be 8-byte aligned.
++ *
++ * To support the spinlock/reference count combo data type for 64-bit SMP
++ * environment with spinlock debugging turned on, the reference count has
++ * to be integrated into the spinlock_t data structure in this special case.
++ * The spinlock_t data type will be 8 bytes larger if CONFIG_GENERIC_LOCKBREAK
++ * is also defined.
++ */
++#if defined(CONFIG_64BIT) && (defined(CONFIG_DEBUG_SPINLOCK) ||\
++			      defined(CONFIG_DEBUG_LOCK_ALLOC))
++#define	__SPINLOCK_HAS_REFCOUNT	1
++#endif
++
+ typedef struct raw_spinlock {
+ 	arch_spinlock_t raw_lock;
++#ifdef __SPINLOCK_HAS_REFCOUNT
++	unsigned int count;
++#endif
+ #ifdef CONFIG_GENERIC_LOCKBREAK
+ 	unsigned int break_lock;
+ #endif
+-- 
+1.7.1
 
-So, in the DT example above, I still believe that you need an extra
-property that defines which mux function to select onto the specified
-group. The group name can't imply this, so there needs to be some way of
-specifying it.
