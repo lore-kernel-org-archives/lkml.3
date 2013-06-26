@@ -1,43 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab3FZI1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:27:35 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:47149 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab3FZI1d (ORCPT
+	id S1751813Ab3FZI3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:29:53 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40452 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab3FZI3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:27:33 -0400
-Message-ID: <51CAA5F1.2010001@free-electrons.com>
-Date: Wed, 26 Jun 2013 10:27:29 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 04:29:50 -0400
+Message-ID: <51CAA764.7000006@linux.vnet.ibm.com>
+Date: Wed, 26 Jun 2013 14:03:40 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the cpuinit tree with the arm-current
- tree
-References: <20130626171241.4629f4072fbd36f12d5fe3be@canb.auug.org.au>
-In-Reply-To: <20130626171241.4629f4072fbd36f12d5fe3be@canb.auug.org.au>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Jones <drjones@redhat.com>
+CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, habanero@linux.vnet.ibm.com,
+        xen-devel@lists.xensource.com, peterz@infradead.org,
+        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
+        andi@firstfloor.org, attilio.rao@citrix.com, ouyang@cs.pitt.edu,
+        gregkh@suse.de, agraf@suse.de, chegu_vinod@hp.com,
+        torvalds@linux-foundation.org, avi.kivity@gmail.com,
+        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephan.diestelhorst@amd.com, riel@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 0/18] Paravirtualized ticket spinlocks
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624131716.GA11948@hawk.usersys.redhat.com>
+In-Reply-To: <20130624131716.GA11948@hawk.usersys.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062608-8256-0000-0000-000008163106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 09:12 AM, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> Today's linux-next merge of the cpuinit tree got a conflict in arch/arm/mm/proc-v7.S between commit 3e0a07f8c401 ("ARM: 7773/1: PJ4B: Add support for errata 4742") from the arm-current
-> tree and commit "arm: delete __cpuinit/__CPUINIT usage from all ARM users" from the cpuinit tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action is required).
-> 
->From my point of view it looks good.
-Thanks,
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+On 06/24/2013 06:47 PM, Andrew Jones wrote:
+> On Mon, Jun 24, 2013 at 06:10:14PM +0530, Raghavendra K T wrote:
+>>
+>> Results:
+>> =======
+>> base = 3.10-rc2 kernel
+>> patched = base + this series
+>>
+>> The test was on 32 core (model: Intel(R) Xeon(R) CPU X7560) HT disabled
+>> with 32 KVM guest vcpu 8GB RAM.
+>
+> Have you ever tried to get results with HT enabled?
+>
+>>
+>> +-----------+-----------+-----------+------------+-----------+
+>>                 ebizzy (records/sec) higher is better
+>> +-----------+-----------+-----------+------------+-----------+
+>>      base        stdev        patched    stdev        %improvement
+>> +-----------+-----------+-----------+------------+-----------+
+>> 1x  5574.9000   237.4997    5618.0000    94.0366     0.77311
+>> 2x  2741.5000   561.3090    3332.0000   102.4738    21.53930
+>> 3x  2146.2500   216.7718    2302.3333    76.3870     7.27237
+>> 4x  1663.0000   141.9235    1753.7500    83.5220     5.45701
+>> +-----------+-----------+-----------+------------+-----------+
+>
+> This looks good. Are your ebizzy results consistent run to run
+> though?
+>
+>> +-----------+-----------+-----------+------------+-----------+
+>>                dbench  (Throughput) higher is better
+>> +-----------+-----------+-----------+------------+-----------+
+>>      base        stdev        patched    stdev        %improvement
+>> +-----------+-----------+-----------+------------+-----------+
+>> 1x 14111.5600   754.4525   14645.9900   114.3087     3.78718
+>> 2x  2481.6270    71.2665    2667.1280    73.8193     7.47498
+>> 3x  1510.2483    31.8634    1503.8792    36.0777    -0.42173
+>> 4x  1029.4875    16.9166    1039.7069    43.8840     0.99267
+>> +-----------+-----------+-----------+------------+-----------+
+>
+> Hmm, I wonder what 2.5x looks like. Also, the 3% improvement with
+> no overcommit is interesting. What's happening there? It makes
+> me wonder what < 1x looks like.
+>
+
+Hi Andrew,
+
+I tried 2.5x case sort where I used 3 guests with 27 vcpu each on 32
+core (HT disabled machine) and here is the output. almost no gain there.
+
+              throughput avg    stdev
+base:     1768.7458 MB/sec     54.044221
+patched:  1772.5617 MB/sec     41.227689
+gain %0.226
+
+I am yet to try HT enabled cases that would give 0.5x to 2x performance
+results.
+
