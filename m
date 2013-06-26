@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab3FZLFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 07:05:37 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45481 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab3FZLFd (ORCPT
+	id S1752126Ab3FZLIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 07:08:18 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:38816 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab3FZLIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 07:05:33 -0400
+	Wed, 26 Jun 2013 07:08:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <1370941408-29304-4-git-send-email-l.majewski@samsung.com>
+In-Reply-To: <20130626130407.021c05cb@amdc308.digital.local>
 References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1370941408-29304-1-git-send-email-l.majewski@samsung.com>
-	<1370941408-29304-4-git-send-email-l.majewski@samsung.com>
-Date: Wed, 26 Jun 2013 16:35:32 +0530
-Message-ID: <CAKohponJ5FyuKywCGz5j8GYomwqEJ0B-CvJybp+_eLjrsRkXDA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] cpufreq:exynos:Extend Exynos cpufreq driver to
- support boost framework
+	<1371661969-7660-1-git-send-email-l.majewski@samsung.com>
+	<1371661969-7660-2-git-send-email-l.majewski@samsung.com>
+	<CAKohpomStuSGyQHnk9jNLpije=SAkb4zHg40zHDgLRCUQeZC1A@mail.gmail.com>
+	<20130626125411.5dc935bf@amdc308.digital.local>
+	<CAKohpom1yJOAVZ1XE+Q+dtrZM1N6Zqd7DjURSA_f2fhQ1OiCJA@mail.gmail.com>
+	<20130626130407.021c05cb@amdc308.digital.local>
+Date: Wed, 26 Jun 2013 16:38:15 +0530
+Message-ID: <CAKohpo=aaJyhZ1U2W=DUyi8wGH=rLCL47SBSO7TgsxHXamdotA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/7] cpufreq: Store cpufreq policies in a list
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: Lukasz Majewski <l.majewski@samsung.com>
 Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
@@ -28,19 +31,18 @@ Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
         Lukasz Majewski <l.majewski@majess.pl>,
         Andre Przywara <andre.przywara@linaro.org>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
+        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>, t.figa@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 June 2013 14:33, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> The struct cpufreq_driver has been extended to embrace the information
-> related to boost support.
->
-> When "boost_mode" device tree attribute is defined for a platform, the
-> low_level_boost pointer is filled with proper address. The
-> .low_level_boost field filled to NULL, indicates that boost is not
-> supported.
+On 26 June 2013 16:34, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> err_out_kobj_put:
+>         list_del(&cpufreq_policy_list);
+>         [rest of error path]
 
-This patch is still few generations back :)
+I couldn't find err_out_kobj_put in existing code :)
+
+BTW, just add to the list only once everything passed.
