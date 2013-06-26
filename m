@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab3FZIZT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:25:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10061 "EHLO mx1.redhat.com"
+	id S1751742Ab3FZI03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:26:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43908 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344Ab3FZIZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:25:14 -0400
-Message-ID: <51CAA514.8050609@redhat.com>
-Date: Wed, 26 Jun 2013 10:23:48 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751458Ab3FZI01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:26:27 -0400
+Date: Wed, 26 Jun 2013 11:26:20 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Ravi Babu <ravibabu@ti.com>
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 2/3] usb: musb: core: added babble recovery func-ptr
+ to musb->ops
+Message-ID: <20130626082620.GN12640@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1369832824-29071-1-git-send-email-ravibabu@ti.com>
+ <1369832824-29071-3-git-send-email-ravibabu@ti.com>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 29/45] kvm/vmx: Use get/put_online_cpus_atomic() to
- prevent CPU offline
-References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625203043.16593.1600.stgit@srivatsabhat.in.ibm.com> <51CA9C5E.1030609@redhat.com> <51CAA116.2060906@linux.vnet.ibm.com>
-In-Reply-To: <51CAA116.2060906@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tuFXEhzhBeitrIAu"
+Content-Disposition: inline
+In-Reply-To: <1369832824-29071-3-git-send-email-ravibabu@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 26/06/2013 10:06, Srivatsa S. Bhat ha scritto:
-> On 06/26/2013 01:16 PM, Paolo Bonzini wrote:
->> Il 25/06/2013 22:30, Srivatsa S. Bhat ha scritto:
->>> -	cpu = get_cpu();
->>> +	cpu = get_online_cpus_atomic();
->>>  	vmx_vcpu_load(&vmx->vcpu, cpu);
->>>  	vmx->vcpu.cpu = cpu;
->>>  	err = vmx_vcpu_setup(vmx);
->>>  	vmx_vcpu_put(&vmx->vcpu);
->>> -	put_cpu();
->>> +	put_online_cpus_atomic();
->>
->> The new API has a weird name.  Why are you adding new functions instead
->> of just modifying get/put_cpu?
->>
-> 
-> Because the purpose of those two functions are distinctly different
-> from each other.
-> 
-> get/put_cpu() is used to disable preemption on the local CPU. (Which
-> also disables offlining the local CPU during that critical section).
+--tuFXEhzhBeitrIAu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, then I understood correctly... and I acked the other KVM patch.
+Hi,
 
-However, keeping the code on the local CPU is exactly the point of this
-particular use of get_cpu()/put_cpu().  Why does it need to synchronize
-with offlining of other CPUs?
+On Wed, May 29, 2013 at 06:37:03PM +0530, Ravi Babu wrote:
+> Adding babble_recovery operation as part of musb->ops, used
+> to recover from babble condition during babble interrupt.
+>=20
+> Signed-off-by: Ravi Babu <ravibabu@ti.com>
+> ---
+>  drivers/usb/musb/musb_core.c |    6 ++++++
+>  drivers/usb/musb/musb_core.h |    7 +++++++
+>  2 files changed, 13 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+> index ab6fa39..411c29d 100644
+> --- a/drivers/usb/musb/musb_core.c
+> +++ b/drivers/usb/musb/musb_core.c
+> @@ -857,6 +857,12 @@ b_host:
+>  		}
+>  	}
+> =20
+> +	/* handle babble condition */
+> +	if (int_usb & MUSB_INTR_BABBLE) {
+> +		pr_info("babble: restarting the musb controller..");
+> +		musb_babble_recovery(musb);
+> +	}
+> +
+>  #if 0
+>  /* REVISIT ... this would be for multiplexing periodic endpoints, or
+>   * supporting transfer phasing to prevent exceeding ISO bandwidth
+> diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+> index f96e899..bf37dc9 100644
+> --- a/drivers/usb/musb/musb_core.h
+> +++ b/drivers/usb/musb/musb_core.h
+> @@ -213,6 +213,8 @@ struct musb_platform_ops {
+>  	int	(*adjust_channel_params)(struct dma_channel *channel,
+>  				u16 packet_sz, u8 *mode,
+>  				dma_addr_t *dma_addr, u32 *len);
+> +
+> +	void	(*babble_recovery)(struct musb *musb);
 
-Paolo
+I don't get why can't 'babble_recovery' be generic. Why do we need each
+glue layer to implement it ?
 
-> What this patchset deals with is synchronizing with offline of *any*
-> CPU. Typically, we use get_online_cpus()/put_online_cpus() for that
-> purpose. But they can't be used in atomic context, because they take
-> mutex locks and hence can sleep.
-> 
-> So the code that executes in atomic context and which wants to prevent
-> *any* CPU from going offline, used to disable preemption around its
-> critical section. Disabling preemption prevents stop_machine(), and
-> CPU offline (of *any* CPU) was done via stop_machine(). So disabling
-> preemption disabled any CPU from going offline, as a *side-effect*.
-> 
-> And this patchset prepares the ground for getting rid of stop_machine()
-> in the CPU offline path. Which means, disabling preemption only prevents
-> the *local* CPU from going offline. So if code in atomic context wants
-> to prevent any CPU from going offline, we need a new set of APIs, like
-> get/put_online_cpus(), but which can be invoked from atomic context.
-> That's why I named it as get/put_online_cpus_atomic().
-> 
-> One of the key points here is that we want to preserve get/put_cpu()
-> as it is, since its purpose is different - disable preemption and
-> offline of the local CPU. There is no reason to change that API, its
-> useful as it is.
+--=20
+balbi
 
+--tuFXEhzhBeitrIAu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRyqWsAAoJEIaOsuA1yqREj10P/1h5hNhaOh8abdZudOId0WDh
+jPI87Xdmf1cDC6WAxjJ4UAQsDURVIImlYwZ3dTqGb+8I+OSP7GFZwrLrUP4TICP6
+0q7d+aXQaA0HqYXAtZpd/bvZvfwEz8QYbgtX3cm08SCCoYa1Uj6mPVA1lTAvVIui
+66rV/AW0LKQdhYzj/HaLG/JeAssttP7tfVJ5ilD1mDBGyAikeJ/+oVxfiOXaOs7M
+38EHsHo3GX7CDNr6IAe5MVbMeHp7P86HkaL+50QQFpksWSlGOf2sN8TdijHNWU4+
+QBNgsz0IR0EvASviZ1nis0WIYXaAA4vT/Cs3tP5vfCy4k8loneRsNClhPo69onhN
+XlOvX5nalbIsdJa689mywBOt7wIOA3N+sk5ooGNggzvQ1jsO1HEVKQXCjoXk8rb9
+Z57zwJatoHgRCLLMeezr+pmXeD6jLSDqdVVLuVIuqhFa3cUhVwonJUJRtbySo24T
+0YsBo6NjIaOvZ27FRCHDmoBVZwbVnB38sxyYdwIuPUsDZYnpc31v36eT+qhPFEKX
+DtKCCbQWjUC2Gd14WTN4JpPmDJ//1Xg4EkFuMnuls99Zh8my5xOmkELU7YVPyX07
+wwXdUSg7kIU4i+43kyg4AO77WVBMv/xOo7y2HZnplNZi+2VFfPe3ph6Xul7FSz2t
+Su/dxbmKmniUqMEr9u8K
+=3IoT
+-----END PGP SIGNATURE-----
+
+--tuFXEhzhBeitrIAu--
