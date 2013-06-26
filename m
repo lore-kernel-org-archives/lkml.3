@@ -1,108 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab3FZD0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 23:26:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50891 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab3FZD0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 23:26:13 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAErSpo4PuKOqKM19Ra5D_jCH0SEtNTo95_EhyXVxYAB3J_27zg@mail.gmail.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com> <6c27e79870ec93f7a8c6692d4bcfebaee589fa6b.1372211451.git.dvhart@linux.intel.com> <CAErSpo4PuKOqKM19Ra5D_jCH0SEtNTo95_EhyXVxYAB3J_27zg@mail.gmail.com>
+	id S1751729Ab3FZDfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 23:35:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45500 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab3FZDfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 23:35:43 -0400
+Date: Tue, 25 Jun 2013 20:36:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/95] 3.9.8-stable review
+Message-ID: <20130626033627.GA27004@kroah.com>
+References: <20130625182153.605455184@linuxfoundation.org>
+ <20130626025838.GA15927@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 8/8] pch_gbe: Add MinnowBoard support
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 25 Jun 2013 20:25:59 -0700
-To: Bjorn Helgaas <bhelgaas@google.com>, Darren Hart <dvhart@linux.intel.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders@circuitco.com, vishal.l.verma@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
-Message-ID: <68829d6a-a419-49a7-9df9-c9fa80f45aed@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130626025838.GA15927@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same subsystem (not subdevice!) ID is used for all devices on the Minnowboard itself.
+On Tue, Jun 25, 2013 at 07:58:38PM -0700, Guenter Roeck wrote:
+> On Tue, Jun 25, 2013 at 11:31:47AM -0700, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.9.8 release.
+> > There are 95 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Thu Jun 27 18:18:29 UTC 2013.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.8-rc1.gz
+> > and the diffstat can be found below.
+> > 
+> Build results are as follows. Same as with 3.9.7.
 
-Bjorn Helgaas <bhelgaas@google.com> wrote:
+Thanks for testing and letting us know.
 
->On Tue, Jun 25, 2013 at 7:53 PM, Darren Hart <dvhart@linux.intel.com>
->wrote:
->> The MinnowBoard uses an AR803x PHY with the PCH GBE.
->>
->> It does not implement the RGMII 2ns TX clock delay in the trace
->routing
->> nor via strapping. Add a detection method for the board and the PHY
->and
->> enable the tx clock delay via the registers.
->>
->> This PHY will hibernate without link for 10 seconds. Ensure the PHY
->is
->> awake for probe and then disable hibernation. A future improvement
->would
->> be to convert pch_gbe to using PHYLIB and making sure we can wake the
->> PHY at the necessary times rather than permanently disabling it.
->>
->> Use the MinnowBoard PCI subsystem ID to identify the board and setup
->the
->> appropriate callbacks in a new pci_id driver_data structure.
->>
->> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: "H. Peter Anvin" <hpa@zytor.com>
->> Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
->> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> Cc: netdev@vger.kernel.org
->> ---
->>  drivers/net/ethernet/oki-semi/pch_gbe/Kconfig      |  1 +
->>  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h    |  2 +
->>  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   | 32 ++++++++
->>  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c    | 89
->++++++++++++++++++++++
->>  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h    |  2 +
->>  5 files changed, 126 insertions(+)
->> ...
->
->> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
->b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
->> index 6667a6b..6f0b9e3 100644
->> --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
->> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
->>...
->> +static struct pch_gbe_privdata pch_gbe_minnowboard_privdata = {
->> +       .phy_reset = minnow_phy_reset,
->> +       .phy_tx_clk_delay = pch_gbe_phy_tx_clk_delay,
->> +};
->> +
->>  static DEFINE_PCI_DEVICE_TABLE(pch_gbe_pcidev_id) = {
->>         {.vendor = PCI_VENDOR_ID_INTEL,
->>          .device = PCI_DEVICE_ID_INTEL_IOH1_GBE,
->> +        .subvendor = PCI_VENDOR_ID_CIRCUITCO,
->> +        .subdevice = PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD,
->
->"MINNOWBOARD" seems like a pretty generic name for something that
->probably refers only to the gigabit ethernet device in the EG20T.  If
->you expect to use that same subdevice ID on other devices, I guess we
->can add PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD to pci_ids.h.  If it will
->only be used for the gigabit ethernet device, we would normally not
->add a #define for it and would just use the hex constant here (see the
->comment at the top of pci_ids.h).
->
->> +        .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
->> +        .class_mask = (0xFFFF00),
->> +        .driver_data = (unsigned long) &pch_gbe_minnowboard_privdata
->> +        },
->> +       {.vendor = PCI_VENDOR_ID_INTEL,
->> +        .device = PCI_DEVICE_ID_INTEL_IOH1_GBE,
->>          .subvendor = PCI_ANY_ID,
->>          .subdevice = PCI_ANY_ID,
->>          .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
-
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+greg k-h
