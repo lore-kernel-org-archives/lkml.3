@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab3FZJhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:37:23 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:45222 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab3FZJhS (ORCPT
+	id S1752185Ab3FZJiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:38:06 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:41683 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab3FZJiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:37:18 -0400
-Date: Wed, 26 Jun 2013 11:37:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Dave Chiluk <chiluk@canonical.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: Scheduler accounting inflated for io bound processes.
-Message-ID: <20130626093713.GA27385@gmail.com>
-References: <51C35C05.1070005@canonical.com>
- <1372176104.7497.86.camel@marge.simpson.net>
- <1372182534.7497.129.camel@marge.simpson.net>
+	Wed, 26 Jun 2013 05:38:03 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: <netdev@vger.kernel.org>
+CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "Joe Perches" <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: [PATCH] arch/arc: angel4.dts - add description for "arc_emac"
+Date: Wed, 26 Jun 2013 13:37:49 +0400
+Message-ID: <1372239469-28537-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372182534.7497.129.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.121.8.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With this patch we introduce DT "arc_emac" description for ARCangel4.
+Description is based on info/example in
+"Documentation/devicetree/bindings/net/arc_emac.txt".
 
-* Mike Galbraith <bitbucket@online.de> wrote:
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
-> On Tue, 2013-06-25 at 18:01 +0200, Mike Galbraith wrote: 
-> > On Thu, 2013-06-20 at 14:46 -0500, Dave Chiluk wrote: 
-> > > Running the below testcase shows each process consuming 41-43% of it's
-> > > respective cpu while per core idle numbers show 63-65%, a disparity of
-> > > roughly 4-8%.  Is this a bug, known behaviour, or consequence of the
-> > > process being io bound?
-> > 
-> > All three I suppose.
-> 
-> P.S.
-> 
-> perf top --sort=comm -C 3 -d 5 -F 250 (my tick freq)
-> 56.65%    netserver
-> 43.35%         pert
-> 
-> perf top --sort=comm -C 3 -d 5
-> 67.16%  netserver
-> 32.84%       pert
-> 
-> If you sample a high freq signal (netperf TCP_RR) at low freq (tick),
-> then try to reproduce the original signal, (very familiar) distortion
-> results.  Perf doesn't even care about softirq yada yada, so seems it's
-> a pure sample rate thing.
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Mischa Jonker <mjonker@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: Florian Fainelli <florian@openwrt.org>
+---
+ arch/arc/boot/dts/angel4.dts |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Would be very nice to randomize the sampling rate, by randomizing the 
-intervals within a 1% range or so - perf tooling will probably recognize 
-the different weights.
+diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
+index bae4f93..4fb2d6f 100644
+--- a/arch/arc/boot/dts/angel4.dts
++++ b/arch/arc/boot/dts/angel4.dts
+@@ -51,5 +51,21 @@
+ 			current-speed = <115200>;
+ 			status = "okay";
+ 		};
++
++		ethernet@c0fc2000 {
++			compatible = "snps,arc-emac";
++			reg = <0xc0fc2000 0x3c>;
++			interrupts = <6>;
++			mac-address = [ 00 11 22 33 44 55 ];
++			clock-frequency = <80000000>;
++			max-speed = <100>;
++			phy = <&phy0>;
++
++			#address-cells = <1>;
++			#size-cells = <0>;
++			phy0: ethernet-phy@0 {
++				reg = <1>;
++			};
++		};
+ 	};
+ };
+-- 
+1.7.10.4
 
-Thanks,
-
-	Ingo
