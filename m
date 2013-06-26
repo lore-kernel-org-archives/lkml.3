@@ -1,109 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab3FZW4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 18:56:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31996 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065Ab3FZW4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 18:56:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,947,1363158000"; 
-   d="scan'208";a="360160146"
-Subject: Re: [PATCH v4 5/5] rwsem: do optimistic spinning for writer lock
- acquisition
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
+	id S1753055Ab3FZXGb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 19:06:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37858 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233Ab3FZXG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 19:06:29 -0400
+Date: Thu, 27 Jun 2013 01:06:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Waiman Long <Waiman.Long@hp.com>
+cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <1372286407.3954.6.camel@buesod1.americas.hpqcorp.net>
-References: <cover.1372282738.git.tim.c.chen@linux.intel.com>
-	 <1372285687.22432.145.camel@schen9-DESK>
-	 <1372286407.3954.6.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Jun 2013 15:56:37 -0700
-Message-ID: <1372287397.22432.146.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
+ update of refcount
+In-Reply-To: <1372268603-46748-2-git-send-email-Waiman.Long@hp.com>
+Message-ID: <alpine.DEB.2.02.1306262307020.4013@ionos.tec.linutronix.de>
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com> <1372268603-46748-2-git-send-email-Waiman.Long@hp.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 15:40 -0700, Davidlohr Bueso wrote:
-> On Wed, 2013-06-26 at 15:28 -0700, Tim Chen wrote:
-> > We want to add optimistic spinning to rwsems because we've noticed that
-> > the writer rwsem does not perform as well as mutexes. Tim noticed that
-> > for exim (mail server) workloads, when reverting commit 4fc3f1d6 and Davidlohr
-> > noticed it when converting the i_mmap_mutex to a rwsem in some aim7
-> > workloads. We've noticed that the biggest difference, in a nutshell, is
-> > when we fail to acquire a mutex in the fastpath, optimistic spinning
-> > comes in to play and we can avoid a large amount of unnecessary sleeping
-> > and wait queue overhead.
-> > 
-> > For rwsems on the other hand, upon entering the writer slowpath in
-> > rwsem_down_write_failed(), we just acquire the ->wait_lock, add
-> > ourselves to the wait_queue and blocking until we get the lock.
-> > 
-> > Reviewed-by: Peter Zijlstra <peterz@infradead.org>
-> > Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> > ---
-> >  include/linux/rwsem.h |    3 +
-> >  init/Kconfig          |    9 +++
-> >  kernel/rwsem.c        |   29 +++++++++-
-> >  lib/rwsem.c           |  150 +++++++++++++++++++++++++++++++++++++++++++++----
-> >  4 files changed, 179 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> > index 0616ffe..0c5933b 100644
-> > --- a/include/linux/rwsem.h
-> > +++ b/include/linux/rwsem.h
-> > @@ -29,6 +29,9 @@ struct rw_semaphore {
-> >  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> >  	struct lockdep_map	dep_map;
-> >  #endif
-> > +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-> > +	struct task_struct	*owner;
-> > +#endif
-> >  };
-> >  
-> >  extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 9d3a788..1c582d1 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -1595,6 +1595,15 @@ config TRACEPOINTS
-> >  
-> >  source "arch/Kconfig"
-> >  
-> > +config RWSEM_SPIN_ON_WRITE_OWNER
-> > +	bool "Optimistic spin write acquisition for writer owned rw-sem"
-> > +	default n
-> > +	depends on SMP
-> > +	help
-> > +	  Allows a writer to perform optimistic spinning if another writer own
-> > +	  the read write semaphore.  This gives a greater chance for writer to
-> > +	  acquire a semaphore before blocking it and putting it to sleep.
-> > +
-> 
-> Quoting from kernel/mutex.c:
-> 
-> "The rationale is that if the lock owner is running, it is likely to
-> release the lock soon." 
-> 
-> It would be good to add that to the Kconfig.
+On Wed, 26 Jun 2013, Waiman Long wrote:
 
-Sounds good.
+It would have been nice if you'd had cc'ed people who spent a massive
+amount of time working on the spinlock code. Did that now.
 
-Tim
+> +#ifndef CONFIG_SMP
+> +#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
+> +	unsigned int count;				\
+> +	spinlock_t   lock
+> +
+> +#elif defined(__SPINLOCK_HAS_REFCOUNT)
+> +#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
+> +	union u_name {					\
+> +		u64		__lock_count;		\
+> +		spinlock_t	lock;			\
+> +		struct {				\
+> +			arch_spinlock_t __raw_lock;	\
+> +			unsigned int	count;		\
+> +		};					\
+> +	}
+> +
+> +#else /* __SPINLOCK_HAS_REFCOUNT */
+> +#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
+> +	union u_name {					\
+> +		u64		__lock_count;		\
+> +		struct {				\
+> +			unsigned int	count;		\
+> +			spinlock_t	lock;		\
+> +		};					\
+> +	}
+> +
+> +#endif /* __SPINLOCK_HAS_REFCOUNT */
 
+This is a complete design disaster. You are violating every single
+rule of proper layering. The differentiation of spinlock, raw_spinlock
+and arch_spinlock is there for a reason and you just take the current
+implementation and map your desired function to it. If we take this,
+then we fundamentally ruled out a change to the mappings of spinlock,
+raw_spinlock and arch_spinlock. This layering is on purpose and it
+took a lot of effort to make it as clean as it is now. Your proposed
+change undoes that and completely wreckages preempt-rt.
 
+What's even worse is that you go and fiddle with the basic data
+structures:
+
+> diff --git a/include/linux/spinlock_types.h b/include/linux/spinlock_types.h
+> index 73548eb..cc107ad 100644
+> --- a/include/linux/spinlock_types.h
+> +++ b/include/linux/spinlock_types.h
+> @@ -17,8 +17,27 @@
+>  
+>  #include <linux/lockdep.h>
+>  
+> +/*
+> + * The presence of either one of the CONFIG_DEBUG_SPINLOCK or
+> + * CONFIG_DEBUG_LOCK_ALLOC configuration parameter will force the
+> + * spinlock_t structure to be 8-byte aligned.
+> + *
+> + * To support the spinlock/reference count combo data type for 64-bit SMP
+> + * environment with spinlock debugging turned on, the reference count has
+> + * to be integrated into the spinlock_t data structure in this special case.
+> + * The spinlock_t data type will be 8 bytes larger if CONFIG_GENERIC_LOCKBREAK
+> + * is also defined.
+> + */
+> +#if defined(CONFIG_64BIT) && (defined(CONFIG_DEBUG_SPINLOCK) ||\
+> +			      defined(CONFIG_DEBUG_LOCK_ALLOC))
+> +#define	__SPINLOCK_HAS_REFCOUNT	1
+> +#endif
+> +
+>  typedef struct raw_spinlock {
+>  	arch_spinlock_t raw_lock;
+> +#ifdef __SPINLOCK_HAS_REFCOUNT
+> +	unsigned int count;
+> +#endif
+>  #ifdef CONFIG_GENERIC_LOCKBREAK
+>  	unsigned int break_lock;
+>  #endif
+
+You need to do that, because you blindly bolt your spinlock extension
+into the existing code without taking the time to think about the
+design implications.
+
+Do not misunderstand me, I'm impressed by the improvement numbers, but
+we need to find a way how this can be done sanely. You really have to
+understand that there is a world aside of x86 and big machines. 
+
+Let's have a look at your UP implementation. It's completely broken:
+
+> +/*
+> + * Just add the value as the spinlock is a no-op
+
+So what protects that from being preempted? Nothing AFAICT.
+
+What's even worse is that you break all architectures, which have an
+arch_spinlock type != sizeof(unsigned int), e.g. SPARC
+
+So what you really want is a new data structure, e.g. something like
+struct spinlock_refcount() and a proper set of new accessor functions
+instead of an adhoc interface which is designed solely for the needs
+of dcache improvements.
+
+The first step to achieve your goal is to consolidate all the
+identical copies of arch_spinlock_t and talk to the maintainers of the
+architectures which have a different (i.e. !32bit) notion of the arch
+specific spinlock implementation, whether it's possible to move over
+to a common data struct. Once you have achieved this, you can build
+your spinlock + refcount construct upon that.
+
+Thanks,
+
+	tglx
