@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab3FZLNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 07:13:45 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:55430 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab3FZLNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 07:13:44 -0400
+	id S1752097Ab3FZLTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 07:19:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4254 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751865Ab3FZLTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 07:19:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,943,1363158000"; 
+   d="scan'208";a="359834628"
+Date: Wed, 26 Jun 2013 16:09:30 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mark Brown <broonie@kernel.org>
+Cc: Jonathan Austin <jonathan.austin@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steve Capper <Steve.Capper@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, linus.walleij@linaro.org,
+        Will Deacon <will.deacon@arm.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: amba-pl08x and 'get_signal' namespace collision/build error
+Message-ID: <20130626103930.GS23141@intel.com>
+References: <51C97F40.5030101@arm.com>
+ <20130625184539.GB2718@n2100.arm.linux.org.uk>
+ <20130626044842.GR23141@intel.com>
+ <20130626081909.GD2718@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <51CACABF.4040902@monstr.eu>
-References: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com>
-	<CAK9yfHzVSt1XN7=OZOtF_n_3jbpXObqoiay_t6n3EauTjUUX+w@mail.gmail.com>
-	<51CAC0A7.7090708@monstr.eu>
-	<CAK9yfHxuHuf1BnzR36c8Ucw_xrVcMW--jE-Gpng6tPNd17sB2A@mail.gmail.com>
-	<51CACABF.4040902@monstr.eu>
-Date: Wed, 26 Jun 2013 16:43:43 +0530
-Message-ID: <CAK9yfHzuUhxUDhBRGJPvH8ftwaE3ZbauUgK=thMTbvc7LdMq7Q@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] uio: Use of_match_ptr() macro in uio_pdrv_genirq.c
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: monstr@monstr.eu
-Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130626081909.GD2718@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 June 2013 16:34, Michal Simek <monstr@monstr.eu> wrote:
-> On 06/26/2013 12:51 PM, Sachin Kamat wrote:
->> On 26 June 2013 15:51, Michal Simek <monstr@monstr.eu> wrote:
->>> On 06/26/2013 12:00 PM, Sachin Kamat wrote:
->>>> On 26 June 2013 15:22, Michal Simek <michal.simek@xilinx.com> wrote:
->>>>> This eliminates having an #ifdef returning NULL for the case
->>>>> when OF is disabled.
->>>>>
->>>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->>>>
->>>> I have already submitted a similar patch for doing this:
->>>> https://lkml.org/lkml/2013/3/14/169
->>>
->>> Ok. I don't care about it.
->>> Greg: Can you please add any of this patch to your char-misc tree?
->>>
->>> For Sachin patch.
->>> Acked-by: Michal Simek <monstr@monstr.eu>
->>
->> Thanks Michal. Since Hans wasn't active the patch has been pending
->> since some time.
->> The latest rebased version has been posted [1] for Greg to apply.
->>
->> [1] https://lkml.org/lkml/2013/6/25/7
->
->
-> Yeah. As I said I really don't care which version will be applied.
-> It is just necessary to have progress on this.
->
-> Here is the first version I have sent
-> http://lkml.org/lkml/2013/5/23/311
->
-> btw: do you agree about removing that uio_pdrv because
-> all functionality is already in uio_pdrv_genirq driver
-> and make no sense to have two drivers for the same thing?
+On Wed, Jun 26, 2013 at 09:19:09AM +0100, Russell King - ARM Linux wrote:
+> On Wed, Jun 26, 2013 at 10:18:42AM +0530, Vinod Koul wrote:
+> > Yup. This is fixed in slave-dma tree by a patch from mark by renaming it.
+> > 
+> > This should not show in the -next tree
+> 
+> Except, that change probably is probably responsible for this new error:
+> 
+> drivers/dma/amba-pl08x.c: In function 'pl08x_request_mux':
+> drivers/dma/amba-pl08x.c:304:13: error: expected identifier before '(' token
+This was pushed four days ago and havent seen any error report expect this.
 
-Sorry, I have'nt  seen much of this code other than the obvious
-cleanup for which I had sent the patch.
+Anyway I rebuild my -next and looks fine for me
 
--- 
-With warm regards,
-Sachin
+  CC      drivers/dma/dmaengine.o
+  CC      drivers/dma/virt-dma.o
+  CC      drivers/dma/iovlock.o
+  CC [M]  drivers/dma/dmatest.o
+  CC      drivers/dma/amba-pl08x.o
+  LD      drivers/dma/built-in.o
+
+Can you share your config which failed for you?
+
+Mark, I believe you are testing for this, have you seen above error?
+
+--
+~Vinod
