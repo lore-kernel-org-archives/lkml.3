@@ -1,139 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab3FZRCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:02:55 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:57664 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab3FZRCx convert rfc822-to-8bit (ORCPT
+	id S1752356Ab3FZRDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:03:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57793 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab3FZRDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:02:53 -0400
-X-AuditID: cbfec37a-b7fc36d0000050de-bb-51cb1ebca0b1
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/95] 3.9.8-stable review
-Thread-topic: [ 00/95] 3.9.8-stable review
-Thread-index: AQHOco79MzEOzSpPDU2dAaM/zJk9bg==
-Date: Wed, 26 Jun 2013 17:02:51 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E617312A9@sisaex02sj>
-References: <20130625183517.651770593@linuxfoundation.org>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e+wn+4eudOBBo87VS3mrF/DZtG8eD2b
-	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4MpYvHMWW8F0uYr9HbtZGxg3SnYxcnJICJhILD51lgnCFpO4cG89WxcjF4eQwDJGiTtT
-	z7JCOL1MEjsuf2aEcOYzSlza08wM0sImoC7x+fUOdhBbRMBYov/sLDCbWeAYk0RHZxmILSyg
-	KdG9+QzQCg6gGi2JJRt0Icr1JHZOvw1WziKgKrFq0Wc2EJtXwF7iwowT7CDlQgJWEouX+4CE
-	GYGO+35qDRPEdHGJ5tabLBBHC0gs2XOeGcIWlXj5+B8rSKuEgKLE9tVWEOV6Eh//3GaEsLUl
-	nry7wAqxSVDix+R7LBMYxWYhmToLScssJC2zkLQsYGRZxShWWpxcUJyUnlphqFecmFtcmpeu
-	l5yfu4kREndVOxjvfLU5xCjAwajEw/uB8XSgEGtiWXFl7iFGCQ5mJRHedyJAId6UxMqq1KL8
-	+KLSnNTiQ4xMHJxSDYwiP+9cDUtT/aP5//eHxR9/REb/Xbjhw9wdjApSh2c37Pvw96JRb17H
-	55KJ9+7aHz6pKrBkwueEh9JPV3qu+xL3n1HPIHJSJLfkpQ18St9mtHkfuFK0qPz3D6Onx4Xz
-	Ll1+eGTzBHW9Da2zGrY0uIcfCQ5n+L/2uuzWphvuIlHpJ8TSUpc/v6F/SImlOCPRUIu5qDgR
-	ABE1AgqZAgAA
+	Wed, 26 Jun 2013 13:03:05 -0400
+Message-ID: <51CB1EC3.8010103@codeaurora.org>
+Date: Wed, 26 Jun 2013 10:02:59 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Russell King <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH v2 1/2] ARM: mmu: Add debug_ll_io_init() mappings to early
+ mappings
+References: <1371241978-6224-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1371241978-6224-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- >This is the start of the stable review cycle for the 3.4.51 release.
- >There are 27 patches in this series, all will be posted as a response
- >to this one.  If anyone has any issues with these being applied, please
- >let me know.
+Russell,
 
- >Responses should be made by Thu Jun 27 18:33:29 UTC 2013.
- >Anything received after that time might be too late.
+Shall I put these two patches in the patch tracker for 3.11?
 
- >The whole patch series can be found in one patch at:
- >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.51->rc1.gz
- >and the diffstat can be found below.
+On 06/14/13 13:32, Stephen Boyd wrote:
+> Failure to add the mapping created in debug_ll_io_init() can lead
+> to the BUG_ON() triggering in lib/ioremap.c:27 if the static
+> virtual address decided for the debug_ll mapping overlaps with
+> another mapping that is created later. This happens because the
+> generic ioremap code has no idea there is a mapping there and it
+> tries to place a mapping in the same location and blows up when
+> it sees that there is a pte already present.
+>
+> kernel BUG at lib/ioremap.c:27!
+> Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
+> Modules linked in:
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc2-00042-g2af0c67-dirty #316
+> task: ef088000 ti: ef082000 task.ti: ef082000
+> PC is at ioremap_page_range+0x16c/0x198
+> LR is at ioremap_page_range+0xf0/0x198
+> pc : [<c04cb874>]    lr : [<c04cb7f8>]    psr: 20000113
+> sp : ef083e78  ip : af140000  fp : ef083ebc
+> r10: ef7fc100  r9 : ef7fc104  r8 : 000af174
+> r7 : 00000647  r6 : beffffff  r5 : f004c000  r4 : f0040000
+> r3 : af173417  r2 : 16440653  r1 : af173e07  r0 : ef7fc8fc
+> Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> Control: 10c5787d  Table: 8020406a  DAC: 00000015
+> Process swapper/0 (pid: 1, stack limit = 0xef082238)
+> Stack: (0xef083e78 to 0xef084000)
+> 3e60:                                                       00040000 ef083eec
+> 3e80: bf134000 f004bfff c0207c00 f004c000 c02fc120 f000c000 c15e7800 00040000
+> 3ea0: ef083eec 00000647 c098ba9c c0953544 ef083edc ef083ec0 c021b82c c04cb714
+> 3ec0: c09cdc50 00000040 ef0f1e00 ef1003c0 ef083f14 ef083ee0 c09535bc c021b7bc
+> 3ee0: c0953544 c04d0c6c c094e2cc c1600be4 c07440c4 c09a6888 00000002 c0a15f00
+> 3f00: ef082000 00000000 ef083f54 ef083f18 c0208728 c0953550 00000002 c1600bfc
+> 3f20: c08e3fac c0839918 ef083f54 c1600b80 c09a6888 c0a15f00 0000008b c094e2cc
+> 3f40: c098ba9c c098bab8 ef083f94 ef083f58 c094ea0c c020865c 00000002 00000002
+> 3f60: c094e2cc 00000000 c025b674 00000000 c06ff860 00000000 00000000 00000000
+> 3f80: 00000000 00000000 ef083fac ef083f98 c06ff878 c094e910 00000000 00000000
+> 3fa0: 00000000 ef083fb0 c020efe8 c06ff86c 00000000 00000000 00000000 00000000
+> 3fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> 3fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 c0595108
+> [<c04cb874>] (ioremap_page_range+0x16c/0x198) from [<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4)
+> [<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4) from [<c09535bc>] (atomic_pool_init+0x78/0x128)
+> [<c09535bc>] (atomic_pool_init+0x78/0x128) from [<c0208728>] (do_one_initcall+0xd8/0x198)
+> [<c0208728>] (do_one_initcall+0xd8/0x198) from [<c094ea0c>] (kernel_init_freeable+0x108/0x1d0)
+> [<c094ea0c>] (kernel_init_freeable+0x108/0x1d0) from [<c06ff878>] (kernel_init+0x18/0xf4)
+> [<c06ff878>] (kernel_init+0x18/0xf4) from [<c020efe8>] (ret_from_fork+0x14/0x20)
+> Code: e50b0040 ebf54b2f e51b0040 eaffffee (e7f001f2)
+>
+> Fix it by telling generic layers about the static mapping via
+> iotable_init().  This also has the nice side effect of letting
+> you see the mapping in procfs' vmallocinfo file.
+>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>
+> Changes since v1:
+>  * Use iotable_init() instead of open coding it
+>
+>  arch/arm/mm/mmu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index e0d8565..18b8aeb 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -947,7 +947,7 @@ void __init debug_ll_io_init(void)
+>  	map.virtual &= PAGE_MASK;
+>  	map.length = PAGE_SIZE;
+>  	map.type = MT_DEVICE;
+> -	create_mapping(&map);
+> +	iotable_init(&map, 1);
+>  }
+>  #endif
+>  
 
- >thanks,
 
- >greg k-h
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Patches applied cleanly to 3.0.83, 3.4.50, and 3.9.7
-
-Compiled and booted on the following systems:
-
-Samsung Series 9 900X4C Intel Corei5:
-     (3.4.51-rc1, and 3.9.8-rc1)
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
-     (3.0.84-rc1, 3.4.51-rc1, and 3.9.8-rc1)
-
-dmesgs for all releases look good. No regressions compared to the previous
-dmesgs for each of these releases.
-
-Cross-compile testing:
-HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
-     (3.0.84-rc1, 3.4.51-rc1, and 3.9.8-rc1)
-
-Cross-compile tests results:
-
-alpha: defconfig passed on 3.0.y and 3.9.y
-arm: defconfig passed on 3.0.y and 3.9.y
-arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.9.y
-c6x: not applicable to 3.0.y, defconfig passed 3.9.y
-mips: defconfig passed on 3.0.y and 3.9.y
-mipsel: defconfig passed on 3.0.y and 3.9.y
-powerpc: wii_defconfig passed on all
-sh: defconfig passed on all
-sparc: defconfig passed on all
-tile: tilegx_defconfig passed on all
-
-3.4.51-rc1 build failures:
-alpha: (both defconfig and allmodconfig)
-
-   CC [M]  drivers/infiniband/core/addr.o
-In file included from include/linux/if_vlan.h:18:0,
-                  from include/rdma/ib_addr.h:42,
-                  from drivers/infiniband/core/addr.c:47:
-include/linux/etherdevice.h: In function ‘ether_addr_equal_64bits’:
-include/linux/etherdevice.h:308:9: error: implicit declaration of 
-function ‘ether_addr_equal’ [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[3]: *** [drivers/infiniband/core/addr.o] Error 1
-make[2]: *** [drivers/infiniband/core] Error 2
-make[1]: *** [drivers/infiniband] Error 2
-make: *** [drivers] Error 2
-make: *** Waiting for unfinished jobs....
-
-arm: (defconfig)
-   CC      drivers/net/Space.o
-In file included from drivers/net/Space.c:31:0:
-include/linux/etherdevice.h: In function ‘ether_addr_equal_64bits’:
-include/linux/etherdevice.h:308:9: error: implicit declaration of 
-function ‘ether_addr_equal’ [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[2]: *** [drivers/net/Space.o] Error 1
-make[1]: *** [drivers/net] Error 2
-make: *** [drivers] Error 2
-make: *** Waiting for unfinished jobs....
-
-mips and mipsel:
-
-   CC      drivers/net/Space.o
-In file included from drivers/net/Space.c:31:0:
-include/linux/etherdevice.h: In function ‘ether_addr_equal_64bits’:
-include/linux/etherdevice.h:308:9: error: implicit declaration of 
-function ‘ether_addr_equal’ [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[2]: *** [drivers/net/Space.o] Error 1
-make[1]: *** [drivers/net] Error 2
-make: *** [drivers] Error 2
-make: *** Waiting for unfinished jobs....
-
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
