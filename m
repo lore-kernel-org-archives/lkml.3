@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3FZXwe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 19:52:34 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55719 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3FZXwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 19:52:33 -0400
-Message-ID: <51CB7E88.6000704@ahsoftware.de>
-Date: Thu, 27 Jun 2013 01:51:36 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1752023Ab3FZXzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 19:55:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45042 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501Ab3FZXzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 19:55:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,947,1363158000"; 
+   d="scan'208";a="360184002"
+Date: Wed, 26 Jun 2013 16:55:21 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Dan Williams <djbw@fb.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dave Jiang <dave.jiang@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ioatdma: add DMA_PRIVATE capabilities flag
+Message-ID: <20130626235521.GH3344@jonmason-lab>
+References: <1371602813-19828-1-git-send-email-jon.mason@intel.com>
+ <1371602813-19828-3-git-send-email-jon.mason@intel.com>
+ <CAA9_cmeie_V0PauHBadVsg22OQmFrC_Oeg1o1FwdzQ+mVU9gTA@mail.gmail.com>
+ <20130619175206.GA20737@jonmason-lab>
+ <CAA9_cmdVfFmD5Li4b8WEtAiqCiSCKYuva_86MLV3ysAhyLXtig@mail.gmail.com>
+ <20130619201054.GA20996@jonmason-lab>
+ <CAA9_cmeX5Daq9EZ7TGVAjzg=GcOuvpyKeyofwjXgid2c2Wf-UQ@mail.gmail.com>
 MIME-Version: 1.0
-To: rtc-linux@googlegroups.com
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] Re: [PATCH 3/9 v2] rtc: rtc-hid-sensor-time: delay
- registering as rtc into a work
-References: <1371228732-5749-4-git-send-email-holler@ahsoftware.de> <1371724776-5572-1-git-send-email-holler@ahsoftware.de> <20130626125501.3d64408309a6f63100cc7d08@linux-foundation.org> <51CB5E6B.109@ahsoftware.de> <20130626220758.GA32461@kroah.com>
-In-Reply-To: <20130626220758.GA32461@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA9_cmeX5Daq9EZ7TGVAjzg=GcOuvpyKeyofwjXgid2c2Wf-UQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.06.2013 00:07, schrieb Greg KH:
-> On Wed, Jun 26, 2013 at 11:34:35PM +0200, Alexander Holler wrote:
->>>> +	/*
->>>> +	 * The HID device has to be registered to read the clock.
->>>> +	 * Because rtc_device_register() might read the time, we have to delay
->>>> +	 * rtc_device_register() to a work in order to finish the probe before.
->>>> +	 */
->>>> +	time_state->workts = kmalloc(sizeof(struct hid_time_workts),
->>>> +		GFP_KERNEL);
->>>> +	if (time_state->workts == NULL) {
->>>> +		sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
->>>> +		return -ENOMEM;
->>>>  	}
->>>> +	time_state->workts->time_state = time_state;
->>>> +	INIT_WORK(&time_state->workts->work,
->>>> +			hid_time_register_rtc_work);
->>>> +	schedule_work(&time_state->workts->work);
->>>
->>> This seems unreliable.  The scheduled work can run one nanosecond
->>> later, on this or a different CPU.  What guarantees that the HID device
->>> will then be fully registered?
->>
->> Nothing, but schedule_delayed_work() is as unreliable as without delay
->> and I don't know of any callback after registration has happened. I have
->> to dig through the hid-(sensor-)code, maybe I will find a callback I can
->> (mis)use to register the rtc driver after the hid driver was registered.
+On Wed, Jun 19, 2013 at 01:44:08PM -0700, Dan Williams wrote:
+> On Wed, Jun 19, 2013 at 1:10 PM, Jon Mason <jon.mason@intel.com> wrote:
+> > On Wed, Jun 19, 2013 at 11:56:38AM -0700, Dan Williams wrote:
+> >> On Wed, Jun 19, 2013 at 10:52 AM, Jon Mason <jon.mason@intel.com> wrote:
+> >> >> DMA_PRIVATE here keeps all channels private, so they couldn't be used
+> >> >> elsewhere, for example raid offload.  Do you need a private allocation
+> >> >> or can you get away with a dynamically assigned channel?
+> >> >
+> >> > I would like to have a dedicated DMA engine.  async_tx could cause the
+> >> > copies to complete out of order.  Do I need to add infrastructure to
+> >> > allow for private channel usage, and when unused allow the channel to
+> >> > be used by async_tx?
+> >>
+> >> Can NTB just call dma_find_channel() once and be done?  Also, async_tx
+> >> will only get things out of order if you allow it to pick a new
+> >> channel for every operation, but as long as you specify a dependency
+> >> chain it will keep things in order (same as remembering the result of
+> >> dma_find_channel).
+> >
+> > Neither of these allow a device exclusive access to a channel.  Is
+> > this not something that is desired by other users of DMA Engines, or
+> > do I have a unique usage model?
+> >
 > 
-> Why not use the deferred_probe code, which is there just for this type
-> of thing (i.e. your other drivers/devices aren't present/initialized
-> yet.)?  Just return -EPROBE_DEFER from your probe function if you don't
-> find everything already set up properly, the driver core will call you
-> again later after it has initialized everything it has found.
+> Yes, ioatdma has never been used in a mixed model.  Other platforms
+> are either using devicetree bindings for specifying channels to their
+> master devices or are exclusively slave channels.  Other slave usage
+> models require use of a dedicated channel, since NTB is alternating
+> between cpu and dma it seems it could get away with using a "public"
+> channel.
 
-Hmm, didn't know about the deferred_probe stuff. Thanks.
+Unfortunately, the dma_find_channel model does not led itself to
+optimal usage of the available channels, as it seems to give out the
+same channel.  Adding some randomizer (or other way to spread the
+channel selection over multiple channels) would be greatly
+beneficial.
 
-Unfortunately I currently don't see how this might help here. The
-rtc-device will not be probed, so it can't be deferred. And even if I
-will find or implement a way to add a probe for the rtc device, I still
-have to search how to find out if the HID device is registered.
+Alternatively, adding an async_memcpy_mmio function (and perhaps some
+minimal size to use the DMA engine) would provide a solution that
+would work.
 
-Anyway, back to reading to sources. Maybe there already is some callback
-from hid-sensor-hub or the hid-subsystem I can use. I haven't searched
-in deep for such because using a work worked just fine here on several
-machines (besides that it was a quick hack which got only necessary with
-the changed hctosys which reads the time in rtc_device_register()).
+However, dma_find_channel should be sufficient to get NTB use of DMA
+engines out for review.  I'll clean it up and send it out shortly.
+Thanks for the insight.
 
-I already wondered why using a work (even without delay) did work, but I
-explained it with some (maybe imaginary) locality of works, such that
-they get called after the scheduling thread gives up his timeslice which
-happily happened after the hid-device was registered. So I hoped (hope
-dies last ;) ) to only have to fix it, if it actually doesn't work
-somewhere or sometimes after the foreseen discussion about hctosys has
-come to an end.
-
-Regards,
-
-Alexander Holler
+Thanks,
+Jon
