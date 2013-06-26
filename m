@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab3FZHZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:25:55 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:41927 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3FZHZy (ORCPT
+	id S1751778Ab3FZHaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:30:08 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:4734 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab3FZHaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:25:54 -0400
-Message-ID: <51CA977D.3050802@suse.cz>
-Date: Wed, 26 Jun 2013 09:25:49 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Wed, 26 Jun 2013 03:30:06 -0400
+Message-ID: <51CA9872.5050700@huawei.com>
+Date: Wed, 26 Jun 2013 15:29:54 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
-        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
-        vishal.l.verma@intel.com, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 2/8] pch_uart: Add uart_clk selection for the MinnowBoard
-References: <cover.1372211451.git.dvhart@linux.intel.com>   <6cc125b9eb85dd3cae4a2496fdb7f0d17b18f930.1372211451.git.dvhart@linux.intel.com>   <20130626023143.GB23320@kroah.com> <1372216578.8177.9.camel@envy.home>   <20130626033926.GA27165@kroah.com> <1372219125.8177.12.camel@envy.home>  <51CA8D91.6000708@suse.cz> <1372231162.8177.70.camel@envy.home>
-In-Reply-To: <1372231162.8177.70.camel@envy.home>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
+To: David Miller <davem@davemloft.net>
+CC: LKML <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: [PATCH 1/2] dlci: acquire rtnl_lock before calling __dev_get_by_name()
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 09:19 AM, Darren Hart wrote:
-> You can't actually use this driver on 64 bit as there is no hardware,
+Otherwise the net device returned can be freed at anytime.
 
-Oh, so is this another candidate for adding dependson (X86_32 ||
-COMPILE_TEST) as well as the other *_PCH options?
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/net/wan/dlci.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
+index 147614e..1f6e053 100644
+--- a/drivers/net/wan/dlci.c
++++ b/drivers/net/wan/dlci.c
+@@ -385,20 +385,24 @@ static int dlci_del(struct dlci_add *dlci)
+ 	struct net_device	*master, *slave;
+ 	int			err;
+ 
++	rtnl_lock();
++
+ 	/* validate slave device */
+ 	master = __dev_get_by_name(&init_net, dlci->devname);
+-	if (!master)
+-		return -ENODEV;
++	if (!master) {
++		err = -ENODEV;
++		goto out;
++	}
+ 
+ 	if (netif_running(master)) {
+-		return -EBUSY;
++		err = -EBUSY;
++		goto out;
+ 	}
+ 
+ 	dlp = netdev_priv(master);
+ 	slave = dlp->slave;
+ 	flp = netdev_priv(slave);
+ 
+-	rtnl_lock();
+ 	err = (*flp->deassoc)(slave, master);
+ 	if (!err) {
+ 		list_del(&dlp->list);
+@@ -407,8 +411,8 @@ static int dlci_del(struct dlci_add *dlci)
+ 
+ 		dev_put(slave);
+ 	}
++out:
+ 	rtnl_unlock();
+-
+ 	return err;
+ }
+ 
 -- 
-js
-suse labs
+1.8.0.2
