@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab3FZCfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:35:36 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:60397 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3FZCfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:35:34 -0400
+	id S1752018Ab3FZCih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:38:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64163 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751327Ab3FZCig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 22:38:36 -0400
+X-IronPort-AV: E=Sophos;i="4.87,941,1363104000"; 
+   d="scan'208";a="7683425"
+Message-ID: <51CA5376.5070706@cn.fujitsu.com>
+Date: Wed, 26 Jun 2013 10:35:34 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <6c27e79870ec93f7a8c6692d4bcfebaee589fa6b.1372211451.git.dvhart@linux.intel.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com> <6c27e79870ec93f7a8c6692d4bcfebaee589fa6b.1372211451.git.dvhart@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 25 Jun 2013 20:35:13 -0600
-Message-ID: <CAErSpo4PuKOqKM19Ra5D_jCH0SEtNTo95_EhyXVxYAB3J_27zg@mail.gmail.com>
-Subject: Re: [PATCH 8/8] pch_gbe: Add MinnowBoard support
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders@circuitco.com, vishal.l.verma@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
+To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net
+CC: v9fs-developer@lists.sourceforge.net,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Subject: [PATCH] fs/v9fs: Remove the unused variable "err" in v9fs_vfs_getattr()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/26 10:37:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/26 10:37:20,
+	Serialize complete at 2013/06/26 10:37:20
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 7:53 PM, Darren Hart <dvhart@linux.intel.com> wrote:
-> The MinnowBoard uses an AR803x PHY with the PCH GBE.
->
-> It does not implement the RGMII 2ns TX clock delay in the trace routing
-> nor via strapping. Add a detection method for the board and the PHY and
-> enable the tx clock delay via the registers.
->
-> This PHY will hibernate without link for 10 seconds. Ensure the PHY is
-> awake for probe and then disable hibernation. A future improvement would
-> be to convert pch_gbe to using PHYLIB and making sure we can wake the
-> PHY at the necessary times rather than permanently disabling it.
->
-> Use the MinnowBoard PCI subsystem ID to identify the board and setup the
-> appropriate callbacks in a new pci_id driver_data structure.
->
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
-> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: netdev@vger.kernel.org
-> ---
->  drivers/net/ethernet/oki-semi/pch_gbe/Kconfig      |  1 +
->  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h    |  2 +
->  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   | 32 ++++++++
->  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c    | 89 ++++++++++++++++++++++
->  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h    |  2 +
->  5 files changed, 126 insertions(+)
-> ...
+Delete the unused variable "err" in v9fs_vfs_getattr()
 
-> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> index 6667a6b..6f0b9e3 100644
-> --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
->...
-> +static struct pch_gbe_privdata pch_gbe_minnowboard_privdata = {
-> +       .phy_reset = minnow_phy_reset,
-> +       .phy_tx_clk_delay = pch_gbe_phy_tx_clk_delay,
-> +};
-> +
->  static DEFINE_PCI_DEVICE_TABLE(pch_gbe_pcidev_id) = {
->         {.vendor = PCI_VENDOR_ID_INTEL,
->          .device = PCI_DEVICE_ID_INTEL_IOH1_GBE,
-> +        .subvendor = PCI_VENDOR_ID_CIRCUITCO,
-> +        .subdevice = PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD,
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/9p/vfs_inode.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-"MINNOWBOARD" seems like a pretty generic name for something that
-probably refers only to the gigabit ethernet device in the EG20T.  If
-you expect to use that same subdevice ID on other devices, I guess we
-can add PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD to pci_ids.h.  If it will
-only be used for the gigabit ethernet device, we would normally not
-add a #define for it and would just use the hex constant here (see the
-comment at the top of pci_ids.h).
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index d86edc8..25b018e 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -1054,13 +1054,11 @@ static int
+ v9fs_vfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
+                 struct kstat *stat)
+ {
+-       int err;
+        struct v9fs_session_info *v9ses;
+        struct p9_fid *fid;
+        struct p9_wstat *st;
+ 
+        p9_debug(P9_DEBUG_VFS, "dentry: %p\n", dentry);
+-       err = -EPERM;
+        v9ses = v9fs_dentry2v9ses(dentry);
+        if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE) {
+                generic_fillattr(dentry->d_inode, stat);
+-- 
+1.7.7
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
 
-> +        .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
-> +        .class_mask = (0xFFFF00),
-> +        .driver_data = (unsigned long) &pch_gbe_minnowboard_privdata
-> +        },
-> +       {.vendor = PCI_VENDOR_ID_INTEL,
-> +        .device = PCI_DEVICE_ID_INTEL_IOH1_GBE,
->          .subvendor = PCI_ANY_ID,
->          .subdevice = PCI_ANY_ID,
->          .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
