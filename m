@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab3FZBPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 21:15:43 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:58130 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086Ab3FZBPl (ORCPT
+	id S1752086Ab3FZBQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 21:16:04 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:9271 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506Ab3FZBQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 21:15:41 -0400
+	Tue, 25 Jun 2013 21:16:02 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
-        <xjtuwjp@gmail.com>, <lindar_liu@usish.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>
-Subject: [PATCH 8/9] scsi/pm8001: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
-Date: Wed, 26 Jun 2013 09:13:30 +0800
-Message-ID: <1372209210-21512-1-git-send-email-wangyijing@huawei.com>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, <linux-fbdev@vger.kernel.org>
+Subject: [PATCH 9/9] radeon: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
+Date: Wed, 26 Jun 2013 09:13:41 +0800
+Message-ID: <1372209221-16492-1-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -30,37 +30,28 @@ in init path. So we can use pdev->pm_cap instead of using
 pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and simplified code.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: xjtuwjp@gmail.com
-Cc: lindar_liu@usish.com
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/scsi/pm8001/pm8001_init.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/video/aty/radeon_pm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index e4b9bc7..3861aa1 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -912,14 +912,13 @@ static int pm8001_pci_suspend(struct pci_dev *pdev, pm_message_t state)
+diff --git a/drivers/video/aty/radeon_pm.c b/drivers/video/aty/radeon_pm.c
+index 92bda58..f7091ec 100644
+--- a/drivers/video/aty/radeon_pm.c
++++ b/drivers/video/aty/radeon_pm.c
+@@ -2805,7 +2805,7 @@ static void radeonfb_early_resume(void *data)
+ void radeonfb_pm_init(struct radeonfb_info *rinfo, int dynclk, int ignore_devlist, int force_sleep)
  {
- 	struct sas_ha_struct *sha = pci_get_drvdata(pdev);
- 	struct pm8001_hba_info *pm8001_ha;
--	int i , pos;
-+	int i;
- 	u32 device_state;
- 	pm8001_ha = sha->lldd_ha;
- 	flush_workqueue(pm8001_wq);
- 	scsi_block_requests(pm8001_ha->shost);
--	pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
--	if (pos == 0) {
--		printk(KERN_ERR " PCI PM not supported\n");
-+	if (!pdev->pm_cap) {
-+		dev_err(&pdev->dev, " PCI PM not supported\n");
- 		return -ENODEV;
- 	}
- 	PM8001_CHIP_DISP->interrupt_disable(pm8001_ha, 0xFF);
+ 	/* Find PM registers in config space if any*/
+-	rinfo->pm_reg = pci_find_capability(rinfo->pdev, PCI_CAP_ID_PM);
++	rinfo->pm_reg = rinfo->pdev->pm_cap;
+ 
+ 	/* Enable/Disable dynamic clocks: TODO add sysfs access */
+ 	if (rinfo->family == CHIP_FAMILY_RS480)
 -- 
 1.7.1
 
