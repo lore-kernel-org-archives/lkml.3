@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab3FZRDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:03:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57793 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3FZRDF (ORCPT
+	id S1752299Ab3FZRIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:08:52 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:64038 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab3FZRIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:03:05 -0400
-Message-ID: <51CB1EC3.8010103@codeaurora.org>
-Date: Wed, 26 Jun 2013 10:02:59 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 26 Jun 2013 13:08:50 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 26 Jun 2013 10:08:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: 'Timed out waiting for forcewake old ack to clear' and hangup on
+ IvyBridge system
+Message-ID: <20130626170856.GA2142@roeck-us.net>
+References: <20130622065808.GA20980@roeck-us.net>
+ <20130622121646.0afcc207@jbarnes-desktop>
+ <20130622200409.GA24545@roeck-us.net>
+ <20130626092407.270ea60b@jbarnes-desktop>
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH v2 1/2] ARM: mmu: Add debug_ll_io_init() mappings to early
- mappings
-References: <1371241978-6224-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1371241978-6224-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130626092407.270ea60b@jbarnes-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+On Wed, Jun 26, 2013 at 09:24:07AM -0700, Jesse Barnes wrote:
+> On Sat, 22 Jun 2013 13:04:09 -0700
+> Guenter Roeck <linux@roeck-us.net> wrote:
+> 
+> > On Sat, Jun 22, 2013 at 12:16:46PM -0700, Jesse Barnes wrote:
+> > > On Fri, 21 Jun 2013 23:58:08 -0700
+> > > Guenter Roeck <linux@roeck-us.net> wrote:
+> > > 
+> > > > Hi all,
+> > > > 
+> > > > after upgrading one of my servers to 3.8, then 3.9.7 and 3.10-rc6, I started to
+> > > > see lots of "Timed out waiting for forcewake old ack to clear" error messages,
+> > > > including hang-ups especially if the system was highly loaded. With 3.5.24
+> > > > everything was fine.
+> > > > 
+> > > > After backing out commit 36ec8f877 (drm/i915: unconditionally use mt forcewake
+> > > > on hsw/ivb), everything is back to normal. The log message is still there, but
+> > > > only once during boot, and the system runs stable.
+> > > > 
+> > > > CPU is "Intel(R) Core(TM) i7-3770K CPU @ 3.50GHz", mainboard is Supermicro
+> > > > C7H61, BIOS version 2.00 dated 11/02/2012. Configuration file is whatever
+> > > > comes with Ubuntu; I'll be happy to provide a copy if anyone thinks it might
+> > > > help.
+> > > > 
+> > > > Any idea what else I can do besides using a special kernel with the backed out
+> > > > commit ? Is it possible that others have the same problem ?
+> > > 
+> > > Ouch, so a BIOS that uses the other forcewake mechanism seems to have
+> > > escaped.  Is there a newer one available for your system?  I'm hoping
+> > > it'll fix the issue, otherwise we may have to introduce both methods
+> > > for IVB again...
+> > > 
+> > I installed the latest BIOS version (2.00b), but it did not fix the problem.
+> > 
+> > Is there some info (such as an Intel document describing what needs to be done)
+> > which I could pass on to Supermicro ?
+> > 
+> > I think it would be helpful if the condition was detected and reported, if that
+> > is possible. I spent two days so far tracking this down. It would be nice
+> > if others would not have to go through the same experience.
+> 
+> I don't think there's anything public to share, but it's not a big deal
+> to simply revert the patch in question.  That seems like the right
+> thing to do anyway since we'd like stuff to work "out of the box" as
+> much as possible.
+> 
+Agreed. Kind of unlikely that I can get Supermicro to listen to me anyway :(.
 
-Shall I put these two patches in the patch tracker for 3.11?
+Who can initiate the revert ?
 
-On 06/14/13 13:32, Stephen Boyd wrote:
-> Failure to add the mapping created in debug_ll_io_init() can lead
-> to the BUG_ON() triggering in lib/ioremap.c:27 if the static
-> virtual address decided for the debug_ll mapping overlaps with
-> another mapping that is created later. This happens because the
-> generic ioremap code has no idea there is a mapping there and it
-> tries to place a mapping in the same location and blows up when
-> it sees that there is a pte already present.
->
-> kernel BUG at lib/ioremap.c:27!
-> Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
-> Modules linked in:
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc2-00042-g2af0c67-dirty #316
-> task: ef088000 ti: ef082000 task.ti: ef082000
-> PC is at ioremap_page_range+0x16c/0x198
-> LR is at ioremap_page_range+0xf0/0x198
-> pc : [<c04cb874>]    lr : [<c04cb7f8>]    psr: 20000113
-> sp : ef083e78  ip : af140000  fp : ef083ebc
-> r10: ef7fc100  r9 : ef7fc104  r8 : 000af174
-> r7 : 00000647  r6 : beffffff  r5 : f004c000  r4 : f0040000
-> r3 : af173417  r2 : 16440653  r1 : af173e07  r0 : ef7fc8fc
-> Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 10c5787d  Table: 8020406a  DAC: 00000015
-> Process swapper/0 (pid: 1, stack limit = 0xef082238)
-> Stack: (0xef083e78 to 0xef084000)
-> 3e60:                                                       00040000 ef083eec
-> 3e80: bf134000 f004bfff c0207c00 f004c000 c02fc120 f000c000 c15e7800 00040000
-> 3ea0: ef083eec 00000647 c098ba9c c0953544 ef083edc ef083ec0 c021b82c c04cb714
-> 3ec0: c09cdc50 00000040 ef0f1e00 ef1003c0 ef083f14 ef083ee0 c09535bc c021b7bc
-> 3ee0: c0953544 c04d0c6c c094e2cc c1600be4 c07440c4 c09a6888 00000002 c0a15f00
-> 3f00: ef082000 00000000 ef083f54 ef083f18 c0208728 c0953550 00000002 c1600bfc
-> 3f20: c08e3fac c0839918 ef083f54 c1600b80 c09a6888 c0a15f00 0000008b c094e2cc
-> 3f40: c098ba9c c098bab8 ef083f94 ef083f58 c094ea0c c020865c 00000002 00000002
-> 3f60: c094e2cc 00000000 c025b674 00000000 c06ff860 00000000 00000000 00000000
-> 3f80: 00000000 00000000 ef083fac ef083f98 c06ff878 c094e910 00000000 00000000
-> 3fa0: 00000000 ef083fb0 c020efe8 c06ff86c 00000000 00000000 00000000 00000000
-> 3fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> 3fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 c0595108
-> [<c04cb874>] (ioremap_page_range+0x16c/0x198) from [<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4)
-> [<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4) from [<c09535bc>] (atomic_pool_init+0x78/0x128)
-> [<c09535bc>] (atomic_pool_init+0x78/0x128) from [<c0208728>] (do_one_initcall+0xd8/0x198)
-> [<c0208728>] (do_one_initcall+0xd8/0x198) from [<c094ea0c>] (kernel_init_freeable+0x108/0x1d0)
-> [<c094ea0c>] (kernel_init_freeable+0x108/0x1d0) from [<c06ff878>] (kernel_init+0x18/0xf4)
-> [<c06ff878>] (kernel_init+0x18/0xf4) from [<c020efe8>] (ret_from_fork+0x14/0x20)
-> Code: e50b0040 ebf54b2f e51b0040 eaffffee (e7f001f2)
->
-> Fix it by telling generic layers about the static mapping via
-> iotable_init().  This also has the nice side effect of letting
-> you see the mapping in procfs' vmallocinfo file.
->
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Stephen Warren <swarren@nvidia.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->
-> Changes since v1:
->  * Use iotable_init() instead of open coding it
->
->  arch/arm/mm/mmu.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> index e0d8565..18b8aeb 100644
-> --- a/arch/arm/mm/mmu.c
-> +++ b/arch/arm/mm/mmu.c
-> @@ -947,7 +947,7 @@ void __init debug_ll_io_init(void)
->  	map.virtual &= PAGE_MASK;
->  	map.length = PAGE_SIZE;
->  	map.type = MT_DEVICE;
-> -	create_mapping(&map);
-> +	iotable_init(&map, 1);
->  }
->  #endif
->  
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thanks,
+Guenter
