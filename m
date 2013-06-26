@@ -1,118 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab3FZFKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 01:10:46 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:33997 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab3FZFKn convert rfc822-to-8bit (ORCPT
+	id S1751309Ab3FZFQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 01:16:04 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:7290 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab3FZFQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 01:10:43 -0400
+	Wed, 26 Jun 2013 01:16:01 -0400
+X-Spam-Score: -100.8
+Message-ID: <51CA476B.3080208@asianux.com>
+Date: Wed, 26 Jun 2013 09:44:11 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1372140227.28480.69.camel@kjgkr>
-References: <1369533945-6955-1-git-send-email-linkinjeon@gmail.com>
-	<1369619214.10521.25.camel@kjgkr>
-	<CAKYAXd_QZronHD536LOfeFWLmtCoweRq3gbH94R4_7oKC7hv3w@mail.gmail.com>
-	<1369704867.10521.46.camel@kjgkr>
-	<CAKYAXd-OO5niMiFv+ysStw=c-NQXT4AkTz3m7o1wTRZRd=WYFw@mail.gmail.com>
-	<1372140227.28480.69.camel@kjgkr>
-Date: Wed, 26 Jun 2013 14:10:42 +0900
-Message-ID: <CAKYAXd-NEKCuEyoLwWHLrN165yq7EKRRcz9RknfdbR5EOO6cvQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] f2fs: add sysfs support for controlling the gc_thread
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        cornelia.huck@de.ibm.com, mtosatti@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, linux-s390@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: s390: kernel: reset 'c->hotpluggable' when failure
+ occurs
+References: <51C8F685.6000209@asianux.com> <20130625064832.GA4999@osiris> <51C94599.1020707@asianux.com> <20130625090928.GA8981@osiris> <51C9636F.1050709@asianux.com>
+In-Reply-To: <51C9636F.1050709@asianux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/25, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> Hi Namjae,
->
-> Sorry for the late reply.
->
-> 2013-05-29 (수), 09:01 +0900, Namjae Jeon:
->> >> I have thought more after getting your reply.
->> >> f2fs_cleaner(a tentative name) is that provide the following several
->> >> options to control gc thread.
->> >> 1. start forground gc thread to clean all invalid blocks.
->> >> 2. stop number 1(fg) working.
->> >> 3. set new tunning parameter (min/max/no_gc).
->> >> 4. get status of current f2fs.
->> >> We will provide user level util in f2fs tools and sysfs at the same
->> >> time.
->> >> It is useful if the console level user/App user can change them
->> >> easily.
->
-> I think we'd better support configurable min/max/no_gc times only.
-> And I don't think users need to do foreground GCs explicitly, since
-> foreground GCs should be done only when the file system suffers from the
-> shortage of free space. The foreground GC is the most costly operation
-> so that I'd like to avoid triggering it as much as possible even if
-> users want to do.
->
-> Otherwise, if users would like to move data, they can just adjust
-> background GC times appropriately and then do sync if they really move
-> data synchronously.
-Hi Jaegeuk.
-
-Agreed, we can provide only time update values to the user and leave
-the user to work out the setting as per the environment.
-
->
->> >>
->> >> >
->> >> > Afterwards, it is worth to add some information to
->> >> > Document/filesystems/f2fs.txt.
->> >> Yes, It will be included in next series patches.
->> >> How do you think ? If you agree my suggestion, I will start to work
->> >> the above jobs.
->> Hi. Jaegeuk.
->> >
->> > As I described, basically I agreed that this kind of interfaces and
->> > user
->> > apps are definitely beneficial to the f2fs users.
->> >
->> > But wrt design and implementation of new interfaces, we'd better
->> > discuss
->> > how to use them in more detail and what information should be needed
->> > for
->> > user-made cleaner.
->> > After then, we'd better start to design the interfaces as well as user
->> > scenarios clearly.
->> Okay. I agree.
+On 06/25/2013 05:31 PM, Chen Gang wrote:
+> On 06/25/2013 05:09 PM, Heiko Carstens wrote:
+>> On Tue, Jun 25, 2013 at 03:24:09PM +0800, Chen Gang wrote:
+>>> On 06/25/2013 02:48 PM, Heiko Carstens wrote:
+>>>> On Tue, Jun 25, 2013 at 09:46:45AM +0800, Chen Gang wrote:
+>>>>>> When smp_add_present_cpu() fails, it has reset all things excluding
+>>>>>> 'c->hotpluggable', so need reset it as original state completely.
+>>>>>>
+>>>>>> +	c->hotpluggable = 0;
+>>>>>>  	return rc;
+>>>> No, that doesn't make sense. All cpus on s390 are always hotplugable.
+>>>> It really doesn't matter if the value of this field is 0 or 1 after
+>>>> an error.
+>>>>
+>>>
+>>> If so, is it better to set 'c->hotpluggable' for all cpus on s390 during
+>>> initializing ?
 >>
->> >
->> > IMO, the following issues should be addressed.
->> > - how to know system idle time by users?
->> e.g. When playing PVR function, In case of DTV, App try to read data
->> from filesystem of usb device.
->> now that, user app will never access flash rw partition and don't need
->> to access there.
->> I think that we can cleverly use such time to avoid or make slowly
->> come in the possible performance regression later.
->
-> Okay.
->
+> No, just leave the code as it is.
 >>
->> > - any priority scheme for cleaning?
->> Could you plz tell me a little more detail ?
->
-> I meant, as well as the GC times, user also gives a kind of status like:
-> LONG_IDLE, SHORT_IDLE, something like that.
-> Therefore, how about using this information to select a victim selection
-> policy between cost-benefit and greedy algorithms?
-currently we will provide the option of updating the time values from
-the ‘sysfs’ interface, and the GC policy is selected by default from
-GC thread based upon the gc type, BG or FG.
-So, do you mean we should provide an option to select the default GC
-policy for the user using ‘sysfs’ interface? Like, if the user sets
-“LONG_IDLE” – we choose Cost Benefit and in case of SHORT_IDLE
-“Greedy” ? Please elaborate more on this.
+> 
 
-Thanks.
->
->>
+Please help check the diff below whether is valuable, thanks.
+
+
+For architectures which may support 'hotpluggable', can loop all cpus
+during subsys_initcall().
+
+The caller will skip the return value of subsys_initcall(), so can only
+return 0.
+
+--------------------------------diff begin------------------------------
+
+diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+index 15a016c..147cc18 100644
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@ -1065,8 +1065,9 @@ static int __init s390_smp_init(void)
+ #endif
+ 	for_each_present_cpu(cpu) {
+ 		rc = smp_add_present_cpu(cpu);
+-		if (rc)
+-			return rc;
++		if (unlikely(rc))
++			printk(KERN_WARNING "%s: register_cpu %d failed (%d)\n",
++			       __func__, cpu, rc);
+ 	}
+ 	return 0;
+ }
+
+--------------------------------diff end--------------------------------
+
+
+> Currently we have 3 possible states for 'struct cpu':
+>   initialized, and set hotplugable.
+>   unitialized, and set hotplugable.
+>   unitialized, and unset hotplugable.
+> 
+> Either 2nd or 3rd is inconsistent.
+> 
+> The cpu_is_hotplugable() will be used in kernel/rcutorture.c. I do not
+> know whether it will cause issue or not, but it seems dangerous when
+> __smp_rescan_cpus() has already called, and has some unsucessfull call
+> of smp_add_present_cpu().
+> 
+> Please help check.
+> 
+> Thanks.
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
