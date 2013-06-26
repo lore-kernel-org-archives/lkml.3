@@ -1,106 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab3FZHMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:12:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46964 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab3FZHMw (ORCPT
+	id S1751631Ab3FZHO0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:14:26 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58756 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab3FZHOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:12:52 -0400
-Date: Wed, 26 Jun 2013 17:12:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: linux-next: manual merge of the cpuinit tree with the arm-current
- tree
-Message-Id: <20130626171241.4629f4072fbd36f12d5fe3be@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Jun_2013_17_12_41_+1000_lArE76q/rGmJNDa2"
+	Wed, 26 Jun 2013 03:14:24 -0400
+X-AuditID: 9c930179-b7cafae000004567-66-51ca94cebb06
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCHSET 00/19] perf tools: Introduce new 'ftrace' command (v3)
+Date: Wed, 26 Jun 2013 16:14:03 +0900
+Message-Id: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Jun_2013_17_12_41_+1000_lArE76q/rGmJNDa2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi Paul,
+This patchset implements a front-end tool for kernel's ftrace.  It
+uses function_graph tracer by default and normal function tracer is
+also supported.  (Of course you need to enable those tracers in your
+kernel first.)
 
-Today's linux-next merge of the cpuinit tree got a conflict in
-arch/arm/mm/proc-v7.S between commit 3e0a07f8c401 ("ARM: 7773/1: PJ4B:
-Add support for errata 4742") from the arm-current tree and commit "arm:
-delete __cpuinit/__CPUINIT usage from all ARM users" from the cpuinit
-tree.
+v3 changes:
+ * fix a bug related to pager and forked workload
+ * add --clock (-c) option to live and record sub-commands
+ * use 'perf' clock if available (Steven)
+ * tidy up the output of show sub-command
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I pushed it out to 'perf/ftrace-v3' branch on my tree at:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
 
-diff --cc arch/arm/mm/proc-v7.S
-index 7ef3ad0,64b3acb..0000000
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@@ -144,31 -144,6 +144,29 @@@ ENTRY(cpu_v7_do_resume
-  ENDPROC(cpu_v7_do_resume)
-  #endif
- =20
- +#ifdef CONFIG_CPU_PJ4B
- +	globl_equ	cpu_pj4b_switch_mm,     cpu_v7_switch_mm
- +	globl_equ	cpu_pj4b_set_pte_ext,	cpu_v7_set_pte_ext
- +	globl_equ	cpu_pj4b_proc_init,	cpu_v7_proc_init
- +	globl_equ	cpu_pj4b_proc_fin, 	cpu_v7_proc_fin
- +	globl_equ	cpu_pj4b_reset,	   	cpu_v7_reset
- +#ifdef CONFIG_PJ4B_ERRATA_4742
- +ENTRY(cpu_pj4b_do_idle)
- +	dsb					@ WFI may enter a low-power mode
- +	wfi
- +	dsb					@barrier
- +	mov	pc, lr
- +ENDPROC(cpu_pj4b_do_idle)
- +#else
- +	globl_equ	cpu_pj4b_do_idle,  	cpu_v7_do_idle
- +#endif
- +	globl_equ	cpu_pj4b_dcache_clean_area,	cpu_v7_dcache_clean_area
- +	globl_equ	cpu_pj4b_do_suspend,	cpu_v7_do_suspend
- +	globl_equ	cpu_pj4b_do_resume,	cpu_v7_do_resume
- +	globl_equ	cpu_pj4b_suspend_size,	cpu_v7_suspend_size
- +
- +#endif
- +
-- 	__CPUINIT
--=20
-  /*
-   *	__v7_setup
-   *
 
---Signature=_Wed__26_Jun_2013_17_12_41_+1000_lArE76q/rGmJNDa2
-Content-Type: application/pgp-signature
+Note that this patchset is based on my previous work.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+  https://lkml.org/lkml/2013/6/4/45
 
-iQIcBAEBCAAGBQJRypRuAAoJEECxmPOUX5FE9JUP/A6AX6ORS2U03luPC6iuyaN7
-V9m9IMYXcPJ6YM2dkBq5wSHtXaOmed6kOhW8NNS7E1r4lFoaOb938ZKyori3ZyOw
-8SG7xamWLFFF+2MFk95BHYnizaDmgTMY48zzEQ2H+ejq3UdFYCGGn9VLlcMAbRLK
-SSUJO2+TM9Sdq3gjWXogcPZOzNwFvCv44s+SGGKDHNxpFjVsvoMDn9U6dgs3lMsZ
-7n/Go6jFYe1U9903QlDk7HJY9hmKgJaeBaRl9PhV8auNCLp2FXnuSSdduwaszRxG
-WlF3nMMbTxi/JFSBUW/aD/OfgQR5aVUOMypMizPC2CR9pW8zqzZtUuDMl1ZxOVX7
-rDbse23W/g0FDljmrCPiMhiLMmXzs6f7gsoW8K3fkOgm4HjhJG0apX24snKkJQtY
-fzMTy1n8cWiDHLGQL84NKTwZ605rzaiX0nxhonWrGPqYwBh7pRnjg850qYTlP6dP
-6vqbSxL+M8DMud6RG4e2DmjaZnVlnJD63Ph8xqkf/92sDhSlM2ITrcKfH4NazbeC
-ud6F1ScUw1565ap4GMh5db+fg0jRWw4n6Um71XSn4pfISg49x1x5Ftw/rfEPPZa6
-FUK9dO1pFNc6fv6DQV71DqODZW9fe2uqQ0QDdRfP9sWz5gqso5eukTqcboehw9MP
-5u4GSxhS/Q2/OVOVC938
-=vz/H
------END PGP SIGNATURE-----
+Any comments are welcome, thanks,
+Namhyung
 
---Signature=_Wed__26_Jun_2013_17_12_41_+1000_lArE76q/rGmJNDa2--
+
+Namhyung Kim (19):
+  perf util: Move debugfs/tracing helper functions to util.c
+  perf util: Use evsel->name to get tracepoint_paths
+  perf util: Save pid-cmdline mapping into tracing header
+  perf util: Add more debug message on failure path
+  perf tools: Introduce new 'ftrace' tool
+  perf ftrace: Add support for --pid option
+  perf ftrace: Add support for -a and -C option
+  perf ftrace: Split "live" sub-command
+  perf ftrace: Add 'record' sub-command
+  perf ftrace: Add 'show' sub-command
+  perf ftrace: Add 'report' sub-command
+  perf evlist: Enhance perf_evlist__start_workload()
+  perf ftrace: Use pager for displaying result
+  perf ftrace: Cleanup using ftrace_setup/teardown()
+  perf tools: Add document for perf-ftrace command
+  perf ftrace: Add a signal handler for SIGSEGV
+  perf ftrace: Add --clock option
+  perf ftrace: Show leaf-functions as oneliner
+  perf ftrace: Tidy up the function graph output of 'show' subcommand
+
+ tools/perf/Documentation/perf-ftrace.txt |  114 ++
+ tools/perf/Makefile                      |    1 +
+ tools/perf/builtin-ftrace.c              | 1759 ++++++++++++++++++++++++++++++
+ tools/perf/builtin.h                     |    1 +
+ tools/perf/command-list.txt              |    1 +
+ tools/perf/perf.c                        |    1 +
+ tools/perf/util/cpumap.c                 |   45 +
+ tools/perf/util/cpumap.h                 |    1 +
+ tools/perf/util/evlist.c                 |   10 +-
+ tools/perf/util/header.c                 |    4 +-
+ tools/perf/util/parse-events.c           |   23 +
+ tools/perf/util/parse-events.h           |    1 +
+ tools/perf/util/trace-event-info.c       |  107 +-
+ tools/perf/util/trace-event-parse.c      |   17 +
+ tools/perf/util/trace-event-read.c       |   77 +-
+ tools/perf/util/trace-event.h            |    1 +
+ tools/perf/util/util.c                   |   59 +
+ tools/perf/util/util.h                   |    3 +
+ 18 files changed, 2150 insertions(+), 75 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-ftrace.txt
+ create mode 100644 tools/perf/builtin-ftrace.c
+
+
+Following is the original description and example.
+-----
+It consists of 4 subcommands: live, record, show and report.
+
+'perf ftrace live' just triggers ftrace and relay kernel buffer
+contents to stdout.  It does no processing in the tool side.
+
+'perf ftrace record' starts ftrace and saves its result to per-cpu
+files and a perf.header file in the perf.data.dir directory.
+Recording was done by multiple threads (a thread per cpu) in order not
+to miss events overrun.  The perf.header file is compatible to current
+perf.data file and contains useful information and sample data.
+
+The sample data were synthesized for each recorded cpu to provide more
+information - I'm not sure it's really needed though.
+
+Once you had run 'perf ftrace record', you could play with other
+subcommands.
+
+'perf ftrace show' displays function traces like 'live' subcommand or
+trace-cmd does.  It's not useful than them at this time but it could
+be improved soon.
+
+'perf ftrace report' displays usual 'perf report' style output from
+the function trace data.  You can see which function is called most
+frequently for example.  Currently it uses 1 as a period value for
+each entry but we might use funcgraph_exit->calltime to get proper
+overhead later.
+
+Example below:
+
+  # perf ftrace record sleep 0.1
+  # ls -l perf.data.dir
+  total 5568
+  -rw-r--r--. 1 root root 3514375 Apr 23 16:43 perf.header
+  -rw-r--r--. 1 root root   90112 Apr 23 16:43 trace-cpu0.buf
+  -rw-r--r--. 1 root root       0 Apr 23 16:43 trace-cpu1.buf
+  -rw-r--r--. 1 root root 2093056 Apr 23 16:43 trace-cpu2.buf
+  -rw-r--r--. 1 root root       0 Apr 23 16:43 trace-cpu3.buf
+
+  # perf ftrace show
+  overriding event (11) ftrace:funcgraph_entry with new print handler
+  overriding event (10) ftrace:funcgraph_exit with new print handler
+    0)   0.065 us |  __fsnotify_parent();
+    0)            |  fsnotify() {
+    0)   0.060 us |    __srcu_read_lock();
+    0)   0.040 us |    __srcu_read_unlock();
+    0)   0.652 us |  }
+    0)   0.040 us |  fput();
+    0)            |  __audit_syscall_exit() {
+    0)            |    path_put() {
+    0)   0.037 us |      dput();
+    0)   0.032 us |      mntput();
+    0)   0.563 us |    }
+    0)   0.035 us |    unroll_tree_refs();
+    0)   0.035 us |    kfree();
+    0)   1.284 us |  }
+    0)            |  __audit_syscall_entry() {
+    0)   0.029 us |    current_kernel_time();
+    0)   0.239 us |  }
+    0)            |  sys_write() {
+    0)   0.155 us |    fget_light();
+    0)            |    vfs_write() {
+    0)            |      rw_verify_area() {
+    0)            |        security_file_permission() {
+    0)            |          selinux_file_permission() {
+    0)            |            file_has_perm() {
+    0)            |              inode_has_perm.isra.31.constprop.61() {
+    0)   0.181 us |                avc_has_perm_flags();
+    0)   0.405 us |              }
+    0)   0.629 us |            }
+    0)   1.024 us |          }
+    0)   1.247 us |        }
+    0)   1.596 us |      }
+    0)            |      do_sync_write() {
+
+  # perf ftrace report
+  # ========
+  # captured on: Tue Apr 23 16:43:52 2013
+  # hostname : sejong.aot.lge.com
+  # os release : 3.6.11-5.fc17.x86_64
+  # perf version : 3.9.rc8.gceb5f8
+  # arch : x86_64
+  # nrcpus online : 12
+  # nrcpus avail : 12
+  # cpudesc : Intel(R) Core(TM) i7-3930K CPU @ 3.20GHz
+  # cpuid : GenuineIntel,6,45,7
+  # total memory : 32901952 kB
+  # cmdline : /home/namhyung/project/linux/tools/perf/perf ftrace record sleep 0.1 
+  # event : name = ftrace:funcgraph_entry, type = 2, config = 0xb, config1 = 0x0,
+  # event : name = ftrace:funcgraph_exit, type = 2, config = 0xa, config1 = 0x0,
+  # HEADER_CPU_TOPOLOGY info available, use -I to display
+  # HEADER_NUMA_TOPOLOGY info available, use -I to display
+  # ========
+  #
+  # Samples: 22K of event 'ftrace:funcgraph_entry'
+  # Event count (approx.): 22433
+  #
+  # Overhead  Command      Shared Object                          Symbol
+  # ........  .......  .................  ..............................
+  #
+       7.90%    sleep  [kernel.kallsyms]  [k] _cond_resched                             
+       4.57%    sleep  [kernel.kallsyms]  [k] ebitmap_get_bit                           
+       3.50%    sleep  [kernel.kallsyms]  [k] __phys_addr                               
+       3.12%    sleep  [kernel.kallsyms]  [k] _raw_spin_lock                            
+       3.09%    sleep  [kernel.kallsyms]  [k] kmem_cache_free                           
+       2.93%    sleep  [kernel.kallsyms]  [k] __slab_free                               
+       2.86%    sleep  [kernel.kallsyms]  [k] __tlb_remove_page                         
+       2.35%    sleep  [kernel.kallsyms]  [k] vm_normal_page                            
+       2.33%    sleep  [kernel.kallsyms]  [k] page_remove_rmap                          
+       1.87%    sleep  [kernel.kallsyms]  [k] mutex_unlock               
+
+
+-- 
+1.7.11.7
+
