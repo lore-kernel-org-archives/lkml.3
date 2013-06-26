@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab3FZILE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:11:04 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56948 "EHLO gate.crashing.org"
+	id S1751980Ab3FZILY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:11:24 -0400
+Received: from ozlabs.org ([203.10.76.45]:37572 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab3FZIK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:10:59 -0400
-Message-ID: <1372234231.18612.6.camel@pasglop>
-Subject: Re: linux-next: manual merge of the akpm tree with the powerpc tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Neuling <mikey@neuling.org>,
-        linuxppc-dev@lists.ozlabs.org, Oleg Nesterov <oleg@redhat.com>
-Date: Wed, 26 Jun 2013 18:10:31 +1000
-In-Reply-To: <20130626165642.8740ecb6d5d5882b06f173c8@canb.auug.org.au>
-References: <20130626165642.8740ecb6d5d5882b06f173c8@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751020Ab3FZILA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:11:00 -0400
+Date: Wed, 26 Jun 2013 18:10:58 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Rojhalat Ibrahim <imr@rtschenk.de>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: Regression in RCU subsystem in latest mainline kernel
+Message-ID: <20130626081057.GB10796@concordia>
+References: <1626500.7WAVXjfS9F@pcimr>
+ <20130614122800.GL5146@linux.vnet.ibm.com>
+ <1645938.As0LR1yeVd@pcimr>
+ <1371243967.9844.338.camel@gandalf.local.home>
+ <1371261741.21896.20.camel@pasglop>
+ <20130617074213.GA3589@concordia>
+ <20130619040906.GA5146@linux.vnet.ibm.com>
+ <20130625071914.GA29957@concordia>
+ <20130625074422.GB29957@concordia>
+ <20130625160332.GA3828@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130625160332.GA3828@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 16:56 +1000, Stephen Rothwell wrote:
-> Today's linux-next merge of the akpm tree got a conflict in
-> arch/powerpc/kernel/ptrace.c between commit b0b0aa9c7faf
-> ("powerpc/hw_brk: Fix setting of length for exact mode breakpoints") from
-> the powerpc tree and commit "ptrace/powerpc: revert "hw_breakpoints: Fix
-> racy access to ptrace breakpoints"" from the akpm tree.
+On Tue, Jun 25, 2013 at 09:03:32AM -0700, Paul E. McKenney wrote:
+> On Tue, Jun 25, 2013 at 05:44:23PM +1000, Michael Ellerman wrote:
+> > On Tue, Jun 25, 2013 at 05:19:14PM +1000, Michael Ellerman wrote:
+> > > 
+> > > Here's another trace from 3.10-rc7 plus a few local patches.
+> > 
+> > And here's another with CONFIG_RCU_CPU_STALL_INFO=y in case that's useful:
+> > 
+> > PASS running test_pmc5_6_overuse()
+> > INFO: rcu_sched self-detected stall on CPU
+> > 	8: (1 GPs behind) idle=8eb/140000000000002/0 softirq=215/220 
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> So this CPU has been out of action since before the beginning of the
+> current grace period ("1 GPs behind").  It is not idle, having taken
+> a pair of nested interrupts from process context (matching the stack
+> below).  This CPU has take five softirqs since the last grace period
+> that it noticed, which makes it likely that the loop is within the
+> softirq handler.
+> 
+> > 	 (t=2100 jiffies g=18446744073709551583 c=18446744073709551582 q=13)
+> 
+> Assuming HZ=100, this stall has been going on  for 21 seconds.  There
+> is a grace period in progress according to RCU's global state (which
+> this CPU is not yet aware of).  There are a total of 13 RCU callbacks
+> queued across the entire system.
+> 
+> If the system is at all responsive, I suggest using ftrace (either from
+> the boot command line or at runtime) to trace __do_softirq() and
+> hrtimer_interrupt().
 
-Where does the latter come from ? Why didn't it go through the powerpc tree ?
+Thanks for decoding it Paul.
 
-Cheers,
-Ben.
+I've narrowed down the test case and I think this is probably just a
+case of too many perf interrupts. If I reduce the sampling period by
+half the test runs fine.
 
+There is logic in perf to detect an interrupt storm, but for some reason
+it's not saving us. I'll dig in there, but I don't think it's an RCU
+problem.
 
+cheers
