@@ -1,56 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab3FZSix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 14:38:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53698 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3FZSiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 14:38:52 -0400
-Date: Wed, 26 Jun 2013 11:38:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Michal Hocko <mhocko@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>
-Subject: Re: [PATCH] zcache: initialize module properly when zcache=FOO is
- given
-Message-ID: <20130626183851.GA10591@kroah.com>
-References: <1372258142-7019-1-git-send-email-mhocko@suse.cz>
- <20130626150116.GA6004@phenom.dumpdata.com>
+	id S1752957Ab3FZSj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 14:39:57 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52293 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab3FZSjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 14:39:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH v2 5/9] ACPI: introduce three helper functions
+Date: Wed, 26 Jun 2013 20:49:21 +0200
+Message-ID: <1769605.QbZVOi8JUg@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1372264261-17442-6-git-send-email-liuj97@gmail.com>
+References: <1372264261-17442-1-git-send-email-liuj97@gmail.com> <1372264261-17442-6-git-send-email-liuj97@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130626150116.GA6004@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 11:01:16AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jun 26, 2013 at 04:49:02PM +0200, Michal Hocko wrote:
-> > 835f2f51 (staging: zcache: enable zcache to be built/loaded as a module)
-> > introduced in 3.10-rc1 has introduced a bug for zcache=FOO module
-> > parameter processing.
-> > 
-> > zcache_comp_init return code doesn't agree with crypto_has_comp which
-> > uses 1 for the success unlike zcache_comp_init which uses 0. This
-> > causes module loading failure even if the given algorithm is supported:
-> > [    0.815330] zcache: compressor initialization failed
-> > 
-> > Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+On Thursday, June 27, 2013 12:30:57 AM Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
 > 
-> Looks OK to me.
+> Introduce three helper functions, which will be used to simplify code.
+
+First, please introduce acpi_has_method() and use it everywhere where
+applicable (at least under drivers/acpi/) in one separate patch.
+
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Jiang Liu <liuj97@gmail.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/acpi/utils.c    | 72 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/acpi/acpi_bus.h |  5 ++++
+>  2 files changed, 77 insertions(+)
 > 
-> Cc-ing Greg.
+> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+> index 74437130..5bcf068 100644
+> --- a/drivers/acpi/utils.c
+> +++ b/drivers/acpi/utils.c
+> @@ -495,3 +495,75 @@ acpi_handle_printk(const char *level, acpi_handle handle, const char *fmt, ...)
+>  	kfree(buffer.pointer);
+>  }
+>  EXPORT_SYMBOL(acpi_handle_printk);
+> +
+> +static acpi_status
 
-That's nice, but can someone resend it in a format that I can apply it
-in, with your ack?
+This style isn't preferred.  Please always use
 
-thanks,
+static acpi_status <function name>(...)
 
-greg k-h
+> +acpi_evaluate_object_with_int_arg(acpi_handle handle, char *method, u64 val)
+
+The name is awful.  Perhaps "acpi_execute_simple_method()" would be better.
+And please change the name of the last argument to 'arg'.
+
+> +{
+> +	union acpi_object arg;
+> +	struct acpi_object_list arg_list;
+> +
+> +	arg.type = ACPI_TYPE_INTEGER;
+> +	arg.integer.value = val;
+> +	arg_list.count = 1;
+> +	arg_list.pointer = &arg;
+
+Besides, why not to do that this way:
+
+	union acpi_object obj = { .type = ACPI_TYPE_INTEGER, .integer.value = arg, };
+	struct acpi_object_list arg_list = { .count = 1, .pointer = &obj, };
+
+and that function would be useful outside of utils.c I suppose.
+
+> +
+> +	return acpi_evaluate_object(handle, method, &arg_list, NULL);
+> +}
+> +
+> +/**
+> + * acpi_evaluate_ej0: Evaluate _EJ0 method for hotplug operations
+> + * @handle: ACPI device handle
+> + *
+> + * Evaluate device's _EJ0 method for hotplug operations.
+> + */
+> +acpi_status acpi_evaluate_ej0(acpi_handle handle)
+> +{
+> +	acpi_status status;
+> +
+> +	status = acpi_evaluate_object_with_int_arg(handle, "_EJ0", 1);
+> +	if (status == AE_NOT_FOUND)
+> +		acpi_handle_warn(handle, "No _EJ0 support for device\n");
+> +	else if (ACPI_FAILURE(status))
+> +		acpi_handle_warn(handle, "Eject failed (0x%x)\n", status);
+> +
+> +	return status;
+> +}
+> +
+> +/**
+> + * acpi_evaluate_lck: Evaluate _LCK method to lock/unlock device
+> + * @handle: ACPI device handle
+> + * @lock: lock device if non-zero, otherwise unlock device
+> + *
+> + * Evaluate device's _LCK method if present to lock/unlock device
+> + */
+> +acpi_status acpi_evaluate_lck(acpi_handle handle, int lock)
+> +{
+> +	acpi_status status;
+> +
+> +	status = acpi_evaluate_object_with_int_arg(handle, "_LCK", !!lock);
+> +	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
+> +		if (lock)
+> +			acpi_handle_warn(handle,
+> +				"Locking device failed (0x%x)\n", status);
+> +		else
+> +			acpi_handle_warn(handle,
+> +				"Unlocking device failed (0x%x)\n", status);
+> +	}
+> +
+> +	return status;
+> +}
+> +
+> +/**
+> + * acpi_has_method: Check whether @handle has a method named @name
+> + * @handle: ACPI device handle
+> + * @name: name of object or method
+> + *
+> + * Check whether @handle has a method named @name.
+> + */
+> +bool acpi_has_method(acpi_handle handle, char *name)
+> +{
+> +	acpi_handle tmp;
+> +
+> +	return ACPI_SUCCESS(acpi_get_handle(handle, name, &tmp));
+> +}
+> +EXPORT_SYMBOL(acpi_has_method);
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index ca081ac..3db3b97 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -56,6 +56,11 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+>  
+>  acpi_status
+>  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
+> +
+> +acpi_status acpi_evaluate_ej0(acpi_handle handle);
+> +acpi_status acpi_evaluate_lck(acpi_handle handle, int lock);
+> +bool acpi_has_method(acpi_handle handle, char *name);
+> +
+>  #ifdef CONFIG_ACPI
+>  
+>  #include <linux/proc_fs.h>
+
+Thanks,
+Rafael
+
+ 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
