@@ -1,164 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab3FZOHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:07:11 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:61743 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab3FZOGb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:06:31 -0400
-X-IronPort-AV: E=Sophos;i="4.87,944,1363132800"; 
-   d="scan'208";a="31945186"
-From: Ben Guthro <benjamin.guthro@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>, "Rafaell J . Wysocki" <rjw@sisk.pl>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <xen-devel@lists.xen.org>
-CC: Ben Guthro <benjamin.guthro@citrix.com>,
-        Bob Moore <robert.moore@intel.com>
-Subject: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
-Date: Wed, 26 Jun 2013 10:06:13 -0400
-Message-ID: <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com>
-References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com>
+	id S1752146Ab3FZOH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:07:58 -0400
+Received: from sauhun.de ([89.238.76.85]:48213 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab3FZOH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 10:07:56 -0400
+Date: Wed, 26 Jun 2013 16:07:14 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH v10] i2c-designware: make SDA hold time configurable
+Message-ID: <20130626140713.GB3119@katana>
+References: <20130625163902.GA2973@katana>
+ <1372236906-6933-1-git-send-email-christian.ruppert@abilis.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.204.241.11]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JYK4vJDZwFMowpUq"
+Content-Disposition: inline
+In-Reply-To: <1372236906-6933-1-git-send-email-christian.ruppert@abilis.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
-reduced hardware sleep support, and the two changes didn't get
-synchronized: The new code doesn't call the hook function (if so
-requested). Fix this, requiring a parameter to be added to the
-hook function to distinguish "extended" from "legacy" sleep.
 
-Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Bob Moore <robert.moore@intel.com>
-Cc: Rafaell J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
----
- drivers/acpi/acpica/hwesleep.c |    8 ++++++++
- drivers/acpi/acpica/hwsleep.c  |    2 +-
- drivers/acpi/osl.c             |   16 ++++++++--------
- include/linux/acpi.h           |   10 +++++-----
- 4 files changed, 22 insertions(+), 14 deletions(-)
+--JYK4vJDZwFMowpUq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
-index 5e5f762..6834dd7 100644
---- a/drivers/acpi/acpica/hwesleep.c
-+++ b/drivers/acpi/acpica/hwesleep.c
-@@ -43,6 +43,7 @@
-  */
- 
- #include <acpi/acpi.h>
-+#include <linux/acpi.h>
- #include "accommon.h"
- 
- #define _COMPONENT          ACPI_HARDWARE
-@@ -128,6 +129,13 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
- 
- 	ACPI_FLUSH_CPU_CACHE();
- 
-+	status = acpi_os_prepare_sleep(sleep_state, acpi_gbl_sleep_type_a,
-+				       acpi_gbl_sleep_type_b, true);
-+	if (ACPI_SKIP(status))
-+		return_ACPI_STATUS(AE_OK);
-+	if (ACPI_FAILURE(status))
-+		return_ACPI_STATUS(status);
-+
- 	/*
- 	 * Set the SLP_TYP and SLP_EN bits.
- 	 *
-diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
-index e3828cc..a93c299 100644
---- a/drivers/acpi/acpica/hwsleep.c
-+++ b/drivers/acpi/acpica/hwsleep.c
-@@ -153,7 +153,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
- 	ACPI_FLUSH_CPU_CACHE();
- 
- 	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
--				       pm1b_control);
-+				       pm1b_control, false);
- 	if (ACPI_SKIP(status))
- 		return_ACPI_STATUS(AE_OK);
- 	if (ACPI_FAILURE(status))
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index e721863..3fc2801 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -77,8 +77,8 @@ EXPORT_SYMBOL(acpi_in_debugger);
- extern char line_buf[80];
- #endif				/*ENABLE_DEBUGGER */
- 
--static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
--				      u32 pm1b_ctrl);
-+static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 val_a, u32 val_b,
-+				      u8 extended);
- 
- static acpi_osd_handler acpi_irq_handler;
- static void *acpi_irq_context;
-@@ -1757,13 +1757,13 @@ acpi_status acpi_os_terminate(void)
- 	return AE_OK;
- }
- 
--acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
--				  u32 pm1b_control)
-+acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
-+				  u8 extended)
- {
- 	int rc = 0;
- 	if (__acpi_os_prepare_sleep)
--		rc = __acpi_os_prepare_sleep(sleep_state,
--					     pm1a_control, pm1b_control);
-+		rc = __acpi_os_prepare_sleep(sleep_state, val_a, val_b,
-+					     extended);
- 	if (rc < 0)
- 		return AE_ERROR;
- 	else if (rc > 0)
-@@ -1772,8 +1772,8 @@ acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
- 	return AE_OK;
- }
- 
--void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
--			       u32 pm1a_ctrl, u32 pm1b_ctrl))
-+void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
-+					   u32 val_b, u8 extended))
- {
- 	__acpi_os_prepare_sleep = func;
- }
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 17b5b59..de99022 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -477,11 +477,11 @@ static inline bool acpi_driver_match_device(struct device *dev,
- #endif	/* !CONFIG_ACPI */
- 
- #ifdef CONFIG_ACPI
--void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
--			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
-+void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
-+					   u32 val_b, u8 extended));
- 
--acpi_status acpi_os_prepare_sleep(u8 sleep_state,
--				  u32 pm1a_control, u32 pm1b_control);
-+acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
-+				  u8 extended);
- #ifdef CONFIG_X86
- void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
- #else
-@@ -491,7 +491,7 @@ static inline void arch_reserve_mem_area(acpi_physical_address addr,
- }
- #endif /* CONFIG_X86 */
- #else
--#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
-+#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { } while (0)
- #endif
- 
- #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
--- 
-1.7.9.5
+On Wed, Jun 26, 2013 at 10:55:06AM +0200, Christian Ruppert wrote:
+> This patch makes the SDA hold time configurable through device tree.
+>=20
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
 
+Applied to for-next, thanks for keeping at it and providing lots of
+useful information. Much appreciated!
+
+--JYK4vJDZwFMowpUq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRyvWRAAoJEBQN5MwUoCm20VIP/1HDPveLjqAXcQPvRqS2DtjH
+O9qOFYk2nuEtwSiOxKzNCMdO/+fhMQZNAc+QDI6LRgRIszVKizqr6NiV4fGCm24X
+GfByz5U6qZXJgu76evsuDMcu3VBZMnIBpriGn0jlSk0qGHGei7hsonGlkFnPzRr4
+gXjvOXniro1oENRhIHyWB00A/ufehB4dB4n9vwE2OSy3vkAT1EJfbVOlkfxPv0Id
+EpfcE7ll7C/xRGhOR4GvyjXa9IYoJgQG3iNyHOD6XfNfnYOzForyTV0uw07xzK7B
+UXviMwxMkRFRpsmTlUIx/RvDPXRjrCW3xOl18SaJvErEoAgoa52ZgBqWFIfqHbAb
+adkeaFP4q6x4/EWotrbagMIQzGUcFo0UHsyLJK/f3Oydb69rwVd7jJHld3Whd6mb
+vhoNYcExvp7B37NZi5Z+PGsUf6NmuZE6B9b9n2+nr7uf3HXwMUajTOxx8S/ZxgLW
+xmwgkWK0YK3Kau8VPrpfAVZELZ2V9gNS/gAuzwg3fyZfgR7COWLEQ/L+kxfDd8W3
+vKTpL5MTYoRdj6DnwCVcFqON6olBlfaZdvLDABgtsv4Kq3l+5yDDmliNKl/u1DmB
+8Nnm5zpZjJpN+hAcAkQylmzc7P6Kh0WjHUzrJoN7UpgbhsSc2OfdYrtFZsqN6fsf
+SNDgeDYppcKKLKllNTRD
+=XGk+
+-----END PGP SIGNATURE-----
+
+--JYK4vJDZwFMowpUq--
