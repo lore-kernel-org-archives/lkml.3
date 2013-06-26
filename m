@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab3FZCCe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:02:34 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:21570 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab3FZCCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:02:33 -0400
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>,
-        "Shen, Voice" <Voice.Shen@atmel.com>, "Wu, Josh" <Josh.wu@atmel.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
-Subject: RE: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
-Thread-Topic: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
-Thread-Index: AQHOcMaKAGpmq7nWiEK9hDRgNwiqQJlHP43g
-Date: Wed, 26 Jun 2013 01:59:22 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641687DF77C@penmbx01>
-References: <cover.1372069834.git.nicolas.ferre@atmel.com>
-In-Reply-To: <cover.1372069834.git.nicolas.ferre@atmel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
+	id S1751531Ab3FZCWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:22:03 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6531 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223Ab3FZCWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 22:22:01 -0400
+X-IronPort-AV: E=Sophos;i="4.87,941,1363104000"; 
+   d="scan'208";a="7683146"
+Message-ID: <51CA4F89.7030204@cn.fujitsu.com>
+Date: Wed, 26 Jun 2013 10:18:49 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
+To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net
+CC: v9fs-developer@lists.sourceforge.net,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Subject: [PATCH 1/2] fs/v9fs: Remove the unused variable "err" in
+ v9fs_vfs_getattr()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/26 10:20:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/26 10:20:41,
+	Serialize complete at 2013/06/26 10:20:41
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5Q22cwY002549
 
+Delete the unused variable "err" in v9fs_vfs_getattr()
 
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/9p/vfs_inode.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-> -----Original Message-----
-> From: Nicolas Ferre [mailto:nicolas.ferre@atmel.com]
-> Sent: 2013Äê6ÔÂ24ÈÕ 18:35
-> To: Jean-Christophe PLAGNIOL-VILLARD; Desroches, Ludovic; Yang, Wenyou;
-> Shen, Voice; Wu, Josh
-> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Ferre,
-> Nicolas
-> Subject: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
-> 
-> This little series is for enabling the support of SPI on at91sam9n12 and
-> sama5d3 families.
-> 
-> Nicolas Ferre (3):
->   ARM: at91/DT: fix SPI compatibility string
->   ARM: at91/DT: sama5d3: add SPI DMA client infos
->   ARM: at91/DT: at91sam9n12: add SPI DMA client infos
-> 
->  arch/arm/boot/dts/at91sam9n12.dtsi |  6 ++++++
->  arch/arm/boot/dts/sama5d3.dtsi     | 10 ++++++++--
->  2 files changed, 14 insertions(+), 2 deletions(-)
-> 
-> --
-> 1.8.2.2
-
-Tested on sama5d34ek, Linux-next: next-20130624
-
-Tested by Wenyou Yang <wenyou.yang@atmel.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index d86edc8..25b018e 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -1054,13 +1054,11 @@ static int
+ v9fs_vfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
+                 struct kstat *stat)
+ {
+-       int err;
+        struct v9fs_session_info *v9ses;
+        struct p9_fid *fid;
+        struct p9_wstat *st;
+ 
+        p9_debug(P9_DEBUG_VFS, "dentry: %p\n", dentry);
+-       err = -EPERM;
+        v9ses = v9fs_dentry2v9ses(dentry);
+        if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE) {
+                generic_fillattr(dentry->d_inode, stat);
+-- 
+1.7.7
