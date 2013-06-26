@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab3FZOvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:51:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21780 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab3FZOvR (ORCPT
+	id S1752610Ab3FZOvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:51:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58975 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab3FZOvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:51:17 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=k2iftdwf7gsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=lolsShB3EWcA:10 a=SwdnOlKBk8mc9e08x5sA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1372258271.18733.256.camel@gandalf.local.home>
-Subject: Re: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to
- prevent CPU offline
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        walken@google.com, mingo@kernel.org, linux-arch@vger.kernel.org,
-        vincent.guittot@linaro.org, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, namhyung@kernel.org,
-        tglx@linutronix.de, laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com,
-        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu, tj@kernel.org,
-        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 26 Jun 2013 10:51:11 -0400
-In-Reply-To: <20130626143424.GN3828@linux.vnet.ibm.com>
-References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
-	 <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com>
-	 <20130625220026.GG3828@linux.vnet.ibm.com>
-	 <51CAF624.6060004@linux.vnet.ibm.com>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com>
-	 <20130626143424.GN3828@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 10:51:31 -0400
+Date: Wed, 26 Jun 2013 14:20:22 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 0/8] Provide infrastructure for full-system
+ idle
+Message-ID: <20130626122022.GI28407@twins.programming.kicks-ass.net>
+References: <20130625213721.GA19452@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130625213721.GA19452@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 07:34 -0700, Paul E. McKenney wrote:
-> On Wed, Jun 26, 2013 at 03:29:40PM +0100, David Laight wrote:
-> > > Once stop_machine() is gone from the CPU offline path, we won't be able
-> > > to depend on disabling preemption to prevent CPUs from going offline
-> > > from under us.
-> > 
-> > Could you use an rcu-like sequence so that disabling pre-emption
-> > would be enough?
-> > 
-> > Something like rebuilding the cpu list, then forcing yourself
-> > to run on all the cpu.
-> > 
-> > That would be far less intrusive.
+On Tue, Jun 25, 2013 at 02:37:21PM -0700, Paul E. McKenney wrote:
+> Whenever there is at least one non-idle CPU, it is necessary to
+> periodically update timekeeping information.  Before NO_HZ_FULL, this
+> updating was carried out by the scheduling-clock tick, which ran on
+> every non-idle CPU.  With the advent of NO_HZ_FULL, it is possible
+> to have non-idle CPUs that are not receiving scheduling-clock ticks.
+> This possibility is handled by assigning a timekeeping CPU that continues
+> taking scheduling-clock ticks.
 > 
-> It would also increase the latency of CPU-hotunplug operations.
+> Unfortunately, timekeeping CPU continues taking scheduling-clock
+> interrupts even when all other CPUs are completely idle, which is
+> not so good for energy efficiency and battery lifetime.  Clearly, it
+> would be good to turn off the timekeeping CPU's scheduling-clock tick
+> when all CPUs are completely idle.  This is conceptually simple, but
+> we also need good performance and scalability on large systems, which
+> rules out implementations based on frequently updated global counts of
+> non-idle CPUs as well as implementations that frequently scan all CPUs.
+> Nevertheless, we need a single global indicator in order to keep the
+> overhead of checking acceptably low.
 > 
+> The chosen approach is to enforce hysteresis on the non-idle to
+> full-system-idle transition, with the amount of hysteresis increasing
+> linearly with the number of CPUs, thus keeping contention acceptably low.
+> This approach piggybacks on RCU's existing force-quiescent-state scanning
+> of idle CPUs, which has the advantage of avoiding the scan entirely on
+> busy systems that have high levels of multiprogramming.  This scan
+> take per-CPU idleness information and feeds it into a state machine
+> that applies the level of hysteresis required to arrive at a single
+> full-system-idle indicator.
+> 
+> Note that this version pays attention to CPUs that have taken an NMI
+> from idle.  It is not clear to me that NMI handlers can safely access
+> the time on a system that is long-term idle.  Unless someone tells me
+> that it is somehow safe to access time from an NMI from idle, I will
+> remove NMI support in the next version.
 
-Is that a big deal?
+Using perf it is 'possible' to come near; we use local_clock() from NMI
+context. It will do a TSC read.
 
--- Steve
+On systems where the TSC is usable we'll end up with a sane timestamp;
+on systems where we need the whole kernel/sched/clock.c song and dance
+routine we'll return a stable time-stamp when called from long idle.
 
-
+I don't think there's anything we can do better there.
