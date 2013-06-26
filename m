@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab3FZNhW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:37:22 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:62662 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab3FZNhT (ORCPT
+	id S1752006Ab3FZNiL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:38:11 -0400
+Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:45356 "EHLO
+	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751721Ab3FZNiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:37:19 -0400
-Date: Wed, 26 Jun 2013 15:37:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mike Travis <travis@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Nathan Zimmer <nzimmer@sgi.com>, holt@sgi.com, rob@landley.net,
-        tglx@linutronix.de, mingo@redhat.com, yinghai@kernel.org,
-        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC] Transparent on-demand memory setup initialization embedded
- in the (GFP) buddy allocator
-Message-ID: <20130626133715.GA6424@gmail.com>
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
- <1371831934-156971-3-git-send-email-nzimmer@sgi.com>
- <20130623092840.GB13445@gmail.com>
- <20130624203657.GA107621@asylum.americas.sgi.com>
- <20130625073819.GC11420@gmail.com>
- <51C9D1D6.20405@sgi.com>
- <51C9E4B7.2000007@zytor.com>
- <51C9E6CD.5080508@sgi.com>
- <20130626092248.GB27025@gmail.com>
- <20130626062850.a7ce5806.akpm@linux-foundation.org>
+	Wed, 26 Jun 2013 09:38:09 -0400
+Message-ID: <51CAED89.1090806@st.com>
+Date: Wed, 26 Jun 2013 14:32:57 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626062850.a7ce5806.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v7] clocksource:arm_global_timer: Add ARM global timer
+ support.
+References: <1372247318-28869-1-git-send-email-srinivas.kandagatla@st.com> <51CAEB87.2070209@linaro.org>
+In-Reply-To: <51CAEB87.2070209@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26/06/13 14:24, Daniel Lezcano wrote:
+>> If its not too late can this patch be considered for 3.11 via clocksource tree?
+>> > This patch has no build dependencies.
+> I took it in my tree but it is too late for a 3.11, sorry.
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+Thanks Daniel.
 
-> On Wed, 26 Jun 2013 11:22:48 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+
 > 
-> > except that on 32 TB 
-> > systems we don't spend ~2 hours initializing 8,589,934,592 page heads.
-> 
-> That's about a million a second which is crazy slow - even my 
-> prehistoric desktop is 100x faster than that.
-> 
-> Where's all this time actually being spent?
+> Thanks
+>   -- Daniel
 
-See the earlier part of the thread - apparently it's spent initializing 
-the page heads - remote NUMA node misses from a single boot CPU, going 
-across a zillion cross-connects? I guess there's some other low hanging 
-fruits as well - so making this easier to profile would be nice. The 
-profile posted was not really usable.
-
-Btw., NUMA locality would be another advantage of on-demand 
-initialization: actual users of RAM tend to allocate node-local 
-(especially on large clusters), so any overhead will be naturally lower.
-
-Thanks,
-
-	Ingo
