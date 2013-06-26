@@ -1,83 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab3FZRU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:20:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53089 "EHLO mx1.redhat.com"
+	id S1752791Ab3FZRVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:21:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54500 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751893Ab3FZRUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:20:54 -0400
-Date: Wed, 26 Jun 2013 19:15:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: James Hogan <james.hogan@imgtec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Daney <ddaney@caviumnetworks.com>,
-        David Daney <ddaney.cavm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        David Daney <david.daney@cavium.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mips@linux-mips.org, stable@vger.kernel.org
-Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
-Message-ID: <20130626171551.GA5830@redhat.com>
-References: <51C47864.9030200@gmail.com> <20130621202244.GA16610@redhat.com> <51C4BB86.1020004@caviumnetworks.com> <20130622190940.GA14150@redhat.com> <51C80CF0.4070608@imgtec.com> <20130625144015.1e4e70a0ac888f4ccf5c6a8f@linux-foundation.org> <CAAG0J9-5J6=c=1VxEW6FevMHKsjShtbjM8G6Q1vu1P+LurQqoQ@mail.gmail.com> <51CACB80.5020706@imgtec.com> <20130626161452.GA2888@redhat.com> <20130626165900.GF7171@linux-mips.org>
+	id S1751893Ab3FZRU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 13:20:59 -0400
+Date: Wed, 26 Jun 2013 13:20:54 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Geremy Condra <gcondra@google.com>,
+        device-mapper development <dm-devel@redhat.com>
+cc: wad@chromium.org, linux-kernel@vger.kernel.org, agk@redhat.com
+Subject: Re: [dm-devel] [PATCH v2] dm: verity: Add support for emitting
+ uevents on dm-verity errors.
+In-Reply-To: <1371783624-23962-1-git-send-email-gcondra@google.com>
+Message-ID: <alpine.LRH.2.02.1306261304290.29719@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1371783624-23962-1-git-send-email-gcondra@google.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626165900.GF7171@linux-mips.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26, Ralf Baechle wrote:
->
-> On Wed, Jun 26, 2013 at 06:14:52PM +0200, Oleg Nesterov wrote:
->
-> > Or simply remove the BUG_ON(), this can equally confuse wait(status).
-> > 128 & 0x7f == 0.
-> >
-> > Still I think it would be better to change _NSIG on mips.
->
-> If it was that easy.  That's going to outright break binary compatibility,
-> see kernel/signal.c:
->
-> SYSCALL_DEFINE4(rt_sigprocmask, int, how, sigset_t __user *, nset,
->                 sigset_t __user *, oset, size_t, sigsetsize)
-> {
->         sigset_t old_set, new_set;
->         int error;
->
->         /* XXX: Don't preclude handling different sized sigset_t's.  */
->         if (sigsetsize != sizeof(sigset_t))
->                 return -EINVAL;
+Hi
 
-I meant the minimal hack like
+I think the idea is fine.
 
-	--- x/arch/mips/include/uapi/asm/signal.h
-	+++ x/arch/mips/include/uapi/asm/signal.h
-	@@ -11,9 +11,9 @@
-	 
-	 #include <linux/types.h>
-	 
-	-#define _NSIG		128
-	+#define _NSIG		127
-	 #define _NSIG_BPW	(sizeof(unsigned long) * 8)
-	-#define _NSIG_WORDS	(_NSIG / _NSIG_BPW)
-	+#define _NSIG_WORDS	DIV_ROUND_UP(_NSIG / _NSIG_BPW)
-	 
-	 typedef struct {
-		unsigned long sig[_NSIG_WORDS];
+There is architecture problem - that target specific routines are being 
+pushed into generic dm core.
 
-just to avoid BUG_ON().
+I suggest that instead of dm_send_verity_uevent and dm_path_uevent you 
+create just one generic function (for example dm_send_uevent) that takes 
+variable argument list of target-specific uevent variables and that can be 
+used for both multipath and verity. Something like: dm_send_uevent(ti, 
+"DM_VERITY_BLOCK_NR=123", "DM_ACTION=VERITY_DATA_ERROR", NULL);
 
-I agree that _NSIG == 126 or 64 needs more discussion. Although personally
-I think this is the only choice in the long term, or we should change ABI
-and break user-space completely.
+There is GFP_ATOMIC allocation and this type of allocation can fail 
+anytime. Could it be a problem if uevent is lost? It's probably not a 
+problem for dm-verity, because uevents are generated only in errorneous 
+state ... but what about multipath? Can it misbehave if we lose uevent?
 
-And, just in case, the hack above doesn't kill SIG_128 completely.
-Say, the task can block/unblock it.
+Mikulas
 
-Oleg.
 
+On Thu, 20 Jun 2013, Geremy Condra wrote:
+
+> With this change dm-verity errors will cause uevents to be
+> sent to userspace, notifying it that an error has occurred
+> and potentially triggering recovery actions.
+> 
+> Signed-off-by: Geremy Condra <gcondra@google.com>
+> ---
+> Changelog since v1:
+> - Removed the DM_VERITY_ERROR_NOTIFY config option
+> 
+>  drivers/md/dm-uevent.c | 40 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/md/dm-uevent.h | 12 ++++++++++--
+>  drivers/md/dm-verity.c | 28 ++++++++++++++++++++++++++++
+>  3 files changed, 78 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/dm-uevent.c b/drivers/md/dm-uevent.c
+> index 8efe033..17a6662 100644
+> --- a/drivers/md/dm-uevent.c
+> +++ b/drivers/md/dm-uevent.c
+> @@ -36,6 +36,8 @@ static const struct {
+>  } _dm_uevent_type_names[] = {
+>  	{DM_UEVENT_PATH_FAILED, KOBJ_CHANGE, "PATH_FAILED"},
+>  	{DM_UEVENT_PATH_REINSTATED, KOBJ_CHANGE, "PATH_REINSTATED"},
+> +	{DM_UEVENT_VERITY_DATA_ERROR, KOBJ_CHANGE, "VERITY_DATA_ERROR"},
+> +	{DM_UEVENT_VERITY_HASH_ERROR, KOBJ_CHANGE, "VERITY_HASH_ERROR"},
+>  };
+>  
+>  static struct kmem_cache *_dm_event_cache;
+> @@ -202,6 +204,44 @@ void dm_path_uevent(enum dm_uevent_type event_type, struct dm_target *ti,
+>  }
+>  EXPORT_SYMBOL_GPL(dm_path_uevent);
+>  
+> +void dm_send_verity_uevent(enum dm_uevent_type event_type, struct dm_target *ti,
+> +						unsigned long long block_nr)
+> +{
+> +	struct mapped_device *md = dm_table_get_md(ti->table);
+> +	struct dm_uevent *event = dm_uevent_alloc(md);
+> +	struct gendisk *disk = dm_disk(md);
+> +
+> +	if (!event) {
+> +		DMERR("%s: dm_uevent_alloc() failed", __func__);
+> +		return;
+> +	}
+> +
+> +	if (event_type >= ARRAY_SIZE(_dm_uevent_type_names)) {
+> +		DMERR("%s: Invalid event_type %d", __func__, event_type);
+> +		goto out;
+> +	}
+> +
+> +	if (add_uevent_var(&event->ku_env, "DM_VERITY_BLOCK_NR=%llu", block_nr)) {
+> +		DMERR("%s: add_uevent_var() for DM_VERITY_BLOCK failed", __func__);
+> +		goto out;
+> +	}
+> +
+> +	if (add_uevent_var(&event->ku_env, "DM_ACTION=%s",
+> +			_dm_uevent_type_names[event_type].name)) {
+> +		DMERR("%s: add_uevent_var() for DM_ACTION failed", __func__);
+> +		goto out;
+> +	}
+> +
+> +	if (kobject_uevent_env(&disk_to_dev(disk)->kobj, event_type,
+> +				event->ku_env.envp)) {
+> +		DMERR("%s: kobject_uevent_env failed", __func__);
+> +	}
+> +
+> +out:
+> +	dm_uevent_free(event);
+> +}
+> +EXPORT_SYMBOL_GPL(dm_send_verity_uevent);
+> +
+>  int dm_uevent_init(void)
+>  {
+>  	_dm_event_cache = KMEM_CACHE(dm_uevent, 0);
+> diff --git a/drivers/md/dm-uevent.h b/drivers/md/dm-uevent.h
+> index 2eccc8b..1c59dba 100644
+> --- a/drivers/md/dm-uevent.h
+> +++ b/drivers/md/dm-uevent.h
+> @@ -24,6 +24,8 @@
+>  enum dm_uevent_type {
+>  	DM_UEVENT_PATH_FAILED,
+>  	DM_UEVENT_PATH_REINSTATED,
+> +	DM_UEVENT_VERITY_DATA_ERROR,
+> +	DM_UEVENT_VERITY_HASH_ERROR,
+>  };
+>  
+>  #ifdef CONFIG_DM_UEVENT
+> @@ -34,7 +36,9 @@ extern void dm_send_uevents(struct list_head *events, struct kobject *kobj);
+>  extern void dm_path_uevent(enum dm_uevent_type event_type,
+>  			   struct dm_target *ti, const char *path,
+>  			   unsigned nr_valid_paths);
+> -
+> +extern void dm_send_verity_uevent(enum dm_uevent_type event_type,
+> +					struct dm_target *ti,
+> +					unsigned long long block_nr);
+>  #else
+>  
+>  static inline int dm_uevent_init(void)
+> @@ -53,7 +57,11 @@ static inline void dm_path_uevent(enum dm_uevent_type event_type,
+>  				  unsigned nr_valid_paths)
+>  {
+>  }
+> -
+> +static inline void dm_send_verity_uevent(enum dm_uevent_type event_type,
+> +					struct dm_target *ti,
+> +					unsigned long long block_nr)
+> +{
+> +}
+>  #endif	/* CONFIG_DM_UEVENT */
+>  
+>  #endif	/* DM_UEVENT_H */
+> diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
+> index 68bf5c3..2e3695b 100644
+> --- a/drivers/md/dm-verity.c
+> +++ b/drivers/md/dm-verity.c
+> @@ -20,6 +20,8 @@
+>  #include <linux/device-mapper.h>
+>  #include <crypto/hash.h>
+>  
+> +#include "dm-uevent.h"
+> +
+>  #define DM_MSG_PREFIX			"verity"
+>  
+>  #define DM_VERITY_IO_VEC_INLINE		16
+> @@ -137,6 +139,30 @@ static void dm_bufio_alloc_callback(struct dm_buffer *buf)
+>  }
+>  
+>  /*
+> + * Trigger userspace data corruption handler.
+> + */
+> +#ifdef CONFIG_DM_UEVENT
+> +static void verity_data_error(struct dm_verity *v, unsigned long long block_nr)
+> +{
+> +	dm_send_verity_uevent(DM_UEVENT_VERITY_DATA_ERROR, v->ti, block_nr);
+> +}
+> +
+> +static void verity_hash_error(struct dm_verity *v, unsigned long long block_nr)
+> +{
+> +	dm_send_verity_uevent(DM_UEVENT_VERITY_HASH_ERROR, v->ti, block_nr);
+> +}
+> +#else
+> +static inline void verity_data_error(struct dm_verity *v,
+> +					unsigned long long block_nr)
+> +{
+> +}
+> +static inline void verity_hash_error(struct dm_verity *v,
+> +					unsigned long long block_nr)
+> +{
+> +}
+> +#endif
+> +
+> +/*
+>   * Translate input sector number to the sector number on the target device.
+>   */
+>  static sector_t verity_map_sector(struct dm_verity *v, sector_t bi_sector)
+> @@ -255,6 +281,7 @@ static int verity_verify_level(struct dm_verity_io *io, sector_t block,
+>  				(unsigned long long)hash_block);
+>  			v->hash_failed = 1;
+>  			r = -EIO;
+> +			verity_hash_error(v, (unsigned long long)hash_block);
+>  			goto release_ret_r;
+>  		} else
+>  			aux->hash_verified = 1;
+> @@ -375,6 +402,7 @@ test_block_hash:
+>  			DMERR_LIMIT("data block %llu is corrupted",
+>  				(unsigned long long)(io->block + b));
+>  			v->hash_failed = 1;
+> +			verity_data_error(v, (unsigned long long)(io->block + b));
+>  			return -EIO;
+>  		}
+>  	}
+> -- 
+> 1.8.3
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
+> 
