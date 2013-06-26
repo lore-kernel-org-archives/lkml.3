@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab3FZQPO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:15:14 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:47146 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752654Ab3FZQPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752723Ab3FZQPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:15:13 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:41449 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab3FZQPL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Jun 2013 12:15:11 -0400
-Message-ID: <51CB138B.5010500@sgi.com>
-Date: Wed, 26 Jun 2013 09:15:07 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Nathan Zimmer <nzimmer@sgi.com>,
-        holt@sgi.com, rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
-        yinghai@kernel.org, gregkh@linuxfoundation.org, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC] Transparent on-demand memory setup initialization embedded
- in the (GFP) buddy allocator
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130625073819.GC11420@gmail.com> <51C9D1D6.20405@sgi.com> <51C9E4B7.2000007@zytor.com> <51C9E6CD.5080508@sgi.com> <20130626092248.GB27025@gmail.com> <20130626062850.a7ce5806.akpm@linux-foundation.org> <20130626133715.GA6424@gmail.com>
-In-Reply-To: <20130626133715.GA6424@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130626155728.GA2141@redhat.com>
+References: <0e00e9073855c02a382d49ba1ede9c4fda3451b7.1372189875.git.luto@amacapital.net>
+ <20130625201602.GB1726@moon> <20130625201705.GA15966@redhat.com>
+ <CALCETrVxm2wHvLgexG6fZO+h1rNHC_qDCv6B+4XuANHgSQU4iw@mail.gmail.com>
+ <20130625215247.GC1726@moon> <CALCETrV2WZ3m82D4THfxvmASW8AOf1SN7Pu14vE0jMORupO5xw@mail.gmail.com>
+ <20130626155728.GA2141@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 26 Jun 2013 09:14:50 -0700
+Message-ID: <CALCETrXHLBnJ5UbtSe9Af+VoPDNtXVe0Da2yasj0Nr_=Q1YvLA@mail.gmail.com>
+Subject: Re: [PATCH] proc: Expose /proc/<pid>/task/<tid>/children unconditionally
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 6/26/2013 6:37 AM, Ingo Molnar wrote:
-> 
-> * Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
->> On Wed, 26 Jun 2013 11:22:48 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+On Wed, Jun 26, 2013 at 8:57 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/25, Andy Lutomirski wrote:
 >>
->>> except that on 32 TB 
->>> systems we don't spend ~2 hours initializing 8,589,934,592 page heads.
+>> On Tue, Jun 25, 2013 at 2:52 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>> > On Tue, Jun 25, 2013 at 02:36:31PM -0700, Andy Lutomirski wrote:
+>> >> On Tue, Jun 25, 2013 at 1:17 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >> > On 06/26, Cyrill Gorcunov wrote:
+>> >> >>
+>> >> >> On Tue, Jun 25, 2013 at 12:51:45PM -0700, Andy Lutomirski wrote:
+>> >> >> > This is currently only available if CONFIG_CHECKPOINT_RESTORE, which
+>> >> >> > is hidden under CONFIG_EXPERT.  It's generally useful functionality,
+>> >> >> > though, so expose it unconditionally.
+>> >> >> >
+>> >> >> > Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+>> >> >> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> >> >> Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>> >> >
+>> >> > I didn't see the patch but I guess it is trivial and I agree with intent ;)
+>> >>
+>> >> The patch works, but "children" is only listed under task/<tid>, not
+>> >> under /proc/<pid>.  Is that intentional?  Fixing it would be a
+>> >> one-liner.
+>> >
+>> > Yeah, it's intentional. Here some explanations from Oleg (check out
+>> > the whole thread, it's not that big https://lkml.org/lkml/2011/12/9/220)
+>> > in short this might require some more code, but i'll re-check tomorrow.
 >>
->> That's about a million a second which is crazy slow - even my 
->> prehistoric desktop is 100x faster than that.
->>
->> Where's all this time actually being spent?
-> 
-> See the earlier part of the thread - apparently it's spent initializing 
-> the page heads - remote NUMA node misses from a single boot CPU, going 
-> across a zillion cross-connects? I guess there's some other low hanging 
-> fruits as well - so making this easier to profile would be nice. The 
-> profile posted was not really usable.
+>> This is a little strange.  It looks like ppid (in status) shows the
+>> tgid,
+>
+> Yes,
+>
+>> but the actual real_parent can refer to a thread (as opposed to
+>> a thread group leader),
+>
+> Yes.
+>
+> This is mostly the internal implementation detail. And probably it
+> would be nice to move ->children from task_struct to signal_struct.
+>
+> However. See __WNOTHREAD in man waitpid. I think this is the only
+> (historical) reason. Otherwise the real_parent's tid doesn't matter,
+> the parent is always the whole process, not sub-thread.
+>
+>> and task/tid/children respects that.
+>
+> Well, it should respect if you want to restart and keep __WNOTHREAD
+> working.
+>
+> But there is another reason. It is not trivial to list all children
+> under /proc/<pid>, and the fix would not be a one-liner ;) You need
+> to fight with the exiting sub-threads and reparenting.
+>
+>> So the
+>> tree that you get by following task/tid/ children won't be quite the
+>> same as the tree you get by following ppid.
+>
+> Not sure I understand... but in any case, yes you need to read
+> /proc/pid/task/*/children to construct the tree.
+>
+>> I wonder if the ptid should be added to status.  Is there anything
+>> (other than task/tid/children)
+>
+> Perhaps, I dunno.
+>
+> Better yet, we should kill __WNOTHREAD ;) I am wondering if it is still
+> used.
 
-This is one advantage of delayed memory init.  I can do it under
-the profiler.  I will put everything together to accomplish this
-and then send a perf report.
+Ugh.  I'll submit a follow-up patch to
+Documentation/filesystems/proc.txt to explain the situation.  All I
+really care about is being able to iterate the children of a
+single-threaded process, and the current semantics are fine for that.
 
-> 
-> Btw., NUMA locality would be another advantage of on-demand 
-> initialization: actual users of RAM tend to allocate node-local 
-> (especially on large clusters), so any overhead will be naturally lower.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+--Andy
