@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab3FZNMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:12:08 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:34843 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751285Ab3FZNMF (ORCPT
+	id S1751776Ab3FZNNU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:13:20 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:39980 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab3FZNNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:12:05 -0400
-Date: Wed, 26 Jun 2013 14:12:00 +0100
-From: "matt@console-pimps.org" <matt@console-pimps.org>
-To: Zachary Bobroff <zacharyb@ami.com>
-Cc: "'H. Peter Anvin'" <hpa@zytor.com>, "'Jan Beulich'" <jbeulich@suse.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>, Joey Lee <JLee@suse.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
-Message-ID: <20130626131200.GN22026@console-pimps.org>
-References: <51BEF71402000078000DEC12@nat28.tlf.novell.com>
- <20130617101745.GB8569@console-pimps.org>
- <51BF08CD02000078000DEC99@nat28.tlf.novell.com>
- <20130617123052.GE8569@console-pimps.org>
- <7BD74F8E52BFD147B6C83AE7A1E893FFE285F690@atlms1.us.megatrends.com>
- <51C068C1020000780009C995@nat28.tlf.novell.com>
- <7BD74F8E52BFD147B6C83AE7A1E893FFE286040C@atlms1.us.megatrends.com>
- <20130619084329.GA5386@console-pimps.org>
- <298f16e6-7ada-4f2e-8dae-f3919e7c8225@email.android.com>
- <7BD74F8E52BFD147B6C83AE7A1E893FFE28622FD@atlms1.us.megatrends.com>
+	Wed, 26 Jun 2013 09:13:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7BD74F8E52BFD147B6C83AE7A1E893FFE28622FD@atlms1.us.megatrends.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAB=otbQ71TXn=-f3WddNoyvP6NmTHCtSPqwDwkYr2Y7micqRTQ@mail.gmail.com>
+References: <1372159970-6361-1-git-send-email-ruslan.bilovol@ti.com>
+	<51C9867C.80206@ti.com>
+	<51C99056.5090104@ti.com>
+	<CAB=otbQ71TXn=-f3WddNoyvP6NmTHCtSPqwDwkYr2Y7micqRTQ@mail.gmail.com>
+Date: Wed, 26 Jun 2013 08:13:17 -0500
+X-Google-Sender-Auth: ksmyd1GYmUiKuqPhc_w2_oCvcQE
+Message-ID: <CAGo_u6ohf86j3VouQZKkkf6Gv3x-wJKfNN=TALSRCgvh0NBEtg@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: DTS: OMAP4: Add OMAP4 Blaze Tablet support
+From: Nishanth Menon <nm@ti.com>
+To: Ruslan Bilovol <ruslan.bilovol@ti.com>
+Cc: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, benoit.cousson@linaro.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun, at 06:04:50PM, Zachary Bobroff wrote:
-> All,
-> 
-> I am attaching a further updated version of eboot.c .  We removed the
-> low_alloc routine from the exit_boot function only.  We also removed
-> the goto statements(sorry we just aren’t huge fans of goto's in c, you
-> can change it back to be goto oriented if you want though) and put it
-> in a loop that is counting down from retry count.  You can see the
-> loop is based upon this conditional:
+On Wed, Jun 26, 2013 at 3:03 AM, Ruslan Bilovol <ruslan.bilovol@ti.com> wrote:
+> Hi Nishanth,
+>
+> On Tue, Jun 25, 2013 at 3:43 PM, Nishanth Menon <nm@ti.com> wrote:
+>> On 06/25/2013 07:01 AM, Nishanth Menon wrote:
+>>>
+>>> On 06/25/2013 06:32 AM, Ruslan Bilovol wrote:
+>>>>
+>>>> The OMAP4 Blaze Tablet is TI OMAP4 processor-based
+>>>> development platform in a tablet formfactor.
+>>>> The platform contains many of the features found in
+>>>> present-day handsets (such as audio, video, wireless
+>>>> functions and user interfaces) and in addition
+>>>> contains features for software development and test.
+>>>>
+>>>> This patch adds initial support for the OMAP4 Blaze
+>>>> Tablet development platform. Additional functionality
+>>>> depends on different drivers and code modifications that
+>>>> are not upstreamed yet or do not support DT yet, so will
+>>>> be added later.--
+>>>
+>>>
+>>> http://svtronics.com/omap/sevm4460,blaze,omap might help too :)
+>
+> Yes, forgot to add this information from cover-letter from previous
+> version of patch :)
 
-It would be much easier to review these changes if you sent them as a
-patch against a git tree, using git to generate the patch. Failing that,
-even a plain old diff-format file would be acceptable.
+;) - link was wrong!
+http://svtronics.com/omap?product_id=15 is more like it -> Blaze
+tablet by default comes in 4460/4470 variants. I suggest introducing
+4470 variant here.
+I am aware of the SOM compatibility and ability to support 4430 SOM on
+tablet as well, but to keep tablet alive and reduce scope of testing,
+keeping just 4470 in place might be a good choice.
 
-> while((ExitRetryCount > 0) && (status != EFI_SUCCESS)) {
-> 
-> So we have currently set ExitRetryCount to 2 (a couple of lines above):
-> int ExitRetryCount = 2;
-> 
-> However, I have a suggestion and im not entirely sure how difficult it
-> would be, im just suggesting it might not be a bad idea.  We can
-> initialize this ExitRetryCount to be some default value, but if
-> grub(or a different bootloader) passes some updated value,
-> ExitRetryCount could be updated with this value.  Myself, I don’t know
-> the level of complexity it creates pulling a kernel parameter, but
-> given a decent example, I could see about adding that support.
-> Allowing passing of a parameter could eliminate problems with the
-> systems that may be out of specification.
- 
-We try to pull workarounds for these problems into the kernel, rather
-than relying on bootloaders to pass in the necessary flags. People
-rarely want to update their boot loaders, but most distributions release
-updates for installed kernels semi-regularly.
+just my 2 cents, no strong feelings towards either. :)
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+>
+>>> [...]
+>>>>
+>>>> +
+>>>> +#include "twl6030.dtsi"
+>>>> +
+>>>
+>>> Might be good to see the TWL interrupt pin information made available as
+>>> well?
+>>
+>> Allow me to rephrase a comment a little bit more :)
+>> Similar to twl4030_omap3.dtsi, we could introduce twl6030_omap4.dtsi. this
+>> could contain the common pins used for 6030.
+>>  &omap4_pmx_wkup {
+>>          pinctrl-names = "default";
+>>          pinctrl-0 = <
+>>                          &twl6030_wkup_pins
+>>          >;
+>>
+>>          twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
+>>                  pinctrl-single,pins = <
+>>                          0x14 (PIN_OUTPUT | MUX_MODE2)
+>>                  >;
+>>          };
+>>  };
+>>
+>>         twl6030_pins: pinmux_twl6030_pins {
+>>                 pinctrl-single,pins = <
+>>                         0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)
+>> /* sys_nirq1.sys_nirq1 */
+>>                 >;
+>>         };
+>>
+>> which is now already duplicated in 2 places (SDP and Panda), and in this
+>> patch duplicated again.
+>
+> Agree, I'm planning to do this later as part of moving common things into
+> some System-On-Module(SOM)-specific files, as discussed previously
+> here https://patchwork.kernel.org/patch/2118371/
+>
+I dont think I was mentioning about that - I just would really like to
+avoid duplication of 6030 information all over the place. if we can
+avoid it, lets start consolidating.
+Regards,
+Nishanth Menon
