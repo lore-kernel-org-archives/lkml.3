@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab3FZCWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:22:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:6531 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab3FZCWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:22:01 -0400
-X-IronPort-AV: E=Sophos;i="4.87,941,1363104000"; 
-   d="scan'208";a="7683146"
-Message-ID: <51CA4F89.7030204@cn.fujitsu.com>
-Date: Wed, 26 Jun 2013 10:18:49 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751881Ab3FZCbA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:31:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44912 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab3FZCa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 22:30:58 -0400
+Date: Tue, 25 Jun 2013 19:31:43 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
+        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
+        vishal.l.verma@intel.com, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 2/8] pch_uart: Add uart_clk selection for the MinnowBoard
+Message-ID: <20130626023143.GB23320@kroah.com>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+ <6cc125b9eb85dd3cae4a2496fdb7f0d17b18f930.1372211451.git.dvhart@linux.intel.com>
 MIME-Version: 1.0
-To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net
-CC: v9fs-developer@lists.sourceforge.net,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Subject: [PATCH 1/2] fs/v9fs: Remove the unused variable "err" in
- v9fs_vfs_getattr()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/26 10:20:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/26 10:20:41,
-	Serialize complete at 2013/06/26 10:20:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6cc125b9eb85dd3cae4a2496fdb7f0d17b18f930.1372211451.git.dvhart@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete the unused variable "err" in v9fs_vfs_getattr()
+On Tue, Jun 25, 2013 at 06:53:22PM -0700, Darren Hart wrote:
+> Use DMI_BOARD_NAME to determine if we are running on a MinnowBoard and
+> set the uart clock to 50MHz if so. This removes the need to pass the
+> user_uartclk to the kernel at boot time.
+> 
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
+> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: linux-serial@vger.kernel.org
+> ---
+>  drivers/tty/serial/pch_uart.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+> index 21a7e17..572d481 100644
+> --- a/drivers/tty/serial/pch_uart.c
+> +++ b/drivers/tty/serial/pch_uart.c
+> @@ -217,6 +217,7 @@ enum {
+>  #define FRI2_64_UARTCLK  64000000 /*  64.0000 MHz */
+>  #define FRI2_48_UARTCLK  48000000 /*  48.0000 MHz */
+>  #define NTC1_UARTCLK     64000000 /*  64.0000 MHz */
+> +#define MINNOW_UARTCLK   50000000 /*  50.0000 MHz */
+>  
+>  struct pch_uart_buffer {
+>  	unsigned char *buf;
+> @@ -398,6 +399,10 @@ static int pch_uart_get_uartclk(void)
+>  		    strstr(cmp, "nanoETXexpress-TT")))
+>  		return NTC1_UARTCLK;
+>  
+> +	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+> +	if (cmp && strstr(cmp, "MinnowBoard"))
+> +		return MINNOW_UARTCLK;
+> +
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/9p/vfs_inode.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+You know, we do have the DMI interface to handle this in a much nicer
+way instead of just randomly trying different strings over and over
+until we find one that matches...
 
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index d86edc8..25b018e 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -1054,13 +1054,11 @@ static int
- v9fs_vfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
-                 struct kstat *stat)
- {
--       int err;
-        struct v9fs_session_info *v9ses;
-        struct p9_fid *fid;
-        struct p9_wstat *st;
- 
-        p9_debug(P9_DEBUG_VFS, "dentry: %p\n", dentry);
--       err = -EPERM;
-        v9ses = v9fs_dentry2v9ses(dentry);
-        if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE) {
-                generic_fillattr(dentry->d_inode, stat);
--- 
-1.7.7
+greg k-h
