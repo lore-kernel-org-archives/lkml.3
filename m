@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab3FZO7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:59:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51270 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab3FZO7V (ORCPT
+	id S1751855Ab3FZO7l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:59:41 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:49714 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab3FZO7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:59:21 -0400
-Date: Wed, 26 Jun 2013 08:00:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3 1/2] uio: Use of_match_ptr() macro in uio_pdrv_genirq.c
-Message-ID: <20130626150003.GA14117@kroah.com>
-References: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com>
- <CAK9yfHzVSt1XN7=OZOtF_n_3jbpXObqoiay_t6n3EauTjUUX+w@mail.gmail.com>
- <51CAC0A7.7090708@monstr.eu>
+	Wed, 26 Jun 2013 10:59:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CAC0A7.7090708@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372258383-24524-1-git-send-email-jonas.jensen@gmail.com>
+References: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
+	<1372258383-24524-1-git-send-email-jonas.jensen@gmail.com>
+Date: Wed, 26 Jun 2013 16:59:39 +0200
+Message-ID: <CACmBeS1zRKJxQGUUDr284F=ftOK45fU4W+QT9_dz-tWc3FK+kg@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: clocksource: add support for MOXA ART SoCs
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, john.stultz@linaro.org,
+        tglx@linutronix.de, u.kleine-koenig@pengutronix.de,
+        tomasz.figa@gmail.com, linus.walleij@linaro.org,
+        thomas.petazzoni@free-electrons.com, arnd@arndb.de,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 12:21:27PM +0200, Michal Simek wrote:
-> On 06/26/2013 12:00 PM, Sachin Kamat wrote:
-> > On 26 June 2013 15:22, Michal Simek <michal.simek@xilinx.com> wrote:
-> >> This eliminates having an #ifdef returning NULL for the case
-> >> when OF is disabled.
-> >>
-> >> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> > 
-> > I have already submitted a similar patch for doing this:
-> > https://lkml.org/lkml/2013/3/14/169
-> 
-> Ok. I don't care about it.
-> Greg: Can you please add any of this patch to your char-misc tree?
+Hi,
 
-I did that yesterday, can't you see it in there already, or did I mess
-something up?
+I have attempted to rectify with changes from all the feedback I have received.
 
-thanks,
+On 26 June 2013 16:53, Jonas Jensen <jonas.jensen@gmail.com> wrote:
+> This patch adds an clocksource driver for the main timer(s)
+> found on MOXA ART SoCs.
+>
+> Changes since v2:
 
-greg k-h
+Unfortunately the commit message is incorrect, these are changes since v1.
+
+Best regards,
+Jonas
