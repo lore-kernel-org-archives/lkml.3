@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3FZPAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:00:14 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39271 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3FZPAK (ORCPT
+	id S1751924Ab3FZPBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:01:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47947 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab3FZPBc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:00:10 -0400
+	Wed, 26 Jun 2013 11:01:32 -0400
+Date: Wed, 26 Jun 2013 11:01:16 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Michal Hocko <mhocko@suse.cz>, gregkh@linuxfoundation.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>
+Subject: Re: [PATCH] zcache: initialize module properly when zcache=FOO is
+ given
+Message-ID: <20130626150116.GA6004@phenom.dumpdata.com>
+References: <1372258142-7019-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1372189326-12230-2-git-send-email-geert@linux-m68k.org>
-References: <1372189326-12230-1-git-send-email-geert@linux-m68k.org>
-	<1372189326-12230-2-git-send-email-geert@linux-m68k.org>
-Date: Wed, 26 Jun 2013 17:00:09 +0200
-X-Google-Sender-Auth: wcGn0adwRATq2zM-PzULaF8SCo8
-Message-ID: <CAMuHMdUuxvaMJP6rL6HgrPix+asx7acCfA=mZV_CFki5r103hw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] m68k/sun3: Dynamically allocate the table to track
- IOMMU use
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sam Creasey <sammy@sammy.net>,
-        Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-Cc: linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1372258142-7019-1-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 9:42 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> -static unsigned long iommu_use[IOMMU_TOTAL_ENTRIES];
-> +static unsigned long *iommu_use;
->
->  #define dvma_index(baddr) ((baddr - DVMA_START) >> DVMA_PAGE_SHIFT)
->
-> @@ -266,6 +267,7 @@ void __init dvma_init(void)
->
->         list_add(&(hole->list), &hole_list);
->
-> +       iommu_use = alloc_bootmem(IOMMU_TOTAL_ENTRIES * sizeof(unsigned long));
->         memset(iommu_use, 0, sizeof(iommu_use));
+On Wed, Jun 26, 2013 at 04:49:02PM +0200, Michal Hocko wrote:
+> 835f2f51 (staging: zcache: enable zcache to be built/loaded as a module)
+> introduced in 3.10-rc1 has introduced a bug for zcache=FOO module
+> parameter processing.
+> 
+> zcache_comp_init return code doesn't agree with crypto_has_comp which
+> uses 1 for the success unlike zcache_comp_init which uses 0. This
+> causes module loading failure even if the given algorithm is supported:
+> [    0.815330] zcache: compressor initialization failed
+> 
+> Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-Bummer, the sizeof in the above line is no longer valid.
-As the bootmem allocator zeroes memory, the line can just be removed.
+Looks OK to me.
 
-Gr{oetje,eeting}s,
+Cc-ing Greg.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> ---
+>  drivers/staging/zcache/zcache-main.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+> index dcceed2..0fe530b 100644
+> --- a/drivers/staging/zcache/zcache-main.c
+> +++ b/drivers/staging/zcache/zcache-main.c
+> @@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
+>  #else
+>  	if (*zcache_comp_name != '\0') {
+>  		ret = crypto_has_comp(zcache_comp_name, 0, 0);
+> -		if (!ret)
+> +		if (!ret) {
+>  			pr_info("zcache: %s not supported\n",
+>  					zcache_comp_name);
+> -		goto out;
+> +			goto out;
+> +		}
+> +		goto out_alloc;
+>  	}
+>  	if (!ret)
+>  		strcpy(zcache_comp_name, "lzo");
+> @@ -1827,6 +1829,7 @@ static int zcache_comp_init(void)
+>  	pr_info("zcache: using %s compressor\n", zcache_comp_name);
+>  
+>  	/* alloc percpu transforms */
+> +out_alloc:
+>  	ret = 0;
+>  	zcache_comp_pcpu_tfms = alloc_percpu(struct crypto_comp *);
+>  	if (!zcache_comp_pcpu_tfms)
+> -- 
+> 1.8.3.1
+> 
