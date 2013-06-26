@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3FZRMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:12:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52808 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab3FZRMH (ORCPT
+	id S1752746Ab3FZRMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:12:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60551 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752299Ab3FZRMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:12:07 -0400
-Date: Wed, 26 Jun 2013 10:12:06 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3 1/2] uio: Use of_match_ptr() macro in uio_pdrv_genirq.c
-Message-ID: <20130626171206.GB20890@kroah.com>
-References: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com>
- <CAK9yfHzVSt1XN7=OZOtF_n_3jbpXObqoiay_t6n3EauTjUUX+w@mail.gmail.com>
- <51CAC0A7.7090708@monstr.eu>
- <20130626150003.GA14117@kroah.com>
- <51CB0378.60100@monstr.eu>
+	Wed, 26 Jun 2013 13:12:22 -0400
+Date: Wed, 26 Jun 2013 18:11:38 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Add support for LPAE style CONTEXTIDR
+Message-ID: <20130626171138.GF10333@mudshark.cambridge.arm.com>
+References: <1372080405-13365-1-git-send-email-cov@codeaurora.org>
+ <20130624140424.GA24861@mudshark.cambridge.arm.com>
+ <51C85A0D.3070400@codeaurora.org>
+ <20130624145303.GA25582@mudshark.cambridge.arm.com>
+ <51C8627A.5000106@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51CB0378.60100@monstr.eu>
+In-Reply-To: <51C8627A.5000106@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 05:06:32PM +0200, Michal Simek wrote:
-> On 06/26/2013 05:00 PM, Greg Kroah-Hartman wrote:
-> > On Wed, Jun 26, 2013 at 12:21:27PM +0200, Michal Simek wrote:
-> >> On 06/26/2013 12:00 PM, Sachin Kamat wrote:
-> >>> On 26 June 2013 15:22, Michal Simek <michal.simek@xilinx.com> wrote:
-> >>>> This eliminates having an #ifdef returning NULL for the case
-> >>>> when OF is disabled.
-> >>>>
-> >>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> >>>
-> >>> I have already submitted a similar patch for doing this:
-> >>> https://lkml.org/lkml/2013/3/14/169
+On Mon, Jun 24, 2013 at 04:15:06PM +0100, Christopher Covington wrote:
+> On 06/24/2013 10:53 AM, Will Deacon wrote:
+> > On Mon, Jun 24, 2013 at 03:39:09PM +0100, Christopher Covington wrote:
+> >> Hi Will,
 > >>
-> >> Ok. I don't care about it.
-> >> Greg: Can you please add any of this patch to your char-misc tree?
+> >> On 06/24/2013 10:04 AM, Will Deacon wrote:
+> >> [...]
+> >>
+> >>> What's the advantage of this approach, other than you get an extra byte's
+> >>> worth of PID?
+> >>
+> >> In my view, the real advantage is that the the PID is located where people
+> >> reading ARM Architecture Reference Manual are told they can find it.
 > > 
-> > I did that yesterday, can't you see it in there already, or did I mess
-> > something up?
+> > Perhaps, but I'd usually expect a debugger or trace tools to do something
+> > with the PID, and they likely expect it to be shifted, so you can't really
+> > win.
 > 
-> You have applied
-> drivers: uio_dmem_genirq: Use of_match_ptr() macro
-> (sha1: 077797117dfa209717e1f3f1416c1101c0e047f0)
-> 
-> which is for uio_dmem_genirq.c
-> and there is one more for uio_pdrv_genirq.c driver
-> which we have talked about with Sachin.
+> But reading and implementing the architecture *is* winning! LOL. I'll file a
+> ticket with the architecture folks and see what they think.
 
-Oops, I did mess up, I forgot to push that patch out publically, I did
-apply it yesterday, thanks for making me check :)
+...aaand that came full circle :)
 
-greg k-h
+I think the conclusion is that Linux PID != CONTEXTIDR.PROCID, so there's no
+architectural issue here. I'm just trying to keep it easy for the tools.
+
+Will
