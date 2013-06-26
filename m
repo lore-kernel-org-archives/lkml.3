@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab3FZHPq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:15:46 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60899 "EHLO
+	id S1751935Ab3FZHPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:15:44 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57313 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab3FZHOd (ORCPT
+	with ESMTP id S1751853Ab3FZHOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Jun 2013 03:14:33 -0400
-X-AuditID: 9c930179-b7cafae000004567-99-51ca94d31905
+X-AuditID: 9c930179-b7cafae000004567-9c-51ca94d39b63
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 14/19] perf ftrace: Cleanup using ftrace_setup/teardown()
-Date: Wed, 26 Jun 2013 16:14:17 +0900
-Message-Id: <1372230862-15861-15-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 15/19] perf tools: Add document for perf-ftrace command
+Date: Wed, 26 Jun 2013 16:14:18 +0900
+Message-Id: <1372230862-15861-16-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
 References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
@@ -29,270 +29,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The ftrace sub-commands share some common code so that factor it out
-to ftrace_setup() and ftrace_teardown() helpers.
-
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 168 +++++++++++++++++---------------------------
- 1 file changed, 64 insertions(+), 104 deletions(-)
+ tools/perf/Documentation/perf-ftrace.txt | 114 +++++++++++++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-ftrace.txt
 
-diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index 8bb2604517cc..698dd0b5cecf 100644
---- a/tools/perf/builtin-ftrace.c
-+++ b/tools/perf/builtin-ftrace.c
-@@ -1363,10 +1363,59 @@ out:
- 	return ret;
- }
- 
-+static int ftrace_setup(struct perf_ftrace *ftrace, int argc, const char **argv)
-+{
-+	int ret;
-+	char errbuf[512];
+diff --git a/tools/perf/Documentation/perf-ftrace.txt b/tools/perf/Documentation/perf-ftrace.txt
+new file mode 100644
+index 000000000000..e102ccc6daa7
+--- /dev/null
++++ b/tools/perf/Documentation/perf-ftrace.txt
+@@ -0,0 +1,114 @@
++perf-ftrace(1)
++==============
 +
-+	ret = perf_target__validate(&ftrace->target);
-+	if (ret) {
-+		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
-+		pr_err("%s\n", errbuf);
-+		return -EINVAL;
-+	}
++NAME
++----
++perf-ftrace - A front end for kernel's ftrace
 +
-+	ftrace->evlist = perf_evlist__new();
-+	if (ftrace->evlist == NULL)
-+		return -ENOMEM;
++SYNOPSIS
++--------
++[verse]
++'perf ftrace' {live|record} [<options>] [<command>]
++'perf ftrace' {show|report} [<options>]
 +
-+	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
-+	if (ret < 0)
-+		goto out;
++DESCRIPTION
++-----------
++This command reads the ftrace buffer and displays the trace recorded.
 +
-+	if (ftrace->tracer == NULL)
-+		ftrace->tracer = DEFAULT_TRACER;
++There are several variants of perf ftrace:
 +
-+	if (ftrace->dirname == NULL)
-+		ftrace->dirname = DEFAULT_DIRNAME;
++  'perf ftrace live <command>' to see a live trace of kernel functions
++  via trace_pipe during executing the <command>.  If <command> is not
++  specified, one of the target options (-p, -a or -C) should be given.
++  It just prints out the result to stdout and doesn't save any files.
 +
-+	if (argc) {
-+		ret = perf_evlist__prepare_workload(ftrace->evlist,
-+						    &ftrace->target,
-+						    argv, false, true);
-+		if (ret < 0)
-+			goto out_maps;
-+	}
-+	return 0;
++  'perf ftrace record <command>' to record trace entries of kernel
++  functions during the execution of the <command>.  Like 'perf ftrace
++  live', at least one of <command> and/or target options should be
++  given in order to start recording.  The recorded results are saved
++  under a directory ('perf.data.dir' by default) and will be used by
++  other perf-ftrace tools like 'show' and 'report'.
 +
-+out_maps:
-+	perf_evlist__delete_maps(ftrace->evlist);
-+out:
-+	perf_evlist__delete(ftrace->evlist);
++  'perf ftrace show' to see the trace of recorded functions.  It shows
++  functions sorted by time so the end result might be interspersed if
++  there's a concurrent execution.
 +
-+	return ret;
-+}
++  'perf ftrace report' to display the result in an usual perf-report
++  style - entries are sorted by given sort keys and output is resorted
++  by its overhead.
 +
-+static void ftrace_teardown(struct perf_ftrace *ftrace)
-+{
-+	perf_evlist__delete_maps(ftrace->evlist);
-+	perf_evlist__delete(ftrace->evlist);
-+}
++OPTIONS
++-------
++<command>...::
++	Any command you can specify in a shell.
 +
- static int
- __cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
- {
--	int ret = -1;
-+	int ret;
- 	const char * const live_usage[] = {
- 		"perf ftrace live [<options>] [<command>]",
- 		"perf ftrace live [<options>] -- <command> [<options>]",
-@@ -1391,47 +1440,22 @@ __cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	if (!argc && perf_target__none(&ftrace->target))
- 		usage_with_options(live_usage, live_options);
- 
--	ret = perf_target__validate(&ftrace->target);
--	if (ret) {
--		char errbuf[512];
--
--		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
--		pr_err("%s\n", errbuf);
--		return -EINVAL;
--	}
--
--	ftrace->evlist = perf_evlist__new();
--	if (ftrace->evlist == NULL)
--		return -ENOMEM;
--
--	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
-+	ret = ftrace_setup(ftrace, argc, argv);
- 	if (ret < 0)
--		goto out;
--
--	if (ftrace->tracer == NULL)
--		ftrace->tracer = DEFAULT_TRACER;
--
--	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
--						  &ftrace->target,
--						  argv, false, true) < 0)
--		goto out_maps;
-+		return ret;
- 
- 	setup_pager();
- 
- 	ret = do_ftrace_live(ftrace);
- 
--out_maps:
--	perf_evlist__delete_maps(ftrace->evlist);
--out:
--	perf_evlist__delete(ftrace->evlist);
--
-+	ftrace_teardown(ftrace);
- 	return ret;
- }
- 
- static int
- __cmd_ftrace_record(struct perf_ftrace *ftrace, int argc, const char **argv)
- {
--	int ret = -1;
-+	int ret;
- 	const char * const record_usage[] = {
- 		"perf ftrace record [<options>] [<command>]",
- 		"perf ftrace record [<options>] -- <command> [<options>]",
-@@ -1458,39 +1482,13 @@ __cmd_ftrace_record(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	if (!argc && perf_target__none(&ftrace->target))
- 		usage_with_options(record_usage, record_options);
- 
--	ret = perf_target__validate(&ftrace->target);
--	if (ret) {
--		char errbuf[512];
--
--		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
--		pr_err("%s\n", errbuf);
--		return -EINVAL;
--	}
--
--	ftrace->evlist = perf_evlist__new();
--	if (ftrace->evlist == NULL)
--		return -ENOMEM;
--
--	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
-+	ret = ftrace_setup(ftrace, argc, argv);
- 	if (ret < 0)
--		goto out;
--
--	if (ftrace->tracer == NULL)
--		ftrace->tracer = DEFAULT_TRACER;
--
--	if (ftrace->dirname == NULL)
--		ftrace->dirname = DEFAULT_DIRNAME;
--
--	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
--						  &ftrace->target,
--						  argv, false, true) < 0)
--		goto out_maps;
-+		return ret;
- 
- 	ret = do_ftrace_record(ftrace);
- 
--out_maps:
- 	perf_evlist__delete_maps(ftrace->evlist);
--out:
- 	perf_evlist__delete(ftrace->evlist);
- 
- 	return ret;
-@@ -1499,7 +1497,7 @@ out:
- static int
- __cmd_ftrace_show(struct perf_ftrace *ftrace, int argc, const char **argv)
- {
--	int ret = -1;
-+	int ret;
- 	const char * const show_usage[] = {
- 		"perf ftrace show [<options>]",
- 		NULL
-@@ -1519,41 +1517,22 @@ __cmd_ftrace_show(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	if (argc)
- 		usage_with_options(show_usage, show_options);
- 
--	ret = perf_target__validate(&ftrace->target);
--	if (ret) {
--		char errbuf[512];
--
--		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
--		pr_err("%s\n", errbuf);
--		return -EINVAL;
--	}
--
--	ftrace->evlist = perf_evlist__new();
--	if (ftrace->evlist == NULL)
--		return -ENOMEM;
--
--	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
-+	ret = ftrace_setup(ftrace, argc, argv);
- 	if (ret < 0)
--		goto out;
--
--	if (ftrace->dirname == NULL)
--		ftrace->dirname = DEFAULT_DIRNAME;
-+		return ret;
- 
- 	setup_pager();
- 
- 	ret = do_ftrace_show(ftrace);
- 
--	perf_evlist__delete_maps(ftrace->evlist);
--out:
--	perf_evlist__delete(ftrace->evlist);
--
-+	ftrace_teardown(ftrace);
- 	return ret;
- }
- 
- static int
- __cmd_ftrace_report(struct perf_ftrace *ftrace, int argc, const char **argv)
- {
--	int ret = -1;
-+	int ret;
- 	const char * const report_usage[] = {
- 		"perf ftrace report [<options>]",
- 		NULL
-@@ -1579,25 +1558,9 @@ __cmd_ftrace_report(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	if (argc)
- 		usage_with_options(report_usage, report_options);
- 
--	ret = perf_target__validate(&ftrace->target);
--	if (ret) {
--		char errbuf[512];
--
--		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
--		pr_err("%s\n", errbuf);
--		return -EINVAL;
--	}
--
--	ftrace->evlist = perf_evlist__new();
--	if (ftrace->evlist == NULL)
--		return -ENOMEM;
--
--	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
-+	ret = ftrace_setup(ftrace, argc, argv);
- 	if (ret < 0)
--		goto out;
--
--	if (ftrace->dirname == NULL)
--		ftrace->dirname = DEFAULT_DIRNAME;
-+		return ret;
- 
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
- 	perf_hpp__init();
-@@ -1611,10 +1574,7 @@ __cmd_ftrace_report(struct perf_ftrace *ftrace, int argc, const char **argv)
- 
- 	ret = do_ftrace_report(ftrace);
- 
--	perf_evlist__delete_maps(ftrace->evlist);
--out:
--	perf_evlist__delete(ftrace->evlist);
--
-+	ftrace_teardown(ftrace);
- 	return ret;
- }
- 
++-t::
++--tracer=::
++        The ftrace tracer to be used (default: function_graph).
++	Currently only 'function' and 'function_graph' are supported.
++        Used by 'live' and 'record' subcommands only.
++
++-p::
++--pid=::
++	Record events on existing process ID (comma separated list).
++        Used by 'live' and 'record' subcommands only.
++
++-a::
++        Force system-wide collection.  Scripts run without a <command>
++        normally use -a by default, while scripts run with a <command>
++        normally don't - this option allows the latter to be run in
++        system-wide mode.  Used by 'live' and 'record' subcommands only.
++
++-C::
++--cpu:: Only process samples for the list of CPUs provided.
++        Multiple CPUs can be provided as a comma-separated list with
++        no space: 0,1. Ranges of CPUs are specified with -: 0-2.
++	Default is to report samples on all online CPUs.
++
++-s::
++--sort=::
++	Sort histogram entries by given key(s) - multiple keys can be
++        specified in CSV format.  Following sort keys are available:
++	pid, comm, dso, symbol, cpu.
++
++	Each key has following meaning:
++
++	- comm: command (name) of the task
++	- pid: command and tid of the task
++	- dso: name of library or module executed at the time of sample
++	- symbol: name of function executed at the time of sample
++	- cpu: cpu number the task ran at the time of sample
++
++	By default, comm, dso and symbol keys are used.
++	(i.e. --sort comm,dso,symbol)
++	Used by 'report' subcommands only.
++
++-i::
++--input=::
++        Input directory name excluding '.dir' at the end.
++        (default: perf.data)
++
++-o::
++--output=::
++        Output directory name excluding '.dir' at the end.
++	(default: perf.data)
++
++-v::
++--verbose::
++	Be more verbose (show counter open errors, etc).
++
++-D::
++--dump-raw-trace::
++        Dump raw trace in ASCII.  Used by 'report' subcommands only.
++
++-I::
++--show-info::
++	Display extended information about the record.  This adds
++	information which may be very large and thus may clutter the
++        display.  It currently includes: cpu and numa topology of the
++        host system.  It can only be used with the 'report' subcommand.
++
++SEE ALSO
++--------
++linkperf:perf-record[1], linkperf:perf-report[1],
++linkperf:perf-script[1]
 -- 
 1.7.11.7
 
