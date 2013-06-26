@@ -1,169 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab3FZOO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:14:59 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46332 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3FZOO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:14:57 -0400
-Date: Wed, 26 Jun 2013 10:13:08 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Andrew Jones <drjones@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        habanero@linux.vnet.ibm.com, mingo@redhat.com, jeremy@goop.org,
-        x86@kernel.org, hpa@zytor.com, pbonzini@redhat.com,
-        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
-Message-ID: <20130626141308.GA5399@phenom.dumpdata.com>
-References: <20130601192125.5966.35563.sendpatchset@codeblue>
- <1372171802.3804.30.camel@oc2024037011.ibm.com>
- <51CAAA26.4090204@linux.vnet.ibm.com>
- <20130626113744.GA6300@hawk.usersys.redhat.com>
- <20130626125240.GY18508@redhat.com>
+	id S1752159Ab3FZOPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:15:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46760 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751738Ab3FZOPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 10:15:32 -0400
+Date: Wed, 26 Jun 2013 16:15:28 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
+Subject: Re: [PATCH 3/4] arm: Add [U]EFI runtime services support
+Message-ID: <20130626141528.GF20274@pd.tnic>
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
+ <1372183863-11333-4-git-send-email-leif.lindholm@linaro.org>
+ <CACxGe6sH4dAVryBp7TeUmrwsJmnMdLsQm++U4EVDJVNi9pnqYw@mail.gmail.com>
+ <20130626135417.GP22026@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130626125240.GY18508@redhat.com>
+In-Reply-To: <20130626135417.GP22026@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 03:52:40PM +0300, Gleb Natapov wrote:
-> On Wed, Jun 26, 2013 at 01:37:45PM +0200, Andrew Jones wrote:
-> > On Wed, Jun 26, 2013 at 02:15:26PM +0530, Raghavendra K T wrote:
-> > > On 06/25/2013 08:20 PM, Andrew Theurer wrote:
-> > > >On Sun, 2013-06-02 at 00:51 +0530, Raghavendra K T wrote:
-> > > >>This series replaces the existing paravirtualized spinlock mechanism
-> > > >>with a paravirtualized ticketlock mechanism. The series provides
-> > > >>implementation for both Xen and KVM.
-> > > >>
-> > > >>Changes in V9:
-> > > >>- Changed spin_threshold to 32k to avoid excess halt exits that are
-> > > >>    causing undercommit degradation (after PLE handler improvement).
-> > > >>- Added  kvm_irq_delivery_to_apic (suggested by Gleb)
-> > > >>- Optimized halt exit path to use PLE handler
-> > > >>
-> > > >>V8 of PVspinlock was posted last year. After Avi's suggestions to look
-> > > >>at PLE handler's improvements, various optimizations in PLE handling
-> > > >>have been tried.
-> > > >
-> > > >Sorry for not posting this sooner.  I have tested the v9 pv-ticketlock
-> > > >patches in 1x and 2x over-commit with 10-vcpu and 20-vcpu VMs.  I have
-> > > >tested these patches with and without PLE, as PLE is still not scalable
-> > > >with large VMs.
-> > > >
-> > > 
-> > > Hi Andrew,
-> > > 
-> > > Thanks for testing.
-> > > 
-> > > >System: x3850X5, 40 cores, 80 threads
-> > > >
-> > > >
-> > > >1x over-commit with 10-vCPU VMs (8 VMs) all running dbench:
-> > > >----------------------------------------------------------
-> > > >						Total
-> > > >Configuration				Throughput(MB/s)	Notes
-> > > >
-> > > >3.10-default-ple_on			22945			5% CPU in host kernel, 2% spin_lock in guests
-> > > >3.10-default-ple_off			23184			5% CPU in host kernel, 2% spin_lock in guests
-> > > >3.10-pvticket-ple_on			22895			5% CPU in host kernel, 2% spin_lock in guests
-> > > >3.10-pvticket-ple_off			23051			5% CPU in host kernel, 2% spin_lock in guests
-> > > >[all 1x results look good here]
-> > > 
-> > > Yes. The 1x results look too close
-> > > 
-> > > >
-> > > >
-> > > >2x over-commit with 10-vCPU VMs (16 VMs) all running dbench:
-> > > >-----------------------------------------------------------
-> > > >						Total
-> > > >Configuration				Throughput		Notes
-> > > >
-> > > >3.10-default-ple_on			 6287			55% CPU  host kernel, 17% spin_lock in guests
-> > > >3.10-default-ple_off			 1849			2% CPU in host kernel, 95% spin_lock in guests
-> > > >3.10-pvticket-ple_on			 6691			50% CPU in host kernel, 15% spin_lock in guests
-> > > >3.10-pvticket-ple_off			16464			8% CPU in host kernel, 33% spin_lock in guests
-> > > 
-> > > I see 6.426% improvement with ple_on
-> > > and 161.87% improvement with ple_off. I think this is a very good sign
-> > >  for the patches
-> > > 
-> > > >[PLE hinders pv-ticket improvements, but even with PLE off,
-> > > >  we still off from ideal throughput (somewhere >20000)]
-> > > >
-> > > 
-> > > Okay, The ideal throughput you are referring is getting around atleast
-> > > 80% of 1x throughput for over-commit. Yes we are still far away from
-> > > there.
-> > > 
-> > > >
-> > > >1x over-commit with 20-vCPU VMs (4 VMs) all running dbench:
-> > > >----------------------------------------------------------
-> > > >						Total
-> > > >Configuration				Throughput		Notes
-> > > >
-> > > >3.10-default-ple_on			22736			6% CPU in host kernel, 3% spin_lock in guests
-> > > >3.10-default-ple_off			23377			5% CPU in host kernel, 3% spin_lock in guests
-> > > >3.10-pvticket-ple_on			22471			6% CPU in host kernel, 3% spin_lock in guests
-> > > >3.10-pvticket-ple_off			23445			5% CPU in host kernel, 3% spin_lock in guests
-> > > >[1x looking fine here]
-> > > >
-> > > 
-> > > I see ple_off is little better here.
-> > > 
-> > > >
-> > > >2x over-commit with 20-vCPU VMs (8 VMs) all running dbench:
-> > > >----------------------------------------------------------
-> > > >						Total
-> > > >Configuration				Throughput		Notes
-> > > >
-> > > >3.10-default-ple_on			 1965			70% CPU in host kernel, 34% spin_lock in guests		
-> > > >3.10-default-ple_off			  226			2% CPU in host kernel, 94% spin_lock in guests
-> > > >3.10-pvticket-ple_on			 1942			70% CPU in host kernel, 35% spin_lock in guests
-> > > >3.10-pvticket-ple_off			 8003			11% CPU in host kernel, 70% spin_lock in guests
-> > > >[quite bad all around, but pv-tickets with PLE off the best so far.
-> > > >  Still quite a bit off from ideal throughput]
-> > > 
-> > > This is again a remarkable improvement (307%).
-> > > This motivates me to add a patch to disable ple when pvspinlock is on.
-> > > probably we can add a hypercall that disables ple in kvm init patch.
-> > > but only problem I see is what if the guests are mixed.
-> > > 
-> > >  (i.e one guest has pvspinlock support but other does not. Host
-> > > supports pv)
-> > 
-> > How about reintroducing the idea to create per-kvm ple_gap,ple_window
-> > state. We were headed down that road when considering a dynamic window at
-> > one point. Then you can just set a single guest's ple_gap to zero, which
-> > would lead to PLE being disabled for that guest. We could also revisit
-> > the dynamic window then.
-> > 
-> Can be done, but lets understand why ple on is such a big problem. Is it
-> possible that ple gap and SPIN_THRESHOLD are not tuned properly?
+On Wed, Jun 26, 2013 at 02:54:17PM +0100, Matt Fleming wrote:
+> On Wed, 26 Jun, at 02:46:09PM, Grant Likely wrote:
+> > Eventually we'll need to look at how this interacts with kexec. A
+> > kexec'd kernel will need to use the mapping already chosen by a
+> > previous kernel, but that's an issue for another patch series.
+> 
+> FYI, this is exactly what Borislav has been tackling on x86 recently. It
+> would be nice if we could find one scheme that suits everyone.
 
-It could be, but it also could be a microcode issue. The earlier version
-of Intel (and AMD) CPUs did not have the best detection mechanism and had
-a "jitter" to them. The ple gap and ple window values seemed to be choosen
-based on microbenchmark - and while they might work great with Windows
-type guests - the same is not said about Linux.
+Is this arm 32 or 64-bit? Because we haven't talked about 32-bit on x86
+either. From skimming over the code, I'm not sure the same top-down
+allocation and 1:1 mapping would work there. But I haven't looked hard
+yet so I dunno.
 
-In which case if you fiddle with the ple gap/window you might incur
-worst performance with Windows guests :-( Or older Linux guests
-that use the byte-locking mechanism.
+-- 
+Regards/Gruss,
+    Boris.
 
-Perhaps the best option is to introduce - as a seperate patchset -
-said dynamic window which will be off when pvticket lock is off - and
-then based on further CPUs improvements, can turn it on/off?
+Sent from a fat crate under my desk. Formatting is fine.
+--
