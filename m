@@ -1,282 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab3FZIwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:52:31 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:47316 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab3FZIvT (ORCPT
+	id S1752271Ab3FZIwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:52:45 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:36303 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab3FZIwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:51:19 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Shawn Guo <shawn.guo@linaro.org>, Jean Delvare <khali@linux-fr.org>
-Cc: jimwall@q.com, brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 3/4] hwmon: Add a simple driver to read the MXS SoC temperature
-Date: Wed, 26 Jun 2013 10:51:12 +0200
-Message-Id: <1372236673-20725-4-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1372236673-20725-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1372236673-20725-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 26 Jun 2013 04:52:40 -0400
+Date: Wed, 26 Jun 2013 10:52:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20130626085235.GA26652@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The low resolution ADC of the mxs is able to read an internal temperature
-sensor, expose that using hwmon.
+Linus,
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- .../devicetree/bindings/hwmon/mxs-cputemp.txt      |  18 +++
- Documentation/hwmon/mxs-cputemp                    |  29 +++++
- drivers/hwmon/Kconfig                              |  10 ++
- drivers/hwmon/Makefile                             |   1 +
- drivers/hwmon/mxs-cputemp.c                        | 132 +++++++++++++++++++++
- 5 files changed, 190 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/hwmon/mxs-cputemp.txt
- create mode 100644 Documentation/hwmon/mxs-cputemp
- create mode 100644 drivers/hwmon/mxs-cputemp.c
+Please pull the latest perf-urgent-for-linus git tree from:
 
-diff --git a/Documentation/devicetree/bindings/hwmon/mxs-cputemp.txt b/Documentation/devicetree/bindings/hwmon/mxs-cputemp.txt
-new file mode 100644
-index 0000000..7d3ae47
---- /dev/null
-+++ b/Documentation/devicetree/bindings/hwmon/mxs-cputemp.txt
-@@ -0,0 +1,18 @@
-+mxs cputemp hwmon sensors
-+-------------------------
-+
-+See: Documentation/hwmon/mxs-cputemp
-+
-+Required properties:
-+- compatible: should be "fsl,mxs-internal-temp"
-+- io-channels: should list the two adc channels needed to calculate the
-+	       temperature
-+- io-channel-names: should map the previously listed adc channels to the "min"
-+		    and "max" value
-+
-+Example:
-+	temp {
-+		compatible = "fsl,mxs-internal-temp";
-+		io-channels = <&lradc 8>, <&lradc 9>;
-+		io-channel-names = "min", "max";
-+	};
-diff --git a/Documentation/hwmon/mxs-cputemp b/Documentation/hwmon/mxs-cputemp
-new file mode 100644
-index 0000000..6c6201f
---- /dev/null
-+++ b/Documentation/hwmon/mxs-cputemp
-@@ -0,0 +1,29 @@
-+Kernel driver mxs-cputemp
-+=========================
-+
-+Supported chips:
-+  * Freescale i.mx28
-+    Datasheet: i.MX28 Applications Processor Reference Manual, Rev. 1, 2010
-+    	       http://cache.freescale.com/files/dsp/doc/ref_manual/MCIMX28RM.pdf
-+
-+Author: Alexandre Belloni
-+
-+Description
-+-----------
-+This driver permits reading the internal die temperature sensor embedded inside
-+Freescale i.mx28 SoCs. This sensor is read through two channels of the on chip
-+Low-Resolution ADC. After calculation, the three-sigma error of the temperature
-+sensor should be within ± 1.5% in degrees Kelvin. Additionally, the temperature
-+sampling has a three-sigma sample-to-sample variation of 2 degrees Kelvin. If
-+desired, this error can be removed by oversampling and averaging the temperature
-+result.
-+
-+The formula is:
-+	(Channel9 – Channel8) * Gain_correction/4
-+
-+As recommended by the datasheet, Gain_correction is equal to 1.012.
-+
-+sysfs entries
-+-------------
-+temp1_input	Measured and corrected temperature in millidegrees Celsius
-+
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 0428e8a..2daf794 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -929,6 +929,16 @@ config SENSORS_MCP3021
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called mcp3021.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+
+   HEAD: c790b0ad23f427c7522ffed264706238c57c007e hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
+
+Three small fixlets.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Masami Hiramatsu (1):
+      kprobes: Fix arch_prepare_kprobe to handle copy insn failures
+
+Oleg Nesterov (2):
+      hw_breakpoint: Fix cpu check in task_bp_pinned(cpu)
+      hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
+
+
+ arch/x86/kernel/kprobes/core.c | 14 ++++++++++----
+ kernel/events/hw_breakpoint.c  |  6 +++---
+ 2 files changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 9895a9a..211bce4 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -365,10 +365,14 @@ int __kprobes __copy_instruction(u8 *dest, u8 *src)
+ 	return insn.length;
+ }
  
-+config SENSORS_MXS_CPU
-+	tristate "MXS internal CPU temperature sensor"
-+	depends on MXS_LRADC
-+	help
-+	  If you say yes here you get support for the i.mx28 internal
-+	  temperature sensor.
+-static void __kprobes arch_copy_kprobe(struct kprobe *p)
++static int __kprobes arch_copy_kprobe(struct kprobe *p)
+ {
++	int ret;
 +
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called mxs-cputemp
-+
- config SENSORS_NCT6775
- 	tristate "Nuvoton NCT6775F and compatibles"
- 	depends on !PPC
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index d17d3e6..366c92d 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -108,6 +108,7 @@ obj-$(CONFIG_SENSORS_MAX6650)	+= max6650.o
- obj-$(CONFIG_SENSORS_MAX6697)	+= max6697.o
- obj-$(CONFIG_SENSORS_MC13783_ADC)+= mc13783-adc.o
- obj-$(CONFIG_SENSORS_MCP3021)	+= mcp3021.o
-+obj-$(CONFIG_SENSORS_MXS_CPU)	+= mxs-cputemp.o
- obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o
- obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+= ntc_thermistor.o
- obj-$(CONFIG_SENSORS_PC87360)	+= pc87360.o
-diff --git a/drivers/hwmon/mxs-cputemp.c b/drivers/hwmon/mxs-cputemp.c
-new file mode 100644
-index 0000000..a312fb5
---- /dev/null
-+++ b/drivers/hwmon/mxs-cputemp.c
-@@ -0,0 +1,132 @@
-+/*
-+ * Driver for the mxs internal temperature sensor
-+ *
-+ * Copyright 2013 Free Electrons
-+ *
-+ * Licensed under the GPLv2 or later.
-+ */
-+
-+#define DRVNAME "mxs-hwmon"
-+
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/iio/consumer.h>
-+
-+#define GAIN_CORRECTION 1012
-+
-+/* The value we calculate from the ADCs is in Kelvins, don't forget to convert
-+ * it to Celsius */
-+#define VALUES_TO_MILLIC(min, max) ((max - min) * GAIN_CORRECTION / 4 - 272150)
-+
-+struct mxs_hwmon_data {
-+	struct device *hwmon_dev;
-+	struct iio_channel *chan_min;
-+	struct iio_channel *chan_max;
-+};
-+
-+static int mxs_hwmon_show_temp(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	int err, val_min, val_max;
-+
-+	struct mxs_hwmon_data *data = dev_get_drvdata(dev);
-+
-+	err = iio_read_channel_raw(data->chan_min, &val_min);
-+	if (err < 0)
-+		return err;
-+
-+	err = iio_read_channel_raw(data->chan_max, &val_max);
-+	if (err < 0)
-+		return err;
-+
-+	return sprintf(buf, "%u\n", VALUES_TO_MILLIC(val_min, val_max));
-+}
-+
-+static DEVICE_ATTR(temp1_input, S_IRUGO, mxs_hwmon_show_temp, NULL);
-+
-+static int mxs_hwmon_probe(struct platform_device *pdev)
-+{
-+	int err;
-+	struct mxs_hwmon_data *data;
-+
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(pdev, data);
-+
-+	err = device_create_file(&pdev->dev, &dev_attr_temp1_input);
-+	if (err)
-+		return err;
-+
-+	data->chan_min = iio_channel_get(&pdev->dev, "min");
-+	if (IS_ERR(data->chan_min)) {
-+		err = PTR_ERR(data->chan_min);
-+		goto error_chan_min;
-+	}
-+
-+	data->chan_max = iio_channel_get(&pdev->dev, "max");
-+	if (IS_ERR(data->chan_max)) {
-+		err = PTR_ERR(data->chan_max);
-+		goto error_chan_max;
-+	}
-+
-+	data->hwmon_dev = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(data->hwmon_dev)) {
-+		err = PTR_ERR(data->hwmon_dev);
-+		goto error_hwmon;
-+	}
+ 	/* Copy an instruction with recovering if other optprobe modifies it.*/
+-	__copy_instruction(p->ainsn.insn, p->addr);
++	ret = __copy_instruction(p->ainsn.insn, p->addr);
++	if (!ret)
++		return -EINVAL;
+ 
+ 	/*
+ 	 * __copy_instruction can modify the displacement of the instruction,
+@@ -384,6 +388,8 @@ static void __kprobes arch_copy_kprobe(struct kprobe *p)
+ 
+ 	/* Also, displacement change doesn't affect the first byte */
+ 	p->opcode = p->ainsn.insn[0];
 +
 +	return 0;
+ }
+ 
+ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+@@ -397,8 +403,8 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	p->ainsn.insn = get_insn_slot();
+ 	if (!p->ainsn.insn)
+ 		return -ENOMEM;
+-	arch_copy_kprobe(p);
+-	return 0;
 +
-+error_hwmon:
-+	iio_channel_release(data->chan_max);
-+error_chan_max:
-+	iio_channel_release(data->chan_min);
-+error_chan_min:
-+	device_remove_file(&pdev->dev, &dev_attr_temp1_input);
-+
-+	return err;
-+}
-+
-+static int mxs_hwmon_remove(struct platform_device *pdev)
-+{
-+	struct mxs_hwmon_data *data = platform_get_drvdata(pdev);
-+
-+	iio_channel_release(data->chan_min);
-+	iio_channel_release(data->chan_max);
-+	hwmon_device_unregister(data->hwmon_dev);
-+
-+	device_remove_file(&pdev->dev, &dev_attr_temp1_input);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id mxs_hwmon_of_match[] = {
-+	{ .compatible = "fsl,mxs-internal-temp", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, mxs_hwmon_of_match);
-+
-+static struct platform_driver mxs_hwmon_driver = {
-+	.probe = mxs_hwmon_probe,
-+	.remove = mxs_hwmon_remove,
-+	.driver	= {
-+		.name = DRVNAME,
-+		.owner = THIS_MODULE,
-+		.of_match_table = mxs_hwmon_of_match,
-+	},
-+};
-+
-+module_platform_driver(mxs_hwmon_driver);
-+
-+MODULE_AUTHOR("Alexandre Belloni <alexandre.belloni@free-electrons.com>");
-+MODULE_DESCRIPTION("Freescale i.MX28 hwmon sensor driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:mxs-hwmon");
--- 
-1.8.1.2
-
++	return arch_copy_kprobe(p);
+ }
+ 
+ void __kprobes arch_arm_kprobe(struct kprobe *p)
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index a64f8ae..20185ea 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -120,7 +120,7 @@ static int task_bp_pinned(int cpu, struct perf_event *bp, enum bp_type_idx type)
+ 	list_for_each_entry(iter, &bp_task_head, hw.bp_list) {
+ 		if (iter->hw.bp_target == tsk &&
+ 		    find_slot_idx(iter) == type &&
+-		    cpu == iter->cpu)
++		    (iter->cpu < 0 || cpu == iter->cpu))
+ 			count += hw_breakpoint_weight(iter);
+ 	}
+ 
+@@ -149,7 +149,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ 		return;
+ 	}
+ 
+-	for_each_online_cpu(cpu) {
++	for_each_possible_cpu(cpu) {
+ 		unsigned int nr;
+ 
+ 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
+@@ -235,7 +235,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
+ 	if (cpu >= 0) {
+ 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	} else {
+-		for_each_online_cpu(cpu)
++		for_each_possible_cpu(cpu)
+ 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	}
+ 
