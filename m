@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3FZH7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:59:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60522 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab3FZH7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:59:23 -0400
-Date: Wed, 26 Jun 2013 09:59:21 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, anton@enomsg.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] vmpressure: implement strict mode
-Message-ID: <20130626075921.GD28748@dhcp22.suse.cz>
-References: <20130625175129.7c0d79e1@redhat.com>
- <20130626075051.GG29127@bbox>
+	id S1751762Ab3FZIDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:03:46 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:37548 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab3FZIDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:03:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626075051.GG29127@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C99056.5090104@ti.com>
+References: <1372159970-6361-1-git-send-email-ruslan.bilovol@ti.com>
+	<51C9867C.80206@ti.com>
+	<51C99056.5090104@ti.com>
+Date: Wed, 26 Jun 2013 11:03:42 +0300
+X-Google-Sender-Auth: XLrfwv_LFleLb0rDn7nnfP7EvE4
+Message-ID: <CAB=otbQ71TXn=-f3WddNoyvP6NmTHCtSPqwDwkYr2Y7micqRTQ@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: DTS: OMAP4: Add OMAP4 Blaze Tablet support
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: b-cousson@ti.com, tony@atomide.com, benoit.cousson@linaro.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-06-13 16:50:51, Minchan Kim wrote:
-> On Tue, Jun 25, 2013 at 05:51:29PM -0400, Luiz Capitulino wrote:
-> > Currently, applications are notified for the level they registered for
-> > _plus_ higher levels.
-> > 
-> > This is a problem if the application wants to implement different
-> > actions for different levels. For example, an application might want
-> > to release 10% of its cache on level low, 50% on medium and 100% on
-> > critical. To do this, the application has to register a different fd
-> > for each event. However, fd low is always going to be notified and
-> > and all fds are going to be notified on level critical.
-> > 
-> > Strict mode solves this problem by strictly notifiying the event
-> > an fd has registered for. It's optional. By default we still notify
-> > on higher levels.
-> > 
-> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> 
-> Shouldn't we make this default?
+Hi Nishanth,
 
-The interface is not there for long but still, changing it is always
-quite tricky. And the users who care can be modified really easily so I
-would stick with the original default.
+On Tue, Jun 25, 2013 at 3:43 PM, Nishanth Menon <nm@ti.com> wrote:
+> On 06/25/2013 07:01 AM, Nishanth Menon wrote:
+>>
+>> On 06/25/2013 06:32 AM, Ruslan Bilovol wrote:
+>>>
+>>> The OMAP4 Blaze Tablet is TI OMAP4 processor-based
+>>> development platform in a tablet formfactor.
+>>> The platform contains many of the features found in
+>>> present-day handsets (such as audio, video, wireless
+>>> functions and user interfaces) and in addition
+>>> contains features for software development and test.
+>>>
+>>> This patch adds initial support for the OMAP4 Blaze
+>>> Tablet development platform. Additional functionality
+>>> depends on different drivers and code modifications that
+>>> are not upstreamed yet or do not support DT yet, so will
+>>> be added later.--
+>>
+>>
+>> http://svtronics.com/omap/sevm4460,blaze,omap might help too :)
 
--- 
-Michal Hocko
-SUSE Labs
+Yes, forgot to add this information from cover-letter from previous
+version of patch :)
+
+>> [...]
+>>>
+>>> +
+>>> +#include "twl6030.dtsi"
+>>> +
+>>
+>> Might be good to see the TWL interrupt pin information made available as
+>> well?
+>
+> Allow me to rephrase a comment a little bit more :)
+> Similar to twl4030_omap3.dtsi, we could introduce twl6030_omap4.dtsi. this
+> could contain the common pins used for 6030.
+>  &omap4_pmx_wkup {
+>          pinctrl-names = "default";
+>          pinctrl-0 = <
+>                          &twl6030_wkup_pins
+>          >;
+>
+>          twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
+>                  pinctrl-single,pins = <
+>                          0x14 (PIN_OUTPUT | MUX_MODE2)
+>                  >;
+>          };
+>  };
+>
+>         twl6030_pins: pinmux_twl6030_pins {
+>                 pinctrl-single,pins = <
+>                         0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)
+> /* sys_nirq1.sys_nirq1 */
+>                 >;
+>         };
+>
+> which is now already duplicated in 2 places (SDP and Panda), and in this
+> patch duplicated again.
+
+Agree, I'm planning to do this later as part of moving common things into
+some System-On-Module(SOM)-specific files, as discussed previously
+here https://patchwork.kernel.org/patch/2118371/
+
+Best regards,
+Ruslan Bilvol
+
+>
+> just my 2 cents :(
+> ---
+> Regards,
+> Nishanth Menon
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
