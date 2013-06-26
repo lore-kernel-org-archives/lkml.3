@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab3FZLwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 07:52:01 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:45723 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab3FZLv6 (ORCPT
+	id S1752417Ab3FZLw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 07:52:59 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40481 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab3FZLw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 07:51:58 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, tglx@linutronix.de, t.figa@samsung.com,
-        arnd@arndb.de, sachin.kamat@linaro.org, patches@linaro.org
-Subject: [PATCH 2/2] irqchip: exynos-combiner: Staticize combiner_init
-Date: Wed, 26 Jun 2013 17:06:37 +0530
-Message-Id: <1372246597-32323-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372246597-32323-1-git-send-email-sachin.kamat@linaro.org>
-References: <1372246597-32323-1-git-send-email-sachin.kamat@linaro.org>
+	Wed, 26 Jun 2013 07:52:57 -0400
+Date: Wed, 26 Jun 2013 13:52:55 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Gustavo Padovan <gustavo@padovan.org>,
+        Marcel Holtmann <marcel@holtmann.org>, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: pull request: bluetooth 2013-06-23
+Message-ID: <20130626115255.GA7940@amd.pavel.ucw.cz>
+References: <20130623021351.GA2327@joana>
+ <20130625201217.GA13879@amd.pavel.ucw.cz>
+ <E95EC814-F064-4AEB-AE13-79982D3BE5E8@holtmann.org>
+ <20130625210039.GA28448@joana>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130625210039.GA28448@joana>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-combiner_init() is referenced only in this file. Make it
-static.
+On Tue 2013-06-25 22:00:39, Gustavo Padovan wrote:
+> Hi Marcel,
+> 
+> * Marcel Holtmann <marcel@holtmann.org> [2013-06-25 13:49:19 -0700]:
+> 
+> > Hi Pavel,
+> > 
+> > >> Jaganath Kanakkassery (1):
+> > >>      Bluetooth: Fix invalid length check in l2cap_information_rsp()
+> > > 
+> > > Could we add the "3.10 vs. thinkpad x60" patch that fixes regression?
+> > > It is from Johan Hedberg…
+> > 
+> > that one went into net-next tree. It is scheduled for 3.11 right now.
+> > 
+> > After 3.10 is out, maybe it can go into -stable, but otherwise I think it is bit late now. Unless someone wants to cherry-pick it.
+> 
+> That patch is actually in 3.10 already, it was included in the last pull
+> request and John took it to wireless.git.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/irqchip/exynos-combiner.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Is it? I tried pulling yesterday (some updates) and today (no
+changes), am on:
 
-diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
-index a9d2b2f..4c68265 100644
---- a/drivers/irqchip/exynos-combiner.c
-+++ b/drivers/irqchip/exynos-combiner.c
-@@ -204,10 +204,10 @@ static unsigned int combiner_lookup_irq(int group)
- 	return 0;
- }
- 
--void __init combiner_init(void __iomem *combiner_base,
--			  struct device_node *np,
--			  unsigned int max_nr,
--			  int irq_base)
-+static void __init combiner_init(void __iomem *combiner_base,
-+				 struct device_node *np,
-+				 unsigned int max_nr,
-+				 int irq_base)
- {
- 	int i, irq;
- 	unsigned int nr_irq;
+Linux amd 3.10.0-rc7+ #267 SMP Tue Jun 25 23:32:24 CEST 2013 i686
+GNU/Linux
+
+and bluetooth is still broken :-(.
+									Pavel
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
