@@ -1,197 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab3FZHS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:18:56 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58756 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab3FZHOZ (ORCPT
+	id S1752066Ab3FZHTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:19:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51443 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020Ab3FZHTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:14:25 -0400
-X-AuditID: 9c930179-b7cafae000004567-70-51ca94d0bac7
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/19] perf util: Move debugfs/tracing helper functions to util.c
-Date: Wed, 26 Jun 2013 16:14:04 +0900
-Message-Id: <1372230862-15861-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
-References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 26 Jun 2013 03:19:05 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>, kernel@pengutronix.de
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 26 Jun 2013 09:18:48 +0200
+Message-Id: <1372231128-11802-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.3.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+Subject: [PATCH v5] irqchip: Add support for ARMv7-M's NVIC
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+This interrupt controller is integrated in all Cortex-M3 and Cortex-M4
+machines.
 
-Since they're generic helpers move them to util.c so that they can be
-used by others.
+Support for this controller appeared in Catalin's Cortex tree based on
+2.6.33 but was nearly completely rewritten.
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- tools/perf/util/trace-event-info.c | 59 --------------------------------------
- tools/perf/util/util.c             | 59 ++++++++++++++++++++++++++++++++++++++
- tools/perf/util/util.h             |  3 ++
- 3 files changed, 62 insertions(+), 59 deletions(-)
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index e85cbcf298f3..ab18bf12d54a 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -46,65 +46,6 @@
- static int output_fd;
+Changes since v4, sent with
+Message-Id: <1371073835-10639-1-git-send-email-u.kleine-koenig@pengutronix.de>:
+
+ - drop change to arch/arm to simplify merging
+ - merge two loops into a single one
+
+I added the acks v4 of this patch got assuming the changes introduced since
+then don't affect your acknowledgment. Please tell me if you don't agree, then
+I drop them.
+
+ drivers/irqchip/Kconfig    |   5 ++
+ drivers/irqchip/Makefile   |   1 +
+ drivers/irqchip/irq-nvic.c | 115 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 121 insertions(+)
+ create mode 100644 drivers/irqchip/irq-nvic.c
+
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index 4a33351..8317a7e 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -10,6 +10,11 @@ config ARM_GIC
+ config GIC_NON_BANKED
+ 	bool
  
- 
--static const char *find_debugfs(void)
--{
--	const char *path = perf_debugfs_mount(NULL);
--
--	if (!path)
--		pr_debug("Your kernel does not support the debugfs filesystem");
--
--	return path;
--}
--
--/*
-- * Finds the path to the debugfs/tracing
-- * Allocates the string and stores it.
-- */
--static const char *find_tracing_dir(void)
--{
--	static char *tracing;
--	static int tracing_found;
--	const char *debugfs;
--
--	if (tracing_found)
--		return tracing;
--
--	debugfs = find_debugfs();
--	if (!debugfs)
--		return NULL;
--
--	tracing = malloc(strlen(debugfs) + 9);
--	if (!tracing)
--		return NULL;
--
--	sprintf(tracing, "%s/tracing", debugfs);
--
--	tracing_found = 1;
--	return tracing;
--}
--
--static char *get_tracing_file(const char *name)
--{
--	const char *tracing;
--	char *file;
--
--	tracing = find_tracing_dir();
--	if (!tracing)
--		return NULL;
--
--	file = malloc(strlen(tracing) + strlen(name) + 2);
--	if (!file)
--		return NULL;
--
--	sprintf(file, "%s/%s", tracing, name);
--	return file;
--}
--
--static void put_tracing_file(char *file)
--{
--	free(file);
--}
--
- int bigendian(void)
- {
- 	unsigned char str[] = { 0x1, 0x2, 0x3, 0x4, 0x0, 0x0, 0x0, 0x0};
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 59d868add275..9a0658405760 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -269,3 +269,62 @@ void perf_debugfs_set_path(const char *mntpt)
- 	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
- 	set_tracing_events_path(mntpt);
- }
++config ARM_NVIC
++	bool
++	select IRQ_DOMAIN
++	select GENERIC_IRQ_CHIP
 +
-+static const char *find_debugfs(void)
-+{
-+	const char *path = perf_debugfs_mount(NULL);
-+
-+	if (!path)
-+		fprintf(stderr, "Your kernel does not support the debugfs filesystem");
-+
-+	return path;
-+}
-+
+ config ARM_VIC
+ 	bool
+ 	select IRQ_DOMAIN
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index cda4cb5..4bb277c 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
+ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
+ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
+ obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
++obj-$(CONFIG_ARM_NVIC)			+= irq-nvic.o
+ obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
+ obj-$(CONFIG_SIRF_IRQ)			+= irq-sirfsoc.o
+ obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
+diff --git a/drivers/irqchip/irq-nvic.c b/drivers/irqchip/irq-nvic.c
+new file mode 100644
+index 0000000..7492d7b
+--- /dev/null
++++ b/drivers/irqchip/irq-nvic.c
+@@ -0,0 +1,115 @@
 +/*
-+ * Finds the path to the debugfs/tracing
-+ * Allocates the string and stores it.
++ * drivers/irq/irq-nvic.c
++ *
++ * Copyright (C) 2008 ARM Limited, All Rights Reserved.
++ * Copyright (C) 2013 Pengutronix
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Support for the Nested Vectored Interrupt Controller found on the
++ * ARMv7-M CPUs (Cortex-M3/M4)
 + */
-+const char *find_tracing_dir(void)
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++
++#include <asm/v7m.h>
++#include <asm/exception.h>
++
++#include "irqchip.h"
++
++#define NVIC_ISER			0x000
++#define NVIC_ICER			0x080
++#define NVIC_IPR			0x300
++
++#define NVIC_MAX_BANKS		16
++/*
++ * Each bank handles 32 irqs. Only the 16th (= last) bank handles only
++ * 16 irqs.
++ */
++#define NVIC_MAX_IRQ		((NVIC_MAX_BANKS - 1) * 32 + 16)
++
++static struct irq_domain *nvic_irq_domain;
++
++asmlinkage void __exception_irq_entry
++nvic_handle_irq(irq_hw_number_t hwirq, struct pt_regs *regs)
 +{
-+	static char *tracing;
-+	static int tracing_found;
-+	const char *debugfs;
++	unsigned int irq = irq_linear_revmap(nvic_irq_domain, hwirq);
 +
-+	if (tracing_found)
-+		return tracing;
-+
-+	debugfs = find_debugfs();
-+	if (!debugfs)
-+		return NULL;
-+
-+	tracing = malloc(strlen(debugfs) + 9);
-+	if (!tracing)
-+		return NULL;
-+
-+	sprintf(tracing, "%s/tracing", debugfs);
-+
-+	tracing_found = 1;
-+	return tracing;
++	handle_IRQ(irq, regs);
 +}
 +
-+char *get_tracing_file(const char *name)
++static void nvic_eoi(struct irq_data *d)
 +{
-+	const char *tracing;
-+	char *file;
-+
-+	tracing = find_tracing_dir();
-+	if (!tracing)
-+		return NULL;
-+
-+	file = malloc(strlen(tracing) + strlen(name) + 2);
-+	if (!file)
-+		return NULL;
-+
-+	sprintf(file, "%s/%s", tracing, name);
-+	return file;
++	/*
++	 * This is a no-op as end of interrupt is signaled by the exception
++	 * return sequence.
++	 */
 +}
 +
-+void put_tracing_file(char *file)
++static int __init nvic_of_init(struct device_node *node,
++			       struct device_node *parent)
 +{
-+	free(file);
++	void __iomem *nvic_base;
++	unsigned int irqs, i, ret;
++	unsigned numbanks = (readl_relaxed(V7M_SCS_ICTR) &
++			     V7M_SCS_ICTR_INTLINESNUM_MASK) + 1;
++	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
++
++	nvic_base = of_iomap(node, 0);
++	if (!nvic_base) {
++		pr_warn("unable to map nvic registers\n");
++		return -ENOMEM;
++	}
++
++	irqs = numbanks * 32;
++	if (irqs > NVIC_MAX_IRQ)
++		irqs = NVIC_MAX_IRQ;
++
++	nvic_irq_domain =
++		irq_domain_add_linear(node, irqs, &irq_generic_chip_ops, NULL);
++	if (!nvic_irq_domain) {
++		pr_warn("Failed to allocate irq domain\n");
++		return -ENOMEM;
++	}
++
++	ret = irq_alloc_domain_generic_chips(nvic_irq_domain, 32, numbanks,
++					     "nvic_irq", handle_fasteoi_irq,
++					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
++	if (ret) {
++		pr_warn("Failed to allocate irq chips\n");
++		irq_domain_remove(nvic_irq_domain);
++		return ret;
++	}
++
++	for (i = 0; i < numbanks; ++i) {
++		struct irq_chip_generic *gc =
++			irq_get_domain_generic_chip(nvic_irq_domain, 32 * i);
++		gc->reg_base = nvic_base + 4 * i;
++		gc->chip_types[0].regs.enable = NVIC_ISER;
++		gc->chip_types[0].regs.disable = NVIC_ICER;
++		gc->chip_types[0].chip.irq_mask = irq_gc_mask_disable_reg;
++		gc->chip_types[0].chip.irq_unmask = irq_gc_unmask_enable_reg;
++		gc->chip_types[0].chip.irq_eoi = nvic_eoi;
++
++		/* disable interrupts */
++		writel_relaxed(~0, gc->reg_base + NVIC_ICER);
++	}
++
++	/* Set priority on all interrupts */
++	for (i = 0; i < irqs; i += 4)
++		writel_relaxed(0, nvic_base + NVIC_IPR + i);
++
++	return 0;
 +}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 2732fad03908..cc1574edcd9a 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -80,6 +80,9 @@ extern char buildid_dir[];
- extern char tracing_events_path[];
- extern void perf_debugfs_set_path(const char *mountpoint);
- const char *perf_debugfs_mount(const char *mountpoint);
-+const char *find_tracing_dir(void);
-+char *get_tracing_file(const char *name);
-+void put_tracing_file(char *file);
- 
- /* On most systems <limits.h> would have given us this, but
-  * not on some systems (e.g. GNU/Hurd).
++IRQCHIP_DECLARE(armv7m_nvic, "arm,armv7m-nvic", nvic_of_init);
 -- 
-1.7.11.7
+1.8.3.1
 
