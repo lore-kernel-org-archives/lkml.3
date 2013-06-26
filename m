@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab3FZHur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:50:47 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:43963 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3FZHur (ORCPT
+	id S1751944Ab3FZHwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:52:12 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:47648 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab3FZHwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:50:47 -0400
-X-AuditID: 9c93017d-b7c09ae000006fa0-c8-51ca9d55481b
-Date: Wed, 26 Jun 2013 16:50:51 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
-        anton@enomsg.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] vmpressure: implement strict mode
-Message-ID: <20130626075051.GG29127@bbox>
-References: <20130625175129.7c0d79e1@redhat.com>
+	Wed, 26 Jun 2013 03:52:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130625175129.7c0d79e1@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20130626094811.1986e875@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1371661969-7660-1-git-send-email-l.majewski@samsung.com>
+	<20130626094811.1986e875@amdc308.digital.local>
+Date: Wed, 26 Jun 2013 13:22:08 +0530
+X-Google-Sender-Auth: RgxheK9n55wa7xqehFX10J50glM
+Message-ID: <CAOh2x=nts3VF11fWp4TNf8f5wLdWM1Eyooi+zdp+ZsQgTnF8eg@mail.gmail.com>
+Subject: Re: [PATCH v4 0/7] cpufreq:boost: CPU Boost mode support
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 05:51:29PM -0400, Luiz Capitulino wrote:
-> Currently, applications are notified for the level they registered for
-> _plus_ higher levels.
-> 
-> This is a problem if the application wants to implement different
-> actions for different levels. For example, an application might want
-> to release 10% of its cache on level low, 50% on medium and 100% on
-> critical. To do this, the application has to register a different fd
-> for each event. However, fd low is always going to be notified and
-> and all fds are going to be notified on level critical.
-> 
-> Strict mode solves this problem by strictly notifiying the event
-> an fd has registered for. It's optional. By default we still notify
-> on higher levels.
-> 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+On Wed, Jun 26, 2013 at 1:18 PM, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> If this is not a problem, I'd like to kindly ask You to review those
+> patches.
+>
+> Rafael has expressed his opinion about "boost" attribute clearly at the
+> other mail (as a response to v4 patches):
+> "Simple: Export it only when supported."
+>
+> Despite the change about the "boost" attribute visibility there were
+> many other changes, which deserve maintainer's look.
 
-Shouldn't we make this default?
-What do you think about it?
-
--- 
-Kind regards,
-Minchan Kim
+I haven't got time to review it until now.. I will try to do it this week.
