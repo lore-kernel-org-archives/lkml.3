@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab3FZILY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:11:24 -0400
-Received: from ozlabs.org ([203.10.76.45]:37572 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab3FZILA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:11:00 -0400
-Date: Wed, 26 Jun 2013 18:10:58 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Rojhalat Ibrahim <imr@rtschenk.de>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: Regression in RCU subsystem in latest mainline kernel
-Message-ID: <20130626081057.GB10796@concordia>
-References: <1626500.7WAVXjfS9F@pcimr>
- <20130614122800.GL5146@linux.vnet.ibm.com>
- <1645938.As0LR1yeVd@pcimr>
- <1371243967.9844.338.camel@gandalf.local.home>
- <1371261741.21896.20.camel@pasglop>
- <20130617074213.GA3589@concordia>
- <20130619040906.GA5146@linux.vnet.ibm.com>
- <20130625071914.GA29957@concordia>
- <20130625074422.GB29957@concordia>
- <20130625160332.GA3828@linux.vnet.ibm.com>
+	id S1752015Ab3FZILt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:11:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46513 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab3FZIKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:10:38 -0400
+Date: Wed, 26 Jun 2013 09:09:36 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the arm-mpidr tree with the arm
+	tree
+Message-ID: <20130626080936.GD7193@flint.arm.linux.org.uk>
+References: <20130626110411.d1fe3913769385fa056010be@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130625160332.GA3828@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130626110411.d1fe3913769385fa056010be@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 09:03:32AM -0700, Paul E. McKenney wrote:
-> On Tue, Jun 25, 2013 at 05:44:23PM +1000, Michael Ellerman wrote:
-> > On Tue, Jun 25, 2013 at 05:19:14PM +1000, Michael Ellerman wrote:
-> > > 
-> > > Here's another trace from 3.10-rc7 plus a few local patches.
-> > 
-> > And here's another with CONFIG_RCU_CPU_STALL_INFO=y in case that's useful:
-> > 
-> > PASS running test_pmc5_6_overuse()
-> > INFO: rcu_sched self-detected stall on CPU
-> > 	8: (1 GPs behind) idle=8eb/140000000000002/0 softirq=215/220 
+On Wed, Jun 26, 2013 at 11:04:11AM +1000, Stephen Rothwell wrote:
+> Hi Lorenzo,
 > 
-> So this CPU has been out of action since before the beginning of the
-> current grace period ("1 GPs behind").  It is not idle, having taken
-> a pair of nested interrupts from process context (matching the stack
-> below).  This CPU has take five softirqs since the last grace period
-> that it noticed, which makes it likely that the loop is within the
-> softirq handler.
+> Today's linux-next merge of the arm-mpidr tree got a conflict in
+> arch/arm/kernel/suspend.c between commit 7604537bbb57 ("ARM: kernel:
+> implement stack pointer save array through MPIDR hashing") from the arm
+> tree and commit 3fed6a1e3bf0 ("ARM: kernel: implement stack pointer save
+> array through MPIDR hashing") from the arm-mpidr tree.
 > 
-> > 	 (t=2100 jiffies g=18446744073709551583 c=18446744073709551582 q=13)
-> 
-> Assuming HZ=100, this stall has been going on  for 21 seconds.  There
-> is a grace period in progress according to RCU's global state (which
-> this CPU is not yet aware of).  There are a total of 13 RCU callbacks
-> queued across the entire system.
-> 
-> If the system is at all responsive, I suggest using ftrace (either from
-> the boot command line or at runtime) to trace __do_softirq() and
-> hrtimer_interrupt().
+> The former is just a rebase of the latter, so I used it.  It then turns
+> out that the arm-mpidr contains nothing that is not already included in
+> the arm tree, so is it needed any more i.e. is there further work coming?
 
-Thanks for decoding it Paul.
+The reason for this is that the changes were submitted to me as patches
+as two of the changes are for -rc, the other one is a development change,
+but in Lorenzo's git tree, they're all part of a single branch, and so
+can't be separately pushed upstream.
 
-I've narrowed down the test case and I think this is probably just a
-case of too many perf interrupts. If I reduce the sampling period by
-half the test runs fine.
-
-There is logic in perf to detect an interrupt storm, but for some reason
-it's not saving us. I'll dig in there, but I don't think it's an RCU
-problem.
-
-cheers
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
