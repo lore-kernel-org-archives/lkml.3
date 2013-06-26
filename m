@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab3FZFc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 01:32:56 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:33215 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3FZFcn (ORCPT
+	id S1751588Ab3FZFdC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 01:33:02 -0400
+Received: from relay.parallels.com ([195.214.232.42]:44502 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab3FZFc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 01:32:43 -0400
-X-Spam-Score: -100.8
-Message-ID: <51CA5F71.207@asianux.com>
-Date: Wed, 26 Jun 2013 11:26:41 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 26 Jun 2013 01:32:58 -0400
+Message-ID: <51CA7CD9.1050209@parallels.com>
+Date: Wed, 26 Jun 2013 09:32:09 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch: arm64: include: asm: add pci.h to pass compiling
-Content-Type: text/plain; charset=windows-1252
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Subject: Re: [PATCH v3 2/4] SUNRPC: fix races on PipeFS UMOUNT notifications
+References: <20130624075131.17104.55399.stgit@localhost.localdomain>  <20130624075245.17104.6279.stgit@localhost.localdomain> <1372176778.5968.29.camel@leira.trondhjem.org>
+In-Reply-To: <1372176778.5968.29.camel@leira.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need add pci.h for compiling, the related error (with allmodconfig):
+25.06.2013 20:13, Myklebust, Trond Ð¿Ð¸ÑˆÐµÑ‚:
+> On Mon, 2013-06-24 at 11:52 +0400, Stanislav Kinsbursky wrote:
+>> CPU#0                                   CPU#1
+>> -----------------------------           -----------------------------
+>> rpc_kill_sb
+>> sn->pipefs_sb = NULL                    rpc_release_client
+>> (UMOUNT_EVENT)                          rpc_free_auth
+>> rpc_pipefs_event
+>> rpc_get_client_for_event
+>> !atomic_inc_not_zero(cl_count)
+>> <skip the client>
+>>                                          atomic_inc(cl_count)
+>>                                          rpc_free_client
+>>                                          rpc_clnt_remove_pipedir
+>>                                          <skip client dir removing>
+>>
+>> To fix this, this patch does the following:
+>>
+>> 1) Calls RPC_PIPEFS_UMOUNT notification with sn->pipefs_sb_lock being held.
+>> 2) Removes SUNRPC client from the list AFTER pipes destroying.
+>> 3) Doesn't hold RPC client on notification: if client in the list, then it
+>> can't be destroyed while sn->pipefs_sb_lock in hold by notification caller.
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> Cc: stable@vger.kernel.org
+>> ---
+>>   net/sunrpc/clnt.c     |    5 +----
+>>   net/sunrpc/rpc_pipe.c |    2 +-
+>>   2 files changed, 2 insertions(+), 5 deletions(-)
+>
+> <snip>
+>
+>> diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+>> index c512448..efca2f7 100644
+>> --- a/net/sunrpc/rpc_pipe.c
+>> +++ b/net/sunrpc/rpc_pipe.c
+>> @@ -1165,7 +1165,6 @@ static void rpc_kill_sb(struct super_block *sb)
+>>   		goto out;
+>>   	}
+>>   	sn->pipefs_sb = NULL;
+>> -	mutex_unlock(&sn->pipefs_sb_lock);
+>>   	dprintk("RPC:       sending pipefs UMOUNT notification for net %p%s\n",
+>>   		net, NET_NAME(net));
+>>   	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+>> @@ -1173,6 +1172,7 @@ static void rpc_kill_sb(struct super_block *sb)
+>>   					   sb);
+>>   	put_net(net);
+>>   out:
+>> +	mutex_unlock(&sn->pipefs_sb_lock);
+>
+> Is this safe to do after the put_net()?
+>
 
-  drivers/media/usb/b2c2/flexcop-usb.c: In function ‘flexcop_usb_transfer_exit’:
-  drivers/media/usb/b2c2/flexcop-usb.c:393:3: error: implicit declaration of function ‘pci_free_consistent’ [-Werror=implicit-function-declaration]
-  drivers/media/usb/b2c2/flexcop-usb.c: In function ‘flexcop_usb_transfer_init’:
-  drivers/media/usb/b2c2/flexcop-usb.c:410:2: error: implicit declaration of function ‘pci_alloc_consistent’ [-Werror=implicit-function-declaration]
-  drivers/media/usb/b2c2/flexcop-usb.c:410:21: warning: assignment makes pointer from integer without a cast [enabled by default]
-  cc1: some warnings being treated as errors
+Sure it's not. Sorry.
+Will send the patch once more.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arm64/include/asm/pci.h |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/pci.h
+>>   	kill_litter_super(sb);
+>>   }
+>>
+>>
+>
+>
 
-diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
-new file mode 100644
-index 0000000..2ed467f
---- /dev/null
-+++ b/arch/arm64/include/asm/pci.h
-@@ -0,0 +1,11 @@
-+#ifndef ASMARM64_PCI_H
-+#define ASMARM64_PCI_H
-+
-+#ifdef __KERNEL__
-+
-+#include <asm-generic/pci-dma-compat.h>
-+#include <asm-generic/pci.h>
-+
-+#endif /* __KERNEL__ */
-+
-+#endif
+
 -- 
-1.7.7.6
+Best regards,
+Stanislav Kinsbursky
