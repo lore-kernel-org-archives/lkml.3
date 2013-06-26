@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab3FZNER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:04:17 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43735 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab3FZNEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:04:15 -0400
-Message-ID: <51CAE6CA.8000909@ti.com>
-Date: Wed, 26 Jun 2013 16:04:10 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751721Ab3FZNF0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:05:26 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:64646 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab3FZNFY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 09:05:24 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>
-Subject: Re: [patch] fbmem: return -EFAULT on copy_to_user() failure
-References: <20130618070529.GA12329@elgon.mountain>
-In-Reply-To: <20130618070529.GA12329@elgon.mountain>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2DXRAHWOQQAMUBFXKLBLL"
+From: Grant Likely <grant.likely@linaro.org>
+Date: Wed, 26 Jun 2013 14:05:04 +0100
+X-Google-Sender-Auth: 2YV51x320jbg2yXnSSYOoaruKro
+Message-ID: <CACxGe6t8KvnUfm7bt3-8+9d9KXwz1W4dQB+y+m0D75DRkMCGGA@mail.gmail.com>
+Subject: [GIT PULL] GPIO regression fix for omap1 for v3.10-rc
+To: Tony Lindgren <tony@atomide.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2DXRAHWOQQAMUBFXKLBLL
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-On 18/06/13 10:05, Dan Carpenter wrote:
-> copy_to_user() returns the number of bytes remaining to be copied.
-> put_user() returns -EFAULT on error.
->=20
-> This function ORs a bunch of stuff together and returns jumbled non-zer=
-o
-> values on error.  It should return -EFAULT.
->=20
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->=20
-> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-> index 098bfc6..9217be3 100644
-> --- a/drivers/video/fbmem.c
-> +++ b/drivers/video/fbmem.c
-> @@ -1305,7 +1305,9 @@ static int do_fscreeninfo_to_user(struct fb_fix_s=
-creeninfo *fix,
->  	err |=3D copy_to_user(fix32->reserved, fix->reserved,
->  			    sizeof(fix->reserved));
-> =20
-> -	return err;
-> +	if (err)
-> +		return -EFAULT;
-> +	return 0;
->  }
-> =20
->  static int fb_get_fscreeninfo(struct fb_info *info, unsigned int cmd,
+It took a while to work out the correct solution to this regression.
+It is sorted now. This branch was constructed and tested by Tony. I've
+verified that it builds and signed the tag. Please pull into v3.10.
 
-I've added this to fbdev-3.11 branch.
+g.
 
- Tomi
+The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
 
+  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
 
+are available in the git repository at:
 
+  git://git.secretlab.ca/git/linux tags/gpio-for-linus
 
-------enig2DXRAHWOQQAMUBFXKLBLL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+for you to fetch changes up to 397eada946712b90e0620c378b366bcc6c98c9f6:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+  gpio/omap: don't use linear domain mapping for OMAP1 (2013-06-25
+23:13:40 -0700)
 
-iQIcBAEBAgAGBQJRyubKAAoJEPo9qoy8lh71DQkP/jo/YqxPdBn1fKjZxVunqf+q
-/KLfQsF5UTCDyO9O66+imJMjpuyN9T2bnFjZGZ6Xp6lfC/Cyqg1L+BckRY5x/yuS
-IDyBJKEB1AewA51Cb1FxNYzwOpGouCAyTF9BVTGkI3d0wllurq8ettV32Z36lNUi
-RP3z1Pqcp9ajXakoTMV2QMfqajr31tYv4oVqGV9jqMG9DE+InlbpjpVhCTJVy6/4
-d/pGxXHI7zA6fObThcYE54/IuHLqucgkZOO/MruIfN68n3BXehTf2MWUU4i0Swr/
-r2nhbudKjIBi8JLikJuEBTuZ2biS3U4z+KKb+0AtJ+c9VtEtPRbw4DNs5svnwAGF
-FZw1/gOr6om/ApMeGixAQOX1ChvjnkmHGwzKpvYiYdQhMHJnQ9sNIURQPxdeHYsb
-l3r3LFNmvTbaerru7GKxpNyTty4USHdaS3AVFZN4lmoIyuv3NKZ0A2cJ4MOaEWrK
-uNUI4PSU+P1JHwWtnwtHWzEw1aZS1fmhvO1qgkErI1HwkOdnr6UA++Xm63HpziYI
-3UTxpvtIYB2YVAdy4N0DNDk8Sk5tyUOC3JuixkqVkv7n9fWh1LwO4oeDJlZ8RQUX
-rZToCWb1WXrJ727+xbB28eVsjbJpxL7D3gjZJQzhtCO3UzoyZXL2XitLzZrO18Qq
-9l99DUvSuuBmIOQ+2pB9
-=PxFp
------END PGP SIGNATURE-----
+----------------------------------------------------------------
+Fix for omap1 GPIO breaking regression
 
-------enig2DXRAHWOQQAMUBFXKLBLL--
+----------------------------------------------------------------
+Javier Martinez Canillas (1):
+      gpio/omap: don't use linear domain mapping for OMAP1
+
+ drivers/gpio/gpio-omap.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+On Wed, Jun 26, 2013 at 8:05 AM, Tony Lindgren <tony@atomide.com> wrote:
+> The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
+>
+>   Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap tags/omap-for-v3.10/gpio-signed
+>
+> for you to fetch changes up to 397eada946712b90e0620c378b366bcc6c98c9f6:
+>
+>   gpio/omap: don't use linear domain mapping for OMAP1 (2013-06-25 23:13:40 -0700)
+>
+> ----------------------------------------------------------------
+> Fix for omap1 GPIO breaking regression.
+>
+> ----------------------------------------------------------------
+> Javier Martinez Canillas (1):
+>       gpio/omap: don't use linear domain mapping for OMAP1
+>
+>  drivers/gpio/gpio-omap.c | 22 +++++++++++++++++++++-
+>  1 file changed, 21 insertions(+), 1 deletion(-)
