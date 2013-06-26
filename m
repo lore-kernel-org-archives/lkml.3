@@ -1,159 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3FZRtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:49:16 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:12640 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3FZRtO (ORCPT
+	id S1752800Ab3FZRt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:49:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53398 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab3FZRt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:49:14 -0400
-Message-ID: <1372268959.1801.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mutex: do not unnecessarily deal with waiters
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 26 Jun 2013 10:49:19 -0700
-In-Reply-To: <1369962720.1751.7.camel@buesod1.americas.hpqcorp.net>
-References: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
-	 <1369962720.1751.7.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 13:49:56 -0400
+Date: Wed, 26 Jun 2013 10:49:54 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Oliver Schinagl <oliver+list@schinagl.nl>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        andy.shevchenko@gmail.com, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-sunxi@googlegroups.com,
+        Oliver Schinagl <oliver@schinagl.nl>, rtc-linux@googlegroups.com,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+Message-ID: <20130626174954.GA2222@kroah.com>
+References: <1371502778-15849-1-git-send-email-oliver+list@schinagl.nl>
+ <1371502778-15849-2-git-send-email-oliver+list@schinagl.nl>
+ <20130617225847.GA9494@kroah.com>
+ <20130624092942.GG26008@lukather>
+ <20130624160440.GA15201@kroah.com>
+ <CAMuHMdVkyTXDsEyAvD4pHBiXHADbncGUHeeqXBCQMbU7t6TTDQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVkyTXDsEyAvD4pHBiXHADbncGUHeeqXBCQMbU7t6TTDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping, Ingo?
-
-On Thu, 2013-05-30 at 18:12 -0700, Davidlohr Bueso wrote:
-> ping?
+On Wed, Jun 26, 2013 at 11:22:30AM +0200, Geert Uytterhoeven wrote:
+> On Mon, Jun 24, 2013 at 6:04 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Jun 24, 2013 at 11:29:42AM +0200, Maxime Ripard wrote:
+> >> On Mon, Jun 17, 2013 at 03:58:47PM -0700, Greg KH wrote:
+> >> > On Mon, Jun 17, 2013 at 10:59:37PM +0200, Oliver Schinagl wrote:
+> >> > > +static int __init sunxi_sid_probe(struct platform_device *pdev)
+> >> > > +{
+> >> > > + u8 entropy[SID_SIZE];
+> >> > > + unsigned int i;
+> >> > > + struct resource *res;
+> >> > > + void __iomem *sid_reg_base;
+> >> > > + int ret;
+> >> > > +
+> >> > > + res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >> > > + sid_reg_base = devm_ioremap_resource(&pdev->dev, res);
+> >> > > + if (IS_ERR(sid_reg_base))
+> >> > > +         return PTR_ERR(sid_reg_base);
+> >> > > + platform_set_drvdata(pdev, sid_reg_base);
+> >> > > +
+> >> > > + ret = device_create_bin_file(&pdev->dev, &sid_bin_attr);
+> >> > > + if (ret)
+> >> > > +         return ret;
+> >> >
+> >> > You just raced with userspace, having the file show up after the device
+> >> > was announced to users that it was there.  Please use the proper device
+> >> > file api to add default attributes to prevent this from happening.
+> >>
+> >> Sorry if the question looks dumb, but what kind of race can we generate
+> >> here?
+> >
+> > Userspace gets told about the device from the driver core, udev runs and
+> > reads all of the attributes, then your probe function comes along and
+> > adds a new attribute.  Userspace will then not know about it at all.
+> >
+> >> The device_create_bin_file is the last call that we make (if we except
+> >> the entropy stuff, but it doesn't really matter here), so after we
+> >> created the file, we have everything properly initialised so that our
+> >> functions can be called, right?
+> >>
+> >> And another dumb question for you, what is the "proper device file API"
+> >> you are referring to ? :)
+> >
+> > Please read Documentation/driver_model/device.txt and see the section on
+> > Attributes for what to do.  If you have specific questions after reading
+> > that, please let me know.
 > 
-> On Thu, 2013-05-23 at 16:59 -0700, Davidlohr Bueso wrote:
-> > From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> > 
-> > Upon entering the slowpath, we immediately attempt to acquire the lock
-> > by checking if it is already unlocked. If we are lucky enough that this
-> > is the case, then we don't need to deal with any waiter related logic.
-> > 
-> > Furthermore any checks for an empty wait_list are unnecessary as we
-> > already know that count is non-negative and hence no one is waiting for
-> > the lock.
-> > 
-> > Move the count check and xchg calls to be done before any waiters are
-> > setup - including waiter debugging. Upon failure to acquire the lock,
-> > the xchg sets the counter to 0, instead of -1 as it was originally.
-> > This can be done here since we set it back to -1 right at the beginning
-> > of the loop so other waiters are woken up when the lock is released.
-> > 
-> > When tested on a 8-socket (80 core) system against a vanilla 3.10-rc1
-> > kernel, this patch provides some small performance benefits (+2-6%).
-> > While it could be considered in the noise level, the average percentages
-> > were stable across multiple runs and no performance regressions were seen.
-> > Two big winners, for small amounts of users (10-100), were the short and
-> > compute workloads had a +19.36% and +%15.76% in jobs per minute.
-> >   
-> > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> > ---
-> >  kernel/mutex.c | 26 ++++++++++++++------------
-> >  1 file changed, 14 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/kernel/mutex.c b/kernel/mutex.c
-> > index ad53a66..a8cd741 100644
-> > --- a/kernel/mutex.c
-> > +++ b/kernel/mutex.c
-> > @@ -306,7 +306,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		owner = ACCESS_ONCE(lock->owner);
-> >  		if (owner && !mutex_spin_on_owner(lock, owner)) {
-> >  			mspin_unlock(MLOCK(lock), &node);
-> > -			break;
-> > +			goto slowpath;
-> >  		}
-> >  
-> >  		if ((atomic_read(&lock->count) == 1) &&
-> > @@ -314,8 +314,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  			lock_acquired(&lock->dep_map, ip);
-> >  			mutex_set_owner(lock);
-> >  			mspin_unlock(MLOCK(lock), &node);
-> > -			preempt_enable();
-> > -			return 0;
-> > +			goto done;
-> >  		}
-> >  		mspin_unlock(MLOCK(lock), &node);
-> >  
-> > @@ -326,7 +325,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		 * the owner complete.
-> >  		 */
-> >  		if (!owner && (need_resched() || rt_task(task)))
-> > -			break;
-> > +			goto slowpath;
-> >  
-> >  		/*
-> >  		 * The cpu_relax() call is a compiler barrier which forces
-> > @@ -340,6 +339,14 @@ slowpath:
-> >  #endif
-> >  	spin_lock_mutex(&lock->wait_lock, flags);
-> >  
-> > +	/* once more, can we acquire the lock? */
-> > +	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
-> > +		lock_acquired(&lock->dep_map, ip);
-> > +		mutex_set_owner(lock);
-> > +		spin_unlock_mutex(&lock->wait_lock, flags);
-> > +		goto done;
-> > +	}
-> > +
-> >  	debug_mutex_lock_common(lock, &waiter);
-> >  	debug_mutex_add_waiter(lock, &waiter, task_thread_info(task));
-> >  
-> > @@ -347,9 +354,6 @@ slowpath:
-> >  	list_add_tail(&waiter.list, &lock->wait_list);
-> >  	waiter.task = task;
-> >  
-> > -	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, -1) == 1))
-> > -		goto done;
-> > -
-> >  	lock_contended(&lock->dep_map, ip);
-> >  
-> >  	for (;;) {
-> > @@ -363,7 +367,7 @@ slowpath:
-> >  		 * other waiters:
-> >  		 */
-> >  		if (MUTEX_SHOW_NO_WAITER(lock) &&
-> > -		   (atomic_xchg(&lock->count, -1) == 1))
-> > +		    (atomic_xchg(&lock->count, -1) == 1))
-> >  			break;
-> >  
-> >  		/*
-> > @@ -388,9 +392,8 @@ slowpath:
-> >  		spin_lock_mutex(&lock->wait_lock, flags);
-> >  	}
-> >  
-> > -done:
-> > +	/* got the lock - cleanup and rejoice! */
-> >  	lock_acquired(&lock->dep_map, ip);
-> > -	/* got the lock - rejoice! */
-> >  	mutex_remove_waiter(lock, &waiter, current_thread_info());
-> >  	mutex_set_owner(lock);
-> >  
-> > @@ -399,10 +402,9 @@ done:
-> >  		atomic_set(&lock->count, 0);
-> >  
-> >  	spin_unlock_mutex(&lock->wait_lock, flags);
-> > -
-> >  	debug_mutex_free_waiter(&waiter);
-> > +done:
-> >  	preempt_enable();
-> > -
-> >  	return 0;
-> >  }
-> >  
+> Woops, then we have plenty of existing drivers to fix, e.g. all/most RTC drivers
+> exposing an NVRAM file through sysfs:
 > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> $ git grep -w sysfs_create_bin_file drivers/rtc/
+> drivers/rtc/rtc-cmos.c: retval = sysfs_create_bin_file(&dev->kobj, &nvram);
+> drivers/rtc/rtc-ds1305.c: status =
+> sysfs_create_bin_file(&spi->dev.kobj, &nvram);
+> drivers/rtc/rtc-ds1307.c: err =
+> sysfs_create_bin_file(&client->dev.kobj, ds1307->nvram);
+> drivers/rtc/rtc-ds1511.c: ret = sysfs_create_bin_file(&pdev->dev.kobj,
+> &ds1511_nvram_attr);
+> drivers/rtc/rtc-ds1553.c: ret = sysfs_create_bin_file(&pdev->dev.kobj,
+> &ds1553_nvram_attr);
+> drivers/rtc/rtc-ds1742.c: ret = sysfs_create_bin_file(&pdev->dev.kobj,
+> &pdata->nvram_attr);
+> drivers/rtc/rtc-m48t59.c: ret = sysfs_create_bin_file(&pdev->dev.kobj,
+> &m48t59_nvram_attr);
+> drivers/rtc/rtc-rp5c01.c: error =
+> sysfs_create_bin_file(&dev->dev.kobj, &priv->nvram_attr);
+> drivers/rtc/rtc-stk17ta8.c: ret =
+> sysfs_create_bin_file(&pdev->dev.kobj, &stk17ta8_nvram_attr);
+> drivers/rtc/rtc-tx4939.c: ret = sysfs_create_bin_file(&pdev->dev.kobj,
+> &tx4939_rtc_nvram_attr);
 
+Yes, they should all be fixed, along with any platform device that
+creates a sysfs file in the probe function.
 
+thanks,
+
+greg k-h
