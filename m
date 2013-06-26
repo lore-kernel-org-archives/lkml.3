@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab3FZPXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:23:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35535 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab3FZPXi (ORCPT
+	id S1752407Ab3FZPYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:24:53 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:49144 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab3FZPYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:23:38 -0400
-Date: Wed, 26 Jun 2013 16:23:31 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Message-ID: <20130626152331.GS27646@sirena.org.uk>
-References: <1372221817-4382-1-git-send-email-sachin.kamat@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yOCDj6dCdxu1mn4c"
-Content-Disposition: inline
-In-Reply-To: <1372221817-4382-1-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] regulator: ab8500-ext: Staticize local symbols
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 26 Jun 2013 11:24:50 -0400
+Date: Wed, 26 Jun 2013 17:24:46 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: sedat.dilek@gmail.com
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: linux-next: Tree for Jun 26 [ vfs | block | fuse (cpuidle)
+ releated? ]
+Message-ID: <20130626172446.51f0bd5f@skate>
+In-Reply-To: <CA+icZUXtTxVUfOmFak9GzyUdGa7bBuxTr2CJEY0vNn0bH2-4Vw@mail.gmail.com>
+References: <CA+icZUWDDCsXBK4+s4fEbM_AGj3EnfCRAe2=yE+8_MT4mauPXg@mail.gmail.com>
+	<CA+icZUXtTxVUfOmFak9GzyUdGa7bBuxTr2CJEY0vNn0bH2-4Vw@mail.gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Sedat Dilek,
 
---yOCDj6dCdxu1mn4c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Wed, 26 Jun 2013 16:50:55 +0200, Sedat Dilek wrote:
 
-On Wed, Jun 26, 2013 at 10:13:37AM +0530, Sachin Kamat wrote:
-> Local symbols used only in this file are made static.
+> [ TO/CC char-misc folks ]
+> 
+> The CULPRIT commit [1] due to my git-bisecting is:
+> 
+> commit 585d98e00ba7a5e2abe65f7a1eff631cb612289b
+> "char: misc: assign file->private_data in all cases"
+> 
+> After reverting it, my system boots up fine again.
+> 
+> Can someone from the char-misc folks look at that?
 
-Applied, thanks.
+Ok. My understanding is that the misc device registered by
+fs/fuse/dev.c:fuse_dev_init() makes the assumption that
+file->private_data == NULL when a misc device is opened. But I'm not
+sure to fully understand the code flow of the FUSE filesystem.
 
---yOCDj6dCdxu1mn4c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And since it doesn't provide its own implementation of the ->open()
+operation, the misc infrastructure was leaving the file->private_data
+defined to NULL before my patch.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+With my patch, the file->private_data gets assigned unconditionally
+(regardless of whether the misc driver provides or does not provide a
+->open() operation) which modifies the unwritten assumption that fuse
+was making about the initial value of file->private_data. I believe the
+assumption made by fuse over the initial value of this variable is a
+bit fragile.
 
-iQIcBAEBAgAGBQJRywdwAAoJELSic+t+oim9VJcQAIJyBHhVT2/Y0ZHaX6xEG0dm
-avYQqYtrB3HS4N7KYQBopzX3BIMtITLYsCr4bpwi0JwNR4EryG2eQYGxxDubGnqi
-uxm85Zl69mBKUTiKPNOpURkJsdFzhPqrgaMbjmH3GkJvOsyPlU1sNFxUysZHgIIw
-Md+0SeUXc0my9ViluR0mmbFcRtuWWqt1WeBeMwlwej0C0gCL9tkAlLVs0Z+VCSSO
-iT6YFQ+m9EQkJfLf3ojtUXfbKljVOD8XZs3hmOWvfRdmH/0lGiuR0/4C17k9SXiG
-+YN5b5cf6UeQrgWoCQ2/h34kNZC5rSNQnY2PUXuau45VaGpixTT90+rfcLxFRGOj
-QTZAWwMh5QhJ+tQz4AUkmw7xF1ZOIMujlityye3R6sMwoo5qe3A4AYVam8VxRkEb
-WUlzqMSI0qrYO48G9CjujoHQTh/l47iYqyWouCt4A/wp3Pgb2QDBPfH7F2Vsmsbk
-a5aCrNOrzTpFviNk82106dfjynMh4s35R2ggX2A1ZRNSmlhYnXHHTmg2HEf6pKQT
-Vu5w99yw1tJxCl5VAyZQ63doU73THvzBE5uOTpsleIDPE9BlZkmOxWgRY2mI/sA/
-o2QpxjkNh9rjNqnn6pLXmP89336PiVuCTd+lEVuqThuypOABWciNN1CQYxURjg2t
-vTLShtkzV6LRovFa7qoa
-=8KtU
------END PGP SIGNATURE-----
+Maybe the FUSE code needs to be slightly adjusted to not make this
+assumption?
 
---yOCDj6dCdxu1mn4c--
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
