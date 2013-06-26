@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab3FZQ1C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:27:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40695 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab3FZQ07 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:26:59 -0400
-Date: Thu, 27 Jun 2013 00:26:40 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: hpa@zytor.com
-Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, bp@suse.de,
-        fenghua.yu@intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: Fix override new_cpu_data.x86 with 486
-Message-ID: <20130626162640.GA19913@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, hpa@zytor.com,
-	tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, bp@suse.de,
-	fenghua.yu@intel.com, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752121Ab3FZQ1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:27:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53032 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab3FZQ1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 12:27:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,945,1363158000"; 
+   d="scan'208";a="335890951"
+Subject: [PATCH v3 0/5] rwsem: performance enhancements for systems with
+ many cores
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Jun 2013 09:27:47 -0700
+Message-ID: <1372264067.22432.120.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In this patchset, we introduce two optimizations to read write semaphore.
+The first optimization reduces cache bouncing of the sem->count field
+by doing a pre-read of the sem->count and avoid cmpxchg if possible.
+The second optimization introduces similar optimistic spining logic in
+the mutex code for the writer lock acquisition of rw-sem.
 
-We should set X86 to 486 before use cpuid
-to detect the cpu type, if we set X86 to 486
-after cpuid, then we will get 486 for ever.
+Combining the two patches, in testing by Davidlohr Bueso on aim7 workloads
+on 8 socket 80 cores system, he saw improvements of
+alltests (+14.5%), custom (+17%), disk (+11%), high_systime
+(+5%), shared (+15%) and short (+4%), most of them after around 500
+users when i_mmap was implemented as rwsem.
 
-Yes, we will correct this in early_cpu_init,
-but it is still a wrong behavior, right? So
-just fix it.
+Feedbacks on the effectiveness of these tweaks on other workloads
+will be appreciated.  Thanks to Peter Hurley and Peter Zijlstra
+for reviewing this patchset.
 
-I also find maybe we can delete the new_cpu_data,
-because we will over write all the information
-in early_cpu_init, and before early_cpu_init,
-there is no user of new_cpu_data, but this is
-another patch in the future.
+I have left the optimistic spinning on write lock acquisition not as a default
+option.  I'll like people's opinion to see if it should be on by default
+to get more testing. 
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- arch/x86/kernel/head_32.S | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Changelog:
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 73afd11..733a8ef 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -410,6 +410,7 @@ enable_paging:
- /*
-  * Check if it is 486
-  */
-+	movb $4,X86                     # at least 486
- 	cmpl $-1,X86_CPUID
- 	je is486
- 
-@@ -437,7 +438,6 @@ enable_paging:
- 	movl %edx,X86_CAPABILITY
- 
- is486:
--	movb $4,X86
- 	movl $0x50022,%ecx	# set AM, WP, NE and MP
- 	movl %cr0,%eax
- 	andl $0x80000011,%eax	# Save PG,PE,ET
+v3:
+1. Added ACCESS_ONCE to sem->count access in rwsem_can_spin_on_owner.
+2. Fix typo bug for RWSEM_SPIN_ON_WRITE_OWNER option in init/Kconfig
+
+v2:
+1. Reorganize changes to down_write_trylock and do_wake into 4 patches and fixed
+   a bug referencing &sem->count when sem->count is intended.
+2. Fix unsafe sem->owner de-reference in rwsem_can_spin_on_owner.
+the option to be on for more seasoning but can be turned off should it be detrimental.
+3. Various patch comments update
+
+
+Alex Shi (4):
+  rwsem: check the lock before cpmxchg in down_write_trylock
+  rwsem: remove 'out' label in do_wake
+  rwsem: remove try_reader_grant label do_wake
+  rwsem/wake: check lock before do atomic update
+
+Tim Chen (1):
+  rwsem: do optimistic spinning for writer lock acquisition
+
+ include/asm-generic/rwsem.h |    8 +-
+ include/linux/rwsem.h       |    3 +
+ init/Kconfig                |    9 ++
+ kernel/rwsem.c              |   29 +++++++-
+ lib/rwsem.c                 |  175 ++++++++++++++++++++++++++++++++++++++-----
+ 5 files changed, 199 insertions(+), 25 deletions(-)
+
 -- 
-1.7.12.4.dirty
+1.7.4.4
+
+
