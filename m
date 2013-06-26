@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab3FZIVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:21:14 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:37682 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab3FZIVK (ORCPT
+	id S1751745Ab3FZIVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:21:43 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:52347 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab3FZIVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:21:10 -0400
-Message-ID: <51CAA46B.70500@redhat.com>
-Date: Wed, 26 Jun 2013 10:20:59 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 04:21:40 -0400
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 28/45] KVM: Use get/put_online_cpus_atomic() to prevent
- CPU offline
-References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625203036.16593.50377.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130625203036.16593.50377.stgit@srivatsabhat.in.ibm.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51C9A412.1050802@ti.com>
+References: <1372159970-6361-1-git-send-email-ruslan.bilovol@ti.com>
+	<51C9A412.1050802@ti.com>
+Date: Wed, 26 Jun 2013 11:21:39 +0300
+X-Google-Sender-Auth: Tr8HHJZpkP_RZZiZ3hiZ9vV8t04
+Message-ID: <CAB=otbQMeOo-5nwORTzPU_+1Ez_=MaQWLRxfnAREhKttvbxAmw@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: DTS: OMAP4: Add OMAP4 Blaze Tablet support
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: b-cousson@ti.com, tony@atomide.com, benoit.cousson@linaro.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/06/2013 22:30, Srivatsa S. Bhat ha scritto:
-> Once stop_machine() is gone from the CPU offline path, we won't be able
-> to depend on disabling preemption to prevent CPUs from going offline
-> from under us.
-> 
-> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
-> offline, while invoking from atomic context.
-> 
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: kvm@vger.kernel.org
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  virt/kvm/kvm_main.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 302681c..5bbfa30 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -174,7 +174,7 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
->  
->  	zalloc_cpumask_var(&cpus, GFP_ATOMIC);
->  
-> -	me = get_cpu();
-> +	me = get_online_cpus_atomic();
->  	kvm_for_each_vcpu(i, vcpu, kvm) {
->  		kvm_make_request(req, vcpu);
->  		cpu = vcpu->cpu;
-> @@ -192,7 +192,7 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
->  		smp_call_function_many(cpus, ack_flush, NULL, 1);
->  	else
->  		called = false;
-> -	put_cpu();
-> +	put_online_cpus_atomic();
->  	free_cpumask_var(cpus);
->  	return called;
->  }
-> @@ -1707,11 +1707,11 @@ void kvm_vcpu_kick(struct kvm_vcpu *vcpu)
->  		++vcpu->stat.halt_wakeup;
->  	}
->  
-> -	me = get_cpu();
-> +	me = get_online_cpus_atomic();
->  	if (cpu != me && (unsigned)cpu < nr_cpu_ids && cpu_online(cpu))
->  		if (kvm_arch_vcpu_should_kick(vcpu))
->  			smp_send_reschedule(cpu);
-> -	put_cpu();
-> +	put_online_cpus_atomic();
->  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_kick);
->  #endif /* !CONFIG_S390 */
-> 
+Hi Dan,
+
+On Tue, Jun 25, 2013 at 5:07 PM, Dan Murphy <dmurphy@ti.com> wrote:
+> On 06/25/2013 06:32 AM, Ruslan Bilovol wrote:
+>>
+>> The OMAP4 Blaze Tablet is TI OMAP4 processor-based
+>> development platform in a tablet formfactor.
+>> The platform contains many of the features found in
+>> present-day handsets (such as audio, video, wireless
+>> functions and user interfaces) and in addition
+>> contains features for software development and test.
+>
+> Why do we want to send this upstream?
+> What is the advantage to having this supported?
+>
+> I don't believe we need to add another community board.  We have a SDP and
+> Panda.
+
+Because:
+a) it is still widely used for prototyping devices
+b) you can still buy it from svtronics
+c) it has different set of devices on board so we have ability to
+   work with things like:
+  - widescreen high-resolution LCD panel
+  - different touchscreen controllers
+  - gpio keys (on 'Blaze Tablet')
+  - another set of sensors
+  - HS USB Host related stuff etc
+d) some features may be easily accessible only on BlazeTalet board
+    (comparing to Panda/SDP), like USB HSIC connection
+e) it is shipped with OMAP4470, support of which we are going to send upstream
+f) with Device Tree it's easy to support this board :)
+
+Best regards,
+Ruslan
+
+>
+> Dan
+>
+> <snip>
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> ----------------------------------------------
+> Dan Murphy
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-
