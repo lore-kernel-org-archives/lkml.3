@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab3FZQd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:33:26 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:64354 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab3FZQdY (ORCPT
+	id S1752548Ab3FZQdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:33:45 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:61422 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab3FZQdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:33:24 -0400
+	Wed, 26 Jun 2013 12:33:43 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>
 Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/9] minor improvements for ACPI dock and acpiphp drivers
-Date: Thu, 27 Jun 2013 00:30:52 +0800
-Message-Id: <1372264261-17442-1-git-send-email-liuj97@gmail.com>
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+Subject: [PATCH v2 1/9] ACPI, DOCK: avoid initializing acpi_dock_notifier_list multiple times
+Date: Thu, 27 Jun 2013 00:30:53 +0800
+Message-Id: <1372264261-17442-2-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372264261-17442-1-git-send-email-liuj97@gmail.com>
+References: <1372264261-17442-1-git-send-email-liuj97@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-This is an following up patchset of "[PATCH 0/3] ACPI / dock / PCI: Fix
-problems with dock and PCI hotplug" with minor code cleanups and
-refinements. It applies to
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git linux-next
+Function dock_add() will be called multiple times if there are multiple
+dock stations, which causes acpi_dock_notifier_list being initialized
+multiple times. So move initialization of acpi_dock_notifier_list from
+dock_add() to acpi_dock_init().
 
-Due to hardware resource limitation, I have only done compilation and
-boot tests.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/acpi/dock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Jiang Liu (9):
-  ACPI, DOCK: avoid initializing acpi_dock_notifier_list multiple times
-  ACPI, DOCK: kill redundant spin lock in dock station object
-  ACPI, DOCK: mark initialization functions with __init
-  ACPI, DOCK: simplify implementation of dock_create_acpi_device()
-  ACPI: introduce three helper functions
-  ACPI: change acpi_[bay|dock]_match() in scan.c as global functions
-  ACPI: simplify dock driver with new interfaces
-  ACPI: simpilify scan.c with new interfaces
-  ACPI: simplify acpiphp driver with new interfaces
-
- drivers/acpi/dock.c                | 152 ++++---------------------------
- drivers/acpi/scan.c                | 182 ++++++++++++-------------------------
- drivers/acpi/utils.c               |  72 +++++++++++++++
- drivers/pci/hotplug/acpiphp_glue.c |  30 ++----
- include/acpi/acpi_bus.h            |   8 ++
- 5 files changed, 168 insertions(+), 276 deletions(-)
-
+diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+index 14de9f4..e944e39 100644
+--- a/drivers/acpi/dock.c
++++ b/drivers/acpi/dock.c
+@@ -1007,7 +1007,6 @@ static int __init dock_add(acpi_handle handle)
+ 	mutex_init(&dock_station->hp_lock);
+ 	spin_lock_init(&dock_station->dd_lock);
+ 	INIT_LIST_HEAD(&dock_station->sibling);
+-	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
+ 	INIT_LIST_HEAD(&dock_station->dependent_devices);
+ 
+ 	/* we want the dock device to send uevents */
+@@ -1078,6 +1077,7 @@ int __init acpi_dock_init(void)
+ 		return 0;
+ 	}
+ 
++	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
+ 	register_acpi_bus_notifier(&dock_acpi_notifier);
+ 	pr_info(PREFIX "%s: %d docks/bays found\n",
+ 		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
 -- 
 1.8.1.2
 
