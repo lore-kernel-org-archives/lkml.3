@@ -1,107 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab3FZRr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:47:28 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:40054 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab3FZRr0 (ORCPT
+	id S1752538Ab3FZRtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:49:16 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:12640 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab3FZRtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:47:26 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130626171501.GA32056@kroah.com>
-References: <CA+icZUWDDCsXBK4+s4fEbM_AGj3EnfCRAe2=yE+8_MT4mauPXg@mail.gmail.com>
-	<CA+icZUXtTxVUfOmFak9GzyUdGa7bBuxTr2CJEY0vNn0bH2-4Vw@mail.gmail.com>
-	<20130626172446.51f0bd5f@skate>
-	<20130626153236.GA29455@kroah.com>
-	<CA+icZUXijuvgQGGqvpPUzrzgC0n4ipo3eFf9vnFa+4jHoTDgDw@mail.gmail.com>
-	<20130626171501.GA32056@kroah.com>
-Date: Wed, 26 Jun 2013 19:47:24 +0200
-Message-ID: <CA+icZUXVuTHH2s2-dbTwUTLwdPiuqr8LKzeGQWwfaJQebFj=Dw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 26 [ vfs | block | fuse (cpuidle)
- releated? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Jun 2013 13:49:14 -0400
+Message-ID: <1372268959.1801.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] mutex: do not unnecessarily deal with waiters
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 26 Jun 2013 10:49:19 -0700
+In-Reply-To: <1369962720.1751.7.camel@buesod1.americas.hpqcorp.net>
+References: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
+	 <1369962720.1751.7.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 7:15 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Jun 26, 2013 at 05:36:03PM +0200, Sedat Dilek wrote:
->> On Wed, Jun 26, 2013 at 5:32 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Wed, Jun 26, 2013 at 05:24:46PM +0200, Thomas Petazzoni wrote:
->> >> Dear Sedat Dilek,
->> >>
->> >> On Wed, 26 Jun 2013 16:50:55 +0200, Sedat Dilek wrote:
->> >>
->> >> > [ TO/CC char-misc folks ]
->> >> >
->> >> > The CULPRIT commit [1] due to my git-bisecting is:
->> >> >
->> >> > commit 585d98e00ba7a5e2abe65f7a1eff631cb612289b
->> >> > "char: misc: assign file->private_data in all cases"
->> >> >
->> >> > After reverting it, my system boots up fine again.
->> >> >
->> >> > Can someone from the char-misc folks look at that?
->> >>
->> >> Ok. My understanding is that the misc device registered by
->> >> fs/fuse/dev.c:fuse_dev_init() makes the assumption that
->> >> file->private_data == NULL when a misc device is opened. But I'm not
->> >> sure to fully understand the code flow of the FUSE filesystem.
->> >>
->> >> And since it doesn't provide its own implementation of the ->open()
->> >> operation, the misc infrastructure was leaving the file->private_data
->> >> defined to NULL before my patch.
->> >>
->> >> With my patch, the file->private_data gets assigned unconditionally
->> >> (regardless of whether the misc driver provides or does not provide a
->> >> ->open() operation) which modifies the unwritten assumption that fuse
->> >> was making about the initial value of file->private_data. I believe the
->> >> assumption made by fuse over the initial value of this variable is a
->> >> bit fragile.
->> >>
->> >> Maybe the FUSE code needs to be slightly adjusted to not make this
->> >> assumption?
->> >
->> > As the FUSE code was working properly before this change, I think this
->> > misc core change needs to be reverted, so I'll go do that in a bit.
->> >
->>
->> Good, sound reasonable.
->>
->> I was not aware that char-misc and fuse code is so interwoven (hope
->> this is the right word).
->
-> The fuse driver is a misc device, so the fuse code depends on the misc
-> core to work properly, that's the dependancy here.
->
-> I've now reverted this change, thanks again for the report and the quick
-> determination of the problem.
->
+ping, Ingo?
 
-All this early-testing results sometimes in nice use-cases/test-cases.
+On Thu, 2013-05-30 at 18:12 -0700, Davidlohr Bueso wrote:
+> ping?
+> 
+> On Thu, 2013-05-23 at 16:59 -0700, Davidlohr Bueso wrote:
+> > From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > 
+> > Upon entering the slowpath, we immediately attempt to acquire the lock
+> > by checking if it is already unlocked. If we are lucky enough that this
+> > is the case, then we don't need to deal with any waiter related logic.
+> > 
+> > Furthermore any checks for an empty wait_list are unnecessary as we
+> > already know that count is non-negative and hence no one is waiting for
+> > the lock.
+> > 
+> > Move the count check and xchg calls to be done before any waiters are
+> > setup - including waiter debugging. Upon failure to acquire the lock,
+> > the xchg sets the counter to 0, instead of -1 as it was originally.
+> > This can be done here since we set it back to -1 right at the beginning
+> > of the loop so other waiters are woken up when the lock is released.
+> > 
+> > When tested on a 8-socket (80 core) system against a vanilla 3.10-rc1
+> > kernel, this patch provides some small performance benefits (+2-6%).
+> > While it could be considered in the noise level, the average percentages
+> > were stable across multiple runs and no performance regressions were seen.
+> > Two big winners, for small amounts of users (10-100), were the short and
+> > compute workloads had a +19.36% and +%15.76% in jobs per minute.
+> >   
+> > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > ---
+> >  kernel/mutex.c | 26 ++++++++++++++------------
+> >  1 file changed, 14 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/kernel/mutex.c b/kernel/mutex.c
+> > index ad53a66..a8cd741 100644
+> > --- a/kernel/mutex.c
+> > +++ b/kernel/mutex.c
+> > @@ -306,7 +306,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  		owner = ACCESS_ONCE(lock->owner);
+> >  		if (owner && !mutex_spin_on_owner(lock, owner)) {
+> >  			mspin_unlock(MLOCK(lock), &node);
+> > -			break;
+> > +			goto slowpath;
+> >  		}
+> >  
+> >  		if ((atomic_read(&lock->count) == 1) &&
+> > @@ -314,8 +314,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  			lock_acquired(&lock->dep_map, ip);
+> >  			mutex_set_owner(lock);
+> >  			mspin_unlock(MLOCK(lock), &node);
+> > -			preempt_enable();
+> > -			return 0;
+> > +			goto done;
+> >  		}
+> >  		mspin_unlock(MLOCK(lock), &node);
+> >  
+> > @@ -326,7 +325,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  		 * the owner complete.
+> >  		 */
+> >  		if (!owner && (need_resched() || rt_task(task)))
+> > -			break;
+> > +			goto slowpath;
+> >  
+> >  		/*
+> >  		 * The cpu_relax() call is a compiler barrier which forces
+> > @@ -340,6 +339,14 @@ slowpath:
+> >  #endif
+> >  	spin_lock_mutex(&lock->wait_lock, flags);
+> >  
+> > +	/* once more, can we acquire the lock? */
+> > +	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
+> > +		lock_acquired(&lock->dep_map, ip);
+> > +		mutex_set_owner(lock);
+> > +		spin_unlock_mutex(&lock->wait_lock, flags);
+> > +		goto done;
+> > +	}
+> > +
+> >  	debug_mutex_lock_common(lock, &waiter);
+> >  	debug_mutex_add_waiter(lock, &waiter, task_thread_info(task));
+> >  
+> > @@ -347,9 +354,6 @@ slowpath:
+> >  	list_add_tail(&waiter.list, &lock->wait_list);
+> >  	waiter.task = task;
+> >  
+> > -	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, -1) == 1))
+> > -		goto done;
+> > -
+> >  	lock_contended(&lock->dep_map, ip);
+> >  
+> >  	for (;;) {
+> > @@ -363,7 +367,7 @@ slowpath:
+> >  		 * other waiters:
+> >  		 */
+> >  		if (MUTEX_SHOW_NO_WAITER(lock) &&
+> > -		   (atomic_xchg(&lock->count, -1) == 1))
+> > +		    (atomic_xchg(&lock->count, -1) == 1))
+> >  			break;
+> >  
+> >  		/*
+> > @@ -388,9 +392,8 @@ slowpath:
+> >  		spin_lock_mutex(&lock->wait_lock, flags);
+> >  	}
+> >  
+> > -done:
+> > +	/* got the lock - cleanup and rejoice! */
+> >  	lock_acquired(&lock->dep_map, ip);
+> > -	/* got the lock - rejoice! */
+> >  	mutex_remove_waiter(lock, &waiter, current_thread_info());
+> >  	mutex_set_owner(lock);
+> >  
+> > @@ -399,10 +402,9 @@ done:
+> >  		atomic_set(&lock->count, 0);
+> >  
+> >  	spin_unlock_mutex(&lock->wait_lock, flags);
+> > -
+> >  	debug_mutex_free_waiter(&waiter);
+> > +done:
+> >  	preempt_enable();
+> > -
+> >  	return 0;
+> >  }
+> >  
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-If I think of the IPC-MSG issue (fakeroot & 'make deb-pkg') I had in -next...
-I have sent a patch to Linux-Testing-Project to enhance the IPC test-suite.
-As a goodie I catched a BASHISM bug for dash shell in runltp script :-).
 
-I forgot a bug-report for Debian's fakeroot... The shipped DEBUG
-doc-file is outdated.
-
-The harder part is to convince the maintainers that sth. is/went wrong :-).
-
-Personally, I am happy when Friday's Linux-Next is "bug-free" for me.
-
-- Sedat -
-
-> greg k-h
