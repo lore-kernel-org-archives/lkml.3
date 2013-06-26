@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab3FZTwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 15:52:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9509 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab3FZTwR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 15:52:17 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XqNnylozy48A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pkicDPhlfI0A:10 a=PPorpS72le2Tx5LNLKMA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1372276335.18733.271.camel@gandalf.local.home>
-Subject: Re: frequent softlockups with 3.10rc6.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Date: Wed, 26 Jun 2013 15:52:15 -0400
-In-Reply-To: <20130626052352.GB31416@redhat.com>
-References: <20130622013731.GA22918@redhat.com>
-	 <20130622173129.GA29375@redhat.com> <20130622215905.GA28238@redhat.com>
-	 <20130623143634.GA2000@redhat.com> <20130623150603.GA32313@redhat.com>
-	 <20130623160452.GA11740@redhat.com> <20130624155758.GA5993@redhat.com>
-	 <20130624173510.GA1321@redhat.com> <20130625153520.GA7784@redhat.com>
-	 <1372177414.18733.211.camel@gandalf.local.home>
-	 <20130626052352.GB31416@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752943Ab3FZTwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 15:52:23 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52374 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752880Ab3FZTwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 15:52:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 0/6] Thunderbolt workarounds take 2
+Date: Wed, 26 Jun 2013 22:01:49 +0200
+Message-ID: <16740668.kbtKGAu32B@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130626194839.GA30260@google.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com> <3671062.GUfa7jqN3X@vostro.rjw.lan> <20130626194839.GA30260@google.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 01:23 -0400, Dave Jones wrote:
-> On Tue, Jun 25, 2013 at 12:23:34PM -0400, Steven Rostedt wrote:
+On Wednesday, June 26, 2013 01:48:39 PM Bjorn Helgaas wrote:
+> On Wed, Jun 26, 2013 at 02:45:40PM +0200, Rafael J. Wysocki wrote:
+> > On Wednesday, June 26, 2013 10:25:36 AM Mika Westerberg wrote:
+> > > On Wed, Jun 26, 2013 at 01:24:25AM +0200, Rafael J. Wysocki wrote:
+> > > > Would you please CC things touching ACPIPHP to linux-acpi?
+> > > 
+> > > Sorry about that -- It wasn't listed in the output of get_maintainers.pl so
+> > > it kind of was forgotten.
+> > > 
+> > > Do you want me to resend this series with linux-acpi@ included?
+> > 
+> > No need, just please remember about that in the future.
 > 
->  > Now, what we can try to do as well, is to add a trigger to disable
->  > tracing, which should (I need to check the code) stop tracing on printk.
->  > To do so:
->  > 
->  > # echo printk:traceoff > /sys/kernel/debug/tracing/set_ftrace_filter
->  > 
->  > This will add a trigger to the printk function that when called, will
->  > disable tracing. If it is hit before you get your trace, you can just
->  > re-enable tracing with:
->  > 
->  > # echo 1 > /sys/kernel/debug/tracing/tracing_on
->  > 
->  > Hmm, no it needs a fix to make this work. I applied a patch below that
->  > should do this correctly (and will put this into my 3.11 queue).
->  > 
->  > If you run the test again with this change and with the above filter, it
->  > should stop the trace before overwriting the first dump, as it should
->  > ignore the printk output.
+> Maybe we should do the following?  That covers the following files under
+> drivers/pci:
 > 
-> I think something isn't right with this patch.
-> After 10 hours, I hit the bug again, but...
+>     drivers/pci/hotplug/pciehp_acpi.c
+>     drivers/pci/hotplug/acpi_pcihp.c
+>     drivers/pci/hotplug/acpiphp_glue.c
+>     drivers/pci/hotplug/acpiphp_core.c
+>     drivers/pci/hotplug/acpiphp_ibm.c
+>     drivers/pci/pcie/aer/aerdrv_acpi.c
+>     drivers/pci/pcie/portdrv_acpi.c
+>     drivers/pci/pci-acpi.c
 > 
-> (01:21:28:root@binary:tracing)# cat trace
-> # tracer: preemptirqsoff
-> #
-> (01:21:30:root@binary:tracing)# 
 > 
+> commit 961e3992849e18f9ed6cbcac5c54fb29925341b3
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date:   Wed Jun 26 13:38:37 2013 -0600
+> 
+>     MAINTAINERS: Add ACPI folks for ACPI-related things under drivers/pci
+>     
+>     Add file patterns so get_maintainers.pl reports both PCI and ACPI folks
+>     for ACPI-related things in drivers/pci.
+>     
+>     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Did you apply the patch I added to my last email. It should have prevent
-that form happening :-/
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
--- Steve
-
-
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 3d7782b..ce65550 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -242,6 +242,9 @@ F:	drivers/acpi/
+>  F:	drivers/pnp/pnpacpi/
+>  F:	include/linux/acpi.h
+>  F:	include/acpi/
+> +F:	drivers/pci/*acpi*
+> +F:	drivers/pci/*/*acpi*
+> +F:	drivers/pci/*/*/*acpi*
+>  
+>  ACPI FAN DRIVER
+>  M:	Zhang Rui <rui.zhang@intel.com>
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
