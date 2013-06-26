@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab3FZCtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:49:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54150 "EHLO
+	id S1752633Ab3FZCta (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:49:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54113 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752144Ab3FZCpZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751458Ab3FZCpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:45:25 -0400
+	Tue, 25 Jun 2013 22:45:24 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wei Yongjun" <yongjun_wei@trendmicro.com.cn>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Catalin Marinas" <catalin.marinas@arm.com>,
+        "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        "Simon Baatz" <gmbnomis@gmail.com>
 Date: Wed, 26 Jun 2013 03:35:58 +0100
-Message-ID: <lsq.1372214158.243974283@decadent.org.uk>
+Message-ID: <lsq.1372214158.657310117@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [13/26] gianfar: add missing iounmap() on error in 
- gianfar_ptp_probe()
+Subject: [04/26] ARM: 7755/1: handle user space mapped pages in
+ flush_kernel_dcache_page
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,30 +33,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Simon Baatz <gmbnomis@gmail.com>
 
-[ Upstream commit e5f5e380e0f3bb11f04ca5bc66a551e58e0ad26e ]
+commit 1bc39742aab09248169ef9d3727c9def3528b3f3 upstream.
 
-Add the missing iounmap() before return from gianfar_ptp_probe()
-in the error handling case.
+Commit f8b63c1 made flush_kernel_dcache_page a no-op assuming that
+the pages it needs to handle are kernel mapped only.  However, for
+example when doing direct I/O, pages with user space mappings may
+occur.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Thus, continue to do lazy flushing if there are no user space
+mappings.  Otherwise, flush the kernel cache lines directly.
+
+Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/freescale/gianfar_ptp.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/include/asm/cacheflush.h |    4 +---
+ arch/arm/mm/flush.c               |   33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/freescale/gianfar_ptp.c b/drivers/net/ethernet/freescale/gianfar_ptp.c
-index 69c3adf..c2ab21c 100644
---- a/drivers/net/ethernet/freescale/gianfar_ptp.c
-+++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
-@@ -520,6 +520,7 @@ static int gianfar_ptp_probe(struct platform_device *dev)
- 	return 0;
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -301,9 +301,7 @@ static inline void flush_anon_page(struc
+ }
  
- no_clock:
-+	iounmap(etsects->regs);
- no_ioremap:
- 	release_resource(etsects->rsrc);
- no_resource:
+ #define ARCH_HAS_FLUSH_KERNEL_DCACHE_PAGE
+-static inline void flush_kernel_dcache_page(struct page *page)
+-{
+-}
++extern void flush_kernel_dcache_page(struct page *);
+ 
+ #define flush_dcache_mmap_lock(mapping) \
+ 	spin_lock_irq(&(mapping)->tree_lock)
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -304,6 +304,39 @@ void flush_dcache_page(struct page *page
+ EXPORT_SYMBOL(flush_dcache_page);
+ 
+ /*
++ * Ensure cache coherency for the kernel mapping of this page. We can
++ * assume that the page is pinned via kmap.
++ *
++ * If the page only exists in the page cache and there are no user
++ * space mappings, this is a no-op since the page was already marked
++ * dirty at creation.  Otherwise, we need to flush the dirty kernel
++ * cache lines directly.
++ */
++void flush_kernel_dcache_page(struct page *page)
++{
++	if (cache_is_vivt() || cache_is_vipt_aliasing()) {
++		struct address_space *mapping;
++
++		mapping = page_mapping(page);
++
++		if (!mapping || mapping_mapped(mapping)) {
++			void *addr;
++
++			addr = page_address(page);
++			/*
++			 * kmap_atomic() doesn't set the page virtual
++			 * address for highmem pages, and
++			 * kunmap_atomic() takes care of cache
++			 * flushing already.
++			 */
++			if (!IS_ENABLED(CONFIG_HIGHMEM) || addr)
++				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
++		}
++	}
++}
++EXPORT_SYMBOL(flush_kernel_dcache_page);
++
++/*
+  * Flush an anonymous page so that users of get_user_pages()
+  * can safely access the data.  The expected sequence is:
+  *
 
