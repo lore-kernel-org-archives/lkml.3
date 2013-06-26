@@ -1,306 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab3FZP5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:57:19 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:33085 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab3FZP5R (ORCPT
+	id S1752417Ab3FZP6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:58:41 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:36064 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645Ab3FZP6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:57:17 -0400
-Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
-From: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Reply-To: habanero@linux.vnet.ibm.com
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Andrew Jones <drjones@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, mingo@redhat.com,
-        jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
-        pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        xen-devel@lists.xensource.com, peterz@infradead.org,
-        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
-        andi@firstfloor.org, attilio.rao@citrix.com, ouyang@cs.pitt.edu,
-        gregkh@suse.de, agraf@suse.de, chegu_vinod@hp.com,
-        torvalds@linux-foundation.org, avi.kivity@gmail.com,
-        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephan.diestelhorst@amd.com, riel@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-In-Reply-To: <20130626125240.GY18508@redhat.com>
-References: <20130601192125.5966.35563.sendpatchset@codeblue>
-	 <1372171802.3804.30.camel@oc2024037011.ibm.com>
-	 <51CAAA26.4090204@linux.vnet.ibm.com>
-	 <20130626113744.GA6300@hawk.usersys.redhat.com>
-	 <20130626125240.GY18508@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Wed, 26 Jun 2013 10:56:53 -0500
-Message-ID: <1372262213.31391.176.camel@oc6622382223.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062615-7408-0000-0000-0000118756DD
+	Wed, 26 Jun 2013 11:58:40 -0400
+Date: Wed, 26 Jun 2013 17:58:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, holt@sgi.com, travis@sgi.com,
+        rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        yinghai@kernel.org, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
+Message-ID: <20130626155835.GC7399@gmail.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
+ <1371831934-156971-3-git-send-email-nzimmer@sgi.com>
+ <20130623092840.GB13445@gmail.com>
+ <20130624203657.GA107621@asylum.americas.sgi.com>
+ <20130626121430.GA4980@gmail.com>
+ <20130626144903.GA2210@asylum.americas.sgi.com>
+ <51CB04C7.8060702@intel.com>
+ <51CB06BD.8090202@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CB06BD.8090202@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 15:52 +0300, Gleb Natapov wrote:
-> On Wed, Jun 26, 2013 at 01:37:45PM +0200, Andrew Jones wrote:
-> > On Wed, Jun 26, 2013 at 02:15:26PM +0530, Raghavendra K T wrote:
-> > > On 06/25/2013 08:20 PM, Andrew Theurer wrote:
-> > > >On Sun, 2013-06-02 at 00:51 +0530, Raghavendra K T wrote:
-> > > >>This series replaces the existing paravirtualized spinlock mechanism
-> > > >>with a paravirtualized ticketlock mechanism. The series provides
-> > > >>implementation for both Xen and KVM.
-> > > >>
-> > > >>Changes in V9:
-> > > >>- Changed spin_threshold to 32k to avoid excess halt exits that are
-> > > >>    causing undercommit degradation (after PLE handler improvement).
-> > > >>- Added  kvm_irq_delivery_to_apic (suggested by Gleb)
-> > > >>- Optimized halt exit path to use PLE handler
-> > > >>
-> > > >>V8 of PVspinlock was posted last year. After Avi's suggestions to look
-> > > >>at PLE handler's improvements, various optimizations in PLE handling
-> > > >>have been tried.
-> > > >
-> > > >Sorry for not posting this sooner.  I have tested the v9 pv-ticketlock
-> > > >patches in 1x and 2x over-commit with 10-vcpu and 20-vcpu VMs.  I have
-> > > >tested these patches with and without PLE, as PLE is still not scalable
-> > > >with large VMs.
-> > > >
-> > > 
-> > > Hi Andrew,
-> > > 
-> > > Thanks for testing.
-> > > 
-> > > >System: x3850X5, 40 cores, 80 threads
-> > > >
-> > > >
-> > > >1x over-commit with 10-vCPU VMs (8 VMs) all running dbench:
-> > > >----------------------------------------------------------
-> > > >						Total
-> > > >Configuration				Throughput(MB/s)	Notes
-> > > >
-> > > >3.10-default-ple_on			22945			5% CPU in host kernel, 2% spin_lock in guests
-> > > >3.10-default-ple_off			23184			5% CPU in host kernel, 2% spin_lock in guests
-> > > >3.10-pvticket-ple_on			22895			5% CPU in host kernel, 2% spin_lock in guests
-> > > >3.10-pvticket-ple_off			23051			5% CPU in host kernel, 2% spin_lock in guests
-> > > >[all 1x results look good here]
-> > > 
-> > > Yes. The 1x results look too close
-> > > 
-> > > >
-> > > >
-> > > >2x over-commit with 10-vCPU VMs (16 VMs) all running dbench:
-> > > >-----------------------------------------------------------
-> > > >						Total
-> > > >Configuration				Throughput		Notes
-> > > >
-> > > >3.10-default-ple_on			 6287			55% CPU  host kernel, 17% spin_lock in guests
-> > > >3.10-default-ple_off			 1849			2% CPU in host kernel, 95% spin_lock in guests
-> > > >3.10-pvticket-ple_on			 6691			50% CPU in host kernel, 15% spin_lock in guests
-> > > >3.10-pvticket-ple_off			16464			8% CPU in host kernel, 33% spin_lock in guests
-> > > 
-> > > I see 6.426% improvement with ple_on
-> > > and 161.87% improvement with ple_off. I think this is a very good sign
-> > >  for the patches
-> > > 
-> > > >[PLE hinders pv-ticket improvements, but even with PLE off,
-> > > >  we still off from ideal throughput (somewhere >20000)]
-> > > >
-> > > 
-> > > Okay, The ideal throughput you are referring is getting around atleast
-> > > 80% of 1x throughput for over-commit. Yes we are still far away from
-> > > there.
-> > > 
-> > > >
-> > > >1x over-commit with 20-vCPU VMs (4 VMs) all running dbench:
-> > > >----------------------------------------------------------
-> > > >						Total
-> > > >Configuration				Throughput		Notes
-> > > >
-> > > >3.10-default-ple_on			22736			6% CPU in host kernel, 3% spin_lock in guests
-> > > >3.10-default-ple_off			23377			5% CPU in host kernel, 3% spin_lock in guests
-> > > >3.10-pvticket-ple_on			22471			6% CPU in host kernel, 3% spin_lock in guests
-> > > >3.10-pvticket-ple_off			23445			5% CPU in host kernel, 3% spin_lock in guests
-> > > >[1x looking fine here]
-> > > >
-> > > 
-> > > I see ple_off is little better here.
-> > > 
-> > > >
-> > > >2x over-commit with 20-vCPU VMs (8 VMs) all running dbench:
-> > > >----------------------------------------------------------
-> > > >						Total
-> > > >Configuration				Throughput		Notes
-> > > >
-> > > >3.10-default-ple_on			 1965			70% CPU in host kernel, 34% spin_lock in guests		
-> > > >3.10-default-ple_off			  226			2% CPU in host kernel, 94% spin_lock in guests
-> > > >3.10-pvticket-ple_on			 1942			70% CPU in host kernel, 35% spin_lock in guests
-> > > >3.10-pvticket-ple_off			 8003			11% CPU in host kernel, 70% spin_lock in guests
-> > > >[quite bad all around, but pv-tickets with PLE off the best so far.
-> > > >  Still quite a bit off from ideal throughput]
-> > > 
-> > > This is again a remarkable improvement (307%).
-> > > This motivates me to add a patch to disable ple when pvspinlock is on.
-> > > probably we can add a hypercall that disables ple in kvm init patch.
-> > > but only problem I see is what if the guests are mixed.
-> > > 
-> > >  (i.e one guest has pvspinlock support but other does not. Host
-> > > supports pv)
-> > 
-> > How about reintroducing the idea to create per-kvm ple_gap,ple_window
-> > state. We were headed down that road when considering a dynamic window at
-> > one point. Then you can just set a single guest's ple_gap to zero, which
-> > would lead to PLE being disabled for that guest. We could also revisit
-> > the dynamic window then.
-> > 
-> Can be done, but lets understand why ple on is such a big problem. Is it
-> possible that ple gap and SPIN_THRESHOLD are not tuned properly?
 
-The biggest problem currently is the double_runqueue_lock from
-yield_to():
-[2x overcommit with 20-vCPU VMs (8 VMs) all running dbench]
+* Nathan Zimmer <nzimmer@sgi.com> wrote:
 
-perf from host:
-> 28.27%        396402  qemu-system-x86  [kernel.kallsyms]        [k] _raw_spin_lock                            
->  4.65%         65667  qemu-system-x86  [kernel.kallsyms]        [k] __schedule                                
->  3.87%         54802  qemu-system-x86  [kernel.kallsyms]        [k] finish_task_switch                        
->  3.32%         47022  qemu-system-x86  [kernel.kallsyms]        [k] perf_event_task_sched_out                 
->  2.84%         40093  qemu-system-x86  [kvm_intel]              [k] vmx_vcpu_run                              
->  2.70%         37672  qemu-system-x86  [kernel.kallsyms]        [k] yield_to                                  
->  2.63%         36859  qemu-system-x86  [kvm]                    [k] kvm_vcpu_on_spin                          
->  2.18%         30810  qemu-system-x86  [kvm_intel]              [k] __vmx_load_host_state     
+> On 06/26/2013 10:12 AM, Dave Hansen wrote:
+> >On 06/26/2013 07:49 AM, Nathan Zimmer wrote:
+> >>My guess it is the NMIs overwhelming the system but I have not found a good way
+> >>to profile perf gone wild so it is only a guess.
+> >I've got an 80-core system and the symptoms sound similar to perf issues
+> >I'm seeing.  Dropping the sample rate helped for me, and there's a patch
+> >in -tip at the moment to do it automatically:
+> >
+> >>http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=14c63f17b1fde5a575a28e96547a22b451c71fb5
+> >Looks like you've also found that debugging NMIs is fun. :)
+> More fun then one person can handle.
+> I'll have to take this patch for a spin.
 
-A tiny patch [included below] checks if the target task is running
-before double_runqueue_lock (then bails if it is running).  This does
-reduce the lock contention somewhat:
+Please try latest -tip:master, there's a series of patches from Dave that 
+address this problem category.
 
-[2x overcommit with 20-vCPU VMs (8 VMs) all running dbench]  
-   
-perf from host:
-> 20.51%        284829  qemu-system-x86  [kernel.kallsyms]        [k] _raw_spin_lock                           
->  5.21%         72949  qemu-system-x86  [kernel.kallsyms]        [k] __schedule                               
->  3.70%         51962  qemu-system-x86  [kernel.kallsyms]        [k] finish_task_switch                       
->  3.50%         48607  qemu-system-x86  [kvm]                    [k] kvm_vcpu_on_spin                         
->  3.22%         45214  qemu-system-x86  [kernel.kallsyms]        [k] perf_event_task_sched_out                
->  3.18%         44546  qemu-system-x86  [kvm_intel]              [k] vmx_vcpu_run                             
->  3.13%         43176  qemu-system-x86  [kernel.kallsyms]        [k] yield_to                                 
->  2.37%         33349  qemu-system-x86  [kvm_intel]              [k] __vmx_load_host_state                    
->  2.06%         28503  qemu-system-x86  [kernel.kallsyms]        [k] get_pid_task    
+Does it only happen with -g, or with regular perf record and/or with perf 
+top as well?
 
-So, the lock contention is reduced, and the results improve slightly
-over default PLE/yield_to (in this case 1942 -> 2161, 11%), but this is
-still far off from no PLE at all (8003) and way off from a ideal
-throughput (>20000).
+Thanks,
 
-One of the problems, IMO, is that we are chasing our tail and burning
-too much CPU trying to fix the problem, but much of what is done is not
-actually fixing the problem (getting the one vcpu holding the lock to
-run again).  We end up spending a lot of cycles getting a lot of vcpus
-running again, and most of them are not holding that lock.  One
-indication of this is the context switches in the host:
-
-[2x overcommit with 20-vCPU VMs (8 VMs) all running dbench]
-
-pvticket with PLE on:  2579227.76/sec
-pvticket with PLE pff:  233711.30/sec
-
-That's over 10x context switches with PLE on.  All of this is for
-yield_to, but IMO most of vcpus are probably yielding to vcpus which are
-not actually holding the lock.
-
-I would like to see how this changes by tracking the lock holder in the
-pvticket lock structure, and when a vcpu spins beyond a threshold, the
-vcpu makes a hypercall to yield_to a -vCPU-it-specifies-, the one it
-knows to be holding the lock.  Note that PLE is no longer needed for
-this and the PLE detection should probably be disabled when the guest
-has this ability.
-
-Additionally, when other vcpus reach their spin threshold and also
-identify the same target vcpu (the same lock), they may opt to not make
-the yield_to hypercall, if another vcpu made the yield_to hypercall to
-the same target vcpu -very-recently-, thus avoiding a redundant exit and
-yield_to.
-
-Another optimization may be to allow vcpu preemption to be visible
--inside- the guest.  If a vcpu reaches the spin threshold, then
-identifies the lock holding vcpu, it then checks to see if a preemption
-bit is set for that vcpu.  If it is not set, then it does nothing, and
-if it is, it makes the yield_to hypercall.  This should help for locks
-which really do have a big critical section, and the vcpus really do
-need to spin for a while.
-
-OK, one last thing.  This is a completely different approach at the
-problem:  automatically adjust active vcpus from within a guest, with
-some sort of daemon (vcpud?) to approximate the actual host cpu resource
-available.  The daemon would monitor steal time and hot unplug vcpus to
-reduce steal time to a small percentage. ending up with a slight cpu
-overcommit.  It would also have to online vcpus if more cpu resource is
-made available, again looking at steal time and adding vcpus until steal
-time increases to a small percentage.  I am not sure if the overhead of
-plugging/unplugging is worth it, but I would bet the guest would be far
-more efficient, because (a) PLE and pvticket would be handling much
-lower effective cpu overcommit (let's say ~1.1x) and (b) the guest and
-its applications would have much better scalability because the active
-vcpu count is much lower.
-
-So, let's see what one of those situations would look like, without
-actually writing something to do the unplugging/plugging for us.  Let's
-take the one of the examples above, where we have 8 VMs, each defined
-with 20 vcpus, for 2x overcommit, but let's unplug 9 vcpus in each of
-the VMs, so we end up with a 1.1x effective overcommit (the last test
-below).
-
-[2x overcommit with 20-vCPU VMs (8 VMs) all running dbench] 
-
-							Total
-Configuration						Throughput	Notes
-
-3.10-default-ple_on					1965		70% CPU in host kernel, 34% spin_lock in guests		
-3.10-default-ple_off			 		 226		2% CPU in host kernel, 94% spin_lock in guests
-3.10-pvticket-ple_on			 		1942		70% CPU in host kernel, 35% spin_lock in guests
-3.10-pvticket-ple_off			 		8003		11% CPU in host kernel, 70% spin_lock in guests
-3.10-pvticket-ple-on_doublerq-opt	 		2161		68% CPU in host kernel, 33% spin_lock in guests		
-3.10-pvticket-ple_on_doublerq-opt_9vcpus-unplugged	22534		6% CPU in host kernel,  9% steal in guests, 2% spin_lock in guests
-
-Finally, we get a nice result!  Note this is the lowest spin % in the guest.  The spin_lock in the host is also quite a bit better:
-
-
-> 6.77%         55421  qemu-system-x86  [kernel.kallsyms]        [k] _raw_spin_lock                             
-> 4.29%         57345  qemu-system-x86  [kvm_intel]              [k] vmx_vcpu_run                               
-> 3.87%         62049  qemu-system-x86  [kernel.kallsyms]        [k] native_apic_msr_write                      
-> 2.88%         45272  qemu-system-x86  [kernel.kallsyms]        [k] atomic_dec_and_mutex_lock                  
-> 2.71%         39276  qemu-system-x86  [kvm]                    [k] vcpu_enter_guest                           
-> 2.48%         38886  qemu-system-x86  [kernel.kallsyms]        [k] memset                                     
-> 2.22%         18331  qemu-system-x86  [kvm]                    [k] kvm_vcpu_on_spin                           
-> 2.09%         32628  qemu-system-x86  [kernel.kallsyms]        [k] perf_event_alloc 
-
-Also the host context switches dropped significantly (66%), to 38768/sec.
-
--Andrew
-
-
-
-
-
-Patch to reduce double runqueue lock in yield_to():
-
-Signed-off-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 58453b8..795d324 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4454,6 +4454,9 @@ again:
- 		goto out_irq;
- 	}
- 
-+	if (task_running(p_rq, p) || p->state)
-+		goto out_irq;
-+
- 	double_rq_lock(rq, p_rq);
- 	while (task_rq(p) != p_rq) {
- 		double_rq_unlock(rq, p_rq);
-
-
+	Ingo
