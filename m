@@ -1,150 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab3FZHT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:19:26 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41834 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843Ab3FZHTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:19:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,941,1363158000"; 
-   d="scan'208";a="322712167"
-Message-ID: <1372231162.8177.70.camel@envy.home>
-Subject: Re: [PATCH 2/8] pch_uart: Add uart_clk selection for the MinnowBoard
-From: Darren Hart <dvhart@linux.intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
-        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
-        vishal.l.verma@intel.com, linux-serial@vger.kernel.org
-Date: Wed, 26 Jun 2013 00:19:22 -0700
-In-Reply-To: <51CA8D91.6000708@suse.cz>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
-	  <6cc125b9eb85dd3cae4a2496fdb7f0d17b18f930.1372211451.git.dvhart@linux.intel.com>
-	  <20130626023143.GB23320@kroah.com> <1372216578.8177.9.camel@envy.home>
-	  <20130626033926.GA27165@kroah.com> <1372219125.8177.12.camel@envy.home>
-	 <51CA8D91.6000708@suse.cz>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751861Ab3FZHSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:18:55 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58756 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab3FZHO0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 03:14:26 -0400
+X-AuditID: 9c930179-b7cafae000004567-79-51ca94d04b62
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCH 03/19] perf util: Save pid-cmdline mapping into tracing header
+Date: Wed, 26 Jun 2013 16:14:06 +0900
+Message-Id: <1372230862-15861-4-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
+References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 08:43 +0200, Jiri Slaby wrote:
-> On 06/26/2013 05:58 AM, Darren Hart wrote:
-> > Subject: [PATCH] pch_uart: Use DMI interface for board detection
-> > 
-> > Use the DMI interface rather than manually matching DMI strings.
-> > 
-> > Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> > ---
-> >  drivers/tty/serial/pch_uart.c | 71
-> > +++++++++++++++++++++++++++++--------------
-> >  1 file changed, 49 insertions(+), 22 deletions(-)
-> > 
-> > diff --git a/drivers/tty/serial/pch_uart.c
-> > b/drivers/tty/serial/pch_uart.c
-> > index 572d481..271cc73 100644
-> > --- a/drivers/tty/serial/pch_uart.c
-> > +++ b/drivers/tty/serial/pch_uart.c
-> > @@ -373,35 +373,62 @@ static const struct file_operations port_regs_ops
-> > = {
-> >  };
-> >  #endif	/* CONFIG_DEBUG_FS */
-> >  
-> > +static struct dmi_system_id __initdata pch_uart_dmi_table[] = {
-> > +	{
-> > +		.ident = "CM-iTC",
-> > +		{
-> > +			DMI_MATCH(DMI_BOARD_NAME, "CM-iTC"),
-> > +		},
-> > +		(void *)CMITC_UARTCLK,
-> > +	},
-> > +	{
-> > +		.ident = "FRI2",
-> > +		{
-> > +			DMI_MATCH(DMI_BIOS_VERSION, "FRI2"),
-> > +		},
-> > +		(void *)FRI2_64_UARTCLK,
-> > +	},
-> > +	{
-> > +		.ident = "Fish River Island II",
-> > +		{
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "Fish River Island II"),
-> > +		},
-> > +		(void *)FRI2_48_UARTCLK,
-> > +	},
-> > +	{
-> > +		.ident = "COMe-mTT",
-> > +		{
-> > +			DMI_MATCH(DMI_BOARD_NAME, "COMe-mTT"),
-> > +		},
-> > +		(void *)NTC1_UARTCLK,
-> > +	},
-> > +	{
-> > +		.ident = "nanoETXexpress-TT",
-> > +		{
-> > +			DMI_MATCH(DMI_BOARD_NAME, "nanoETXexpress-TT"),
-> > +		},
-> > +		(void *)NTC1_UARTCLK,
-> > +	},
-> > +	{
-> > +		.ident = "MinnowBoard",
-> > +		{
-> > +			DMI_MATCH(DMI_BOARD_NAME, "MinnowBoard"),
-> > +		},
-> > +		(void *)MINNOW_UARTCLK,
-> > +	},
-> > +};
-> > +
-> >  /* Return UART clock, checking for board specific clocks. */
-> >  static int pch_uart_get_uartclk(void)
-> >  {
-> > -	const char *cmp;
-> > +	const struct dmi_system_id *d;
-> >  
-> >  	if (user_uartclk)
-> >  		return user_uartclk;
-> >  
-> > -	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-> > -	if (cmp && strstr(cmp, "CM-iTC"))
-> > -		return CMITC_UARTCLK;
-> > -
-> > -	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
-> > -	if (cmp && strnstr(cmp, "FRI2", 4))
-> > -		return FRI2_64_UARTCLK;
-> > -
-> > -	cmp = dmi_get_system_info(DMI_PRODUCT_NAME);
-> > -	if (cmp && strstr(cmp, "Fish River Island II"))
-> > -		return FRI2_48_UARTCLK;
-> > -
-> > -	/* Kontron COMe-mTT10 (nanoETXexpress-TT) */
-> > -	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-> > -	if (cmp && (strstr(cmp, "COMe-mTT") ||
-> > -		    strstr(cmp, "nanoETXexpress-TT")))
-> > -		return NTC1_UARTCLK;
-> > -
-> > -	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-> > -	if (cmp && strstr(cmp, "MinnowBoard"))
-> > -		return MINNOW_UARTCLK;
-> > +	d = dmi_first_match(pch_uart_dmi_table);
-> > +	if (d)
-> > +		return (int)d->driver_data;
-> 
-> This and the (void *) casts above will generate a warning on 64bit,
-> right? We need to go through long here...
-> 
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-You can't actually use this driver on 64 bit as there is no hardware,
-but yes, I can clean that up just on principle. Thank you for pointing
-that out.
+Current trace info data lacks the saved cmdline mapping which is
+needed for pevent to find out the comm of a task.  Add this and bump
+up the version number so that perf can determine its presence when
+reading.
 
+This is mostly corresponding to trace.dat file version 6, but still
+lacks 4 byte of number of cpus, and 10 bytes of type string - and I
+think we don't need those anyway.
+
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/trace-event-info.c  | 33 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/trace-event-parse.c | 17 +++++++++++++++++
+ tools/perf/util/trace-event-read.c  | 36 ++++++++++++++++++++++++++++++++++--
+ tools/perf/util/trace-event.h       |  1 +
+ 4 files changed, 84 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index f3c9e551bd35..48678ca4c4d6 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -41,7 +41,7 @@
+ #include <lk/debugfs.h>
+ #include "evsel.h"
+ 
+-#define VERSION "0.5"
++#define VERSION "0.6"
+ 
+ static int output_fd;
+ 
+@@ -390,6 +390,34 @@ out:
+ 	return err;
+ }
+ 
++static int record_saved_cmdline(void)
++{
++	unsigned int size;
++	char *path;
++	struct stat st;
++	int ret, err = 0;
++
++	path = get_tracing_file("saved_cmdlines");
++	if (!path) {
++		pr_debug("can't get tracing/saved_cmdline");
++		return -ENOMEM;
++	}
++
++	ret = stat(path, &st);
++	if (ret < 0) {
++		/* not found */
++		size = 0;
++		if (write(output_fd, &size, 8) != 8)
++			err = -EIO;
++		goto out;
++	}
++	err = record_file(path, 8);
++
++out:
++	put_tracing_file(path);
++	return err;
++}
++
+ static void
+ put_tracepoints_path(struct tracepoint_path *tps)
+ {
+@@ -550,6 +578,9 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 	if (err)
+ 		goto out;
+ 	err = record_ftrace_printk();
++	if (err)
++		goto out;
++	err = record_saved_cmdline();
+ 
+ out:
+ 	/*
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index fe7a27d67d2b..ef09e4720e04 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -232,6 +232,23 @@ void parse_ftrace_printk(struct pevent *pevent,
+ 	}
+ }
+ 
++void parse_saved_cmdline(struct pevent *pevent,
++			 char *file, unsigned int size __maybe_unused)
++{
++	char *comm;
++	char *line;
++	char *next = NULL;
++	int pid;
++
++	line = strtok_r(file, "\n", &next);
++	while (line) {
++		sscanf(line, "%d %ms", &pid, &comm);
++		pevent_register_comm(pevent, comm, pid);
++		free(comm);
++		line = strtok_r(NULL, "\n", &next);
++	}
++}
++
+ int parse_ftrace_file(struct pevent *pevent, char *buf, unsigned long size)
+ {
+ 	return pevent_parse_event(pevent, buf, size, "ftrace");
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index f2112270c663..e084e5e654b6 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -343,6 +343,31 @@ static int read_event_files(struct pevent *pevent)
+ 	return 0;
+ }
+ 
++static int read_saved_cmdline(struct pevent *pevent)
++{
++	unsigned long long size;
++	char *buf;
++
++	/* it can have 0 size */
++	size = read8(pevent);
++	if (!size)
++		return 0;
++
++	buf = malloc(size + 1);
++	if (buf == NULL)
++		return -1;
++
++	if (do_read(buf, size) < 0) {
++		free(buf);
++		return -1;
++	}
++
++	parse_saved_cmdline(pevent, buf, size);
++
++	free(buf);
++	return 0;
++}
++
+ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ {
+ 	char buf[BUFSIZ];
+@@ -383,10 +408,11 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 		return -1;
+ 	if (show_version)
+ 		printf("version = %s\n", version);
+-	free(version);
+ 
+-	if (do_read(buf, 1) < 0)
++	if (do_read(buf, 1) < 0) {
++		free(version);
+ 		return -1;
++	}
+ 	file_bigendian = buf[0];
+ 	host_bigendian = bigendian();
+ 
+@@ -422,6 +448,11 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 	err = read_ftrace_printk(pevent);
+ 	if (err)
+ 		goto out;
++	if (!strcmp(version, "0.6")) {
++		err = read_saved_cmdline(pevent);
++		if (err)
++			goto out;
++	}
+ 
+ 	size = trace_data_size;
+ 	repipe = false;
+@@ -438,5 +469,6 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ out:
+ 	if (pevent)
+ 		pevent_free(pevent);
++	free(version);
+ 	return size;
+ }
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 669a64a660d7..bf02af200f9c 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -30,6 +30,7 @@ void *raw_field_ptr(struct event_format *event, const char *name, void *data);
+ 
+ void parse_proc_kallsyms(struct pevent *pevent, char *file, unsigned int size);
+ void parse_ftrace_printk(struct pevent *pevent, char *file, unsigned int size);
++void parse_saved_cmdline(struct pevent *pevent, char *file, unsigned int size);
+ 
+ ssize_t trace_report(int fd, struct pevent **pevent, bool repipe);
+ 
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+1.7.11.7
 
