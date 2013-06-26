@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab3FZByV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 21:54:21 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48808 "EHLO mga14.intel.com"
+	id S1752275Ab3FZByS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 21:54:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59621 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751461Ab3FZBxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 21:53:44 -0400
+	id S1751458Ab3FZBxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 21:53:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,940,1363158000"; 
-   d="scan'208";a="322608902"
+   d="scan'208";a="360531386"
 From: Darren Hart <dvhart@linux.intel.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
         andriy.shevchenko@linux.intel.com, danders@circuitco.com,
         vishal.l.verma@intel.com, dvhart@linux.intel.com
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
-Subject: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE ID
-Date: Tue, 25 Jun 2013 18:53:27 -0700
-Message-Id: <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        platform-driver-x86@vger.kernel.org
+Subject: [PATCH 6/8] minnowboard-keys: Bind MinnowBoard buttons to arrow keys
+Date: Tue, 25 Jun 2013 18:53:26 -0700
+Message-Id: <1ded9714150de50fac7fb6ee82166fbcb5621f7d.1372211451.git.dvhart@linux.intel.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1372211451.git.dvhart@linux.intel.com>
 References: <cover.1372211451.git.dvhart@linux.intel.com>
@@ -27,34 +30,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CircuitCo's newly created VENDOR ID and their first board subsystem
-ID for the MinnowBoard.
+Configure the four buttons tied to the E6XX GPIO lines on the
+MinnowBoard as keys using the gpio-keys-polled platform driver. From
+left to right, bind them to LEFT, DOWN, UP, RIGHT, similar to the VI
+directional keys.
+
+This is separate from the minnowboard driver to provide users with the
+flexibility to write kernel drivers for their own devices using these GPIO
+lines.
 
 Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: David Anders <danders@circuitco.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-pci@vger.kernel.org
+Cc: platform-driver-x86@vger.kernel.org
 ---
- include/linux/pci_ids.h | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/platform/x86/Kconfig            |  14 +++++
+ drivers/platform/x86/Makefile           |   1 +
+ drivers/platform/x86/minnowboard-keys.c | 108 ++++++++++++++++++++++++++++++++
+ 3 files changed, 123 insertions(+)
+ create mode 100644 drivers/platform/x86/minnowboard-keys.c
 
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index c129162..b2879ce 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -149,6 +149,9 @@
- #define PCI_DEVICE_ID_BERKOM_A4T		0xffa4
- #define PCI_DEVICE_ID_BERKOM_SCITEL_QUADRO	0xffa8
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index c8755cb..b9ff98c 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -50,6 +50,20 @@ config MINNOWBOARD_GPIO
+ 	  If you have a MinnowBoard, and want to experiment with the GPIO,
+ 	  say Y or M here.
  
-+#define PCI_VENDOR_ID_CIRCUITCO			0x1cc8
-+#define PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD	0x0001
++config MINNOWBOARD_KEYS
++	tristate "MinnowBoard GPIO Keys"
++	depends on MINNOWBOARD
++	depends on KEYBOARD_GPIO_POLLED
++	default n
++	---help---
++	  Configure the four buttons tied to the E6XX GPIO lines on the
++	  MinnowBoard as keys using the gpio-keys-polled platform driver. From
++	  left to right, bind them to LEFT, DOWN, UP, RIGHT, similar to the VI
++	  directional keys.
 +
- #define PCI_VENDOR_ID_COMPAQ		0x0e11
- #define PCI_DEVICE_ID_COMPAQ_TOKENRING	0x0508
- #define PCI_DEVICE_ID_COMPAQ_TACHYON	0xa0fc
++	  If you have a MinnowBoard and want to use the buttons as arrow keys,
++	  say Y or M here.
++
+ endif # MINNOWBOARD
+ 
+ 
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 4dac9f0..2f55903 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -4,6 +4,7 @@
+ #
+ obj-$(CONFIG_MINNOWBOARD)	+= minnowboard.o
+ obj-$(CONFIG_MINNOWBOARD_GPIO)	+= minnowboard-gpio.o
++obj-$(CONFIG_MINNOWBOARD_KEYS)	+= minnowboard-keys.o
+ obj-$(CONFIG_ASUS_LAPTOP)	+= asus-laptop.o
+ obj-$(CONFIG_ASUS_WMI)		+= asus-wmi.o
+ obj-$(CONFIG_ASUS_NB_WMI)	+= asus-nb-wmi.o
+diff --git a/drivers/platform/x86/minnowboard-keys.c b/drivers/platform/x86/minnowboard-keys.c
+new file mode 100644
+index 0000000..de96df1
+--- /dev/null
++++ b/drivers/platform/x86/minnowboard-keys.c
+@@ -0,0 +1,108 @@
++/*
++ * MinnowBoard Linux platform driver
++ * Copyright (c) 2013, Intel Corporation.
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Author: Darren Hart <dvhart@linux.intel.com>
++ */
++
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/gpio.h>
++#include <linux/gpio_keys.h>
++#include <linux/input.h>
++#include <linux/minnowboard.h>
++#include "minnowboard-gpio.h"
++
++/* VI-style direction keys seem like as good as anything */
++#define GPIO_BTN0_KEY KEY_LEFT
++#define GPIO_BTN1_KEY KEY_DOWN
++#define GPIO_BTN2_KEY KEY_UP
++#define GPIO_BTN3_KEY KEY_RIGHT
++
++/* Timing in milliseconds */
++#define GPIO_DEBOUNCE 1
++#define BUTTON_POLL_INTERVAL 300
++
++/* gpio-keys platform device structures */
++static struct gpio_keys_button minnow_buttons[] = {
++	{ .code = GPIO_BTN0_KEY, .gpio = GPIO_BTN0, .active_low = 1,
++	  .desc = "minnow_btn0", .type = EV_KEY, .wakeup = 0,
++	  .debounce_interval = GPIO_DEBOUNCE, .can_disable = true },
++	{ .code = GPIO_BTN1_KEY, .gpio = GPIO_BTN1, .active_low = 1,
++	  .desc = "minnow_btn1", .type = EV_KEY, .wakeup = 0,
++	  .debounce_interval = GPIO_DEBOUNCE, .can_disable = true },
++	{ .code = GPIO_BTN2_KEY, .gpio = GPIO_BTN2, .active_low = 1,
++	  .desc = "minnow_btn2", .type = EV_KEY, .wakeup = 0,
++	  .debounce_interval = GPIO_DEBOUNCE, .can_disable = true },
++	{ .code = GPIO_BTN3_KEY, .gpio = GPIO_BTN3, .active_low = 1,
++	  .desc = "minnow_btn3", .type = EV_KEY, .wakeup = 0,
++	  .debounce_interval = GPIO_DEBOUNCE, .can_disable = true },
++};
++
++static const struct gpio_keys_platform_data minnow_buttons_platform_data = {
++	.buttons = minnow_buttons,
++	.nbuttons = ARRAY_SIZE(minnow_buttons),
++	.poll_interval = BUTTON_POLL_INTERVAL,
++	.rep = 1,
++	.enable = NULL,
++	.disable = NULL,
++	.name = "minnow_buttons",
++};
++
++static struct platform_device minnow_gpio_buttons = {
++	.name = "gpio-keys-polled",
++	.id = -1,
++	.dev = {
++		.platform_data = (void *) &minnow_buttons_platform_data,
++	},
++};
++
++static int __init minnow_keys_module_init(void)
++{
++	int err;
++
++	err = -ENODEV;
++	if (!minnow_detect())
++		goto out;
++
++#ifdef MODULE
++#ifdef CONFIG_MINNOWBOARD_MODULE
++	if (request_module("minnowboard"))
++		goto out;
++#endif
++#endif
++
++	/* Export GPIO buttons to sysfs */
++	err = platform_device_register(&minnow_gpio_buttons);
++	if (err) {
++		pr_err("Failed to register gpio-keys-polled platform device\n");
++		goto out;
++	}
++
++ out:
++	return err;
++}
++
++static void __exit minnow_keys_module_exit(void)
++{
++	platform_device_unregister(&minnow_gpio_buttons);
++}
++
++module_init(minnow_keys_module_init);
++module_exit(minnow_keys_module_exit);
++
++MODULE_LICENSE("GPL");
 -- 
 1.8.1.2
 
