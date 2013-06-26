@@ -1,163 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab3FZTbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 15:31:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13333 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab3FZTav (ORCPT
+	id S1752862Ab3FZTb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 15:31:27 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:44262 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab3FZTbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 15:30:51 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=UkRfqwMJfo0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_XmpRUgrQQgA:10 a=vsRtZte0DsJuhYkqPIYA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130626193049.724948276@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 26 Jun 2013 15:28:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <clark.williams@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [RFC][PATCH RT 1/6] rt,rcu: Have rcu_read_lock_sched() use locks for PREEMPT_RT
-References: <20130626192806.107564905@goodmis.org>
-Content-Disposition: inline; filename=rcu-sched-preempt.patch
+	Wed, 26 Jun 2013 15:31:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <51CAEA90.90200@ti.com>
+References: <1371826990-25820-1-git-send-email-grygorii.strashko@ti.com>
+	<CACRpkdY=m1b9Lh27+wHP8FQ4SbVZKmAOCGhxe59aP+TcuR9QaA@mail.gmail.com>
+	<20130625065811.GZ5523@atomide.com>
+	<51CAEA90.90200@ti.com>
+Date: Wed, 26 Jun 2013 21:31:22 +0200
+Message-ID: <CACRpkdbKgEcfF67oO9HrczvDp4Po3Xt1hFajJ1vO8kEvsZH4jA@mail.gmail.com>
+Subject: Re: [RFC] ARM: OMAP2+: omap_device: add pinctrl handling
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several critical sections that require synchronization with
-synchronize_sched(). Usually these are done by disabling preemption and
-the synchronize_sched() just waits for the kernel to schedule on each
-of the CPUs.
+On Wed, Jun 26, 2013 at 3:20 PM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
 
-The rcu_read_lock_sched() is the preferred API to use, but some areas
-still use preempt_disable() and local_irq_*() to prevent preemption
-from happening. But our main concern is with those users of
-rcu_read_lock_sched(), where they may also call spin_locks() that turn
-into a mutex for PREEMPT_RT. For these cases, we need to allow
-rcu_read_lock_sched() to schedule out.
+> The "Sleep" pinctrl state is optional - if "sleep" state isn't defined
+> then "Idle" pinctrl state will be used during suspend.
 
-To allow rcu_read_lock_sched() sections to preempt when PREEMPT_RT is enabled,
-instead of disabling preemption, it will grab a local_lock(). Then the
-synchronize_sched() will grab all CPUs local_locks() and release them.
-After that, it still does the normal synchronize_sched() as there may be
-places that still disable preemption or irqs that it needs to
-synchronize with. By grabbing all the locks and releasing them, it will
-properly synchronize with those that use the locks instead of disabling
-preemption or interrupts.
+Why? If we have a clear cut semantic that "idle" is for runtime
+suspend, why should it be a fallback for suspend?
 
-Note: The rcu_read_lock_sched_notrace() version still only disables
-preemption, because they are used for lockdep and tracing, which require
-real preemption disabling and not mutexes.
+You do realize that can just be turned around (as common suspend
+is more widely implemented than runtime suspend) so that we
+could say that if "idle" does not exist, we go to "sleep" in
+runtime suspend.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> So, final list of default pnctrl states may be defined as "default",
+> "active", "idle", "sleep", "off":
+> - "active", "idle", "sleep": will be handled by omap_device core
+> - "default", "off": will be handled by driver itself (or Device core).
 
-Index: linux-rt.git/include/linux/rcupdate.h
-===================================================================
---- linux-rt.git.orig/include/linux/rcupdate.h
-+++ linux-rt.git/include/linux/rcupdate.h
-@@ -36,6 +36,7 @@
- #include <linux/types.h>
- #include <linux/cache.h>
- #include <linux/spinlock.h>
-+#include <linux/locallock.h>
- #include <linux/threads.h>
- #include <linux/cpumask.h>
- #include <linux/seqlock.h>
-@@ -870,6 +871,28 @@ static inline void rcu_read_unlock_bh(vo
- 	local_bh_enable();
- }
- 
-+/* asm-offsets.c gets confused with local_lock here */
-+#if defined(CONFIG_PREEMPT_RT_FULL)
-+DECLARE_LOCAL_IRQ_LOCK(rcu_sched_lock);
-+static inline void rcu_read_lock_sched_disable(void)
-+{
-+	local_lock(rcu_sched_lock);
-+}
-+static inline void rcu_read_lock_sched_enable(void)
-+{
-+	local_unlock(rcu_sched_lock);
-+}
-+#else
-+static inline void rcu_read_lock_sched_disable(void)
-+{
-+	preempt_disable();
-+}
-+static inline void rcu_read_lock_sched_enable(void)
-+{
-+	preempt_enable();
-+}
-+#endif
-+
- /**
-  * rcu_read_lock_sched() - mark the beginning of a RCU-sched critical section
-  *
-@@ -885,7 +908,7 @@ static inline void rcu_read_unlock_bh(vo
-  */
- static inline void rcu_read_lock_sched(void)
- {
--	preempt_disable();
-+	rcu_read_lock_sched_disable();
- 	__acquire(RCU_SCHED);
- 	rcu_lock_acquire(&rcu_sched_lock_map);
- 	rcu_lockdep_assert(!rcu_is_cpu_idle(),
-@@ -910,7 +933,7 @@ static inline void rcu_read_unlock_sched
- 			   "rcu_read_unlock_sched() used illegally while idle");
- 	rcu_lock_release(&rcu_sched_lock_map);
- 	__release(RCU_SCHED);
--	preempt_enable();
-+	rcu_read_lock_sched_enable();
- }
- 
- /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
-Index: linux-rt.git/kernel/rcutree.c
-===================================================================
---- linux-rt.git.orig/kernel/rcutree.c
-+++ linux-rt.git/kernel/rcutree.c
-@@ -2491,6 +2491,31 @@ static inline int rcu_blocking_is_gp(voi
- 	return ret;
- }
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+DEFINE_LOCAL_IRQ_LOCK(rcu_sched_lock);
-+/*
-+ * Real-time allows for synchronize sched to sleep but not migrate.
-+ * This is done via the local locks. When calling synchronize_sched(),
-+ * all the local locks need to be taken and released. This will ensure
-+ * that all users of rcu_read_lock_sched() will be out of their critical
-+ * sections at the completion of this function. synchronize_sched() will
-+ * still perform the normal RCU sched operations to synchronize with
-+ * locations that use disabling preemption or interrupts.
-+ */
-+static void rcu_synchronize_sched_rt(void)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		spin_lock(&per_cpu(rcu_sched_lock, cpu).lock);
-+		spin_unlock(&per_cpu(rcu_sched_lock, cpu).lock);
-+	}
-+}
-+#else
-+static inline void rcu_synchronize_sched_rt(void)
-+{
-+}
-+#endif
- /**
-  * synchronize_sched - wait until an rcu-sched grace period has elapsed.
-  *
-@@ -2538,6 +2563,9 @@ void synchronize_sched(void)
- 			   !lock_is_held(&rcu_lock_map) &&
- 			   !lock_is_held(&rcu_sched_lock_map),
- 			   "Illegal synchronize_sched() in RCU-sched read-side critical section");
-+
-+	rcu_synchronize_sched_rt();
-+
- 	if (rcu_blocking_is_gp())
- 		return;
- 	if (rcu_expedited)
+Currently the pinctrl system combines what is called "default"
+and "active" into one, assuming that all devices shall come up
+in the active state.
 
+Also we haven't seen a device that need some "off" state that
+is different from "sleep".
+
+If you want to drive this state list home you have to give a
+*real world example*.
+
+I want to see a *real* example, for a device and it's pins,
+that define totally different things for these states, as a
+rationale.
+
+Else we are just defining states to make nice figures or mental
+maps and that is not helpful for drivers writers.
+
+Yours,
+Linus Walleij
