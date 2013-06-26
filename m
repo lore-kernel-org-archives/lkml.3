@@ -1,70 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab3FZJEG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:04:06 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751916Ab3FZJEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:04:04 -0400
-Message-ID: <51CAAE7C.9090003@nod.at>
-Date: Wed, 26 Jun 2013 11:03:56 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752504Ab3FZJER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:04:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52701 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab3FZJEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:04:13 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, "Catalin Marinas" <catalin.marinas@arm.com>,
+        "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        "Simon Baatz" <gmbnomis@gmail.com>
+Subject: Re: [04/26] ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_page
+References: <lsq.1372214158.657310117@decadent.org.uk>
+Date: Wed, 26 Jun 2013 10:04:11 +0100
+In-Reply-To: <lsq.1372214158.657310117@decadent.org.uk> (Ben Hutchings's
+	message of "Wed, 26 Jun 2013 03:35:58 +0100")
+Message-ID: <878v1x4510.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
-        dhsharp@google.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
-References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at> <51CAA78C.5040900@asianux.com> <51CAA8D6.9000505@nod.at> <51CAAD1D.8050801@asianux.com>
-In-Reply-To: <51CAAD1D.8050801@asianux.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.06.2013 10:58, schrieb Chen Gang:
-> On 06/26/2013 04:39 PM, Richard Weinberger wrote:
->>>>>>>>>> The drivers internal code has already check the related return value,
->>>>>>>>>> so it is the architecture's duty to 'tell' the driver whether support
->>>>>>>>>> io memory (e.g. define ioremap, but return NULL).
->>>>>> It does so already by setting CONFIG_HAS_IOMEM=n
->>>>
->>>> Excuse me, I use "grep -rn ioremap *" under "include/" and "arch/um/"
->>>> directory, but can not find the related definition for 'ioremap'.
->>>>
->>>> Is there another declaration or definition way which I don't know ?
->>>> (maybe it is).
->> Both UML and s390 (in the !CONFIG_PCI) do not define ioremap() because
->> without io memory you cannot have a ioremap().
->>
-> 
-> I assume if ioremap() return NULL, it means "without io memory", is it
-> correct ?
-> 
-> If it is correct, "define a dummy ioremap(), and return NULL" is just
-> the meaning that you mentioned above.
-> 
-> If so, for UML, it is not requirement, but recommend to define a dummy
-> ioremap() which return NULL, so can be generic enough to mach all cases.
+Ben Hutchings <ben@decadent.org.uk> writes:
 
-No.
-Not setting CONFIG_HAS_IOMEM=y means "This arch has no io memory and therefore no
-functions to mess with it".
+> 3.2.48-rc1 review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Simon Baatz <gmbnomis@gmail.com>
+>
+> commit 1bc39742aab09248169ef9d3727c9def3528b3f3 upstream.
 
-Let's get back to the real problem,
-drivers/ptp/ptp_pch.c does not build on UML (and I'm very sure also not on S390).
-Fix the issue by making it depend on HAS_IOMEM.
+Simon suggested Greg not to queue this patch for stable kernels as it
+breaks no-MMU ARM configs.  He will provide a follow-up patch that
+should go together with this one.
 
-Btw: Did you actually look at this driver? There is *zero* reason to have it on UML.
-...like 99.9% of all other drivers which use io memory.
+Cheers,
+-- 
+Luis
 
-Thanks,
-//richard
+>
+> Commit f8b63c1 made flush_kernel_dcache_page a no-op assuming that
+> the pages it needs to handle are kernel mapped only.  However, for
+> example when doing direct I/O, pages with user space mappings may
+> occur.
+>
+> Thus, continue to do lazy flushing if there are no user space
+> mappings.  Otherwise, flush the kernel cache lines directly.
+>
+> Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
+> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  arch/arm/include/asm/cacheflush.h |    4 +---
+>  arch/arm/mm/flush.c               |   33 +++++++++++++++++++++++++++++++++
+>  2 files changed, 34 insertions(+), 3 deletions(-)
+>
+> --- a/arch/arm/include/asm/cacheflush.h
+> +++ b/arch/arm/include/asm/cacheflush.h
+> @@ -301,9 +301,7 @@ static inline void flush_anon_page(struc
+>  }
+>  
+>  #define ARCH_HAS_FLUSH_KERNEL_DCACHE_PAGE
+> -static inline void flush_kernel_dcache_page(struct page *page)
+> -{
+> -}
+> +extern void flush_kernel_dcache_page(struct page *);
+>  
+>  #define flush_dcache_mmap_lock(mapping) \
+>  	spin_lock_irq(&(mapping)->tree_lock)
+> --- a/arch/arm/mm/flush.c
+> +++ b/arch/arm/mm/flush.c
+> @@ -304,6 +304,39 @@ void flush_dcache_page(struct page *page
+>  EXPORT_SYMBOL(flush_dcache_page);
+>  
+>  /*
+> + * Ensure cache coherency for the kernel mapping of this page. We can
+> + * assume that the page is pinned via kmap.
+> + *
+> + * If the page only exists in the page cache and there are no user
+> + * space mappings, this is a no-op since the page was already marked
+> + * dirty at creation.  Otherwise, we need to flush the dirty kernel
+> + * cache lines directly.
+> + */
+> +void flush_kernel_dcache_page(struct page *page)
+> +{
+> +	if (cache_is_vivt() || cache_is_vipt_aliasing()) {
+> +		struct address_space *mapping;
+> +
+> +		mapping = page_mapping(page);
+> +
+> +		if (!mapping || mapping_mapped(mapping)) {
+> +			void *addr;
+> +
+> +			addr = page_address(page);
+> +			/*
+> +			 * kmap_atomic() doesn't set the page virtual
+> +			 * address for highmem pages, and
+> +			 * kunmap_atomic() takes care of cache
+> +			 * flushing already.
+> +			 */
+> +			if (!IS_ENABLED(CONFIG_HIGHMEM) || addr)
+> +				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
+> +		}
+> +	}
+> +}
+> +EXPORT_SYMBOL(flush_kernel_dcache_page);
+> +
+> +/*
+>   * Flush an anonymous page so that users of get_user_pages()
+>   * can safely access the data.  The expected sequence is:
+>   *
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
