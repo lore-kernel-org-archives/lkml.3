@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab3FZMX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 08:23:29 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:48103 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3FZMX1 (ORCPT
+	id S1752307Ab3FZMXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 08:23:37 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:38750 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752049Ab3FZMXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 08:23:27 -0400
-Message-ID: <51CADD3D.2030502@free-electrons.com>
-Date: Wed, 26 Jun 2013 14:23:25 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: davem@davemloft.net, linux-wireless@vger.kernel.org,
+	Wed, 26 Jun 2013 08:23:34 -0400
+Date: Wed, 26 Jun 2013 13:23:31 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfg80211/mac80211: fix doc compilation warnings
-References: <1372189700-6247-1-git-send-email-michael.opdenacker@free-electrons.com> <1372232238.8157.2.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1372232238.8157.2.camel@jlt4.sipsolutions.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: [GIT PULL] EFI changes for v3.11
+Message-ID: <20130626122331.GK22026@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+The following changes since commit d3768d885c6ccbf8a137276843177d76c49033a7:
 
-Thank you for your review!
+  x86, efi: retry ExitBootServices() on failure (2013-06-11 07:51:54 +0100)
 
-On 06/26/2013 09:37 AM, Johannes Berg wrote:
-> On Tue, 2013-06-25 at 21:48 +0200, Michael Opdenacker wrote:
->> This patch fixes countless "No description found for parameter"
->> warnings generating documentation (running "make htmldocs"),
->> because the comments do not match the actual prototypes in the code.
->>
->> This issue didn't exist in 3.9. It may we worth fixing in 3.10
->> (if it's not too late).
-> I think it's way late. Besides, all of this is already fixed in -next
-> trees.
-Cool! That's good news :)
->
->
->> @@ -4153,6 +4153,7 @@ void cfg80211_report_wowlan_wakeup(struct wireless_dev *wdev,
->>   * cfg80211_crit_proto_stopped() - indicate critical protocol stopped by driver.
->>   *
->>   * @wdev: the wireless device for which critical protocol is stopped.
->> + * @gfp: the type of memory to allocate (see kmalloc).
-> This is also wrong, the allocation flags don't really change the *type*
-> of memory, but only *how* it is allocated.
-I agree, but I chose to stick to the description I found 5 times in
-include/linux/slab.h. I shouldn't have followed bad examples...
+are available in the git repository at:
 
-I'll submit another patch ;)
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
 
-Thanks again,
+for you to fetch changes up to 5d32cf1e590bcdc879f8f862e836c542f6ba7ecb:
 
-Michael.
+  [IA64] sim: Add casts to avoid assignment warnings (2013-06-21 11:22:21 +0100)
+
+----------------------------------------------------------------
+ * Add casts to avoid compiler warnings about assignments making
+   pointers from integers of different types. The warnings were
+   introduced with Borislav's patch to move the EFI runtime service
+   pointers to void * - Tony Luck
+
+----------------------------------------------------------------
+Tony Luck (1):
+      [IA64] sim: Add casts to avoid assignment warnings
+
+ arch/ia64/hp/sim/boot/fw-emu.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
 -- 
-Michael Opdenacker, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
-
+Matt Fleming, Intel Open Source Technology Center
