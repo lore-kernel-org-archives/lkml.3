@@ -1,207 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab3FZUxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 16:53:39 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48613 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3FZUxh (ORCPT
+	id S1752508Ab3FZUyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 16:54:55 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:60852 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab3FZUyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 16:53:37 -0400
-Date: Wed, 26 Jun 2013 13:53:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <clark.williams@gmail.com>
-Subject: Re: [RFC][PATCH RT 1/6] rt,rcu: Have rcu_read_lock_sched() use locks
- for PREEMPT_RT
-Message-ID: <20130626205331.GS3828@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130626192806.107564905@goodmis.org>
- <20130626193049.724948276@goodmis.org>
+	Wed, 26 Jun 2013 16:54:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626193049.724948276@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062620-7408-0000-0000-00001189CF9C
+In-Reply-To: <51CB53A9.80004@gmail.com>
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com>
+	<1372079772-20803-13-git-send-email-adrian.hunter@intel.com>
+	<51CB53A9.80004@gmail.com>
+Date: Wed, 26 Jun 2013 22:54:53 +0200
+Message-ID: <CABPqkBR=5TxFX=3J=p7EAPcbwK7E93rM1X4GKGsuw0Eopcf+6Q@mail.gmail.com>
+Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
+From: Stephane Eranian <eranian@google.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 03:28:07PM -0400, Steven Rostedt wrote:
-> There are several critical sections that require synchronization with
-> synchronize_sched(). Usually these are done by disabling preemption and
-> the synchronize_sched() just waits for the kernel to schedule on each
-> of the CPUs.
-> 
-> The rcu_read_lock_sched() is the preferred API to use, but some areas
-> still use preempt_disable() and local_irq_*() to prevent preemption
-> from happening. But our main concern is with those users of
-> rcu_read_lock_sched(), where they may also call spin_locks() that turn
-> into a mutex for PREEMPT_RT. For these cases, we need to allow
-> rcu_read_lock_sched() to schedule out.
-> 
-> To allow rcu_read_lock_sched() sections to preempt when PREEMPT_RT is enabled,
-> instead of disabling preemption, it will grab a local_lock(). Then the
-> synchronize_sched() will grab all CPUs local_locks() and release them.
-> After that, it still does the normal synchronize_sched() as there may be
-> places that still disable preemption or irqs that it needs to
-> synchronize with. By grabbing all the locks and releasing them, it will
-> properly synchronize with those that use the locks instead of disabling
-> preemption or interrupts.
-> 
-> Note: The rcu_read_lock_sched_notrace() version still only disables
-> preemption, because they are used for lockdep and tracing, which require
-> real preemption disabling and not mutexes.
+On Wed, Jun 26, 2013 at 10:48 PM, David Ahern <dsahern@gmail.com> wrote:
+> Arnaldo:
+>
+> I noticed this patch in your perf/core branch. I do not think this one is
+> ready to be committed. It does not fully solve the problem of allowing
+> non-matching sample types.
+>
+> I have a set of patches here on github that work fine for one use case --
+> mixed s/w and tracepoint events:
+> https://github.com/dsahern/linux/tree/multiple-sample_type
+>
+> I'll push the patches out, but wanted to run some more test cases first.
+>
+All those solutions address the need of perf but they do not fix the fundamental
+problem that the kernel is exporting a un-parseable file in case of different
+sample_type for each event. We need to fix the generic case so that other
+tools don't have to deal with this. I will post a patch which can solve this
+in the kernel and yet remain backward compatible. But I don't  have the
+perf portion of the patch, hoping somebody can help with developing it.
 
-This looks much better!
 
-A few more questions and comments below.
-
-							Thanx, Paul
-
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Index: linux-rt.git/include/linux/rcupdate.h
-> ===================================================================
-> --- linux-rt.git.orig/include/linux/rcupdate.h
-> +++ linux-rt.git/include/linux/rcupdate.h
-> @@ -36,6 +36,7 @@
->  #include <linux/types.h>
->  #include <linux/cache.h>
->  #include <linux/spinlock.h>
-> +#include <linux/locallock.h>
->  #include <linux/threads.h>
->  #include <linux/cpumask.h>
->  #include <linux/seqlock.h>
-> @@ -870,6 +871,28 @@ static inline void rcu_read_unlock_bh(vo
->  	local_bh_enable();
->  }
-> 
-> +/* asm-offsets.c gets confused with local_lock here */
-> +#if defined(CONFIG_PREEMPT_RT_FULL)
-> +DECLARE_LOCAL_IRQ_LOCK(rcu_sched_lock);
-> +static inline void rcu_read_lock_sched_disable(void)
-> +{
-> +	local_lock(rcu_sched_lock);
-> +}
-> +static inline void rcu_read_lock_sched_enable(void)
-> +{
-> +	local_unlock(rcu_sched_lock);
-> +}
-> +#else
-> +static inline void rcu_read_lock_sched_disable(void)
-> +{
-> +	preempt_disable();
-> +}
-> +static inline void rcu_read_lock_sched_enable(void)
-> +{
-> +	preempt_enable();
-> +}
-> +#endif
-> +
->  /**
->   * rcu_read_lock_sched() - mark the beginning of a RCU-sched critical section
->   *
-> @@ -885,7 +908,7 @@ static inline void rcu_read_unlock_bh(vo
->   */
-
-How about having an rcu_read_lock_sched_rt() and rcu_read_unlock_sched_rt()?
-Leave rcu_read_lock_sched() and rcu_read_unlock_sched() with their prior
-semantics and deadlock immunity, with a header comment for the _rt()
-variants that gives their properties and where they should be used.
-
->  static inline void rcu_read_lock_sched(void)
->  {
-> -	preempt_disable();
-> +	rcu_read_lock_sched_disable();
->  	__acquire(RCU_SCHED);
->  	rcu_lock_acquire(&rcu_sched_lock_map);
->  	rcu_lockdep_assert(!rcu_is_cpu_idle(),
-> @@ -910,7 +933,7 @@ static inline void rcu_read_unlock_sched
->  			   "rcu_read_unlock_sched() used illegally while idle");
->  	rcu_lock_release(&rcu_sched_lock_map);
->  	__release(RCU_SCHED);
-> -	preempt_enable();
-> +	rcu_read_lock_sched_enable();
->  }
-> 
->  /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
-> Index: linux-rt.git/kernel/rcutree.c
-> ===================================================================
-> --- linux-rt.git.orig/kernel/rcutree.c
-> +++ linux-rt.git/kernel/rcutree.c
-> @@ -2491,6 +2491,31 @@ static inline int rcu_blocking_is_gp(voi
->  	return ret;
->  }
-> 
-> +#ifdef CONFIG_PREEMPT_RT_FULL
-> +DEFINE_LOCAL_IRQ_LOCK(rcu_sched_lock);
-> +/*
-> + * Real-time allows for synchronize sched to sleep but not migrate.
-> + * This is done via the local locks. When calling synchronize_sched(),
-> + * all the local locks need to be taken and released. This will ensure
-> + * that all users of rcu_read_lock_sched() will be out of their critical
-> + * sections at the completion of this function. synchronize_sched() will
-> + * still perform the normal RCU sched operations to synchronize with
-> + * locations that use disabling preemption or interrupts.
-> + */
-> +static void rcu_synchronize_sched_rt(void)
-
-The name synchronize_sched_rt() would fit better with the companion
-synchronize_sched() function.
-
-> +{
-> +	int cpu;
-> +
-> +	for_each_possible_cpu(cpu) {
-> +		spin_lock(&per_cpu(rcu_sched_lock, cpu).lock);
-> +		spin_unlock(&per_cpu(rcu_sched_lock, cpu).lock);
-> +	}
-> +}
-> +#else
-> +static inline void rcu_synchronize_sched_rt(void)
-> +{
-
-I bet you want a synchronize_sched() here.  ;-)
-
-But looking below...
-
-> +}
-> +#endif
->  /**
->   * synchronize_sched - wait until an rcu-sched grace period has elapsed.
->   *
-> @@ -2538,6 +2563,9 @@ void synchronize_sched(void)
->  			   !lock_is_held(&rcu_lock_map) &&
->  			   !lock_is_held(&rcu_sched_lock_map),
->  			   "Illegal synchronize_sched() in RCU-sched read-side critical section");
-> +
-> +	rcu_synchronize_sched_rt();
-> +
-
-Are you sure you want a single primitive to wait on both types of
-read-side critical sections?  I can see arguments on either side...
-
-For completeness, another approach would be to use SRCU instead of locking
-for the preemptible RCU-sched read-side critical sections.  One benefit
-of doing this is that SRCU avoids introducing the potential deadlocks
-that involve locks acquired both within and across read-side critical
-sections.
-
->  	if (rcu_blocking_is_gp())
->  		return;
->  	if (rcu_expedited)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+> David
+>
+>
+> On 6/24/13 7:16 AM, Adrian Hunter wrote:
+>>
+>> Sample types need not be identical to determine
+>> the sample id from the event.  Only the position
+>> of the sample id needs to be the same.
+>>
+>> Compatible sample types are ones in which the bits
+>> defined by PERF_COMPAT_MASK are the same.
+>> 'perf_evlist__config()' forces sample types to be
+>> compatible on that basis.
+>>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>   tools/perf/util/event.h  |  6 ++++
+>>   tools/perf/util/evlist.c | 93
+>> ++++++++++++++++++++++++++++++++++++++++++++++--
+>>   tools/perf/util/evlist.h |  3 ++
+>>   tools/perf/util/evsel.c  | 41 +++++++++++++++++++++
+>>   tools/perf/util/evsel.h  |  4 +++
+>>   5 files changed, 145 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+>> index 1813895..858572f 100644
+>> --- a/tools/perf/util/event.h
+>> +++ b/tools/perf/util/event.h
+>> @@ -65,6 +65,12 @@ struct read_event {
+>>         PERF_SAMPLE_ID | PERF_SAMPLE_STREAM_ID |        \
+>>          PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
+>>
+>> +#define PERF_COMPAT_MASK                               \
+>> +       (PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |     \
+>> +        PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR      |     \
+>> +        PERF_SAMPLE_ID   | PERF_SAMPLE_STREAM_ID |     \
+>> +        PERF_SAMPLE_CPU)
+>> +
+>>   struct sample_event {
+>>         struct perf_event_header        header;
+>>         u64 array[];
+>> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+>> index a660f56..85c4d91 100644
+>> --- a/tools/perf/util/evlist.c
+>> +++ b/tools/perf/util/evlist.c
+>> @@ -49,10 +49,20 @@ struct perf_evlist *perf_evlist__new(void)
+>>         return evlist;
+>>   }
+>>
+>> +static void perf_evlist__set_id_pos(struct perf_evlist *evlist)
+>> +{
+>> +       struct perf_evsel *first = perf_evlist__first(evlist);
+>> +
+>> +       evlist->id_pos = first->id_pos;
+>> +       evlist->is_pos = first->is_pos;
+>> +}
+>> +
+>>   void perf_evlist__config(struct perf_evlist *evlist,
+>>                         struct perf_record_opts *opts)
+>>   {
+>>         struct perf_evsel *evsel;
+>> +       u64 compat = 0;
+>> +
+>>         /*
+>>          * Set the evsel leader links before we configure attributes,
+>>          * since some might depend on this info.
+>> @@ -68,7 +78,15 @@ void perf_evlist__config(struct perf_evlist *evlist,
+>>
+>>                 if (evlist->nr_entries > 1)
+>>                         perf_evsel__set_sample_id(evsel);
+>> +               compat |= evsel->attr.sample_type & PERF_COMPAT_MASK;
+>>         }
+>> +
+>> +       list_for_each_entry(evsel, &evlist->entries, node) {
+>> +               evsel->attr.sample_type |= compat;
+>> +               perf_evsel__calc_id_pos(evsel);
+>> +       }
+>> +
+>> +       perf_evlist__set_id_pos(evlist);
+>>   }
+>>
+>>   static void perf_evlist__purge(struct perf_evlist *evlist)
+>> @@ -102,6 +120,7 @@ void perf_evlist__add(struct perf_evlist *evlist,
+>> struct perf_evsel *entry)
+>>   {
+>>         list_add_tail(&entry->node, &evlist->entries);
+>>         ++evlist->nr_entries;
+>> +       perf_evlist__set_id_pos(evlist);
+>>   }
+>>
+>>   void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+>> @@ -110,6 +129,7 @@ void perf_evlist__splice_list_tail(struct perf_evlist
+>> *evlist,
+>>   {
+>>         list_splice_tail(list, &evlist->entries);
+>>         evlist->nr_entries += nr_entries;
+>> +       perf_evlist__set_id_pos(evlist);
+>>   }
+>>
+>>   void __perf_evlist__set_leader(struct list_head *list)
+>> @@ -339,6 +359,55 @@ struct perf_evsel *perf_evlist__id2evsel(struct
+>> perf_evlist *evlist, u64 id)
+>>         return NULL;
+>>   }
+>>
+>> +static int perf_evlist__event2id(struct perf_evlist *evlist,
+>> +                                union perf_event *event, u64 *id)
+>> +{
+>> +       const u64 *array = event->sample.array;
+>> +       ssize_t n;
+>> +
+>> +       n = (event->header.size - sizeof(event->header)) >> 3;
+>> +
+>> +       if (event->header.type == PERF_RECORD_SAMPLE) {
+>> +               if (evlist->id_pos >= n)
+>> +                       return -1;
+>> +               *id = array[evlist->id_pos];
+>> +       } else {
+>> +               if (evlist->is_pos >= n)
+>> +                       return -1;
+>> +               n -= evlist->is_pos;
+>> +               *id = array[n];
+>> +       }
+>> +       return 0;
+>> +}
+>> +
+>> +static struct perf_evsel *perf_evlist__event2evsel(struct perf_evlist
+>> *evlist,
+>> +                                                  union perf_event
+>> *event)
+>> +{
+>> +       struct hlist_head *head;
+>> +       struct perf_sample_id *sid;
+>> +       int hash;
+>> +       u64 id;
+>> +
+>> +       if (evlist->nr_entries == 1 || evlist->matching_sample_types)
+>> +               return perf_evlist__first(evlist);
+>> +
+>> +       if (perf_evlist__event2id(evlist, event, &id))
+>> +               return NULL;
+>> +
+>> +       /* Synthesized events have an id of zero */
+>> +       if (!id)
+>> +               return perf_evlist__first(evlist);
+>> +
+>> +       hash = hash_64(id, PERF_EVLIST__HLIST_BITS);
+>> +       head = &evlist->heads[hash];
+>> +
+>> +       hlist_for_each_entry(sid, head, node) {
+>> +               if (sid->id == id)
+>> +                       return sid->evsel;
+>> +       }
+>> +       return NULL;
+>> +}
+>> +
+>>   union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int
+>> idx)
+>>   {
+>>         struct perf_mmap *md = &evlist->mmap[idx];
+>> @@ -650,9 +719,26 @@ int perf_evlist__set_filter(struct perf_evlist
+>> *evlist, const char *filter)
+>>   bool perf_evlist__valid_sample_type(struct perf_evlist *evlist)
+>>   {
+>>         struct perf_evsel *first = perf_evlist__first(evlist), *pos =
+>> first;
+>> +       bool ok = true;
+>>
+>>         list_for_each_entry_continue(pos, &evlist->entries, node) {
+>> -               if (first->attr.sample_type != pos->attr.sample_type)
+>> +               if (first->attr.sample_type != pos->attr.sample_type) {
+>> +                       ok = false;
+>> +                       break;
+>> +               }
+>> +       }
+>> +
+>> +       if (ok) {
+>> +               evlist->matching_sample_types = true;
+>> +               return true;
+>> +       }
+>> +
+>> +       if (evlist->id_pos < 0 || evlist->is_pos < 0)
+>> +               return false;
+>> +
+>> +       list_for_each_entry(pos, &evlist->entries, node) {
+>> +               if (pos->id_pos != evlist->id_pos ||
+>> +                   pos->is_pos != evlist->is_pos)
+>>                         return false;
+>>         }
+>>
+>> @@ -848,7 +934,10 @@ int perf_evlist__start_workload(struct perf_evlist
+>> *evlist)
+>>   int perf_evlist__parse_sample(struct perf_evlist *evlist, union
+>> perf_event *event,
+>>                               struct perf_sample *sample)
+>>   {
+>> -       struct perf_evsel *evsel = perf_evlist__first(evlist);
+>> +       struct perf_evsel *evsel = perf_evlist__event2evsel(evlist,
+>> event);
+>> +
+>> +       if (!evsel)
+>> +               return -EFAULT;
+>>         return perf_evsel__parse_sample(evsel, event, sample);
+>>   }
+>>
+>> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+>> index 0583d36..bfcbf67 100644
+>> --- a/tools/perf/util/evlist.h
+>> +++ b/tools/perf/util/evlist.h
+>> @@ -32,11 +32,14 @@ struct perf_evlist {
+>>         int              nr_fds;
+>>         int              nr_mmaps;
+>>         int              mmap_len;
+>> +       int              id_pos;
+>> +       int              is_pos;
+>>         struct {
+>>                 int     cork_fd;
+>>                 pid_t   pid;
+>>         } workload;
+>>         bool             overwrite;
+>> +       bool             matching_sample_types;
+>>         struct perf_mmap *mmap;
+>>         struct pollfd    *pollfd;
+>>         struct thread_map *threads;
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index d01d2cd..ee0f894 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -46,6 +46,46 @@ static int __perf_evsel__sample_size(u64 sample_type)
+>>         return size;
+>>   }
+>>
+>> +static int __perf_evsel__calc_id_pos(u64 sample_type)
+>> +{
+>> +       u64 mask;
+>> +       int i, idx;
+>> +
+>> +       if (!(sample_type & PERF_SAMPLE_ID))
+>> +               return -1;
+>> +
+>> +       mask = sample_type & (PERF_SAMPLE_ID - 1);
+>> +
+>> +       for (i = 0, idx = 0; i < 64; i++) {
+>> +               if (mask & (1ULL << i))
+>> +                       idx++;
+>> +       }
+>> +
+>> +       return idx;
+>> +}
+>> +
+>> +static int __perf_evsel__calc_is_pos(u64 sample_type)
+>> +{
+>> +       int idx = 1;
+>> +
+>> +       if (!(sample_type & PERF_SAMPLE_ID))
+>> +               return -1;
+>> +
+>> +       if (sample_type & PERF_SAMPLE_CPU)
+>> +               idx += 1;
+>> +
+>> +       if (sample_type & PERF_SAMPLE_STREAM_ID)
+>> +               idx += 1;
+>> +
+>> +       return idx;
+>> +}
+>> +
+>> +void perf_evsel__calc_id_pos(struct perf_evsel *evsel)
+>> +{
+>> +       evsel->id_pos =
+>> __perf_evsel__calc_id_pos(evsel->attr.sample_type);
+>> +       evsel->is_pos =
+>> __perf_evsel__calc_is_pos(evsel->attr.sample_type);
+>> +}
+>> +
+>>   void hists__init(struct hists *hists)
+>>   {
+>>         memset(hists, 0, sizeof(*hists));
+>> @@ -89,6 +129,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
+>>         INIT_LIST_HEAD(&evsel->node);
+>>         hists__init(&evsel->hists);
+>>         evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
+>> +       perf_evsel__calc_id_pos(evsel);
+>>   }
+>>
+>>   struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int
+>> idx)
+>> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+>> index 3f156cc..88b4319 100644
+>> --- a/tools/perf/util/evsel.h
+>> +++ b/tools/perf/util/evsel.h
+>> @@ -71,6 +71,8 @@ struct perf_evsel {
+>>         } handler;
+>>         struct cpu_map          *cpus;
+>>         unsigned int            sample_size;
+>> +       int                     id_pos;
+>> +       int                     is_pos;
+>>         bool                    supported;
+>>         bool                    needs_swap;
+>>         /* parse modifier helper */
+>> @@ -100,6 +102,8 @@ void perf_evsel__delete(struct perf_evsel *evsel);
+>>   void perf_evsel__config(struct perf_evsel *evsel,
+>>                         struct perf_record_opts *opts);
+>>
+>> +void perf_evsel__calc_id_pos(struct perf_evsel *evsel);
+>> +
+>>   bool perf_evsel__is_cache_op_valid(u8 type, u8 op);
+>>
+>>   #define PERF_EVSEL__MAX_ALIASES 8
+>>
+>
