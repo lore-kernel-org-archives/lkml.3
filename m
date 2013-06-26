@@ -1,62 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3FZQLm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:11:42 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54551 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751380Ab3FZQLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:11:41 -0400
-Message-ID: <51CB12BC.9080708@sgi.com>
-Date: Wed, 26 Jun 2013 11:11:40 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752646Ab3FZQNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:13:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23047 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751709Ab3FZQNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 12:13:01 -0400
+Date: Wed, 26 Jun 2013 19:11:30 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: habanero@linux.vnet.ibm.com, Andrew Jones <drjones@redhat.com>,
+        mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+Message-ID: <20130626161130.GB18152@redhat.com>
+References: <20130601192125.5966.35563.sendpatchset@codeblue>
+ <1372171802.3804.30.camel@oc2024037011.ibm.com>
+ <51CAAA26.4090204@linux.vnet.ibm.com>
+ <20130626113744.GA6300@hawk.usersys.redhat.com>
+ <20130626125240.GY18508@redhat.com>
+ <51CAEF45.3010203@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Dave Hansen <dave.hansen@intel.com>, <holt@sgi.com>, <travis@sgi.com>,
-        <rob@landley.net>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <yinghai@kernel.org>, <akpm@linux-foundation.org>,
-        <gregkh@linuxfoundation.org>, <x86@kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130626121430.GA4980@gmail.com> <20130626144903.GA2210@asylum.americas.sgi.com> <51CB04C7.8060702@intel.com> <51CB06BD.8090202@sgi.com> <20130626155835.GC7399@gmail.com>
-In-Reply-To: <20130626155835.GC7399@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.140]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CAEF45.3010203@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 10:58 AM, Ingo Molnar wrote:
-> * Nathan Zimmer <nzimmer@sgi.com> wrote:
->
->> On 06/26/2013 10:12 AM, Dave Hansen wrote:
->>> On 06/26/2013 07:49 AM, Nathan Zimmer wrote:
->>>> My guess it is the NMIs overwhelming the system but I have not found a good way
->>>> to profile perf gone wild so it is only a guess.
->>> I've got an 80-core system and the symptoms sound similar to perf issues
->>> I'm seeing.  Dropping the sample rate helped for me, and there's a patch
->>> in -tip at the moment to do it automatically:
->>>
->>>> http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=14c63f17b1fde5a575a28e96547a22b451c71fb5
->>> Looks like you've also found that debugging NMIs is fun. :)
->> More fun then one person can handle.
->> I'll have to take this patch for a spin.
-> Please try latest -tip:master, there's a series of patches from Dave that
-> address this problem category.
->
-> Does it only happen with -g, or with regular perf record and/or with perf
-> top as well?
->
-> Thanks,
->
-> 	Ingo
+On Wed, Jun 26, 2013 at 07:10:21PM +0530, Raghavendra K T wrote:
+> On 06/26/2013 06:22 PM, Gleb Natapov wrote:
+> >On Wed, Jun 26, 2013 at 01:37:45PM +0200, Andrew Jones wrote:
+> >>On Wed, Jun 26, 2013 at 02:15:26PM +0530, Raghavendra K T wrote:
+> >>>On 06/25/2013 08:20 PM, Andrew Theurer wrote:
+> >>>>On Sun, 2013-06-02 at 00:51 +0530, Raghavendra K T wrote:
+> >>>>>This series replaces the existing paravirtualized spinlock mechanism
+> >>>>>with a paravirtualized ticketlock mechanism. The series provides
+> >>>>>implementation for both Xen and KVM.
+> >>>>>
+> >>>>>Changes in V9:
+> >>>>>- Changed spin_threshold to 32k to avoid excess halt exits that are
+> >>>>>    causing undercommit degradation (after PLE handler improvement).
+> >>>>>- Added  kvm_irq_delivery_to_apic (suggested by Gleb)
+> >>>>>- Optimized halt exit path to use PLE handler
+> >>>>>
+> >>>>>V8 of PVspinlock was posted last year. After Avi's suggestions to look
+> >>>>>at PLE handler's improvements, various optimizations in PLE handling
+> >>>>>have been tried.
+> >>>>
+> >>>>Sorry for not posting this sooner.  I have tested the v9 pv-ticketlock
+> >>>>patches in 1x and 2x over-commit with 10-vcpu and 20-vcpu VMs.  I have
+> >>>>tested these patches with and without PLE, as PLE is still not scalable
+> >>>>with large VMs.
+> >>>>
+> >>>
+> >>>Hi Andrew,
+> >>>
+> >>>Thanks for testing.
+> >>>
+> >>>>System: x3850X5, 40 cores, 80 threads
+> >>>>
+> >>>>
+> >>>>1x over-commit with 10-vCPU VMs (8 VMs) all running dbench:
+> >>>>----------------------------------------------------------
+> >>>>						Total
+> >>>>Configuration				Throughput(MB/s)	Notes
+> >>>>
+> >>>>3.10-default-ple_on			22945			5% CPU in host kernel, 2% spin_lock in guests
+> >>>>3.10-default-ple_off			23184			5% CPU in host kernel, 2% spin_lock in guests
+> >>>>3.10-pvticket-ple_on			22895			5% CPU in host kernel, 2% spin_lock in guests
+> >>>>3.10-pvticket-ple_off			23051			5% CPU in host kernel, 2% spin_lock in guests
+> >>>>[all 1x results look good here]
+> >>>
+> >>>Yes. The 1x results look too close
+> >>>
+> >>>>
+> >>>>
+> >>>>2x over-commit with 10-vCPU VMs (16 VMs) all running dbench:
+> >>>>-----------------------------------------------------------
+> >>>>						Total
+> >>>>Configuration				Throughput		Notes
+> >>>>
+> >>>>3.10-default-ple_on			 6287			55% CPU  host kernel, 17% spin_lock in guests
+> >>>>3.10-default-ple_off			 1849			2% CPU in host kernel, 95% spin_lock in guests
+> >>>>3.10-pvticket-ple_on			 6691			50% CPU in host kernel, 15% spin_lock in guests
+> >>>>3.10-pvticket-ple_off			16464			8% CPU in host kernel, 33% spin_lock in guests
+> >>>
+> >>>I see 6.426% improvement with ple_on
+> >>>and 161.87% improvement with ple_off. I think this is a very good sign
+> >>>  for the patches
+> >>>
+> >>>>[PLE hinders pv-ticket improvements, but even with PLE off,
+> >>>>  we still off from ideal throughput (somewhere >20000)]
+> >>>>
+> >>>
+> >>>Okay, The ideal throughput you are referring is getting around atleast
+> >>>80% of 1x throughput for over-commit. Yes we are still far away from
+> >>>there.
+> >>>
+> >>>>
+> >>>>1x over-commit with 20-vCPU VMs (4 VMs) all running dbench:
+> >>>>----------------------------------------------------------
+> >>>>						Total
+> >>>>Configuration				Throughput		Notes
+> >>>>
+> >>>>3.10-default-ple_on			22736			6% CPU in host kernel, 3% spin_lock in guests
+> >>>>3.10-default-ple_off			23377			5% CPU in host kernel, 3% spin_lock in guests
+> >>>>3.10-pvticket-ple_on			22471			6% CPU in host kernel, 3% spin_lock in guests
+> >>>>3.10-pvticket-ple_off			23445			5% CPU in host kernel, 3% spin_lock in guests
+> >>>>[1x looking fine here]
+> >>>>
+> >>>
+> >>>I see ple_off is little better here.
+> >>>
+> >>>>
+> >>>>2x over-commit with 20-vCPU VMs (8 VMs) all running dbench:
+> >>>>----------------------------------------------------------
+> >>>>						Total
+> >>>>Configuration				Throughput		Notes
+> >>>>
+> >>>>3.10-default-ple_on			 1965			70% CPU in host kernel, 34% spin_lock in guests		
+> >>>>3.10-default-ple_off			  226			2% CPU in host kernel, 94% spin_lock in guests
+> >>>>3.10-pvticket-ple_on			 1942			70% CPU in host kernel, 35% spin_lock in guests
+> >>>>3.10-pvticket-ple_off			 8003			11% CPU in host kernel, 70% spin_lock in guests
+> >>>>[quite bad all around, but pv-tickets with PLE off the best so far.
+> >>>>  Still quite a bit off from ideal throughput]
+> >>>
+> >>>This is again a remarkable improvement (307%).
+> >>>This motivates me to add a patch to disable ple when pvspinlock is on.
+> >>>probably we can add a hypercall that disables ple in kvm init patch.
+> >>>but only problem I see is what if the guests are mixed.
+> >>>
+> >>>  (i.e one guest has pvspinlock support but other does not. Host
+> >>>supports pv)
+> >>
+> >>How about reintroducing the idea to create per-kvm ple_gap,ple_window
+> >>state. We were headed down that road when considering a dynamic window at
+> >>one point. Then you can just set a single guest's ple_gap to zero, which
+> >>would lead to PLE being disabled for that guest. We could also revisit
+> >>the dynamic window then.
+> >>
+> >Can be done, but lets understand why ple on is such a big problem. Is it
+> >possible that ple gap and SPIN_THRESHOLD are not tuned properly?
+> >
+> 
+> The one obvious reason I see is commit awareness inside the guest. for
+> under-commit there is no necessity to do PLE, but unfortunately we do.
+> 
+> atleast we return back immediately in case of potential undercommits,
+> but we still incur vmexit delay.
+But why do we? If SPIN_THRESHOLD will be short enough (or ple windows
+long enough) to not generate PLE exit we will not go into PLE handler
+at all, no?
 
-It happens in all those cases, but I notice it most when doing a perf 
-record -g -a
-I'll try the tip series and see how it compares.
-
-Thanks
-     Nate
+--
+			Gleb.
