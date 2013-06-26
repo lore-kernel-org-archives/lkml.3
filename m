@@ -1,65 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab3FZCxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:53:33 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52236 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab3FZCxc (ORCPT
+	id S1752094Ab3FZC6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:58:36 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53564 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab3FZC6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:53:32 -0400
-X-AuditID: 9c930197-b7bf9ae000003cc9-9c-51ca57ab9bec
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf tools: Introduce new -P/--parent-deep report option
-References: <1372161253-22081-1-git-send-email-jolsa@redhat.com>
-	<1372161253-22081-5-git-send-email-jolsa@redhat.com>
-Date: Wed, 26 Jun 2013 11:53:30 +0900
-In-Reply-To: <1372161253-22081-5-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Tue, 25 Jun 2013 13:54:12 +0200")
-Message-ID: <87sj051t1x.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 25 Jun 2013 22:58:34 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 25 Jun 2013 19:58:38 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/95] 3.9.8-stable review
+Message-ID: <20130626025838.GA15927@roeck-us.net>
+References: <20130625182153.605455184@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130625182153.605455184@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Tue, Jun 25, 2013 at 11:31:47AM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.9.8 release.
+> There are 95 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Thu Jun 27 18:18:29 UTC 2013.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.8-rc1.gz
+> and the diffstat can be found below.
+> 
+Build results are as follows. Same as with 3.9.7.
 
-On Tue, 25 Jun 2013 13:54:12 +0200, Jiri Olsa wrote:
-> Introducing new -P/--parent-deep report option. It does the
-> same as '-p' but it force the deep search of the callchain
-> and looks for the deepest possible match.
->
-> The -p option searches for the first match of the parent
-> pattern in the callchain.
->
->   $ perf report -i perf.data.delete -p perf_session__delete -s parent
->
->   +  99.51%  [other]
->   +   0.46%  perf_session__delete_dead_threads
->   +   0.03%  perf_session__delete
->   +   0.00%  perf_session__delete_threads
->
-> so we got multiple 'different' matches instancies, while
-> they all belong under perf_session__delete function:
->
->   $ perf report -i perf.data.delete -P perf_session__delete -s parent
->
->   +  99.51%  [other]
->   +   0.49%  perf_session__delete
->
-> NOTE the 'p' vs 'P' difference in above commands above.
+Guenter
 
-I guess using --inverted (-G) option with -p does the job.
+---
+Build reference: v3.9.7-95-g6a2f14b
 
-Thanks,
-Namhyung
+Build x86_64:defconfig passed
+Build x86_64:allyesconfig passed
+Build x86_64:allmodconfig passed
+Build x86_64:allnoconfig passed
+Build x86_64:alldefconfig passed
+Build i386:defconfig passed
+Build i386:allyesconfig passed
+Build i386:allmodconfig passed
+Build i386:allnoconfig passed
+Build i386:alldefconfig passed
+Build mips:defconfig passed
+Build mips:bcm47xx_defconfig passed
+Build mips:bcm63xx_defconfig passed
+Build mips:nlm_xlp_defconfig passed
+Build mips:ath79_defconfig passed
+Build mips:ar7_defconfig passed
+Build mips:fuloong2e_defconfig passed
+Build mips:e55_defconfig passed
+Build mips:cavium_octeon_defconfig passed
+Build mips:powertv_defconfig passed
+Build mips:malta_defconfig passed
+Build powerpc:defconfig passed
+Build powerpc:allyesconfig failed
+Build powerpc:allmodconfig passed
+Build powerpc:chroma_defconfig passed
+Build powerpc:maple_defconfig passed
+Build powerpc:ppc6xx_defconfig passed
+Build powerpc:mpc83xx_defconfig passed
+Build powerpc:mpc85xx_defconfig passed
+Build powerpc:mpc85xx_smp_defconfig passed
+Build powerpc:tqm8xx_defconfig passed
+Build powerpc:85xx/sbc8548_defconfig passed
+Build powerpc:83xx/mpc834x_mds_defconfig passed
+Build powerpc:86xx/sbc8641d_defconfig passed
+Build arm:defconfig passed
+Build arm:allyesconfig failed
+Build arm:allmodconfig failed
+Build arm:exynos4_defconfig passed
+Build arm:multi_v7_defconfig passed
+Build arm:kirkwood_defconfig passed
+Build arm:omap2plus_defconfig passed
+Build arm:tegra_defconfig passed
+Build arm:u8500_defconfig passed
+Build arm:at91sam9rl_defconfig passed
+Build arm:ap4evb_defconfig passed
+Build arm:bcm_defconfig passed
+Build arm:bonito_defconfig passed
+Build arm:pxa910_defconfig passed
+Build arm:mvebu_defconfig passed
+Build m68k:defconfig passed
+Build m68k:m5272c3_defconfig failed
+Build m68k:m5307c3_defconfig passed
+Build m68k:m5249evb_defconfig passed
+Build m68k:m5407c3_defconfig passed
+Build m68k:sun3_defconfig passed
+Build m68k:mvme16x_defconfig passed
+Build sparc:defconfig passed
+Build sparc:sparc64_defconfig passed
+Build xtensa:defconfig passed
+Build xtensa:iss_defconfig passed
+Build microblaze:mmu_defconfig passed
+Build microblaze:nommu_defconfig passed
+Build blackfin:defconfig passed
+Build parisc:defconfig passed
+
+-----------------------
+Total builds: 64 Total build errors: 4
+
+
