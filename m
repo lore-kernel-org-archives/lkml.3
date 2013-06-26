@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab3FZSRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 14:17:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56406 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab3FZSRm (ORCPT
+	id S1752924Ab3FZSWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 14:22:17 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:36666 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab3FZSWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 14:17:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH V10 1/4] pci: Add PCIe driver for Samsung Exynos
-Date: Wed, 26 Jun 2013 20:17:04 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>, Olof Johansson <olof@lixom.net>
-References: <003a01ce6e50$6d5418b0$47fc4a10$@samsung.com> <20130625021102.GA13310@google.com> <007e01ce7153$4d4b0730$e7e11590$%kim@samsung.com>
-In-Reply-To: <007e01ce7153$4d4b0730$e7e11590$%kim@samsung.com>
+	Wed, 26 Jun 2013 14:22:14 -0400
+Message-ID: <51CB307E.9050508@linux.vnet.ibm.com>
+Date: Wed, 26 Jun 2013 23:48:38 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: David Laight <David.Laight@aculab.com>
+CC: paulmck@linux.vnet.ibm.com, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
+        linux-arch@vger.kernel.org, vincent.guittot@linaro.org,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, namhyung@kernel.org,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com,
+        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu, tj@kernel.org,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com> <20130625220026.GG3828@linux.vnet.ibm.com> <51CAF624.6060004@linux.vnet.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306262017.04689.arnd@arndb.de>
-X-Provags-ID: V02:K0:JzoeYAw110zQhwoxU+33LzQpWNO5HaKzoehJJeBmVxH
- jxGrW71Wfdov4Up0QMNlW7uRka4MftE9yTWiQLQVaDweiUEkU+
- hSAtos76AV4t6AMU/8z0aKD7SLZczwtiaCYi4NnaNgkU3asZw8
- vb/MyoYXlBdd1EtGUY5nbyrVAQ/4xqcT4LssoajDChObz8wOv+
- LLP0lUZaeZC42tqqyakAl7TUgesUNxFPvtO9DnHlQGqwqgYcFb
- +Rn3BRpXpz7WOEoSc/bMKFIlX3IBPA+0B+0xbeFXRKm+/DghT0
- hsDOOel9zBkupKu/kUBl5YSP/K2EwhDniHirlye3M1dE8g0E47
- dSsOWkYSeon6KTOlHE5Y=
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062618-5140-0000-0000-0000036F3D84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 June 2013, Kukjin Kim wrote:
-> Bjorn Helgaas wrote:
-> > 
-> > On Fri, Jun 21, 2013 at 04:24:54PM +0900, Jingoo Han wrote:
-> > > Exynos5440 has a PCIe controller which can be used as Root Complex.
-> > > This driver supports a PCIe controller as Root Complex mode.
-> > >
-> > > Signed-off-by: Surendranath Gurivireddy Balla <suren.reddy@samsung.com>
-> > > Signed-off-by: Siva Reddy Kallam <siva.kallam@samsung.com>
-> > > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> > 
-> > Please merge this through arm-soc as you discussed.
-> > 
-> Sounds great.
+On 06/26/2013 07:59 PM, David Laight wrote:
+>> Once stop_machine() is gone from the CPU offline path, we won't be able
+>> to depend on disabling preemption to prevent CPUs from going offline
+>> from under us.
 > 
-> Arnd, please take this series into arm-soc tree directly by yourself with my
-> ack on arch/exynos stuff if you want ;)
+> Could you use an rcu-like sequence so that disabling pre-emption
+> would be enough?
+> 
+> Something like rebuilding the cpu list, then forcing yourself
+> to run on all the cpu.
 > 
 
-Ok, done.
+Certainly, and we had debated schemes similar to that (including
+schemes invoking synchronize_sched() itself) in earlier discussions.
+(But IIRC even those schemes required converting call-sites from
+preempt_disable() to get/put_online_cpus_atomic(), to properly
+synchronize).
 
-I've put this on top of the next/soc tree, which already contains the
-other PCI host controller support.
+> That would be far less intrusive.
+> 
 
-	Arnd
+But that would increase the latency of hotplug operations like Paul
+pointed out, and that in turn is not good for use-cases such as
+suspend/resume, where we take all non-boot CPUs offline in a loop.
+(That would mean executing the above logic num_online_cpus() times!).
+
+So we started hunting for ideas that can make the hotplug writer
+side not only less intrusive, but also remain fast. That's how
+the later designs evolved.
+ 
+Regards,
+Srivatsa S. Bhat
+
