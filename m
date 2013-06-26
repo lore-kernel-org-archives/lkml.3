@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab3FZQTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:19:37 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:48761 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3FZQTf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:19:35 -0400
+	id S1752620Ab3FZQTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:19:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61962 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752020Ab3FZQTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 12:19:46 -0400
+Date: Wed, 26 Jun 2013 18:14:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <ddaney@caviumnetworks.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>,
+        David Daney <david.daney@cavium.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mips@linux-mips.org, stable@vger.kernel.org
+Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
+Message-ID: <20130626161452.GA2888@redhat.com>
+References: <1371821962-9151-1-git-send-email-james.hogan@imgtec.com> <51C47864.9030200@gmail.com> <20130621202244.GA16610@redhat.com> <51C4BB86.1020004@caviumnetworks.com> <20130622190940.GA14150@redhat.com> <51C80CF0.4070608@imgtec.com> <20130625144015.1e4e70a0ac888f4ccf5c6a8f@linux-foundation.org> <CAAG0J9-5J6=c=1VxEW6FevMHKsjShtbjM8G6Q1vu1P+LurQqoQ@mail.gmail.com> <51CACB80.5020706@imgtec.com>
 MIME-Version: 1.0
-In-Reply-To: <51CA5829.9060807@asianux.com>
-References: <51CA5829.9060807@asianux.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Jun 2013 10:19:14 -0600
-Message-ID: <CAErSpo4dg7cVN1grEuKWvDJkZoJPAaELeh8knqD=s-nd5dsBNw@mail.gmail.com>
-Subject: Re: [PATCH] arch: frv: mb93090-mb00: remove '__init' for
- pci_fixup_umc_ide() which used by 'DECLARE_PCI_FIXUP_HEADER'
-To: Chen Gang <gang.chen@asianux.com>
-Cc: "dhowells@redhat.com" <dhowells@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CACB80.5020706@imgtec.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 8:55 PM, Chen Gang <gang.chen@asianux.com> wrote:
-> pci_fixup_umc_ide() is for 'DECLARE_PCI_FIXUP_HEADER', so need remove
-> it from init section to normal section.
+On 06/26, James Hogan wrote:
 >
-> The related warning (with allmodconfig):
+> On 25/06/13 23:13, James Hogan wrote:
+>   BUG_ON(exit_code & 0x80); /* core dumps don't get here */
 >
->   LD      arch/frv/mb93090-mb00/built-in.o
-> WARNING: arch/frv/mb93090-mb00/built-in.o(.pci_fixup_header+0x4c): Section mismatch in reference from the variable __pci_fixup_PCI_VENDOR_ID_UMCPCI_DEVICE_ID_UMC_UM8886BFpci_fixup_umc_ide to the function .init.text:pci_fixup_umc_ide()
-> The variable __pci_fixup_PCI_VENDOR_ID_UMCPCI_DEVICE_ID_UMC_UM8886BFpci_fixup_umc_ide references
-> a function __init pci_fixup_umc_ide().
-> This is often seen when error handling in the init function
-> uses functionality in the exit path.
-> The fix is often to remove the __init annotation of
-> pci_fixup_umc_ide() so it may be used outside an exit section.
->
->
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
-
+> As a quick fix, mask out higher bits in the signal number. This
+> effectively matches the exit code from other code paths but avoids the
+> BUG_ON.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: David Daney <david.daney@cavium.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Dave Jones <davej@redhat.com>
+> Cc: linux-mips@linux-mips.org
+> Cc: stable@vger.kernel.org
 > ---
->  arch/frv/mb93090-mb00/pci-vdk.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/frv/mb93090-mb00/pci-vdk.c b/arch/frv/mb93090-mb00/pci-vdk.c
-> index 0aa35f0..56a3abf 100644
-> --- a/arch/frv/mb93090-mb00/pci-vdk.c
-> +++ b/arch/frv/mb93090-mb00/pci-vdk.c
-> @@ -254,7 +254,7 @@ static void __init pcibios_fixup_peer_bridges(void)
->   * Exceptions for specific devices. Usually work-arounds for fatal design flaws.
->   */
->
-> -static void __init pci_fixup_umc_ide(struct pci_dev *d)
-> +static void pci_fixup_umc_ide(struct pci_dev *d)
->  {
->         /*
->          * UM8886BF IDE controller sets region type bits incorrectly,
-> --
-> 1.7.7.6
+>  kernel/signal.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 113411b..9ea8f4f 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -2366,8 +2366,14 @@ relock:
+>  
+>  		/*
+>  		 * Death signals, no core dump.
+> +		 *
+> +		 * Some architectures (MIPS) have 128 signals which doesn't play
+> +		 * nicely with the exit code since there are only 7 bits to
+> +		 * store the terminating signal number. Mask out higher bits to
+> +		 * avoid overflowing into the core dump bit and triggering
+> +		 * BUG_ON in do_group_exit.
+>  		 */
+> -		do_group_exit(info->si_signo);
+> +		do_group_exit(info->si_signo & 0x7f);
+
+Or simply remove the BUG_ON(), this can equally confuse wait(status).
+128 & 0x7f == 0.
+
+Still I think it would be better to change _NSIG on mips.
+
+Oleg.
+
