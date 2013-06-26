@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab3FZCqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:46:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54156 "EHLO
+	id S1752570Ab3FZCrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:47:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54182 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752129Ab3FZCp1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752255Ab3FZCp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 22:45:27 -0400
+	Tue, 25 Jun 2013 22:45:26 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Neal Cardwell" <ncardwell@google.com>,
-        "Herbert Xu" <herbert@gondor.hengli.com.au>,
+CC: akpm@linux-foundation.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
         "Eric Dumazet" <edumazet@google.com>,
-        "Hideaki YOSHIFUJI" <yoshfuji@linux-ipv6.org>,
+        "Boris Zhmurov" <zhmurov@yandex-team.ru>,
+        "Roman Gushchin" <klamm@yandex-team.ru>,
         "David S. Miller" <davem@davemloft.net>
-Date: Wed, 26 Jun 2013 03:35:58 +0100
-Message-ID: <lsq.1372214158.376527225@decadent.org.uk>
+Date: Wed, 26 Jun 2013 03:35:59 +0100
+Message-ID: <lsq.1372214159.708140691@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [14/26] ipv6: fix possible crashes in ip6_cork_release()
+Subject: [20/26] net: force a reload of first item in  hlist_nulls_for_each_entry_rcu
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,37 +35,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 284041ef21fdf2e0d216ab6b787bc9072b4eb58a ]
+[ Upstream commit c87a124a5d5e8cf8e21c4363c3372bcaf53ea190 ]
 
-commit 0178b695fd6b4 ("ipv6: Copy cork options in ip6_append_data")
-added some code duplication and bad error recovery, leading to potential
-crash in ip6_cork_release() as kfree() could be called with garbage.
+Roman Gushchin discovered that udp4_lib_lookup2() was not reloading
+first item in the rcu protected list, in case the loop was restarted.
 
-use kzalloc() to make sure this wont happen.
+This produced soft lockups as in https://lkml.org/lkml/2013/4/16/37
 
+rcu_dereference(X)/ACCESS_ONCE(X) seem to not work as intended if X is
+ptr->field :
+
+In some cases, gcc caches the value or ptr->field in a register.
+
+Use a barrier() to disallow such caching, as documented in
+Documentation/atomic_ops.txt line 114
+
+Thanks a lot to Roman for providing analysis and numerous patches.
+
+Diagnosed-by: Roman Gushchin <klamm@yandex-team.ru>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/ip6_output.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/rculist_nulls.h | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 3ccd9b2..6aadaa8 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1233,7 +1233,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 			if (WARN_ON(np->cork.opt))
- 				return -EINVAL;
- 
--			np->cork.opt = kmalloc(opt->tot_len, sk->sk_allocation);
-+			np->cork.opt = kzalloc(opt->tot_len, sk->sk_allocation);
- 			if (unlikely(np->cork.opt == NULL))
- 				return -ENOBUFS;
- 
+diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
+index 2ae1371..1c33dd7 100644
+--- a/include/linux/rculist_nulls.h
++++ b/include/linux/rculist_nulls.h
+@@ -105,9 +105,14 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
+  * @head:	the head for your list.
+  * @member:	the name of the hlist_nulls_node within the struct.
+  *
++ * The barrier() is needed to make sure compiler doesn't cache first element [1],
++ * as this loop can be restarted [2]
++ * [1] Documentation/atomic_ops.txt around line 114
++ * [2] Documentation/RCU/rculist_nulls.txt around line 146
+  */
+ #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)			\
+-	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
++	for (({barrier();}),							\
++	     pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
+ 		(!is_a_nulls(pos)) &&						\
+ 		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
+ 		pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
 
