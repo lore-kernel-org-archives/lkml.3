@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3FZCsU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:48:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54115 "EHLO
+	id S1752607Ab3FZCsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:48:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54131 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751960Ab3FZCpZ (ORCPT
+	by vger.kernel.org with ESMTP id S1752198Ab3FZCpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 22:45:25 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jeremy Rosen" <jeremy.rosen@openwide.fr>,
-        "Takashi Iwai" <tiwai@suse.de>, "Clemens Ladisch" <clemens@ladisch.de>
+CC: akpm@linux-foundation.org, "Matt Fleming" <matt.fleming@intel.com>
 Date: Wed, 26 Jun 2013 03:35:58 +0100
-Message-ID: <lsq.1372214158.602386740@decadent.org.uk>
+Message-ID: <lsq.1372214158.331667502@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [02/26] ALSA: usb-audio: work around Android accessory firmware bug
+Subject: [09/26] x86/efi: Fix dummy variable buffer allocation
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,65 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 342cda29343a6272c630f94ed56810a76740251b upstream.
+commit b8cb62f82103083a6e8fa5470bfe634a2c06514d upstream.
 
-When the Android firmware enables the audio interfaces in accessory
-mode, it always declares in the control interface's baInterfaceNr array
-that interfaces 0 and 1 belong to the audio function.  However, the
-accessory interface itself, if also enabled, already is at index 0 and
-shifts the actual audio interface numbers to 1 and 2, which prevents the
-PCM streaming interface from being seen by the host driver.
+1. Check for allocation failure
+2. Clear the buffer contents, as they may actually be written to flash
+3. Don't leak the buffer
 
-To get the PCM interface interface to work, detect when the descriptors
-point to the (for this driver useless) accessory interface, and redirect
-to the correct one.
+Compile-tested only.
 
-Reported-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
-Tested-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ Tested successfully on my buggy ASUS machine - Matt ]
+
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- sound/usb/card.c |   22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+ arch/x86/platform/efi/efi.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -149,14 +149,32 @@ static int snd_usb_create_stream(struct
- 		return -EINVAL;
- 	}
- 
-+	alts = &iface->altsetting[0];
-+	altsd = get_iface_desc(alts);
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -875,7 +875,10 @@ efi_status_t efi_query_variable_store(u3
+ 		 * that by attempting to use more space than is available.
+ 		 */
+ 		unsigned long dummy_size = remaining_size + 1024;
+-		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
++		void *dummy = kzalloc(dummy_size, GFP_ATOMIC);
 +
-+	/*
-+	 * Android with both accessory and audio interfaces enabled gets the
-+	 * interface numbers wrong.
-+	 */
-+	if ((chip->usb_id == USB_ID(0x18d1, 0x2d04) ||
-+	     chip->usb_id == USB_ID(0x18d1, 0x2d05)) &&
-+	    interface == 0 &&
-+	    altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC &&
-+	    altsd->bInterfaceSubClass == USB_SUBCLASS_VENDOR_SPEC) {
-+		interface = 2;
-+		iface = usb_ifnum_to_if(dev, interface);
-+		if (!iface)
-+			return -EINVAL;
-+		alts = &iface->altsetting[0];
-+		altsd = get_iface_desc(alts);
-+	}
-+
- 	if (usb_interface_claimed(iface)) {
- 		snd_printdd(KERN_INFO "%d:%d:%d: skipping, already claimed\n",
- 						dev->devnum, ctrlif, interface);
- 		return -EINVAL;
- 	}
++		if (!dummy)
++			return EFI_OUT_OF_RESOURCES;
  
--	alts = &iface->altsetting[0];
--	altsd = get_iface_desc(alts);
- 	if ((altsd->bInterfaceClass == USB_CLASS_AUDIO ||
- 	     altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC) &&
- 	    altsd->bInterfaceSubClass == USB_SUBCLASS_MIDISTREAMING) {
+ 		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+ 					  EFI_VARIABLE_NON_VOLATILE |
+@@ -895,6 +898,8 @@ efi_status_t efi_query_variable_store(u3
+ 					 0, dummy);
+ 		}
+ 
++		kfree(dummy);
++
+ 		/*
+ 		 * The runtime code may now have triggered a garbage collection
+ 		 * run, so check the variable info again
 
