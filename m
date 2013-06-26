@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab3FZMmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 08:42:36 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:45168 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab3FZMmd (ORCPT
+	id S1752004Ab3FZMnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 08:43:15 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:45652 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751368Ab3FZMnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 08:42:33 -0400
-Message-ID: <1372250558.3301.194.camel@edumazet-glaptop>
-Subject: Re: [netlink] WARNING: at mm/vmalloc.c:1487 __vunmap()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Date: Wed, 26 Jun 2013 05:42:38 -0700
-In-Reply-To: <20130617200938.GA14567@localhost>
-References: <20130614220119.GA12954@localhost>
-	 <20130617200938.GA14567@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 26 Jun 2013 08:43:14 -0400
+Message-ID: <51CAE1DD.8070301@hurleysoftware.com>
+Date: Wed, 26 Jun 2013 08:43:09 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: channing <chao.bi@intel.com>
+CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY: memory leakage in tty_buffer_find()
+References: <1372236670.2390.12.camel@bichao>
+In-Reply-To: <1372236670.2390.12.camel@bichao>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 22:09 +0200, Pablo Neira Ayuso wrote:
+On 06/26/2013 04:51 AM, channing wrote:
+>
+> In tty_buffer_find(), it scans all tty buffers in
+> free buffer queue, if it finds matched one,
+> tty->buf.free will point to matched one's next buffer,
+> so tty buffers that ahead of matched one are removed
+> from free queue, they will never be used but they
+> are not released, then memory leak happen.
 
-> I've been trying to trigger this bug here with no success using
-> different communication configurations (userspace <-> userspace,
-> userspace <-> kernelspace).
-> 
+Actually, the whole scan loop is wrong: only tty buffers of
+size 256 are added to the free list.
 
-I got more success with trinity ;)
+So this can't leak because a buffer will never be found
+mid-list.
 
-> The address that vfree shows seems good to me and we always set
-> skb->head to NULL after releasing the network buffer.
-> 
-> This patch also exposes the vmalloc infrastructure to user-space,
-> which is something that didn't happen so far. Not sure if Trinity is
-> uncovering a bug there.
+Greg has a patch series from me that reduces this but it's not
+yet in next.
 
-Nope there are several issues :
-
-1) bug in netlink_alloc_large_skb() because it doesn't account
-for sizeof(struct skb_shared_info) overhead and initialization.
-
-2) Also, skb_clone() on such skb should be forbidden.
-
-   Example, nl_fib_input() does a nskb = skb_clone(skb)
-
-If skb is freed before nskb, then nskb wont know skb->head must be freed
-by vfree()
-
-I don't know...
-
-3) Do we really need this vmalloc stuff, because it sounds like we are
-going to add yet another test in fast path (in skb_free_head())
-
-4) Or we must track all skb_clone() netlink calls to attach a destructor
-to properly to the vfree()
-
-
-[1]
- BUG: unable to handle kernel paging request at ffffc90018a39001
- IP: [<ffffffff814cdeef>] skb_clone+0x1f/0xb0
- PGD c7f40f067 PUD 67f81b067 PMD 65de02067 PTE 0
- Oops: 0000 [#1] [ 1931.190995] scsi_nl_rcv_msg: discarding partial skb
- gsmi: Log Shutdown Reason 0x03
- CPU: 1 PID: 4157 Comm: trinity-child1 Tainted: G        W    3.10.0-smp-DEV #148
- task: ffff880c5fb647f0 ti: ffff880c5ff6c000 task.ti: ffff880c5ff6c000
- RIP: 0010:[<ffffffff814cdeef>]  [<ffffffff814cdeef>] skb_clone+0x1f/0xb0
- RSP: 0018:ffff880c5ff6db18  EFLAGS: 00010282
- RAX: 0000000000002000 RBX: ffff88065fed8ec0 RCX: 0000000060fd8cb3
- RDX: ffffc90018a37000 RSI: 00000000000000d0 RDI: ffff88065fed8ec0
- RBP: ffff880c5ff6db28 R08: ffffc90018a39000 R09: 0000000000000001
- R10: ffffc90018a38fff R11: 0000000000000000 R12: 00000000000000d0
- R13: ffff880c266a0000 R14: ffff88065fed8ec0 R15: 0000000000000000
- FS:  000000000264d880(0063) GS:ffff88067fc20000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: ffffc90018a39001 CR3: 0000000c5b8af000 CR4: 00000000000007e0
- Call Trace:
- [<ffffffff8154b086>] nl_fib_input+0x46/0x140
- [<ffffffff815057ed>] netlink_unicast+0x13d/0x1f0
- [<ffffffff81505b95>] netlink_sendmsg+0x2f5/0x3f0
- [<ffffffff814c366e>] sock_aio_write+0x15e/0x180
- [<ffffffff81193743>] do_sync_readv_writev+0x73/0xb0
- [<ffffffff81194e5b>] do_readv_writev+0xdb/0x2c0
-
-
+Regards,
+Peter Hurley
 
