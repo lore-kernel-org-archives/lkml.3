@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab3FZQBx (ORCPT <rfc822;w@1wt.eu>);
+	id S1752563Ab3FZQCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:02:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751912Ab3FZQBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Jun 2013 12:01:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61310 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab3FZQBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:01:52 -0400
-Message-ID: <1372262508.8776.83.camel@marge.simpson.net>
-Subject: Re: Scheduler accounting inflated for io bound processes.
-From: Mike Galbraith <bitbucket@online.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Dave Chiluk <chiluk@canonical.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Date: Wed, 26 Jun 2013 18:01:48 +0200
-In-Reply-To: <20130626155048.GA7399@gmail.com>
-References: <51C35C05.1070005@canonical.com>
-	 <1372176104.7497.86.camel@marge.simpson.net>
-	 <1372182534.7497.129.camel@marge.simpson.net>
-	 <20130626093713.GA27385@gmail.com>
-	 <20130626104243.GE28407@twins.programming.kicks-ass.net>
-	 <20130626155048.GA7399@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:Vo0oDDOC8HkOFr8mcErYaiwTz5qH/pvk+DcIKz+DNlO
- qWn3HxXRyJ8sdlUl00ev98MaLGP+5g29lJsDOLqBO0CYBz9Xth
- /6WD6t5+a8bmT3mvia5/iYlBhFyyDk/4IBeY1nGPHSOTPoFLP9
- FiaX7xkebckcTAfx9hYxRVrvEpBx5tawkZLnbc3Yn0ts/Lc7zr
- HSDLqtzKRETVBWxljgpVnLiFpmDDvXXRiz4GM2LlXdPC3DX3M9
- 0+R7vftHJfG4s36P0cwe9TVofYs/Zz3hR5kUZeno+jwiMBaQco
- Y8kBU1XcX8NlAKkGHz3NmEYgK6SpZ2TBVRjxLFqeJ0mXFqTZZS
- H1I6kDsa91gzXCF7XABTjn04+SS3KmdSncAJG25tMKNHEshd7L
- J57v/YISUgsLg==
+Date: Wed, 26 Jun 2013 17:57:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] proc: Expose /proc/<pid>/task/<tid>/children
+	unconditionally
+Message-ID: <20130626155728.GA2141@redhat.com>
+References: <0e00e9073855c02a382d49ba1ede9c4fda3451b7.1372189875.git.luto@amacapital.net> <20130625201602.GB1726@moon> <20130625201705.GA15966@redhat.com> <CALCETrVxm2wHvLgexG6fZO+h1rNHC_qDCv6B+4XuANHgSQU4iw@mail.gmail.com> <20130625215247.GC1726@moon> <CALCETrV2WZ3m82D4THfxvmASW8AOf1SN7Pu14vE0jMORupO5xw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrV2WZ3m82D4THfxvmASW8AOf1SN7Pu14vE0jMORupO5xw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 17:50 +0200, Ingo Molnar wrote: 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Wed, Jun 26, 2013 at 11:37:13AM +0200, Ingo Molnar wrote:
-> > > Would be very nice to randomize the sampling rate, by randomizing the 
-> > > intervals within a 1% range or so - perf tooling will probably recognize 
-> > > the different weights.
-> > 
-> > You're suggesting adding noise to the regular kernel tick?
-> 
-> No, to the perf interval (which I assumed Mike was using to profile this?)
+On 06/25, Andy Lutomirski wrote:
+>
+> On Tue, Jun 25, 2013 at 2:52 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> > On Tue, Jun 25, 2013 at 02:36:31PM -0700, Andy Lutomirski wrote:
+> >> On Tue, Jun 25, 2013 at 1:17 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> > On 06/26, Cyrill Gorcunov wrote:
+> >> >>
+> >> >> On Tue, Jun 25, 2013 at 12:51:45PM -0700, Andy Lutomirski wrote:
+> >> >> > This is currently only available if CONFIG_CHECKPOINT_RESTORE, which
+> >> >> > is hidden under CONFIG_EXPERT.  It's generally useful functionality,
+> >> >> > though, so expose it unconditionally.
+> >> >> >
+> >> >> > Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> >> >> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> >> Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> >> >
+> >> > I didn't see the patch but I guess it is trivial and I agree with intent ;)
+> >>
+> >> The patch works, but "children" is only listed under task/<tid>, not
+> >> under /proc/<pid>.  Is that intentional?  Fixing it would be a
+> >> one-liner.
+> >
+> > Yeah, it's intentional. Here some explanations from Oleg (check out
+> > the whole thread, it's not that big https://lkml.org/lkml/2011/12/9/220)
+> > in short this might require some more code, but i'll re-check tomorrow.
+>
+> This is a little strange.  It looks like ppid (in status) shows the
+> tgid,
 
-Yeah, perf top -F 250 exhibits the same inaccuracy as 250 Hz tick cpu
-accounting.  (sufficient sample jitter should cure it, but I think I'd
-prefer to just live with it)
+Yes,
 
--Mike
+> but the actual real_parent can refer to a thread (as opposed to
+> a thread group leader),
+
+Yes.
+
+This is mostly the internal implementation detail. And probably it
+would be nice to move ->children from task_struct to signal_struct.
+
+However. See __WNOTHREAD in man waitpid. I think this is the only
+(historical) reason. Otherwise the real_parent's tid doesn't matter,
+the parent is always the whole process, not sub-thread.
+
+> and task/tid/children respects that.
+
+Well, it should respect if you want to restart and keep __WNOTHREAD
+working.
+
+But there is another reason. It is not trivial to list all children
+under /proc/<pid>, and the fix would not be a one-liner ;) You need
+to fight with the exiting sub-threads and reparenting. 
+
+> So the
+> tree that you get by following task/tid/ children won't be quite the
+> same as the tree you get by following ppid.
+
+Not sure I understand... but in any case, yes you need to read
+/proc/pid/task/*/children to construct the tree.
+
+> I wonder if the ptid should be added to status.  Is there anything
+> (other than task/tid/children)
+
+Perhaps, I dunno.
+
+Better yet, we should kill __WNOTHREAD ;) I am wondering if it is still
+used.
+
+Oleg.
 
