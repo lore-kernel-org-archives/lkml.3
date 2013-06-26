@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab3FZNHZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:07:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52030 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab3FZNHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:07:24 -0400
-Date: Wed, 26 Jun 2013 08:06:41 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: <anton@enomsg.org>, <dwmw2@infradead.org>, <khilman@linaro.org>,
-        <andrii.tseglytskyi@ti.com>, <jean.pihet@newoldbits.com>,
-        <tony@atomide.com>, <yongjun_wei@trendmicro.com.cn>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH -next] PM / AVS: SmartReflex: remove redundant dev_err
- call in omap_sr_probe()
-Message-ID: <20130626130641.GA26920@kahuna>
-References: <CAPgLHd_K37Uf420FRiEkiCZQiL9bAdiE2_qG4dp7WmQRaCnDqQ@mail.gmail.com>
+	id S1751581Ab3FZNMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:12:08 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:34843 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751285Ab3FZNMF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 09:12:05 -0400
+Date: Wed, 26 Jun 2013 14:12:00 +0100
+From: "matt@console-pimps.org" <matt@console-pimps.org>
+To: Zachary Bobroff <zacharyb@ami.com>
+Cc: "'H. Peter Anvin'" <hpa@zytor.com>, "'Jan Beulich'" <jbeulich@suse.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>, Joey Lee <JLee@suse.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
+Message-ID: <20130626131200.GN22026@console-pimps.org>
+References: <51BEF71402000078000DEC12@nat28.tlf.novell.com>
+ <20130617101745.GB8569@console-pimps.org>
+ <51BF08CD02000078000DEC99@nat28.tlf.novell.com>
+ <20130617123052.GE8569@console-pimps.org>
+ <7BD74F8E52BFD147B6C83AE7A1E893FFE285F690@atlms1.us.megatrends.com>
+ <51C068C1020000780009C995@nat28.tlf.novell.com>
+ <7BD74F8E52BFD147B6C83AE7A1E893FFE286040C@atlms1.us.megatrends.com>
+ <20130619084329.GA5386@console-pimps.org>
+ <298f16e6-7ada-4f2e-8dae-f3919e7c8225@email.android.com>
+ <7BD74F8E52BFD147B6C83AE7A1E893FFE28622FD@atlms1.us.megatrends.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAPgLHd_K37Uf420FRiEkiCZQiL9bAdiE2_qG4dp7WmQRaCnDqQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7BD74F8E52BFD147B6C83AE7A1E893FFE28622FD@atlms1.us.megatrends.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:57-20130626, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Thu, 20 Jun, at 06:04:50PM, Zachary Bobroff wrote:
+> All,
 > 
-> There is a error message within devm_ioremap_resource
-> already, so remove the dev_err call to avoid redundant
-> error message.
+> I am attaching a further updated version of eboot.c .  We removed the
+> low_alloc routine from the exit_boot function only.  We also removed
+> the goto statements(sorry we just aren’t huge fans of goto's in c, you
+> can change it back to be goto oriented if you want though) and put it
+> in a loop that is counting down from retry count.  You can see the
+> loop is based upon this conditional:
+
+It would be much easier to review these changes if you sent them as a
+patch against a git tree, using git to generate the patch. Failing that,
+even a plain old diff-format file would be acceptable.
+
+> while((ExitRetryCount > 0) && (status != EFI_SUCCESS)) {
 > 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/power/avs/smartreflex.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+> So we have currently set ExitRetryCount to 2 (a couple of lines above):
+> int ExitRetryCount = 2;
 > 
-> diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
-> index db9973b..c26acfc 100644
-> --- a/drivers/power/avs/smartreflex.c
-> +++ b/drivers/power/avs/smartreflex.c
-> @@ -871,10 +871,8 @@ static int __init omap_sr_probe(struct platform_device *pdev)
->  
->  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	sr_info->base = devm_ioremap_resource(&pdev->dev, mem);
-> -	if (IS_ERR(sr_info->base)) {
-> -		dev_err(&pdev->dev, "%s: ioremap fail\n", __func__);
-> +	if (IS_ERR(sr_info->base))
->  		return PTR_ERR(sr_info->base);
-> -	}
->  
->  	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
->  
-> 
-Acked-by: Nishanth Menon <nm@ti.com>
+> However, I have a suggestion and im not entirely sure how difficult it
+> would be, im just suggesting it might not be a bad idea.  We can
+> initialize this ExitRetryCount to be some default value, but if
+> grub(or a different bootloader) passes some updated value,
+> ExitRetryCount could be updated with this value.  Myself, I don’t know
+> the level of complexity it creates pulling a kernel parameter, but
+> given a decent example, I could see about adding that support.
+> Allowing passing of a parameter could eliminate problems with the
+> systems that may be out of specification.
+ 
+We try to pull workarounds for these problems into the kernel, rather
+than relying on bootloaders to pass in the necessary flags. People
+rarely want to update their boot loaders, but most distributions release
+updates for installed kernels semi-regularly.
+
 -- 
-Regards,
-Nishanth Menon
+Matt Fleming, Intel Open Source Technology Center
