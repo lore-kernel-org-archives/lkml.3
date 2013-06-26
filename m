@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab3FZQ2z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:28:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35218 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752353Ab3FZQ1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:27:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,945,1363158000"; 
-   d="scan'208";a="359985167"
-Subject: [PATCH v3 2/5] rwsem: remove 'out' label in do_wake
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <cover.1372261602.git.tim.c.chen@linux.intel.com>
-References: <cover.1372261602.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Jun 2013 09:27:55 -0700
-Message-ID: <1372264075.22432.122.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752118Ab3FZQaO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:30:14 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:34298 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab3FZQaM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 12:30:12 -0400
+MIME-Version: 1.0
+Date: Thu, 27 Jun 2013 00:30:10 +0800
+Message-ID: <CAPgLHd8-jbXfb95x1Bp7GsMuEJ3mOudUcknRqbxNpNmcdQvg3w@mail.gmail.com>
+Subject: [PATCH -next] pinctrl: st: fix return value check
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: linus.walleij@linaro.org, grant.likely@linaro.org, rob.herring@calxeda.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That make code simple and more readable.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
+In case of error, the function pinctrl_register() returns
+NULL not ERR_PTR(). The IS_ERR() test in the return value
+check should be replaced with NULL test.
+The function syscon_regmap_lookup_by_phandle() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- lib/rwsem.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/pinctrl/pinctrl-st.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 19c5fa9..42f1b1a 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 			 * will block as they will notice the queued writer.
- 			 */
- 			wake_up_process(waiter->task);
--		goto out;
-+		return sem;
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index 7effedf..de8c626 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -1299,9 +1299,9 @@ static int st_pctl_probe_dt(struct platform_device *pdev,
+ 		return -ENOMEM;
+ 
+ 	info->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
+-	if (!info->regmap) {
++	if (IS_ERR(info->regmap)) {
+ 		dev_err(info->dev, "No syscfg phandle specified\n");
+-		return -ENOMEM;
++		return PTR_ERR(info->regmap);
+ 	}
+ 	info->data = of_match_node(st_pctl_of_match, np)->data;
+ 
+@@ -1376,9 +1376,9 @@ static int st_pctl_probe(struct platform_device *pdev)
+ 	pctl_desc->name		= dev_name(&pdev->dev);
+ 
+ 	info->pctl = pinctrl_register(pctl_desc, &pdev->dev, info);
+-	if (IS_ERR(info->pctl)) {
++	if (!info->pctl) {
+ 		dev_err(&pdev->dev, "Failed pinctrl registration\n");
+-		return PTR_ERR(info->pctl);
++		return -EINVAL;
  	}
  
- 	/* Writers might steal the lock before we grant it to the next reader.
-@@ -91,7 +91,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 			/* A writer stole the lock. Undo our reader grant. */
- 			if (rwsem_atomic_update(-adjustment, sem) &
- 						RWSEM_ACTIVE_MASK)
--				goto out;
-+				return sem;
- 			/* Last active locker left. Retry waking readers. */
- 			goto try_reader_grant;
- 		}
-@@ -136,7 +136,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 	sem->wait_list.next = next;
- 	next->prev = &sem->wait_list;
- 
-- out:
- 	return sem;
- }
- 
--- 
-1.7.4.4
-
-
+ 	for (i = 0; i < info->nbanks; i++)
 
