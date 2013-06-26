@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab3FZQCO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:02:14 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:53765 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab3FZQCJ (ORCPT
+	id S1752617Ab3FZQCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:02:46 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59666 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab3FZQCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:02:09 -0400
-Date: Wed, 26 Jun 2013 18:01:12 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        David Daney <ddaney@caviumnetworks.com>,
-        David Daney <ddaney.cavm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        David Daney <david.daney@cavium.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mips@linux-mips.org, stable@vger.kernel.org
-Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
-Message-ID: <20130626160112.GD7171@linux-mips.org>
-References: <1371821962-9151-1-git-send-email-james.hogan@imgtec.com>
- <51C47864.9030200@gmail.com>
- <20130621202244.GA16610@redhat.com>
- <51C4BB86.1020004@caviumnetworks.com>
- <20130622190940.GA14150@redhat.com>
- <51C80CF0.4070608@imgtec.com>
- <20130625144015.1e4e70a0ac888f4ccf5c6a8f@linux-foundation.org>
- <CAAG0J9-5J6=c=1VxEW6FevMHKsjShtbjM8G6Q1vu1P+LurQqoQ@mail.gmail.com>
- <51CACB80.5020706@imgtec.com>
+	Wed, 26 Jun 2013 12:02:44 -0400
+Date: Wed, 26 Jun 2013 10:32:22 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tux3@tux3.org
+Subject: Re: [PATCH] Optimize wait_sb_inodes()
+Message-ID: <20130626143222.GA27481@logfs.org>
+References: <87ehbpntuk.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51CACB80.5020706@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87ehbpntuk.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 12:07:44PM +0100, James Hogan wrote:
-
-> > IMO changing the ABI by reducing _NSIG to 127 or 126 isn't appropriate
-> > for stable.
+On Wed, 26 June 2013 17:45:23 +0900, OGAWA Hirofumi wrote:
+>
 > 
-> How does this look for a nasty/stable fix?
-
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 113411b..9ea8f4f 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -2366,8 +2366,14 @@ relock:
+>  fs/fs-writeback.c  |    5 ++++-
+>  include/linux/fs.h |    1 +
+>  2 files changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff -puN include/linux/fs.h~tux3-fix-wait_sb_inodes include/linux/fs.h
+> --- tux3fs/include/linux/fs.h~tux3-fix-wait_sb_inodes	2013-06-24 19:03:10.000000000 +0900
+> +++ tux3fs-hirofumi/include/linux/fs.h	2013-06-24 19:03:10.000000000 +0900
+> @@ -1595,6 +1595,7 @@ struct super_operations {
+>  	int (*write_inode) (struct inode *, struct writeback_control *wbc);
+>  	int (*drop_inode) (struct inode *);
+>  	void (*evict_inode) (struct inode *);
+> +	void (*wait_inodes)(struct super_block *);
+>  	void (*put_super) (struct super_block *);
+>  	int (*sync_fs)(struct super_block *sb, int wait);
+>  	int (*freeze_fs) (struct super_block *);
+> diff -puN fs/fs-writeback.c~tux3-fix-wait_sb_inodes fs/fs-writeback.c
+> --- tux3fs/fs/fs-writeback.c~tux3-fix-wait_sb_inodes	2013-06-24 19:03:10.000000000 +0900
+> +++ tux3fs-hirofumi/fs/fs-writeback.c	2013-06-24 19:03:10.000000000 +0900
+> @@ -1401,7 +1401,10 @@ void sync_inodes_sb(struct super_block *
+>  	bdi_queue_work(sb->s_bdi, &work);
+>  	wait_for_completion(&done);
 >  
->  		/*
->  		 * Death signals, no core dump.
-> +		 *
-> +		 * Some architectures (MIPS) have 128 signals which doesn't play
-> +		 * nicely with the exit code since there are only 7 bits to
-> +		 * store the terminating signal number. Mask out higher bits to
-> +		 * avoid overflowing into the core dump bit and triggering
-> +		 * BUG_ON in do_group_exit.
->  		 */
-> -		do_group_exit(info->si_signo);
-> +		do_group_exit(info->si_signo & 0x7f);
->  		/* NOTREACHED */
->  	}
->  	spin_unlock_irq(&sighand->siglock);
+> -	wait_sb_inodes(sb);
+> +	if (sb->s_op->wait_inodes)
+> +		sb->s_op->wait_inodes(sb);
+> +	else
+> +		wait_sb_inodes(sb);
+>  }
+>  EXPORT_SYMBOL(sync_inodes_sb);
 
-Looks like something which I think we could live with.
+Two things.  Until there are actual implementations of
+s_op->wait_inodes, this is pure obfuscation.  You already know this,
+of course.
 
-Clearly it also scores in the "nasty" category, so fits the bill ;)
+More interestingly, I personally hate methods with a default option if
+they are not implemented.  Not too bad in this particular case, but
+the same pattern has burned me a number of times and wasted weeks of
+my life.  So I would prefer to unconditionally call
+sb->s_op->wait_inodes(sb) and set it to wait_sb_inodes for all
+filesystems that don't have a smarter way to do things.
 
-  Ralf
+Jörn
+
+--
+Linux is more the core point of a concept that surrounds "open source"
+which, in turn, is based on a false concept. This concept is that
+people actually want to look at source code.
+-- Rob Enderle
