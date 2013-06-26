@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3FZWIC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 18:08:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55729 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab3FZWIA (ORCPT
+	id S1753227Ab3FZWLj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 18:11:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30112 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752841Ab3FZWLh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 18:08:00 -0400
-Date: Wed, 26 Jun 2013 15:07:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] Re: [PATCH 3/9 v2] rtc: rtc-hid-sensor-time: delay
- registering as rtc into a work
-Message-ID: <20130626220758.GA32461@kroah.com>
-References: <1371228732-5749-4-git-send-email-holler@ahsoftware.de>
- <1371724776-5572-1-git-send-email-holler@ahsoftware.de>
- <20130626125501.3d64408309a6f63100cc7d08@linux-foundation.org>
- <51CB5E6B.109@ahsoftware.de>
+	Wed, 26 Jun 2013 18:11:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,947,1363158000"; 
+   d="scan'208";a="360135230"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Dave Airlie <airlied@redhat.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: RE: Linux 3.10-rc7
+Thread-Topic: Linux 3.10-rc7
+Thread-Index: AQHOcO9Wy94BEELWoUiZdIX6E3dp15lIkLZQ
+Date: Wed, 26 Jun 2013 22:11:13 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B028DB36B@HASMSX106.ger.corp.intel.com>
+References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
+ <B8EFE96D1287C24090BAD9D858E15E6172FFB9@sisaex02sj>
+ <CA+55aFxuB_nx8fZ_kN8U=fMFOq43cKZC_HJbj=6vKo7-fDqNuw@mail.gmail.com>
+ <CAKMK7uH0q1vSaVRigtZD2pf5ZeVLEv1sn+tsiO7ZWjJdt=DwBA@mail.gmail.com>
+ <20130625125437.6e7bb2d4@jbarnes-desktop>
+ <B8EFE96D1287C24090BAD9D858E15E617305B4@sisaex02sj>
+ <20130625130816.55e6cb80@jbarnes-desktop>
+ <B8EFE96D1287C24090BAD9D858E15E617306DD@sisaex02sj>
+ <CA+i0qc64MqeZd3y2E4YOtxwxyWRPXqofJep1BGCeEHCdkJuxQg@mail.gmail.com>
+ <B8EFE96D1287C24090BAD9D858E15E6173079B@sisaex02sj>
+In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E6173079B@sisaex02sj>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CB5E6B.109@ahsoftware.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 11:34:35PM +0200, Alexander Holler wrote:
-> >> +	/*
-> >> +	 * The HID device has to be registered to read the clock.
-> >> +	 * Because rtc_device_register() might read the time, we have to delay
-> >> +	 * rtc_device_register() to a work in order to finish the probe before.
-> >> +	 */
-> >> +	time_state->workts = kmalloc(sizeof(struct hid_time_workts),
-> >> +		GFP_KERNEL);
-> >> +	if (time_state->workts == NULL) {
-> >> +		sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
-> >> +		return -ENOMEM;
-> >>  	}
-> >> +	time_state->workts->time_state = time_state;
-> >> +	INIT_WORK(&time_state->workts->work,
-> >> +			hid_time_register_rtc_work);
-> >> +	schedule_work(&time_state->workts->work);
-> > 
-> > This seems unreliable.  The scheduled work can run one nanosecond
-> > later, on this or a different CPU.  What guarantees that the HID device
-> > will then be fully registered?
+
+
+> > Can you please send me the log part when this starts?
+> >
+> > Thanks
+> >
 > 
-> Nothing, but schedule_delayed_work() is as unreliable as without delay
-> and I don't know of any callback after registration has happened. I have
-> to dig through the hid-(sensor-)code, maybe I will find a callback I can
-> (mis)use to register the rtc driver after the hid driver was registered.
+> It rolled over and I don't have prior messages. I tried reproducing twice and
+> didn't see it again. I will try a few more times and see if I can get it to happen
+> again.
+> 
+> This is what I could save before dmesg rolled over:
+> 
+> [   78.709014] mei_me 0000:00:16.0: reset: wrong host start response
+> [   78.709016] mei_me 0000:00:16.0: unexpected reset: dev_state =
+> RESETTING
+> [   78.709029] mei_me 0000:00:16.0: reset: unexpected enumeration
+> response hbm.
+> [   78.709031] mei_me 0000:00:16.0: unexpected reset: dev_state =
+> RESETTING
+> [   78.709069] mei_me 0000:00:16.0: reset: wrong host start response
+> 
+So far I was able to positively reproduce it with  3.10-rc5 but not with 3.10-rc7 and above.
 
-Why not use the deferred_probe code, which is there just for this type
-of thing (i.e. your other drivers/devices aren't present/initialized
-yet.)?  Just return -EPROBE_DEFER from your probe function if you don't
-find everything already set up properly, the driver core will call you
-again later after it has initialized everything it has found.
+There are 3 patches that went in to fix this issue
 
-Hope this helps,
+42f132f mei: me: clear interrupts on the resume path
+2753ff5 mei: nfc: fix nfc device freeing
+5e85b36 mei: init: Flush scheduled work before resetting the device
 
-greg k-h
+Are you sure you have these 3 in?
+
+Thanks
+Tomas
