@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab3FZVsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:48:24 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52465 "EHLO hydra.sisk.pl"
+	id S1753233Ab3FZVtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:49:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40935 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752733Ab3FZVsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:48:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        dave.martin@arm.com
-Subject: Re: [PATCH 13/13] cpufreq: make sure frequency transitions are serialized
-Date: Wed, 26 Jun 2013 23:57:51 +0200
-Message-ID: <2081161.dnl1xTqcUT@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohponyMG-uA93ZpH-KD+EOQPmk5tT_QoaQ7+NCEf48vYj5-w@mail.gmail.com>
-References: <cover.1371630975.git.viresh.kumar@linaro.org> <2165396.dF1lQyPRVT@vostro.rjw.lan> <CAKohponyMG-uA93ZpH-KD+EOQPmk5tT_QoaQ7+NCEf48vYj5-w@mail.gmail.com>
+	id S1752733Ab3FZVte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 17:49:34 -0400
+Message-ID: <51CB61DC.9030800@zytor.com>
+Date: Wed, 26 Jun 2013 14:49:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        danders@circuitco.com, vishal.l.verma@intel.com,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE
+ ID
+References: <cover.1372211451.git.dvhart@linux.intel.com> <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com> <20130626163250.GA29299@google.com> <1372266904.8177.83.camel@envy.home> <CAErSpo6=1i76RRmJSUi+BpD9D0WrXaML4HkGLn0C=+6=ohB0uQ@mail.gmail.com> <51CB5D84.4080709@zytor.com> <CAErSpo6Dss9hj33QRP-Leob05WT-uN-MWUAZBfh+VDtUvCWNkA@mail.gmail.com>
+In-Reply-To: <CAErSpo6Dss9hj33QRP-Leob05WT-uN-MWUAZBfh+VDtUvCWNkA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 24, 2013 07:01:59 PM Viresh Kumar wrote:
-> On 24 June 2013 19:03, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Looks OK, but since transition_ongoing is either 0 or 1 now, as far as I can
-> > say, it would be better to make it a bool and use = true/false instead of
-> > ++/-- I suppose.
+On 06/26/2013 02:46 PM, Bjorn Helgaas wrote:
+>>
+>> Microsoft has a "best practices" document, which may end up becoming
+>> basis for a future PCI-SIG document clarifying the standard:
+>>
+>> http://msdn.microsoft.com/en-us/library/windows/hardware/gg463287.aspx
 > 
-> Another fixup:
+> Interesting, thanks for the link.  If I read that correctly, the
+> MinnowBoard is basically a motherboard, and any board layout change or
+> component value change will require a new Subsystem ID, which will in
+> turn require a pch_gbe update.  That doesn't sound optimal, but maybe
+> people don't actually interpret it that strictly.
 > 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 6ca7eac..49d942a 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -108,7 +108,7 @@ static BLOCKING_NOTIFIER_HEAD(cpufreq_policy_notifier_list);
->  static struct srcu_notifier_head cpufreq_transition_notifier_list;
-> 
->  /* Tracks status of transition */
-> -static int transition_ongoing;
-> +static bool transition_ongoing;
-> 
->  static bool init_cpufreq_transition_notifier_list_called;
->  static int __init init_cpufreq_transition_notifier_list(void)
-> @@ -271,7 +271,7 @@ void __cpufreq_notify_transition(struct
-> cpufreq_policy *policy,
->                                 "In middle of another frequency transition\n"))
->                         return;
-> 
-> -               transition_ongoing++;
-> +               transition_ongoing = true;
-> 
->                 /* detect if the driver reported a value as "old frequency"
->                  * which is not equal to what the cpufreq core thinks is
-> @@ -296,7 +296,7 @@ void __cpufreq_notify_transition(struct
-> cpufreq_policy *policy,
->                                 "No frequency transition in progress\n"))
->                         return;
-> 
-> -               transition_ongoing--;
-> +               transition_ongoing = false;
-> 
->                 adjust_jiffies(CPUFREQ_POSTCHANGE, freqs);
->                 pr_debug("FREQ: %lu - CPU: %lu", (unsigned long)freqs->new,
 
-Well, now, seeing that the locking around this seems to be kind of haphazard,
-I'm wondering what prevents two different threads from doing CPUFREQ_PRECHANGE
-concurrently in such a way that thread A will check transition_ongoing
-and thread B will check transition_ongoing and then both will set it if it
-was 'false' before.  And then one of them will trigger the WARN() in
-CPUFREQ_POSTCHANGE.
+It could be interpreted that literally, yes.  This is part of why a
+"subsystem" isn't necessarily forced to be a "board".
 
-Is there any protection in place and if so then how does it work?
-
-Rafael
+	-hpa
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
