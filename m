@@ -1,335 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805Ab3FZUsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 16:48:51 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:62714 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab3FZUsu (ORCPT
+	id S1752304Ab3FZUtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 16:49:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34730 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab3FZUta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 16:48:50 -0400
-Message-ID: <51CB53A9.80004@gmail.com>
-Date: Wed, 26 Jun 2013 14:48:41 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 16:49:30 -0400
+Message-ID: <51CB53D7.7030602@wwwdotorg.org>
+Date: Wed, 26 Jun 2013 14:49:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
-References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-13-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1372079772-20803-13-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [RFC 2/6] x86: provide platform-devices for boot-framebuffers
+References: <1372112849-670-1-git-send-email-dh.herrmann@gmail.com> <1372112849-670-3-git-send-email-dh.herrmann@gmail.com>
+In-Reply-To: <1372112849-670-3-git-send-email-dh.herrmann@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo:
+On 06/24/2013 04:27 PM, David Herrmann wrote:
+> The current situation regarding boot-framebuffers (VGA, VESA/VBE, EFI) on
+> x86 causes troubles when loading multiple fbdev drivers. The global
+> "struct screen_info" does not provide any state-tracking about which
+> drivers use the FBs. request_mem_region() theoretically works, but
+> unfortunately vesafb/efifb ignore it due to quirks for broken boards.
+> 
+> Avoid this by creating a "platform-framebuffer" device with a pointer
+> to the "struct screen_info" as platform-data. Drivers can now create
+> platform-drivers and the driver-core will refuse multiple drivers being
+> active simultaneously.
+> 
+> We keep the screen_info available for backwards-compatibility. Drivers
+> can be converted in follow-up patches.
+> 
+> Apart from "platform-framebuffer" devices, this also introduces a
+> compatibility option for "simple-framebuffer" drivers which recently got
+> introduced for OF based systems. If CONFIG_X86_SYSFB is selected, we
+> try to match the screen_info against a simple-framebuffer supported
+> format. If we succeed, we create a "simple-framebuffer" device instead
+> of a platform-framebuffer.
+> This allows to reuse the simplefb.c driver across architectures and also
+> to introduce a SimpleDRM driver. There is no need to have vesafb.c,
+> efifb.c, simplefb.c and more just to have architecture specific quirks
+> in their setup-routines.
+> 
+> Instead, we now move the architecture specific quirks into x86-setup and
+> provide a generic simple-framebuffer. For backwards-compatibility (if
+> strange formats are used), we still allow vesafb/efifb to be loaded
+> simultaneously and pick up all remaining devices.
 
-I noticed this patch in your perf/core branch. I do not think this one 
-is ready to be committed. It does not fully solve the problem of 
-allowing non-matching sample types.
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
 
-I have a set of patches here on github that work fine for one use case 
--- mixed s/w and tracepoint events: 
-https://github.com/dsahern/linux/tree/multiple-sample_type
+> +config X86_SYSFB
+> +	bool "Mark VGA/VBE/EFI FB as generic system framebuffer"
+> +	help
+> +	  Firmwares often provide initial graphics framebuffers so the BIOS,
+> +	  bootloader or kernel can show basic video-output during boot for
+> +	  user-guidance and debugging. Historically, x86 used the VESA BIOS
+> +	  Extensions and EFI-framebuffers for this, which are mostly limited
+> +	  to x86. However, a generic system-framebuffer initialization emerged
+> +	  recently on some non-x86 architectures.
 
-I'll push the patches out, but wanted to run some more test cases first.
+After this patch has been in the kernel a while, that very last won't
+really be true; simplefb won't have been introduced recently. Perhaps
+just delete that one sentence?
 
-David
-
-On 6/24/13 7:16 AM, Adrian Hunter wrote:
-> Sample types need not be identical to determine
-> the sample id from the event.  Only the position
-> of the sample id needs to be the same.
->
-> Compatible sample types are ones in which the bits
-> defined by PERF_COMPAT_MASK are the same.
-> 'perf_evlist__config()' forces sample types to be
-> compatible on that basis.
->
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->   tools/perf/util/event.h  |  6 ++++
->   tools/perf/util/evlist.c | 93 ++++++++++++++++++++++++++++++++++++++++++++++--
->   tools/perf/util/evlist.h |  3 ++
->   tools/perf/util/evsel.c  | 41 +++++++++++++++++++++
->   tools/perf/util/evsel.h  |  4 +++
->   5 files changed, 145 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-> index 1813895..858572f 100644
-> --- a/tools/perf/util/event.h
-> +++ b/tools/perf/util/event.h
-> @@ -65,6 +65,12 @@ struct read_event {
->   	PERF_SAMPLE_ID | PERF_SAMPLE_STREAM_ID |	\
->   	 PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
->
-> +#define PERF_COMPAT_MASK				\
-> +	(PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |	\
-> +	 PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR      |	\
-> +	 PERF_SAMPLE_ID   | PERF_SAMPLE_STREAM_ID |	\
-> +	 PERF_SAMPLE_CPU)
+> +	  This option, if enabled, marks VGA/VBE/EFI framebuffers as generic
+> +	  framebuffers so the new generic system-framebuffer drivers can be
+> +	  used on x86.
 > +
->   struct sample_event {
->   	struct perf_event_header        header;
->   	u64 array[];
-> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> index a660f56..85c4d91 100644
-> --- a/tools/perf/util/evlist.c
-> +++ b/tools/perf/util/evlist.c
-> @@ -49,10 +49,20 @@ struct perf_evlist *perf_evlist__new(void)
->   	return evlist;
->   }
->
-> +static void perf_evlist__set_id_pos(struct perf_evlist *evlist)
+> +	  This breaks any x86-only driver like efifb, vesafb, uvesafb, which
+> +	  will not work if this is selected.
+
+Doesn't that imply that some form of conflicts or depends ! statement
+should be added here?
+
+> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+
+> +obj-y					+= sysfb.o
+
+I suspect that should be obj-$(CONFIG_X86_SYSFB) += sysfb.o.
+
+> diff --git a/arch/x86/kernel/sysfb.c b/arch/x86/kernel/sysfb.c
+
+> +#ifdef CONFIG_X86_SYSFB
+
+Rather than ifdef'ing the body of this file, why not create a dummy
+static inline version of add_sysfb() and put that into a header file
+that users include. There should be a header file to prototype the
+function anyway. That way, you avoid all of the ifdefs and static inline
+functions in this file.
+
+> +static bool parse_mode(const struct screen_info *si,
+> +		       struct simplefb_platform_data *mode)
+
+> +			strlcpy(mode->format, f->name, sizeof(mode->format));
+
+Per my comments about the type of mode->format, I think that could just be:
+
+mode->format = f->name;
+
+... since formats[] (i.e. f) isn't initdata.
+
+> +#else /* CONFIG_X86_SYSFB */
+> +
+> +static bool parse_mode(const struct screen_info *si,
+> +		       struct simplefb_platform_data *mode)
 > +{
-> +	struct perf_evsel *first = perf_evlist__first(evlist);
-> +
-> +	evlist->id_pos = first->id_pos;
-> +	evlist->is_pos = first->is_pos;
+> +	return false;
 > +}
 > +
->   void perf_evlist__config(struct perf_evlist *evlist,
->   			struct perf_record_opts *opts)
->   {
->   	struct perf_evsel *evsel;
-> +	u64 compat = 0;
-> +
->   	/*
->   	 * Set the evsel leader links before we configure attributes,
->   	 * since some might depend on this info.
-> @@ -68,7 +78,15 @@ void perf_evlist__config(struct perf_evlist *evlist,
->
->   		if (evlist->nr_entries > 1)
->   			perf_evsel__set_sample_id(evsel);
-> +		compat |= evsel->attr.sample_type & PERF_COMPAT_MASK;
->   	}
-> +
-> +	list_for_each_entry(evsel, &evlist->entries, node) {
-> +		evsel->attr.sample_type |= compat;
-> +		perf_evsel__calc_id_pos(evsel);
-> +	}
-> +
-> +	perf_evlist__set_id_pos(evlist);
->   }
->
->   static void perf_evlist__purge(struct perf_evlist *evlist)
-> @@ -102,6 +120,7 @@ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry)
->   {
->   	list_add_tail(&entry->node, &evlist->entries);
->   	++evlist->nr_entries;
-> +	perf_evlist__set_id_pos(evlist);
->   }
->
->   void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
-> @@ -110,6 +129,7 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
->   {
->   	list_splice_tail(list, &evlist->entries);
->   	evlist->nr_entries += nr_entries;
-> +	perf_evlist__set_id_pos(evlist);
->   }
->
->   void __perf_evlist__set_leader(struct list_head *list)
-> @@ -339,6 +359,55 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
->   	return NULL;
->   }
->
-> +static int perf_evlist__event2id(struct perf_evlist *evlist,
-> +				 union perf_event *event, u64 *id)
+> +static int create_simplefb(const struct screen_info *si,
+> +			   const struct simplefb_platform_data *mode)
 > +{
-> +	const u64 *array = event->sample.array;
-> +	ssize_t n;
-> +
-> +	n = (event->header.size - sizeof(event->header)) >> 3;
-> +
-> +	if (event->header.type == PERF_RECORD_SAMPLE) {
-> +		if (evlist->id_pos >= n)
-> +			return -1;
-> +		*id = array[evlist->id_pos];
-> +	} else {
-> +		if (evlist->is_pos >= n)
-> +			return -1;
-> +		n -= evlist->is_pos;
-> +		*id = array[n];
-> +	}
-> +	return 0;
+> +	return -EINVAL;
 > +}
 > +
-> +static struct perf_evsel *perf_evlist__event2evsel(struct perf_evlist *evlist,
-> +						   union perf_event *event)
-> +{
-> +	struct hlist_head *head;
-> +	struct perf_sample_id *sid;
-> +	int hash;
-> +	u64 id;
-> +
-> +	if (evlist->nr_entries == 1 || evlist->matching_sample_types)
-> +		return perf_evlist__first(evlist);
-> +
-> +	if (perf_evlist__event2id(evlist, event, &id))
-> +		return NULL;
-> +
-> +	/* Synthesized events have an id of zero */
-> +	if (!id)
-> +		return perf_evlist__first(evlist);
-> +
-> +	hash = hash_64(id, PERF_EVLIST__HLIST_BITS);
-> +	head = &evlist->heads[hash];
-> +
-> +	hlist_for_each_entry(sid, head, node) {
-> +		if (sid->id == id)
-> +			return sid->evsel;
-> +	}
-> +	return NULL;
-> +}
-> +
->   union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
->   {
->   	struct perf_mmap *md = &evlist->mmap[idx];
-> @@ -650,9 +719,26 @@ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter)
->   bool perf_evlist__valid_sample_type(struct perf_evlist *evlist)
->   {
->   	struct perf_evsel *first = perf_evlist__first(evlist), *pos = first;
-> +	bool ok = true;
->
->   	list_for_each_entry_continue(pos, &evlist->entries, node) {
-> -		if (first->attr.sample_type != pos->attr.sample_type)
-> +		if (first->attr.sample_type != pos->attr.sample_type) {
-> +			ok = false;
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (ok) {
-> +		evlist->matching_sample_types = true;
-> +		return true;
-> +	}
-> +
-> +	if (evlist->id_pos < 0 || evlist->is_pos < 0)
-> +		return false;
-> +
-> +	list_for_each_entry(pos, &evlist->entries, node) {
-> +		if (pos->id_pos != evlist->id_pos ||
-> +		    pos->is_pos != evlist->is_pos)
->   			return false;
->   	}
->
-> @@ -848,7 +934,10 @@ int perf_evlist__start_workload(struct perf_evlist *evlist)
->   int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *event,
->   			      struct perf_sample *sample)
->   {
-> -	struct perf_evsel *evsel = perf_evlist__first(evlist);
-> +	struct perf_evsel *evsel = perf_evlist__event2evsel(evlist, event);
-> +
-> +	if (!evsel)
-> +		return -EFAULT;
->   	return perf_evsel__parse_sample(evsel, event, sample);
->   }
->
-> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-> index 0583d36..bfcbf67 100644
-> --- a/tools/perf/util/evlist.h
-> +++ b/tools/perf/util/evlist.h
-> @@ -32,11 +32,14 @@ struct perf_evlist {
->   	int		 nr_fds;
->   	int		 nr_mmaps;
->   	int		 mmap_len;
-> +	int		 id_pos;
-> +	int		 is_pos;
->   	struct {
->   		int	cork_fd;
->   		pid_t	pid;
->   	} workload;
->   	bool		 overwrite;
-> +	bool		 matching_sample_types;
->   	struct perf_mmap *mmap;
->   	struct pollfd	 *pollfd;
->   	struct thread_map *threads;
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index d01d2cd..ee0f894 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -46,6 +46,46 @@ static int __perf_evsel__sample_size(u64 sample_type)
->   	return size;
->   }
->
-> +static int __perf_evsel__calc_id_pos(u64 sample_type)
-> +{
-> +	u64 mask;
-> +	int i, idx;
-> +
-> +	if (!(sample_type & PERF_SAMPLE_ID))
-> +		return -1;
-> +
-> +	mask = sample_type & (PERF_SAMPLE_ID - 1);
-> +
-> +	for (i = 0, idx = 0; i < 64; i++) {
-> +		if (mask & (1ULL << i))
-> +			idx++;
-> +	}
-> +
-> +	return idx;
-> +}
-> +
-> +static int __perf_evsel__calc_is_pos(u64 sample_type)
-> +{
-> +	int idx = 1;
-> +
-> +	if (!(sample_type & PERF_SAMPLE_ID))
-> +		return -1;
-> +
-> +	if (sample_type & PERF_SAMPLE_CPU)
-> +		idx += 1;
-> +
-> +	if (sample_type & PERF_SAMPLE_STREAM_ID)
-> +		idx += 1;
-> +
-> +	return idx;
-> +}
-> +
-> +void perf_evsel__calc_id_pos(struct perf_evsel *evsel)
-> +{
-> +	evsel->id_pos = __perf_evsel__calc_id_pos(evsel->attr.sample_type);
-> +	evsel->is_pos = __perf_evsel__calc_is_pos(evsel->attr.sample_type);
-> +}
-> +
->   void hists__init(struct hists *hists)
->   {
->   	memset(hists, 0, sizeof(*hists));
-> @@ -89,6 +129,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
->   	INIT_LIST_HEAD(&evsel->node);
->   	hists__init(&evsel->hists);
->   	evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
-> +	perf_evsel__calc_id_pos(evsel);
->   }
->
->   struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
-> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-> index 3f156cc..88b4319 100644
-> --- a/tools/perf/util/evsel.h
-> +++ b/tools/perf/util/evsel.h
-> @@ -71,6 +71,8 @@ struct perf_evsel {
->   	} handler;
->   	struct cpu_map		*cpus;
->   	unsigned int		sample_size;
-> +	int			id_pos;
-> +	int			is_pos;
->   	bool 			supported;
->   	bool 			needs_swap;
->   	/* parse modifier helper */
-> @@ -100,6 +102,8 @@ void perf_evsel__delete(struct perf_evsel *evsel);
->   void perf_evsel__config(struct perf_evsel *evsel,
->   			struct perf_record_opts *opts);
->
-> +void perf_evsel__calc_id_pos(struct perf_evsel *evsel);
-> +
->   bool perf_evsel__is_cache_op_valid(u8 type, u8 op);
->
->   #define PERF_EVSEL__MAX_ALIASES 8
->
+> +#endif /* CONFIG_X86_SYSFB */
 
+Following on from my ifdef comment above, I believe those versions of
+those functions will always cause add_sysfb() to return -ENODEV, so you
+may as well provide a static inline for add_sysfb() instead.
