@@ -1,51 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab3FZF5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 01:57:25 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:38515 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab3FZF5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 01:57:23 -0400
+	id S1751568Ab3FZGFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 02:05:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10454 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751309Ab3FZGFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 02:05:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,941,1363158000"; 
+   d="scan'208";a="260249549"
+Message-ID: <51CA84BA.8040102@intel.com>
+Date: Wed, 26 Jun 2013 14:05:46 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Date: Wed, 26 Jun 2013 11:27:23 +0530
-X-Google-Sender-Auth: vg8JJiHVzvqkH9Ct8-BYz8acKx8
-Message-ID: <CAPV97yd6tZDs17cQb+3x0YpjnfOqnv=oRg-2w2hBTFpoHjxzEg@mail.gmail.com>
-Subject: 
-From: navin patidar <navinp@cdac.in>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: mfm@muteddisk.com, linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 1/7] perf, x86: Reduce lbr_sel_map size
+References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com> <1372150039-15151-2-git-send-email-zheng.z.yan@intel.com> <CABPqkBTNRsd4fHF=Rts45pHSApmpEnOkNNcvSWeDXjryc+bs_g@mail.gmail.com>
+In-Reply-To: <CABPqkBTNRsd4fHF=Rts45pHSApmpEnOkNNcvSWeDXjryc+bs_g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013, Greg KH <gregkh@linuxfoundation.org> said:
-
-> On Tue, Jun 25, 2013 at 04:27:18PM +0530, navin patidar wrote:
->> On Tue, Jun 25, 2013, Greg KH <gregkh@linuxfoundation.org> said:
+On 06/25/2013 08:33 PM, Stephane Eranian wrote:
+> On Tue, Jun 25, 2013 at 10:47 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
 >>
->> > On Fri, Jun 21, 2013 at 03:01:04PM +0530, navin patidar wrote:
->> >> pr_warn() is preferred over pr_warning().
->> >
->> > And dev_warn() is preferred over both of them, can you convert the code
->> > to use that instead?
->> >
+>> The index of lbr_sel_map is bit value of perf branch_sample_type.
+>> We can reduce lbr_sel_map size by using bit shift as index.
 >>
->> struct device is not available in usbip_start_eh()  which is required
->> for dev_warn().
+>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event.h           |  4 +++
+>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 50 ++++++++++++++----------------
+>>  include/uapi/linux/perf_event.h            | 42 +++++++++++++++++--------
+>>  3 files changed, 56 insertions(+), 40 deletions(-)
 >>
->> usbip_device's containers struct stub_device and struct  vhci_device
->> both have member structure usb_device but inside usbip_start_eh(), it
->> is difficult to determine  to which container struct usbip_device
->> belongs, thus container_of() can not be used here to get struct
->> usb_device.
->
-> Then the code should be reworked in order to be able to properly
-> determine that.
+>> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+>> index 108dc75..a74d554 100644
+>> --- a/arch/x86/kernel/cpu/perf_event.h
+>> +++ b/arch/x86/kernel/cpu/perf_event.h
+>> @@ -447,6 +447,10 @@ struct x86_pmu {
+>>         struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
+>>  };
+>>
+>> +enum {
+>> +       PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
+>> +};
+>> +
+>>  #define x86_add_quirk(func_)                                           \
+>>  do {                                                                   \
+>>         static struct x86_pmu_quirk __quirk __initdata = {              \
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>> index d5be06a..a72e9e9 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>> @@ -69,10 +69,6 @@ static enum {
+>>  #define LBR_FROM_FLAG_IN_TX    (1ULL << 62)
+>>  #define LBR_FROM_FLAG_ABORT    (1ULL << 61)
+>>
+>> -#define for_each_branch_sample_type(x) \
+>> -       for ((x) = PERF_SAMPLE_BRANCH_USER; \
+>> -            (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
+>> -
+>>  /*
+>>   * x86control flow change classification
+>>   * x86control flow changes include branches, interrupts, traps, faults
+>> @@ -387,14 +383,14 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
+>>  {
+>>         struct hw_perf_event_extra *reg;
+>>         u64 br_type = event->attr.branch_sample_type;
+>> -       u64 mask = 0, m;
+>> -       u64 v;
+>> +       u64 mask = 0, v;
+>> +       int i;
+>>
+>> -       for_each_branch_sample_type(m) {
+>> -               if (!(br_type & m))
+>> +       for (i = 0; i < PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE; i++) {
+>> +               if (!(br_type & (1U << i)))
+> 
+> Needs to be 1ULL to avoid bug later on. br_type is u64.
 
-How about adding a usb_device pointer in  usbip_device structure ?
+thanks, will fix.
 
-regards,
---navin-patidar
+> 
+>>                         continue;
+>>
+>> -               v = x86_pmu.lbr_sel_map[m];
+>> +               v = x86_pmu.lbr_sel_map[i];
+>>                 if (v == LBR_NOT_SUPP)
+>>                         return -EOPNOTSUPP;
+>>
+>> @@ -649,33 +645,33 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+>>  /*
+>>   * Map interface branch filters onto LBR filters
+>>   */
+>> -static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+>> -       [PERF_SAMPLE_BRANCH_ANY]        = LBR_ANY,
+>> -       [PERF_SAMPLE_BRANCH_USER]       = LBR_USER,
+>> -       [PERF_SAMPLE_BRANCH_KERNEL]     = LBR_KERNEL,
+>> -       [PERF_SAMPLE_BRANCH_HV]         = LBR_IGN,
+>> -       [PERF_SAMPLE_BRANCH_ANY_RETURN] = LBR_RETURN | LBR_REL_JMP
+>> -                                       | LBR_IND_JMP | LBR_FAR,
+>> +static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+>> +       [PERF_SAMPLE_BRANCH_ANY_SHIFT]          = LBR_ANY,
+>> +       [PERF_SAMPLE_BRANCH_USER_SHIFT]         = LBR_USER,
+>> +       [PERF_SAMPLE_BRANCH_KERNEL_SHIFT]       = LBR_KERNEL,
+>> +       [PERF_SAMPLE_BRANCH_HV_SHIFT]           = LBR_IGN,
+>> +       [PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]   = LBR_RETURN | LBR_REL_JMP
+>> +                                               | LBR_IND_JMP | LBR_FAR,
+>>         /*
+>>          * NHM/WSM erratum: must include REL_JMP+IND_JMP to get CALL branches
+>>          */
+>> -       [PERF_SAMPLE_BRANCH_ANY_CALL] =
+>> +       [PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT] =
+>>          LBR_REL_CALL | LBR_IND_CALL | LBR_REL_JMP | LBR_IND_JMP | LBR_FAR,
+>>         /*
+>>          * NHM/WSM erratum: must include IND_JMP to capture IND_CALL
+>>          */
+>> -       [PERF_SAMPLE_BRANCH_IND_CALL] = LBR_IND_CALL | LBR_IND_JMP,
+>> +       [PERF_SAMPLE_BRANCH_IND_CALL_SHIFT] = LBR_IND_CALL | LBR_IND_JMP,
+>>  };
+>>
+> I think it would ease formatting readability
+> if the indexes could be constructed from a simple macro:
+> #define BR_SHIFT(a) \
+>   PERF_SAMPLE_##a##_SHIFT
+> 
+> #define BR_SMPL(a) \
+>    PERF_SAMPLE_##a
+
+
+#define BR_SHIFT(a) PERF_SAMPLE_##a##_SHIFT
+
+static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+	[BR_SHIFT(ANY)]			= LBR_ANY,
+	[BR_SHIFT(USER)]		= LBR_USER,
+	[BR_SHIFT(KERNEL)		= LBR_KERNEL,
+	[BR_SHIFT(HV)]			= LBR_IGN,
+	[BR_SHIFT(ANY_RETURN)]		= LBR_RETURN | LBR_FAR,
+	[BR_SHIFT(ANY_CALL)]		= LBR_REL_CALL | LBR_IND_CALL | LBR_FAR,
+	[BR_SHIFT(CALL_STACK)]		= LBR_IND_CALL,
+};
+
+the code looks strange, I don't think it has better readability. 
+
+Regards
+Yan, Zheng
+
+
+
+> 
+>> -static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+>> -       [PERF_SAMPLE_BRANCH_ANY]        = LBR_ANY,
+>> -       [PERF_SAMPLE_BRANCH_USER]       = LBR_USER,
+>> -       [PERF_SAMPLE_BRANCH_KERNEL]     = LBR_KERNEL,
+>> -       [PERF_SAMPLE_BRANCH_HV]         = LBR_IGN,
+>> -       [PERF_SAMPLE_BRANCH_ANY_RETURN] = LBR_RETURN | LBR_FAR,
+>> -       [PERF_SAMPLE_BRANCH_ANY_CALL]   = LBR_REL_CALL | LBR_IND_CALL
+>> -                                       | LBR_FAR,
+>> -       [PERF_SAMPLE_BRANCH_IND_CALL]   = LBR_IND_CALL,
+>> +static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+>> +       [PERF_SAMPLE_BRANCH_ANY_SHIFT]          = LBR_ANY,
+>> +       [PERF_SAMPLE_BRANCH_USER_SHIFT]         = LBR_USER,
+>> +       [PERF_SAMPLE_BRANCH_KERNEL_SHIFT]       = LBR_KERNEL,
+>> +       [PERF_SAMPLE_BRANCH_HV_SHIFT]           = LBR_IGN,
+>> +       [PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]   = LBR_RETURN | LBR_FAR,
+>> +       [PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT]     = LBR_REL_CALL | LBR_IND_CALL
+>> +                                               | LBR_FAR,
+>> +       [PERF_SAMPLE_BRANCH_IND_CALL_SHIFT]     = LBR_IND_CALL,
+>>  };
+>>
+>>  /* core */
+>> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+>> index 0b1df41..2ec219e 100644
+>> --- a/include/uapi/linux/perf_event.h
+>> +++ b/include/uapi/linux/perf_event.h
+>> @@ -148,20 +148,36 @@ enum perf_event_sample_format {
+>>   * The branch types can be combined, however BRANCH_ANY covers all types
+>>   * of branches and therefore it supersedes all the other types.
+>>   */
+>> +enum perf_branch_sample_type_shift {
+>> +       PERF_SAMPLE_BRANCH_USER_SHIFT           = 0, /* user branches */
+>> +       PERF_SAMPLE_BRANCH_KERNEL_SHIFT         = 1, /* kernel branches */
+>> +       PERF_SAMPLE_BRANCH_HV_SHIFT             = 2, /* hypervisor branches */
+>> +
+>> +       PERF_SAMPLE_BRANCH_ANY_SHIFT            = 3, /* any branch types */
+>> +       PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT       = 4, /* any call branch */
+>> +       PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT     = 5, /* any return branch */
+>> +       PERF_SAMPLE_BRANCH_IND_CALL_SHIFT       = 6, /* indirect calls */
+>> +       PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT       = 7, /* transaction aborts */
+>> +       PERF_SAMPLE_BRANCH_IN_TX_SHIFT          = 8, /* in transaction */
+>> +       PERF_SAMPLE_BRANCH_NO_TX_SHIFT          = 9, /* not in transaction */
+>> +
+>> +       PERF_SAMPLE_BRANCH_MAX_SHIFT            /* non-ABI */
+>> +};
+>> +
+>>  enum perf_branch_sample_type {
+>> -       PERF_SAMPLE_BRANCH_USER         = 1U << 0, /* user branches */
+>> -       PERF_SAMPLE_BRANCH_KERNEL       = 1U << 1, /* kernel branches */
+>> -       PERF_SAMPLE_BRANCH_HV           = 1U << 2, /* hypervisor branches */
+>> -
+>> -       PERF_SAMPLE_BRANCH_ANY          = 1U << 3, /* any branch types */
+>> -       PERF_SAMPLE_BRANCH_ANY_CALL     = 1U << 4, /* any call branch */
+>> -       PERF_SAMPLE_BRANCH_ANY_RETURN   = 1U << 5, /* any return branch */
+>> -       PERF_SAMPLE_BRANCH_IND_CALL     = 1U << 6, /* indirect calls */
+>> -       PERF_SAMPLE_BRANCH_ABORT_TX     = 1U << 7, /* transaction aborts */
+>> -       PERF_SAMPLE_BRANCH_IN_TX        = 1U << 8, /* in transaction */
+>> -       PERF_SAMPLE_BRANCH_NO_TX        = 1U << 9, /* not in transaction */
+>> -
+>> -       PERF_SAMPLE_BRANCH_MAX          = 1U << 10, /* non-ABI */
+>> +       PERF_SAMPLE_BRANCH_USER         = 1U << PERF_SAMPLE_BRANCH_USER_SHIFT,
+>> +       PERF_SAMPLE_BRANCH_KERNEL       = 1U << PERF_SAMPLE_BRANCH_KERNEL_SHIFT,
+>> +       PERF_SAMPLE_BRANCH_HV           = 1U << PERF_SAMPLE_BRANCH_HV_SHIFT,
+>> +
+>> +       PERF_SAMPLE_BRANCH_ANY          = 1U << PERF_SAMPLE_BRANCH_ANY_SHIFT,
+>> +       PERF_SAMPLE_BRANCH_ANY_CALL     = 1U << PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT,
+>> +       PERF_SAMPLE_BRANCH_ANY_RETURN   = 1U << PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT,
+>> +       PERF_SAMPLE_BRANCH_IND_CALL     = 1U << PERF_SAMPLE_BRANCH_IND_CALL_SHIFT,
+>> +       PERF_SAMPLE_BRANCH_ABORT_TX     = 1U << PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT,
+>> +       PERF_SAMPLE_BRANCH_IN_TX        = 1U << PERF_SAMPLE_BRANCH_IN_TX_SHIFT,
+>> +       PERF_SAMPLE_BRANCH_NO_TX        = 1U << PERF_SAMPLE_BRANCH_NO_TX_SHIFT,
+>> +
+>> +       PERF_SAMPLE_BRANCH_MAX          = 1U << PERF_SAMPLE_BRANCH_MAX_SHIFT,
+>>  };
+>>
+>>  #define PERF_SAMPLE_BRANCH_PLM_ALL \
+>> --
+>> 1.8.1.4
+>>
+
