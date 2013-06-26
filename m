@@ -1,204 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab3FZTPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 15:15:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902Ab3FZTO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 15:14:59 -0400
-Message-ID: <1372274083.30572.577.camel@ul30vt.home>
-Subject: Re: [PATCH 3/3 v16] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-Cc: "joro@8bytes.org" <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+	id S1752755Ab3FZTP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 15:15:57 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:49714 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3FZTPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 15:15:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <1372258383-24524-1-git-send-email-jonas.jensen@gmail.com>
+References: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
+	<1372258383-24524-1-git-send-email-jonas.jensen@gmail.com>
+Date: Wed, 26 Jun 2013 21:15:54 +0200
+Message-ID: <CACRpkdZdmC=ur0FFxoDXAMzieutp2w4HXBDbgbeoSeVXeCgp9w@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: clocksource: add support for MOXA ART SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>, Timur Tabi <timur@tabi.org>
-Date: Wed, 26 Jun 2013 13:14:43 -0600
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D5DD70C@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1371744089-17780-1-git-send-email-Varun.Sethi@freescale.com>
-	 <1371744089-17780-2-git-send-email-Varun.Sethi@freescale.com>
-	 <1372136211.30572.377.camel@ul30vt.home>
-	 <C5ECD7A89D1DC44195F34B25E172658D5DD70C@039-SN2MPN1-011.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "arm@kernel.org" <arm@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 06:24 +0000, Sethi Varun-B16395 wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Tuesday, June 25, 2013 10:27 AM
-> > To: Sethi Varun-B16395
-> > Cc: joro@8bytes.org; iommu@lists.linux-foundation.org; linuxppc-
-> > dev@lists.ozlabs.org; linux-kernel@vger.kernel.org;
-> > benh@kernel.crashing.org; galak@kernel.crashing.org; Yoder Stuart-B08248;
-> > Wood Scott-B07421; Timur Tabi
-> > Subject: Re: [PATCH 3/3 v16] iommu/fsl: Freescale PAMU driver and iommu
-> > implementation.
-> > 
-> > On Thu, 2013-06-20 at 21:31 +0530, Varun Sethi wrote:
-> > 
-> > > +#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR |
-> > PCI_ACS_UF)
-> > > +
-> > > +static struct iommu_group *get_device_iommu_group(struct device *dev)
-> > > +{
-> > > +	struct iommu_group *group;
-> > > +
-> > > +	group = iommu_group_get(dev);
-> > > +	if (!group)
-> > > +		group = iommu_group_alloc();
-> > > +
-> > > +	return group;
-> > > +}
-> > > +
-> > [snip]
-> > > +
-> > 
-> > This really gets parent or peer, right?
-> > 
-> > > +static struct iommu_group *get_peer_pci_device_group(struct pci_dev
-> > > +*pdev) {
-> > > +	struct iommu_group *group = NULL;
-> > > +
-> > > +	/* check if this is the first device on the bus*/
-> > > +	if (pdev->bus_list.next == pdev->bus_list.prev) {
-> > 
-> > It's a list_head, use list functions.  The list implementation should be
-> > treated as opaque.
-> > 
-> > if (list_is_singular(&pdev->bus_list))
-> > 
-> > > +		struct pci_bus *bus = pdev->bus->parent;
-> > > +		/* Traverese the parent bus list to get
-> > > +		 * pdev & dev for the sibling device.
-> > > +		 */
-> > > +		while (bus) {
-> > > +			if (!list_empty(&bus->devices)) {
-> > > +				pdev = container_of(bus->devices.next,
-> > > +					            struct pci_dev, bus_list);
-> > 
-> > pdev = list_first_entry(&bus->devices, struct pci_dev, bus_list);
-> > 
-> > > +				group = iommu_group_get(&pdev->dev);
-> > > +				break;
-> > > +			} else
-> > > +				bus = bus->parent;
-> > 
-> > Is this ever reached?  Don't you always have bus->self?
-> > 
-> [Sethi Varun-B16395] Not sure I understand. Trying to get the group
-> information from the parent bus, if there are no sibling devices on
-> the current bus.
+On Wed, Jun 26, 2013 at 4:53 PM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
 
-I assume there's always a bridge on a bus, but maybe that bridge
-(parent->self) is not in the list of parent->devices?  Is that the case?
-If not, then there's always a device on the bus, the bridge that created
-it.
+> This patch adds an clocksource driver for the main timer(s)
+> found on MOXA ART SoCs.
+>
+> Changes since v2:
+>
+> 1. use clocksource/clockevents infrastructures
+> 2. clock frequency read from system clock
+>
+> Applies to next-20130619
+>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-> > > +		}
-> > > +	} else {
-> > > +		/*
-> > > +		 * Get the pdev & dev for the sibling device
-> > > +		 */
-> > > +		pdev = container_of(pdev->bus_list.prev,
-> > > +				    struct pci_dev, bus_list);
-> > 
-> > How do you know if you're at the head or tail of the list?
-> > 
-> > struct pci_dev *tmp;
-> > list_for_each_entry(tmp, &pdev->bus_list, bus_list) {
-> > 	if (tmp == pdev)
-> > 		continue;
-> > 
-> > 	group = iommu_group_get(&tmp->dev);
-> > 	break;
-> > }
-> > 
-> > > +		group = iommu_group_get(&pdev->dev);
-> > > +	}
-> > > +
-> > > +	return group;
-> > > +}
-> > > +
-> > > +static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
-> > > +{
-> > > +	struct iommu_group *group = NULL;
-> > > +	struct pci_dev *bridge, *dma_pdev = NULL;
-> > > +	struct pci_controller *pci_ctl;
-> > > +	bool pci_endpt_partioning;
-> > > +
-> > > +	pci_ctl = pci_bus_to_host(pdev->bus);
-> > > +	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
-> > > +	/* We can partition PCIe devices so assign device group to the
-> > device */
-> > > +	if (pci_endpt_partioning) {
-> > > +		bridge = pci_find_upstream_pcie_bridge(pdev);
-> > > +		if (bridge) {
-> > > +			if (pci_is_pcie(bridge))
-> > > +				dma_pdev = pci_get_domain_bus_and_slot(
-> > > +						pci_domain_nr(pdev->bus),
-> > > +						bridge->subordinate->number, 0);
-> > > +			if (!dma_pdev)
-> > > +				dma_pdev = pci_dev_get(bridge);
-> > > +		} else
-> > > +			dma_pdev = pci_dev_get(pdev);
-> > > +
-> > > +		/* Account for quirked devices */
-> > > +		swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
-> > > +
-> > > +		/*
-> > > +		 * If it's a multifunction device that does not support our
-> > > +		 * required ACS flags, add to the same group as function 0.
-> > > +		 */
-> > 
-> > See c14d2690 in Joerg's next tree, using function 0 was a poor
-> > assumption.
-> [Sethi Varun-B16395] ok.
-> 
-> > 
-> > > +		if (dma_pdev->multifunction &&
-> > > +		    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
-> > > +			swap_pci_ref(&dma_pdev,
-> > > +				     pci_get_slot(dma_pdev->bus,
-> > > +						  PCI_DEVFN(PCI_SLOT(dma_pdev-
-> > >devfn),
-> > > +						  0)));
-> > > +
-> > > +		group = get_device_iommu_group(&pdev->dev);
-> > > +		pci_dev_put(pdev);
-> > 
-> > What was the point of all the above if we use pdev here instead of
-> > dma_pdev?  Wrong device and broken reference counting.
-> [Sethi Varun-B16395] Will fix this
-> 
->   This also isn't
-> > testing ACS all the way up to the root complex or controller.
-> [Sethi Varun-B16395] In our case the IOMMU can differentiate
-> transactions based on the LIODN. The PCIe controller can generate a
-> unique LIODN based on the bus,device,function number. I believe this
-> would even be true for devices connected to a PCIe bridge (and not on
-> the root bus). So, do we still need to check for ACS up to the root
-> node?
+This is starting to look good :-)
 
-ACS is the PCI capability that tells us whether a device allows
-peer-to-peer or requires all DMA to be forwarded upstream.  At any step
-along the way from an endpoint to the IOMMU the transaction can be
-re-routed.  We therefore need to test the ACS property not only of the
-endpoint, but every device between the endpoint and the IOMMU to form
-the IOMMU groups.  An IOMMU cannot isolate a device if a DMA access is
-re-routed by a link in the topology that prevents the IOMMU from even
-being part of the transaction.  Thanks,
+> +/* TIMER_CR flags:
+> +   TIMEREG_CR_1_CLOCK  0: PCLK, 1: EXT1CLK
+> +   TIMEREG_CR_1_INT    over flow interrupt enable bit */
 
-Alex
+/*
+ * Usually we use this comment style, one star at the beginning
+ * of every comment line and a closing star-slash sitting lonley
+ * on a single line to close it.
+ */
+
+> +       case CLOCK_EVT_MODE_RESUME:
+> +       case CLOCK_EVT_MODE_ONESHOT:
+> +               u |= TIMEREG_CR_1_ENABLE;
+> +               writel(u, timer_base + TIMER_CR);
+> +               writel(~0, timer_base + TIMER1_LOAD);
+
+Should you not write the load value *before* enabling the timer?
+
+> +               pr_debug("%s: CLOCK_EVT_MODE_ONESHOT\n", __func__);
+> +               break;
+
+This looks like you're enabling a tick far ahead in the future.
+For oneshot you should just trigger new events in .next_event(),
+I would just disable the timer for oneshot and enable it
+for each new event in .next_event() instead.
+
+> +       case CLOCK_EVT_MODE_PERIODIC:
+> +               u |= TIMEREG_CR_1_ENABLE;
+> +               writel(u, timer_base + TIMER_CR);
+> +               writel(clock_frequency / HZ, timer_base + TIMER1_LOAD);
+
+Use DIV_ROUND_CLOSEST(clock_frequency, HZ)
+
+> +               pr_debug("%s: CLOCK_EVT_MODE_PERIODIC\n", __func__);
+> +               break;
+> +       case CLOCK_EVT_MODE_UNUSED:
+> +       case CLOCK_EVT_MODE_SHUTDOWN:
+> +       default:
+> +               u &= ~TIMEREG_CR_1_ENABLE;
+
+I would do this also for Oneshot. Then enable it in
+.next_event().
+
+> +               writel(u, timer_base + TIMER_CR);
+> +               break;
 
 
+> +static int moxart_clkevt_next_event(unsigned long cycles,
+> +       struct clock_event_device *unused)
+> +{
+> +       u32 alarm = readl(timer_base + TIMER1_COUNT) - cycles;
+> +       writel(alarm, timer_base + TIMER1_MATCH1);
+
+I would write TIMEREG_CR_1_ENABLE *here*. This way the
+timer is only strictly triggered when an event is queued.
+
+> +static struct irqaction moxart_timer_irq = {
+> +       .name = "moxart-timer",
+> +       .flags = IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
+
+IRQF_DISABLED is pointless, remove it. Nowadays all IRQ handlers
+are called with interrupts disabled.
+
+Why do you need IRQF_IRQPOLL? That seems like more
+copy/paste luggade.
+
+> +       clock_frequency = APB_CLK;
+> +       /* it might be a good idea to have a default other than 0 for
+> +          clock_frequency, should any attempt at getting a valid
+> +          frequency fail, not that i see how it could, it probably could..
+> +          having it APB_CLK can certainly be wrong on some hardware,
+> +          why it is set again with the DT specific property: */
+
+Seems overkill.
+
+> +       ret = of_property_read_u32(node, "clock-frequency", &clock_frequency);
+> +       if (ret)
+> +               pr_err("%s: can't read clock-frequency DT property\n",
+> +                       node->full_name);
+
+I don't think it's apropriate to put clock frequencies into the device
+tree node as u32:s. Please use the clock framework exclusively.
+Now it's like three ways to get this frequency... what if all three
+are different :-P
+
+> +       clk = of_clk_get(node, 0);
+> +       if (IS_ERR(clk))
+> +               pr_err("%s: of_clk_get failed\n", __func__);
+
+bail out here?
+
+> +       else {
+> +               clock_frequency = clk_get_rate(clk);
+> +               pr_debug("%s: clk_get_rate=%u success\n", __func__,
+> +                       clock_frequency);
+> +       }
+
+Then you can  remove the else clause and de-indent this.
+
+The rest looks OK...
+
+Yours,
+Linus Walleij
