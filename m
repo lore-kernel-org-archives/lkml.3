@@ -1,141 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab3FZPyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:54:10 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:55248 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab3FZPyH (ORCPT
+	id S1752165Ab3FZPz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:55:58 -0400
+Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:33291 "EHLO
+	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751591Ab3FZPz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:54:07 -0400
-Message-ID: <51CB0E9C.50408@lwfinger.net>
-Date: Wed, 26 Jun 2013 10:54:04 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 11:55:57 -0400
+X-Greylist: delayed 631 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jun 2013 11:55:56 EDT
+X-RRZE-Submit-IP: 131.188.11.52
+Message-ID: <3109bea2ac0947fd544042e51bcb75ad.squirrel@faumail.uni-erlangen.de>
+In-Reply-To: <51CAF4C9.20407@redhat.com>
+References: <1372182701-12256-1-git-send-email-michael.banken@mathe.stud.uni-erlangen.de>
+    <51CAF4C9.20407@redhat.com>
+Date: Wed, 26 Jun 2013 17:45:14 +0200
+Subject: Re: [PATCH] Added a check for NULL pointer in hid_add_device
+From: michael.banken@mathe.stud.uni-erlangen.de
+To: "Benjamin Tissoires" <benjamin.tissoires@redhat.com>
+Cc: "Michael Banken" <michael.banken@mathe.stud.uni-erlangen.de>,
+        linux-kernel@vger.kernel.org, rydberg@euromail.se,
+        srinivas.pandruvada@intel.com, erazor_de@users.sourceforge.net,
+        jkosina@suse.cz, lorenz@badgers.com,
+        linux-kernel@i4.informatik.uni-erlangen.de,
+        linux-input@vger.kernel.org
+User-Agent: SquirrelMail/1.4.23 [SVN]
 MIME-Version: 1.0
-To: Richard GENOUD <richard.genoud@gmail.com>
-CC: Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: rtl8192cu: slow path warning
-References: <20130611123814.GA9854@lnx-rg> <20130626142241.GA13107@lnx-rg>
-In-Reply-To: <20130626142241.GA13107@lnx-rg>
-Content-Type: multipart/mixed;
- boundary="------------040103060308080909040200"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040103060308080909040200
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Hi,
 
-On 06/26/2013 09:22 AM, Richard GENOUD wrote:
-> Using 3.10-rc7, I'm still seeing the warning, BUT ONLY on the first
-> connection.
+The idea was to make the creation of an empty hid device while inside the
+kernel easier. This problem came up, when I was writing a kernel module
+driver for a usb temperature sensor. The sensors were supposed to be
+recognized in lm-sensors, which does not recognize usb devices. The
+solution in this case was to create an empty hid device to hook it up to
+sysfs.
+In some older implementations of this driver the solution to this problem
+was creating an empty hid device to hook it up to sysfs.
+These older implementations of the driver are not working anymore, unless
+built with the change I am suggesting, because in the current version
+their method of creating the hid device causes a NULL pointer dereference
+at the point where I added the check.
+
+The reason, why I believe this change to be completely harmless is that in
+the case where there actually is a NULL pointer the function would
+dereference it anyway immediately after the line where I added the check.
+The only problem that to my understanding could possibly arise is delaying
+the inevitable oops for a little while.
+
+best regards,
+Michael
+
+On 06/25/2013 4:03 PM, Benjamin Tissoires wrote:
+> Hi Michael,
 >
-> [   40.312500] usb 2-2: default language 0x0409
-> [   40.312500] usb 2-2: udev 2, busnum 2, minor = 129
-> [   40.320312] usb 2-2: New USB device found, idVendor=0bda, idProduct=8176
-> [   40.328125] usb 2-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-> [   40.328125] usb 2-2: Product: 802.11n WLAN Adapter
-> [   40.335937] usb 2-2: Manufacturer: Realtek
-> [   40.343750] usb 2-2: SerialNumber: 00e04c000001
-> [   40.343750] usb 2-2: usb_probe_device
-> [   40.351562] usb 2-2: configuration #1 chosen from 1 choice
-> [   40.351562] usb 2-2: adding 2-2:1.0 (config #1, interface 0)
-> [   40.500000] cfg80211: Calling CRDA to update world regulatory domain
-> [   40.648437] rtl8192cu 2-2:1.0: usb_probe_interface
-> [   40.656250] rtl8192cu 2-2:1.0: usb_probe_interface - got id
-> [   40.664062] rtl8192cu: Chip version 0x10
-> [   40.757812] rtl8192cu: MAC address: a0:f3:c1:1e:02:a0
-> [   40.765625] rtl8192cu: Board Type 0
-> [   40.773437] rtlwifi: rx_max_size 15360, rx_urb_num 8, in_ep 1
-> [   40.773437] rtl8192cu: Loading firmware rtlwifi/rtl8192cufw.bin
-> [   40.781250] usbcore: registered new interface driver rtl8192cu
-> [   40.835937] ieee80211 phy0: Selected rate control algorithm 'rtl_rc'
-> [   40.843750] rtlwifi: wireless switch is on
-> # ip link set wlan0 up
-> [   59.921875] rtl8192cu: MAC auto ON okay!
-> [   59.960937] rtl8192cu: Tx queue select: 0x05
-> # iw wlan0 connect test
-> [   75.390625] wlan0: authenticate with f8:1a:67:1a:df:88
-> [   75.421875] wlan0: send auth to f8:1a:67:1a:df:88 (try 1/3)
-> [   75.437500] wlan0: authenticated
-> [   75.453125] wlan0: associate with f8:1a:67:1a:df:88 (try 1/3)
-> [   75.460937] wlan0: RX AssocResp from f8:1a:67:1a:df:88 (capab=0x401 status=0 aid=2)
-> [   75.468750] wlan0: associated
-> [   76.375000] ------------[ cut here ]------------
-> [   76.375000] WARNING: at kernel/workqueue.c:1365 __queue_work+0x168/0x200()
-> [   76.375000] Modules linked in: rtl8192cu rtl8192c_common rtlwifi mac80211 cfg80211 rfkill ehci_atmel ehci_hcd atmel_usba_udc udc_core ohci_hcd
-> [   76.375000] CPU: 0 PID: 308 Comm: kworker/0:1 Not tainted 3.10.0-rc7 #36
-> [   76.375000] Workqueue: rtl92c_usb rtl_watchdog_wq_callback [rtlwifi]
-> [   76.375000] [<c000d9bc>] (unwind_backtrace+0x0/0xf0) from [<c000b9ec>] (show_stack+0x10/0x14)
-> [   76.375000] [<c000b9ec>] (show_stack+0x10/0x14) from [<c0015c00>] (warn_slowpath_common+0x4c/0x68)
-> [   76.375000] [<c0015c00>] (warn_slowpath_common+0x4c/0x68) from [<c0015c38>] (warn_slowpath_null+0x1c/0x24)
-> [   76.375000] [<c0015c38>] (warn_slowpath_null+0x1c/0x24) from [<c0029e40>] (__queue_work+0x168/0x200)
-> [   76.375000] [<c0029e40>] (__queue_work+0x168/0x200) from [<c0029f2c>] (queue_work_on+0x44/0x50)
-> [   76.375000] [<c0029f2c>] (queue_work_on+0x44/0x50) from [<bf09bb54>] (rtl_watchdog_wq_callback+0x320/0x404 [rtlwifi])
-> [   76.375000] [<bf09bb54>] (rtl_watchdog_wq_callback+0x320/0x404 [rtlwifi]) from [<c002b168>] (process_one_work+0x10c/0x354)
-> [   76.375000] [<c002b168>] (process_one_work+0x10c/0x354) from [<c002b784>] (worker_thread+0x130/0x380)
-> [   76.375000] [<c002b784>] (worker_thread+0x130/0x380) from [<c0030330>] (kthread+0xa4/0xb0)
-> [   76.375000] [<c0030330>] (kthread+0xa4/0xb0) from [<c00092f0>] (ret_from_fork+0x14/0x24)
-> [   76.375000] ---[ end trace e116b4b3d671f3d2 ]---
+> On 06/25/2013 07:51 PM, Michael Banken wrote:
+>> This check greatly simplifies creating a dummy hid device.
+>
+> Could you elaborate a little here? If you want to create a hid device
+> from the user space, I encourage you to use uhid, which is available
+> since v3.6.
+>
+>> With this check in place a hid dummy can be created simply by allocating
+>> and adding the device.
+>> This used to be possible in earlier Kernel versions.
+>>
+>> Signed-off-by: Michael Banken
+>> <michael.banken@mathe.stud.uni-erlangen.de>
+>> Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
+>> ---
+>>  drivers/hid/hid-core.c |   37 ++++++++++++++++++++-----------------
+>>  1 file changed, 20 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>> index 0951a9a..88c573e 100644
+>> --- a/drivers/hid/hid-core.c
+>> +++ b/drivers/hid/hid-core.c
+>> @@ -2289,24 +2289,27 @@ int hid_add_device(struct hid_device *hdev)
+>>  	if (hid_ignore(hdev))
+>>  		return -ENODEV;
+>>
+>> -	/*
+>> -	 * Read the device report descriptor once and use as template
+>> -	 * for the driver-specific modifications.
+>> -	 */
+>> -	ret = hdev->ll_driver->parse(hdev);
+>> -	if (ret)
+>> -		return ret;
+>> -	if (!hdev->dev_rdesc)
+>> -		return -ENODEV;
+>> -
+>> -	/*
+>> -	 * Scan generic devices for group information
+>> -	 */
+>> -	if (hid_ignore_special_drivers ||
+>> -	    !hid_match_id(hdev, hid_have_special_driver)) {
+>> -		ret = hid_scan_report(hdev);
+>> +	if (hdev->ll_driver != NULL) {
+>
+> I am concerned by the fact that *every* hid specific driver will have to
+> call hid_hw_start and hid_hw_stop at some point. These 2 functions  are
+> not protected against a null pointer in hdev->ll_driver, so allowing
+> here a null pointer will introduce a kernel oops later.
+>
+> I think it would be safer to have:
+> if (!hdev->ll_driver)
+> 	return -ENODEV;
+>
+> But if I understood correctly, this is not your point.
+> So definitively, I need your usage scenarios of such hid "dummy" device.
+>
+> Cheers,
+> Benjamin
+>
+>> +		/*
+>> +		 * Read the device report descriptor once and use as template
+>> +			 * for the driver-specific modifications.
+>> +		 */
+>> +		ret = hdev->ll_driver->parse(hdev);
+>>  		if (ret)
+>> -			hid_warn(hdev, "bad device descriptor (%d)\n", ret);
+>> +			return ret;
+>> +		if (!hdev->dev_rdesc)
+>> +			return -ENODEV;
+>> +
+>> +		/*
+>> +		 * Scan generic devices for group information
+>> +		 */
+>> +		if (hid_ignore_special_drivers ||
+>> +		    !hid_match_id(hdev, hid_have_special_driver)) {
+>> +			ret = hid_scan_report(hdev);
+>> +			if (ret)
+>> +				hid_warn(hdev,
+>> +					"bad device descriptor (%d)\n", ret);
+>> +		}
+>>  	}
+>>
+>>  	/* XXX hack, any other cleaner solution after the driver core
+>>
+>
+>
 
-The WARNING is the result of a workqueue not being initialized for the USB driver.
 
-Please try the attached patch. As you have posted on a public mailing list, May 
-I assume that it will be OK to use your address in Reported-by/Tested-by lines 
-in the patch submission?
-
-Thanks,
-
-Larry
-
-
---------------040103060308080909040200
-Content-Type: text/plain; charset=UTF-8;
- name="rtl8192cu_init_work"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="rtl8192cu_init_work"
-
-Index: wireless-testing-save/drivers/net/wireless/rtlwifi/pci.c
-===================================================================
---- wireless-testing-save.orig/drivers/net/wireless/rtlwifi/pci.c
-+++ wireless-testing-save/drivers/net/wireless/rtlwifi/pci.c
-@@ -1008,7 +1008,7 @@ static void _rtl_pci_prepare_bcn_tasklet
- 	return;
- }
- 
--static void rtl_lps_change_work_callback(struct work_struct *work)
-+void rtl_lps_change_work_callback(struct work_struct *work)
- {
- 	struct rtl_works *rtlworks =
- 	    container_of(work, struct rtl_works, lps_change_work);
-Index: wireless-testing-save/drivers/net/wireless/rtlwifi/ps.h
-===================================================================
---- wireless-testing-save.orig/drivers/net/wireless/rtlwifi/ps.h
-+++ wireless-testing-save/drivers/net/wireless/rtlwifi/ps.h
-@@ -49,5 +49,6 @@ void rtl_swlps_rf_awake(struct ieee80211
- void rtl_swlps_rf_sleep(struct ieee80211_hw *hw);
- void rtl_p2p_ps_cmd(struct ieee80211_hw *hw, u8 p2p_ps_state);
- void rtl_p2p_info(struct ieee80211_hw *hw, void *data, unsigned int len);
-+void rtl_lps_change_work_callback(struct work_struct *work);
- 
- #endif
-Index: wireless-testing-save/drivers/net/wireless/rtlwifi/usb.c
-===================================================================
---- wireless-testing-save.orig/drivers/net/wireless/rtlwifi/usb.c
-+++ wireless-testing-save/drivers/net/wireless/rtlwifi/usb.c
-@@ -1070,6 +1070,8 @@ int rtl_usb_probe(struct usb_interface *
- 	spin_lock_init(&rtlpriv->locks.usb_lock);
- 	INIT_WORK(&rtlpriv->works.fill_h2c_cmd,
- 		  rtl_fill_h2c_cmd_work_callback);
-+	INIT_WORK(&rtlpriv->works.lps_change_work,
-+		  rtl_lps_change_work_callback);
- 
- 	rtlpriv->usb_data_index = 0;
- 	init_completion(&rtlpriv->firmware_loading_complete);
-
---------------040103060308080909040200--
