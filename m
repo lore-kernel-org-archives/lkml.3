@@ -1,172 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab3FZWTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 18:19:16 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:44345 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab3FZWTO (ORCPT
+	id S1753348Ab3FZWYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 18:24:09 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:29575 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848Ab3FZWYG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 18:19:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Jun 2013 16:18:53 -0600
-Message-ID: <CAErSpo58bCG4=hwC73VY+nXPk9-dZUb5eWERZ_wTtAfrXtBVmg@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Jun 2013 18:24:06 -0400
+X-AuditID: cbfec37d-b7f036d000004805-2c-51cb6a0401e5
+From: Shuah Khan <shuah.kh@samsung.com>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Dave Airlie <airlied@redhat.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: Linux 3.10-rc7
+Thread-topic: Linux 3.10-rc7
+Thread-index: AQHOcO9Wy94BEELWoUiZdIX6E3dp1w==
+Date: Wed, 26 Jun 2013 22:24:03 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E61731A11@sisaex02sj>
+References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
+ <B8EFE96D1287C24090BAD9D858E15E6172FFB9@sisaex02sj>
+ <CA+55aFxuB_nx8fZ_kN8U=fMFOq43cKZC_HJbj=6vKo7-fDqNuw@mail.gmail.com>
+ <CAKMK7uH0q1vSaVRigtZD2pf5ZeVLEv1sn+tsiO7ZWjJdt=DwBA@mail.gmail.com>
+ <20130625125437.6e7bb2d4@jbarnes-desktop>
+ <B8EFE96D1287C24090BAD9D858E15E617305B4@sisaex02sj>
+ <20130625130816.55e6cb80@jbarnes-desktop>
+ <B8EFE96D1287C24090BAD9D858E15E617306DD@sisaex02sj>
+ <CA+i0qc64MqeZd3y2E4YOtxwxyWRPXqofJep1BGCeEHCdkJuxQg@mail.gmail.com>
+ <B8EFE96D1287C24090BAD9D858E15E6173079B@sisaex02sj>
+ <5B8DA87D05A7694D9FA63FD143655C1B028DB36B@HASMSX106.ger.corp.intel.com>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t9hP12WrNOBBrdny1hcvbWAyeLmw7Os
+	Fgsf3mW2mD1hM5PFozMn2S0u75rDZvH1p4PFh546i0d9b9kdOD1WftDy2PttAYvHzll32T0W
+	73nJ5HFixm8Wj/vdx5k83u+7yubxeZOcx7eve5kCOKO4bFJSczLLUov07RK4MpZu2MdasJ63
+	Yvq1H8wNjK+4uhg5OSQETCSav1xihrDFJC7cW8/WxcjFISSwjFHi3a/LrBBOL5PE3vezmSCc
+	+YwS9++9ZwFpYRNQl/j8egc7iC0ioCdxa/UcdpAiZoGJzBITvu4DKuLgEBaQlnh5SAaiRkZi
+	ZutHVpj6U//OgdksAqoS03+dZQKxeQXsJeZ+OQm1bCGrxLfNh8ESjED3fT+1BsxmFhCXaG69
+	yQJxt4DEkj3noX4QlXj5+B8ryF4JAUWJ7autIMq1JNbvPA7Vqi3x5N0FVohdghI/Jt9jmcAo
+	NgvJ1FlIWmYhaZmFpGUBI8sqRrHS4uSC4qT01AoTveLE3OLSvHS95PzcTYyQSK7dwXj/q80h
+	RgEORiUe3g+MpwOFWBPLiitzDzFKcDArifBaewKFeFMSK6tSi/Lji0pzUosPMTJxcEo1MMY8
+	5OVddzJOR0pK/Ok/3XuMNgwSBwvWqjyqZM2xPd1cIpewieWH1duDDPMiFtswMEvdn50qnTyf
+	45GB1Smbkx9/dvb02mW80hK9U9g3c+kTOU0bnqwFOUfPyeflSz57oqf75tYfpvvTbnc9vLFW
+	+PCujNq5R7Y4/vvfcmQ3zxu+6Y57re1MniqxFGckGmoxFxUnAgBST6SawgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 10:22 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> Thunderbolt PCI-to-PCI bridges typically use BIOS "assisted" enumeration.
-> This means that the BIOS will allocate bridge resources based on some
-> assumptions of a maximum Thunderbolt chain. It also disables native PCIe
-> hotplug of the root port where the Thunderbolt host router is connected.
-
-The BIOS often assigns PCI bridge windows, e.g., for root ports
-leading to ExpressCard slots.  I assume BIOSes make similar
-assumptions there about what ExpressCards are likely to be plugged in.
- Is your BIOS assistance the same sort of thing, or is there something
-additional happening at hot-add time?  (I think there might be AML
-that does Thunderbolt-specific stuff at hotplug-time, but I assume
-that's not related to resource assignment, because the OS owns those
-resources.)
-
-> In order to support this we must make sure that the kernel does not try to
-> be too smart and resize / open the bridge windows during PCI enumeration.
-> For example by default the kernel will add certain amount of space to the
-> bridge memory/io windows (this is configurable via pci=hp[mem|io]size=xxx
-> command line option). Eventually we run out of space that the BIOS has
-> allocated.
-
-ROMs usually aren't very big compared to regular memory BARs.  Is the
-problem just that adding space the BIOS didn't plan for causes the OS
-to increase the window size and bump into space assigned to a peer of
-the Thunderbolt controller?
-
-> Also address space for expansion ROMs should not be allocated (BIOS does
-> not execute them for Thunderbolt endpoints). If we don't prevent this the
-> kernel might find expansion ROM associated with some endpoint and reopen
-> the bridge window which the BIOS already closed leading again resource
-> exhaustion.
-
-I assume the only reason we should not allocate expansion ROM space is
-to avoid resource exhaustion.  If we had enough resources, allocating
-ROM space wouldn't cause anything bad to happen, would it?
-
-> Fix this by adding a quirk that matches known Thunderbolt PCI-to-PCI
-> bridges and in that case prevents allocation of expansion ROM resources and
-> makes sure that the PCI core does not increase size of bridge windows.
+On 06/26/2013 04:12 PM, Winkler, Tomas wrote:
 >
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  arch/x86/pci/fixup.c | 51 +++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 51 insertions(+)
 >
-> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-> index f5809fa..924822b 100644
-> --- a/arch/x86/pci/fixup.c
-> +++ b/arch/x86/pci/fixup.c
-> @@ -7,6 +7,8 @@
->  #include <linux/pci.h>
->  #include <linux/init.h>
->  #include <linux/vgaarb.h>
-> +#include <linux/acpi.h>
-> +#include <linux/pci-acpi.h>
->  #include <asm/pci_x86.h>
+>>> Can you please send me the log part when this starts?
+>>>
+>>> Thanks
+>>>
+>>
+>> It rolled over and I don't have prior messages. I tried reproducing twice and
+>> didn't see it again. I will try a few more times and see if I can get it to happen
+>> again.
+>>
+>> This is what I could save before dmesg rolled over:
+>>
+>> [   78.709014] mei_me 0000:00:16.0: reset: wrong host start response
+>> [   78.709016] mei_me 0000:00:16.0: unexpected reset: dev_state =
+>> RESETTING
+>> [   78.709029] mei_me 0000:00:16.0: reset: unexpected enumeration
+>> response hbm.
+>> [   78.709031] mei_me 0000:00:16.0: unexpected reset: dev_state =
+>> RESETTING
+>> [   78.709069] mei_me 0000:00:16.0: reset: wrong host start response
+>>
+> So far I was able to positively reproduce it with  3.10-rc5 but not with 3.10-rc7 and above.
 >
->  static void pci_fixup_i450nx(struct pci_dev *d)
-> @@ -539,3 +541,52 @@ static void twinhead_reserve_killing_zone(struct pci_dev *dev)
->          }
->  }
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x27B9, twinhead_reserve_killing_zone);
-> +
-> +#ifdef CONFIG_ACPI
-> +/*
-> + * BIOS assisted Thunderbolt PCI enumeration should handle all resource
-> + * allocation on behalf of OS.
-> + */
-> +static void quirk_thunderbolt(struct pci_dev *dev)
-> +{
-> +       struct acpi_pci_root *root;
-> +       acpi_handle handle;
-> +
-> +       handle = acpi_find_root_bridge_handle(dev);
-> +       if (!handle)
-> +               return;
-> +
-> +       root = acpi_pci_find_root(handle);
-> +       if (!root)
-> +               return;
-> +
-> +       /*
-> +        * Native PCIe hotplug should be disabled when BIOS assisted
-> +        * hotplug is in use.
-> +        */
-> +       if (root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL)
-> +               return;
-
-I'm not really sure why this test is here.  I dimly recall hearing
-that Thunderbolt hotplug requires some work at hotplug-time, and this
-is not all public, and hence is done by AML.  But that in itself
-doesn't seem related to the question of allocating ROM space.
-
-> +       /*
-> +        * Make sure that we don't allocate resources for expansion ROMs.
-> +        * This may accidentally increase the size of the bridge window
-> +        * causing us to run out of resources.
-> +        */
-> +       if (!(pci_probe & PCI_NOASSIGN_ROMS)) {
-> +               pr_info("Thunderbolt host router detected disabling ROMs\n");
-
-We have a pci_dev, so this should use dev_info().
-
-> +               pci_probe |= PCI_NOASSIGN_ROMS;
-
-I think you really only care about the space for ROMs on devices
-connected via Thunderbolt, so it's kind of a shame that the switch is
-global and affects ROMs on *all* devices.  I guess there's nothing
-simple to be done about that, though.
-
-> +       }
-> +
-> +       /*
-> +        * Don't add anything to the BIOS allocated bridge window size for
-> +        * the same reason.
-> +        */
-> +       dev->is_hotplug_bridge = 0;
-
-"is_hotplug_bridge" is also used in MPS management
-(pcie_find_smpss()).  Did you investigate that and make sure this is
-safe?  I think the Thunderbolt controller supports hotplug, and I'm
-not sure what will happen if the MPS code assumes it doesn't.
-
-> +}
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1513, quirk_thunderbolt);
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x151a, quirk_thunderbolt);
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x151b, quirk_thunderbolt);
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1547, quirk_thunderbolt);
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1548, quirk_thunderbolt);
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1549, quirk_thunderbolt);
-> +#endif
-> --
-> 1.8.3.1
+> There are 3 patches that went in to fix this issue
 >
+> 42f132f mei: me: clear interrupts on the resume path
+> 2753ff5 mei: nfc: fix nfc device freeing
+> 5e85b36 mei: init: Flush scheduled work before resetting the device
+>
+> Are you sure you have these 3 in?
+>
+
+Checked the git log and yes I have all three commits. It appears this 
+problem is intermittent and hard to reproduce at least on 3.10-rc7. I 
+tried several times yesterday to capture the log and couldn't reproduce.
+
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
