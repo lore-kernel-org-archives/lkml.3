@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab3FZByF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 21:54:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:59621 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab3FZBxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 21:53:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,940,1363158000"; 
-   d="scan'208";a="360531370"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
-        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
-        vishal.l.verma@intel.com, dvhart@linux.intel.com
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 1/8] pch_gbe: Use PCH_GBE_PHY_REGS_LEN instead of 32
-Date: Tue, 25 Jun 2013 18:53:21 -0700
-Message-Id: <28bb2a41e403eac476c2d72a338b8c508a0219c5.1372211451.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <cover.1372211451.git.dvhart@linux.intel.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
-In-Reply-To: <cover.1372211451.git.dvhart@linux.intel.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
+	id S1751674Ab3FZB4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 21:56:33 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:39635 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab3FZB4c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 21:56:32 -0400
+MIME-Version: 1.0
+Date: Wed, 26 Jun 2013 09:56:30 +0800
+Message-ID: <CAPgLHd8wYkHaqH90Xyg=QgBKaREwjgS=H-pOMz-jLrwtdWuQ3g@mail.gmail.com>
+Subject: [PATCH -next] pinctrl: vt8500: wmt: remove redundant dev_err call in wmt_pinctrl_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: linus.walleij@linaro.org, linux@prisktech.co.nz, axel.lin@ingics.com,
+        maxime.ripard@free-electrons.com, swarren@nvidia.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid using magic numbers when we have perfectly good defines just lying
-around.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: netdev@vger.kernel.org
+There is a error message within devm_ioremap_resource
+already, so remove the dev_err call to avoid redundant
+error message.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pinctrl/vt8500/pinctrl-wmt.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-index 0c1c65a..6667a6b 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -670,7 +670,7 @@ static int pch_gbe_init_phy(struct pch_gbe_adapter *adapter)
- 	}
- 	adapter->hw.phy.addr = adapter->mii.phy_id;
- 	pr_debug("phy_addr = %d\n", adapter->mii.phy_id);
--	if (addr == 32)
-+	if (addr == PCH_GBE_PHY_REGS_LEN)
- 		return -EAGAIN;
- 	/* Selected the phy and isolate the rest */
- 	for (addr = 0; addr < PCH_GBE_PHY_REGS_LEN; addr++) {
--- 
-1.8.1.2
+diff --git a/drivers/pinctrl/vt8500/pinctrl-wmt.c b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+index fb30edf3..0cc4335 100644
+--- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
++++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+@@ -570,10 +570,8 @@ int wmt_pinctrl_probe(struct platform_device *pdev,
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	data->base = devm_ioremap_resource(&pdev->dev, res);
+-	if (IS_ERR(data->base)) {
+-		dev_err(&pdev->dev, "failed to map memory resource\n");
++	if (IS_ERR(data->base))
+ 		return PTR_ERR(data->base);
+-	}
+ 
+ 	wmt_desc.pins = data->pins;
+ 	wmt_desc.npins = data->npins;
 
