@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3FZKCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 06:02:25 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:52489 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab3FZKCW (ORCPT
+	id S1752219Ab3FZKCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 06:02:36 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:38871 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506Ab3FZKCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 06:02:22 -0400
-Message-ID: <51CABC2A.50209@monstr.eu>
-Date: Wed, 26 Jun 2013 12:02:18 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 26 Jun 2013 06:02:34 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: <netdev@vger.kernel.org>
+CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "Joe Perches" <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: [PATCH v2] arch/arc: angel4.dts - add description for "arc_emac"
+Date: Wed, 26 Jun 2013 14:02:18 +0400
+Message-ID: <1372240938-28733-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Timur Tabi <timur@tabi.org>, devicetree-discuss@lists.ozlabs.org,
-        linux-fbdev@vger.kernel.org, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v4 0/7] xilinxfb changes
-References: <cover.1370254386.git.michal.simek@xilinx.com> <20130617085640.GE305@game.jcrosoft.org> <51BED093.1040207@monstr.eu> <201306172307.19114.arnd@arndb.de>
-In-Reply-To: <201306172307.19114.arnd@arndb.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2PSNFIPJPVKCNARCOSPLE"
+Content-Type: text/plain
+X-Originating-IP: [10.121.8.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2PSNFIPJPVKCNARCOSPLE
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+With this patch we introduce DT "arc_emac" description for ARCangel4.
+Description is based on info/example in
+"Documentation/devicetree/bindings/net/arc_emac.txt".
 
-On 06/17/2013 11:07 PM, Arnd Bergmann wrote:
-> On Monday 17 June 2013, Michal Simek wrote:
->> On 06/17/2013 10:56 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>> On 07:23 Mon 17 Jun     , Michal Simek wrote:
->>>> On 06/06/2013 06:23 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>> On 12:13 Mon 03 Jun     , Michal Simek wrote:
->>>>>> Hi,
->>>>>>
->>>>>
->>>>> Arnd can you take look on it again please
->>>>>
->>>>> I'll take a look on it next week
->>>>
->>>> Any update on this?
->>> look ok but I want the Ack from Arnd
->=20
-> Sorry for the delay, everything looks good to me.
->=20
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
-Jean-Christophe: Will you apply this series?
-Or should I take it through my microblaze tree?
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Mischa Jonker <mjonker@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: Florian Fainelli <florian@openwrt.org>
 
-Thanks,
-Michal
+---
 
+This re-spin also removes obsolete mentions of IRQ number and
+base-address of arc_emac from "plat_arcfpga".
+---
+ arch/arc/boot/dts/angel4.dts                |   16 ++++++++++++++++
+ arch/arc/plat-arcfpga/include/plat/irq.h    |    2 --
+ arch/arc/plat-arcfpga/include/plat/memmap.h |    2 --
+ 3 files changed, 16 insertions(+), 4 deletions(-)
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
+index bae4f93..4fb2d6f 100644
+--- a/arch/arc/boot/dts/angel4.dts
++++ b/arch/arc/boot/dts/angel4.dts
+@@ -51,5 +51,21 @@
+ 			current-speed = <115200>;
+ 			status = "okay";
+ 		};
++
++		ethernet@c0fc2000 {
++			compatible = "snps,arc-emac";
++			reg = <0xc0fc2000 0x3c>;
++			interrupts = <6>;
++			mac-address = [ 00 11 22 33 44 55 ];
++			clock-frequency = <80000000>;
++			max-speed = <100>;
++			phy = <&phy0>;
++
++			#address-cells = <1>;
++			#size-cells = <0>;
++			phy0: ethernet-phy@0 {
++				reg = <1>;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arc/plat-arcfpga/include/plat/irq.h b/arch/arc/plat-arcfpga/include/plat/irq.h
+index 41e3356..6adbc53 100644
+--- a/arch/arc/plat-arcfpga/include/plat/irq.h
++++ b/arch/arc/plat-arcfpga/include/plat/irq.h
+@@ -16,8 +16,6 @@
+ #define UART1_IRQ	10
+ #define UART2_IRQ	11
+ 
+-#define VMAC_IRQ	6
+-
+ #define IDE_IRQ		13
+ #define PCI_IRQ		14
+ #define PS2_IRQ		15
+diff --git a/arch/arc/plat-arcfpga/include/plat/memmap.h b/arch/arc/plat-arcfpga/include/plat/memmap.h
+index 1663f33..5c78e61 100644
+--- a/arch/arc/plat-arcfpga/include/plat/memmap.h
++++ b/arch/arc/plat-arcfpga/include/plat/memmap.h
+@@ -15,8 +15,6 @@
+ #define UART0_BASE              0xC0FC1000
+ #define UART1_BASE              0xC0FC1100
+ 
+-#define VMAC_REG_BASEADDR       0xC0FC2000
+-
+ #define IDE_CONTROLLER_BASE     0xC0FC9000
+ 
+ #define AHB_PCI_HOST_BRG_BASE   0xC0FD0000
+-- 
+1.7.10.4
 
-
-
-------enig2PSNFIPJPVKCNARCOSPLE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHKvCoACgkQykllyylKDCFmjwCghQjOmC52L9nFSN6NLIUqvRSL
-Iy0Anjp0zWieAd00kNXvqvyvAGknpaXA
-=fXgE
------END PGP SIGNATURE-----
-
-------enig2PSNFIPJPVKCNARCOSPLE--
