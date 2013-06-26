@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab3FZSwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 14:52:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50085 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab3FZSwP (ORCPT
+	id S1752294Ab3FZSwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 14:52:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16825 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab3FZSwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Jun 2013 14:52:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] arm: add early_ioremap() support
-Date: Wed, 26 Jun 2013 20:52:09 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, nico@linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-References: <1372182401-11029-1-git-send-email-leif.lindholm@linaro.org>
-In-Reply-To: <1372182401-11029-1-git-send-email-leif.lindholm@linaro.org>
+Message-ID: <51CB3838.10400@oracle.com>
+Date: Wed, 26 Jun 2013 14:51:36 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Tejun Heo <tj@kernel.org>
+CC: lizefan@huawei.com, LKML <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, trinity@vger.kernel.org
+Subject: Re: [PATCH cgroup/for-3.11] cgroup: grab cgroup_mutex in drop_parsed_module_refcounts()
+References: <51C9D17B.5090208@oracle.com> <20130626010454.GD30407@mtj.dyndns.org> <20130626010521.GE30407@mtj.dyndns.org> <20130626175008.GF4405@mtj.dyndns.org>
+In-Reply-To: <20130626175008.GF4405@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306262052.09640.arnd@arndb.de>
-X-Provags-ID: V02:K0:nUow+mOgcHM99zKs3dvp/I7va9HICSWr+YZGYUS/LvM
- cbC5773/TV+xLciiZ5xEplahCpPsNNjiuA1A4Trw5RezXwPquu
- nyhW65aIuS74E2zFcT4g78qaOM6b6kZpQaO3ZBRk9y8chHczjS
- sibmcR9J2+MwqqEVueOtzO5pI2+/ndmyfmgfezN1yee03kExjG
- CxAurADA2hXbToGHGSgWh2/Bwa0mBwv6ho7ARbBYaWdTMXzWBQ
- 7QJ99gWt04Z36FIP6CnkQ5Hs2WpBh61DQ64A20Rkc46C8oxj0b
- yTElT4wt0PHeaTSliEC/SNGVmCHFp0PaFGd/jI6NODIH0QxAXE
- YW0QiUwzHgltvT9bZQOE=
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 June 2013, Leif Lindholm wrote:
-> x86 and ia64 have the early_ioremap()/early_iounmap() functions, which are
-> useful for supporting things like UEFI, ACPI and SMBIOS, where configuration
-> tables need to be parsed before proper memory management is available,
-> regardless of highmem status.
-> 
-> This patchset implements a restricted form of early_ioremap(), available
-> before paging_init() only. Like the x86 code on which it is based, it
-> (p)re-uses the fixmap regions for its virtual mapping range. Up to 7
-> simultaneous mappings of up to 128KB can be accommodated in the available
-> fixmap space.
+On 06/26/2013 01:50 PM, Tejun Heo wrote:
+> On Tue, Jun 25, 2013 at 06:05:21PM -0700, Tejun Heo wrote:
+>> This isn't strictly necessary as all subsystems specified in
+>> @subsys_mask are guaranteed to be pinned; however, it does spuriously
+>> trigger lockdep warning.  Let's grab cgroup_mutex around it.
+>>
+>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>
+> Applied both patches to cgroup/for-3.11.
 
-+rmk
+FWIW, for both patches,
 
-I made a similar suggestion to extending the use of fixmap recently, see
-"Re: SCU registers mapping for CA9/CA5 cores". Russell pointed out that
-fixmap is intentionally limited to just kmap_atomic uses at the moment
-and changing that would potentially have a significant impact when we
-run out of pages in the fixmap area.
+	Tested-by: Sasha Levin <sasha.levin@oracle.com>
 
-The method we use on ARM normally is the iotable_init() function, which
-requires hardcoding a virtual address at the moment.
 
-It might be nicer to change that code than to put early_ioremap into
-fixmap. Note that early_ioremap in fixmap is a bit of a kludge on x86
-as well because it is very much /not/ a fixed mapping like the rest
-of fixmap, they just use it because it's convenient.
-
-Extending the iotable mechanism on ARM would be the convenient
-solution for us I think.
-
-	Arnd
+Thanks,
+Sasha
