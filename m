@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab3FZX2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 19:28:53 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:35340 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3FZX2v (ORCPT
+	id S1753518Ab3FZX24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 19:28:56 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:34269 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab3FZX2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 19:28:51 -0400
+	Wed, 26 Jun 2013 19:28:54 -0400
+Message-ID: <51CB792D.6030504@redhat.com>
+Date: Thu, 27 Jun 2013 01:28:45 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1372177330-28013-2-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-2-git-send-email-mika.westerberg@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Jun 2013 17:28:30 -0600
-Message-ID: <CAErSpo4Ks+8PPvpscWZE7LrRd-daOzV-kJi6Oim42A+nZnp3HQ@mail.gmail.com>
-Subject: Re: [PATCH 1/6] PCI: acpiphp: do not check for SLOT_ENABLED in enable_device()
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vishal Verma <vishal.l.verma@intel.com>
+Subject: Re: NVMe: Add nvme-scsi.c (was Re: [PULL REQUEST] NVMe driver updates)
+References: <20130509202015.GJ6057@linux.intel.com>
+In-Reply-To: <20130509202015.GJ6057@linux.intel.com>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 10:22 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> With Thunderbolt you can chain devices: connect a new devices to plugged
-> one. In this case the slot is already enabled, but we still want to look
-> for new devices behind it.
->
-> We're going to reuse enable_device() for rescan for new devices on the
-> enabled slot. Let's push the check up by stack.
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/pci/hotplug/acpiphp_glue.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index 59df857..b983e29 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -688,9 +688,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->         int num, max, pass;
->         LIST_HEAD(add_list);
->
-> -       if (slot->flags & SLOT_ENABLED)
-> -               goto err_exit;
-> -
->         list_for_each_entry(func, &slot->funcs, sibling)
->                 acpiphp_bus_add(func);
->
-> @@ -1242,6 +1239,8 @@ int acpiphp_enable_slot(struct acpiphp_slot *slot)
->                 goto err_exit;
->
->         if (get_slot_status(slot) == ACPI_STA_ALL) {
-> +               if (slot->flags & SLOT_ENABLED)
-> +                       goto err_exit;
+Il 09/05/2013 22:20, Matthew Wilcox ha scritto:
+>       NVMe: Add nvme-scsi.c
 
-Why do we check for SLOT_ENABLED at all?  I think we're handling a Bus
-Check notification, which means "re-enumerate on the device tree
-starting from the notification point."  It doesn't say anything about
-skipping the re-enumeration if we find a device that's already
-enabled.
+I couldn't find the original patch on LKML, so I'll just quote the
+relevant piece of code.
 
-It seems like we ought to just re-enumerate all the way down in case a
-device was added farther down in the tree (which is what it sounds
-like Thunderbolt is doing).
+> +int nvme_sg_io(struct nvme_ns *ns, struct sg_io_hdr __user *u_hdr)
+> +{
+> +	struct sg_io_hdr hdr;
+> +	int retcode;
+> +
+> +	if (!capable(CAP_SYS_ADMIN))
+> +		return -EACCES;
 
->                 /* configure all functions */
->                 retval = enable_device(slot);
->                 if (retval)
-> --
-> 1.8.3.1
->
+This should be EPERM, and also it should use the same checks as other
+implementations of SG_IO, including:
+
+- checking if it's operating on a partition, and requiring CAP_SYS_RAWIO
+if so;
+
+- allowing a limited number of commands even for !capable(CAP_SYS_RAWIO).
+
+All this is done by scsi_cmd_blk_ioctl.
+
+Paolo
+
+> +	if (copy_from_user(&hdr, u_hdr, sizeof(hdr)))
+> +		return -EFAULT;
+> +	if (hdr.interface_id != 'S')
+> +		return -EINVAL;
+> +	if (hdr.cmd_len > BLK_MAX_CDB)
+> +		return -EINVAL;
+> +
+> +	retcode = nvme_scsi_translate(ns, &hdr);
+> +	if (retcode < 0)
+> +		return retcode;
+> +	if (retcode > 0)
+> +		retcode = SNTI_TRANSLATION_SUCCESS;
+> +	if (copy_to_user(__user u_hdr, &hdr, sizeof(sg_io_hdr_t)) > 0)
+> +		return -EFAULT;
+> +
+> +	return retcode;
+> +}
+
+
