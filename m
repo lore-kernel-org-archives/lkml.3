@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3FZW17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 18:27:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9165 "EHLO mga02.intel.com"
+	id S1753475Ab3FZW2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 18:28:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60715 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417Ab3FZW15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 18:27:57 -0400
+	id S1753417Ab3FZW2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 18:28:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,947,1363158000"; 
-   d="scan'208";a="336051901"
-Subject: [PATCH v4 3/5] rwsem: remove try_reader_grant label do_wake
+   d="scan'208";a="360144384"
+Subject: [PATCH v4 4/5] rwsem/wake: check lock before do atomic update
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
@@ -26,8 +26,8 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
 In-Reply-To: <cover.1372282738.git.tim.c.chen@linux.intel.com>
 References: <cover.1372282738.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Jun 2013 15:28:00 -0700
-Message-ID: <1372285680.22432.143.camel@schen9-DESK>
+Date: Wed, 26 Jun 2013 15:28:03 -0700
+Message-ID: <1372285683.22432.144.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -35,40 +35,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That make code simple and more readable
+Atomic update lock and roll back will cause cache bouncing in large
+machine. A lock status pre-read can relieve this problem
 
+Suggested-by: Davidlohr bueso <davidlohr.bueso@hp.com>
+Suggested-by: Tim Chen <tim.c.chen@linux.intel.com>
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- lib/rwsem.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ lib/rwsem.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
 diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 42f1b1a..a8055cf 100644
+index a8055cf..1d6e6e8 100644
 --- a/lib/rwsem.c
 +++ b/lib/rwsem.c
-@@ -85,15 +85,17 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 	adjustment = 0;
+@@ -64,7 +64,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 	struct rwsem_waiter *waiter;
+ 	struct task_struct *tsk;
+ 	struct list_head *next;
+-	long oldcount, woken, loop, adjustment;
++	long woken, loop, adjustment;
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+@@ -86,6 +86,12 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
  	if (wake_type != RWSEM_WAKE_READ_OWNED) {
  		adjustment = RWSEM_ACTIVE_READ_BIAS;
-- try_reader_grant:
--		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
--		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
--			/* A writer stole the lock. Undo our reader grant. */
-+		while (1) {
-+			oldcount = rwsem_atomic_update(adjustment, sem)
-+								- adjustment;
-+			if (likely(oldcount >= RWSEM_WAITING_BIAS))
-+				break;
+ 		while (1) {
++			long oldcount;
 +
-+			 /* A writer stole the lock.  Undo our reader grant. */
- 			if (rwsem_atomic_update(-adjustment, sem) &
- 						RWSEM_ACTIVE_MASK)
- 				return sem;
- 			/* Last active locker left. Retry waking readers. */
--			goto try_reader_grant;
- 		}
- 	}
- 
++			/* A writer stole the lock. */
++			if (unlikely(sem->count < RWSEM_WAITING_BIAS))
++				return sem;
++
+ 			oldcount = rwsem_atomic_update(adjustment, sem)
+ 								- adjustment;
+ 			if (likely(oldcount >= RWSEM_WAITING_BIAS))
 -- 
 1.7.4.4
 
