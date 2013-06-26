@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab3FZPBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:01:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47947 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab3FZPBc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:01:32 -0400
-Date: Wed, 26 Jun 2013 11:01:16 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Michal Hocko <mhocko@suse.cz>, gregkh@linuxfoundation.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>
-Subject: Re: [PATCH] zcache: initialize module properly when zcache=FOO is
- given
-Message-ID: <20130626150116.GA6004@phenom.dumpdata.com>
-References: <1372258142-7019-1-git-send-email-mhocko@suse.cz>
+	id S1752078Ab3FZPCU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:02:20 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:48119 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751569Ab3FZPCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 11:02:18 -0400
+Date: Wed, 26 Jun 2013 10:02:16 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mike Travis <travis@sgi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Nathan Zimmer <nzimmer@sgi.com>,
+        holt@sgi.com, rob@landley.net, tglx@linutronix.de, mingo@redhat.com,
+        yinghai@kernel.org, gregkh@linuxfoundation.org, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC] Transparent on-demand memory setup initialization
+	embedded in the (GFP) buddy allocator
+Message-ID: <20130626150216.GB2210@asylum.americas.sgi.com>
+References: <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130625073819.GC11420@gmail.com> <51C9D1D6.20405@sgi.com> <51C9E4B7.2000007@zytor.com> <51C9E6CD.5080508@sgi.com> <20130626092248.GB27025@gmail.com> <20130626062850.a7ce5806.akpm@linux-foundation.org> <20130626133715.GA6424@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372258142-7019-1-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20130626133715.GA6424@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 04:49:02PM +0200, Michal Hocko wrote:
-> 835f2f51 (staging: zcache: enable zcache to be built/loaded as a module)
-> introduced in 3.10-rc1 has introduced a bug for zcache=FOO module
-> parameter processing.
+On Wed, Jun 26, 2013 at 03:37:15PM +0200, Ingo Molnar wrote:
 > 
-> zcache_comp_init return code doesn't agree with crypto_has_comp which
-> uses 1 for the success unlike zcache_comp_init which uses 0. This
-> causes module loading failure even if the given algorithm is supported:
-> [    0.815330] zcache: compressor initialization failed
+> * Andrew Morton <akpm@linux-foundation.org> wrote:
 > 
-> Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > On Wed, 26 Jun 2013 11:22:48 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+> > 
+> > > except that on 32 TB 
+> > > systems we don't spend ~2 hours initializing 8,589,934,592 page heads.
+> > 
+> > That's about a million a second which is crazy slow - even my 
+> > prehistoric desktop is 100x faster than that.
+> > 
+> > Where's all this time actually being spent?
+> 
+> See the earlier part of the thread - apparently it's spent initializing 
+> the page heads - remote NUMA node misses from a single boot CPU, going 
+> across a zillion cross-connects? I guess there's some other low hanging 
+> fruits as well - so making this easier to profile would be nice. The 
+> profile posted was not really usable.
+> 
+That is correct, from what I am seeing, using crude cycle counters, there is
+far more time spent on the later nodes, i.e. memory near the boot node is 
+initialized a lot faster then remote memory.
 
-Looks OK to me.
+I think the other low hanging fruits are currently being drowned out by the
+lack of locality.
 
-Cc-ing Greg.
+Nate
 
-> ---
->  drivers/staging/zcache/zcache-main.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
+> Btw., NUMA locality would be another advantage of on-demand 
+> initialization: actual users of RAM tend to allocate node-local 
+> (especially on large clusters), so any overhead will be naturally lower.
 > 
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index dcceed2..0fe530b 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
->  #else
->  	if (*zcache_comp_name != '\0') {
->  		ret = crypto_has_comp(zcache_comp_name, 0, 0);
-> -		if (!ret)
-> +		if (!ret) {
->  			pr_info("zcache: %s not supported\n",
->  					zcache_comp_name);
-> -		goto out;
-> +			goto out;
-> +		}
-> +		goto out_alloc;
->  	}
->  	if (!ret)
->  		strcpy(zcache_comp_name, "lzo");
-> @@ -1827,6 +1829,7 @@ static int zcache_comp_init(void)
->  	pr_info("zcache: using %s compressor\n", zcache_comp_name);
->  
->  	/* alloc percpu transforms */
-> +out_alloc:
->  	ret = 0;
->  	zcache_comp_pcpu_tfms = alloc_percpu(struct crypto_comp *);
->  	if (!zcache_comp_pcpu_tfms)
-> -- 
-> 1.8.3.1
+> Thanks,
 > 
+> 	Ingo
