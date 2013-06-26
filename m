@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab3FZPUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:20:34 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:46069 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751421Ab3FZPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:20:31 -0400
-Message-ID: <51CB06BD.8090202@sgi.com>
-Date: Wed, 26 Jun 2013 10:20:29 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752260Ab3FZPWA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:22:00 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:40710 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab3FZPV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 11:21:58 -0400
+Date: Wed, 26 Jun 2013 08:21:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: paulmck@linux.vnet.ibm.com, David Laight <David.Laight@ACULAB.COM>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        walken@google.com, mingo@kernel.org, linux-arch@vger.kernel.org,
+        vincent.guittot@linaro.org, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, namhyung@kernel.org,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com,
+        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+Message-ID: <20130626152148.GA4405@mtj.dyndns.org>
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
+ <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com>
+ <20130625220026.GG3828@linux.vnet.ibm.com>
+ <51CAF624.6060004@linux.vnet.ibm.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com>
+ <20130626143424.GN3828@linux.vnet.ibm.com>
+ <1372258271.18733.256.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>
-CC: Ingo Molnar <mingo@kernel.org>, <holt@sgi.com>, <travis@sgi.com>,
-        <rob@landley.net>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <yinghai@kernel.org>, <akpm@linux-foundation.org>,
-        <gregkh@linuxfoundation.org>, <x86@kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130626121430.GA4980@gmail.com> <20130626144903.GA2210@asylum.americas.sgi.com> <51CB04C7.8060702@intel.com>
-In-Reply-To: <51CB04C7.8060702@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.140]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372258271.18733.256.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 10:12 AM, Dave Hansen wrote:
-> On 06/26/2013 07:49 AM, Nathan Zimmer wrote:
->> My guess it is the NMIs overwhelming the system but I have not found a good way
->> to profile perf gone wild so it is only a guess.
-> I've got an 80-core system and the symptoms sound similar to perf issues
-> I'm seeing.  Dropping the sample rate helped for me, and there's a patch
-> in -tip at the moment to do it automatically:
->
->> http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=14c63f17b1fde5a575a28e96547a22b451c71fb5
-> Looks like you've also found that debugging NMIs is fun. :)
-More fun then one person can handle.
-I'll have to take this patch for a spin.
+On Wed, Jun 26, 2013 at 10:51:11AM -0400, Steven Rostedt wrote:
+> > It would also increase the latency of CPU-hotunplug operations.
+> 
+> Is that a big deal?
 
-Thanks,
-     Nate
+I thought that was the whole deal with this patchset - making cpu
+hotunplugs lighter and faster mostly for powersaving.  That said, just
+removing stop_machine call would be a pretty good deal and I don't
+know how meaningful reducing CPU hotunplug latency is.  Srivatsa?
+
+Thanks.
+
+-- 
+tejun
