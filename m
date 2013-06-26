@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab3FZJOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:14:50 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:50475 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab3FZJOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:14:47 -0400
-Message-ID: <51CAB0DB.5000706@huawei.com>
-Date: Wed, 26 Jun 2013 17:14:03 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752246Ab3FZJPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:15:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347Ab3FZJPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:15:31 -0400
+Date: Wed, 26 Jun 2013 11:13:46 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [BUG] perf report: garbage output with event grouping
+Message-ID: <20130626091346.GB1019@krava.brq.redhat.com>
+References: <CABPqkBQ843gUmk596NrOyybBH63o02sz8-8qW0jOkEodrs1a7g@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <trinity@vger.kernel.org>
-Subject: Re: [PATCH cgroup/for-3.11] cgroup: fix cgroupfs_root early destruction
- path
-References: <51C9D17B.5090208@oracle.com> <20130626010454.GD30407@mtj.dyndns.org>
-In-Reply-To: <20130626010454.GD30407@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQ843gUmk596NrOyybBH63o02sz8-8qW0jOkEodrs1a7g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/6/26 9:04, Tejun Heo wrote:
-> cgroupfs_root used to have ->actual_subsys_mask in addition to
-> ->subsys_mask.  a8a648c4ac ("cgroup: remove
-> cgroup->actual_subsys_mask") removed it noting that the subsys_mask is
-> essentially temporary and doesn't belong in cgroupfs_root; however,
-> the patch made it impossible to tell whether a cgroupfs_root actually
-> has the subsystems bound or just have the bits set leading to the
-> following BUG when trying to mount with subsystems which are already
-> mounted elsewhere.
+On Wed, Jun 26, 2013 at 10:42:49AM +0200, Stephane Eranian wrote:
+> Hi,
 > 
->  kernel BUG at kernel/cgroup.c:1038!
->  invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->  ...
->  CPU: 1 PID: 7973 Comm: mount Tainted: G        W    3.10.0-rc7-next-20130625-sasha-00011-g1c1dc0e #1105
->  task: ffff880fc0ae8000 ti: ffff880fc0b9a000 task.ti: ffff880fc0b9a000
->  RIP: 0010:[<ffffffff81249b29>]  [<ffffffff81249b29>] rebind_subsystems+0x409/0x5f0
->  ...
->  Call Trace:
->   [<ffffffff8124bd4f>] cgroup_kill_sb+0xff/0x210
->   [<ffffffff813d21af>] deactivate_locked_super+0x4f/0x90
->   [<ffffffff8124f3b3>] cgroup_mount+0x673/0x6e0
->   [<ffffffff81257169>] cpuset_mount+0xd9/0x110
->   [<ffffffff813d2580>] mount_fs+0xb0/0x2d0
->   [<ffffffff81404afd>] vfs_kern_mount+0xbd/0x180
->   [<ffffffff814070b5>] do_new_mount+0x145/0x2c0
->   [<ffffffff814085d6>] do_mount+0x356/0x3c0
->   [<ffffffff8140873d>] SyS_mount+0xfd/0x140
->   [<ffffffff854eb600>] tracesys+0xdd/0xe2
 > 
-> We still want rebind_subsystems() to take added/removed masks, so
-> let's fix it by marking whether a cgroupfs_root has finished binding
-> or not.  Also, document what's going on around ->subsys_mask
-> initialization so that similar mistakes aren't repeated.
+> $ perf record -e 'cpi{cycles,instructions}' noploop 5
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> $ perf report --stdio --group
+> # group: ^P^Q<A0>\{cycles,instructions}
+> # ========
+> #
+> # Samples: 39K of event '^P^Q<A0>\ { cycles, instructions }'
+> # Event count (approx.): 37782563692
+> #
+> #         Overhead  Command      Shared Object                       Symbol
+> # ................  .......  .................  ...........................
+> #
+>     99.91%  99.98%  noploop  noploop            [.] main
+>      0.06%   -nan%  noploop  [kernel.kallsyms]  [k] read_hpet
+>      0.01%   0.01%  noploop  [kernel.kallsyms]  [k] __acct_update_integrals
+>      0.01%   -nan%  noploop  [kernel.kallsyms]  [k] raise_softirq
+>      0.01%   -nan%  noploop  [kernel.kallsyms]  [k] apic_timer_interrupt
+>      0.01%   -nan%  noploop  [kernel.kallsyms]  [k] __do_softirq
+>      0.01%   -nan%  noploop  [kernel.kallsyms]  [k] common_interrupt
+>      0.00%   0.00%  noploop  [kernel.kallsyms]  [k] intel_pmu_enable_all
+>      0.00%   0.01%  noploop  [kernel.kallsyms]  [k] cpuacct_account_field
+>      0.00%   0.01%  noploop  [kernel.kallsyms]  [k] __local_bh_enable
+> 
+> 
+> 1. The group name is garbage if not anonymous group.
+> 2. arithmetic error in the overhead columns leading to NaN.
+> 3. I assume the Overhead column order is the group event order. Is that right?
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+hi
 
+1) attached patch fixies that for me
+2) I cannot reproduce this one on acme's tree
+3) right, and we do need event names there ;-)
+
+---
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 738d3b8..673d98c 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2089,7 +2089,7 @@ static int process_group_desc(struct perf_file_section *section __maybe_unused,
+ 			evsel->leader = evsel;
+ 			/* {anon_group} is a dummy name */
+ 			if (strcmp(desc[i].name, "{anon_group}"))
+-				evsel->group_name = desc[i].name;
++				evsel->group_name = strdup(desc[i].name);
+ 			evsel->nr_members = desc[i].nr_members;
+ 
+ 			if (i >= nr_groups || nr > 0) {
