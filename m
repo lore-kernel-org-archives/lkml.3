@@ -1,314 +1,468 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab3FZPN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:13:26 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:49027 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab3FZPNZ (ORCPT
+	id S1751827Ab3FZPOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:14:31 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45563 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab3FZPO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:13:25 -0400
-Date: Wed, 26 Jun 2013 17:13:21 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Russell King <linux@arm.linux.org.uk>,
-        jimwall@q.com, brian@crystalfontz.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: mxs: dt: Add Crystalfontz CFA-10056 device tree
-Message-ID: <20130626151321.GD5803@lukather>
-References: <1372258347-18422-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1372258347-18422-3-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 26 Jun 2013 11:14:29 -0400
+Date: Wed, 26 Jun 2013 17:14:26 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: N900 device tree conversion: first step
+Message-ID: <20130626151426.GA1440@amd.pavel.ucw.cz>
+References: <20130609015944.GA23559@amd.pavel.ucw.cz>
+ <20130609201119.GA3190@blackmetal.musicnaut.iki.fi>
+ <20130613132624.GA3464@amd.pavel.ucw.cz>
+ <20130613141001.GF8164@atomide.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9dgjiU4MmWPVapMU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372258347-18422-3-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130613141001.GF8164@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
---9dgjiU4MmWPVapMU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+After major fight, I ended up with patch that can be posted to the
+mailing list without major risk, and where video still works on
+emulator & real hardware...
 
-Hi Alexandre,
+So... here it is.
 
-On Wed, Jun 26, 2013 at 04:52:26PM +0200, Alexandre Belloni wrote:
-> From: Brian Lilly <brian@crystalfontz.com>
->=20
-> The CFA-10056 is a breakout board for the CFA-10036, and is
-> basically a CFA-10037, with ai 4.3" screen.
-                               ^ typo
+One hack that is still neccessary is old-style spi init. Without that,
+I get display on emulator, but not on actual hardware. Bad. Ideas
+welcome.
 
-> Signed-off-by: Brian Lilly <brian@crystalfontz.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/boot/dts/Makefile           |   1 +
->  arch/arm/boot/dts/imx28-cfa10056.dts | 200 +++++++++++++++++++++++++++++=
-++++++
->  2 files changed, 201 insertions(+)
->  create mode 100644 arch/arm/boot/dts/imx28-cfa10056.dts
->=20
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 225d939..d494f37 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -131,6 +131,7 @@ dtb-$(CONFIG_ARCH_MXS) +=3D imx23-evk.dtb \
->  	imx28-cfa10037.dtb \
->  	imx28-cfa10049.dtb \
->  	imx28-cfa10055.dtb \
-> +	imx28-cfa10056.dtb \
->  	imx28-cfa10057.dtb \
->  	imx28-evk.dtb \
->  	imx28-m28evk.dtb \
-> diff --git a/arch/arm/boot/dts/imx28-cfa10056.dts b/arch/arm/boot/dts/imx=
-28-cfa10056.dts
-> new file mode 100644
-> index 0000000..47b5016
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/imx28-cfa10056.dts
-> @@ -0,0 +1,200 @@
-> +/*
-> + * Copyright 2012 Free Electrons
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +
-> +/*
-> + * The CFA-10056 is an expansion board for the CFA-10036 module, thus we
-> + * need to include the CFA-10036 DTS.
-> + */
-> +/include/ "imx28-cfa10036.dts"
-> +
-> +/ {
-> +	model =3D "Crystalfontz CFA-10056 Board";
-> +	compatible =3D "crystalfontz,cfa10056", "crystalfontz,cfa10036", "fsl,i=
-mx28";
-> +
-> +	apb@80000000 {
-> +		apbh@80000000 {
-> +			pinctrl@80018000 {
-> +				pinctrl-names =3D "default", "default";
-> +				pinctrl-1 =3D <&hog_pins_cfa10056
-> +					&hog_pins_cfa10056_pullup>;
-> +
-> +				hog_pins_cfa10056: hog-10056@0 {
-> +					reg =3D <0>;
-> +					fsl,pinmux-ids =3D <
-> +						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
-> +						0x2153 /* MX28_PAD_SSP2_D5__GPIO_2_21 */
-> +						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
-> +					>;
-> +					fsl,drive-strength =3D <0>;
-> +					fsl,voltage =3D <1>;
-> +					fsl,pull-up =3D <0>;
-> +				};
-> +
-> +				hog_pins_cfa10056_pullup: hog-10056-pullup@0 {
-> +					reg =3D <0>;
-> +					fsl,pinmux-ids =3D <
-> +						0x2133 /* MX28_PAD_SSP2_D3__GPIO_2_19 */
-> +						0x3183 /* MX28_PAD_I2C0_SCL__GPIO_3_24 */
-> +						0x3193 /* MX28_PAD_I2C0_SDA__GPIO_3_25 */
-> +						0x31a3 /* MX28_PAD_SAIF_SDATA0__GPIO_3_26 */
-> +						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
-> +					>;
-> +					fsl,drive-strength =3D <0>;
-> +					fsl,voltage =3D <1>;
-> +					fsl,pull-up =3D <1>;
-> +				};
+Oh and this all is with very reduced .config.
 
-These pins don't seem used in your DT. Are you sure you need them?
+Not for merge, but
 
-> +				spi2_pins_cfa10056: spi2-cfa10056@0 {
-> +					reg =3D <0>;
-> +					fsl,pinmux-ids =3D <
-> +						0x2103 /* MX28_PAD_SSP2_SCK__GPIO_2_16 */
-> +						0x2113 /* MX28_PAD_SSP2_CMD__GPIO_2_17 */
-> +						0x2123 /* MX28_PAD_SSP2_D0__GPIO_2_18 */
-> +					>;
-> +					fsl,drive-strength =3D <1>;
-> +					fsl,voltage =3D <1>;
-> +					fsl,pull-up =3D <1>;
-> +				};
-> +
-> +				spi3_pins_cfa10056: spi3-cfa10056@0 {
-> +					reg =3D <0>;
-> +					fsl,pinmux-ids =3D <
-> +						0x0183 /* MX28_PAD_GPMI_RDN__GPIO_0_24 */
-> +						0x01c3 /* MX28_PAD_GPMI_RESETN__GPIO_0_28 */
-> +						0x0113 /* MX28_PAD_GPMI_CE1N__GPIO_0_17 */
-> +						0x01a3 /* MX28_PAD_GPMI_ALE__GPIO_0_26 */
-> +						0x01b3 /* MX28_PAD_GPMI_CLE__GPIO_0_27 */
-> +					>;
-> +					fsl,drive-strength =3D <1>;
-> +					fsl,voltage =3D <1>;
-> +					fsl,pull-up =3D <1>;
-> +				};
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Ditto.
+Enjoy :-),
+								Pavel
 
-> +				lcdif_pins_cfa10056: lcdif-evk@0 {
-> +					reg =3D <0>;
-> +					fsl,pinmux-ids =3D <
-> +						0x1181 /* MX28_PAD_LCD_RD_E__LCD_VSYNC */
-> +						0x1191 /* MX28_PAD_LCD_WR_RWN__LCD_HSYNC */
-> +						0x11a1 /* MX28_PAD_LCD_RS__LCD_DOTCLK */
-> +						0x11b1 /* MX28_PAD_LCD_CS__LCD_ENABLE */
-> +					>;
-> +					fsl,drive-strength =3D <0>;
-> +					fsl,voltage =3D <1>;
-> +					fsl,pull-up =3D <0>;
-> +				};
-> +			};
-> +
-> +			lcdif@80030000 {
-> +				pinctrl-names =3D "default";
-> +				pinctrl-0 =3D <&lcdif_24bit_pins_a
-> +						 &lcdif_pins_cfa10056>;
-> +				display =3D <&display>;
-> +				status =3D "okay";
-> +
-> +				display: display {
-> +					bits-per-pixel =3D <32>;
-> +					bus-width =3D <24>;
-> +
-> +					display-timings {
-> +						native-mode =3D <&timing0>;
-> +						timing0: timing0 {
-> +							clock-frequency =3D <32000000>;
-> +							hactive =3D <480>;
-> +							vactive =3D <800>;
-> +							hback-porch =3D <2>;
-> +							hfront-porch =3D <2>;
-> +							vback-porch =3D <2>;
-> +							vfront-porch =3D <2>;
-> +							hsync-len =3D <5>;
-> +							vsync-len =3D <5>;
-> +							hsync-active =3D <0>;
-> +							vsync-active =3D <0>;
-> +							de-active =3D <1>;
-> +							pixelclk-active =3D <1>;
-> +						};
-> +					};
-> +				};
-> +			};
-> +		};
-> +
-> +		apbx@80040000 {
-> +			i2c1: i2c@8005a000 {
-> +				pinctrl-names =3D "default";
-> +				pinctrl-0 =3D <&i2c1_pins_a>;
-> +				status =3D "okay";
-> +			};
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 9c62558..7b1a075 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -119,6 +119,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	omap3-beagle-xm.dtb \
+ 	omap3-evm.dtb \
+ 	omap3-tobi.dtb \
++	omap3-n900.dtb \
+ 	omap4-panda.dtb \
+ 	omap4-panda-a4.dtb \
+ 	omap4-panda-es.dtb \
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+new file mode 100644
+index 0000000..3918ae1
+--- /dev/null
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -0,0 +1,83 @@
++/*
++ * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
++ * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 (or later) as
++ * published by the Free Software Foundation.
++ */
++
++/dts-v1/;
++
++/include/ "omap34xx.dtsi"
++
++/ {
++	model = "Nokia N900";
++	compatible = "nokia,omap3-n900", "ti,omap3";
++
++	cpus {
++		cpu@0 {
++//			cpu0-supply = <&vcc>;
++		};
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x10000000>; /* 256 MB */
++	};
++
++};
++
++&i2c1 {
++	clock-frequency = <2200000>;
++
++	twl: twl@48 {
++		reg = <0x48>;
++		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
++		interrupt-parent = <&intc>;
++	};
++};
++
++/include/ "twl4030.dtsi"
++
++&twl_gpio {
++	ti,pullups	= <0x0>;
++	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
++};
++
++&i2c2 {
++	clock-frequency = <400000>;
++};
++
++&i2c3 {
++	clock-frequency = <100000>;
++};
++
++&mmc1 {
++	status = "disabled";
++};
++
++&mmc2 {
++	status = "disabled";
++};
++
++&mmc3 {
++	status = "disabled";
++};
++
++&mcspi1 {
++	mipid@2 {
++		compatible = "acx565akm";
++		spi-max-frequency = <6000000>;
++		reg = <2>;
++	};
++};
++
++/*
++&usb_otg_hs {
++	interface-type = <0>;
++	usb-phy = <&usb2_phy>;
++	mode = <2>;
++	power = <50>;
++};
++*/
+diff --git a/arch/arm/boot/dts/omap34xx.dtsi b/arch/arm/boot/dts/omap34xx.dtsi
+new file mode 100644
+index 0000000..75ed4ae
+--- /dev/null
++++ b/arch/arm/boot/dts/omap34xx.dtsi
+@@ -0,0 +1,28 @@
++/*
++ * Device Tree Source for OMAP34xx/OMAP35xx SoC
++ *
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "omap3.dtsi"
++
++/ {
++	cpus {
++		cpu@0 {
++			/* OMAP343x/OMAP35xx variants OPP1-5 */
++			operating-points = <
++				/* kHz    uV */
++				125000   975000
++				250000  1075000
++				500000  1200000
++				550000  1270000
++				600000  1350000
++			>;
++			clock-latency = <300000>; /* From legacy driver */
++		};
++	};
++};
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index e54a480..5aacde2 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -21,6 +21,10 @@
+ #include "common.h"
+ #include "common-board-devices.h"
+ #include "dss-common.h"
++#include "sdram-nokia.h"
++#include "soc.h"
++#include "board-rx51-secure.h"
++#include <linux/regulator/machine.h>
+ 
+ #if !(defined(CONFIG_ARCH_OMAP2) || defined(CONFIG_ARCH_OMAP3))
+ #define intc_of_init	NULL
+@@ -35,20 +39,57 @@ static struct of_device_id omap_dt_match_table[] __initdata = {
+ 	{ }
+ };
+ 
+-static void __init omap_generic_init(void)
++extern void rx51_init_base(void);
++extern void rx51_init(void);
++extern int __init rx51_i2c_init(void);
++extern void __init rx51_peripherals_init(void);
++extern void __init rx51_spi_init(void);
++
++
++void __init omap_generic_init(void)
+ {
+-	omap_sdrc_init(NULL, NULL);
++	struct omap_sdrc_params *sdrc_params;
++
++#ifdef CONFIG_ARM_ERRATA_430973
++	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
++		printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
++		/* set IBE to 1 */
++		rx51_secure_update_aux_cr(1 << 6, 0);
++	} else {
++		extern bool early_print_redirect;
++
++		early_print_redirect = 1;
++	}
++#endif
+ 
++	sdrc_params = nokia_get_sdram_timings();
++	omap_sdrc_init(sdrc_params, sdrc_params);
++
++#if 1
++	printk("*** omap: populating platform\n");
+ 	of_platform_populate(NULL, omap_dt_match_table, NULL, NULL);
++#endif
+ 
+ 	/*
+ 	 * HACK: call display setup code for selected boards to enable omapdss.
+ 	 * This will be removed when omapdss supports DT.
+ 	 */
+-	if (of_machine_is_compatible("ti,omap4-panda"))
++	if (of_machine_is_compatible("ti,omap4-panda")) {
+ 		omap4_panda_display_init_of();
+-	else if (of_machine_is_compatible("ti,omap4-sdp"))
++		return;
++	}
++	if (of_machine_is_compatible("ti,omap4-sdp")) {
+ 		omap_4430sdp_display_init_of();
++		return;
++	}
++#ifdef CONFIG_MACH_NOKIA_RX51
++	if (of_machine_is_compatible("nokia,omap3-n900")) {
++		regulator_use_dummy_regulator(); 
++		rx51_spi_init();
++		return;
++	}
++	panic("really want to init video\n");
++#endif
+ }
+ 
+ #ifdef CONFIG_SOC_OMAP2420
+diff --git a/arch/arm/mach-omap2/board-rx51-compat.c b/arch/arm/mach-omap2/board-rx51-compat.c
+index 0ffa909..f4223ff 100644
+--- a/arch/arm/mach-omap2/board-rx51-compat.c
++++ b/arch/arm/mach-omap2/board-rx51-compat.c
+@@ -131,6 +131,7 @@ static long twl4030_madc_ioctl(struct file *filp, unsigned int cmd,
+ 
+ 	switch (cmd) {
+ 	case TWL4030_MADC_IOCX_ADC_RAW_READ: {
++#if 0
+ 		struct twl4030_madc_request req;
+ 		if (par.channel >= TWL4030_MADC_MAX_CHANNELS)
+ 			return -EINVAL;
+@@ -151,6 +152,9 @@ static long twl4030_madc_ioctl(struct file *filp, unsigned int cmd,
+ 		} else {
+ 			par.status = val;
+ 		}
++#else
++		panic("no raw readings from adc"); 
++#endif
+ 		break;
+ 	}
+ 	default:
+diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
+index 64485d7..cc6c2e8 100644
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@ -1647,6 +1647,12 @@ fail:
+ 	printk(KERN_ERR "Bluetooth device registration failed\n");
+ }
+ 
++void __init rx51_spi_init(void)
++{
++	spi_register_board_info(rx51_peripherals_spi_board_info,
++				ARRAY_SIZE(rx51_peripherals_spi_board_info));
++}
++
+ void __init rx51_peripherals_init(void)
+ {
+ 	rx51_i2c_init();
+@@ -1664,8 +1670,7 @@ void __init rx51_peripherals_init(void)
+ 	rx51_cmt_init();
+ 	rx51_ssi_init();
+ 	rx51_bt_init();
+-	spi_register_board_info(rx51_peripherals_spi_board_info,
+-				ARRAY_SIZE(rx51_peripherals_spi_board_info));
++	rx51_spi_init();
+ 
+ 	partition = omap_mux_get("core");
+ 	if (partition)
+diff --git a/arch/arm/mach-omap2/board-rx51-video.c b/arch/arm/mach-omap2/board-rx51-video.c
+index eb66726..4c834c1 100644
+--- a/arch/arm/mach-omap2/board-rx51-video.c
++++ b/arch/arm/mach-omap2/board-rx51-video.c
+@@ -68,7 +68,7 @@ static struct omap_dss_board_info rx51_dss_board_info = {
+ 
+ static int __init rx51_video_init(void)
+ {
+-	if (!machine_is_nokia_rx51())
++	if (!machine_is_nokia_rx51() && !of_machine_is_compatible("nokia,omap3-n900"))
+ 		return 0;
+ 
+ 	if (omap_mux_init_gpio(RX51_LCD_RESET_GPIO, OMAP_PIN_OUTPUT)) {
+diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
+index 74f83a5..81f7b9f 100644
+--- a/arch/arm/mach-omap2/board-rx51.c
++++ b/arch/arm/mach-omap2/board-rx51.c
+@@ -33,9 +33,12 @@
+ #include "pm.h"
+ #include "sdram-nokia.h"
+ #include "board-rx51-secure.h"
++#include "soc.h"
+ 
+ #define RX51_GPIO_SLEEP_IND 162
+ 
++/* This lights up left part of keyboard */
++
+ static struct gpio_led gpio_leds[] = {
+ 	{
+ 		.name	= "sleep_ind",
+@@ -107,9 +110,11 @@ static void __init rx51_init(void)
+ 	rx51_camera_init();
+ 
+ #ifdef CONFIG_ARM_ERRATA_430973
+-	printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
+-	/* set IBE to 1 */
+-	rx51_secure_update_aux_cr(1 << 6, 0);
++	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
++		printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
++		/* set IBE to 1 */
++		rx51_secure_update_aux_cr(1 << 6, 0);
++	}
+ #endif
+ 
+ 	/* Ensure SDRC pins are mux'd for self-refresh */
+@@ -124,6 +129,7 @@ static void __init rx51_reserve(void)
+ 	omap_reserve();
+ }
+ 
++#if 0
+ MACHINE_START(NOKIA_RX51, "Nokia RX-51 board")
+ 	/* Maintainer: Lauri Leukkunen <lauri.leukkunen@nokia.com> */
+ 	.atag_offset	= 0x100,
+@@ -137,3 +143,4 @@ MACHINE_START(NOKIA_RX51, "Nokia RX-51 board")
+ 	.init_time	= omap3_sync32k_timer_init,
+ 	.restart	= omap3xxx_restart,
+ MACHINE_END
++#endif
+diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+index 0b6260a1..7959946 100644
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -39,6 +39,8 @@
+ #include "devices.h"
+ #include "dma.h"
+ 
++#define OF_DT 0
++
+ #define L3_MODULES_MAX_LEN 12
+ #define L3_MODULES 3
+ 
+@@ -764,7 +766,7 @@ static inline void omap_init_ocp2scp(void) { }
+ static int __init omap2_init_devices(void)
+ {
+ 	/* Enable dummy states for those platforms without pinctrl support */
+-	if (!of_have_populated_dt())
++	if (!OF_DT)
+ 		pinctrl_provide_dummies();
+ 
+ 	/*
+diff --git a/drivers/video/omap2/dss/sdi.c b/drivers/video/omap2/dss/sdi.c
+index 62b5374..081838b 100644
+--- a/drivers/video/omap2/dss/sdi.c
++++ b/drivers/video/omap2/dss/sdi.c
+@@ -194,6 +194,7 @@ static int __init sdi_init_display(struct omap_dss_device *dssdev)
+ 		if (IS_ERR(vdds_sdi)) {
+ 			DSSERR("can't get VDDS_SDI regulator\n");
+ 			return PTR_ERR(vdds_sdi);
++//			return 0;
+ 		}
+ 
+ 		sdi.vdds_sdi_reg = vdds_sdi;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index abbdd9e..dc3c6bc 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -757,11 +757,24 @@ static int __init ignore_loglevel_setup(char *str)
+ 	return 0;
+ }
+ 
++bool __read_mostly early_print_redirect;
++
++static int __init early_print_setup(char *str)
++{
++	early_print_redirect = 1;
++	early_printk("copying printk to early_printk\n");
++
++	return 0;
++}
++
++
+ early_param("ignore_loglevel", ignore_loglevel_setup);
+ module_param(ignore_loglevel, bool, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
+ 	"print all kernel messages to the console.");
+ 
++early_param("early_print", early_print_setup);
++
+ #ifdef CONFIG_BOOT_PRINTK_DELAY
+ 
+ static int boot_delay; /* msecs delay after each printk during bootup */
+@@ -1265,6 +1278,12 @@ static void call_console_drivers(int level, const char *text, size_t len)
+ {
+ 	struct console *con;
+ 
++	if (early_print_redirect) {
++                int i;
++		for (i=0; i<len; i++)
++                        early_printk("%c", text[i]);
++        }
++
+ 	trace_console(text, 0, len, len);
+ 
+ 	if (level >= console_loglevel && !ignore_loglevel)
+diff --git a/sound/soc/omap/rx51.c b/sound/soc/omap/rx51.c
+index e4842c3..026de91 100644
+--- a/sound/soc/omap/rx51.c
++++ b/sound/soc/omap/rx51.c
+@@ -396,8 +396,10 @@ static int rx51_soc_probe(struct platform_device *pdev)
+ 	struct snd_soc_card *card = &rx51_sound_card;
+ 	int err;
+ 
+-	if (!machine_is_nokia_rx51())
++	if (!of_machine_is_compatible("nokia,omap3-n900")) {
++		printk("FIXME: rx51_soc_probe on non-nokia\n");
+ 		return -ENODEV;
++	}
+ 
+ 	err = gpio_request_one(RX51_TVOUT_SEL_GPIO,
+ 			       GPIOF_DIR_OUT | GPIOF_INIT_LOW, "tvout_sel");
 
-There's no child device on this bus. We don't need to load it (and we
-can remove the pinctrl node with it as well).
 
-> +			usbphy1: usbphy@8007e000 {
-> +				status =3D "okay";
-> +			};
-> +		};
-> +	};
-> +
-> +	ahb@80080000 {
-> +		usb1: usb@80090000 {
-> +			vbus-supply =3D <&reg_usb1_vbus>;
-> +			pinctrl-0 =3D <&usbphy1_pins_a>;
-> +			pinctrl-names =3D "default";
-> +			status =3D "okay";
-> +		};
-> +	};
-> +
-> +	regulators {
-> +		compatible =3D "simple-bus";
-> +
-> +		reg_usb1_vbus: usb1_vbus {
-> +			compatible =3D "regulator-fixed";
-> +			regulator-name =3D "usb1_vbus";
-> +			regulator-min-microvolt =3D <5000000>;
-> +			regulator-max-microvolt =3D <5000000>;
-> +			gpio =3D <&gpio0 7 1>;
-> +		};
-> +	};
-> +
-> +	ahb@80080000 {
-> +		mac0: ethernet@800f0000 {
-> +			phy-mode =3D "rmii";
-> +			pinctrl-names =3D "default";
-> +			pinctrl-0 =3D <&mac0_pins_a>;
-> +			phy-reset-gpios =3D <&gpio2 21 0>;
-> +			phy-reset-duration =3D <100>;
-> +			status =3D "okay";
-> +		};
-> +	};
-> +
-> +	spi2 {
-> +		compatible =3D "spi-gpio";
-> +		pinctrl-names =3D "default";
-> +		pinctrl-0 =3D <&spi2_pins_cfa10056>;
-> +		status =3D "okay";
-> +		gpio-sck =3D <&gpio2 16 0>;
-> +		gpio-mosi =3D <&gpio2 17 0>;
-> +		gpio-miso =3D <&gpio2 18 0>;
-> +		cs-gpios =3D <&gpio3 5 0>;
-> +		num-chipselects =3D <1>;
-> +		#address-cells =3D <1>;
-> +		#size-cells =3D <0>;
-> +
-> +		hx8369: hx8369@0 {
-> +			compatible =3D "himax,hx8369a", "himax,hx8369";
-> +			reg =3D <0>;
-> +			spi-max-frequency =3D <100000>;
-> +			spi-cpol;
-> +			spi-cpha;
-> +			gpios-reset =3D <&gpio3 30 0>;
-> +		};
-> +	};
-> +
-> +	fiq {
-> +		compatible =3D "crystalfontz,cfa10049-fiq";
-> +		interrupts =3D <50>;
-> +	};
-> +};
-
-This code has never been merged, and even with the unmerged driver the
-driver won't load. You should maybe remove it :)
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---9dgjiU4MmWPVapMU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRywURAAoJEBx+YmzsjxAg2OUP/2zNdPZMZTEW3t7J3289DXm2
-VFWDu7CvRSIxhjlxG3NHIQwFXrVFl/TFvK3OQfS3+C9ZYxaidQawAQKaqkCE4bu3
-u9YDSfa0MkNIN/qSiI6VndLVyKZ/6yAqkl6lCOYzRtvnzCZh37q7Ou+of71cIyCU
-scURBB2tbz/J5zsQh8bmJYXt8c8VBxFAxWmNacs2HstK1YcL+q9lq56EeBDSyVfp
-/oRbvSb/elN6RblOMzHaMHdXt8OPR1rJVGvxX5jm6i7+orFOhloyg/ehsrtu4lcQ
-EvCtwm9Mw4AWgrSSZIJE22vEhbXgl0Mu6pWH0aRwqqjQvlrfZ6/WYrYxrtiGHFT8
-+/VYIdsZe7H6ocmNhPSxw+7/W3KGWRfAjOserBJciu1g8+KuggoSuIo43wBDGRH/
-ZA0hTnI9MZqvQAuu+o/OwxoC6Xb0scj3cZO2CnZxfYxFRGGrhOZDk2WYvjkjpG28
-Q2RyhXJfc3CvDRjnhqDMeE7J3myYitWTUnTV4RrVDxA3ENwl/ogVm6hCuEt6mNjP
-et7sl4ZLreYzn7h/Wjzb7slbPZTAFD1WX4ZFoHi6UGxVlwScDjr58ZOkZycWE/9J
-hHUIcJ/9tv/Ou2iUEHf+kLpJsA7p40XMAs87ypQX8lHKQQAtJEzsh+0sq0zND4Um
-R3gW5Z47RcEkaXyuTkFn
-=yNNd
------END PGP SIGNATURE-----
-
---9dgjiU4MmWPVapMU--
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
