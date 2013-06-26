@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3FZWqf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 18:46:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48437 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab3FZWqc (ORCPT
+	id S1753051Ab3FZWto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 18:49:44 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:35778 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab3FZWtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 18:46:32 -0400
-Date: Wed, 26 Jun 2013 15:46:31 -0700 (PDT)
-Message-Id: <20130626.154631.1134375305331643368.davem@davemloft.net>
-To: lizefan@huawei.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        trinity@vger.kernel.org, lijinyue@huawei.com
-Subject: Re: [PATCH 2/2] dlci: validate the net device in dlci_del()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51CA98EE.4050801@huawei.com>
-References: <51CA9872.5050700@huawei.com>
-	<51CA98EE.4050801@huawei.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 18:49:43 -0400
+Date: Wed, 26 Jun 2013 15:49:51 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: ux500: check platform in ux500_l2x0_init
+Message-ID: <20130626224951.GA911@quad.lixom.net>
+References: <1372210231-22900-1-git-send-email-olof@lixom.net>
+ <CACRpkdaiKYCzb1t-eTEUSa5e5LupL3sqtE4GmFtWmaEOnRvhKQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaiKYCzb1t-eTEUSa5e5LupL3sqtE4GmFtWmaEOnRvhKQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizefan@huawei.com>
-Date: Wed, 26 Jun 2013 15:31:58 +0800
+Hi,
 
-> We triggered an oops while running trinity with 3.4 kernel:
+On Wed, Jun 26, 2013 at 09:46:08PM +0200, Linus Walleij wrote:
+> On Wed, Jun 26, 2013 at 3:30 AM, Olof Johansson <olof@lixom.net> wrote:
 > 
-> BUG: unable to handle kernel paging request at 0000000100000d07
-> IP: [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-> PGD 640c0d067 PUD 0
-> Oops: 0000 [#1] PREEMPT SMP
-> CPU 3
-> ...
-> Pid: 7302, comm: trinity-child3 Not tainted 3.4.24.09+ 40 Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
-> RIP: 0010:[<ffffffffa0109738>]  [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-> ...
-> Call Trace:
->   [<ffffffff8137c5c3>] sock_ioctl+0x153/0x280
->   [<ffffffff81195494>] do_vfs_ioctl+0xa4/0x5e0
->   [<ffffffff8118354a>] ? fget_light+0x3ea/0x490
->   [<ffffffff81195a1f>] sys_ioctl+0x4f/0x80
->   [<ffffffff81478b69>] system_call_fastpath+0x16/0x1b
-> ...
+> > Add compatible checks for ux500. This should probably be moved to generic
+> > DT-based probing whenever DT is populated instead, but until then at
+> > least don't panic all non-ux500 multiplatform machines.
+> >
+> > Signed-off-by: Olof Johansson <olof@lixom.net>
 > 
-> It's because the net device is not a dlci device.
+> > +       /* Ick. I wish there was a single compatible value to compare for,
+> > +        * but there isn't.
+> > +        */
+> > +       if (!of_machine_is_compatible("st-ericsson,u8500") &&
+> > +           !of_machine_is_compatible("st-ericsson,u8540") &&
+> > +           !of_machine_is_compatible("st-ericsson,u9500") &&
+> > +           !of_machine_is_compatible("st-ericsson,u8540"))
+> > +               return -ENODEV;
 > 
-> Reported-by: Li Jinyue <lijinyue@huawei.com>
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> This is checking u8540 twice and does not account for snowball.
 
-Applied and queued up for -stable.
+Snowball has a compatible of:
+
+"calaosystems,snowball-a9500", "st-ericsson,u9500"
+
+but yeah, I typoed on the 9540.
+
+> With new platforms coming we cannot just line up all possible
+> compat strings like this, we need to rely on the cpu_is* macro
+> to be reporting something sane, and I think it does.
+
+Agreed.
+
+> What about just doing this:
+> 
+> From da838c71fb32d63d7e28c14697702ff48088a09b Mon Sep 17 00:00:00 2001
+> From: Linus Walleij <linus.walleij@linaro.org>
+> Date: Wed, 26 Jun 2013 21:44:57 +0200
+> Subject: [PATCH] ARM: ux500: bail out on alien cpus
+> 
+> This makes the l2x0 initialization fail gracefully on non-ux500
+> systems.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  arch/arm/mach-ux500/cache-l2x0.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-ux500/cache-l2x0.c b/arch/arm/mach-ux500/cache-l2x0.c
+> index f58615b..82ccf1d 100644
+> --- a/arch/arm/mach-ux500/cache-l2x0.c
+> +++ b/arch/arm/mach-ux500/cache-l2x0.c
+> @@ -42,7 +42,8 @@ static int __init ux500_l2x0_init(void)
+>      if (cpu_is_u8500_family() || cpu_is_ux540_family())
+>          l2x0_base = __io_address(U8500_L2CC_BASE);
+>      else
+> -        ux500_unknown_soc();
+> +        /* Non-Ux500 platform */
+> +        return -ENODEV;
+> 
+>      /* Unlock before init */
+>      ux500_l2x0_unlock();
+
+SGTM. Applied to next/late.
+
+
+-Olof
