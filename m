@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3FZTk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 15:40:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752307Ab3FZTk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 15:40:56 -0400
-Date: Wed, 26 Jun 2013 15:40:39 -0400
-From: Dave Jones <davej@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130626194039.GA2833@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrey Vagin <avagin@openvz.org>,
-	Steven Rostedt <rostedt@goodmis.org>
-References: <20130622013731.GA22918@redhat.com>
- <20130622173129.GA29375@redhat.com>
- <20130622215905.GA28238@redhat.com>
- <20130623143634.GA2000@redhat.com>
- <20130623150603.GA32313@redhat.com>
- <20130623160452.GA11740@redhat.com>
- <20130624155758.GA5993@redhat.com>
- <20130624173510.GA1321@redhat.com>
- <20130625153520.GA7784@redhat.com>
- <20130626191853.GA29049@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626191853.GA29049@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752788Ab3FZTnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 15:43:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12204 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab3FZTnk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 15:43:40 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Oxi_NWkH43cA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=imA-zbZYuvsA:10 a=1mlNsQWPZikZu6gH3BsA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1372275817.18733.270.camel@gandalf.local.home>
+Subject: [RFC][PATCH RT 0.5/6] locallock: Add include of percpu.h
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <clark.williams@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Wed, 26 Jun 2013 15:43:37 -0400
+In-Reply-To: <20130626192806.107564905@goodmis.org>
+References: <20130626192806.107564905@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 09:18:53PM +0200, Oleg Nesterov wrote:
- > On 06/25, Dave Jones wrote:
- > >
- > > Took a lot longer to trigger this time. (13 hours of runtime).
- > 
- > And _perhaps_ this means that 3.10-rc7 without 8aac6270 needs more
- > time to hit the same bug ;)
- > 
- > Dave, I am not going to "deny the problem". We should investigate it
- > anyway. And yes, 8aac6270 is not as trivial as it looks.
- > 
- > But so far it is absolutely unclear how it can trigger such a problem,
- > and none of the traces _look_ as if it should be blamed.
- > 
- > Probably I should try to reproduce too...
+[ I cut and pasted the series file but missed this patch to start ]
 
-I've tried so many different kernels this last week that I've forgotten
-just how long I left the build without 8aac6270 running, but I'm pretty
-sure it included an overnight run last weekend.  Given I have two identical
-machines that can reproduce it, I'll leave one running for a few days
-with that reverted just to see if it turns up.
+locallock.h uses per cpu variables, and if it is included by code
+that does not include percpu.h, the compiler complains.
 
-(Though, I seem to be walking into other issues [like the perf overflow bug
- I reported last night] before seeing the lockups reproduce,  so I'll keep an eye on it).
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-	Dave
+Index: linux-rt.git/include/linux/locallock.h
+===================================================================
+--- linux-rt.git.orig/include/linux/locallock.h
++++ linux-rt.git/include/linux/locallock.h
+@@ -1,6 +1,7 @@
+ #ifndef _LINUX_LOCALLOCK_H
+ #define _LINUX_LOCALLOCK_H
  
++#include <linux/percpu.h>
+ #include <linux/spinlock.h>
+ 
+ #ifdef CONFIG_PREEMPT_RT_BASE
+
+
