@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab3FZR2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:28:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52939 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab3FZR2S (ORCPT
+	id S1752810Ab3FZRaA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:30:00 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:56212 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab3FZR36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:28:18 -0400
-Date: Wed, 26 Jun 2013 10:28:17 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/11] staging/lustre: fix build error on non-x86
- platforms
-Message-ID: <20130626172817.GB6842@kroah.com>
-References: <1372119326-3565-1-git-send-email-bergwolf@gmail.com>
- <1372119326-3565-8-git-send-email-bergwolf@gmail.com>
- <20130625022244.GG18752@kroah.com>
- <CA+a=Yy6GD6xAG=qULGbwOA1wCt-seVtCv1tufGvmmO-jpbgL3A@mail.gmail.com>
- <220AF645-E299-4B35-9E15-858C7A10FF3E@intel.com>
- <20130625152003.GB20244@kroah.com>
- <CA+a=Yy48DH0q7-m8J0r-0oBGLbEBx5AwrBKCEb2pZ3AsPJg-Xw@mail.gmail.com>
+	Wed, 26 Jun 2013 13:29:58 -0400
+Date: Wed, 26 Jun 2013 10:29:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: paulmck@linux.vnet.ibm.com, David Laight <David.Laight@ACULAB.COM>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        walken@google.com, mingo@kernel.org, linux-arch@vger.kernel.org,
+        vincent.guittot@linaro.org, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, namhyung@kernel.org,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com,
+        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+Message-ID: <20130626172948.GD4405@mtj.dyndns.org>
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
+ <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com>
+ <20130625220026.GG3828@linux.vnet.ibm.com>
+ <51CAF624.6060004@linux.vnet.ibm.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com>
+ <20130626143424.GN3828@linux.vnet.ibm.com>
+ <1372258271.18733.256.camel@gandalf.local.home>
+ <20130626152148.GA4405@mtj.dyndns.org>
+ <1372260823.18733.263.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+a=Yy48DH0q7-m8J0r-0oBGLbEBx5AwrBKCEb2pZ3AsPJg-Xw@mail.gmail.com>
+In-Reply-To: <1372260823.18733.263.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 04:52:03PM +0800, Peng Tao wrote:
-> Since it takes time to patch kernel's generic watchdog, can we get
-> this patch in so that we have a build-able Lustre base, and then we
-> can work on push necessary bits to kernel watchdog? I understand that
-> we shouldn't reinvent things. Just don't want it to be a blocking
-> issue for build and if we simply delete it, we lose a feature that is
-> still missing in kernel watchdog.
+Hello,
 
-Why not delete it, and then work on getting the feature into the
-upstream watchdog?  Given that this stuff isn't going to be enabled
-until 3.12 anyway, you have time, right?
+On Wed, Jun 26, 2013 at 11:33:43AM -0400, Steven Rostedt wrote:
+> I thought the whole deal with this patchset was to remove stop_machine
+> from CPU hotplug. Why halt all CPUs just to remove one? stomp_machine()
+> is extremely intrusive for the entire system, where as one CPU making
+> sure all CPUs schedule isn't very intrusive at all.
+> 
+> I didn't think the idea of this patch set was to make CPU hotplug
+> faster, just less intrusive to the system.
 
-Shortcuts aren't really allowed in upstream kernel development, you know
-that :)
+Yeap, removal of stop_machine is a great improvement in itself.  ISTR
+mentions of hot-unplug latency but I could be mistaken.  Srivatsa, can
+you please chime in on that?
 
-thanks,
+Thanks.
 
-greg k-h
+-- 
+tejun
