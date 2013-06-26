@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab3FZVRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:17:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53639 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab3FZVQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:16:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,946,1363158000"; 
-   d="scan'208";a="336023499"
-Message-ID: <1372281416.2720.28.camel@envy.home>
-Subject: Re: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE
- ID
-From: Darren Hart <dvhart@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders@circuitco.com, vishal.l.verma@intel.com,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Date: Wed, 26 Jun 2013 14:16:56 -0700
-In-Reply-To: <CAErSpo6=1i76RRmJSUi+BpD9D0WrXaML4HkGLn0C=+6=ohB0uQ@mail.gmail.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
-	 <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
-	 <20130626163250.GA29299@google.com> <1372266904.8177.83.camel@envy.home>
-	 <CAErSpo6=1i76RRmJSUi+BpD9D0WrXaML4HkGLn0C=+6=ohB0uQ@mail.gmail.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753168Ab3FZVRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:17:14 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51792 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3FZVRE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 17:17:04 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 0/8] clocksource: sunxi: Timer fixes and cleanup
+Date: Wed, 26 Jun 2013 23:16:53 +0200
+Message-Id: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 13:37 -0600, Bjorn Helgaas wrote:
-> On Wed, Jun 26, 2013 at 11:15 AM, Darren Hart <dvhart@linux.intel.com> wrote:
-> > On Wed, 2013-06-26 at 10:32 -0600, Bjorn Helgaas wrote:
-> 
-> >> +#define PCI_VENDOR_ID_CIRCUITCO              0x1cc8
-> >> +
-> >>  #define PCI_VENDOR_ID_TEKRAM         0x1de1
-> >>  #define PCI_DEVICE_ID_TEKRAM_DC290   0xdc29
-> >
-> >
-> > Thanks Bjorn. When I reuse this Subsystem ID and there is more than one
-> > usage, I should send a patch to pci_ids.h adding it and replace the hex
-> > value in all drivers with the new define. Is that right?
-> 
-> Yeah, that's what I was thinking.
-> 
-> But Peter's comment makes more sense to me now.  The spec refers to
-> that config register as "Subsystem ID," not "Subsystem Device ID," but
-> I was confused because most existing usage treats it as a device ID.
-> For example, the field in struct pci_device_id is named "subdevice,"
-> and all the existing #defines in pci_ids.h are of the form
-> PCI_SUBDEVICE_ID_*.
-> 
-> Device IDs are pretty specific identifiers, so I was thinking that a
-> "sub-device ID" would be even more specific.  Then it would make no
-> sense to have a "sub-device ID" that was as generic as "MINNOWBOARD."
-> But the register is actually *not* a "sub-device ID," and I can see
-> that using the same Subsystem ID for all the devices on a board might
-> make sense.
-> 
-> So I think the name PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD is a bit of a
-> misnomer, and something like PCI_SUBSYSTEM_CIRCUITCO_MINNOWBOARD would
-> make it more clear that it really isn't sharing the device ID space
-> assigned to CircuitCo.  It would make perfect sense to have a Device
-> ID, e.g., "PCI_DEVICE_ID_CIRCUIT_CO_xxx 0x0001," that has nothing to
-> do with the Subsystem ID 0x0001.
-> 
-> If you want to do something like that (or even keep your original
-> patch), I can put that in my -next branch.  Just let me know.
-> 
-> Bjorn
+Hi everyone,
 
+The first timer code we merged when adding support for the A13 some time back
+was mostly a clean up from the source drop we had, without any documentation.
+This happened to work, but the code merged in turned out to be far from
+perfect, and had several flaws.
 
-I would be happy to change DEVICE to SUBSYSTEM in the the pci_ids.h:
+This patchset hopefully fixes these flaws, and cleanup most of the driver as
+well, to end up in an almost complete rewrite of it (even though it's not that
+long).
 
-+#define PCI_VENDOR_ID_CIRCUITCO		0x1cc8
-+#define PCI_SUBSYSTEM_ID_CITCUITCO_MINNOWBOARD	0x0001
+It also finally adds a clocksource from the free running counter found in the
+A10/A13 SoCs.
 
-Would you like me to send another patch?
+These flaws have all been spotted when trying to add the A31 support, work that
+is still ongoing, but will hopefully benefit from this patchset as well.
+
+Thanks,
+Maxime
+ 
+Maxime Ripard (8):
+  clocksource: sun4i: Use the BIT macros where possible
+  clocksource: sun4i: Add clocksource and sched clock drivers
+  clocksource: sun4i: Don't forget to enable the clock we use
+  clocksource: sun4i: Fix the next event code
+  clocksource: sun4i: Factor out some timer code
+  clocksource: sun4i: Remove TIMER_SCAL variable
+  clocksource: sun4i: Cleanup parent clock setup
+  clocksource: sun4i: Fix bug when switching from periodic to oneshot
+    modes
+
+ drivers/clocksource/sun4i_timer.c | 107 ++++++++++++++++++++++++++------------
+ 1 file changed, 75 insertions(+), 32 deletions(-)
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+1.8.3.1
 
