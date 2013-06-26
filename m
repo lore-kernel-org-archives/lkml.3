@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab3FZHOe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:14:34 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61581 "EHLO
+	id S1752027Ab3FZHPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:15:47 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58756 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab3FZHO3 (ORCPT
+	with ESMTP id S1751734Ab3FZHOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:14:29 -0400
-X-AuditID: 9c930179-b7cafae000004567-86-51ca94d19ae8
+	Wed, 26 Jun 2013 03:14:33 -0400
+X-AuditID: 9c930179-b7cafae000004567-98-51ca94d229ed
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/19] perf ftrace: Add support for -a and -C option
-Date: Wed, 26 Jun 2013 16:14:10 +0900
-Message-Id: <1372230862-15861-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/19] perf ftrace: Use pager for displaying result
+Date: Wed, 26 Jun 2013 16:14:16 +0900
+Message-Id: <1372230862-15861-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
 References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
@@ -29,201 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The -a/--all-cpus and -C/--cpu option is for controlling tracing cpus.
-To do that, add and use cpu_map__sprintf() function.
+It's convenient to use pager when seeing many lines of result.
+
+Note that setup_pager() should be called after perf_evlist__
+prepare_workload() since they can interfere each other regarding
+shared stdio streams.
 
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 69 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/cpumap.c    | 45 +++++++++++++++++++++++++++++
- tools/perf/util/cpumap.h    |  1 +
- 3 files changed, 115 insertions(+)
+ tools/perf/builtin-ftrace.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index 2025161bbaed..efe907e4bd56 100644
+index 1e28dc7e9743..8bb2604517cc 100644
 --- a/tools/perf/builtin-ftrace.c
 +++ b/tools/perf/builtin-ftrace.c
-@@ -18,6 +18,7 @@
- #include "util/evlist.h"
- #include "util/target.h"
- #include "util/thread_map.h"
-+#include "util/cpumap.h"
+@@ -227,6 +227,7 @@ static int do_ftrace_live(struct perf_ftrace *ftrace)
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
+ 	signal(SIGCHLD, sig_handler);
++	signal(SIGPIPE, sig_handler);
  
- 
- #define DEFAULT_TRACER  "function_graph"
-@@ -79,6 +80,8 @@ static int append_tracing_file(const char *name, const char *val)
- 	return __write_tracing_file(name, val, true);
- }
- 
-+static int reset_tracing_cpu(void);
-+
- static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
- {
- 	if (write_tracing_file("tracing_on", "0") < 0)
-@@ -90,6 +93,9 @@ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
- 	if (write_tracing_file("set_ftrace_pid", " ") < 0)
- 		return -1;
- 
-+	if (reset_tracing_cpu() < 0)
-+		return -1;
-+
- 	return 0;
- }
- 
-@@ -110,6 +116,60 @@ static int set_tracing_pid(struct perf_ftrace *ftrace)
- 	return 0;
- }
- 
-+static int set_tracing_cpu(struct perf_ftrace *ftrace)
-+{
-+	char *cpumask;
-+	size_t mask_size;
-+	int ret;
-+	int last_cpu;
-+	struct cpu_map *cpumap = ftrace->evlist->cpus;
-+
-+	if (!perf_target__has_cpu(&ftrace->target))
-+		return 0;
-+
-+	last_cpu = cpumap->map[cpumap->nr - 1];
-+	mask_size = (last_cpu + 3) / 4 + 1;
-+	mask_size += last_cpu / 32; /* ',' is needed for every 32th cpus */
-+
-+	cpumask = malloc(mask_size);
-+	if (cpumask == NULL) {
-+		pr_debug("failed to allocate cpu mask\n");
-+		return -1;
-+	}
-+
-+	cpu_map__sprintf(cpumap, cpumask);
-+
-+	ret = write_tracing_file("tracing_cpumask", cpumask);
-+
-+	free(cpumask);
-+	return ret;
-+}
-+
-+static int reset_tracing_cpu(void)
-+{
-+	char *cpumask;
-+	size_t mask_size;
-+	int last_cpu;
-+	struct cpu_map *cpumap = cpu_map__new(NULL);
-+
-+	last_cpu = cpumap->map[cpumap->nr - 1];
-+	mask_size = (last_cpu + 3) / 4 + 1;
-+	mask_size += last_cpu / 32; /* ',' is needed for every 32th cpus */
-+
-+	cpumask = malloc(mask_size);
-+	if (cpumask == NULL) {
-+		pr_debug("failed to allocate cpu mask\n");
-+		return -1;
-+	}
-+
-+	cpu_map__sprintf(cpumap, cpumask);
-+
-+	write_tracing_file("tracing_cpumask", cpumask);
-+
-+	free(cpumask);
-+	return 0;
-+}
-+
- static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
- {
- 	char *trace_file;
-@@ -146,6 +206,11 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 	if (setup_tracing_files(ftrace) < 0)
  		goto out_reset;
- 	}
+@@ -1415,6 +1416,8 @@ __cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 						  argv, false, true) < 0)
+ 		goto out_maps;
  
-+	if (set_tracing_cpu(ftrace) < 0) {
-+		pr_err("failed to set tracing cpumask\n");
-+		goto out_reset;
-+	}
++	setup_pager();
 +
- 	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
- 		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
- 		goto out_reset;
-@@ -226,6 +291,10 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "trace on existing process id"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		 "be more verbose"),
-+	OPT_BOOLEAN('a', "all-cpus", &ftrace.target.system_wide,
-+		    "system-wide collection from all CPUs"),
-+	OPT_STRING('C', "cpu", &ftrace.target.cpu_list, "cpu",
-+		    "list of cpus to monitor"),
- 	OPT_END()
- 	};
+ 	ret = do_ftrace_live(ftrace);
  
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index beb8cf9f9976..7933839915ea 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -187,6 +187,51 @@ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp)
- 	return printed + fprintf(fp, "\n");
- }
+ out_maps:
+@@ -1536,6 +1539,8 @@ __cmd_ftrace_show(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 	if (ftrace->dirname == NULL)
+ 		ftrace->dirname = DEFAULT_DIRNAME;
  
-+static char hex_char(char val)
-+{
-+	if (0 <= val && val <= 9)
-+		return val + '0';
-+	if (10 <= val && val < 16)
-+		return val - 10 + 'a';
-+	return '?';
-+}
++	setup_pager();
 +
-+size_t cpu_map__sprintf(struct cpu_map *map, char *buf)
-+{
-+	int i, cpu;
-+	char *ptr = buf;
-+	unsigned char *bitmap;
-+	int last_cpu = map->map[map->nr - 1];
-+
-+	bitmap = zalloc((last_cpu + 7) / 8);
-+	if (bitmap == NULL) {
-+		buf[0] = '\0';
-+		return 0;
-+	}
-+
-+	for (i = 0; i < map->nr; i++) {
-+		cpu = map->map[i];
-+		bitmap[cpu / 8] |= 1 << (cpu % 8);
-+	}
-+
-+	for (cpu = last_cpu / 4 * 4; cpu >= 0; cpu -= 4) {
-+		unsigned char bits = bitmap[cpu / 8];
-+
-+		if (cpu % 8)
-+			bits >>= 4;
-+		else
-+			bits &= 0xf;
-+
-+		*ptr++ = hex_char(bits);
-+		if ((cpu % 32) == 0 && cpu > 0)
-+			*ptr++ = ',';
-+	}
-+	*ptr++ = '\0';
-+
-+	free(bitmap);
-+	return ptr - buf;
-+}
-+
- struct cpu_map *cpu_map__dummy_new(void)
- {
- 	struct cpu_map *cpus = malloc(sizeof(*cpus) + sizeof(int));
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index b123bb9d6f55..a9a7f19f89d7 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -14,6 +14,7 @@ struct cpu_map *cpu_map__dummy_new(void);
- void cpu_map__delete(struct cpu_map *map);
- struct cpu_map *cpu_map__read(FILE *file);
- size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
-+size_t cpu_map__sprintf(struct cpu_map *map, char *buf);
- int cpu_map__get_socket(struct cpu_map *map, int idx);
- int cpu_map__get_core(struct cpu_map *map, int idx);
- int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp);
+ 	ret = do_ftrace_show(ftrace);
+ 
+ 	perf_evlist__delete_maps(ftrace->evlist);
+@@ -1597,6 +1602,7 @@ __cmd_ftrace_report(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+ 	perf_hpp__init();
+ 
++	setup_pager();
+ 	setup_sorting();
+ 
+ 	symbol_conf.exclude_other = false;
 -- 
 1.7.11.7
 
