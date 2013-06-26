@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab3FZShO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 14:37:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45914 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab3FZShL (ORCPT
+	id S1752881Ab3FZSix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 14:38:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53698 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3FZSiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 14:37:11 -0400
-Date: Wed, 26 Jun 2013 11:37:08 -0700 (PDT)
-Message-Id: <20130626.113708.974853729895213353.davem@davemloft.net>
-To: stefan.bader@canonical.com
-Cc: ben@decadent.org.uk, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, hayeswang@realtek.com, romieu@fr.zoreil.com
-Subject: Re: [16/26] r8169: fix 8168evl frame padding.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51CAAB98.6040706@canonical.com>
-References: <lsq.1372214158.437609827@decadent.org.uk>
-	<51CAAB98.6040706@canonical.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 14:38:52 -0400
+Date: Wed, 26 Jun 2013 11:38:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>
+Subject: Re: [PATCH] zcache: initialize module properly when zcache=FOO is
+ given
+Message-ID: <20130626183851.GA10591@kroah.com>
+References: <1372258142-7019-1-git-send-email-mhocko@suse.cz>
+ <20130626150116.GA6004@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130626150116.GA6004@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Bader <stefan.bader@canonical.com>
-Date: Wed, 26 Jun 2013 10:51:36 +0200
-
->> [ Upstream commits e5195c1f31f399289347e043d6abf3ffa80f0005 and
->>   b423e9ae49d78ea3f53b131c8d5a6087aed16fd6 ]
- ...
-> No abjection, just make sure that
+On Wed, Jun 26, 2013 at 11:01:16AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jun 26, 2013 at 04:49:02PM +0200, Michal Hocko wrote:
+> > 835f2f51 (staging: zcache: enable zcache to be built/loaded as a module)
+> > introduced in 3.10-rc1 has introduced a bug for zcache=FOO module
+> > parameter processing.
+> > 
+> > zcache_comp_init return code doesn't agree with crypto_has_comp which
+> > uses 1 for the success unlike zcache_comp_init which uses 0. This
+> > causes module loading failure even if the given algorithm is supported:
+> > [    0.815330] zcache: compressor initialization failed
+> > 
+> > Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
 > 
-> commit b423e9ae49d78ea3f53b131c8d5a6087aed16fd6
- ...
-> is included as well.
+> Looks OK to me.
+> 
+> Cc-ing Greg.
 
-Read the commit message carefully, the two commits were folded into
-one exactly to deal with this issue.
+That's nice, but can someone resend it in a format that I can apply it
+in, with your ack?
+
+thanks,
+
+greg k-h
