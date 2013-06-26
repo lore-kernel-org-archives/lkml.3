@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab3FZGMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 02:12:00 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:50375 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab3FZGL6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 02:11:58 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: SATA hdd refuses to reallocate a sector?
-Date: Wed, 26 Jun 2013 08:11:15 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Mark Lord <mlord@pobox.com>, Pavel Machek <pavel@ucw.cz>,
-        Marcus Overhagen <marcus.overhagen@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        tj@kernel.org
-References: <20130623101940.GA4448@amd.pavel.ucw.cz> <51C83907.2020202@pobox.com> <1372215862.2806.54.camel@dabdike>
-In-Reply-To: <1372215862.2806.54.camel@dabdike>
-X-KMail-QuotePrefix: > 
+	id S1751542Ab3FZGPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 02:15:30 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45924 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751309Ab3FZGP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 02:15:29 -0400
+Subject: [PATCH v4] SUNRPC: fix races on PipeFS UMOUNT notifications
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, devel@openvz.org, linux-kernel@vger.kernel.org,
+        jlayton@redhat.com
+Date: Wed, 26 Jun 2013 10:15:14 +0400
+Message-ID: <20130626061448.32202.192.stgit@localhost.localdomain>
+In-Reply-To: <20130624075245.17104.6279.stgit@localhost.localdomain>
+References: <20130624075245.17104.6279.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201306260811.15421.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 June 2013, James Bottomley wrote:
-> On Mon, 2013-06-24 at 08:18 -0400, Mark Lord wrote:
-> > And the SCSI stack in Linux has rather atrocious error handling.
-> > It lumps multiple requests together, and can fail the entire lot even
-> > if only a single sector is bad.
->
-> That's rather misleading.  SCSI doesn't lump anything together; it
-> handles the requests it was passed.  For reads and writes through the
-> page cache, block will aggregate in the elevators, but you avoid that by
-> not using the page cache (O_DIRECT or SG_IO).
+CPU#0                                   CPU#1
+-----------------------------           -----------------------------
+rpc_kill_sb
+sn->pipefs_sb = NULL                    rpc_release_client
+(UMOUNT_EVENT)                          rpc_free_auth
+rpc_pipefs_event
+rpc_get_client_for_event
+!atomic_inc_not_zero(cl_count)
+<skip the client>
+                                        atomic_inc(cl_count)
+                                        rpc_free_client
+                                        rpc_clnt_remove_pipedir
+                                        <skip client dir removing>
 
-Yes, it works fine with O_DIRECT - that's why hdd_realloc reads 
-sector-by-sector when an error was detected. I'd also like to disable read 
-retries but that does not seem to be possible.
+To fix this, this patch does the following:
 
-> For devices which report failing sectors correctly data up to the failed
-> sector is returned and the request is shortened and retried from the
-> failed sector on.  If we get a second failure at the beginning (where
-> the previous bad sector was), then we give up.
->
-> James
+1) Calls RPC_PIPEFS_UMOUNT notification with sn->pipefs_sb_lock being held.
+2) Removes SUNRPC client from the list AFTER pipes destroying.
+3) Doesn't hold RPC client on notification: if client in the list, then it
+can't be destroyed while sn->pipefs_sb_lock in hold by notification caller.
 
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: stable@vger.kernel.org
+---
+ net/sunrpc/clnt.c     |    5 +----
+ net/sunrpc/rpc_pipe.c |    2 +-
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
--- 
-Ondrej Zary
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index b827a4b..41f180c 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -236,8 +236,6 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
+ 			continue;
+ 		if (rpc_clnt_skip_event(clnt, event))
+ 			continue;
+-		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
+-			continue;
+ 		spin_unlock(&sn->rpc_client_lock);
+ 		return clnt;
+ 	}
+@@ -254,7 +252,6 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
+ 
+ 	while ((clnt = rpc_get_client_for_event(sb->s_fs_info, event))) {
+ 		error = __rpc_pipefs_event(clnt, event, sb);
+-		rpc_release_client(clnt);
+ 		if (error)
+ 			break;
+ 	}
+@@ -641,8 +638,8 @@ rpc_free_client(struct rpc_clnt *clnt)
+ 			rcu_dereference(clnt->cl_xprt)->servername);
+ 	if (clnt->cl_parent != clnt)
+ 		rpc_release_client(clnt->cl_parent);
+-	rpc_unregister_client(clnt);
+ 	rpc_clnt_remove_pipedir(clnt);
++	rpc_unregister_client(clnt);
+ 	rpc_free_iostats(clnt->cl_metrics);
+ 	kfree(clnt->cl_principal);
+ 	clnt->cl_metrics = NULL;
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index c512448..9b4ec5b 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -1165,12 +1165,12 @@ static void rpc_kill_sb(struct super_block *sb)
+ 		goto out;
+ 	}
+ 	sn->pipefs_sb = NULL;
+-	mutex_unlock(&sn->pipefs_sb_lock);
+ 	dprintk("RPC:       sending pipefs UMOUNT notification for net %p%s\n",
+ 		net, NET_NAME(net));
+ 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_UMOUNT,
+ 					   sb);
++	mutex_unlock(&sn->pipefs_sb_lock);
+ 	put_net(net);
+ out:
+ 	kill_litter_super(sb);
+
