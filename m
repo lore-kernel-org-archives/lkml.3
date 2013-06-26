@@ -1,105 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab3FZGyp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 02:54:45 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751166Ab3FZGyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 02:54:43 -0400
-Message-ID: <51CA900E.9020407@nod.at>
-Date: Wed, 26 Jun 2013 08:54:06 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751661Ab3FZGyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 02:54:50 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:64204 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020Ab3FZGyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 02:54:47 -0400
+Message-ID: <51CA903A.4070809@windriver.com>
+Date: Wed, 26 Jun 2013 14:54:50 +0800
+From: "tiejun.chen" <tiejun.chen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
-        dhsharp@google.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
-References: <51CA8AB8.7080504@asianux.com>
-In-Reply-To: <51CA8AB8.7080504@asianux.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Bharat Bhushan <r65777@freescale.com>
+CC: <kvm-ppc@vger.kernel.org>, <kvm@vger.kernel.org>, <agraf@suse.de>,
+        <scottwood@freescale.com>, <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <mikey@neuling.org>, Bharat Bhushan <Bharat.Bhushan@freescale.com>
+Subject: Re: [PATCH 4/6 v5] KVM: PPC: exit to user space on "ehpriv" instruction
+References: <1372225346-5029-1-git-send-email-Bharat.Bhushan@freescale.com> <1372225346-5029-5-git-send-email-Bharat.Bhushan@freescale.com>
+In-Reply-To: <1372225346-5029-5-git-send-email-Bharat.Bhushan@freescale.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.162.212]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-Am 26.06.2013 08:31, schrieb Chen Gang:
-> For "User Mode Linux", it may enable 'MMU', but not need implement
-> ioremap and iounmap, so "include/asm-generic/io.h" need notice this
-> case to keep itself 'generic'.
-> 
-> The related error (with allmodconfig, without pcap):
-> 
->     CC [M]  drivers/ptp/ptp_pch.o
->   drivers/ptp/ptp_pch.c: In function ‘pch_remove’:
->   drivers/ptp/ptp_pch.c:571:3: error: implicit declaration of function ‘iounmap’ [-Werror=implicit-function-declaration]
->   drivers/ptp/ptp_pch.c: In function ‘pch_probe’:
->   drivers/ptp/ptp_pch.c:621:2: error: implicit declaration of function ‘ioremap’ [-Werror=implicit-function-declaration]
->   drivers/ptp/ptp_pch.c:621:13: warning: assignment makes pointer from integer without a cast [enabled by default]
->   cc1: some warnings being treated as errors
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+On 06/26/2013 01:42 PM, Bharat Bhushan wrote:
+> "ehpriv" instruction is used for setting software breakpoints
+> by user space. This patch adds support to exit to user space
+> with "run->debug" have relevant information.
+>
+> As this is the first point we are using run->debug, also defined
+> the run->debug structure.
+>
+> Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
 > ---
->  arch/um/include/asm/Kbuild |    1 +
->  include/asm-generic/io.h   |    6 +++---
->  2 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
-> index b30f34a..a34ea5d 100644
-> --- a/arch/um/include/asm/Kbuild
-> +++ b/arch/um/include/asm/Kbuild
-> @@ -3,3 +3,4 @@ generic-y += hw_irq.h irq_regs.h kdebug.h percpu.h sections.h topology.h xor.h
->  generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
->  generic-y += switch_to.h clkdev.h
->  generic-y += trace_clock.h
-> +generic-y += io.h
+>   arch/powerpc/include/asm/disassemble.h |    4 ++++
+>   arch/powerpc/include/uapi/asm/kvm.h    |   21 +++++++++++++++++----
+>   arch/powerpc/kvm/e500_emulate.c        |   27 +++++++++++++++++++++++++++
+>   3 files changed, 48 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/powerpc/include/asm/disassemble.h b/arch/powerpc/include/asm/disassemble.h
+> index 9b198d1..856f8de 100644
+> --- a/arch/powerpc/include/asm/disassemble.h
+> +++ b/arch/powerpc/include/asm/disassemble.h
+> @@ -77,4 +77,8 @@ static inline unsigned int get_d(u32 inst)
+>   	return inst & 0xffff;
+>   }
+>
+> +static inline unsigned int get_oc(u32 inst)
+> +{
+> +	return (inst >> 11) & 0x7fff;
+> +}
+>   #endif /* __ASM_PPC_DISASSEMBLE_H__ */
+> diff --git a/arch/powerpc/include/uapi/asm/kvm.h b/arch/powerpc/include/uapi/asm/kvm.h
+> index 0fb1a6e..ded0607 100644
+> --- a/arch/powerpc/include/uapi/asm/kvm.h
+> +++ b/arch/powerpc/include/uapi/asm/kvm.h
+> @@ -269,7 +269,24 @@ struct kvm_fpu {
+>   	__u64 fpr[32];
+>   };
+>
+> +/*
+> + * Defines for h/w breakpoint, watchpoint (read, write or both) and
+> + * software breakpoint.
+> + * These are used as "type" in KVM_SET_GUEST_DEBUG ioctl and "status"
+> + * for KVM_DEBUG_EXIT.
+> + */
+> +#define KVMPPC_DEBUG_NONE		0x0
+> +#define KVMPPC_DEBUG_BREAKPOINT		(1UL << 1)
+> +#define KVMPPC_DEBUG_WATCH_WRITE	(1UL << 2)
+> +#define KVMPPC_DEBUG_WATCH_READ		(1UL << 3)
+>   struct kvm_debug_exit_arch {
+> +	__u64 address;
+> +	/*
+> +	 * exiting to userspace because of h/w breakpoint, watchpoint
+> +	 * (read, write or both) and software breakpoint.
+> +	 */
+> +	__u32 status;
+> +	__u32 reserved;
+>   };
+>
+>   /* for KVM_SET_GUEST_DEBUG */
+> @@ -281,10 +298,6 @@ struct kvm_guest_debug_arch {
+>   		 * Type denotes h/w breakpoint, read watchpoint, write
+>   		 * watchpoint or watchpoint (both read and write).
+>   		 */
+> -#define KVMPPC_DEBUG_NONE		0x0
+> -#define KVMPPC_DEBUG_BREAKPOINT		(1UL << 1)
+> -#define KVMPPC_DEBUG_WATCH_WRITE	(1UL << 2)
+> -#define KVMPPC_DEBUG_WATCH_READ		(1UL << 3)
+>   		__u32 type;
+>   		__u32 reserved;
+>   	} bp[16];
+> diff --git a/arch/powerpc/kvm/e500_emulate.c b/arch/powerpc/kvm/e500_emulate.c
+> index b10a012..dab9d07 100644
+> --- a/arch/powerpc/kvm/e500_emulate.c
+> +++ b/arch/powerpc/kvm/e500_emulate.c
+> @@ -26,6 +26,8 @@
+>   #define XOP_TLBRE   946
+>   #define XOP_TLBWE   978
+>   #define XOP_TLBILX  18
+> +#define XOP_EHPRIV  270
+> +#define EHPRIV_OC_DEBUG 0
 
-We include that file already. See three lines above.
+As I think the case, "OC = 0", is a bit specific since IIRC, if the OC
+operand is omitted, its equal 0 by default. So I think we should start this OC 
+value from 1 or other magic number.
 
-> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-> index d5afe96..e80331d 100644
-> --- a/include/asm-generic/io.h
-> +++ b/include/asm-generic/io.h
-> @@ -303,10 +303,10 @@ static inline void *phys_to_virt(unsigned long address)
->  /*
->   * Change "struct page" to physical address.
->   *
-> - * This implementation is for the no-MMU case only... if you have an MMU
-> + * This implementation is for the no-MMU or UML case only... if you have an MMU
->   * you'll need to provide your own definitions.
->   */
-> -#ifndef CONFIG_MMU
-> +#if !CONFIG_MMU || CONFIG_UML
->  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
->  {
->  	return (void __iomem*) (unsigned long)offset;
-> @@ -325,7 +325,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
->  static inline void iounmap(void __iomem *addr)
->  {
->  }
-> -#endif /* CONFIG_MMU */
-> +#endif /* !CONFIG_MMU || CONFIG_UML */
->  
->  #ifdef CONFIG_HAS_IOPORT
->  #ifndef CONFIG_GENERIC_IOMAP
-> 
+And if possible, we'd better add some comments to describe this to make the OC 
+definition readable.
 
-UML has no io memory but a MMU, so I'd argue that you better fix drivers/ptp/ptp_pch.c dependencies.
-_If_ ptp_pch.c really works without real io memory, you can look what I did in my GENERIC_IO series[1]
-to make nandsim work on UML. Maybe this helps.
+Tiejun
 
-Thanks,
-//richard
-
-[1] http://lists.infradead.org/pipermail/linux-mtd/2012-February/039701.html
+>
+>   #ifdef CONFIG_KVM_E500MC
+>   static int dbell2prio(ulong param)
+> @@ -82,6 +84,26 @@ static int kvmppc_e500_emul_msgsnd(struct kvm_vcpu *vcpu, int rb)
+>   }
+>   #endif
+>
+> +static int kvmppc_e500_emul_ehpriv(struct kvm_run *run, struct kvm_vcpu *vcpu,
+> +				   unsigned int inst, int *advance)
+> +{
+> +	int emulated = EMULATE_DONE;
+> +
+> +	switch (get_oc(inst)) {
+> +	case EHPRIV_OC_DEBUG:
+> +		run->exit_reason = KVM_EXIT_DEBUG;
+> +		run->debug.arch.address = vcpu->arch.pc;
+> +		run->debug.arch.status = 0;
+> +		kvmppc_account_exit(vcpu, DEBUG_EXITS);
+> +		emulated = EMULATE_EXIT_USER;
+> +		*advance = 0;
+> +		break;
+> +	default:
+> +		emulated = EMULATE_FAIL;
+> +	}
+> +	return emulated;
+> +}
+> +
+>   int kvmppc_core_emulate_op(struct kvm_run *run, struct kvm_vcpu *vcpu,
+>                              unsigned int inst, int *advance)
+>   {
+> @@ -130,6 +152,11 @@ int kvmppc_core_emulate_op(struct kvm_run *run, struct kvm_vcpu *vcpu,
+>   			emulated = kvmppc_e500_emul_tlbivax(vcpu, ea);
+>   			break;
+>
+> +		case XOP_EHPRIV:
+> +			emulated = kvmppc_e500_emul_ehpriv(run, vcpu, inst,
+> +							   advance);
+> +			break;
+> +
+>   		default:
+>   			emulated = EMULATE_FAIL;
+>   		}
+>
 
