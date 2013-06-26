@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab3FZJ1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:27:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1324 "EHLO mga01.intel.com"
+	id S1751774Ab3FZJ3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:29:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47230 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189Ab3FZJ1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:27:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,943,1363158000"; 
-   d="asc'?scan'208";a="360707711"
-Date: Wed, 26 Jun 2013 05:18:08 -0400
-From: Chen Gong <gong.chen@linux.intel.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86/MCE: Update MCE severity condition check
-Message-ID: <20130626091808.GA18468@gchen.bj.intel.com>
-Mail-Followup-To: "Luck, Tony" <tony.luck@intel.com>,
-	"Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-	"bp@alien8.de" <bp@alien8.de>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1371719773-27572-1-git-send-email-gong.chen@linux.intel.com>
- <20130625063257.GA2274@naverao1-tp.in.ibm.com>
- <3908561D78D1C84285E8C5FCA982C28F31C53805@ORSMSX106.amr.corp.intel.com>
+	id S1751566Ab3FZJ3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:29:21 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-usb@vger.kernel.org>
+CC: <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH] usb: dwc3: core: continue probe even if usb3 phy is not available
+Date: Wed, 26 Jun 2013 14:59:14 +0530
+Message-ID: <1372238954-29047-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31C53805@ORSMSX106.amr.corp.intel.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There can be configurations in which DWC3 is hoooked up only to USB2 PHY.
+In such cases we should not return -EPROBE_DEFER, rather continue probe
+even if there is no USB3 PHY.
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/dwc3/core.c | 31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
 
-On Tue, Jun 25, 2013 at 04:31:23PM +0000, Luck, Tony wrote:
-> Date: Tue, 25 Jun 2013 16:31:23 +0000
-> From: "Luck, Tony" <tony.luck@intel.com>
-> To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, Chen Gong
->  <gong.chen@linux.intel.com>
-> CC: "bp@alien8.de" <bp@alien8.de>, "linux-kernel@vger.kernel.org"
->  <linux-kernel@vger.kernel.org>
-> Subject: RE: [PATCH] x86/MCE: Update MCE severity condition check
->=20
-> > The SDM talks about "non-affected" logical processors, but perhaps we
-> > can call this an "unaffected" thread?
->=20
-> "unaffected" sounds a bit more natural (but close enough to the wording in
-> the SDM that people should see the connection).
->=20
-> -Tony
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index c35d49d..d5e6f3e 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -100,7 +100,9 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
+ 	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
+ 
+ 	usb_phy_init(dwc->usb2_phy);
+-	usb_phy_init(dwc->usb3_phy);
++
++	if (dwc->usb3_phy)
++		usb_phy_init(dwc->usb3_phy);
+ 	mdelay(100);
+ 
+ 	/* Clear USB3 PHY reset */
+@@ -360,7 +362,9 @@ err0:
+ static void dwc3_core_exit(struct dwc3 *dwc)
+ {
+ 	usb_phy_shutdown(dwc->usb2_phy);
+-	usb_phy_shutdown(dwc->usb3_phy);
++
++	if (dwc->usb3_phy)
++		usb_phy_shutdown(dwc->usb3_phy);
+ }
+ 
+ #define DWC3_ALIGN_MASK		(16 - 1)
+@@ -460,12 +464,19 @@ static int dwc3_probe(struct platform_device *pdev)
+ 		if (ret == -ENXIO)
+ 			return ret;
+ 
++		/*
++		 * In  some cases we wont have a USB3 PHY, in such cases
++		 * if we return EPROBE_DEFER we would never complete the
++		 * probe. Just print error and continue.
++		 */
+ 		dev_err(dev, "no usb3 phy configured\n");
+-		return -EPROBE_DEFER;
++		dwc->usb3_phy = NULL;
+ 	}
+ 
+ 	usb_phy_set_suspend(dwc->usb2_phy, 0);
+-	usb_phy_set_suspend(dwc->usb3_phy, 0);
++
++	if (dwc->usb3_phy)
++		usb_phy_set_suspend(dwc->usb3_phy, 0);
+ 
+ 	spin_lock_init(&dwc->lock);
+ 	platform_set_drvdata(pdev, dwc);
+@@ -604,7 +615,9 @@ static int dwc3_remove(struct platform_device *pdev)
+ 	struct dwc3	*dwc = platform_get_drvdata(pdev);
+ 
+ 	usb_phy_set_suspend(dwc->usb2_phy, 1);
+-	usb_phy_set_suspend(dwc->usb3_phy, 1);
++
++	if (dwc->usb3_phy)
++		usb_phy_set_suspend(dwc->usb3_phy, 1);
+ 
+ 	pm_runtime_put(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+@@ -700,7 +713,9 @@ static int dwc3_suspend(struct device *dev)
+ 	dwc->gctl = dwc3_readl(dwc->regs, DWC3_GCTL);
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+-	usb_phy_shutdown(dwc->usb3_phy);
++	if (dwc->usb3_phy)
++		usb_phy_shutdown(dwc->usb3_phy);
++
+ 	usb_phy_shutdown(dwc->usb2_phy);
+ 
+ 	return 0;
+@@ -711,7 +726,9 @@ static int dwc3_resume(struct device *dev)
+ 	struct dwc3	*dwc = dev_get_drvdata(dev);
+ 	unsigned long	flags;
+ 
+-	usb_phy_init(dwc->usb3_phy);
++	if (dwc->usb3_phy)
++		usb_phy_init(dwc->usb3_phy);
++
+ 	usb_phy_init(dwc->usb2_phy);
+ 	msleep(100);
+ 
+-- 
+1.8.1.4
 
-If this patch is OK, would you please help to update it when merging
-it? Thanks very much.
-
---mP3DRpeJDSE+ciuQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRyrHPAAoJEI01n1+kOSLHUaYP/1PI4Pzwv7OORGG1XGAAqp87
-U7b6z6sd9Hu3LMEJFgLymxXByloFyvyahJLF/qAh3N6pY6dOtSnh0v8qLuU97a+4
-VIpNC+z8t/h57YFQMOEBakfGBnjS7mOKo0+t/Mts9jYPi5w9LWEo4aGkILh9Q7f7
-ly7jRM4DGDeJbRn97SyZvgJvTWuE7kXCKxfKEo8gMwTeZk4h+Tz6FNqer1MzZ0E3
-Q/XPtFJ+2pHbk4087WLAq4TuaYTmyeYICWZ23KIvcb3hdnZ03MWOrs9ZT59+gCpI
-9BscHJCu6LfNl619FVwARe4A8FsSNa4TzIDGqoUxSDJ/6FTVnIGH5MeF0pCxQ6Uc
-lIuM8cimWVDJr7lCSXmys2JmhlzBtqk/f4FlrMsg0ODrlpZLxDGln0R/xWJANN0n
-GwC3VPK0xUgi/T74fzGoBOxIdxCFblzlTZeN/jZyzBERUqI5LGEybbyjJ+/0+Ut2
-XArqqXPORPZ6ZEnZiekzCrR3n1TBDAcZqWK3+NFdkXaQbtnX+38+u504TRnJLb6x
-OrHZ6JR3p7ohXF5zPLvlMDJz+XxhznIPAs7aCRoyUZsWIpmKabAI7Tx/fxDS94KK
-HMRZhYPMfydwszmFbiw2ywccpixleZolST4ptE+vrc5daHPWdLOl9wzeQybnIuoZ
-2eRqBpZQcAWTY/6N7uY/
-=mfRn
------END PGP SIGNATURE-----
-
---mP3DRpeJDSE+ciuQ--
