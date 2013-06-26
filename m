@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab3FZJmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:42:14 -0400
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:47033 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab3FZJmN (ORCPT
+	id S1752002Ab3FZJnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:43:06 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:54764 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab3FZJnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:42:13 -0400
-Message-ID: <51CAB760.3050008@synopsys.com>
-Date: Wed, 26 Jun 2013 15:11:52 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-CC: <netdev@vger.kernel.org>, Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, Joe Perches <joe@perches.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: Re: [PATCH] arch/arc: angel4.dts - add description for "arc_emac"
-References: <1372239469-28537-1-git-send-email-abrodkin@synopsys.com>
-In-Reply-To: <1372239469-28537-1-git-send-email-abrodkin@synopsys.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.141]
+	Wed, 26 Jun 2013 05:43:04 -0400
+From: navin patidar <navinp@cdac.in>
+To: gregkh@linuxfoundation.org, mfm@muteddisk.com
+Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navinp@cdac.in>
+Subject: [PATCH v2] staging: usbip: replace pr_warning() with dev_warn().
+Date: Wed, 26 Jun 2013 15:11:43 +0530
+Message-Id: <1372239703-4551-1-git-send-email-navinp@cdac.in>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 03:07 PM, Alexey Brodkin wrote:
-> With this patch we introduce DT "arc_emac" description for ARCangel4.
-> Description is based on info/example in
-> "Documentation/devicetree/bindings/net/arc_emac.txt".
->
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
->
-> Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-> Cc: Francois Romieu <romieu@fr.zoreil.com>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Mischa Jonker <mjonker@synopsys.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Florian Fainelli <florian@openwrt.org>
-> ---
->  arch/arc/boot/dts/angel4.dts |   16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
->
-> diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
-> index bae4f93..4fb2d6f 100644
-> --- a/arch/arc/boot/dts/angel4.dts
-> +++ b/arch/arc/boot/dts/angel4.dts
-> @@ -51,5 +51,21 @@
->  			current-speed = <115200>;
->  			status = "okay";
->  		};
-> +
-> +		ethernet@c0fc2000 {
-> +			compatible = "snps,arc-emac";
-> +			reg = <0xc0fc2000 0x3c>;
-> +			interrupts = <6>;
-> +			mac-address = [ 00 11 22 33 44 55 ];
-> +			clock-frequency = <80000000>;
-> +			max-speed = <100>;
-> +			phy = <&phy0>;
-> +
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +			phy0: ethernet-phy@0 {
-> +				reg = <1>;
-> +			};
-> +		};
->  	};
->  };
+dev_warn() is preferred over pr_warning().
 
-This looks good - for completeness sake, can you also send a patch to remove
-legacy hardcodings for irq/mem-map from arch/arc/plat-arcfpga/include/*
+container_of() is used to get usb_driver pointer from usbip_device container
+(stub_device or vhci_device), to get device structure required for dev_warn().
 
--Vineet
+Signed-off-by: navin patidar <navinp@cdac.in>
+---
+ drivers/staging/usbip/usbip_event.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/usbip/usbip_event.c b/drivers/staging/usbip/usbip_event.c
+index 82123be..3bd1b94 100644
+--- a/drivers/staging/usbip/usbip_event.c
++++ b/drivers/staging/usbip/usbip_event.c
+@@ -21,6 +21,8 @@
+ #include <linux/export.h>
+
+ #include "usbip_common.h"
++#include "stub.h"
++#include "vhci.h"
+
+ static int event_handler(struct usbip_device *ud)
+ {
+@@ -85,7 +87,17 @@ int usbip_start_eh(struct usbip_device *ud)
+
+ 	ud->eh = kthread_run(event_handler_loop, ud, "usbip_eh");
+ 	if (IS_ERR(ud->eh)) {
+-		pr_warning("Unable to start control thread\n");
++		struct device dev;
++		if (ud->side == USBIP_STUB) {
++			struct stub_device *sdev;
++			sdev = container_of(ud, struct stub_device, ud);
++			dev = sdev->udev->dev;
++		} else {
++			struct vhci_device *vdev;
++			vdev = container_of(ud, struct vhci_device, ud);
++			dev = vdev->udev->dev;
++		}
++		dev_warn(&dev, "Unable to start control thread\n");
+ 		return PTR_ERR(ud->eh);
+ 	}
+
+--
+1.7.10.4
+
