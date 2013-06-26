@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3FZQdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:33:49 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:57412 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab3FZQdq (ORCPT
+	id S1752004Ab3FZQiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:38:00 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:50150 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3FZQh7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:33:46 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: "Rafael J . Wysocki" <rjw@sisk.pl>
-Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
-Subject: [PATCH v2 2/9] ACPI, DOCK: kill redundant spin lock in dock station object
-Date: Thu, 27 Jun 2013 00:30:54 +0800
-Message-Id: <1372264261-17442-3-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1372264261-17442-1-git-send-email-liuj97@gmail.com>
-References: <1372264261-17442-1-git-send-email-liuj97@gmail.com>
+	Wed, 26 Jun 2013 12:37:59 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CADDKRnCP_s2hL2wr8TsKeToNRt5nXF3NBYAqkmCCUPX8HbY_yQ@mail.gmail.com>
+References: <CADDKRnBf4i8ZQ4EXC15Sa6z9CZ55w0vBDnXG26sjWgdO9zH45w@mail.gmail.com>
+	<CADDKRnCP_s2hL2wr8TsKeToNRt5nXF3NBYAqkmCCUPX8HbY_yQ@mail.gmail.com>
+Date: Wed, 26 Jun 2013 18:37:57 +0200
+Message-ID: <CA+icZUXJK2ks7TQbH0AiPYAWrFuQC85Uw2sSM6d_YD5yS7unhA@mail.gmail.com>
+Subject: Re: [v3.10-rc2] iwlwifi regression
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+Cc: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+On Wed, Jun 26, 2013 at 6:16 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
+> 2013/5/25 Jörg Otte <jrg.otte@gmail.com>:
+>> If iwlwifi/iwldvm are built into the kernel (no loadable modules)
+>> following error is written to console and syslog since v3.10-rc:
+>>
+>> iwlwifi 0000:08:00.0: failed to load module iwldvm (error -38), is
+>> dynamic loading enabled?
+>>
+>> reverting
+>> commit 1618b2b02a3a0ee7a6863fed4b0d22e697e7e97c
+>> Author: Johannes Berg <johannes.berg@intel.com>
+>> Date:   Thu Apr 4 10:35:23 2013 +0200
+>>     iwlwifi: print warning on request_module failure
+>>
+>> fixes the problem for me.
+>>
+>> Jörg
+>>
+>> I'm not subscribed,please CC me in answeres
+>
+> We have rc-7 now and it's still not fixed. What is the problem?
+>
 
-All dock station objects are created during initialization and don't
-change at runtime, so kill the redundant spin lock in dock station
-object.
+The patch is pending in wireless.git and is not in mainline, right.
+AFAICS there was a recent pull request... so should be in rc8.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/acpi/dock.c | 15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
+commit 8edf3fd6eb0649b0f19363baf23bca39c6fbdba4
+"iwlwifi: don't print module loading error if not modular"
 
-diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-index e944e39..a73571f 100644
---- a/drivers/acpi/dock.c
-+++ b/drivers/acpi/dock.c
-@@ -63,7 +63,6 @@ struct dock_station {
- 	acpi_handle handle;
- 	unsigned long last_dock_time;
- 	u32 flags;
--	spinlock_t dd_lock;
- 	struct mutex hp_lock;
- 	struct list_head dependent_devices;
- 
-@@ -112,10 +111,7 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
- 
- 	dd->handle = handle;
- 	INIT_LIST_HEAD(&dd->list);
--
--	spin_lock(&ds->dd_lock);
- 	list_add_tail(&dd->list, &ds->dependent_devices);
--	spin_unlock(&ds->dd_lock);
- 
- 	return 0;
- }
-@@ -220,14 +216,10 @@ find_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
- {
- 	struct dock_dependent_device *dd;
- 
--	spin_lock(&ds->dd_lock);
--	list_for_each_entry(dd, &ds->dependent_devices, list) {
--		if (handle == dd->handle) {
--			spin_unlock(&ds->dd_lock);
-+	list_for_each_entry(dd, &ds->dependent_devices, list)
-+		if (handle == dd->handle)
- 			return dd;
--		}
--	}
--	spin_unlock(&ds->dd_lock);
-+
- 	return NULL;
- }
- 
-@@ -1005,7 +997,6 @@ static int __init dock_add(acpi_handle handle)
- 	dock_station->last_dock_time = jiffies - HZ;
- 
- 	mutex_init(&dock_station->hp_lock);
--	spin_lock_init(&dock_station->dd_lock);
- 	INIT_LIST_HEAD(&dock_station->sibling);
- 	INIT_LIST_HEAD(&dock_station->dependent_devices);
- 
--- 
-1.8.1.2
+- Sedat -
 
+http://git.kernel.org/cgit/linux/kernel/git/linville/wireless.git/commit/?id=8edf3fd6eb0649b0f19363baf23bca39c6fbdba4
+
+> Thanks, Jörg
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
