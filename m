@@ -1,131 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab3FZUtc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 16:49:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34730 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab3FZUta (ORCPT
+	id S1752252Ab3FZUxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 16:53:39 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48613 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3FZUxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 16:49:30 -0400
-Message-ID: <51CB53D7.7030602@wwwdotorg.org>
-Date: Wed, 26 Jun 2013 14:49:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 16:53:37 -0400
+Date: Wed, 26 Jun 2013 13:53:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <clark.williams@gmail.com>
+Subject: Re: [RFC][PATCH RT 1/6] rt,rcu: Have rcu_read_lock_sched() use locks
+ for PREEMPT_RT
+Message-ID: <20130626205331.GS3828@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130626192806.107564905@goodmis.org>
+ <20130626193049.724948276@goodmis.org>
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>
-CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [RFC 2/6] x86: provide platform-devices for boot-framebuffers
-References: <1372112849-670-1-git-send-email-dh.herrmann@gmail.com> <1372112849-670-3-git-send-email-dh.herrmann@gmail.com>
-In-Reply-To: <1372112849-670-3-git-send-email-dh.herrmann@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130626193049.724948276@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062620-7408-0000-0000-00001189CF9C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2013 04:27 PM, David Herrmann wrote:
-> The current situation regarding boot-framebuffers (VGA, VESA/VBE, EFI) on
-> x86 causes troubles when loading multiple fbdev drivers. The global
-> "struct screen_info" does not provide any state-tracking about which
-> drivers use the FBs. request_mem_region() theoretically works, but
-> unfortunately vesafb/efifb ignore it due to quirks for broken boards.
+On Wed, Jun 26, 2013 at 03:28:07PM -0400, Steven Rostedt wrote:
+> There are several critical sections that require synchronization with
+> synchronize_sched(). Usually these are done by disabling preemption and
+> the synchronize_sched() just waits for the kernel to schedule on each
+> of the CPUs.
 > 
-> Avoid this by creating a "platform-framebuffer" device with a pointer
-> to the "struct screen_info" as platform-data. Drivers can now create
-> platform-drivers and the driver-core will refuse multiple drivers being
-> active simultaneously.
+> The rcu_read_lock_sched() is the preferred API to use, but some areas
+> still use preempt_disable() and local_irq_*() to prevent preemption
+> from happening. But our main concern is with those users of
+> rcu_read_lock_sched(), where they may also call spin_locks() that turn
+> into a mutex for PREEMPT_RT. For these cases, we need to allow
+> rcu_read_lock_sched() to schedule out.
 > 
-> We keep the screen_info available for backwards-compatibility. Drivers
-> can be converted in follow-up patches.
+> To allow rcu_read_lock_sched() sections to preempt when PREEMPT_RT is enabled,
+> instead of disabling preemption, it will grab a local_lock(). Then the
+> synchronize_sched() will grab all CPUs local_locks() and release them.
+> After that, it still does the normal synchronize_sched() as there may be
+> places that still disable preemption or irqs that it needs to
+> synchronize with. By grabbing all the locks and releasing them, it will
+> properly synchronize with those that use the locks instead of disabling
+> preemption or interrupts.
 > 
-> Apart from "platform-framebuffer" devices, this also introduces a
-> compatibility option for "simple-framebuffer" drivers which recently got
-> introduced for OF based systems. If CONFIG_X86_SYSFB is selected, we
-> try to match the screen_info against a simple-framebuffer supported
-> format. If we succeed, we create a "simple-framebuffer" device instead
-> of a platform-framebuffer.
-> This allows to reuse the simplefb.c driver across architectures and also
-> to introduce a SimpleDRM driver. There is no need to have vesafb.c,
-> efifb.c, simplefb.c and more just to have architecture specific quirks
-> in their setup-routines.
+> Note: The rcu_read_lock_sched_notrace() version still only disables
+> preemption, because they are used for lockdep and tracing, which require
+> real preemption disabling and not mutexes.
+
+This looks much better!
+
+A few more questions and comments below.
+
+							Thanx, Paul
+
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > 
-> Instead, we now move the architecture specific quirks into x86-setup and
-> provide a generic simple-framebuffer. For backwards-compatibility (if
-> strange formats are used), we still allow vesafb/efifb to be loaded
-> simultaneously and pick up all remaining devices.
-
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-
-> +config X86_SYSFB
-> +	bool "Mark VGA/VBE/EFI FB as generic system framebuffer"
-> +	help
-> +	  Firmwares often provide initial graphics framebuffers so the BIOS,
-> +	  bootloader or kernel can show basic video-output during boot for
-> +	  user-guidance and debugging. Historically, x86 used the VESA BIOS
-> +	  Extensions and EFI-framebuffers for this, which are mostly limited
-> +	  to x86. However, a generic system-framebuffer initialization emerged
-> +	  recently on some non-x86 architectures.
-
-After this patch has been in the kernel a while, that very last won't
-really be true; simplefb won't have been introduced recently. Perhaps
-just delete that one sentence?
-
-> +	  This option, if enabled, marks VGA/VBE/EFI framebuffers as generic
-> +	  framebuffers so the new generic system-framebuffer drivers can be
-> +	  used on x86.
-> +
-> +	  This breaks any x86-only driver like efifb, vesafb, uvesafb, which
-> +	  will not work if this is selected.
-
-Doesn't that imply that some form of conflicts or depends ! statement
-should be added here?
-
-> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-
-> +obj-y					+= sysfb.o
-
-I suspect that should be obj-$(CONFIG_X86_SYSFB) += sysfb.o.
-
-> diff --git a/arch/x86/kernel/sysfb.c b/arch/x86/kernel/sysfb.c
-
-> +#ifdef CONFIG_X86_SYSFB
-
-Rather than ifdef'ing the body of this file, why not create a dummy
-static inline version of add_sysfb() and put that into a header file
-that users include. There should be a header file to prototype the
-function anyway. That way, you avoid all of the ifdefs and static inline
-functions in this file.
-
-> +static bool parse_mode(const struct screen_info *si,
-> +		       struct simplefb_platform_data *mode)
-
-> +			strlcpy(mode->format, f->name, sizeof(mode->format));
-
-Per my comments about the type of mode->format, I think that could just be:
-
-mode->format = f->name;
-
-... since formats[] (i.e. f) isn't initdata.
-
-> +#else /* CONFIG_X86_SYSFB */
-> +
-> +static bool parse_mode(const struct screen_info *si,
-> +		       struct simplefb_platform_data *mode)
+> Index: linux-rt.git/include/linux/rcupdate.h
+> ===================================================================
+> --- linux-rt.git.orig/include/linux/rcupdate.h
+> +++ linux-rt.git/include/linux/rcupdate.h
+> @@ -36,6 +36,7 @@
+>  #include <linux/types.h>
+>  #include <linux/cache.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/locallock.h>
+>  #include <linux/threads.h>
+>  #include <linux/cpumask.h>
+>  #include <linux/seqlock.h>
+> @@ -870,6 +871,28 @@ static inline void rcu_read_unlock_bh(vo
+>  	local_bh_enable();
+>  }
+> 
+> +/* asm-offsets.c gets confused with local_lock here */
+> +#if defined(CONFIG_PREEMPT_RT_FULL)
+> +DECLARE_LOCAL_IRQ_LOCK(rcu_sched_lock);
+> +static inline void rcu_read_lock_sched_disable(void)
 > +{
-> +	return false;
+> +	local_lock(rcu_sched_lock);
 > +}
-> +
-> +static int create_simplefb(const struct screen_info *si,
-> +			   const struct simplefb_platform_data *mode)
+> +static inline void rcu_read_lock_sched_enable(void)
 > +{
-> +	return -EINVAL;
+> +	local_unlock(rcu_sched_lock);
 > +}
+> +#else
+> +static inline void rcu_read_lock_sched_disable(void)
+> +{
+> +	preempt_disable();
+> +}
+> +static inline void rcu_read_lock_sched_enable(void)
+> +{
+> +	preempt_enable();
+> +}
+> +#endif
 > +
-> +#endif /* CONFIG_X86_SYSFB */
+>  /**
+>   * rcu_read_lock_sched() - mark the beginning of a RCU-sched critical section
+>   *
+> @@ -885,7 +908,7 @@ static inline void rcu_read_unlock_bh(vo
+>   */
 
-Following on from my ifdef comment above, I believe those versions of
-those functions will always cause add_sysfb() to return -ENODEV, so you
-may as well provide a static inline for add_sysfb() instead.
+How about having an rcu_read_lock_sched_rt() and rcu_read_unlock_sched_rt()?
+Leave rcu_read_lock_sched() and rcu_read_unlock_sched() with their prior
+semantics and deadlock immunity, with a header comment for the _rt()
+variants that gives their properties and where they should be used.
+
+>  static inline void rcu_read_lock_sched(void)
+>  {
+> -	preempt_disable();
+> +	rcu_read_lock_sched_disable();
+>  	__acquire(RCU_SCHED);
+>  	rcu_lock_acquire(&rcu_sched_lock_map);
+>  	rcu_lockdep_assert(!rcu_is_cpu_idle(),
+> @@ -910,7 +933,7 @@ static inline void rcu_read_unlock_sched
+>  			   "rcu_read_unlock_sched() used illegally while idle");
+>  	rcu_lock_release(&rcu_sched_lock_map);
+>  	__release(RCU_SCHED);
+> -	preempt_enable();
+> +	rcu_read_lock_sched_enable();
+>  }
+> 
+>  /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
+> Index: linux-rt.git/kernel/rcutree.c
+> ===================================================================
+> --- linux-rt.git.orig/kernel/rcutree.c
+> +++ linux-rt.git/kernel/rcutree.c
+> @@ -2491,6 +2491,31 @@ static inline int rcu_blocking_is_gp(voi
+>  	return ret;
+>  }
+> 
+> +#ifdef CONFIG_PREEMPT_RT_FULL
+> +DEFINE_LOCAL_IRQ_LOCK(rcu_sched_lock);
+> +/*
+> + * Real-time allows for synchronize sched to sleep but not migrate.
+> + * This is done via the local locks. When calling synchronize_sched(),
+> + * all the local locks need to be taken and released. This will ensure
+> + * that all users of rcu_read_lock_sched() will be out of their critical
+> + * sections at the completion of this function. synchronize_sched() will
+> + * still perform the normal RCU sched operations to synchronize with
+> + * locations that use disabling preemption or interrupts.
+> + */
+> +static void rcu_synchronize_sched_rt(void)
+
+The name synchronize_sched_rt() would fit better with the companion
+synchronize_sched() function.
+
+> +{
+> +	int cpu;
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		spin_lock(&per_cpu(rcu_sched_lock, cpu).lock);
+> +		spin_unlock(&per_cpu(rcu_sched_lock, cpu).lock);
+> +	}
+> +}
+> +#else
+> +static inline void rcu_synchronize_sched_rt(void)
+> +{
+
+I bet you want a synchronize_sched() here.  ;-)
+
+But looking below...
+
+> +}
+> +#endif
+>  /**
+>   * synchronize_sched - wait until an rcu-sched grace period has elapsed.
+>   *
+> @@ -2538,6 +2563,9 @@ void synchronize_sched(void)
+>  			   !lock_is_held(&rcu_lock_map) &&
+>  			   !lock_is_held(&rcu_sched_lock_map),
+>  			   "Illegal synchronize_sched() in RCU-sched read-side critical section");
+> +
+> +	rcu_synchronize_sched_rt();
+> +
+
+Are you sure you want a single primitive to wait on both types of
+read-side critical sections?  I can see arguments on either side...
+
+For completeness, another approach would be to use SRCU instead of locking
+for the preemptible RCU-sched read-side critical sections.  One benefit
+of doing this is that SRCU avoids introducing the potential deadlocks
+that involve locks acquired both within and across read-side critical
+sections.
+
+>  	if (rcu_blocking_is_gp())
+>  		return;
+>  	if (rcu_expedited)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
