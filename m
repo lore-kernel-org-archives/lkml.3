@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab3FZNje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:39:34 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:52349 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab3FZNjd (ORCPT
+	id S1752065Ab3FZNj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:39:56 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:53163 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3FZNjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:39:33 -0400
+	Wed, 26 Jun 2013 09:39:53 -0400
+Date: Wed, 26 Jun 2013 15:39:12 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, Sanjay Lal <sanjayl@kymasys.com>,
+        "Steven J. Hill" <sjhill@mips.com>, John Crispin <blogic@openwrt.org>,
+        Florian Fainelli <florian@openwrt.org>, linux-mips@linux-mips.org
+Subject: Re: [PATCH v2 38/45] MIPS: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+Message-ID: <20130626133912.GA4559@linux-mips.org>
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com>
+ <20130625203257.16593.15358.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAfg0W5BoDLN_O9PwGTQC-0uFp+ZEgqAH2A9sSbbvOHsHutPkQ@mail.gmail.com>
-References: <CAAfg0W5BoDLN_O9PwGTQC-0uFp+ZEgqAH2A9sSbbvOHsHutPkQ@mail.gmail.com>
-Date: Wed, 26 Jun 2013 19:09:32 +0530
-Message-ID: <CAJ_BOiBHZ=nXD+dHnbAwSexHkd=zfDWePK0WjEr=dvzmhu1bPw@mail.gmail.com>
-Subject: Re: 3.10-rc6 "perf test" seems unhappy
-From: Prabhat Kumar Ravi <prabhatravi09@gmail.com>
-To: Andy Green <andy.green@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130625203257.16593.15358.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jun 26, 2013 at 02:02:57AM +0530, Srivatsa S. Bhat wrote:
 
-On Wed, Jun 26, 2013 at 4:39 PM, Andy Green <andy.green@linaro.org> wrote:
-> Hi -
->
-> Running perf test on 3.10-rc6 gives some unexpected behaviours.
->
-> This is on a dual Cortex A9 board with perf userland cross-built from
-> same tree as the kernel.
->
-> root@aa9-eb:~# perf test
->  1: vmlinux symtab matches kallsyms                        : FAILED!
+> Once stop_machine() is gone from the CPU offline path, we won't be able
+> to depend on disabling preemption to prevent CPUs from going offline
+> from under us.
+> 
+> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
+> offline, while invoking from atomic context.
 
-> I started tracing the first failure... it stops because it can't find
-> "_stext" in /proc/kallsyms.  But it is there
->
-> root@aa9-eb:~# cat /proc/kallsyms | grep _stext
-> 800081c0 T _stext
->
+I think the same change also needs to be applied to r4k_on_each_cpu() in
+arch/mips/mm/c-r4k.c which currently looks like:
 
->
-> The others may be due to missing some config somewhere.
->
-> Any ideas what I am (or perf is) doing wrong?
->
+static inline void r4k_on_each_cpu(void (*func) (void *info), void *info)
+{
+        preempt_disable();
 
-I Think your Perf test is failing at dso__find_symbol_by_name
-where in perf test we have something like:
+#if !defined(CONFIG_MIPS_MT_SMP) && !defined(CONFIG_MIPS_MT_SMTC)
+        smp_call_function(func, info, 1);
+#endif
+        func(info);
+        preempt_enable();
+}
 
-        kallsyms_map = machine__kernel_map(&kallsyms, type);
+This is a slightly specialized version of on_each_cpu() which only calls
+out to other CPUs in actual multi-core environments and also - unlike
+on_each_cpu() doesn't disable interrupts for the sake of better
+interrupt latencies.
 
-        sym = map__find_symbol_by_name(kallsyms_map, ref_reloc_sym.name, NULL);
-        if (sym == NULL) {
-                pr_debug("dso__find_symbol_by_name ");
-                goto out;
-        }
+Which reminds me ...
 
-Here sym is search for "_stext" which is NULL here so perf test fails here only,
+Andrew, I was wondering why did 78eef01b0fae087c5fadbd85dd4fe2918c3a015f
+[[PATCH] on_each_cpu(): disable local interrupts] disable interrupts?
+The log is:
 
-Here _stext having same address as some other, like
+----- snip -----
+    When on_each_cpu() runs the callback on other CPUs, it runs with local
+    interrupts disabled.  So we should run the function with local interrupts
+    disabled on this CPU, too.
+    
+    And do the same for UP, so the callback is run in the same environment on bo
+    UP and SMP.  (strictly it should do preempt_disable() too, but I think
+    local_irq_disable is sufficiently equivalent).
+[...]
+----- snip -----
 
-c00081c0 T asm_do_IRQ
-c00081c0 T _stext
-c00081c0 T __exception_text_start
+I'm not entirely convinced the symmetry between UP and SMP environments is
+really worth it.  Would anybody mind removing the local_irq_disable() ...
+local_irq_enable() from on_each_cpu()?
 
-Function call is like this:
-machine__load_kallsyms
---> dso__load_kallsyms
-    --> symbols__fixup_duplicate
-
-So, it getting deleted, I think we should disable symbols__fixup_duplicate.
-
-- Prabhat
+  Ralf
