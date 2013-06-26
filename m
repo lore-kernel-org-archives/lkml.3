@@ -1,431 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab3FZNQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:16:28 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:40212 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab3FZNQ0 (ORCPT
+	id S1751776Ab3FZNSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:18:13 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:26257 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab3FZNSM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:16:26 -0400
-Message-ID: <51CAE9C8.3030005@gmail.com>
-Date: Wed, 26 Jun 2013 15:16:56 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 09:18:12 -0400
+Date: Wed, 26 Jun 2013 15:15:43 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] pinctrl: elaborate a bit on arrangements in doc
+Message-ID: <20130626131543.GD7095@ab42.lan>
+References: <1372169952-22439-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-To: Marek Belisko <marek.belisko@gmail.com>
-CC: perex@perex.cz, tiwai@suse.de, grant.likely@linaro.org,
-        rob.herring@calxeda.com, rob@landley.net, lgirdwood@gmail.com,
-        broonie@kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org,
-        Marek Belisko <marek.belisko@streamunlimited.com>
-Subject: Re: [PATCH] ASoC: Add PCM1681 codec driver.
-References: <1372251928-15706-1-git-send-email-marek.belisko@streamunlimited.com>
-In-Reply-To: <1372251928-15706-1-git-send-email-marek.belisko@streamunlimited.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1372169952-22439-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
-
-On 26.06.2013 15:05, Marek Belisko wrote:
-> PCM1681 can be controlled via I2C, SPI or in bootstrap mode. This code add
-> support only for I2C mode.
+On Tue, Jun 25, 2013 at 04:19:12PM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Signed-off-by: Marek Belisko <marek.belisko@streamunlimited.com>
+> This elaborates a bit on the pinctrl vs GPIO arangements
+> in the hardware.
+> 
+> Inspired by some drawings in a mail from Christian
+> Ruppert.
+> 
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Christian Ruppert <christian.ruppert@abilis.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
->  .../devicetree/bindings/sound/ti,pcm1681.txt       |   15 +
->  sound/soc/codecs/Kconfig                           |    4 +
->  sound/soc/codecs/Makefile                          |    2 +
->  sound/soc/codecs/pcm1681.c                         |  328 ++++++++++++++++++++
->  4 files changed, 349 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/sound/ti,pcm1681.txt
->  create mode 100644 sound/soc/codecs/pcm1681.c
+>  Documentation/pinctrl.txt | 37 ++++++++++++++++++++++++++++++++-----
+>  1 file changed, 32 insertions(+), 5 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/sound/ti,pcm1681.txt b/Documentation/devicetree/bindings/sound/ti,pcm1681.txt
-> new file mode 100644
-> index 0000000..4df1718
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/sound/ti,pcm1681.txt
-> @@ -0,0 +1,15 @@
-> +Texas Instruments PCM1681 8-channel PWM Processor
-> +
-> +Required properties:
-> +
-> + - compatible:		Should contain "ti,pcm1681".
-> + - reg:			The i2c address. Should contain <0x4c>.
-> +
-> +Examples:
-> +
-> +	i2c_bus {
-> +		pcm1681@4c {
-> +			compatible = "ti,pcm1681";
-> +			reg = <0x4c>;
-> +		};
-> +	};
-> diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-> index badb6fb..e2daf82 100644
-> --- a/sound/soc/codecs/Kconfig
-> +++ b/sound/soc/codecs/Kconfig
-> @@ -54,6 +54,7 @@ config SND_SOC_ALL_CODECS
->  	select SND_SOC_MC13783 if MFD_MC13XXX
->  	select SND_SOC_ML26124 if I2C
->  	select SND_SOC_HDMI_CODEC
-> +	select SND_SOC_PCM1681 if I2C
->  	select SND_SOC_PCM3008
->  	select SND_SOC_RT5631 if I2C
->  	select SND_SOC_RT5640 if I2C
-> @@ -292,6 +293,9 @@ config SND_SOC_MAX9850
->  config SND_SOC_HDMI_CODEC
->         tristate
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+> index 447fd4c..41ecad0 100644
+> --- a/Documentation/pinctrl.txt
+> +++ b/Documentation/pinctrl.txt
+> @@ -784,11 +784,38 @@ special GPIO-handler is registered.
+>  GPIO mode pitfalls
+>  ==================
 >  
-> +config SND_SOC_PCM1681
-> +       tristate
+> -Sometime the developer may be confused by a datasheet talking about a pin
+> -being possible to set into "GPIO mode". It appears that what hardware
+> -engineers mean with "GPIO mode" is not necessarily the use case that is
+> -implied in the kernel interface <linux/gpio.h>: a pin that you grab from
+> -kernel code and then either listen for input or drive high/low to
+> +The GPIO portions of a pin and its relation to a certain pin controller
+> +logic can be constructed in several ways. Here are three examples:
 > +
->  config SND_SOC_PCM3008
->         tristate
+> +(A)
+> +
+> +                                         +- SPI
+> +     Physical pins --- GPIO --- pinctrl -+- I2C
+> +                                         +- mmc
+> +
+> +(B)
+> +                    +- GPIO
+> +     Physical pins -+           +- SPI
+> +                    +- pinctrl -+- I2C
+> +                                +- mmc
+> +
+> +(C)
+> +                                +- SPI
+> +     Physical pins --- pinctrl -+- I2C
+> +                                +- mmc
+> +                                +- GPIO
+> +
+> +In (A) the GPIO-like functionality of the pin is *always* available.
+> +For example it is possible to read the GPIO input register to "spy" on
+> +the SPI, I2C or MMC line while it is being used by the peripheral.
+> +In (B) the GPIO functionality is orthogonal to any device using the
+> +pin, and in (C) the GPIO case is the same as "some peripheral".
+> +
+> +For this reason the developer may be confused by a datasheet talking
+> +about a pin being possible to set into "GPIO mode". It appears that what
+> +hardware engineers mean with "GPIO mode" is not necessarily the use case
+> +that is implied in the kernel interface <linux/gpio.h>: a pin that you
+> +grab from kernel code and then either listen for input or drive high/low to
+>  assert/deassert some external line.
 >  
-> diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-> index 70fd806..4a068d2 100644
-> --- a/sound/soc/codecs/Makefile
-> +++ b/sound/soc/codecs/Makefile
-> @@ -42,6 +42,7 @@ snd-soc-max9850-objs := max9850.o
->  snd-soc-mc13783-objs := mc13783.o
->  snd-soc-ml26124-objs := ml26124.o
->  snd-soc-hdmi-codec-objs := hdmi.o
-> +snd-soc-pcm1681-objs := pcm1681.o
->  snd-soc-pcm3008-objs := pcm3008.o
->  snd-soc-rt5631-objs := rt5631.o
->  snd-soc-rt5640-objs := rt5640.o
-> @@ -171,6 +172,7 @@ obj-$(CONFIG_SND_SOC_MAX9850)	+= snd-soc-max9850.o
->  obj-$(CONFIG_SND_SOC_MC13783)	+= snd-soc-mc13783.o
->  obj-$(CONFIG_SND_SOC_ML26124)	+= snd-soc-ml26124.o
->  obj-$(CONFIG_SND_SOC_HDMI_CODEC) += snd-soc-hdmi-codec.o
-> +obj-$(CONFIG_SND_SOC_PCM1681)	+= snd-soc-pcm1681.o
->  obj-$(CONFIG_SND_SOC_PCM3008)	+= snd-soc-pcm3008.o
->  obj-$(CONFIG_SND_SOC_RT5631)	+= snd-soc-rt5631.o
->  obj-$(CONFIG_SND_SOC_RT5640)	+= snd-soc-rt5640.o
-> diff --git a/sound/soc/codecs/pcm1681.c b/sound/soc/codecs/pcm1681.c
-> new file mode 100644
-> index 0000000..6122fd1
-> --- /dev/null
-> +++ b/sound/soc/codecs/pcm1681.c
-> @@ -0,0 +1,328 @@
-> +/*
-> + * PCM1681 ASoC codec driver
-> + *
-> + * Copyright (c) StreamUnlimited GmbH 2013
-> + *	Marek Belisko <marek.belisko@streamunlimited.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/delay.h>
-> +#include <linux/gpio.h>
-> +#include <linux/i2c.h>
-> +#include <linux/regmap.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_gpio.h>
-> +#include <sound/pcm.h>
-> +#include <sound/pcm_params.h>
-> +#include <sound/soc.h>
-> +#include <sound/tlv.h>
-> +
-> +#define PCM1681_PCM_FORMATS (SNDRV_PCM_FMTBIT_S16_LE  |		\
-> +			     SNDRV_PCM_FMTBIT_S24_LE)
-> +
-> +#define PCM1681_PCM_RATES   (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 | \
-> +			     SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100  | \
-> +			     SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_88200  | \
-> +			     SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_192000)
-> +
-> +#define PCM1681_SOFT_MUTE_ALL		0xff
-> +#define PCM1681_DEEMPH_RATE_MASK	0x18
-> +#define PCM1681_DEEMPH_MASK		0x01
-> +
-> +#define PCM1681_ATT_CONTROL(X)	(X <= 6 ? X : X + 9) /* Attenuation level */
-> +#define PCM1681_SOFT_MUTE	0x07	/* Soft mute control register */
-> +#define PCM1681_DAC_CONTROL	0x08	/* DAC operation control */
-> +#define PCM1681_FMT_CONTROL	0x09	/* Audio interface data format */
-> +#define PCM1681_DEEMPH_CONTROL	0x0a	/* De-emphasis control */
-> +#define PCM1681_ZERO_DETECT_STATUS	0x0e	/* Zero detect status reg */
-> +
-> +static const struct reg_default pcm1681_reg_defaults[] = {
-> +	{ 0x01,	0xff },
-> +	{ 0x02,	0xff },
-> +	{ 0x03,	0xff },
-> +	{ 0x04,	0xff },
-> +	{ 0x05,	0xff },
-> +	{ 0x06,	0xff },
-> +	{ 0x07,	0x00 },
-> +	{ 0x08,	0x00 },
-> +	{ 0x09,	0x06 },
-> +	{ 0x0A,	0x00 },
-> +	{ 0x0B,	0xff },
-> +	{ 0x0C,	0x0f },
-> +	{ 0x0D,	0x00 },
-> +	{ 0x10,	0xff },
-> +	{ 0x11,	0xff },
-> +	{ 0x12,	0x00 },
-> +	{ 0x13,	0x00 },
-> +};
-> +
-> +static bool pcm1681_accessible_reg(struct device *dev, unsigned int reg)
-> +{
-> +	return !((reg == 0x00) || (reg == 0x0f));
-> +}
-> +
-> +static bool pcm1681_writeable_reg(struct device *dev, unsigned register reg)
-> +{
-> +	return pcm1681_accessible_reg(dev, reg) &&
-> +		(reg != PCM1681_ZERO_DETECT_STATUS);
-> +}
-> +
-> +struct pcm1681_private {
-> +	struct regmap *regmap;
-> +	unsigned int format;
-> +	/* Current deemphasis status */
-> +	unsigned int deemph;
-> +	/* Current rate for deemphasis control */
-> +	unsigned int rate;
-> +};
-> +
-> +static int pcm1681_deemph[] = { 44100, 48000, 32000 };
-> +
-> +static int pcm1681_set_deemph(struct snd_soc_codec *codec)
-> +{
-> +	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-> +	int i = 0, val = -1, ret;
-> +
-> +	if (priv->deemph)
-> +		for (i = 0; i < ARRAY_SIZE(pcm1681_deemph); i++)
-> +			if (pcm1681_deemph[i] == priv->rate)
-> +				val = i;
-> +
-> +	/* enable choosen frequency */
-> +	if (val != -1)
-> +		regmap_update_bits(priv->regmap, PCM1681_DEEMPH_CONTROL,
-> +					PCM1681_DEEMPH_RATE_MASK, val);
-> +
-> +	/* enable/disable deemphasis functionality */
-> +	ret = regmap_update_bits(priv->regmap, PCM1681_DEEMPH_CONTROL,
-> +				PCM1681_DEEMPH_MASK, priv->deemph);
-> +
-> +	return ret;
-> +}
-> +
-> +static int pcm1681_get_deemph(struct snd_kcontrol *kcontrol,
-> +			      struct snd_ctl_elem_value *ucontrol)
-> +{
-> +	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-> +	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-> +
-> +	ucontrol->value.enumerated.item[0] = priv->deemph;
-> +
-> +	return 0;
-> +}
-> +
-> +static int pcm1681_put_deemph(struct snd_kcontrol *kcontrol,
-> +			      struct snd_ctl_elem_value *ucontrol)
-> +{
-> +	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-> +	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-> +
-> +	priv->deemph = ucontrol->value.enumerated.item[0];
-> +
-> +	return pcm1681_set_deemph(codec);
-> +}
-> +
-> +static int pcm1681_set_dai_fmt(struct snd_soc_dai *codec_dai,
-> +			      unsigned int format)
-> +{
-> +	struct snd_soc_codec *codec = codec_dai->codec;
-> +	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-> +
-> +	/* The PCM1681 can only be slave to all clocks */
-> +	if ((format & SND_SOC_DAIFMT_MASTER_MASK) != SND_SOC_DAIFMT_CBS_CFS) {
-> +		dev_err(codec->dev, "Invalid clocking mode\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	priv->format = format;
-> +
-> +	return 0;
-> +}
-> +
-> +static int pcm1681_digital_mute(struct snd_soc_dai *dai, int mute)
-> +{
-> +	struct snd_soc_codec *codec = dai->codec;
-> +	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-> +	int ret, val = 0;
-> +
-> +	if (mute)
-> +		val = PCM1681_SOFT_MUTE_ALL;
-> +
-> +	ret = regmap_write(priv->regmap, PCM1681_SOFT_MUTE, val);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int pcm1681_hw_params(struct snd_pcm_substream *substream,
-> +			     struct snd_pcm_hw_params *params,
-> +			     struct snd_soc_dai *dai)
-> +{
-> +	struct snd_soc_codec *codec = dai->codec;
-> +	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-> +	int val = 0;
-> +	int pcm_format = params_format(params);
-> +
-> +	priv->rate = params_rate(params);
-> +
-> +	switch (priv->format & SND_SOC_DAIFMT_FORMAT_MASK) {
-> +	case SND_SOC_DAIFMT_RIGHT_J:
-> +		if (pcm_format == SNDRV_PCM_FORMAT_S24_LE)
-> +			val = 0x00;
-> +		else if (pcm_format == SNDRV_PCM_FORMAT_S16_LE)
-> +			val = 0x03;
-> +		break;
-> +	case SND_SOC_DAIFMT_I2S:
-> +		val = 0x04;
-> +		break;
-> +	case SND_SOC_DAIFMT_LEFT_J:
-> +		val = 0x05;
-> +		break;
-> +	default:
-> +		dev_err(codec->dev, "Invalid DAI format\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	regmap_update_bits(priv->regmap, PCM1681_FMT_CONTROL, 0x0f, val);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct snd_soc_dai_ops pcm1681_dai_ops = {
-> +	.set_fmt	= pcm1681_set_dai_fmt,
-> +	.hw_params	= pcm1681_hw_params,
-> +	.digital_mute	= pcm1681_digital_mute,
-> +};
-> +
-> +static const DECLARE_TLV_DB_SCALE(pcm1681_dac_tlv, -6350, 50, 1);
-> +
-> +static const struct snd_kcontrol_new pcm1681_controls[] = {
-> +	SOC_DOUBLE_R_TLV("PCM1681 Channel 1/2 Playback Volume",
-> +			PCM1681_ATT_CONTROL(1), PCM1681_ATT_CONTROL(2), 0,
-> +			0x7f, 0, pcm1681_dac_tlv),
-> +	SOC_DOUBLE_R_TLV("PCM1681 Channel 3/4 Playback Volume",
-> +			PCM1681_ATT_CONTROL(3), PCM1681_ATT_CONTROL(4), 0,
-> +			0x7f, 0, pcm1681_dac_tlv),
-> +	SOC_DOUBLE_R_TLV("PCM1681 Channel 5/6 Playback Volume",
-> +			PCM1681_ATT_CONTROL(5), PCM1681_ATT_CONTROL(6), 0,
-> +			0x7f, 0, pcm1681_dac_tlv),
-> +	SOC_DOUBLE_R_TLV("PCM1681 Channel 7/8 Playback Volume",
-> +			PCM1681_ATT_CONTROL(7), PCM1681_ATT_CONTROL(8), 0,
-> +			0x7f, 0, pcm1681_dac_tlv),
-> +	SOC_SINGLE_BOOL_EXT("PCM1681 De-emphasis Switch", 0,
-> +			    pcm1681_get_deemph, pcm1681_put_deemph),
-> +};
-> +
-> +struct snd_soc_dai_driver pcm1681_dai = {
-> +	.name = "pcm1681-hifi",
-> +	.playback = {
-> +		.stream_name = "Playback",
-> +		.channels_min = 2,
-> +		.channels_max = 8,
-> +		.rates = PCM1681_PCM_RATES,
-> +		.formats = PCM1681_PCM_FORMATS,
-> +	},
-> +	.ops = &pcm1681_dai_ops,
-> +};
-> +
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id pcm1681_dt_ids[] = {
-> +	{ .compatible = "ti,pcm1681", },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, pcm1681_dt_ids);
-> +#endif
-> +
-> +static const struct regmap_config pcm1681_regmap = {
-> +	.reg_bits		= 8,
-> +	.val_bits		= 8,
-> +	.max_register		= ARRAY_SIZE(pcm1681_reg_defaults),
-> +	.reg_defaults		= pcm1681_reg_defaults,
-> +	.num_reg_defaults	= ARRAY_SIZE(pcm1681_reg_defaults),
-> +	.writeable_reg		= pcm1681_writeable_reg,
-> +	.readable_reg		= pcm1681_accessible_reg,
-> +};
-> +
-> +static int pcm1681_probe(struct snd_soc_codec *codec)
-> +{
-> +	return 0;
+>  Rather hardware engineers think that "GPIO mode" means that you can
+> -- 
+> 1.7.11.3
 
-Is there really nothing the driver has to do in order to bring the codec
-into full operation mode?
+In my experience, in hardware engineering terminology, GPIO/General
+Purpose I/O just means a physical pad macro cell which can be
+dynamically configured in different modes, e.g. as an input or as an
+output, as an open drain driver etc. This configuration is done through
+hardware signals and controlled by digital logic. This logic might
+either be a GPIO controller or some other hardware block, e.g. an I2C
+controller block.
 
-> +}
-> +
-> +static int pcm1681_remove(struct snd_soc_codec *codec)
-> +{
-> +	return 0;
-> +}
-> +
-> +static struct snd_soc_codec_driver soc_codec_dev_pcm1681 = {
-> +	.probe			= pcm1681_probe,
-> +	.remove			= pcm1681_remove,
-> +	.controls		= pcm1681_controls,
-> +	.num_controls		= ARRAY_SIZE(pcm1681_controls),
-> +};
-> +
-> +#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
-> +static const struct i2c_device_id pcm1681_i2c_id[] = {
-> +	{"pcm1681", 0},
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(i2c, pcm1681_i2c_id);
-> +
-> +static int pcm1681_i2c_probe(struct i2c_client *client,
-> +			      const struct i2c_device_id *id)
-> +{
-> +	int ret;
-> +	struct pcm1681_private *priv;
-> +
-> +	priv = devm_kzalloc(&client->dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
-> +
-> +	priv->regmap = devm_regmap_init_i2c(client, &pcm1681_regmap);
-> +	if (IS_ERR(priv->regmap)) {
-> +		ret = PTR_ERR(priv->regmap);
-> +		dev_err(&client->dev, "Failed to create regmap: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	i2c_set_clientdata(client, priv);
-> +
+Hardware GPIOs have nothing to do with the concept of GPIOs from the
+Linux kernel point of view where a GPIO is a swoftware controllable pin
+with a similar configuration space as "hardware GPIOs". To put it
+simple, a software GPIO is a hardware GPIO plus some digital logic which
+implements a register interface to drive all the hardware GPIO's control
+lines from software.
 
-Is there any way to probe the device is there at all? I'd like to bail
-early in case the bus or i2c address doesn't match for example.
+In some cases, both modes are combined, e.g. one can imagine an SPI
+interface where the output levels are driven from an SPI controller
+hardware block and other parameters such as the drive strength or
+integrated pull-up/pull-down resistors are controlled through some
+independent mechanism. The parameters controlled through that
+independent mechanism are sometimes referred to as the GPIO mode of the
+pin.
 
-Also, I wonder whether there are any reset lines that might be connected
-to GPIOs of the MCU. If so, it would be good idea to add support for
-that in this driver. But that can be done at some later point as well.
-
-
-Best,
-Daniel
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
