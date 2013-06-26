@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab3FZQaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:30:14 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:34298 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab3FZQaM (ORCPT
+	id S1751645Ab3FZQcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:32:55 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:59333 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab3FZQcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:30:12 -0400
+	Wed, 26 Jun 2013 12:32:53 -0400
+Date: Wed, 26 Jun 2013 10:32:50 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
+        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
+        vishal.l.verma@intel.com, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE
+ ID
+Message-ID: <20130626163250.GA29299@google.com>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+ <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
 MIME-Version: 1.0
-Date: Thu, 27 Jun 2013 00:30:10 +0800
-Message-ID: <CAPgLHd8-jbXfb95x1Bp7GsMuEJ3mOudUcknRqbxNpNmcdQvg3w@mail.gmail.com>
-Subject: [PATCH -next] pinctrl: st: fix return value check
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: linus.walleij@linaro.org, grant.likely@linaro.org, rob.herring@calxeda.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Tue, Jun 25, 2013 at 06:53:27PM -0700, Darren Hart wrote:
+> Add CircuitCo's newly created VENDOR ID and their first board subsystem
+> ID for the MinnowBoard.
+> 
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: David Anders <danders@circuitco.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
+> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  include/linux/pci_ids.h | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index c129162..b2879ce 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -149,6 +149,9 @@
+>  #define PCI_DEVICE_ID_BERKOM_A4T		0xffa4
+>  #define PCI_DEVICE_ID_BERKOM_SCITEL_QUADRO	0xffa8
+>  
+> +#define PCI_VENDOR_ID_CIRCUITCO			0x1cc8
+> +#define PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD	0x0001
+> +
+>  #define PCI_VENDOR_ID_COMPAQ		0x0e11
+>  #define PCI_DEVICE_ID_COMPAQ_TOKENRING	0x0508
+>  #define PCI_DEVICE_ID_COMPAQ_TACHYON	0xa0fc
+> -- 
+> 1.8.1.2
+> 
 
-In case of error, the function pinctrl_register() returns
-NULL not ERR_PTR(). The IS_ERR() test in the return value
-check should be replaced with NULL test.
-The function syscon_regmap_lookup_by_phandle() returns ERR_PTR()
-and never returns NULL. The NULL test in the return value check
-should be replaced with IS_ERR().
+Per conversation at [1], I merged the patch below to my pci/misc branch
+for v3.11:
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/pinctrl/pinctrl-st.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+[1] https://lkml.kernel.org/r/6c27e79870ec93f7a8c6692d4bcfebaee589fa6b.1372211451.git.dvhart@linux.intel.com
 
-diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-index 7effedf..de8c626 100644
---- a/drivers/pinctrl/pinctrl-st.c
-+++ b/drivers/pinctrl/pinctrl-st.c
-@@ -1299,9 +1299,9 @@ static int st_pctl_probe_dt(struct platform_device *pdev,
- 		return -ENOMEM;
- 
- 	info->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
--	if (!info->regmap) {
-+	if (IS_ERR(info->regmap)) {
- 		dev_err(info->dev, "No syscfg phandle specified\n");
--		return -ENOMEM;
-+		return PTR_ERR(info->regmap);
- 	}
- 	info->data = of_match_node(st_pctl_of_match, np)->data;
- 
-@@ -1376,9 +1376,9 @@ static int st_pctl_probe(struct platform_device *pdev)
- 	pctl_desc->name		= dev_name(&pdev->dev);
- 
- 	info->pctl = pinctrl_register(pctl_desc, &pdev->dev, info);
--	if (IS_ERR(info->pctl)) {
-+	if (!info->pctl) {
- 		dev_err(&pdev->dev, "Failed pinctrl registration\n");
--		return PTR_ERR(info->pctl);
-+		return -EINVAL;
- 	}
- 
- 	for (i = 0; i < info->nbanks; i++)
 
+commit 9f4de80a09667538e1162fdecff96ccb5bb354a8
+Author: Darren Hart <dvhart@linux.intel.com>
+Date:   Tue Jun 25 20:08:46 2013 -0600
+
+    PCI: Add CircuitCo vendor ID
+    
+    Add CircuitCo's newly created VENDOR ID
+    
+    [bhelgaas: sort, drop device ID (only used once)]
+    Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index c129162..8b1aa7f 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2476,6 +2476,8 @@
+ 
+ #define PCI_VENDOR_ID_ASMEDIA		0x1b21
+ 
++#define PCI_VENDOR_ID_CIRCUITCO		0x1cc8
++
+ #define PCI_VENDOR_ID_TEKRAM		0x1de1
+ #define PCI_DEVICE_ID_TEKRAM_DC290	0xdc29
+ 
