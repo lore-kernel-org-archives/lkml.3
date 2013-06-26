@@ -1,172 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3FZBMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 21:12:18 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:63473 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab3FZBMR (ORCPT
+	id S1752117Ab3FZBMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 21:12:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53872 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751401Ab3FZBMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 21:12:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH9JG2U6Kg9MBdFX-OnfrqGAsJGJwEMkg01-uUycF1r3VyZqrg@mail.gmail.com>
-References: <20130625175129.7c0d79e1@redhat.com>
-	<CAH9JG2U6Kg9MBdFX-OnfrqGAsJGJwEMkg01-uUycF1r3VyZqrg@mail.gmail.com>
-Date: Wed, 26 Jun 2013 10:12:15 +0900
-X-Google-Sender-Auth: VZC9Evqay5vrCCLiLiY_pgu-yYU
-Message-ID: <CAOK=xRN-cNJZgPqWuapsPjeGqFm9RAEXVn6kN971aZ016ocxxA@mail.gmail.com>
-Subject: Re: [PATCH] vmpressure: implement strict mode
-From: Hyunhee Kim <hyunhee.kim@samsung.com>
-To: Kyungmin Park <kmpark@infradead.org>,
-        Luiz Capitulino <lcapitulino@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, minchan@kernel.org,
-        anton@enomsg.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Jun 2013 21:12:37 -0400
+Message-ID: <1372209146.4006.35.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Per route MTU settings are broken in linux kernel 3.2
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Yura Pakhuchiy <pakhuchiy@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        stable@vger.kernel.org
+Date: Wed, 26 Jun 2013 02:12:26 +0100
+In-Reply-To: <1372079315.32157.15.camel@linux>
+References: <1372063443.32157.10.camel@linux>
+	 <1372077951.21189.16.camel@deadeye.wl.decadent.org.uk>
+	 <1372079315.32157.15.camel@linux>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-3pqCePKAFTA6m7+Icio4"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please see "[PATCH v3] memcg: event control at vmpressure". mail
-thread. (and also the thread I sent last Saturday.)
-There was discussion on this mode not sending lower events when "level
-!= ev->level".
 
-Thanks,
-Hyunhee Kim.
+--=-3pqCePKAFTA6m7+Icio4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-2013/6/26 Kyungmin Park <kmpark@infradead.org>:
-> + Ms. Kim,
->
-> she already raised this issue at another mail thread.
->
-> Thank you,
-> Kyungmin Park
->
-> On Wed, Jun 26, 2013 at 6:51 AM, Luiz Capitulino <lcapitulino@redhat.com> wrote:
->> Currently, applications are notified for the level they registered for
->> _plus_ higher levels.
->>
->> This is a problem if the application wants to implement different
->> actions for different levels. For example, an application might want
->> to release 10% of its cache on level low, 50% on medium and 100% on
->> critical. To do this, the application has to register a different fd
->> for each event. However, fd low is always going to be notified and
->> and all fds are going to be notified on level critical.
->>
->> Strict mode solves this problem by strictly notifiying the event
->> an fd has registered for. It's optional. By default we still notify
->> on higher levels.
->>
->> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
->> ---
->>
->> PS: I'm following the discussion on the event storm problem, but I believe
->>     strict mode is orthogonal to what has been suggested (although the
->>     patches conflict)
->>
->>  Documentation/cgroups/memory.txt | 10 ++++++----
->>  mm/vmpressure.c                  | 19 +++++++++++++++++--
->>  2 files changed, 23 insertions(+), 6 deletions(-)
->>
->> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
->> index ddf4f93..3c589cf 100644
->> --- a/Documentation/cgroups/memory.txt
->> +++ b/Documentation/cgroups/memory.txt
->> @@ -807,12 +807,14 @@ register a notification, an application must:
->>
->>  - create an eventfd using eventfd(2);
->>  - open memory.pressure_level;
->> -- write string like "<event_fd> <fd of memory.pressure_level> <level>"
->> +- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
->>    to cgroup.event_control.
->>
->> -Application will be notified through eventfd when memory pressure is at
->> -the specific level (or higher). Read/write operations to
->> -memory.pressure_level are no implemented.
->> +Applications will be notified through eventfd when memory pressure is at
->> +the specific level or higher. If strict is passed, then applications
->> +will only be notified when memory pressure reaches the specified level.
->> +
->> +Read/write operations to memory.pressure_level are no implemented.
->>
->>  Test:
->>
->> diff --git a/mm/vmpressure.c b/mm/vmpressure.c
->> index 736a601..6289ede 100644
->> --- a/mm/vmpressure.c
->> +++ b/mm/vmpressure.c
->> @@ -137,6 +137,7 @@ static enum vmpressure_levels vmpressure_calc_level(unsigned long scanned,
->>  struct vmpressure_event {
->>         struct eventfd_ctx *efd;
->>         enum vmpressure_levels level;
->> +       bool strict_mode;
->>         struct list_head node;
->>  };
->>
->> @@ -153,6 +154,9 @@ static bool vmpressure_event(struct vmpressure *vmpr,
->>
->>         list_for_each_entry(ev, &vmpr->events, node) {
->>                 if (level >= ev->level) {
->> +                       /* strict mode ensures level == ev->level */
->> +                       if (ev->strict_mode && level != ev->level)
->> +                               continue;
->>                         eventfd_signal(ev->efd, 1);
->>                         signalled = true;
->>                 }
->> @@ -292,7 +296,7 @@ void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
->>   * infrastructure, so that the notifications will be delivered to the
->>   * @eventfd. The @args parameter is a string that denotes pressure level
->>   * threshold (one of vmpressure_str_levels, i.e. "low", "medium", or
->> - * "critical").
->> + * "critical") and optionally a different operating mode (i.e. "strict")
->>   *
->>   * This function should not be used directly, just pass it to (struct
->>   * cftype).register_event, and then cgroup core will handle everything by
->> @@ -303,22 +307,33 @@ int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
->>  {
->>         struct vmpressure *vmpr = cg_to_vmpressure(cg);
->>         struct vmpressure_event *ev;
->> +       bool smode = false;
->> +       const char *p;
->>         int level;
->>
->>         for (level = 0; level < VMPRESSURE_NUM_LEVELS; level++) {
->> -               if (!strcmp(vmpressure_str_levels[level], args))
->> +               p = vmpressure_str_levels[level];
->> +               if (!strncmp(p, args, strlen(p)))
->>                         break;
->>         }
->>
->>         if (level >= VMPRESSURE_NUM_LEVELS)
->>                 return -EINVAL;
->>
->> +       p = strchr(args, ' ');
->> +       if (p) {
->> +               if (strncmp(++p, "strict", 6))
->> +                       return -EINVAL;
->> +               smode = true;
->> +       }
->> +
->>         ev = kzalloc(sizeof(*ev), GFP_KERNEL);
->>         if (!ev)
->>                 return -ENOMEM;
->>
->>         ev->efd = eventfd;
->>         ev->level = level;
->> +       ev->strict_mode = smode;
->>
->>         mutex_lock(&vmpr->events_lock);
->>         list_add(&ev->node, &vmpr->events);
->> --
->> 1.8.1.4
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+On Mon, 2013-06-24 at 20:08 +0700, Yura Pakhuchiy wrote:
+> On Mon, 2013-06-24 at 13:45 +0100, Ben Hutchings wrote:
+> > On Mon, 2013-06-24 at 15:44 +0700, Yura Pakhuchiy wrote:
+> > > Hello Ben,
+> > >=20
+> > > Looks like setting per route MTU (as described in [1]) is broken in
+> > > Linux kernel 3.2. I tested with newer Ubuntu kernels 3.5 and 3.8 and =
+it
+> > > looks like problem is fixed there. I filled Ubuntu bug report [2] wit=
+h
+> > > more details and sample script which illustrates problem. But since t=
+his
+> > > problem is probably also present in stock kernel (not just in Ubuntu)=
+,
+> > > is it possible to backport fixes to stable 3.2 series?
+> > >=20
+> > > 1. http://lartc.org/howto/lartc.cookbook.mtu-discovery.html
+> > > 2. https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1177507
+> >=20
+> > Sure, what are the fixes?
+>=20
+> Actually, I do not know :-( Ubuntu devs have not fixed this problem in
+> Ubuntu 3.2 kernel. But these commits in mainline kernel looks related:
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3D9b04f350057863d1fad1ba071e09362a1da3503e
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3D5f2d04f1f9b52604fca6ee08a77972c0df67e082
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3Dd851c12b60471188e15e5c8405b289073e8dd025
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3D7f92d334ba19a0d8e96f8f8f092219553367d921
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3Dee9a8f7ab2edf801b8b514c310455c94acc232f6
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3D38d523e2948162776903349c89d65f7b9370dadb
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3Dfa1e492aa3cbafba9f8fc6d05e5b08a3091daf4a
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3D05ab86c55683410593720003442dde629782aaac
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3D9cb3a50c5f63ed745702972f66eaee8767659acd
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/comm=
+it/?id=3Db44108dbdbaa07c609bb5755e8dd6c2035236251
+>=20
+> However I'm not sure whether they all are required or sufficient to fix
+> everything correctly.
+
+Sorry, but I really do need someone to tell me exactly what's required.
+I'm not likely to find the time to work this out myself.
+
+Ben.
+
+--=20
+Ben Hutchings
+Knowledge is power.  France is bacon.
+
+--=-3pqCePKAFTA6m7+Icio4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUco/+ue/yOyVhhEJAQpBsxAA0Wxus9cvoZxfoOSi10wa2d+MvbqYihkh
+cEZl0XllDIrx7f//FCzxBaVWzosJjaE05DSPFUaOTmAcgQaaftK3QzQKA1QIqqTa
+WhFvQbwsxt9RWRZbev43V/WaV/cMjdF5Y+j2Qm1fI639EF2QuAksgE+jn0aEbsAh
+1OXz0GHVFg0i0pYh+UyqRxJg+FUtLKfc85Cak6b6F/q/PXRI1cwyYxYYIdUfuf/x
+WPE6m4efMS7I6w3A7+GaFZzrvj/5lVeAKuxvLlpuPBGHJHgwd0H3KateyZtiib7o
+yBvIL/UiJTehV17a/W1FUhBsas5q3whTWHBRLl2D1TpvX7X8THly6nnByF4La+xL
+rS3bqY/R0jq8QcAaPIlMm4yi1UIg+t8NDcjjWQQdBASev10Uu5Bwb9hpxa6D2yJn
+kzqlECX7dz+FtyJwaCIkxsfoA41za56KMh4cJtVXmgTHxD/6gZGDRy5MkUZQ/flr
+7xJAnC+DpRPyBWtQa266N/ILW4MTGa0Wz4vQpEBufg1tV1+57N0WATMDcXBnOIOa
+QGuR8X9TvIB0VfN52IFI4zH6sExxuzAtXm9d4Jlr50rbuDM+mcSCngfWJj72hw40
+E8ztTB0xLs0cpkcff108+cYxP4EYqz0LA2ZLlqUNZyaNjkz8ekDDUdh1rMwDCDtn
+sboaNXDwbns=
+=W0jS
+-----END PGP SIGNATURE-----
+
+--=-3pqCePKAFTA6m7+Icio4--
