@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab3FZLEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 07:04:21 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:21064 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab3FZLET (ORCPT
+	id S1752152Ab3FZLEi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 07:04:38 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:52134 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab3FZLEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 07:04:19 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-70-51cacab150aa
-Date: Wed, 26 Jun 2013 13:04:07 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, t.figa@samsung.com
-Subject: Re: [PATCH v4 1/7] cpufreq: Store cpufreq policies in a list
-Message-id: <20130626130407.021c05cb@amdc308.digital.local>
-In-reply-to: <CAKohpom1yJOAVZ1XE+Q+dtrZM1N6Zqd7DjURSA_f2fhQ1OiCJA@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-2-git-send-email-l.majewski@samsung.com>
- <CAKohpomStuSGyQHnk9jNLpije=SAkb4zHg40zHDgLRCUQeZC1A@mail.gmail.com>
- <20130626125411.5dc935bf@amdc308.digital.local>
- <CAKohpom1yJOAVZ1XE+Q+dtrZM1N6Zqd7DjURSA_f2fhQ1OiCJA@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jAd1Np04FGtz5w2zx5+1yVounTT/Y
-	LeZ9lrVYs/8nk0Xn2SfMFr0LrrJZvHnEbXF51xw2i8+9RxgtbjeuYLPoX9jLZPHkYR+bxfoZ
-	r1ksOo58Y7bY+NXDgd9j8Z6XTB53ru1h81g37S2zR9+WVYwejxa3MHocv7GdyePzJrkA9igu
-	m5TUnMyy1CJ9uwSujOa7XYwFy1grDp/PbGD8zdzFyMkhIWAisbV1LiOELSZx4d56NhBbSGAR
-	o8S2xxldjFxAdjuTxOMzH8GKWARUJT6d+wnWzCagJ/H57lOmLkYODhEBLYmXN1NB6pkFTrNI
-	7HhwjR0kLizgKnH9vCKIyStgLbFrawVIJ6dAsMT83ydZIcb/ZZLoWncVbCS/gKRE+78fULfZ
-	SZz7tIEdxOYVEJT4MfkeC4jNDLRq87YmVghbXmLzmrfMExgFZyEpm4WkbBaSsgWMzKsYRVML
-	kguKk9JzjfSKE3OLS/PS9ZLzczcxguPqmfQOxlUNFocYBTgYlXh4FbaeDBRiTSwrrsw9xCjB
-	wawkwvtm/qlAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHW60DhQTSE0tSs1NTC1KLYLJMHJxS
-	DYxWxrNM638sEr8WcT5hpu9Ur4ZJ6h+n3EqZ5V73RGXn+p/ZXXcfXkq+/N2YJ1Tg2bqnLLLv
-	5vKJhGgFV36o/el8a8+2e6+WpxqEu+x2NdA/UZ2UGXDI6quPyzenRQ1yb2X67+z9Lta07Xc3
-	75ZTMeLyszNWG515bd/zaZeN8Bbb9ukL1i/6veayEktxRqKhFnNRcSIAHWDx9acCAAA=
+	Wed, 26 Jun 2013 07:04:36 -0400
+Message-ID: <51CACABF.4040902@monstr.eu>
+Date: Wed, 26 Jun 2013 13:04:31 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Sachin Kamat <sachin.kamat@linaro.org>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v3 1/2] uio: Use of_match_ptr() macro in uio_pdrv_genirq.c
+References: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com> <CAK9yfHzVSt1XN7=OZOtF_n_3jbpXObqoiay_t6n3EauTjUUX+w@mail.gmail.com> <51CAC0A7.7090708@monstr.eu> <CAK9yfHxuHuf1BnzR36c8Ucw_xrVcMW--jE-Gpng6tPNd17sB2A@mail.gmail.com>
+In-Reply-To: <CAK9yfHxuHuf1BnzR36c8Ucw_xrVcMW--jE-Gpng6tPNd17sB2A@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2SCWEKLNXHIKVTCHFFSCW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jun 2013 16:26:30 +0530, Viresh Kumar wrote:
-> On 26 June 2013 16:24, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> >> > ---
-> >
-> > So here <---> I will put change log for v5.
-> 
-> correct.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2SCWEKLNXHIKVTCHFFSCW
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-OK.
+On 06/26/2013 12:51 PM, Sachin Kamat wrote:
+> On 26 June 2013 15:51, Michal Simek <monstr@monstr.eu> wrote:
+>> On 06/26/2013 12:00 PM, Sachin Kamat wrote:
+>>> On 26 June 2013 15:22, Michal Simek <michal.simek@xilinx.com> wrote:
+>>>> This eliminates having an #ifdef returning NULL for the case
+>>>> when OF is disabled.
+>>>>
+>>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>>>
+>>> I have already submitted a similar patch for doing this:
+>>> https://lkml.org/lkml/2013/3/14/169
+>>
+>> Ok. I don't care about it.
+>> Greg: Can you please add any of this patch to your char-misc tree?
+>>
+>> For Sachin patch.
+>> Acked-by: Michal Simek <monstr@monstr.eu>
+>=20
+> Thanks Michal. Since Hans wasn't active the patch has been pending
+> since some time.
+> The latest rebased version has been posted [1] for Greg to apply.
+>=20
+> [1] https://lkml.org/lkml/2013/6/25/7
 
-> 
-> >> >         ret = cpufreq_add_dev_interface(cpu, policy, dev);
-> >> >         if (ret)
-> >
-> > I will add list_del(&cpufreq_policy_list);
-> > here.
-> 
-> May not be sufficient. You must do it once at the end of this routine.
 
-Then I will add this code below:
+Yeah. As I said I really don't care which version will be applied.
+It is just necessary to have progress on this.
 
-err_out_kobj_put:
-	list_del(&cpufreq_policy_list);
-	[rest of error path]
+Here is the first version I have sent
+http://lkml.org/lkml/2013/5/23/311
 
--- 
-Best regards,
+btw: do you agree about removing that uio_pdrv because
+all functionality is already in uio_pdrv_genirq driver
+and make no sense to have two drivers for the same thing?
 
-Lukasz Majewski
+Thanks,
+Michal
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2SCWEKLNXHIKVTCHFFSCW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHKyr8ACgkQykllyylKDCEbBQCgkpfWPeR1qC4gXgGip9pb40l0
+9VsAoIHxlWVIoKcKzO1ZnXREzB1m2Xbg
+=XV1N
+-----END PGP SIGNATURE-----
+
+------enig2SCWEKLNXHIKVTCHFFSCW--
