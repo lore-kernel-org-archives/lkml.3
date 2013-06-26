@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab3FZPFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:05:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26172 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3FZPFF (ORCPT
+	id S1752251Ab3FZPFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:05:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59696 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab3FZPFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:05:05 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=JeMnKzm8Z7MA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=vXuyrZPK3zMA:10 a=D19gQVrFAAAA:8 a=b4KrJKo_AAAA:8 a=-qwhw_xnys7Ca05oJrcA:9 a=QEXdDO2ut3YA:10 a=_H-fYMU3ovgA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1372259103.18733.260.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH RT] rcu,rt: Allow rcu_read_lock_sched() to schedule
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>
-Date: Wed, 26 Jun 2013 11:05:03 -0400
-In-Reply-To: <1372259000.18733.258.camel@gandalf.local.home>
-References: <1372254133.18733.252.camel@gandalf.local.home>
-	 <20130626144045.GO3828@linux.vnet.ibm.com>
-	 <1372259000.18733.258.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 11:05:17 -0400
+Date: Wed, 26 Jun 2013 16:27:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [Resend patch v8 0/13] use runnable load in schedule balance
+Message-ID: <20130626142759.GM28407@twins.programming.kicks-ass.net>
+References: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 11:03 -0400, Steven Rostedt wrote:
-
-> > I tried this approach in early 2005, and testing did not go well:
-> > 
-> > https://lkml.org/lkml/2005/3/17/199
-> > 
-> > For one thing, a lock acquired both within and surrounding an
-> > RCU-sched read-side critical section would result in deadlock.
-> > 
-> > Or have things changed so that this now somehow works?
+On Thu, Jun 20, 2013 at 10:18:44AM +0800, Alex Shi wrote:
+> Resend patchset for more convenient pick up.
+> This patch set combine 'use runnable load in balance' serials and 'change 
+> 64bit variables to long type' serials. also collected Reviewed-bys, and 
+> Tested-bys.
 > 
-> Well, so far lockdep hasn't splatted on this. But that's not saying much
-> because I'm currently fighting the lockdep splats from other workqueue
-> related stuff.
+> The only changed code is fixing load to load_avg convert in UP mode, which
+> found by PeterZ in task_h_load().
 > 
-> Seems that Tejun really doesn't like us RT folks ;-)
+> Paul still has some concern of blocked_load_avg out of balance consideration.
+> but I didn't see the blocked_load_avg usage was thought through now, or some 
+> strong reason to make it into balance.
+> So, according to benchmarks testing result I keep patches unchanged.
+> 
+> [Resend patch v8 01/13] Revert "sched: Introduce temporary
+> [Resend patch v8 02/13] sched: move few runnable tg variables into
+> [Resend patch v8 03/13] sched: set initial value of runnable avg for
+> [Resend patch v8 04/13] sched: fix slept time double counting in
+> [Resend patch v8 05/13] sched: update cpu load after task_tick.
+> [Resend patch v8 06/13] sched: compute runnable load avg in cpu_load
+> [Resend patch v8 07/13] sched: consider runnable load average in
+> [Resend patch v8 08/13] sched/tg: remove blocked_load_avg in balance
+> [Resend patch v8 09/13] sched: change cfs_rq load avg to unsigned
+> [Resend patch v8 10/13] sched/tg: use 'unsigned long' for load
+> [Resend patch v8 11/13] sched/cfs_rq: change atomic64_t removed_load
+> [Resend patch v8 12/13] sched/tg: remove tg.load_weight
+> [Resend patch v8 13/13] sched: get_rq_runnable_load() can be static
 
-If there are issues, we could make a rcu_read_lock_sched_rt() which for
-mainline will be rcu_read_lock_sched(), but for -rt will grab the lock.
-That way we can pick and choose the locations that this is required.
-
--- Steve
-
-
+I applied all except patch 8.
