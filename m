@@ -1,160 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab3FZHsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:48:23 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:25699 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab3FZHsV (ORCPT
+	id S1752014Ab3FZHts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:49:48 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:48377 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab3FZHtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:48:21 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-1b-51ca9cc3ab1b
-Date: Wed, 26 Jun 2013 09:48:11 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH v4 0/7] cpufreq:boost: CPU Boost mode support
-Message-id: <20130626094811.1986e875@amdc308.digital.local>
-In-reply-to: <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t9jQd3Dc04FGlz5wmPx5+1yVounTT/Y
-	LeZ9lrVYs/8nk0Xn2SfMFr0LrrJZvHnEbfHm4WZGi8u75rBZfO49wmhxu3EFm0X/wl4miycP
-	+9gsOo58Y7bY+NXDgd9j8Z6XTB53ru1h81g37S2zR9+WVYwejxa3MHocv7GdyePzJrkA9igu
-	m5TUnMyy1CJ9uwSujK6eRawFa+Uq2rf2sTQwXhDvYuTkkBAwkTj+rJcRwhaTuHBvPRuILSQw
-	nVGi6YUahN3OJPFprjmIzSKgKnHvZxcTiM0moCfx+e5TIJuDQ0RAS+LlzdQuRi4OZoHHLBLb
-	969lBqkRFnCU2HvxBguIzStgLbFpzRSwXk4BN4nj37rYQBqEBBoZJdZueADWwC8gKdH+7wcz
-	xEF2Euc+bWCHaBaU+DH5HtggZqBlm7c1sULY8hKb17xlnsAoOAtJ2SwkZbOQlC1gZF7FKJpa
-	kFxQnJSea6hXnJhbXJqXrpecn7uJERxbz6R2MK5ssDjEKMDBqMTDq7D1ZKAQa2JZcWXuIUYJ
-	DmYlEV7T2acChXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBK
-	NTBePNWm+lRaum9D14tDOmWucyzdwo7tan/dcjAi/tinTwmd/qYdf6ImCt0MX6P0P52P2SRp
-	5Y3+ay+ez5qe6e3lc5O10t74136+DVujbx30bDqTsWGx6zGO7TdP3G68xjZl+e/HaqIBPSd2
-	Rey24wwXMSt6e26SOu+rOK4yw/cvvy7d8fXfRg4NJZbijERDLeai4kQAKv1EgKkCAAA=
+	Wed, 26 Jun 2013 03:49:47 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: <davem@davemloft.net>
+CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>, <netdev@vger.kernel.org>,
+        "Andy Shevchenko" <andy.shevchenko@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>, Joe Perches <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        David Laight <david.laight@aculab.com>
+Subject: [PATCH] arc_emac: fix compile-time errors & warnings on PPC64
+Date: Wed, 26 Jun 2013 11:49:26 +0400
+Message-ID: <1372232966-11507-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.121.8.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+As reported by "kbuild test robot" there were some errors and warnings
+on attempt to build kernel with "make ARCH=powerpc allmodconfig".
 
-> This patch series introduces support for CPU overclocking technique
-> called Boost.
-> 
-> It is a follow up of a LAB governor proposal. Boost is a LAB
-> component:
-> http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
-> 
-> Boost unifies hardware based solution (e.g. Intel Nehalem) with
-> software oriented one (like the one done at Exynos).
-> For this reason cpufreq/freq_table code has been reorganized to
-> include common code.
-> 
-> Important design decisions:
-> 
-> - Boost related code is compiled-in unconditionally and disabled by
-> default The cpufreq_driver is responsibile for setting
-> boost_supported flag and providing enable_boost callback(if HW
-> support is needed)
-> 
-> - struct cpufreq_driver has been extended with boost related fields:
->         -- boost_supported - when driver supports boosting
->         -- enable_boost - callback to function, which is necessary to
->            enable boost in the processor (like it is done at Intel)
-> 
-> - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost) is
-> always provided.
-> It will be read only, until either cpufreq_driver defines
-> boost_supported flag or device tree's cpufreq "boost_mode" attribute
-> is defined. It is consistent with legacy acpi API.
-> 
-> - No special spin_lock for Boost was created. The one from cpufreq
-> core was reused.
-> 
-> - All available policies are now stored in a list.
-> 
-> - The Boost code doesn't rely on any policy. When boost state is
-> changed, then the policy list is iterated and proper adjustements are
-> done.
-> 
-> - Number of busy cpus (with load > 90%) is calculated and exported as
-> a global sysfs attribute.
-> 
-> - The SW based boost can be only enabled when up to one core is
-> regarded as a "busy" one. For safety reasons boost is disabled when
-> more cores comes into play.
-> 
-> - To improve safety level, the thermal framework is also extended to
-> disable software boosting, when thermal trip point is reached.
-> 
-> New patches for v4:
-> cpufreq: Store cpufreq policies in a list
-> cpufreq: Calculate number of busy CPUs
-> cpufreq: Enable software boost only when up to one busy core is
-> running thermal:boost: Disable boost when trip point is reached
-> 
-> Tested at: HW:
->         Exynos 4412 3.10 linux
->         Exynos 4210 3.10 linux
-> Compile tested x86_64 defconfig (acpi) - help with HW (Intel Nehalem)
-> test needed
-> 
+And this patch addresses both errors and warnings.
+Below is a list of introduced changes:
+1. Fix compile-time errors (misspellings in "dma_unmap_single") on PPC.
+2. Use DMA address instead of "skb->data" as a pointer to data buffer.
+This fixed warnings on pointer to int conversion on 64-bit systems.
+3. Re-implemented initial allocation of Rx buffers in "arc_emac_open" in
+the same way they're re-allocated during operation (receiving packets).
+So once again DMA address could be used instead of "skb->data".
+4. Explicitly use EMAC_BUFFER_SIZE for Rx buffers allocation.
 
-If this is not a problem, I'd like to kindly ask You to review those
-patches.
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
-Rafael has expressed his opinion about "boost" attribute clearly at the
-other mail (as a response to v4 patches):
-"Simple: Export it only when supported."
+Cc: netdev@vger.kernel.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Mischa Jonker <mjonker@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: David Laight <david.laight@aculab.com>
+---
+ drivers/net/ethernet/arc/emac_main.c |   65 ++++++++++++++++++++--------------
+ 1 file changed, 39 insertions(+), 26 deletions(-)
 
-Despite the change about the "boost" attribute visibility there were
-many other changes, which deserve maintainer's look.
-
-
-
-> 
-> Lukasz Majewski (7):
->   cpufreq: Store cpufreq policies in a list
->   cpufreq: Add boost frequency support in core
->   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with common
->     boost solution
->   cpufreq:exynos:Extend Exynos cpufreq driver to support boost
->     framework
->   cpufreq: Calculate number of busy CPUs
->   cpufreq: Enable software boost only when up to one busy core is
->     running
->   thermal:boost: Disable boost when trip point is reached
-> 
->  drivers/cpufreq/acpi-cpufreq.c     |   61 ++++++-----------
->  drivers/cpufreq/cpufreq.c          |  132
-> ++++++++++++++++++++++++++++++++++++
-> drivers/cpufreq/cpufreq_governor.c |    4 ++
-> drivers/cpufreq/exynos-cpufreq.c   |    4 ++
-> drivers/cpufreq/freq_table.c       |   43 ++++++++++--
-> drivers/thermal/cpu_cooling.c      |    3 +
-> include/linux/cpufreq.h            |   15 ++++ 7 files changed, 215
-> insertions(+), 47 deletions(-)
-> 
-
-
-
+diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+index 20345f6..f1b121e 100644
+--- a/drivers/net/ethernet/arc/emac_main.c
++++ b/drivers/net/ethernet/arc/emac_main.c
+@@ -171,8 +171,8 @@ static void arc_emac_tx_clean(struct net_device *ndev)
+ 			stats->tx_bytes += skb->len;
+ 		}
+ 
+-		dma_unmap_single(&ndev->dev, dma_unmap_addr(&tx_buff, addr),
+-				 dma_unmap_len(&tx_buff, len), DMA_TO_DEVICE);
++		dma_unmap_single(&ndev->dev, dma_unmap_addr(tx_buff, addr),
++				 dma_unmap_len(tx_buff, len), DMA_TO_DEVICE);
+ 
+ 		/* return the sk_buff to system */
+ 		dev_kfree_skb_irq(skb);
+@@ -204,7 +204,6 @@ static int arc_emac_rx(struct net_device *ndev, int budget)
+ 		struct net_device_stats *stats = &priv->stats;
+ 		struct buffer_state *rx_buff = &priv->rx_buff[*last_rx_bd];
+ 		struct arc_emac_bd *rxbd = &priv->rxbd[*last_rx_bd];
+-		unsigned int buflen = EMAC_BUFFER_SIZE;
+ 		unsigned int pktlen, info = le32_to_cpu(rxbd->info);
+ 		struct sk_buff *skb;
+ 		dma_addr_t addr;
+@@ -226,7 +225,7 @@ static int arc_emac_rx(struct net_device *ndev, int budget)
+ 				netdev_err(ndev, "incomplete packet received\n");
+ 
+ 			/* Return ownership to EMAC */
+-			rxbd->info = cpu_to_le32(FOR_EMAC | buflen);
++			rxbd->info = cpu_to_le32(FOR_EMAC | EMAC_BUFFER_SIZE);
+ 			stats->rx_errors++;
+ 			stats->rx_length_errors++;
+ 			continue;
+@@ -240,11 +239,12 @@ static int arc_emac_rx(struct net_device *ndev, int budget)
+ 		skb->dev = ndev;
+ 		skb->protocol = eth_type_trans(skb, ndev);
+ 
+-		dma_unmap_single(&ndev->dev, dma_unmap_addr(&rx_buff, addr),
+-				 dma_unmap_len(&rx_buff, len), DMA_FROM_DEVICE);
++		dma_unmap_single(&ndev->dev, dma_unmap_addr(rx_buff, addr),
++				 dma_unmap_len(rx_buff, len), DMA_FROM_DEVICE);
+ 
+ 		/* Prepare the BD for next cycle */
+-		rx_buff->skb = netdev_alloc_skb_ip_align(ndev, buflen);
++		rx_buff->skb = netdev_alloc_skb_ip_align(ndev,
++							 EMAC_BUFFER_SIZE);
+ 		if (unlikely(!rx_buff->skb)) {
+ 			stats->rx_errors++;
+ 			/* Because receive_skb is below, increment rx_dropped */
+@@ -256,7 +256,7 @@ static int arc_emac_rx(struct net_device *ndev, int budget)
+ 		netif_receive_skb(skb);
+ 
+ 		addr = dma_map_single(&ndev->dev, (void *)rx_buff->skb->data,
+-				      buflen, DMA_FROM_DEVICE);
++				      EMAC_BUFFER_SIZE, DMA_FROM_DEVICE);
+ 		if (dma_mapping_error(&ndev->dev, addr)) {
+ 			if (net_ratelimit())
+ 				netdev_err(ndev, "cannot dma map\n");
+@@ -264,16 +264,16 @@ static int arc_emac_rx(struct net_device *ndev, int budget)
+ 			stats->rx_errors++;
+ 			continue;
+ 		}
+-		dma_unmap_addr_set(&rx_buff, mapping, addr);
+-		dma_unmap_len_set(&rx_buff, len, buflen);
++		dma_unmap_addr_set(rx_buff, addr, addr);
++		dma_unmap_len_set(rx_buff, len, EMAC_BUFFER_SIZE);
+ 
+-		rxbd->data = cpu_to_le32(rx_buff->skb->data);
++		rxbd->data = cpu_to_le32(addr);
+ 
+ 		/* Make sure pointer to data buffer is set */
+ 		wmb();
+ 
+ 		/* Return ownership to EMAC */
+-		rxbd->info = cpu_to_le32(FOR_EMAC | buflen);
++		rxbd->info = cpu_to_le32(FOR_EMAC | EMAC_BUFFER_SIZE);
+ 	}
+ 
+ 	return work_done;
+@@ -376,8 +376,6 @@ static int arc_emac_open(struct net_device *ndev)
+ {
+ 	struct arc_emac_priv *priv = netdev_priv(ndev);
+ 	struct phy_device *phy_dev = priv->phy_dev;
+-	struct arc_emac_bd *bd;
+-	struct sk_buff *skb;
+ 	int i;
+ 
+ 	phy_dev->autoneg = AUTONEG_ENABLE;
+@@ -395,25 +393,40 @@ static int arc_emac_open(struct net_device *ndev)
+ 		}
+ 	}
+ 
++	priv->last_rx_bd = 0;
++
+ 	/* Allocate and set buffers for Rx BD's */
+-	bd = priv->rxbd;
+ 	for (i = 0; i < RX_BD_NUM; i++) {
+-		skb = netdev_alloc_skb_ip_align(ndev, EMAC_BUFFER_SIZE);
+-		if (unlikely(!skb))
++		dma_addr_t addr;
++		unsigned int *last_rx_bd = &priv->last_rx_bd;
++		struct arc_emac_bd *rxbd = &priv->rxbd[*last_rx_bd];
++		struct buffer_state *rx_buff = &priv->rx_buff[*last_rx_bd];
++
++		rx_buff->skb = netdev_alloc_skb_ip_align(ndev,
++							 EMAC_BUFFER_SIZE);
++		if (unlikely(!rx_buff->skb))
++			return -ENOMEM;
++
++		addr = dma_map_single(&ndev->dev, (void *)rx_buff->skb->data,
++				      EMAC_BUFFER_SIZE, DMA_FROM_DEVICE);
++		if (dma_mapping_error(&ndev->dev, addr)) {
++			netdev_err(ndev, "cannot dma map\n");
++			dev_kfree_skb(rx_buff->skb);
+ 			return -ENOMEM;
++		}
++		dma_unmap_addr_set(rx_buff, addr, addr);
++		dma_unmap_len_set(rx_buff, len, EMAC_BUFFER_SIZE);
+ 
+-		priv->rx_buff[i].skb = skb;
+-		bd->data = cpu_to_le32(skb->data);
++		rxbd->data = cpu_to_le32(addr);
+ 
+ 		/* Make sure pointer to data buffer is set */
+ 		wmb();
+ 
+-		/* Set ownership to EMAC */
+-		bd->info = cpu_to_le32(FOR_EMAC | EMAC_BUFFER_SIZE);
+-		bd++;
+-	}
++		/* Return ownership to EMAC */
++		rxbd->info = cpu_to_le32(FOR_EMAC | EMAC_BUFFER_SIZE);
+ 
+-	priv->last_rx_bd = 0;
++		*last_rx_bd = (*last_rx_bd + 1) % RX_BD_NUM;
++	}
+ 
+ 	/* Clean Tx BD's */
+ 	memset(priv->txbd, 0, TX_RING_SZ);
+@@ -543,11 +556,11 @@ static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
+ 		dev_kfree_skb(skb);
+ 		return NETDEV_TX_OK;
+ 	}
+-	dma_unmap_addr_set(&priv->tx_buff[*txbd_curr], mapping, addr);
++	dma_unmap_addr_set(&priv->tx_buff[*txbd_curr], addr, addr);
+ 	dma_unmap_len_set(&priv->tx_buff[*txbd_curr], len, len);
+ 
+ 	priv->tx_buff[*txbd_curr].skb = skb;
+-	priv->txbd[*txbd_curr].data = cpu_to_le32(skb->data);
++	priv->txbd[*txbd_curr].data = cpu_to_le32(addr);
+ 
+ 	/* Make sure pointer to data buffer is set */
+ 	wmb();
 -- 
-Best regards,
+1.7.10.4
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
