@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309Ab3FZFQE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 01:16:04 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:7290 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab3FZFQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 01:16:01 -0400
-X-Spam-Score: -100.8
-Message-ID: <51CA476B.3080208@asianux.com>
-Date: Wed, 26 Jun 2013 09:44:11 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751349Ab3FZFYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 01:24:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40692 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab3FZFYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 01:24:09 -0400
+Date: Wed, 26 Jun 2013 01:23:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130626052352.GB31416@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Oleg Nesterov <oleg@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrey Vagin <avagin@openvz.org>
+References: <20130622013731.GA22918@redhat.com>
+ <20130622173129.GA29375@redhat.com>
+ <20130622215905.GA28238@redhat.com>
+ <20130623143634.GA2000@redhat.com>
+ <20130623150603.GA32313@redhat.com>
+ <20130623160452.GA11740@redhat.com>
+ <20130624155758.GA5993@redhat.com>
+ <20130624173510.GA1321@redhat.com>
+ <20130625153520.GA7784@redhat.com>
+ <1372177414.18733.211.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        cornelia.huck@de.ibm.com, mtosatti@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-s390@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch: s390: kernel: reset 'c->hotpluggable' when failure
- occurs
-References: <51C8F685.6000209@asianux.com> <20130625064832.GA4999@osiris> <51C94599.1020707@asianux.com> <20130625090928.GA8981@osiris> <51C9636F.1050709@asianux.com>
-In-Reply-To: <51C9636F.1050709@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372177414.18733.211.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 05:31 PM, Chen Gang wrote:
-> On 06/25/2013 05:09 PM, Heiko Carstens wrote:
->> On Tue, Jun 25, 2013 at 03:24:09PM +0800, Chen Gang wrote:
->>> On 06/25/2013 02:48 PM, Heiko Carstens wrote:
->>>> On Tue, Jun 25, 2013 at 09:46:45AM +0800, Chen Gang wrote:
->>>>>> When smp_add_present_cpu() fails, it has reset all things excluding
->>>>>> 'c->hotpluggable', so need reset it as original state completely.
->>>>>>
->>>>>> +	c->hotpluggable = 0;
->>>>>>  	return rc;
->>>> No, that doesn't make sense. All cpus on s390 are always hotplugable.
->>>> It really doesn't matter if the value of this field is 0 or 1 after
->>>> an error.
->>>>
->>>
->>> If so, is it better to set 'c->hotpluggable' for all cpus on s390 during
->>> initializing ?
->>
-> No, just leave the code as it is.
->>
-> 
+On Tue, Jun 25, 2013 at 12:23:34PM -0400, Steven Rostedt wrote:
 
-Please help check the diff below whether is valuable, thanks.
+ > Now, what we can try to do as well, is to add a trigger to disable
+ > tracing, which should (I need to check the code) stop tracing on printk.
+ > To do so:
+ > 
+ > # echo printk:traceoff > /sys/kernel/debug/tracing/set_ftrace_filter
+ > 
+ > This will add a trigger to the printk function that when called, will
+ > disable tracing. If it is hit before you get your trace, you can just
+ > re-enable tracing with:
+ > 
+ > # echo 1 > /sys/kernel/debug/tracing/tracing_on
+ > 
+ > Hmm, no it needs a fix to make this work. I applied a patch below that
+ > should do this correctly (and will put this into my 3.11 queue).
+ > 
+ > If you run the test again with this change and with the above filter, it
+ > should stop the trace before overwriting the first dump, as it should
+ > ignore the printk output.
 
+I think something isn't right with this patch.
+After 10 hours, I hit the bug again, but...
 
-For architectures which may support 'hotpluggable', can loop all cpus
-during subsys_initcall().
+(01:21:28:root@binary:tracing)# cat trace
+# tracer: preemptirqsoff
+#
+(01:21:30:root@binary:tracing)# 
 
-The caller will skip the return value of subsys_initcall(), so can only
-return 0.
+	Dave
 
---------------------------------diff begin------------------------------
-
-diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
-index 15a016c..147cc18 100644
---- a/arch/s390/kernel/smp.c
-+++ b/arch/s390/kernel/smp.c
-@@ -1065,8 +1065,9 @@ static int __init s390_smp_init(void)
- #endif
- 	for_each_present_cpu(cpu) {
- 		rc = smp_add_present_cpu(cpu);
--		if (rc)
--			return rc;
-+		if (unlikely(rc))
-+			printk(KERN_WARNING "%s: register_cpu %d failed (%d)\n",
-+			       __func__, cpu, rc);
- 	}
- 	return 0;
- }
-
---------------------------------diff end--------------------------------
-
-
-> Currently we have 3 possible states for 'struct cpu':
->   initialized, and set hotplugable.
->   unitialized, and set hotplugable.
->   unitialized, and unset hotplugable.
-> 
-> Either 2nd or 3rd is inconsistent.
-> 
-> The cpu_is_hotplugable() will be used in kernel/rcutorture.c. I do not
-> know whether it will cause issue or not, but it seems dangerous when
-> __smp_rescan_cpus() has already called, and has some unsucessfull call
-> of smp_add_present_cpu().
-> 
-> Please help check.
-> 
-> Thanks.
-> 
-
-
--- 
-Chen Gang
-
-Asianux Corporation
