@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab3FZQiA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:38:00 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:50150 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab3FZQh7 convert rfc822-to-8bit (ORCPT
+	id S1752349Ab3FZQkb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:40:31 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:37754 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab3FZQk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:37:59 -0400
+	Wed, 26 Jun 2013 12:40:29 -0400
+Date: Wed, 26 Jun 2013 18:40:27 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH 0/7] perf, x86: Haswell LBR call stack support
+Message-ID: <20130626164027.GE6123@two.firstfloor.org>
+References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
+ <20130626115420.GG28407@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CADDKRnCP_s2hL2wr8TsKeToNRt5nXF3NBYAqkmCCUPX8HbY_yQ@mail.gmail.com>
-References: <CADDKRnBf4i8ZQ4EXC15Sa6z9CZ55w0vBDnXG26sjWgdO9zH45w@mail.gmail.com>
-	<CADDKRnCP_s2hL2wr8TsKeToNRt5nXF3NBYAqkmCCUPX8HbY_yQ@mail.gmail.com>
-Date: Wed, 26 Jun 2013 18:37:57 +0200
-Message-ID: <CA+icZUXJK2ks7TQbH0AiPYAWrFuQC85Uw2sSM6d_YD5yS7unhA@mail.gmail.com>
-Subject: Re: [v3.10-rc2] iwlwifi regression
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130626115420.GG28407@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 6:16 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
-> 2013/5/25 Jörg Otte <jrg.otte@gmail.com>:
->> If iwlwifi/iwldvm are built into the kernel (no loadable modules)
->> following error is written to console and syslog since v3.10-rc:
->>
->> iwlwifi 0000:08:00.0: failed to load module iwldvm (error -38), is
->> dynamic loading enabled?
->>
->> reverting
->> commit 1618b2b02a3a0ee7a6863fed4b0d22e697e7e97c
->> Author: Johannes Berg <johannes.berg@intel.com>
->> Date:   Thu Apr 4 10:35:23 2013 +0200
->>     iwlwifi: print warning on request_module failure
->>
->> fixes the problem for me.
->>
->> Jörg
->>
->> I'm not subscribed,please CC me in answeres
->
-> We have rc-7 now and it's still not fixed. What is the problem?
->
+> So on pretty much every program you'd be lucky to get the top of the
+> callstack but can end up with nearly nothing.
 
-The patch is pending in wireless.git and is not in mainline, right.
-AFAICS there was a recent pull request... so should be in rc8.
+The last few entries up are usually the interesting ones, and those will
+be preserved.
 
-commit 8edf3fd6eb0649b0f19363baf23bca39c6fbdba4
-"iwlwifi: don't print module loading error if not modular"
+Do you really care about main() for profiling?
 
-- Sedat -
+When you pop back up there may be a few situations where you
+have a very small visible stack, but as soon as the program
+starts nesting deeper again that will be fixed.
 
-http://git.kernel.org/cgit/linux/kernel/git/linville/wireless.git/commit/?id=8edf3fd6eb0649b0f19363baf23bca39c6fbdba4
+> Given that, and the other limitations I don't think its a fair
+> replacement for user callchains.
 
-> Thanks, Jörg
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It's not intended to be a full replacement, just to cover
+cases that cannot give you callgraphs at all today.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
