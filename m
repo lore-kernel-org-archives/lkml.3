@@ -1,111 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab3FZVMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:12:55 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:50693 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab3FZVMx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:12:53 -0400
-X-AuditID: cbfec37d-b7f036d000004805-31-51cb59548c3e
-From: Shuah Khan <shuah.kh@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "pavel@ucw.cz" <pavel@ucw.cz>, "len.brown@intel.com" <len.brown@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v2] power: Add warning message about incorrect system date
- and time after resume when pm_trace is enabled
-Thread-topic: [PATCH v2] power: Add warning message about incorrect system date
- and time after resume when pm_trace is enabled
-Thread-index: AQHOcTIp4yU9PBfFeEaBODaFSkxwag==
-Date: Wed, 26 Jun 2013 21:12:51 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E61731812@sisaex02sj>
-References: <1372116318-10824-1-git-send-email-shuah.kh@samsung.com>
- <2689226.oQ0T3XLPmT@vostro.rjw.lan>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+wn25I5OlAg5XvhSxmTdnLZHF51xw2
-	i8+9Rxgt7p46ymbRv7CXyeLrTwcHNo+ds+6yeyze85LJ49HiFkaPFau/s3t83iQXwBrFZZOS
-	mpNZllqkb5fAldHdvp+l4JdIxZWXpxkbGP8KdDFycEgImEicfaLWxcgJZIpJXLi3nq2LkYtD
-	SGAZo8SvsyeZIZxeJomtj/cwQTjzGSU6fr5kBmlhE1CX+Px6BzuILSKgKrHlyX92kCJmgVlM
-	Eqs3PWYCSQgL1EvMfAeREBFoYJSYunwlO8huEQE9iRNTDEBqWICa3+45wQJi8wrYS5xcdAHM
-	FhLIkvhwpwlsASPQfd9PrQGbySwgLtHcepMF4m4BiSV7zjND2KISLx//Y4V4TVFi+2oriHIt
-	ifU7j0O1aks8eXeBFWKVoMSPyfdYJjCKzUIydRaSlllIWmYhaVnAyLKKUay0OLmgOCk9tcJE
-	rzgxt7g0L10vOT93EyMkCmt3MN7/anOIUYCDUYmH9wPj6UAh1sSy4srcQ4wSHMxKIrzWnkAh
-	3pTEyqrUovz4otKc1OJDjEwcnFINjNZTYpqC+zmKc1Pelih1cJWHiBxasPnXll5xqf1skqkb
-	rNJKtxwUPs7u2CdofZf301VZp4+r1JQqMgyevxA6OJk5L0tT5pNP6IRt8gZb72SbSE38KjXh
-	+BH/tL7C6+ecfVyPf/F1W7DTahW/sc33Z4JcxUvZi3QOT/G8JPm8zrOr5crWV8wblViKMxIN
-	tZiLihMBHt92UKACAAA=
+	id S1753037Ab3FZVRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:17:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53639 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751754Ab3FZVQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 17:16:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,946,1363158000"; 
+   d="scan'208";a="336023499"
+Message-ID: <1372281416.2720.28.camel@envy.home>
+Subject: Re: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE
+ ID
+From: Darren Hart <dvhart@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        danders@circuitco.com, vishal.l.verma@intel.com,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Wed, 26 Jun 2013 14:16:56 -0700
+In-Reply-To: <CAErSpo6=1i76RRmJSUi+BpD9D0WrXaML4HkGLn0C=+6=ohB0uQ@mail.gmail.com>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+	 <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
+	 <20130626163250.GA29299@google.com> <1372266904.8177.83.camel@envy.home>
+	 <CAErSpo6=1i76RRmJSUi+BpD9D0WrXaML4HkGLn0C=+6=ohB0uQ@mail.gmail.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 05:01 PM, Rafael J. Wysocki wrote:
-> On Monday, June 24, 2013 05:25:18 PM Shuah Khan wrote:
->> pm_trace uses the system's Real Time Clock (RTC) to save the magic number.
->> Reason for this is that the RTC is the only reliably available piece of
->> hardware during resume operations where a value can be set that will
->> survive a reboot.
->>
->> Consequence is that after a resume (even if it is successful) your system
->> clock will have a value corresponding to the magic number instead of the
->> correct date/time! It is therefore advisable to use a program like ntp-date
->> or rdate to reset the correct date/time from an external time source when
->> using this trace option.
->>
->> There is no run-time message to warn users of the consequences of enabling
->> pm_trace. Adding a warning message to pm_trace_store() will serve as a
->> reminder to users to set the system date and time after resume.
->>
->> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
->> ---
->>   kernel/power/main.c |    2 ++
->>   1 file changed, 2 insertions(+)
->>
->> diff --git a/kernel/power/main.c b/kernel/power/main.c
->> index d77663b..fd744d1 100644
->> --- a/kernel/power/main.c
->> +++ b/kernel/power/main.c
->> @@ -528,6 +528,8 @@ pm_trace_store(struct kobject *kobj, struct kobj_attribute *attr,
->>
->>   	if (sscanf(buf, "%d", &val) == 1) {
->>   		pm_trace_enabled = !!val;
->> +		pr_warn("PM: Enabling pm_trace changes system date and time after resume.\n");
->> +		pr_cont("PM: Remember to set correct time after resume\n");
->
-> You can do it like this:
->
-> +	pr_warn("PM: Enabling pm_trace changes system date and time after resume.\n"
-> +		  "PM: Remember to set correct time after resume\n");
->
-> No need to use pr_cont(). :-)
+On Wed, 2013-06-26 at 13:37 -0600, Bjorn Helgaas wrote:
+> On Wed, Jun 26, 2013 at 11:15 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+> > On Wed, 2013-06-26 at 10:32 -0600, Bjorn Helgaas wrote:
+> 
+> >> +#define PCI_VENDOR_ID_CIRCUITCO              0x1cc8
+> >> +
+> >>  #define PCI_VENDOR_ID_TEKRAM         0x1de1
+> >>  #define PCI_DEVICE_ID_TEKRAM_DC290   0xdc29
+> >
+> >
+> > Thanks Bjorn. When I reuse this Subsystem ID and there is more than one
+> > usage, I should send a patch to pci_ids.h adding it and replace the hex
+> > value in all drivers with the new define. Is that right?
+> 
+> Yeah, that's what I was thinking.
+> 
+> But Peter's comment makes more sense to me now.  The spec refers to
+> that config register as "Subsystem ID," not "Subsystem Device ID," but
+> I was confused because most existing usage treats it as a device ID.
+> For example, the field in struct pci_device_id is named "subdevice,"
+> and all the existing #defines in pci_ids.h are of the form
+> PCI_SUBDEVICE_ID_*.
+> 
+> Device IDs are pretty specific identifiers, so I was thinking that a
+> "sub-device ID" would be even more specific.  Then it would make no
+> sense to have a "sub-device ID" that was as generic as "MINNOWBOARD."
+> But the register is actually *not* a "sub-device ID," and I can see
+> that using the same Subsystem ID for all the devices on a board might
+> make sense.
+> 
+> So I think the name PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD is a bit of a
+> misnomer, and something like PCI_SUBSYSTEM_CIRCUITCO_MINNOWBOARD would
+> make it more clear that it really isn't sharing the device ID space
+> assigned to CircuitCo.  It would make perfect sense to have a Device
+> ID, e.g., "PCI_DEVICE_ID_CIRCUIT_CO_xxx 0x0001," that has nothing to
+> do with the Subsystem ID 0x0001.
+> 
+> If you want to do something like that (or even keep your original
+> patch), I can put that in my -next branch.  Just let me know.
+> 
+> Bjorn
 
-:) Yeah.
 
->
-> And I'd say "during" instead of "after" in the first sentence.
->
-> I'd also say something like "Correct system time has to be restored manually after resume."
-> instead of the second one.
->
+I would be happy to change DEVICE to SUBSYSTEM in the the pci_ids.h:
 
-Will do. I think I should add a check and print this warning when 
-pm_trace is enabled and not when it is disabled. The way this patch is 
-done, it prints this warning for enable and disable. For both:
++#define PCI_VENDOR_ID_CIRCUITCO		0x1cc8
++#define PCI_SUBSYSTEM_ID_CITCUITCO_MINNOWBOARD	0x0001
 
-echo 1 > pm_trace and echo 0 > pm_trace.
+Would you like me to send another patch?
 
-Any thoughts?
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
 
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
