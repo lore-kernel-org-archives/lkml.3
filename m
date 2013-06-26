@@ -1,91 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab3FZBFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 21:05:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53853 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751223Ab3FZBFv (ORCPT
+	id S1751989Ab3FZBGw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 21:06:52 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:47499 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab3FZBGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 21:05:51 -0400
-Message-ID: <1372208742.4006.31.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] ncpfs: fix rmdir returns Device or resource busy
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: Dave Chiluk <chiluk@canonical.com>, viro@zeniv.linux.org.uk,
-        petr@vandrovec.name, linux-kernel@vger.kernel.org,
-        stable <stable@vger.kernel.org>
-Date: Wed, 26 Jun 2013 02:05:42 +0100
-In-Reply-To: <87fvwev45p.fsf@canonical.com>
-References: <1369781410-24473-1-git-send-email-chiluk@canonical.com>
-	 <87fvwev45p.fsf@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Uvnhmsavq49ikuzZOymY"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 25 Jun 2013 21:06:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130625200211.GA11625@codeaurora.org>
+References: <20130625200211.GA11625@codeaurora.org>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 26 Jun 2013 09:06:29 +0800
+Message-ID: <CAGsJ_4zQEAHQM1C5_PDhMtUsrM1za6Fg-XS3jBNYTnm9H30qaQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Remove ARM local timer API
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Barry Song <baohua.song@csr.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/6/26 Stephen Boyd <sboyd@codeaurora.org>:
+> Olof/Arnd,
+>
+> These patches remove the ARM local timer API. The ARM architected
+> timers have already moved away from this API so this series
+> migrates the rest of the users allowing us to remove the API
+> entirely. Thomas has been kind enough to take the first two
+> patches into timers/core in the tip tree (thanks Thomas!) so I've
+> merged that into v3.10-rc1 and then applied the rest of the
+> patches on top. Let me know if this is acceptable.
+>
+> These patches have been through multiple rounds and tested by
+> multiple people since before the 3.10 merge window closed. Only
+> Barry's ack is missing (Cced).
 
---=-Uvnhmsavq49ikuzZOymY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+sorry for delayed reply. pls don't wait for my ack. as we are dropping
+the marco SoC project this driver supports and moving to a new SoC.
+that is why i didn't verify and ack this.
+whether this driver is still usable will depend on whether the timer
+IP will be re-used in the new chip. so maybe i will delete this driver
+once timer IP is decided in the new SoC, or i will repeat to maintain
+and verify it if the new SoC uses the same IP.
 
-On Wed, 2013-06-19 at 10:30 +0100, Luis Henriques wrote:
-> Dave Chiluk <chiluk@canonical.com> writes:
->=20
-> > 1d2ef5901483004d74947bbf78d5146c24038fe7 caused a regression in ncpfs s=
-uch that
-> > directories could no longer be removed.  This was because ncp_rmdir che=
-cked
-> > to see if a dentry could be unhashed before allowing it to be removed. =
-Since
-> > 1d2ef5901483004d74947bbf78d5146c24038fe7 introduced a change that incre=
-mented
-> > dentry->d_count causing it to always be greater than 1 unhash would alw=
-ays
-> > fail.  Thus causing the error path in ncp_rmdir to always be taken.  Re=
-moving
-> > this error path is safe as unhashing is still accomplished by calls to =
-dput
-> > from vfs_rmdir.
->=20
-> Stable kernels starting with 3.0 also contain the offending commit, so
-> I believe this patch should be applied to stable kernels as well.
->=20
-> Upstream commit is 698b8223631472bf982ed570b0812faa61955683.
+>
+> Since I don't have a tree on kernel.org, David Brown has been
+> kind enough to push my tag out to his repo. Please pull.
+>
+> The following changes since commit 42cba6e27c4cddc4df701c597dbfa666e1c013c8:
+>
+>   Merge branch 'timers/core' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip into remove-local-timers (2013-06-24 17:45:02 -0700)
+>
+> are available in the git repository at:
+>
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/remove-local-timers
+>
+> for you to fetch changes up to 060fd3043e5e3488504b9e70182e188dd9113aea:
+>
+>   ARM: smp: Remove local timer API (2013-06-24 17:47:34 -0700)
+>
+> ----------------------------------------------------------------
+> Now that we have a generic arch hook for broadcast we can remove the local
+> timer API entirely. Doing so will reduce code in ARM core, reduce the
+> architecture dependencies of our timer drivers, and simplify the code because
+> we no longer go through an architecture layer that is essentially a hotplug
+> notifier.
+>
+> ----------------------------------------------------------------
+> Stephen Boyd (9):
+>       ARM: smp: Remove duplicate dummy timer implementation
+>       ARM: smp_twd: Divorce smp_twd from local timer API
+>       ARM: OMAP2+: Divorce from local timer API
+>       ARM: EXYNOS4: Divorce mct from local timer API
+>       ARM: PRIMA2: Divorce timer-marco from local timer API
+>       ARM: msm: Divorce msm_timer from local timer API
+>       clocksource: time-armada-370-xp: Fix sparse warning
+>       clocksource: time-armada-370-xp: Divorce from local timer API
+>       ARM: smp: Remove local timer API
+>
+>  arch/arm/Kconfig                         |  12 +--
+>  arch/arm/include/asm/localtimer.h        |  34 ---------
+>  arch/arm/kernel/smp.c                    |  87 ---------------------
+>  arch/arm/kernel/smp_twd.c                |  64 ++++++++++------
+>  arch/arm/mach-highbank/Kconfig           |   2 +-
+>  arch/arm/mach-imx/Kconfig                |   2 +-
+>  arch/arm/mach-msm/timer.c                | 126 +++++++++++++++++--------------
+>  arch/arm/mach-omap2/Kconfig              |   3 +-
+>  arch/arm/mach-omap2/timer.c              |   7 --
+>  arch/arm/mach-realview/Kconfig           |   8 +-
+>  arch/arm/mach-spear/Kconfig              |   2 +-
+>  arch/arm/mach-tegra/Kconfig              |   2 +-
+>  arch/arm/mach-ux500/Kconfig              |   2 +-
+>  arch/arm/mach-vexpress/Kconfig           |   2 +-
+>  arch/arm/mach-zynq/Kconfig               |   2 +-
+>  drivers/clocksource/exynos_mct.c         |  60 ++++++++++-----
+>  drivers/clocksource/time-armada-370-xp.c |  92 +++++++++++-----------
+>  drivers/clocksource/timer-marco.c        | 100 +++++++++++++-----------
+>  include/linux/time-armada-370-xp.h       |   4 +-
+>  19 files changed, 267 insertions(+), 344 deletions(-)
+>  delete mode 100644 arch/arm/include/asm/localtimer.h
+>
+> --
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
 
-Queued up for 3.2, thanks.
-
-Ben.
-
---=20
-Ben Hutchings
-Knowledge is power.  France is bacon.
-
---=-Uvnhmsavq49ikuzZOymY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUco+Zue/yOyVhhEJAQq6Ww/+MGro4fEMpQ0S6CX/AWhCOKEnGIW5Ln18
-1mthv6b4r9MLf/aqDOBZi8unErVnZPt4NagsWm5uoc4oVmax72BlpJ4+OvLGBfpW
-2sEEdSsc0d8kMH8HrwnJ8IyC3ak5XlY3iuFhyG81cbQFvZQdOfSsP5XDqVMmZqPP
-g6UifHyqw7c1UdNvsUO+bitWI8Mbwr5ShMUvTtf4FGIXPz485efsZJ7pL+zird0f
-Df+bB4pc3UHZqcLlq4AffLT/ym+UWaRq+vbr8r0JWwz7ylyjILo+rYaslDT6rC4w
-fyfVie9/I7OOzXvL0bNX7tMSaw1SNywaHp0TOKczWXGtG4YvgPMmKJcNbZlRrSTo
-/2acTxhWqcFoZxwdy/RBNlET4U3k/EMMS3qn4/c4zt2VfTpzD7Os/juuD4Ctv4F5
-v8lJOxyZFdIp7YgDWc1arTpG4PByrppx/vAIRMaKwY/iTVQJ0LgSMX+yz+hVWKK4
-5kGMPKaXXhY49jftEcY9Sw3AFpxfXhLf8go8j61qAMiSB9qHZ8jcO30spHBZjueA
-XvOsirukW2xAzEpgrm/EERAvsgmuaOScV+YA8rZYCa0ey1Wgbdr9e0aX+S1vauoQ
-Drmv5jg37ujjScubq9jMdpX8EdMB8xCa5Fsr8CSrPG4bCuWiPRCv73CkkrsuYjms
-BQJt5ov8U4o=
-=mTJD
------END PGP SIGNATURE-----
-
---=-Uvnhmsavq49ikuzZOymY--
+-barry
