@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab3FZJvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:51:15 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51982 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab3FZJvN (ORCPT
+	id S1752047Ab3FZJwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:52:22 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:48974 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3FZJwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:51:13 -0400
-Date: Wed, 26 Jun 2013 11:51:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-Message-ID: <20130626095108.GB29181@gmail.com>
-References: <1371165992.27102.573.camel@schen9-DESK>
- <20130619131611.GC24957@gmail.com>
- <1371660831.27102.663.camel@schen9-DESK>
- <1372205996.22432.119.camel@schen9-DESK>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372205996.22432.119.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Jun 2013 05:52:20 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Pavel Machek <pavel@ucw.cz>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v3 1/2] uio: Use of_match_ptr() macro in uio_pdrv_genirq.c
+Date: Wed, 26 Jun 2013 11:52:11 +0200
+Message-Id: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-21913-1372240333-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+--=_mimegpg-monstr-desktop-21913-1372240333-0001
 
-> On Wed, 2013-06-19 at 09:53 -0700, Tim Chen wrote: 
-> > On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
-> > 
-> > > > vmstat for mutex implementation: 
-> > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > > > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
-> > > > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
-> > > > 
-> > > > vmstat for rw-sem implementation (3.10-rc4)
-> > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > > > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
-> > > > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
-> > > 
-> > > It appears the main difference is that the rwsem variant context-switches 
-> > > about 36% more than the mutex version, right?
-> > > 
-> > > I'm wondering how that's possible - the lock is mostly write-locked, 
-> > > correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
-> > > ought to have brought roughly the same lock-stealing behavior as mutexes 
-> > > do, right?
-> > > 
-> > > So the next analytical step would be to figure out why rwsem lock-stealing 
-> > > is not behaving in an equivalent fashion on this workload. Do readers come 
-> > > in frequently enough to disrupt write-lock-stealing perhaps?
-> 
-> Ingo, 
-> 
-> I did some instrumentation on the write lock failure path.  I found that
-> for the exim workload, there are no readers blocking for the rwsem when
-> write locking failed.  The lock stealing is successful for 9.1% of the
-> time and the rest of the write lock failure caused the writer to go to
-> sleep.  About 1.4% of the writers sleep more than once. Majority of the
-> writers sleep once.
-> 
-> It is weird that lock stealing is not successful more often.
+This eliminates having an #ifdef returning NULL for the case
+when OF is disabled.
 
-For this to be comparable to the mutex scalability numbers you'd have to 
-compare wlock-stealing _and_ adaptive spinning for failed-wlock rwsems.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 
-Are both techniques applied in the kernel you are running your tests on?
+---
+Changes in v3:
+- Rebased on Pavel's UIO patch
+  UIO: allow binding uio_pdrv_genirq.c to devices using command line option
+  (sha1: 05c3e0bb5629b897b0459e4bfb1b93d729033b99)
 
-Thanks,
+Changes in v2:
+- s/Use Use/Use/ from patch subject
 
-	Ingo
+ drivers/uio/uio_pdrv_genirq.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+index bcd72f3..ad77450 100644
+--- a/drivers/uio/uio_pdrv_genirq.c
++++ b/drivers/uio/uio_pdrv_genirq.c
+@@ -274,8 +274,6 @@ MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+
+ module_param_string(of_id, uio_of_genirq_match[0].compatible, 128, 0);
+ MODULE_PARM_DESC(of_id, "Openfirmware id of the device to be handled by uio");
+-#else
+-# define uio_of_genirq_match NULL
+ #endif
+
+ static struct platform_driver uio_pdrv_genirq = {
+@@ -285,7 +283,7 @@ static struct platform_driver uio_pdrv_genirq = {
+ 		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
+ 		.pm = &uio_pdrv_genirq_dev_pm_ops,
+-		.of_match_table = uio_of_genirq_match,
++		.of_match_table = of_match_ptr(uio_of_genirq_match),
+ 	},
+ };
+
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-21913-1372240333-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlHKuc0ACgkQykllyylKDCE2LQCfedOrBbeWXuZ27YltKzhK7Rw8
+2tUAnjPqvQcLVRLZOfA21S+6a+FoQdFN
+=2Zg9
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-21913-1372240333-0001--
