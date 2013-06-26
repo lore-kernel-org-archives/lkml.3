@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab3FZJhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:37:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22316 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678Ab3FZJhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:37:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,943,1363158000"; 
-   d="scan'208";a="360712136"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, x86@kernel.org
-In-Reply-To: <CAHp75Vesp=u+GqBM5RfG-s_BmEoLXZz-zp3+tsHYUsoSNv4XUQ@mail.gmail.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
- <CAHp75Vesp=u+GqBM5RfG-s_BmEoLXZz-zp3+tsHYUsoSNv4XUQ@mail.gmail.com>
-Subject: Re: [PATCH 4/6] PCI: acpiphp: check for new devices on enabled host
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130626093930.DB6B6E0090@blue.fi.intel.com>
-Date: Wed, 26 Jun 2013 12:39:30 +0300 (EEST)
+	id S1752073Ab3FZJhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:37:23 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:45222 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab3FZJhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:37:18 -0400
+Date: Wed, 26 Jun 2013 11:37:13 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Dave Chiluk <chiluk@canonical.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: Scheduler accounting inflated for io bound processes.
+Message-ID: <20130626093713.GA27385@gmail.com>
+References: <51C35C05.1070005@canonical.com>
+ <1372176104.7497.86.camel@marge.simpson.net>
+ <1372182534.7497.129.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372182534.7497.129.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Shevchenko wrote:
-> On Tue, Jun 25, 2013 at 7:22 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> 
-> > Current acpiphp_check_bridge() implementation is pretty dumb:
-> >  - it enables the slot if it's not enabled and the slot status is
-> >    ACPI_STA_ALL;
-> >  - it disables the slot if it's enabled and slot is not in ACPI_STA_ALL
-> >    state.
-> >
-> > This behavior is not enough to handle Thunderbolt chaining case
-> > properly. We need to actually rescan for new devices even if a device
-> > has already in the slot.
-> >
-> > The new implementation disables and stops the slot if it's not in
-> > ACPI_STA_ALL state.
-> >
-> > For ACPI_STA_ALL state we first trim devices which don't respond and
-> > look for the ones after that. We do that even if slot already enabled
-> > (SLOT_ENABLED).
-> 
-> Just a couple of nitpicks below.
-> 
-> >         list_for_each_entry(slot, &bridge->slots, node) {
-> > +               struct pci_bus *bus = slot->bridge->pci_bus;
-> > +               struct pci_dev *dev, *tmp;
-> > +               int retval;
-> > +
-> > +               mutex_lock(&slot->crit_sect);
-> 
-> Does it make sense to introduce a helper let's say
-> __acpiphp_check_slot() and put there all lines inside this mutex?
 
-No. Why?
+* Mike Galbraith <bitbucket@online.de> wrote:
 
-> > +               if (get_slot_status(slot) == ACPI_STA_ALL) {
-> > +                       /* remove stale devices if any */
-> > +                       list_for_each_entry_safe(dev, tmp,
-> > +                                       &bus->devices, bus_list) {
-> > +                               if (PCI_SLOT(dev->devfn) != slot->device)
-> > +                                       continue;
-> > +                               pci_trim_stale_devices(dev);
+> On Tue, 2013-06-25 at 18:01 +0200, Mike Galbraith wrote: 
+> > On Thu, 2013-06-20 at 14:46 -0500, Dave Chiluk wrote: 
+> > > Running the below testcase shows each process consuming 41-43% of it's
+> > > respective cpu while per core idle numbers show 63-65%, a disparity of
+> > > roughly 4-8%.  Is this a bug, known behaviour, or consequence of the
+> > > process being io bound?
+> > 
+> > All three I suppose.
 > 
-> Perhaps
+> P.S.
 > 
->  list_for_each_entry_safe(dev, tmp, &bus->devices, bus_list) {
->       if (PCI_SLOT(dev->devfn) == slot->device)
->                 pci_trim_stale_devices(dev);
->  }
+> perf top --sort=comm -C 3 -d 5 -F 250 (my tick freq)
+> 56.65%    netserver
+> 43.35%         pert
+> 
+> perf top --sort=comm -C 3 -d 5
+> 67.16%  netserver
+> 32.84%       pert
+> 
+> If you sample a high freq signal (netperf TCP_RR) at low freq (tick),
+> then try to reproduce the original signal, (very familiar) distortion
+> results.  Perf doesn't even care about softirq yada yada, so seems it's
+> a pure sample rate thing.
 
-Makes sense, thanks.
+Would be very nice to randomize the sampling rate, by randomizing the 
+intervals within a 1% range or so - perf tooling will probably recognize 
+the different weights.
 
--- 
- Kirill A. Shutemov
+Thanks,
+
+	Ingo
