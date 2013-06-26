@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645Ab3FZQcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:32:55 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:59333 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab3FZQcx (ORCPT
+	id S1752397Ab3FZQd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:33:28 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:55267 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506Ab3FZQd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:32:53 -0400
-Date: Wed, 26 Jun 2013 10:32:50 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
-        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
-        vishal.l.verma@intel.com, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE
- ID
-Message-ID: <20130626163250.GA29299@google.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
- <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Jun 2013 12:33:26 -0400
+Message-ID: <1372264414.3301.198.camel@edumazet-glaptop>
+Subject: Re: [PATCH v3.10-rc7] net: fix kernel deadlock with interface
+ rename and netdev name retrieval.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nicolas Schichan <nschichan@freebox.fr>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Date: Wed, 26 Jun 2013 09:33:34 -0700
+In-Reply-To: <1372260222-8597-1-git-send-email-nschichan@freebox.fr>
+References: <1372260222-8597-1-git-send-email-nschichan@freebox.fr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 06:53:27PM -0700, Darren Hart wrote:
-> Add CircuitCo's newly created VENDOR ID and their first board subsystem
-> ID for the MinnowBoard.
+On Wed, 2013-06-26 at 17:23 +0200, Nicolas Schichan wrote:
+> When the kernel (compiled with CONFIG_PREEMPT=n) is performing the
+> rename of a network interface, it can end up waiting for a workqueue
+> to complete. If userland is able to invoke a SIOCGIFNAME ioctl or a
+> SO_BINDTODEVICE getsockopt in between, the kernel will deadlock due to
+> the fact that read_secklock_begin() will spin forever waiting for the
+> writer process (the one doing the interface rename) to update the
+> devnet_rename_seq sequence.
 > 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: David Anders <danders@circuitco.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
-> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: linux-pci@vger.kernel.org
+> This patch fixes the problem by adding a helper (netdev_get_name())
+> and using it in the code handling the SIOCGIFNAME ioctl and
+> SO_BINDTODEVICE setsockopt.
+> 
+> The netdev_get_name() helper uses raw_seqcount_begin() to avoid
+> spinning forever, waiting for devnet_rename_seq->sequence to become
+> even. cond_resched() is used in the contended case, before retrying
+> the access to give the writer process a chance to finish.
+> 
+> The use of raw_seqcount_begin() will incur some unneeded work in the
+> reader process in the contended case, but this is better than
+> deadlocking the system.
+> 
+> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
 > ---
->  include/linux/pci_ids.h | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index c129162..b2879ce 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -149,6 +149,9 @@
->  #define PCI_DEVICE_ID_BERKOM_A4T		0xffa4
->  #define PCI_DEVICE_ID_BERKOM_SCITEL_QUADRO	0xffa8
->  
-> +#define PCI_VENDOR_ID_CIRCUITCO			0x1cc8
-> +#define PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD	0x0001
-> +
->  #define PCI_VENDOR_ID_COMPAQ		0x0e11
->  #define PCI_DEVICE_ID_COMPAQ_TOKENRING	0x0508
->  #define PCI_DEVICE_ID_COMPAQ_TACHYON	0xa0fc
-> -- 
-> 1.8.1.2
-> 
 
-Per conversation at [1], I merged the patch below to my pci/misc branch
-for v3.11:
+This goes back to commit c91f6df2db49
+("sockopt: Change getsockopt() of SO_BINDTODEVICE to return an interface
+name") in linux-3.8
 
-[1] https://lkml.kernel.org/r/6c27e79870ec93f7a8c6692d4bcfebaee589fa6b.1372211451.git.dvhart@linux.intel.com
+Acked-by: Eric Dumazet <edumazet@google.com>
+
+Thanks Nicolas
 
 
-commit 9f4de80a09667538e1162fdecff96ccb5bb354a8
-Author: Darren Hart <dvhart@linux.intel.com>
-Date:   Tue Jun 25 20:08:46 2013 -0600
 
-    PCI: Add CircuitCo vendor ID
-    
-    Add CircuitCo's newly created VENDOR ID
-    
-    [bhelgaas: sort, drop device ID (only used once)]
-    Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index c129162..8b1aa7f 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2476,6 +2476,8 @@
- 
- #define PCI_VENDOR_ID_ASMEDIA		0x1b21
- 
-+#define PCI_VENDOR_ID_CIRCUITCO		0x1cc8
-+
- #define PCI_VENDOR_ID_TEKRAM		0x1de1
- #define PCI_DEVICE_ID_TEKRAM_DC290	0xdc29
- 
