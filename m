@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab3FZVRK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:17:10 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51830 "EHLO
+	id S1753093Ab3FZVRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:17:09 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51819 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063Ab3FZVRG (ORCPT
+	with ESMTP id S1753061Ab3FZVRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:17:06 -0400
+	Wed, 26 Jun 2013 17:17:05 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 4/8] clocksource: sun4i: Fix the next event code
-Date: Wed, 26 Jun 2013 23:16:57 +0200
-Message-Id: <1372281421-2099-5-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 3/8] clocksource: sun4i: Don't forget to enable the clock we use
+Date: Wed, 26 Jun 2013 23:16:56 +0200
+Message-Id: <1372281421-2099-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,46 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next_event logic was setting the next interval to fire in the
-current timer value instead of the interval value register, which is
-obviously wrong. Plus the logic to set the actual value was wrong as
-well, so this code has always been broken.
+Even if in our case, this clock was non-gatable, used as a parent clock
+for several IPs, it still is a good idea to enable it.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clocksource/sun4i_timer.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/clocksource/sun4i_timer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 8bd66df..032e504 100644
+index 1d2eaa0..8bd66df 100644
 --- a/drivers/clocksource/sun4i_timer.c
 +++ b/drivers/clocksource/sun4i_timer.c
-@@ -16,6 +16,7 @@
+@@ -135,6 +135,7 @@ static void __init sun4i_timer_init(struct device_node *node)
+ 	clk = of_clk_get(node, 0);
+ 	if (IS_ERR(clk))
+ 		panic("Can't get timer clock");
++	clk_prepare_enable(clk);
  
- #include <linux/clk.h>
- #include <linux/clockchips.h>
-+#include <linux/delay.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/irqreturn.h>
-@@ -69,9 +70,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
- static int sun4i_clkevt_next_event(unsigned long evt,
- 				   struct clock_event_device *unused)
- {
--	u32 u = readl(timer_base + TIMER_CTL_REG(0));
--	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
--	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
-+	u32 val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
-+	udelay(1);
-+
-+	writel(evt, timer_base + TIMER_INTVAL_REG(0));
-+
-+	val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
- 	       timer_base + TIMER_CTL_REG(0));
+ 	rate = clk_get_rate(clk);
  
- 	return 0;
 -- 
 1.8.3.1
 
