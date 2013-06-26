@@ -1,68 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab3FZD5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 23:57:34 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46342 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab3FZD5d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 23:57:33 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: gregkh@linuxfoundation.org, joe@perches.com, davem@davemloft.net,
-        rafael.j.wysocki@intel.com, jbaron@redhat.com,
-        linux-kernel@vger.kernel.org
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] driver core: device.h: fix doc compilation warnings
-Date: Wed, 26 Jun 2013 05:57:06 +0200
-Message-Id: <1372219026-23418-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751917Ab3FZD6t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 23:58:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52071 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401Ab3FZD6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 23:58:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,941,1363158000"; 
+   d="scan'208";a="260215007"
+Message-ID: <1372219125.8177.12.camel@envy.home>
+Subject: Re: [PATCH 2/8] pch_uart: Add uart_clk selection for the MinnowBoard
+From: Darren Hart <dvhart@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
+        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
+        vishal.l.verma@intel.com, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org
+Date: Tue, 25 Jun 2013 20:58:45 -0700
+In-Reply-To: <20130626033926.GA27165@kroah.com>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+	 <6cc125b9eb85dd3cae4a2496fdb7f0d17b18f930.1372211451.git.dvhart@linux.intel.com>
+	 <20130626023143.GB23320@kroah.com> <1372216578.8177.9.camel@envy.home>
+	 <20130626033926.GA27165@kroah.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the below 3 warnings running "make htmldocs",
-by adding descriptions for recently added structure members:
+On Tue, 2013-06-25 at 20:39 -0700, Greg Kroah-Hartman wrote:
+> On Tue, Jun 25, 2013 at 08:16:18PM -0700, Darren Hart wrote:
+> > On Tue, 2013-06-25 at 19:31 -0700, Greg Kroah-Hartman wrote:
+> > > On Tue, Jun 25, 2013 at 06:53:22PM -0700, Darren Hart wrote:
+> > >   
+> > > >  struct pch_uart_buffer {
+> > > >  	unsigned char *buf;
+> > > > @@ -398,6 +399,10 @@ static int pch_uart_get_uartclk(void)
+> > > >  		    strstr(cmp, "nanoETXexpress-TT")))
+> > > >  		return NTC1_UARTCLK;
+> > > >  
+> > > > +	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+> > > > +	if (cmp && strstr(cmp, "MinnowBoard"))
+> > > > +		return MINNOW_UARTCLK;
+> > > > +
+> > > 
+> > > You know, we do have the DMI interface to handle this in a much nicer
+> > > way instead of just randomly trying different strings over and over
+> > > until we find one that matches...
+> > 
+> > I was aiming for minimal change. Partly because I'm lazy. Partly
+> > because I don't have all of the impacted hardware to test. Partly
+> > because I wanted to keep it simple so I could push this to 3.8 stable.
+> 
+> Then you should have marked it for the stable tree by putting the proper
+> Cc: in the body of the patch...
 
-DOCPROC Documentation/DocBook/device-drivers.xml
-Warning(/work/git.free-electrons.com/users/michael-opdenacker/linux//include/linux/device.h:116): No description found for parameter 'lock_key'
-Warning(/work/git.free-electrons.com/users/michael-opdenacker/linux//include/linux/device.h:723): No description found for parameter 'cma_area'
-Warning(/work/git.free-electrons.com/users/michael-opdenacker/linux//include/linux/device.h:723): No description found for parameter 'iommu_group'
+I had expected there to be some discussion on this series as a whole
+and didn't want to confuse things... I suppose that was silly as the
+patch will just whither and die if it never makes it into mainline.
+Apologies.
 
-Don't hesitate to propose better descriptions!
+> 
+> > I can rewrite this detection to use the DMI interface. Would you allow
+> > it as a follow-on, to keep the changes to stable minimal?
+> > 
+> > Also, I do have a PCI subsystem ID for this particular board which I
+> > could trigger on, but since that mechanism didn't exist in the driver
+> > already and the other boards don't do it, I just followed what was
+> > already there (yeah, so I wrote most of what was already there...
+> > but.... anyway) :-)
+> > 
+> > What do you prefer? Rewrite, then add Minnow, or use this, then
+> > rewrite?
+> 
+> How about this, which makes it easy to backport, then you fix it up
+> properly for 3.12?  This comes after my tree is pretty much closed for
+> 3.11, but a simple device id addition like this is acceptable, but I'll
+> not get to it until after 3.11-rc1 is out...
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Sure. So something like this is what you have in mind? Build tested
+only, I'll include it in V2 with proper testing, but just wanted to
+make sure we're on the same page while I have your attention:
+
+>From 22cb21e2421ffcd439f58843422cff0e2579902f Mon Sep 17 00:00:00 2001
+Message-Id:
+<22cb21e2421ffcd439f58843422cff0e2579902f.1372219079.git.dvhart@linux.intel.com>
+From: Darren Hart <dvhart@linux.intel.com>
+Date: Tue, 25 Jun 2013 20:54:29 -0700
+Subject: [PATCH] pch_uart: Use DMI interface for board detection
+
+Use the DMI interface rather than manually matching DMI strings.
+
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 ---
- include/linux/device.h | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/tty/serial/pch_uart.c | 71
++++++++++++++++++++++++++++++--------------
+ 1 file changed, 49 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index c0a1261..9d4835a 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -80,6 +80,7 @@ extern void bus_remove_file(struct bus_type *, struct bus_attribute *);
-  *              bus-specific setup
-  * @p:		The private data of the driver core, only the driver core can
-  *		touch this.
-+ * @lock_key:	Lock class key for use by the lock validator
-  *
-  * A bus is a channel between the processor and one or more devices. For the
-  * purposes of the device model, all devices are connected via a bus, even if
-@@ -635,6 +636,7 @@ struct acpi_dev_node {
-  * 		segment limitations.
-  * @dma_pools:	Dma pools (if dma'ble device).
-  * @dma_mem:	Internal for coherent mem override.
-+ * @cma_area:	Contiguous memory area for dma allocations
-  * @archdata:	For arch-specific additions.
-  * @of_node:	Associated device tree node.
-  * @acpi_node:	Associated ACPI device node.
-@@ -648,6 +650,7 @@ struct acpi_dev_node {
-  * @release:	Callback to free the device after all references have
-  * 		gone away. This should be set by the allocator of the
-  * 		device (i.e. the bus driver that discovered the device).
-+ * @iommu_group: IOMMU group the device belongs to.
-  *
-  * At the lowest level, every device in a Linux system is represented by an
-  * instance of struct device. The device structure contains the information
+diff --git a/drivers/tty/serial/pch_uart.c
+b/drivers/tty/serial/pch_uart.c
+index 572d481..271cc73 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -373,35 +373,62 @@ static const struct file_operations port_regs_ops
+= {
+ };
+ #endif	/* CONFIG_DEBUG_FS */
+ 
++static struct dmi_system_id __initdata pch_uart_dmi_table[] = {
++	{
++		.ident = "CM-iTC",
++		{
++			DMI_MATCH(DMI_BOARD_NAME, "CM-iTC"),
++		},
++		(void *)CMITC_UARTCLK,
++	},
++	{
++		.ident = "FRI2",
++		{
++			DMI_MATCH(DMI_BIOS_VERSION, "FRI2"),
++		},
++		(void *)FRI2_64_UARTCLK,
++	},
++	{
++		.ident = "Fish River Island II",
++		{
++			DMI_MATCH(DMI_PRODUCT_NAME, "Fish River Island II"),
++		},
++		(void *)FRI2_48_UARTCLK,
++	},
++	{
++		.ident = "COMe-mTT",
++		{
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-mTT"),
++		},
++		(void *)NTC1_UARTCLK,
++	},
++	{
++		.ident = "nanoETXexpress-TT",
++		{
++			DMI_MATCH(DMI_BOARD_NAME, "nanoETXexpress-TT"),
++		},
++		(void *)NTC1_UARTCLK,
++	},
++	{
++		.ident = "MinnowBoard",
++		{
++			DMI_MATCH(DMI_BOARD_NAME, "MinnowBoard"),
++		},
++		(void *)MINNOW_UARTCLK,
++	},
++};
++
+ /* Return UART clock, checking for board specific clocks. */
+ static int pch_uart_get_uartclk(void)
+ {
+-	const char *cmp;
++	const struct dmi_system_id *d;
+ 
+ 	if (user_uartclk)
+ 		return user_uartclk;
+ 
+-	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (cmp && strstr(cmp, "CM-iTC"))
+-		return CMITC_UARTCLK;
+-
+-	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
+-	if (cmp && strnstr(cmp, "FRI2", 4))
+-		return FRI2_64_UARTCLK;
+-
+-	cmp = dmi_get_system_info(DMI_PRODUCT_NAME);
+-	if (cmp && strstr(cmp, "Fish River Island II"))
+-		return FRI2_48_UARTCLK;
+-
+-	/* Kontron COMe-mTT10 (nanoETXexpress-TT) */
+-	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (cmp && (strstr(cmp, "COMe-mTT") ||
+-		    strstr(cmp, "nanoETXexpress-TT")))
+-		return NTC1_UARTCLK;
+-
+-	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (cmp && strstr(cmp, "MinnowBoard"))
+-		return MINNOW_UARTCLK;
++	d = dmi_first_match(pch_uart_dmi_table);
++	if (d)
++		return (int)d->driver_data;
+ 
+ 	return DEFAULT_UARTCLK;
+ }
 -- 
 1.8.1.2
+
+
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
 
