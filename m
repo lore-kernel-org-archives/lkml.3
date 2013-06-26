@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab3FZNAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:00:24 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:59470 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3FZNAW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:00:22 -0400
-Message-ID: <51CAE5E3.2060503@monstr.eu>
-Date: Wed, 26 Jun 2013 15:00:19 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1751633Ab3FZNER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:04:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43735 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751269Ab3FZNEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 09:04:15 -0400
+Message-ID: <51CAE6CA.8000909@ti.com>
+Date: Wed, 26 Jun 2013 16:04:10 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, linux-watchdog@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: [PATCH v2 0/2] Xilinx watchdog changes
-References: <cover.1369979787.git.michal.simek@xilinx.com> <51B59803.5090509@monstr.eu>
-In-Reply-To: <51B59803.5090509@monstr.eu>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel-janitors@vger.kernel.org>
+Subject: Re: [patch] fbmem: return -EFAULT on copy_to_user() failure
+References: <20130618070529.GA12329@elgon.mountain>
+In-Reply-To: <20130618070529.GA12329@elgon.mountain>
 X-Enigmail-Version: 1.5.1
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2VJAQIQSIALVPUEKTVPGM"
+	protocol="application/pgp-signature";
+	boundary="----enig2DXRAHWOQQAMUBFXKLBLL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2VJAQIQSIALVPUEKTVPGM
+------enig2DXRAHWOQQAMUBFXKLBLL
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 06/10/2013 11:10 AM, Michal Simek wrote:
-> Hi Wim
+On 18/06/13 10:05, Dan Carpenter wrote:
+> copy_to_user() returns the number of bytes remaining to be copied.
+> put_user() returns -EFAULT on error.
 >=20
-> On 05/31/2013 07:56 AM, Michal Simek wrote:
->> The patchset fixes license header and add 1.00.a IP to compatible
->> list.
->>
->> Thanks for your review,
->> Michal
->>
->> Remove the 3rd patch from this series which incorrectly
->> tried to support set timeout feature.
->>
->> Changes in v2:
->> - Extend compatible list with 1.00.a instead of replacing 1.01.a
->>   reported by Guenter Roeck <linux@roeck-us.net>
->>
->> Michal Simek (2):
->>   watchdog: xilinx: Fix driver header
->>   watchdog: xilinx: Setup the origin compatible string
->>
->>  drivers/watchdog/of_xilinx_wdt.c | 31 +++++++++++--------------------=
-
->>  1 file changed, 11 insertions(+), 20 deletions(-)
+> This function ORs a bunch of stuff together and returns jumbled non-zer=
+o
+> values on error.  It should return -EFAULT.
 >=20
-> Can you please add these two patches to your tree?
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>=20
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index 098bfc6..9217be3 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1305,7 +1305,9 @@ static int do_fscreeninfo_to_user(struct fb_fix_s=
+creeninfo *fix,
+>  	err |=3D copy_to_user(fix32->reserved, fix->reserved,
+>  			    sizeof(fix->reserved));
+> =20
+> -	return err;
+> +	if (err)
+> +		return -EFAULT;
+> +	return 0;
+>  }
+> =20
+>  static int fb_get_fscreeninfo(struct fb_info *info, unsigned int cmd,
 
-Wim: I can't see these patches in linux-next that's why I expect
-you haven't added them to your branch.
-Can you please look at it?
+I've added this to fbdev-3.11 branch.
 
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+ Tomi
 
 
 
-------enig2VJAQIQSIALVPUEKTVPGM
+
+------enig2DXRAHWOQQAMUBFXKLBLL
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iEYEARECAAYFAlHK5eMACgkQykllyylKDCFe8ACfVzotzJu9QttyqL2GvfzWKfO/
-ec8An0oLJN7TrqoLMSAtXwpVe+4FoA9K
-=5GgQ
+iQIcBAEBAgAGBQJRyubKAAoJEPo9qoy8lh71DQkP/jo/YqxPdBn1fKjZxVunqf+q
+/KLfQsF5UTCDyO9O66+imJMjpuyN9T2bnFjZGZ6Xp6lfC/Cyqg1L+BckRY5x/yuS
+IDyBJKEB1AewA51Cb1FxNYzwOpGouCAyTF9BVTGkI3d0wllurq8ettV32Z36lNUi
+RP3z1Pqcp9ajXakoTMV2QMfqajr31tYv4oVqGV9jqMG9DE+InlbpjpVhCTJVy6/4
+d/pGxXHI7zA6fObThcYE54/IuHLqucgkZOO/MruIfN68n3BXehTf2MWUU4i0Swr/
+r2nhbudKjIBi8JLikJuEBTuZ2biS3U4z+KKb+0AtJ+c9VtEtPRbw4DNs5svnwAGF
+FZw1/gOr6om/ApMeGixAQOX1ChvjnkmHGwzKpvYiYdQhMHJnQ9sNIURQPxdeHYsb
+l3r3LFNmvTbaerru7GKxpNyTty4USHdaS3AVFZN4lmoIyuv3NKZ0A2cJ4MOaEWrK
+uNUI4PSU+P1JHwWtnwtHWzEw1aZS1fmhvO1qgkErI1HwkOdnr6UA++Xm63HpziYI
+3UTxpvtIYB2YVAdy4N0DNDk8Sk5tyUOC3JuixkqVkv7n9fWh1LwO4oeDJlZ8RQUX
+rZToCWb1WXrJ727+xbB28eVsjbJpxL7D3gjZJQzhtCO3UzoyZXL2XitLzZrO18Qq
+9l99DUvSuuBmIOQ+2pB9
+=PxFp
 -----END PGP SIGNATURE-----
 
-------enig2VJAQIQSIALVPUEKTVPGM--
+------enig2DXRAHWOQQAMUBFXKLBLL--
