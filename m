@@ -1,85 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab3FZNpN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 09:45:13 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:19070 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab3FZNpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 09:45:10 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: <daniel.lezcano@linaro.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: non critical fixes (for early 3.11) #2
-Date: Wed, 26 Jun 2013 15:45:07 +0200
-Message-ID: <1372254307-2063-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752071Ab3FZNp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 09:45:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9766 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902Ab3FZNp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 09:45:56 -0400
+Date: Wed, 26 Jun 2013 09:45:48 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, minchan@kernel.org,
+        anton@enomsg.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] vmpressure: implement strict mode
+Message-ID: <20130626094548.24c68511@redhat.com>
+In-Reply-To: <20130626080827.GE28748@dhcp22.suse.cz>
+References: <20130625175129.7c0d79e1@redhat.com>
+	<20130626080827.GE28748@dhcp22.suse.cz>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+On Wed, 26 Jun 2013 10:08:27 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Another fixes-non-critical pull-request for early 3.11. It is of course based
-on the patches that you already have in arm-soc/at91/fixes.
+> On Tue 25-06-13 17:51:29, Luiz Capitulino wrote:
+> > Currently, applications are notified for the level they registered for
+> > _plus_ higher levels.
+> > 
+> > This is a problem if the application wants to implement different
+> > actions for different levels. For example, an application might want
+> > to release 10% of its cache on level low, 50% on medium and 100% on
+> > critical. To do this, the application has to register a different fd
+> > for each event. However, fd low is always going to be notified and
+> > and all fds are going to be notified on level critical.
+> 
+> OK, I am not user of this interface but I thought that the application
+> would take an action of the highest level it gets notification. But yes
+> this might get clumsy to implement.
+> 
+> > Strict mode solves this problem by strictly notifiying the event
+> > an fd has registered for. It's optional. By default we still notify
+> > on higher levels.
+> 
+> OK, makes some sense to me and it should work with the proposed edge
+> trigerring as well.
+> 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > ---
+> > 
+> > PS: I'm following the discussion on the event storm problem, but I believe
+> >     strict mode is orthogonal to what has been suggested (although the
+> >     patches conflict)
+> > 
+> >  Documentation/cgroups/memory.txt | 10 ++++++----
+> >  mm/vmpressure.c                  | 19 +++++++++++++++++--
+> >  2 files changed, 23 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> > index ddf4f93..3c589cf 100644
+> > --- a/Documentation/cgroups/memory.txt
+> > +++ b/Documentation/cgroups/memory.txt
+> > @@ -807,12 +807,14 @@ register a notification, an application must:
+> >  
+> >  - create an eventfd using eventfd(2);
+> >  - open memory.pressure_level;
+> > -- write string like "<event_fd> <fd of memory.pressure_level> <level>"
+> > +- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
+> >    to cgroup.event_control.
+> >  
+> > -Application will be notified through eventfd when memory pressure is at
+> > -the specific level (or higher). Read/write operations to
+> > -memory.pressure_level are no implemented.
+> > +Applications will be notified through eventfd when memory pressure is at
+> > +the specific level or higher. If strict is passed, then applications
+> > +will only be notified when memory pressure reaches the specified level.
+> 
+> It would be good to describe when is strick and when the default
+> appropriate.
 
-Thanks, best regards,
+Yeah, Anton asked for the same thing. Will do it.
 
-The following changes since commit 133e00116b5bc76110bcc41ded369489209b641f:
+> > +
+> > +Read/write operations to memory.pressure_level are no implemented.
+> >  
+> >  Test:
+> >  
+> > diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+> > index 736a601..6289ede 100644
+> > --- a/mm/vmpressure.c
+> > +++ b/mm/vmpressure.c
+> > @@ -137,6 +137,7 @@ static enum vmpressure_levels vmpressure_calc_level(unsigned long scanned,
+> >  struct vmpressure_event {
+> >  	struct eventfd_ctx *efd;
+> >  	enum vmpressure_levels level;
+> > +	bool strict_mode;
+> 
+> Any reason to not using a flag for this? If there are any other modes to
+> come them we would end up with zilions of bools which is not very nice.
 
-  ARM: at91: Change the internal SRAM memory type MT_MEMORY_NONCACHED (2013-06-18 10:20:30 +0200)
+Good point, I'll change it.
 
-are available in the git repository at:
+> 
+> >  	struct list_head node;
+> >  };
+> >  
+> > @@ -153,6 +154,9 @@ static bool vmpressure_event(struct vmpressure *vmpr,
+> >  
+> >  	list_for_each_entry(ev, &vmpr->events, node) {
+> >  		if (level >= ev->level) {
+> > +			/* strict mode ensures level == ev->level */
+> > +			if (ev->strict_mode && level != ev->level)
+> > +				continue;
+> >  			eventfd_signal(ev->efd, 1);
+> >  			signalled = true;
+> >  		}
+> > @@ -292,7 +296,7 @@ void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
+> >   * infrastructure, so that the notifications will be delivered to the
+> >   * @eventfd. The @args parameter is a string that denotes pressure level
+> >   * threshold (one of vmpressure_str_levels, i.e. "low", "medium", or
+> > - * "critical").
+> > + * "critical") and optionally a different operating mode (i.e. "strict")
+> >   *
+> >   * This function should not be used directly, just pass it to (struct
+> >   * cftype).register_event, and then cgroup core will handle everything by
+> > @@ -303,22 +307,33 @@ int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
+> >  {
+> >  	struct vmpressure *vmpr = cg_to_vmpressure(cg);
+> >  	struct vmpressure_event *ev;
+> > +	bool smode = false;
+> > +	const char *p;
+> >  	int level;
+> >  
+> >  	for (level = 0; level < VMPRESSURE_NUM_LEVELS; level++) {
+> > -		if (!strcmp(vmpressure_str_levels[level], args))
+> > +		p = vmpressure_str_levels[level];
+> > +		if (!strncmp(p, args, strlen(p)))
+> >  			break;
+> >  	}
+> >  
+> >  	if (level >= VMPRESSURE_NUM_LEVELS)
+> >  		return -EINVAL;
+> >  
+> > +	p = strchr(args, ' ');
+> > +	if (p) {
+> > +		if (strncmp(++p, "strict", 6))
+> > +			return -EINVAL;
+> > +		smode = true;
+> > +	}
+> > +
+> >  	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
+> >  	if (!ev)
+> >  		return -ENOMEM;
+> >  
+> >  	ev->efd = eventfd;
+> >  	ev->level = level;
+> > +	ev->strict_mode = smode;
+> >  
+> >  	mutex_lock(&vmpr->events_lock);
+> >  	list_add(&ev->node, &vmpr->events);
+> > -- 
+> > 1.8.1.4
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to bd2da9ca138e446824a7542b381aed442fef4caa:
-
-  ARM: at91/PMC: use at91_usb_rate() for UTMI PLL (2013-06-26 15:24:11 +0200)
-
-----------------------------------------------------------------
-Several fixes for:
-- external irq on non-DT boards
-- cpuidle code in some circumstances
-- PMC code in relation with PLLB/PLL_UTMI/USB:
-  mainly for SAMA5D3 and AT91SAM9N12
-
-----------------------------------------------------------------
-Daniel Lezcano (1):
-      ARM: at91: cpuidle: Fix target_residency
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: fix at91_extern_irq usage for non-dt boards
-
-Nicolas Ferre (4):
-      ARM: at91/PMC: sama5d3 family doesn't have a PLLB
-      ARM: at91/PMC: at91sam9n12 family has a PLLB
-      ARM: at91/PMC: fix at91sam9n12 USB FS init
-      ARM: at91/PMC: use at91_usb_rate() for UTMI PLL
-
- arch/arm/mach-at91/at91rm9200.c            |  8 ++++----
- arch/arm/mach-at91/at91sam9260.c           |  4 ++--
- arch/arm/mach-at91/at91sam9261.c           |  4 ++--
- arch/arm/mach-at91/at91sam9263.c           |  2 +-
- arch/arm/mach-at91/at91sam9g45.c           |  2 +-
- arch/arm/mach-at91/at91sam9rl.c            |  2 +-
- arch/arm/mach-at91/at91x40.c               |  7 +++----
- arch/arm/mach-at91/clock.c                 | 30 +++++++++++++++++++++++-------
- arch/arm/mach-at91/cpuidle.c               |  2 +-
- arch/arm/mach-at91/generic.h               |  2 +-
- arch/arm/mach-at91/include/mach/at91_pmc.h |  3 +++
- arch/arm/mach-at91/irq.c                   |  9 ++++++++-
- arch/arm/mach-at91/pm.c                    |  2 +-
- arch/arm/mach-at91/setup.c                 |  2 +-
- arch/arm/mach-at91/soc.h                   |  1 +
- 15 files changed, 53 insertions(+), 27 deletions(-)
-
--- 
-Nicolas Ferre
