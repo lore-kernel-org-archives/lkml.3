@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab3FZRPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:15:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:21153 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751893Ab3FZRPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:15:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,945,1363158000"; 
-   d="scan'208";a="356152079"
-Message-ID: <1372266904.8177.83.camel@envy.home>
-Subject: Re: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE
- ID
-From: Darren Hart <dvhart@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S1752723Ab3FZRQn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:16:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52907 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab3FZRQl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 13:16:41 -0400
+Date: Wed, 26 Jun 2013 10:16:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Olof Johansson <olof@lixom.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
-        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
-        vishal.l.verma@intel.com, linux-pci@vger.kernel.org
-Date: Wed, 26 Jun 2013 10:15:04 -0700
-In-Reply-To: <20130626163250.GA29299@google.com>
+        danders@circuitco.com, vishal.l.verma@intel.com,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH 6/8] minnowboard-keys: Bind MinnowBoard buttons to arrow
+ keys
+Message-ID: <20130626171640.GA14661@kroah.com>
 References: <cover.1372211451.git.dvhart@linux.intel.com>
-	 <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
-	 <20130626163250.GA29299@google.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <1ded9714150de50fac7fb6ee82166fbcb5621f7d.1372211451.git.dvhart@linux.intel.com>
+ <1372236386.24799.58.camel@smile>
+ <1372264087.8177.80.camel@envy.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372264087.8177.80.camel@envy.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 10:32 -0600, Bjorn Helgaas wrote:
-> On Tue, Jun 25, 2013 at 06:53:27PM -0700, Darren Hart wrote:
-> > Add CircuitCo's newly created VENDOR ID and their first board subsystem
-> > ID for the MinnowBoard.
+On Wed, Jun 26, 2013 at 09:28:07AM -0700, Darren Hart wrote:
+> On Wed, 2013-06-26 at 11:46 +0300, Andy Shevchenko wrote:
+> > On Tue, 2013-06-25 at 18:53 -0700, Darren Hart wrote: 
+> > > Configure the four buttons tied to the E6XX GPIO lines on the
+> > > MinnowBoard as keys using the gpio-keys-polled platform driver. From
+> > > left to right, bind them to LEFT, DOWN, UP, RIGHT, similar to the VI
+> > > directional keys.
+> > > 
+> > > This is separate from the minnowboard driver to provide users with the
+> > > flexibility to write kernel drivers for their own devices using these GPIO
+> > > lines.
 > > 
-> > Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: David Anders <danders@circuitco.com>
-> > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
-> > Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > Cc: linux-pci@vger.kernel.org
-> > ---
-> >  include/linux/pci_ids.h | 3 +++
-> >  1 file changed, 3 insertions(+)
+> > I'm repeating my comment I did early to you.
 > > 
-> > diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> > index c129162..b2879ce 100644
-> > --- a/include/linux/pci_ids.h
-> > +++ b/include/linux/pci_ids.h
-> > @@ -149,6 +149,9 @@
-> >  #define PCI_DEVICE_ID_BERKOM_A4T		0xffa4
-> >  #define PCI_DEVICE_ID_BERKOM_SCITEL_QUADRO	0xffa8
-> >  
-> > +#define PCI_VENDOR_ID_CIRCUITCO			0x1cc8
-> > +#define PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD	0x0001
-> > +
-> >  #define PCI_VENDOR_ID_COMPAQ		0x0e11
-> >  #define PCI_DEVICE_ID_COMPAQ_TOKENRING	0x0508
-> >  #define PCI_DEVICE_ID_COMPAQ_TACHYON	0xa0fc
-> > -- 
-> > 1.8.1.2
-> > 
+> > I think this driver is a wrong approach, since you just use
+> > gpio_keys_polling with custom platform data. So, it should go to the
+> > platform code / board file under arch/x86/platform/minnow/...
 > 
-> Per conversation at [1], I merged the patch below to my pci/misc branch
-> for v3.11:
 > 
-> [1] https://lkml.kernel.org/r/6c27e79870ec93f7a8c6692d4bcfebaee589fa6b.1372211451.git.dvhart@linux.intel.com
-
+> Olof mentinoed something similar. The reason this is separate is that I
+> can easily see someone wanting to use these buttons in a different way
+> when integrating the MinnowBoard into some kind of product. The
+> minnowboard.c driver sets up the fixed functionality GPIO lines, such as
+> the LEDs (which can be easily reconfigured via triggers) while this
+> driver serves as an example of how the GPIO buttons could be used as
+> keys, but if included in the minnowboard driver, users couldn't get the
+> fixed functionality without also tying up these GPIO lines.
 > 
-> commit 9f4de80a09667538e1162fdecff96ccb5bb354a8
-> Author: Darren Hart <dvhart@linux.intel.com>
-> Date:   Tue Jun 25 20:08:46 2013 -0600
-> 
->     PCI: Add CircuitCo vendor ID
->     
->     Add CircuitCo's newly created VENDOR ID
->     
->     [bhelgaas: sort, drop device ID (only used once)]
->     Signed-off-by: Darren Hart <dvhart@linux.intel.com>
->     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index c129162..8b1aa7f 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -2476,6 +2476,8 @@
->  
->  #define PCI_VENDOR_ID_ASMEDIA		0x1b21
->  
-> +#define PCI_VENDOR_ID_CIRCUITCO		0x1cc8
-> +
->  #define PCI_VENDOR_ID_TEKRAM		0x1de1
->  #define PCI_DEVICE_ID_TEKRAM_DC290	0xdc29
+> I could remedy that with driver command-line options, but I know I've
+> heard Greg KH discourage their use in the past.
 
+Ick, yes, never do that type of thing as a command-line option, that's
+what device-tree is for :)
 
-Thanks Bjorn. When I reuse this Subsystem ID and there is more than one
-usage, I should send a patch to pci_ids.h adding it and replace the hex
-value in all drivers with the new define. Is that right?
+thanks,
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
-
+greg k-h
