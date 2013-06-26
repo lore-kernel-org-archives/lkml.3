@@ -1,89 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab3FZMLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 08:11:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54934 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751817Ab3FZMLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 08:11:07 -0400
-Date: Wed, 26 Jun 2013 15:10:00 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
-        <arnd@arndb.de>, <swarren@nvidia.com>, <sylvester.nawrocki@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <benoit.cousson@linaro.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
-        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
-        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>, <balajitk@ti.com>,
-        <george.cherian@ti.com>
-Subject: Re: [PATCH v9 1/8] drivers: phy: add generic PHY framework
-Message-ID: <20130626121000.GZ12640@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1372247257-30186-1-git-send-email-kishon@ti.com>
- <1372247257-30186-2-git-send-email-kishon@ti.com>
+	id S1752521Ab3FZMLY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 08:11:24 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55010 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab3FZMLJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 08:11:09 -0400
+Message-ID: <51CADA58.2030602@ti.com>
+Date: Wed, 26 Jun 2013 15:11:04 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: "Etheridge, Darren" <detheridge@ti.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LFBDEV <linux-fbdev@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] video:da8xx-fb: Convert to devm_* api
+References: <1368688257-18705-1-git-send-email-prabhakar.csengg@gmail.com> <1368688257-18705-3-git-send-email-prabhakar.csengg@gmail.com> <51CAD305.30407@ti.com> <CA+V-a8uhK5-QJKifkiSUN6Nz0aBc2moraWQUJPCmZg9zaFX0eg@mail.gmail.com> <51CAD7E4.2000403@ti.com> <CA+V-a8u6vjSc5EV3z4FCQ8LEHxL79bUXtHzX8svhQwqVtj6w=g@mail.gmail.com>
+In-Reply-To: <CA+V-a8u6vjSc5EV3z4FCQ8LEHxL79bUXtHzX8svhQwqVtj6w=g@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3cI6DWK3Xt33P8nt"
-Content-Disposition: inline
-In-Reply-To: <1372247257-30186-2-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	protocol="application/pgp-signature";
+	boundary="----enig2DTDQJGPMUJFXVEUGNCOD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3cI6DWK3Xt33P8nt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------enig2DTDQJGPMUJFXVEUGNCOD
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jun 26, 2013 at 05:17:29PM +0530, Kishon Vijay Abraham I wrote:
-> The PHY framework provides a set of APIs for the PHY drivers to
-> create/destroy a PHY and APIs for the PHY users to obtain a reference to =
-the
-> PHY with or without using phandle. For dt-boot, the PHY drivers should
-> also register *PHY provider* with the framework.
+On 26/06/13 15:06, Prabhakar Lad wrote:
+> Hi Tomi,
 >=20
-> PHY drivers should create the PHY by passing id and ops like init, exit,
-> power_on and power_off. This framework is also pm runtime enabled.
+> On Wed, Jun 26, 2013 at 5:30 PM, Tomi Valkeinen <tomi.valkeinen@ti.com>=
+ wrote:
+>> On 26/06/13 14:56, Prabhakar Lad wrote:
+>>> Hi Tomi,
+>>>
+>>> On Wed, Jun 26, 2013 at 5:09 PM, Tomi Valkeinen <tomi.valkeinen@ti.co=
+m> wrote:
+>>>> On 16/05/13 10:10, Lad Prabhakar wrote:
+>>>>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>>
+>>>>> Use devm_ioremap_resource instead of reques_mem_region()/ioremap() =
+and
+>>>>> devm_request_irq() instead of request_irq().
+>>>>>
+>>>>> This ensures more consistent error values and simplifies error path=
+s.
+>>>>>
+>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>> ---
+>>>>>  drivers/video/da8xx-fb.c |   39 +++++++---------------------------=
+-----
+>>>>>  1 files changed, 7 insertions(+), 32 deletions(-)
+>>>>
+>>>> There's something similar in Darren's da8xx-fb series. Can you check=
+ if
+>>>> there are differences?
+>>>>
+>>> I don't see similar changes in his patch series.
+>>
+>> [PATCH 14/23] video: da8xx-fb: use devres
+>>
+> Oops missed it out :), patch is almost similar except
+> for following block,
 >=20
-> The documentation for the generic PHY framework is added in
-> Documentation/phy.txt and the documentation for dt binding can be found at
-> Documentation/devicetree/bindings/phy/phy-bindings.txt
+> -       fb_clk =3D clk_get(&device->dev, "fck");
+> +       fb_clk =3D devm_clk_get(&device->dev, "fck");
+>         if (IS_ERR(fb_clk)) {
+>                 dev_err(&device->dev, "Can not get device clock\n");
+> -               ret =3D -ENODEV;
+> -               goto err_ioremap;
+> +               return -ENODEV;
+>         }
 >=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> How do you suggest to handle it ?
 
-looks great to my eyes
+I think it's easiest if Darren handles the da8xx-fb series for 3.11. So
+if there's something missing from Darren's series, please discuss with hi=
+m.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+ Tomi
 
---=20
-balbi
 
---3cI6DWK3Xt33P8nt
+
+------enig2DTDQJGPMUJFXVEUGNCOD
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJRytoYAAoJEIaOsuA1yqREJxQP/iPE0WrYsa7JnctOcRP4XVnW
-GlMDbFMhAu7pQ0pFYbb7u4vHFs4RZdOqPsA5QHgbVzYxwZ5pcEOMtiwBtoh2GedK
-XM8l7Z5oO1LIeaUOvR4VG7ivo8jsyh3/i/7Y1v8Lj/298BdEudsLJYQHr/lZP0wt
-WRgwbDPBEVQjE5Z/9XoMkAWOnKhOmHcdgkd+69ORwudHleeNVmr+VsEgxHfS+XEK
-GSLopAFIgLm92PSP4XXxoTFzVd2bZ8PpGu2rQv2BoMdWNTgoet13Stok28hlNq+8
-kkINa7NyujVZrH2IgVaQbGDhS586xunUugUFxargrbZ3ySAiJILbm4vQ9xQ8Y/op
-2Hl41MDhjcKfQnKEVXWndsUIWhhvAjeggAFCpJ3/PyyScNGDug222xxFKZYCdUZv
-BXbrXgkq5r87MdMEVGk3TrVVcGJWGb1mfew4jzpT311MqPlWakKWbT48ezuKyIYt
-rrcIO1GEctDVQofkkG21c20RCpsfFC3ZEYiWhXZZz1m2mnx6rZYS5ZKT8xXx8vZb
-NTHwTCDD46P1+acZoVa29jY+5kza7/lUUsUqPehEyE4mtbvhsp1QXg7KptNa476V
-UmtgFF08tmQEmJi/xDM7DwQEKv4jI1JDw6IPXkN1Jihe3dPEzvtD5TRToyeEBuI8
-lgdkW9uGDLfNydx+5W8w
-=5RxU
+iQIcBAEBAgAGBQJRytpYAAoJEPo9qoy8lh71L9cQAIBjuTmJZrJVRMFWyxc+fR9t
+k124un5lUUxQW/5j2KpYyJi14cEuwwDwxS8pus4D9pBxOVLTR0hp8f8XKH5m3O3/
+867I8aDnIrvR4DlUJcoFYW5dNy0/N+G74P/Mkh13FO0/8aNkhr0kASwuqBrIB1md
+Tp1at3Gl1v5ZMl9k9WhODL+fx0X86jZj/QSXiYuDvlnCFKVJihxqZOYEp7v+I0c7
+smqAiGL3kLctsWoVqesW6a1o4W6kIvtbAtiddA3V4JEvIGTuHisbIbTP2JNj1Mej
+zNKNtMCZrkyB36KUX0lgVCbQsSsE0oavpPaB0vhANJTUl6wziVck4B84LwxdI5tu
+eNeURD51vLbbkBgsHsZRnNMN9OWdJNYn+H4x9fY0gFuME28dF4Ro/wdKL93X6FVZ
+fqSdr6YDSS0BPdsBCQ0hy4X64+XQWxLHEie1RtQAiSukpC0OuFFU0xs01rZU2fBR
+u/pgE1Ly5j9DlzJ9/pcHNtNsZEHp7hdCJ2aXXYhe5lPiOImddO5nHBtX0jbMQ7ZK
+Vl52JpK9GMW4i0HSk7g0XZXxmmChBoPtzN4J7JZ7dDWPUjGzF3gQzODOnvzYtalr
+1issxsMF7jv+ErI/rXYhy5lDb+ZeQb4v1QhtzFxcpUtA/vpLvjLIZZnYbCOv0RjS
+PuXl/aPok8PHtIjFBO7l
+=0NOP
 -----END PGP SIGNATURE-----
 
---3cI6DWK3Xt33P8nt--
+------enig2DTDQJGPMUJFXVEUGNCOD--
