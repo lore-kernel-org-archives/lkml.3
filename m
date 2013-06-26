@@ -1,375 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3FZQ2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:28:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35218 "EHLO mga09.intel.com"
+	id S1752646Ab3FZQ2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:28:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7222 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab3FZQ2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:28:03 -0400
+	id S1751873Ab3FZQ2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 12:28:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,945,1363158000"; 
-   d="scan'208";a="335891082"
-Subject: [PATCH v3 5/5] rwsem: do optimistic spinning for writer lock
- acquisition
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <cover.1372261602.git.tim.c.chen@linux.intel.com>
-References: <cover.1372261602.git.tim.c.chen@linux.intel.com>
+   d="scan'208";a="335891130"
+Message-ID: <1372264087.8177.80.camel@envy.home>
+Subject: Re: [PATCH 6/8] minnowboard-keys: Bind MinnowBoard buttons to arrow
+ keys
+From: Darren Hart <dvhart@linux.intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
+        danders@circuitco.com, vishal.l.verma@intel.com,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        platform-driver-x86@vger.kernel.org
+Date: Wed, 26 Jun 2013 09:28:07 -0700
+In-Reply-To: <1372236386.24799.58.camel@smile>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+	 <1ded9714150de50fac7fb6ee82166fbcb5621f7d.1372211451.git.dvhart@linux.intel.com>
+	 <1372236386.24799.58.camel@smile>
+Organization: Intel
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Jun 2013 09:28:04 -0700
-Message-ID: <1372264084.22432.125.camel@schen9-DESK>
+X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to add optimistic spinning to rwsems because we've noticed that
-the writer rwsem does not perform as well as mutexes. Tim noticed that
-for exim (mail server) workloads, when reverting commit 4fc3f1d6 and Davidlohr
-noticed it when converting the i_mmap_mutex to a rwsem in some aim7
-workloads. We've noticed that the biggest difference, in a nutshell, is
-when we fail to acquire a mutex in the fastpath, optimistic spinning
-comes in to play and we can avoid a large amount of unnecessary sleeping
-and wait queue overhead.
+On Wed, 2013-06-26 at 11:46 +0300, Andy Shevchenko wrote:
+> On Tue, 2013-06-25 at 18:53 -0700, Darren Hart wrote: 
+> > Configure the four buttons tied to the E6XX GPIO lines on the
+> > MinnowBoard as keys using the gpio-keys-polled platform driver. From
+> > left to right, bind them to LEFT, DOWN, UP, RIGHT, similar to the VI
+> > directional keys.
+> > 
+> > This is separate from the minnowboard driver to provide users with the
+> > flexibility to write kernel drivers for their own devices using these GPIO
+> > lines.
+> 
+> I'm repeating my comment I did early to you.
+> 
+> I think this driver is a wrong approach, since you just use
+> gpio_keys_polling with custom platform data. So, it should go to the
+> platform code / board file under arch/x86/platform/minnow/...
 
-For rwsems on the other hand, upon entering the writer slowpath in
-rwsem_down_write_failed(), we just acquire the ->wait_lock, add
-ourselves to the wait_queue and blocking until we get the lock.
 
-Reviewed-by: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
----
- include/linux/rwsem.h |    3 +
- init/Kconfig          |    9 +++
- kernel/rwsem.c        |   29 +++++++++-
- lib/rwsem.c           |  150 +++++++++++++++++++++++++++++++++++++++++++++----
- 4 files changed, 179 insertions(+), 12 deletions(-)
+Olof mentinoed something similar. The reason this is separate is that I
+can easily see someone wanting to use these buttons in a different way
+when integrating the MinnowBoard into some kind of product. The
+minnowboard.c driver sets up the fixed functionality GPIO lines, such as
+the LEDs (which can be easily reconfigured via triggers) while this
+driver serves as an example of how the GPIO buttons could be used as
+keys, but if included in the minnowboard driver, users couldn't get the
+fixed functionality without also tying up these GPIO lines.
 
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 0616ffe..0c5933b 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -29,6 +29,9 @@ struct rw_semaphore {
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map	dep_map;
- #endif
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+	struct task_struct	*owner;
-+#endif
- };
- 
- extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
-diff --git a/init/Kconfig b/init/Kconfig
-index 9d3a788..792356f 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1595,6 +1595,15 @@ config TRACEPOINTS
- 
- source "arch/Kconfig"
- 
-+config RWSEM_SPIN_ON_WRTIE_OWNER
-+	bool "Optimistic spin write acquisition for writer owned rw-sem"
-+	default n
-+	depends on SMP
-+	help
-+	  Allows a writer to perform optimistic spinning if another writer own
-+	  the read write semaphore.  This gives a greater chance for writer to
-+	  acquire a semaphore before blocking it and putting it to sleep.
-+
- endmenu		# General setup
- 
- config HAVE_GENERIC_DMA_COHERENT
-diff --git a/kernel/rwsem.c b/kernel/rwsem.c
-index cfff143..a32990a 100644
---- a/kernel/rwsem.c
-+++ b/kernel/rwsem.c
-@@ -12,6 +12,26 @@
- 
- #include <linux/atomic.h>
- 
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+static inline void rwsem_set_owner(struct rw_semaphore *sem)
-+{
-+	sem->owner = current;
-+}
-+
-+static inline void rwsem_clear_owner(struct rw_semaphore *sem)
-+{
-+	sem->owner = NULL;
-+}
-+#else
-+static inline void rwsem_set_owner(struct rw_semaphore *sem)
-+{
-+}
-+
-+static inline void rwsem_clear_owner(struct rw_semaphore *sem)
-+{
-+}
-+#endif
-+
- /*
-  * lock for reading
-  */
-@@ -48,6 +68,7 @@ void __sched down_write(struct rw_semaphore *sem)
- 	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
- 
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
- }
- 
- EXPORT_SYMBOL(down_write);
-@@ -59,8 +80,10 @@ int down_write_trylock(struct rw_semaphore *sem)
- {
- 	int ret = __down_write_trylock(sem);
- 
--	if (ret == 1)
-+	if (ret == 1) {
- 		rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
-+		rwsem_set_owner(sem);
-+	}
- 	return ret;
- }
- 
-@@ -86,6 +109,7 @@ void up_write(struct rw_semaphore *sem)
- 	rwsem_release(&sem->dep_map, 1, _RET_IP_);
- 
- 	__up_write(sem);
-+	rwsem_clear_owner(sem);
- }
- 
- EXPORT_SYMBOL(up_write);
-@@ -100,6 +124,7 @@ void downgrade_write(struct rw_semaphore *sem)
- 	 * dependency.
- 	 */
- 	__downgrade_write(sem);
-+	rwsem_clear_owner(sem);
- }
- 
- EXPORT_SYMBOL(downgrade_write);
-@@ -122,6 +147,7 @@ void _down_write_nest_lock(struct rw_semaphore *sem, struct lockdep_map *nest)
- 	rwsem_acquire_nest(&sem->dep_map, 0, 0, nest, _RET_IP_);
- 
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
- }
- 
- EXPORT_SYMBOL(_down_write_nest_lock);
-@@ -141,6 +167,7 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
- 	rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
- 
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
- }
- 
- EXPORT_SYMBOL(down_write_nested);
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 1d6e6e8..24ec8d5 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -8,6 +8,7 @@
-  */
- #include <linux/rwsem.h>
- #include <linux/sched.h>
-+#include <linux/sched/rt.h>
- #include <linux/init.h>
- #include <linux/export.h>
- 
-@@ -27,6 +28,9 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 	sem->count = RWSEM_UNLOCKED_VALUE;
- 	raw_spin_lock_init(&sem->wait_lock);
- 	INIT_LIST_HEAD(&sem->wait_list);
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+	sem->owner = NULL;
-+#endif
- }
- 
- EXPORT_SYMBOL(__init_rwsem);
-@@ -194,6 +198,130 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 	return sem;
- }
- 
-+static inline int rwsem_try_write_lock(long count, bool need_lock,
-+	struct rw_semaphore *sem)
-+{
-+	if (!(count & RWSEM_ACTIVE_MASK)) {
-+		/* Try acquiring the write lock. */
-+		if (sem->count == RWSEM_WAITING_BIAS &&
-+		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-+			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-+			if (need_lock)
-+				raw_spin_lock_irq(&sem->wait_lock);
-+			if (!list_is_singular(&sem->wait_list))
-+				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-+			return 1;
-+		}
-+	}
-+	return 0;
-+}
-+
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-+{
-+	int retval;
-+	task_struct *owner;
-+
-+	rcu_read_lock();
-+	owner = ACCESS_ONCE(sem->owner);
-+
-+	/* Spin only if active writer running */
-+	if (owner)
-+		retval = owner->on_cpu;
-+	else
-+		retval = false;
-+
-+	rcu_read_unlock();
-+	/*
-+	 * if lock->owner is not set, the sem owner may have just acquired
-+	 * it and not set the owner yet, or the sem has been released, or
-+	 * reader active.
-+	 */
-+	return retval;
-+}
-+
-+static inline bool owner_running(struct rw_semaphore *lock,
-+				struct task_struct *owner)
-+{
-+	if (lock->owner != owner)
-+		return false;
-+
-+	/*
-+	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
-+	 * lock->owner still matches owner, if that fails, owner might
-+	 * point to free()d memory, if it still matches, the rcu_read_lock()
-+	 * ensures the memory stays valid.
-+	 */
-+	barrier();
-+
-+	return owner->on_cpu;
-+}
-+
-+static noinline
-+int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
-+{
-+	rcu_read_lock();
-+	while (owner_running(lock, owner)) {
-+		if (need_resched())
-+			break;
-+
-+		arch_mutex_cpu_relax();
-+	}
-+	rcu_read_unlock();
-+
-+	/*
-+	 * We break out the loop above on need_resched() and when the
-+	 * owner changed, which is a sign for heavy contention. Return
-+	 * success only when lock->owner is NULL.
-+	 */
-+	return lock->owner == NULL;
-+}
-+
-+int rwsem_optimistic_spin(struct rw_semaphore *sem)
-+{
-+	struct	task_struct	*owner;
-+	int	ret = 0;
-+
-+	/* sem->wait_lock should not be held when doing optimistic spinning */
-+	if (!rwsem_can_spin_on_owner(sem))
-+		return ret;
-+
-+	preempt_disable();
-+	for (;;) {
-+		owner = ACCESS_ONCE(sem->owner);
-+		if (owner && !rwsem_spin_on_owner(sem, owner))
-+			break;
-+
-+		/* wait_lock will be acquired if write_lock is obtained */
-+		if (rwsem_try_write_lock(sem->count, true, sem)) {
-+			ret = 1;
-+			break;
-+		}
-+
-+		/*
-+		 * When there's no owner, we might have preempted between the
-+		 * owner acquiring the lock and setting the owner field. If
-+		 * we're an RT task that will live-lock because we won't let
-+		 * the owner complete.
-+		 */
-+		if (!owner && (need_resched() || rt_task(current)))
-+			break;
-+
-+		/*
-+		 * The cpu_relax() call is a compiler barrier which forces
-+		 * everything in this loop to be re-loaded. We don't need
-+		 * memory barriers as we'll eventually observe the right
-+		 * values at the cost of a few extra spins.
-+		 */
-+		arch_mutex_cpu_relax();
-+
-+	}
-+
-+	preempt_enable();
-+	return ret;
-+}
-+#endif
-+
- /*
-  * wait until we successfully acquire the write lock
-  */
-@@ -202,6 +330,9 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk = current;
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+	bool try_optimistic_spin = true;
-+#endif
- 
- 	/* set up my own style of waitqueue */
- 	waiter.task = tsk;
-@@ -225,20 +356,17 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 	/* wait until we successfully acquire the lock */
- 	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
- 	while (true) {
--		if (!(count & RWSEM_ACTIVE_MASK)) {
--			/* Try acquiring the write lock. */
--			count = RWSEM_ACTIVE_WRITE_BIAS;
--			if (!list_is_singular(&sem->wait_list))
--				count += RWSEM_WAITING_BIAS;
--
--			if (sem->count == RWSEM_WAITING_BIAS &&
--			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
--							RWSEM_WAITING_BIAS)
--				break;
--		}
-+		if (rwsem_try_write_lock(count, false, sem))
-+			break;
- 
- 		raw_spin_unlock_irq(&sem->wait_lock);
- 
-+#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
-+		/* do optimistic spinning */
-+		if (try_optimistic_spin && rwsem_optimistic_spin(sem))
-+			break;
-+		try_optimistic_spin = false;
-+#endif
- 		/* Block until there are no active lockers. */
- 		do {
- 			schedule();
+I could remedy that with driver command-line options, but I know I've
+heard Greg KH discourage their use in the past.
+
+Does that address your concern or do you still feel they should be
+merged?
+
 -- 
-1.7.4.4
-
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
 
