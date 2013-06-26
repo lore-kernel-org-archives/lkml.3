@@ -1,86 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab3FZIKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 04:10:43 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33884 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab3FZIKJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 04:10:09 -0400
-Message-ID: <51CAA116.2060906@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 13:36:46 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 29/45] kvm/vmx: Use get/put_online_cpus_atomic() to
- prevent CPU offline
-References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625203043.16593.1600.stgit@srivatsabhat.in.ibm.com> <51CA9C5E.1030609@redhat.com>
-In-Reply-To: <51CA9C5E.1030609@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751963Ab3FZILE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 04:11:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56948 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751269Ab3FZIK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 04:10:59 -0400
+Message-ID: <1372234231.18612.6.camel@pasglop>
+Subject: Re: linux-next: manual merge of the akpm tree with the powerpc tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Neuling <mikey@neuling.org>,
+        linuxppc-dev@lists.ozlabs.org, Oleg Nesterov <oleg@redhat.com>
+Date: Wed, 26 Jun 2013 18:10:31 +1000
+In-Reply-To: <20130626165642.8740ecb6d5d5882b06f173c8@canb.auug.org.au>
+References: <20130626165642.8740ecb6d5d5882b06f173c8@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062608-5816-0000-0000-000008A24B15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 01:16 PM, Paolo Bonzini wrote:
-> Il 25/06/2013 22:30, Srivatsa S. Bhat ha scritto:
->> -	cpu = get_cpu();
->> +	cpu = get_online_cpus_atomic();
->>  	vmx_vcpu_load(&vmx->vcpu, cpu);
->>  	vmx->vcpu.cpu = cpu;
->>  	err = vmx_vcpu_setup(vmx);
->>  	vmx_vcpu_put(&vmx->vcpu);
->> -	put_cpu();
->> +	put_online_cpus_atomic();
+On Wed, 2013-06-26 at 16:56 +1000, Stephen Rothwell wrote:
+> Today's linux-next merge of the akpm tree got a conflict in
+> arch/powerpc/kernel/ptrace.c between commit b0b0aa9c7faf
+> ("powerpc/hw_brk: Fix setting of length for exact mode breakpoints") from
+> the powerpc tree and commit "ptrace/powerpc: revert "hw_breakpoints: Fix
+> racy access to ptrace breakpoints"" from the akpm tree.
 > 
-> The new API has a weird name.  Why are you adding new functions instead
-> of just modifying get/put_cpu?
-> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-Because the purpose of those two functions are distinctly different
-from each other.
+Where does the latter come from ? Why didn't it go through the powerpc tree ?
 
-get/put_cpu() is used to disable preemption on the local CPU. (Which
-also disables offlining the local CPU during that critical section).
+Cheers,
+Ben.
 
-What this patchset deals with is synchronizing with offline of *any*
-CPU. Typically, we use get_online_cpus()/put_online_cpus() for that
-purpose. But they can't be used in atomic context, because they take
-mutex locks and hence can sleep.
-
-So the code that executes in atomic context and which wants to prevent
-*any* CPU from going offline, used to disable preemption around its
-critical section. Disabling preemption prevents stop_machine(), and
-CPU offline (of *any* CPU) was done via stop_machine(). So disabling
-preemption disabled any CPU from going offline, as a *side-effect*.
-
-And this patchset prepares the ground for getting rid of stop_machine()
-in the CPU offline path. Which means, disabling preemption only prevents
-the *local* CPU from going offline. So if code in atomic context wants
-to prevent any CPU from going offline, we need a new set of APIs, like
-get/put_online_cpus(), but which can be invoked from atomic context.
-That's why I named it as get/put_online_cpus_atomic().
-
-One of the key points here is that we want to preserve get/put_cpu()
-as it is, since its purpose is different - disable preemption and
-offline of the local CPU. There is no reason to change that API, its
-useful as it is.
-
-Regards,
-Srivatsa S. Bhat
 
