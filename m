@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab3FZJto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:49:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37505 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132Ab3FZJtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:49:42 -0400
-Date: Wed, 26 Jun 2013 11:49:40 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Herrmann <dh.herrmann@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Todd Showalter <todd@electronjump.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] input: document gamepad API and add extra
- keycodes
-In-Reply-To: <alpine.LNX.2.00.1306190129330.6750@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1306261148580.3538@pobox.suse.cz>
-References: <1371303165-1802-1-git-send-email-dh.herrmann@gmail.com> <1371303165-1802-2-git-send-email-dh.herrmann@gmail.com> <alpine.LNX.2.00.1306190129330.6750@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752347Ab3FZJuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:50:52 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:64375 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab3FZJuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:50:50 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWDDCsXBK4+s4fEbM_AGj3EnfCRAe2=yE+8_MT4mauPXg@mail.gmail.com>
+References: <CA+icZUWDDCsXBK4+s4fEbM_AGj3EnfCRAe2=yE+8_MT4mauPXg@mail.gmail.com>
+Date: Wed, 26 Jun 2013 11:50:48 +0200
+Message-ID: <CA+icZUVzsOyOdL3zRF=mikx-6vrQbZ-aKnEQTaXau+HYD0YymQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jun 26 [ vfs | block | fuse (cpuidle)
+ releated? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jun 2013, Jiri Kosina wrote:
+On Wed, Jun 26, 2013 at 11:48 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Wed, Jun 26, 2013 at 10:06 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> Changes since 20130625:
+>>
+>> New tree: cpuinit
+>>
+>> The arm-mpidr tree gained a conflict against the arm tree.
+>>
+>> The net-next tree gained a conflict against the pm tree and a build
+>> failure for which I reverted a commit.
+>>
+>> The drm-intel tree gained a conflict against Linus' tree.
+>>
+>> The pinctrl tree gained a conflict against the regmap tree.
+>>
+>> The akpm tree lost a patch that turned up elsewhere and gained a conflict
+>> against the powerpc tree.
+>>
+>> The cpuinit tree lost a patch that turned up in the arc tree and gained a
+>> conflict against the arm-current tree.
+>>
+>> ----------------------------------------------------------------------------
+>>
+>
+> [ CC some vfs | block | fuse maintainers ]
+>
+> Since yesterday (next-20130625) and today (next-20130626) I can NOT
+> boot into my -next kernels.
+>
+> I have seen two traces whereas I would like to concentrate on Trace #1.
+>
+> Trace #1 (noted manually, read from the screen):
+> ...
+> general_protection
+> spin_dump
+> spin_bug
+> do_raw_spin_lock
+> _raw_spin_locking
+> rwsem_spin_locking
+> rwsem_downwrite_failed
+> _rwsem_downwrite_failed
+> call_rwsem_downwrite_failed
+> downwrite
+> fuse_kill_sb_blk
+> deactivate_locked_super
+> mount_bdev
+> fuse_iget
+> fuse_mountblk
+> mount_fs
+> vfs_kern_mount
+> do_mount
+> __get_free_pages
+> copy_mount_options
+> SyS_mount
+> tracesys
+>
+> Trace #2 (noted manually, read from the screen):
+> ...
+> blablabla cpuidle
+> ...
+> arch_trigger_all_cpu_backtrace_handler
+>
+> I have attached my kernel-config.
+>
+> Any hints/feedback welcome!
+>
 
-> On Sat, 15 Jun 2013, David Herrmann wrote:
-> 
-> > Until today all gamepad input drivers report their data differently. It is
-> > nearly impossible to write applications for more than one device in a
-> > generic way. Therefore, this patch introduces a uniform gamepad API which
-> > will be used for all new drivers.
-> > 
-> > Instead of mapping buttons by their labels, we now map them by position.
-> > This allows applications to work with any gamepad regardless of the labels
-> > on the buttons. Furthermore, we standardize the ABS_* codes for analog
-> > triggers and sticks.
-> > 
-> > For D-Pads the long overdue BTN_DPAD_* codes are introduced. They should
-> > be fairly obvious how to use. To avoid confusion, the action buttons now
-> > have BTN_EAST/SOUTH/WEST/NORTH aliases.
-> > 
-> > Reported-by: Todd Showalter <todd@electronjump.com>
-> > Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-> 
-> I definitely need to have Dmitry's Ack for this. If he's OK with 1/2, I am 
-> fine with 2/2 patch for wiimote and will happily take it through my tree.
+Just as a sidenote:
 
-Dmitry, please?
+This is not a ***native*** Ubuntu/precise AMD64 installation - I am
+using a WUBI environment.
 
-I'd like to avoid missing next merge window if you're ok with this.
+- Sedat -
 
-Thanks again,
+https://wiki.ubuntu.com/WubiGuide
 
--- 
-Jiri Kosina
-SUSE Labs
+> Regards,
+> - Sedat -
