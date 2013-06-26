@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab3FZOEj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:04:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab3FZOEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:04:38 -0400
-Message-ID: <51CAF4C9.20407@redhat.com>
-Date: Wed, 26 Jun 2013 16:03:53 +0200
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1752129Ab3FZOFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:05:10 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:51355 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab3FZOFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 10:05:07 -0400
+Date: Wed, 26 Jun 2013 16:04:59 +0200
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
+Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
+Message-ID: <20130626140459.GB9078@rocoto.smurfnet.nu>
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
+ <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
+ <CACxGe6tUpo31p6N0BZt_jdonuPP8ijvLBygC76wQ044EFsqOwA@mail.gmail.com>
 MIME-Version: 1.0
-To: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
-CC: linux-kernel@vger.kernel.org, rydberg@euromail.se,
-        srinivas.pandruvada@intel.com, erazor_de@users.sourceforge.net,
-        jkosina@suse.cz, lorenz@badgers.com,
-        linux-kernel@i4.informatik.uni-erlangen.de,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH] Added a check for NULL pointer in hid_add_device
-References: <1372182701-12256-1-git-send-email-michael.banken@mathe.stud.uni-erlangen.de>
-In-Reply-To: <1372182701-12256-1-git-send-email-michael.banken@mathe.stud.uni-erlangen.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6tUpo31p6N0BZt_jdonuPP8ijvLBygC76wQ044EFsqOwA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
-
-On 06/25/2013 07:51 PM, Michael Banken wrote:
-> This check greatly simplifies creating a dummy hid device.
-
-Could you elaborate a little here? If you want to create a hid device
-from the user space, I encourage you to use uhid, which is available
-since v3.6.
-
-> With this check in place a hid dummy can be created simply by allocating and adding the device.
-> This used to be possible in earlier Kernel versions.
+On Wed, Jun 26, 2013 at 02:13:39PM +0100, Grant Likely wrote:
+> > diff --git a/Documentation/arm/uefi.txt b/Documentation/arm/uefi.txt
+> > +It (early) parses the FDT for the following parameters:
 > 
-> Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
-> Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
-> ---
->  drivers/hid/hid-core.c |   37 ++++++++++++++++++++-----------------
->  1 file changed, 20 insertions(+), 17 deletions(-)
+> Need to state which node these properties can be found in. I recommend /chosen
+
+Will do.
+ 
+> I would also prefix all of the following properties with "linux,"
+> since they are very much about what the Linux kernel needs for
+> booting. EFI stub will be creating these properties specifically for
+> Linux, and the LinuxLoader should do the same (until we eventually
+> kill it).
+ 
+And that.
+
+> > +- 'efi-system-table':
+> > +  Physical address of the system table. (required)
 > 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 0951a9a..88c573e 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -2289,24 +2289,27 @@ int hid_add_device(struct hid_device *hdev)
->  	if (hid_ignore(hdev))
->  		return -ENODEV;
->  
-> -	/*
-> -	 * Read the device report descriptor once and use as template
-> -	 * for the driver-specific modifications.
-> -	 */
-> -	ret = hdev->ll_driver->parse(hdev);
-> -	if (ret)
-> -		return ret;
-> -	if (!hdev->dev_rdesc)
-> -		return -ENODEV;
-> -
-> -	/*
-> -	 * Scan generic devices for group information
-> -	 */
-> -	if (hid_ignore_special_drivers ||
-> -	    !hid_match_id(hdev, hid_have_special_driver)) {
-> -		ret = hid_scan_report(hdev);
-> +	if (hdev->ll_driver != NULL) {
+> Need to mention the size of this address. Is it 64 bit or 32 bit? I
+> would follow the lead of 'linux,initrd-start' here and make the size
+> of property the size of the address. ie. If it is 8 bytes long, then
+> it is a 64 bit address.
+ 
+Currently, it's a 4-byte address.
+Although technically possible to be >32-bit in an LPAE system, the 1:1
+mappign requirement of the UEFI spec forces it to reside in the lower
+4GB on a 32-bit system.
 
-I am concerned by the fact that *every* hid specific driver will have to
-call hid_hw_start and hid_hw_stop at some point. These 2 functions  are
-not protected against a null pointer in hdev->ll_driver, so allowing
-here a null pointer will introduce a kernel oops later.
-
-I think it would be safer to have:
-if (!hdev->ll_driver)
-	return -ENODEV;
-
-But if I understood correctly, this is not your point.
-So definitively, I need your usage scenarios of such hid "dummy" device.
-
-Cheers,
-Benjamin
-
-> +		/*
-> +		 * Read the device report descriptor once and use as template
-> +			 * for the driver-specific modifications.
-> +		 */
-> +		ret = hdev->ll_driver->parse(hdev);
->  		if (ret)
-> -			hid_warn(hdev, "bad device descriptor (%d)\n", ret);
-> +			return ret;
-> +		if (!hdev->dev_rdesc)
-> +			return -ENODEV;
-> +
-> +		/*
-> +		 * Scan generic devices for group information
-> +		 */
-> +		if (hid_ignore_special_drivers ||
-> +		    !hid_match_id(hdev, hid_have_special_driver)) {
-> +			ret = hid_scan_report(hdev);
-> +			if (ret)
-> +				hid_warn(hdev,
-> +					"bad device descriptor (%d)\n", ret);
-> +		}
->  	}
->  
->  	/* XXX hack, any other cleaner solution after the driver core
+> > +- 'efi-runtime-mmap':
+> > +  Physical address of an EFI memory map, containing at least
+> > +  the regions to be preserved. (required)
+> > +- 'efi-runtime-mmap-size':
+> > +  Size in bytes of the provided memory map. (required)
 > 
+> I would collapse the above two properties into a single property that
+> actually contains the memory map instead of pointing to it. You will
+> also need to specify the exact format of the data in this property.
+ 
+Ok, that makes sense.
 
+Hmm. The data is an array of struct EFI_MEMORY_DESCRIPTOR entries,
+known in Linux as efi_memory_desc_t. Is that a good enough description?
+
+> > +- 'efi-mmap-desc-size':
+> > +  Size of each descriptor in the memory map. (override default)
+> > +- 'efi-mmap-desc-ver':
+> > +  Memory descriptor format version. (override default)
+> 
+> I don't understand how these properties will actually work. What
+> changes in the parsing if these properties are set?
+ 
+I guess the intended use is that these options would permit you to
+append new fields to the struct and have old code correctly parse the
+array anyway.
+
+/
+    Leif
