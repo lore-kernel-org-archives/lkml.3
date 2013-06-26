@@ -1,103 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab3FZGVN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 02:21:13 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:54436 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab3FZGVM (ORCPT
+	id S1751583Ab3FZGYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 02:24:16 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18294 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751309Ab3FZGYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 02:21:12 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] powerpc/vfio: Add missing locks for take/release TCE table ownership
-Date: Wed, 26 Jun 2013 16:21:02 +1000
-Message-Id: <1372227662-28302-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 26 Jun 2013 02:24:14 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+Vo6KTbQD9/fQOeXt6C7nE
+Date: Tue, 25 Jun 2013 23:24:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Luciano Coelho <coelho@ti.com>
+Cc: grant.likely@linaro.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
+Message-ID: <20130626062409.GK5523@atomide.com>
+References: <1372149330-24335-1-git-send-email-coelho@ti.com>
+ <1372189024.18889.19.camel@cumari.coelho.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372189024.18889.19.camel@cumari.coelho.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO IOMMU driver for sPAPR TCE locks the whole DMA window by setting
-ones to iommu_table.it_map. However this was not protected by the locks
-which other clients of iommu_table use.
+* Luciano Coelho <coelho@ti.com> [130625 12:43]:
+> (oh crap, now *really* fixed the ARM mailing list address)
+> 
+> On Tue, 2013-06-25 at 11:35 +0300, Luciano Coelho wrote:
+> > Add device tree bindings documentation for the TI WiLink modules.
+> > Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
+> > modules is supported.
+> > 
+> > Signed-off-by: Luciano Coelho <coelho@ti.com>
+> > ---
+> > 
+> > I created a new directory under net to contain wireless bindings documentation.
+> > 
+> > The actual implementation in the driver will follow separately.
+> > 
+> >  .../devicetree/bindings/net/wireless/ti-wilink.txt |   46 ++++++++++++++++++++
+> >  1 file changed, 46 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> > new file mode 100644
+> > index 0000000..d8e8bfbb
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> > @@ -0,0 +1,46 @@
+> > +TI WiLink Wireless Modules Device Tree Bindings
+> > +===============================================
+> > +
+> > +The WiLink modules provide wireless connectivity, such as WLAN,
+> > +Bluetooth, FM and NFC.
+> > +
+> > +There are several different modules available, which can be grouped by
+> > +their generation: WiLink6, WiLink7 and WiLink8.  WiLink4 is not
+> > +currently supported with device tree.
+> > +
+> > +Currently, only the WLAN portion of the modules is supported with
+> > +device tree.
+> > +
+> > +Required properties:
+> > +--------------------
+> > +
+> > +- compatible: should be "ti,wilink6", "ti,wilink7" or "ti,wilink8"
+> > +- interrupt-parent: the interrupt controller
+> > +- interrupts: out-of-band WLAN interrupt
+> > +	See the interrupt controller's bindings documentation for
+> > +	detailed definition.
+> > +
+> > +Optional properties:
+> > +--------------------
+> > +
+> > +- refclock: the internal WLAN reference clock frequency (required for
+> > +  WiLink6 and WiLink7; not used for WiLink8).  Must be one of the
+> > +  following:
+> > +	0 = 19.2 MHz
+> > +	1 = 26.0 MHz
+> > +	2 = 38.4 MHz
+> > +	3 = 52.0 MHz
+> > +	4 = 38.4 MHz, XTAL
+> > +	5 = 26.0 MHz, XTAL
 
-The patch fixes this.
+This is just the omap refclock, right? If so, you can just pass the
+standard clock phandle. I know we don't yet have the DT clocks merged,
+but Tero just posted another revision of those.
 
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
+> > +- tcxoclock: the internal WLAN TCXO clock frequency (required for
+> > +  WiLink7 not used for WiLink6 and WiLink8).  Must be one of the
+> > +  following:
+> > +	0 = 19.200 MHz
+> > +	1 = 26.000 MHz
+> > +	2 = 38.400 MHz
+> > +	3 = 52.000 MHz
+> > +	4 = 16.368 MHz
+> > +	5 = 32.736 MHz
+> > +	6 = 16.800 MHz
+> > +	7 = 33.600 MHz
 
-v1->v2:
-* Fixed a potential warning from lockdep.
+Where does this clock come from? Maybe this can be set based on the
+compatible value if it's completely internal?
+ 
+> If this is okay for everyone, can I push this via my tree (which goes to
+> linux-wireless->net->linus)? I think it makes more sense to send the
+> documentation together with the patch that actually implements the DT
+> node parsing in the driver.
 
----
- arch/powerpc/kernel/iommu.c |   25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+If we can use the standard bindings, it might be worth waiting until
+we have the DT clocks available as we have the pdata workaround merged
+anyways. That's because then we don't need to support the custom
+binding later on ;)
 
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index b20ff17..5c1fc89 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -1076,25 +1076,42 @@ EXPORT_SYMBOL_GPL(iommu_put_tce_user_mode);
- int iommu_take_ownership(struct iommu_table *tbl)
- {
- 	unsigned long sz = (tbl->it_size + 7) >> 3;
-+	unsigned long i, flags;
-+	int ret = 0;
-+
-+	spin_lock_irqsave(&tbl->large_pool.lock, flags);
-+	for (i = 0; i < tbl->nr_pools; i++)
-+		spin_lock(&tbl->pools[i].lock);
- 
- 	if (tbl->it_offset == 0)
- 		clear_bit(0, tbl->it_map);
- 
- 	if (!bitmap_empty(tbl->it_map, tbl->it_size)) {
- 		pr_err("iommu_tce: it_map is not empty");
--		return -EBUSY;
-+		ret = -EBUSY;
-+		goto unlock_exit;
- 	}
- 
- 	memset(tbl->it_map, 0xff, sz);
- 	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
- 
--	return 0;
-+unlock_exit:
-+	for (i = 0; i < tbl->nr_pools; i++)
-+		spin_unlock(&tbl->pools[i].lock);
-+	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(iommu_take_ownership);
- 
- void iommu_release_ownership(struct iommu_table *tbl)
- {
- 	unsigned long sz = (tbl->it_size + 7) >> 3;
-+	unsigned long i, flags;
-+
-+	spin_lock_irqsave(&tbl->large_pool.lock, flags);
-+	for (i = 0; i < tbl->nr_pools; i++)
-+		spin_lock(&tbl->pools[i].lock);
- 
- 	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
- 	memset(tbl->it_map, 0, sz);
-@@ -1102,6 +1119,10 @@ void iommu_release_ownership(struct iommu_table *tbl)
- 	/* Restore bit#0 set by iommu_init_table() */
- 	if (tbl->it_offset == 0)
- 		set_bit(0, tbl->it_map);
-+
-+	for (i = 0; i < tbl->nr_pools; i++)
-+		spin_unlock(&tbl->pools[i].lock);
-+	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
- }
- EXPORT_SYMBOL_GPL(iommu_release_ownership);
- 
--- 
-1.7.10.4
+Regards,
 
+Tony
