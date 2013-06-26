@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab3FZQCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:02:46 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59666 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab3FZQCo (ORCPT
+	id S1752576Ab3FZQEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:04:43 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:45671 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab3FZQEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:02:44 -0400
-Date: Wed, 26 Jun 2013 10:32:22 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tux3@tux3.org
-Subject: Re: [PATCH] Optimize wait_sb_inodes()
-Message-ID: <20130626143222.GA27481@logfs.org>
-References: <87ehbpntuk.fsf@devron.myhome.or.jp>
+	Wed, 26 Jun 2013 12:04:42 -0400
+Message-ID: <51CB110E.6010707@gmail.com>
+Date: Wed, 26 Jun 2013 10:04:30 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87ehbpntuk.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <bitbucket@online.de>, Dave Chiluk <chiluk@canonical.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Scheduler accounting inflated for io bound processes.
+References: <51C35C05.1070005@canonical.com> <1372176104.7497.86.camel@marge.simpson.net> <1372182534.7497.129.camel@marge.simpson.net> <20130626093713.GA27385@gmail.com> <20130626104243.GE28407@twins.programming.kicks-ass.net> <20130626155048.GA7399@gmail.com>
+In-Reply-To: <20130626155048.GA7399@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 June 2013 17:45:23 +0900, OGAWA Hirofumi wrote:
+On 6/26/13 9:50 AM, Ingo Molnar wrote:
 >
-> 
->  fs/fs-writeback.c  |    5 ++++-
->  include/linux/fs.h |    1 +
->  2 files changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff -puN include/linux/fs.h~tux3-fix-wait_sb_inodes include/linux/fs.h
-> --- tux3fs/include/linux/fs.h~tux3-fix-wait_sb_inodes	2013-06-24 19:03:10.000000000 +0900
-> +++ tux3fs-hirofumi/include/linux/fs.h	2013-06-24 19:03:10.000000000 +0900
-> @@ -1595,6 +1595,7 @@ struct super_operations {
->  	int (*write_inode) (struct inode *, struct writeback_control *wbc);
->  	int (*drop_inode) (struct inode *);
->  	void (*evict_inode) (struct inode *);
-> +	void (*wait_inodes)(struct super_block *);
->  	void (*put_super) (struct super_block *);
->  	int (*sync_fs)(struct super_block *sb, int wait);
->  	int (*freeze_fs) (struct super_block *);
-> diff -puN fs/fs-writeback.c~tux3-fix-wait_sb_inodes fs/fs-writeback.c
-> --- tux3fs/fs/fs-writeback.c~tux3-fix-wait_sb_inodes	2013-06-24 19:03:10.000000000 +0900
-> +++ tux3fs-hirofumi/fs/fs-writeback.c	2013-06-24 19:03:10.000000000 +0900
-> @@ -1401,7 +1401,10 @@ void sync_inodes_sb(struct super_block *
->  	bdi_queue_work(sb->s_bdi, &work);
->  	wait_for_completion(&done);
->  
-> -	wait_sb_inodes(sb);
-> +	if (sb->s_op->wait_inodes)
-> +		sb->s_op->wait_inodes(sb);
-> +	else
-> +		wait_sb_inodes(sb);
->  }
->  EXPORT_SYMBOL(sync_inodes_sb);
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Wed, Jun 26, 2013 at 11:37:13AM +0200, Ingo Molnar wrote:
+>>> Would be very nice to randomize the sampling rate, by randomizing the
+>>> intervals within a 1% range or so - perf tooling will probably recognize
+>>> the different weights.
+>>
+>> You're suggesting adding noise to the regular kernel tick?
+>
+> No, to the perf interval (which I assumed Mike was using to profile this?)
+> - although slightly randomizing the kernel tick might make sense as well,
+> especially if it's hrtimer driven and reprogrammed anyway.
+>
+> I might have gotten it all wrong though ...
 
-Two things.  Until there are actual implementations of
-s_op->wait_inodes, this is pure obfuscation.  You already know this,
-of course.
+Sampled S/W events like cpu-clock have a fixed rate 
+(perf_swevent_init_hrtimer converts freq to sample_period).
 
-More interestingly, I personally hate methods with a default option if
-they are not implemented.  Not too bad in this particular case, but
-the same pattern has burned me a number of times and wasted weeks of
-my life.  So I would prefer to unconditionally call
-sb->s_op->wait_inodes(sb) and set it to wait_sb_inodes for all
-filesystems that don't have a smarter way to do things.
+Sampled H/W events have an adaptive period that converges to the desired 
+sampling rate. The first few samples come in 10 usecs are so apart and 
+the time period expands to the desired rate. As I recall that adaptive 
+algorithm starts over every time the event is scheduled in.
 
-Jörn
-
---
-Linux is more the core point of a concept that surrounds "open source"
-which, in turn, is based on a false concept. This concept is that
-people actually want to look at source code.
--- Rob Enderle
+David
