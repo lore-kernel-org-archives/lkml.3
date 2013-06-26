@@ -1,48 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3FZQQP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 12:16:15 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:62294 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3FZQQO convert rfc822-to-8bit (ORCPT
+	id S1752202Ab3FZQSi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 12:18:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55016 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3FZQSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 12:16:14 -0400
+	Wed, 26 Jun 2013 12:18:37 -0400
+Date: Wed, 26 Jun 2013 11:18:20 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Biederman <ebiederm@xmission.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        containers@lists.linux-foundation.org,
+        Colin Ian King <colin.king@canonical.com>,
+        =?iso-8859-1?Q?St=E9phane?= Graber <stgraber@ubuntu.com>
+Subject: [PATCH RFC] procfs: add pidnr file
+Message-ID: <20130626161820.GA32142@tp>
 MIME-Version: 1.0
-In-Reply-To: <CADDKRnBf4i8ZQ4EXC15Sa6z9CZ55w0vBDnXG26sjWgdO9zH45w@mail.gmail.com>
-References: <CADDKRnBf4i8ZQ4EXC15Sa6z9CZ55w0vBDnXG26sjWgdO9zH45w@mail.gmail.com>
-Date: Wed, 26 Jun 2013 18:16:13 +0200
-Message-ID: <CADDKRnCP_s2hL2wr8TsKeToNRt5nXF3NBYAqkmCCUPX8HbY_yQ@mail.gmail.com>
-Subject: Re: [v3.10-rc2] iwlwifi regression
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: linux-wireless@vger.kernel.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/25 Jörg Otte <jrg.otte@gmail.com>:
-> If iwlwifi/iwldvm are built into the kernel (no loadable modules)
-> following error is written to console and syslog since v3.10-rc:
->
-> iwlwifi 0000:08:00.0: failed to load module iwldvm (error -38), is
-> dynamic loading enabled?
->
-> reverting
-> commit 1618b2b02a3a0ee7a6863fed4b0d22e697e7e97c
-> Author: Johannes Berg <johannes.berg@intel.com>
-> Date:   Thu Apr 4 10:35:23 2013 +0200
->     iwlwifi: print warning on request_module failure
->
-> fixes the problem for me.
->
-> Jörg
->
-> I'm not subscribed,please CC me in answeres
+Add a file called pidnr under /proc/task/.  Reading this file gives the
+pid of /proc/task in the reading task's namespace (or 0 if there is no
+valid pid).
 
-We have rc-7 now and it's still not fixed. What is the problem?
+This fills a need currently not solvable at all.  The particular need I
+have for it is so that a task inside a container can pass requests to a
+task outside the container (using an open fd for /proc/task) to have the
+target task moved to a new cgroup.  Others have asked for this ability
+for other reasons.
 
-Thanks, Jörg
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Eric Biederman <ebiederm@xmission.com>
+Cc: "Daniel P. Berrange" <berrange@redhat.com>
+Cc: containers@lists.linux-foundation.org
+Cc: Colin Ian King <colin.king@canonical.com>
+Cc: St�phane Graber <stgraber@ubuntu.com>
+---
+ fs/proc/base.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index c3834da..b7499eb 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -899,6 +899,28 @@ static const struct file_operations proc_environ_operations = {
+ 	.release	= mem_release,
+ };
+ 
++#define TMPBUFLEN 21
++static ssize_t pidnr_read(struct file * file, char __user * buf,
++				  size_t count, loff_t *ppos)
++{
++	struct inode * inode = file_inode(file);
++	struct task_struct *task = get_proc_task(inode);
++	ssize_t length;
++	char tmpbuf[TMPBUFLEN];
++
++	if (!task)
++		return -ESRCH;
++	length = scnprintf(tmpbuf, TMPBUFLEN, "%u\n",
++			task_pid_vnr(task));
++	put_task_struct(task);
++	return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
++}
++
++static const struct file_operations pidnr_operations = {
++	.read		= pidnr_read,
++	.llseek		= generic_file_llseek,
++};
++
+ static ssize_t oom_adj_read(struct file *file, char __user *buf, size_t count,
+ 			    loff_t *ppos)
+ {
+@@ -1096,7 +1118,6 @@ static const struct file_operations proc_oom_score_adj_operations = {
+ };
+ 
+ #ifdef CONFIG_AUDITSYSCALL
+-#define TMPBUFLEN 21
+ static ssize_t proc_loginuid_read(struct file * file, char __user * buf,
+ 				  size_t count, loff_t *ppos)
+ {
+@@ -2642,6 +2663,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	DIR("net",        S_IRUGO|S_IXUGO, proc_net_inode_operations, proc_net_operations),
+ #endif
+ 	REG("environ",    S_IRUSR, proc_environ_operations),
++	REG("pidnr",      S_IRUGO, pidnr_operations),
+ 	INF("auxv",       S_IRUSR, proc_pid_auxv),
+ 	ONE("status",     S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUGO, proc_pid_personality),
+@@ -2999,6 +3021,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
+ 	DIR("ns",	 S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
+ 	REG("environ",   S_IRUSR, proc_environ_operations),
++	REG("pidnr",     S_IRUGO, pidnr_operations),
+ 	INF("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUGO, proc_pid_personality),
+-- 
+1.7.9.5
+
