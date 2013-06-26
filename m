@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab3FZDin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 23:38:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45512 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab3FZDim (ORCPT
+	id S1751683Ab3FZDzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 23:55:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47516 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab3FZDzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 23:38:42 -0400
-Date: Tue, 25 Jun 2013 20:39:26 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
-        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
-        vishal.l.verma@intel.com, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 2/8] pch_uart: Add uart_clk selection for the MinnowBoard
-Message-ID: <20130626033926.GA27165@kroah.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
- <6cc125b9eb85dd3cae4a2496fdb7f0d17b18f930.1372211451.git.dvhart@linux.intel.com>
- <20130626023143.GB23320@kroah.com>
- <1372216578.8177.9.camel@envy.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372216578.8177.9.camel@envy.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 25 Jun 2013 23:55:10 -0400
+Date: Wed, 26 Jun 2013 13:54:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: linux-next: manual merge of the drm-intel tree with Linus' tree
+Message-Id: <20130626135458.fa65dac429e9c1c04c6e48d4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__26_Jun_2013_13_54_58_+1000_lqnXlBsD5_qgfzx7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 08:16:18PM -0700, Darren Hart wrote:
-> On Tue, 2013-06-25 at 19:31 -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Jun 25, 2013 at 06:53:22PM -0700, Darren Hart wrote:
-> >   
-> > >  struct pch_uart_buffer {
-> > >  	unsigned char *buf;
-> > > @@ -398,6 +399,10 @@ static int pch_uart_get_uartclk(void)
-> > >  		    strstr(cmp, "nanoETXexpress-TT")))
-> > >  		return NTC1_UARTCLK;
-> > >  
-> > > +	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-> > > +	if (cmp && strstr(cmp, "MinnowBoard"))
-> > > +		return MINNOW_UARTCLK;
-> > > +
-> > 
-> > You know, we do have the DMI interface to handle this in a much nicer
-> > way instead of just randomly trying different strings over and over
-> > until we find one that matches...
-> 
-> I was aiming for minimal change. Partly because I'm lazy. Partly
-> because I don't have all of the impacted hardware to test. Partly
-> because I wanted to keep it simple so I could push this to 3.8 stable.
+--Signature=_Wed__26_Jun_2013_13_54_58_+1000_lqnXlBsD5_qgfzx7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Then you should have marked it for the stable tree by putting the proper
-Cc: in the body of the patch...
+Hi all,
 
-> I can rewrite this detection to use the DMI interface. Would you allow
-> it as a follow-on, to keep the changes to stable minimal?
-> 
-> Also, I do have a PCI subsystem ID for this particular board which I
-> could trigger on, but since that mechanism didn't exist in the driver
-> already and the other boards don't do it, I just followed what was
-> already there (yeah, so I wrote most of what was already there...
-> but.... anyway) :-)
-> 
-> What do you prefer? Rewrite, then add Minnow, or use this, then
-> rewrite?
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/intel_display.c between commits 2d05eae1c92f
+("drm/i915: Propagate errors back from fb set-base") and d62cf62ad07d
+("drm/i915: Quirk the pipe A quirk in the modeset state checker") from
+Linus' tree and commits 6c49f24180c3 ("drm/i915: hw state readout support
+for pixel_multiplier") and 9222be993921 ("drm/i915: don't scream into
+dmesg when a modeset fails") from the drm-intel tree.
 
-How about this, which makes it easy to backport, then you fix it up
-properly for 3.12?  This comes after my tree is pretty much closed for
-3.11, but a simple device id addition like this is acceptable, but I'll
-not get to it until after 3.11-rc1 is out...
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
 
-thanks,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-greg k-h
+diff --cc drivers/gpu/drm/i915/intel_display.c
+index 6eb99e1,8f746d9..0000000
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@@ -8177,11 -8264,14 +8264,19 @@@ check_crtc_state(struct drm_device *dev
+ =20
+  		active =3D dev_priv->display.get_pipe_config(crtc,
+  							   &pipe_config);
+ +
+ +		/* hw state is inconsistent with the pipe A quirk */
+ +		if (crtc->pipe =3D=3D PIPE_A && dev_priv->quirks & QUIRK_PIPEA_FORCE)
+ +			active =3D crtc->active;
+ +
++ 		list_for_each_entry(encoder, &dev->mode_config.encoder_list,
++ 				    base.head) {
++ 			if (encoder->base.crtc !=3D &crtc->base)
++ 				continue;
++ 			if (encoder->get_config)
++ 				encoder->get_config(encoder, &pipe_config);
++ 		}
++=20
+  		WARN(crtc->active !=3D active,
+  		     "crtc active state doesn't match with hw state "
+  		     "(expected %i, found %i)\n", crtc->active, active);
+
+--Signature=_Wed__26_Jun_2013_13_54_58_+1000_lqnXlBsD5_qgfzx7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRymYWAAoJEECxmPOUX5FE79EQAIQ69akBwp08I+wFXaMxNoRf
+xtRXzedDZG454HHpyV0G5KOHsqbrfGk+LrbPtWqrjijIuJhECDFLjA9Ud49iC3wh
+AwarQ/0anmIoAwgG8xiU5Nk9QWiR+/U0Eb3PiyAuE/q4Xw1O15nmqmuIZ4tf7w8K
+CcMCSl0BaDyXj+meol1t3ApLwcP7tcYYGdDNyK/OuY0F9+dBX96FEvWEuMuqMWtD
+Nu/qhZvM0OenTQqb1bsT/lnFt7GqRyTlzMmK6Z77So0deVX5KZYxh4kXrae0y816
+mHqFjZvzXus4Msf7t6Gyxfz/3medlNihWVvIUDjZzM6FYI3/rjOS3xqjrRIjPbpm
+CLCRviqWg7iufgujvAxtVvVqIqINpDvP1Mofua649FuKxx78ibFaEwqAsAdqlOul
+taYucL94TdVszJz9qJv9Y40raHUw9v6xC07rno7mKEPU4v3lkeBJVSPlhda2cNVN
+rljc/F8mcAIQ0UgkBTzfq2EcTUJ+3rdAlUNKHF1a1ADgi8IUS7yfswxRs9W+OweY
+eXh88wlLspzNE63nGco0RFTH46Q97Ld9T0xaR7HK3M+M/KCKQkmuG+wSOmMeUQg5
+M+q3/n6KhGXpkY7ucEYNAAP5BxZRqpEug8MAd2zoo9Kd5Mo1FR8fFAppKNIQNnPz
+HQGfQwxmcWQR4dC76JfX
+=dbqF
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__26_Jun_2013_13_54_58_+1000_lqnXlBsD5_qgfzx7--
