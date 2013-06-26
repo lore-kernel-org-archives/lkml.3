@@ -1,243 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3FZTbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 15:31:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13333 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605Ab3FZTaw (ORCPT
+	id S1752955Ab3FZTcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 15:32:08 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:39508 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab3FZTcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 15:30:52 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=HWCg0ey-AhcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Krp7Uy9HbdsA:10 a=9B4eBwZM3edjN190uTEA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130626193050.529670718@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 26 Jun 2013 15:28:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <clark.williams@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [RFC][PATCH RT 6/6] vtime: Convert vtime_seqlock into raw_spinlock_t and seqcount combo
-References: <20130626192806.107564905@goodmis.org>
-Content-Disposition: inline; filename=vtime-lock.patch
+	Wed, 26 Jun 2013 15:32:05 -0400
+Date: Wed, 26 Jun 2013 21:31:58 +0200
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
+Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
+Message-ID: <20130626193158.GF9078@rocoto.smurfnet.nu>
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
+ <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
+ <51CA2B03.4080106@wwwdotorg.org>
+ <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com>
+ <51CB33BE.2020601@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CB33BE.2020601@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vtime seqlock needs to be taken in true interrupt context on -rt.
-The normal seqlocks are converted to mutexes when PREEMPT_RT_FULL is
-enabled, which will break the vtime code as the calls are done from
-interrupt context.
+On Wed, Jun 26, 2013 at 12:32:30PM -0600, Stephen Warren wrote:
+> >> What about ARMv8? Is the intention to have a separate definition for the
+> >> UEFI bindings on ARMv8, so that compatibility isn't an issue? What if a
+> >> future version of UEFI allows LPAE usage?
+> > 
+> > It is unlikely that will happen on v7 since newer versions of UEFI are
+> > expected to remain backwards compatible with the current spec.
+> 
+> The expectation of backwards-compatibility sounds nice, but it seems a
+> little dangerous to outright rely on it.
+> 
+> Even if not a regular compatible property, can we define a property that
+> indicates the UEFI revision or revision of this DT binding, so that if
+> we ever have to change it, there is some way of explicitly indicating
+> which exact schema the DT corresponds to, rather than having to
+> reverse-engineer it from the set of properties that "just happen" to be
+> present in DT?
+>
+> This is rather like the firmware node discussion that happened recently,
+> where we were expecting to represent a firmware (secure mode) interface
+> by a DT node, which would have a compatible value, which in turn would
+> convey information about which "OS" the secure firmware was running, and
+> well as any potential SoC-/OEM-/board-specific interface provided by it.
+> 
+> And who knows, what if UEFI gets replaced someday; presumably we'd want
+> some way of explicitly stating "running under UEFI" vs. "running under
+> something else"?
 
-Convert the vtime seqlock into the raw_spinlock_t and seqcount combo
-that can be done in interrupt context.
+To me, these concerns are all covered by the existence of the
+efi-system-table node, and the version number that you can extract
+from the table (mandatory in any UEFI implementation) located at that
+address. There is no reverse-engineering involved.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-
-Index: linux-rt.git/include/linux/sched.h
-===================================================================
---- linux-rt.git.orig/include/linux/sched.h
-+++ linux-rt.git/include/linux/sched.h
-@@ -1176,7 +1176,8 @@ struct task_struct {
- 	struct cputime prev_cputime;
- #endif
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
--	seqlock_t vtime_seqlock;
-+	raw_spinlock_t vtime_lock;
-+	seqcount_t vtime_seq;
- 	unsigned long long vtime_snap;
- 	enum {
- 		VTIME_SLEEPING = 0,
-Index: linux-rt.git/kernel/sched/cputime.c
-===================================================================
---- linux-rt.git.orig/kernel/sched/cputime.c
-+++ linux-rt.git/kernel/sched/cputime.c
-@@ -668,9 +668,11 @@ void vtime_account_system(struct task_st
- 	if (!vtime_accounting_enabled())
- 		return;
- 
--	write_seqlock(&tsk->vtime_seqlock);
-+	raw_spin_lock(&tsk->vtime_lock);
-+	write_seqcount_begin(&tsk->vtime_seq);
- 	__vtime_account_system(tsk);
--	write_sequnlock(&tsk->vtime_seqlock);
-+	write_seqcount_end(&tsk->vtime_seq);
-+	raw_spin_unlock(&tsk->vtime_lock);
- }
- 
- void vtime_account_irq_exit(struct task_struct *tsk)
-@@ -678,11 +680,13 @@ void vtime_account_irq_exit(struct task_
- 	if (!vtime_accounting_enabled())
- 		return;
- 
--	write_seqlock(&tsk->vtime_seqlock);
-+	raw_spin_lock(&tsk->vtime_lock);
-+	write_seqcount_begin(&tsk->vtime_seq);
- 	if (context_tracking_in_user())
- 		tsk->vtime_snap_whence = VTIME_USER;
- 	__vtime_account_system(tsk);
--	write_sequnlock(&tsk->vtime_seqlock);
-+	write_seqcount_end(&tsk->vtime_seq);
-+	raw_spin_unlock(&tsk->vtime_lock);
- }
- 
- void vtime_account_user(struct task_struct *tsk)
-@@ -694,10 +698,12 @@ void vtime_account_user(struct task_stru
- 
- 	delta_cpu = get_vtime_delta(tsk);
- 
--	write_seqlock(&tsk->vtime_seqlock);
-+	raw_spin_lock(&tsk->vtime_lock);
-+	write_seqcount_begin(&tsk->vtime_seq);
- 	tsk->vtime_snap_whence = VTIME_SYS;
- 	account_user_time(tsk, delta_cpu, cputime_to_scaled(delta_cpu));
--	write_sequnlock(&tsk->vtime_seqlock);
-+	write_seqcount_end(&tsk->vtime_seq);
-+	raw_spin_unlock(&tsk->vtime_lock);
- }
- 
- void vtime_user_enter(struct task_struct *tsk)
-@@ -705,26 +711,32 @@ void vtime_user_enter(struct task_struct
- 	if (!vtime_accounting_enabled())
- 		return;
- 
--	write_seqlock(&tsk->vtime_seqlock);
-+	raw_spin_lock(&tsk->vtime_lock);
-+	write_seqcount_begin(&tsk->vtime_seq);
- 	tsk->vtime_snap_whence = VTIME_USER;
- 	__vtime_account_system(tsk);
--	write_sequnlock(&tsk->vtime_seqlock);
-+	write_seqcount_end(&tsk->vtime_seq);
-+	raw_spin_unlock(&tsk->vtime_lock);
- }
- 
- void vtime_guest_enter(struct task_struct *tsk)
- {
--	write_seqlock(&tsk->vtime_seqlock);
-+	raw_spin_lock(&tsk->vtime_lock);
-+	write_seqcount_begin(&tsk->vtime_seq);
- 	__vtime_account_system(tsk);
- 	current->flags |= PF_VCPU;
--	write_sequnlock(&tsk->vtime_seqlock);
-+	write_seqcount_end(&tsk->vtime_seq);
-+	raw_spin_unlock(&tsk->vtime_lock);
- }
- 
- void vtime_guest_exit(struct task_struct *tsk)
- {
--	write_seqlock(&tsk->vtime_seqlock);
-+	raw_spin_lock(&tsk->vtime_lock);
-+	write_seqcount_begin(&tsk->vtime_seq);
- 	__vtime_account_system(tsk);
- 	current->flags &= ~PF_VCPU;
--	write_sequnlock(&tsk->vtime_seqlock);
-+	write_seqcount_end(&tsk->vtime_seq);
-+	raw_spin_unlock(&tsk->vtime_lock);
- }
- 
- void vtime_account_idle(struct task_struct *tsk)
-@@ -741,24 +753,30 @@ bool vtime_accounting_enabled(void)
- 
- void arch_vtime_task_switch(struct task_struct *prev)
- {
--	write_seqlock(&prev->vtime_seqlock);
-+	raw_spin_lock(&prev->vtime_lock);
-+	write_seqcount_begin(&prev->vtime_seq);
- 	prev->vtime_snap_whence = VTIME_SLEEPING;
--	write_sequnlock(&prev->vtime_seqlock);
-+	write_seqcount_end(&prev->vtime_seq);
-+	raw_spin_unlock(&prev->vtime_lock);
- 
--	write_seqlock(&current->vtime_seqlock);
-+	raw_spin_lock(&current->vtime_lock);
-+	write_seqcount_begin(&current->vtime_seq);
- 	current->vtime_snap_whence = VTIME_SYS;
- 	current->vtime_snap = sched_clock_cpu(smp_processor_id());
--	write_sequnlock(&current->vtime_seqlock);
-+	write_seqcount_end(&current->vtime_seq);
-+	raw_spin_unlock(&current->vtime_lock);
- }
- 
- void vtime_init_idle(struct task_struct *t, int cpu)
- {
- 	unsigned long flags;
- 
--	write_seqlock_irqsave(&t->vtime_seqlock, flags);
-+	raw_spin_lock_irqsave(&t->vtime_lock, flags);
-+	write_seqcount_begin(&t->vtime_seq);
- 	t->vtime_snap_whence = VTIME_SYS;
- 	t->vtime_snap = sched_clock_cpu(cpu);
--	write_sequnlock_irqrestore(&t->vtime_seqlock, flags);
-+	write_seqcount_end(&t->vtime_seq);
-+	raw_spin_unlock_irqrestore(&t->vtime_lock, flags);
- }
- 
- cputime_t task_gtime(struct task_struct *t)
-@@ -767,13 +785,13 @@ cputime_t task_gtime(struct task_struct 
- 	cputime_t gtime;
- 
- 	do {
--		seq = read_seqbegin(&t->vtime_seqlock);
-+		seq = read_seqcount_begin(&t->vtime_seq);
- 
- 		gtime = t->gtime;
- 		if (t->flags & PF_VCPU)
- 			gtime += vtime_delta(t);
- 
--	} while (read_seqretry(&t->vtime_seqlock, seq));
-+	} while (read_seqcount_retry(&t->vtime_seq, seq));
- 
- 	return gtime;
- }
-@@ -796,7 +814,7 @@ fetch_task_cputime(struct task_struct *t
- 		*udelta = 0;
- 		*sdelta = 0;
- 
--		seq = read_seqbegin(&t->vtime_seqlock);
-+		seq = read_seqcount_begin(&t->vtime_seq);
- 
- 		if (u_dst)
- 			*u_dst = *u_src;
-@@ -820,7 +838,7 @@ fetch_task_cputime(struct task_struct *t
- 			if (t->vtime_snap_whence == VTIME_SYS)
- 				*sdelta = delta;
- 		}
--	} while (read_seqretry(&t->vtime_seqlock, seq));
-+	} while (read_seqcount_retry(&t->vtime_seq, seq));
- }
- 
- 
-Index: linux-rt.git/include/linux/init_task.h
-===================================================================
---- linux-rt.git.orig/include/linux/init_task.h
-+++ linux-rt.git/include/linux/init_task.h
-@@ -151,7 +151,8 @@ extern struct task_group root_task_group
- 
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- # define INIT_VTIME(tsk)						\
--	.vtime_seqlock = __SEQLOCK_UNLOCKED(tsk.vtime_seqlock),	\
-+	.vtime_lock = __RAW_SPIN_LOCK_UNLOCKED(tsk.vtime_lock),	\
-+	.vtime_seq = SEQCNT_ZERO,			\
- 	.vtime_snap = 0,				\
- 	.vtime_snap_whence = VTIME_SYS,
- #else
-Index: linux-rt.git/kernel/fork.c
-===================================================================
---- linux-rt.git.orig/kernel/fork.c
-+++ linux-rt.git/kernel/fork.c
-@@ -1268,7 +1268,8 @@ static struct task_struct *copy_process(
- 	p->prev_cputime.utime = p->prev_cputime.stime = 0;
- #endif
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
--	seqlock_init(&p->vtime_seqlock);
-+	raw_spin_lock_init(&p->vtime_lock);
-+	seqcount_init(&p->vtime_seq);
- 	p->vtime_snap = 0;
- 	p->vtime_snap_whence = VTIME_SLEEPING;
- #endif
-
+/
+    Leif
