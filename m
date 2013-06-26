@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab3FZRfC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:35:02 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58430 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab3FZRfA (ORCPT
+	id S1752231Ab3FZRkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:40:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32277 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab3FZRkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:35:00 -0400
-Message-ID: <51CB2641.1010404@wwwdotorg.org>
-Date: Wed, 26 Jun 2013 11:34:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 1/4] Make non-linear GPIO ranges accesible from gpiolib
-References: <20130618092516.GC18663@ab42.lan> <1371547751-13873-1-git-send-email-christian.ruppert@abilis.com> <51C23060.50807@wwwdotorg.org> <20130626114654.GB7095@ab42.lan>
-In-Reply-To: <20130626114654.GB7095@ab42.lan>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Jun 2013 13:40:11 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=JeMnKzm8Z7MA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=vXuyrZPK3zMA:10 a=D19gQVrFAAAA:8 a=kB5e_mfPBjXIv_vM1vsA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1372268409.18733.264.camel@gandalf.local.home>
+Subject: Re: [RFC][PATCH RT] rcu,rt: Allow rcu_read_lock_sched() to schedule
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>
+Date: Wed, 26 Jun 2013 13:40:09 -0400
+In-Reply-To: <1372259103.18733.260.camel@gandalf.local.home>
+References: <1372254133.18733.252.camel@gandalf.local.home>
+	 <20130626144045.GO3828@linux.vnet.ibm.com>
+	 <1372259000.18733.258.camel@gandalf.local.home>
+	 <1372259103.18733.260.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 05:46 AM, Christian Ruppert wrote:
-> On Wed, Jun 19, 2013 at 04:27:44PM -0600, Stephen Warren wrote:
->> On 06/18/2013 03:29 AM, Christian Ruppert wrote:
->>> This patch adds the infrastructure required to register non-linear gpio
->>> ranges through gpiolib and the standard GPIO device tree bindings.
->>
->> I review this in case we decide to go with it anyway.
->>
->>> diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
->>
->>> +In addition, named groups of pins can be mapped to pin groups of a given
->>> +pin controller:
->>> +
->>> +	gpio_pio_g: gpio-controller@1480 {
->>> +		#gpio-cells = <2>;
->>> +		compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
->>> +		reg = <0x1480 0x18>;
->>> +		gpio-controller;
->>> +		gpio-ranges = <&pinctrl1 0 0 0>, <&pinctrl2 3 0 0>;
->>> +		gpio-ranges-group-names = "foo", "bar";
->>> +	};
->>> +
->>> +where,
->>> +   &pinctrl1 and &pinctrl2 is the phandle to the pinctrl DT node.
->>> +
->>> +   The following value specifies the base GPIO offset of the pin range with
->>> +   respect to the GPIO controller's base. The remaining two values must be
->>> +   0 to indicate that a named pin group should be used for the respective
->>> +   range. The number of pins in the range is the number of pins in the pin
->>> +   group.
->>
->> It'd be good to re-write this section in a similar style to the cleanup
->> patches that I sent for the existing gpio-ranges documentation. That
->> makes the format description more of a raw syntax than English text.
+On Wed, 2013-06-26 at 11:05 -0400, Steven Rostedt wrote:
+> On Wed, 2013-06-26 at 11:03 -0400, Steven Rostedt wrote:
 > 
-> can you please point me to some place where I can find those patches on
-> the web?
+> > > I tried this approach in early 2005, and testing did not go well:
+> > > 
+> > > https://lkml.org/lkml/2005/3/17/199
+> > > 
+> > > For one thing, a lock acquired both within and surrounding an
+> > > RCU-sched read-side critical section would result in deadlock.
+> > > 
+> > > Or have things changed so that this now somehow works?
+> > 
+> > Well, so far lockdep hasn't splatted on this. But that's not saying much
+> > because I'm currently fighting the lockdep splats from other workqueue
+> > related stuff.
+> > 
+> > Seems that Tejun really doesn't like us RT folks ;-)
+> 
+> If there are issues, we could make a rcu_read_lock_sched_rt() which for
+> mainline will be rcu_read_lock_sched(), but for -rt will grab the lock.
+> That way we can pick and choose the locations that this is required.
+> 
 
-The start of the thread is at:
+I finally fixed the other issues and ran a full compile on this kernel.
+No problems appeared yet, so maybe things have changed.
 
-https://lists.ozlabs.org/pipermail/devicetree-discuss/2013-June/thread.html#35462
+-- Steve
 
-Patch 1/7 has already been applied. 2/7 and on are really the conversion.
+
