@@ -1,149 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab3FZJCN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:02:13 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:42094 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3FZJCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:02:08 -0400
-Message-ID: <51CAAE0C.4040809@monstr.eu>
-Date: Wed, 26 Jun 2013 11:02:04 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1752495Ab3FZJCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:02:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45757 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751569Ab3FZJCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:02:21 -0400
+Date: Wed, 26 Jun 2013 12:02:13 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <sarah.a.sharp@linux.intel.com>
+Subject: Re: [PATCH] usb: host: xhci-plat: Enable XHCI_SPURIOUS_SUCCESS quirk
+ for xhci-plat
+Message-ID: <20130626090213.GQ12640@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1372237137-17351-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-To: Graeme Smecher <gsmecher@threespeedlogic.com>
-CC: linux-kernel@vger.kernel.org,
-        "microblaze-uclinux@itee.uq.edu.au" 
-	<microblaze-uclinux@itee.uq.edu.au>
-Subject: Re: [PATCH] microblaze: Don't mark arch_kgdb_ops as const.
-References: <1370710328-15011-1-git-send-email-gsmecher@threespeedlogic.com> <51B39B11.8030900@threespeedlogic.com> <51C765C3.403@threespeedlogic.com>
-In-Reply-To: <51C765C3.403@threespeedlogic.com>
-X-Enigmail-Version: 1.5.1
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2UBFVMSFWXKQOOTFBOQQL"
+	protocol="application/pgp-signature"; boundary="MOeiELSuYwpLEKvX"
+Content-Disposition: inline
+In-Reply-To: <1372237137-17351-1-git-send-email-george.cherian@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2UBFVMSFWXKQOOTFBOQQL
-Content-Type: text/plain; charset=ISO-8859-1
+--MOeiELSuYwpLEKvX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Graeme,
+Hi,
 
-On 06/23/2013 11:16 PM, Graeme Smecher wrote:
-> Hi Michal,
+On Wed, Jun 26, 2013 at 02:28:57PM +0530, George Cherian wrote:
+> Synopsis xhci controllers with hci_version > 0.96 gives spurious success
+> events on short packet completion. During webcam capture the
+> "ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+> The same application works fine with synopsis controllers hci_version 0.9=
+6.
 >=20
-> On 08/06/13 01:58 PM, Graeme Smecher wrote:
->> Hi all,
->>
->> On 08/06/13 09:52 AM, Graeme Smecher wrote:
->>> Other architectures don't do it, and it conflicts with the extern'd d=
-efinition
->>> in include/linux/kgdb.h.
->>>
->>> Signed-off-by: Graeme Smecher<gsmecher@threespeedlogic.com>
->>> CC: Michal Simek<monstr@monstr.eu>
->>> CC:linux-kernel@vger.kernel.org
->>> ---
->>>   arch/microblaze/kernel/kgdb.c |    2 +-
->>>   1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/arch/microblaze/kernel/kgdb.c b/arch/microblaze/kernel/k=
-gdb.c
->>> index 8adc9244..09a5e82 100644
->>> --- a/arch/microblaze/kernel/kgdb.c
->>> +++ b/arch/microblaze/kernel/kgdb.c
->>> @@ -141,7 +141,7 @@ void kgdb_arch_exit(void)
->>>   /*
->>>    * Global data
->>>    */
->>> -const struct kgdb_arch arch_kgdb_ops =3D {
->>> +struct kgdb_arch arch_kgdb_ops =3D {
->>>   #ifdef __MICROBLAZEEL__
->>>       .gdb_bpt_instr =3D {0x18, 0x00, 0x0c, 0xba}, /* brki r16, 0x18 =
-*/
->>>   #else
->>
->> It's worth noting that this patch is flagged by checkpatch:
->>
->>    WARNING: struct kgdb_arch should normally be const
->>    #25: FILE: arch/microblaze/kernel/kgdb.c:144:
->>    +struct kgdb_arch arch_kgdb_ops =3D {
->>
->>    total: 0 errors, 1 warnings, 8 lines checked
->>
->>
->> However, without it, my kernel fails to compile:
->>
->>       CC      arch/microblaze/kernel/kgdb.o
->>    arch/microblaze/kernel/kgdb.c:144:24: error: conflicting type
->>    qualifiers for 'arch_kgdb_ops'
->>    include/linux/kgdb.h:284:26: note: previous declaration of
->>    'arch_kgdb_ops' was here
->>    make[1]: *** [arch/microblaze/kernel/kgdb.o] Error 1
->>    make: *** [arch/microblaze/kernel] Error 2
->>
->>
->> The checkpatch test was a response to this (rejected) patch series:
->>
->> http://lkml.indiana.edu/hypermail/linux/kernel/0912.1/02659.html
->>
->> I'm the lucky victim, here, since I'm using gcc 4.6.4 (which notices t=
-he conflicting qualifiers), while other Microblaze users are still workin=
-g with gcc 4.1.2 (which didn't care.) All other architectures (including =
-mn10300, arc, and hexagon, which were accepted after the checkpatch commi=
-t) ignore the checkpatch rule and declare arch_kgdb_ops non-const.
->>
->> In any case, I wanted to point out (a) that the patch fails checkpatch=
-, (b) that I'm submitting it anyway, and (c) that I'm utterly ambivalent =
-about how the struct is declared, provided I can compile working kernels =
-on Microblaze.
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> ---
+>  drivers/usb/host/xhci-plat.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
 >=20
-> Can you give me an update on including this patch in linux-2.6-microbla=
-ze? I realize the "const" was added as a result of a checkpatch.pl compla=
-int (see 6bd55f0bbaebb79b39e147aa864401fd0c94db82), but it seems like a n=
-on-compiling kernel (even for trivial reasons) is worse than a noisy Perl=
- script.
+> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+> index 93ad67e..e63c6d3 100644
+> --- a/drivers/usb/host/xhci-plat.c
+> +++ b/drivers/usb/host/xhci-plat.c
+> @@ -25,6 +25,16 @@ static void xhci_plat_quirks(struct device *dev, struc=
+t xhci_hcd *xhci)
+>  	 * dev struct in order to setup MSI
+>  	 */
+>  	xhci->quirks |=3D XHCI_BROKEN_MSI;
+> +
+> +	/*
+> +	 * In some xhci controllers which follows xhci 1.0 spec gives a spurious
+> +	 * success event after a short transfer. This quirk will ignore such
+> +	 * spurious event. Hit this issue in synopsis xhci controllers with
+> +	 * hci_version > 0.96
+> +	 */
+> +
+> +	if (xhci->hci_version > 0x96)
+> +		xhci->quirks |=3D XHCI_SPURIOUS_SUCCESS;
+>  }
 
-Sorry for delay.
-Yes, you are right. I will extend description to connect it with that cle=
-anup patch
-and will also create follow up to enable kgdb in defconfig to be sure tha=
-t it is tested regularly.
+doesn't look like the correct way to do this. What if enabling that
+quirk on hosts which don't have the quirk cause problems ?
 
-Applied.
+I would suggest adding a platform_data which (in our case) dwc3 will
+pass to xhci-plat. Then you can do proper revision detection of the
+synopsys controller and set the quirk only on the failing hosts.
 
-Thanks,
-Michal
-
-
+BTW, do you have the STARS number for this errata ?
 
 --=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+balbi
 
-
-
-------enig2UBFVMSFWXKQOOTFBOQQL
+--MOeiELSuYwpLEKvX
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAlHKrg0ACgkQykllyylKDCEAsQCfWrHfbSdYcSuDdhTtp/E0UnHo
-SPYAoIvQzgVgJs1nojMzUGdQn9vXMdsN
-=tpz5
+iQIcBAEBAgAGBQJRyq4VAAoJEIaOsuA1yqRE1pwP/A/mF/CXYUzPy+UCLNJVq2ar
+X+hR/mQXQs4ARYlyJeUqzZ0yCNdt3a3X6OHkE8dx3kr4DtdihYUPfRMG2iPEoE4p
+Ak24/v0/d3lTcoVwimnyj0Bo3I9vOMveRIaSILfZhzVzXI8Yh+CNA1ag627vDYUd
+G1DuSUM9Y8XCk6jKXiP6WDg7Ych29yt9eCETLGvjxwwVpdxe00T2UhXgBqKXdzUH
+hxE9EK425lzvWpp1Pxz8ROb9jU3MyM/tDobiWMyFolalzrwxcdFKclOXyG9/vhmr
+8v7mLyevyyUnTj+xaKUyAB4iiqEPxHQ9KaWRn9cFsFC4tVOQrdhT9RUjpRMKuYSx
+14rYHlM1lweEvOKnaJb01rdTzpKU85JHk64UhAG1Pj8/G52qI/pBWYeoV0++KONT
+a47ovqQowwn2weTyHP/QgoOxMd8f8kem/GUeESKRvOXoC895C4MSoyI+CcwvxaZA
+VhMTbOevwnjnYnV6oY+zJswScLhCDScV2FBjEhlRr4lqfDC04RHmKwZ53GgtDjZZ
+SuJR3UotK0KEgLHamw7FeLqO38rE77oIL73OlB8nnKQ0GNv3FxigjDa5NNaGpjpy
+HBUFp588EfbgU8dhQXlNlbvf4yprd4gtMeZFlBAe1JJWvlyt1ynVscOg1pcCh7LG
+dy7ajunnFFnMt+oT8jVC
+=VYtq
 -----END PGP SIGNATURE-----
 
-------enig2UBFVMSFWXKQOOTFBOQQL--
+--MOeiELSuYwpLEKvX--
