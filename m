@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab3FZJKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:10:53 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46541 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab3FZJKv (ORCPT
+	id S1751912Ab3FZJNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:13:35 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:63403 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab3FZJNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:10:51 -0400
-Date: Wed, 26 Jun 2013 10:10:33 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Oliver Schinagl <oliver+list@schinagl.nl>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        andy.shevchenko@gmail.com, linus.walleij@linaro.org,
-        linux-sunxi@googlegroups.com, Oliver Schinagl <oliver@schinagl.nl>
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-Message-ID: <20130626091032.GE2718@n2100.arm.linux.org.uk>
-References: <1371502778-15849-1-git-send-email-oliver+list@schinagl.nl> <1371502778-15849-2-git-send-email-oliver+list@schinagl.nl> <20130617225847.GA9494@kroah.com> <20130624092942.GG26008@lukather> <20130624160440.GA15201@kroah.com> <51C87DC7.50005@schinagl.nl> <20130624181509.GA8847@kroah.com> <51C8B84C.3020200@schinagl.nl> <20130624214615.GA17604@kroah.com>
+	Wed, 26 Jun 2013 05:13:33 -0400
+Date: Wed, 26 Jun 2013 10:13:26 +0100
+From: Steve Capper <steve.capper@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jonathan Austin <jonathan.austin@arm.com>,
+        Steve Capper <Steve.Capper@arm.com>, Vinod Koul <vinod.koul@intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, linus.walleij@linaro.org,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: amba-pl08x and 'get_signal' namespace collision/build error
+Message-ID: <20130626091325.GA7389@linaro.org>
+References: <51C97F40.5030101@arm.com>
+ <20130625184539.GB2718@n2100.arm.linux.org.uk>
+ <20130626084011.GA6687@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130624214615.GA17604@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130626084011.GA6687@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 02:46:15PM -0700, Greg KH wrote:
-> Stick with a binary attribute, and attach that to the proper class
-> structure and all should be fine.
+On Wed, Jun 26, 2013 at 09:40:25AM +0100, Steve Capper wrote:
+> On Tue, Jun 25, 2013 at 07:45:39PM +0100, Russell King - ARM Linux wrote:
+> > On Tue, Jun 25, 2013 at 12:30:08PM +0100, Jonathan Austin wrote:
+> > > There's a patch making its way to mainline via Russell's tree
+> > > (8d96250700: ARM: mm: Transparent huge page support for LPAE systems)
+> > > that breaks the build of the amba-pl08x driver (drivers/dma/amba-pl08x.c) 
+> > > because the 'get_signal' macro from include/linux/signal.h is now in the
+> > > driver's scope and it clobbers a (previously) valid function call.
+> > 
+> > Well, here's the change to asm/pgtable.h in that patch:
+> > 
+> > diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+> > index 9bcd262..eaedce7 100644
+> > --- a/arch/arm/include/asm/pgtable.h
+> > +++ b/arch/arm/include/asm/pgtable.h
+> > @@ -24,6 +24,9 @@
+> >  #include <asm/memory.h>
+> >  #include <asm/pgtable-hwdef.h>
+> > 
+> > +
+> > +#include <asm/tlbflush.h>
+> > +
+> >  #ifdef CONFIG_ARM_LPAE
+> >  #include <asm/pgtable-3level.h>
+> >  #else
+> > 
+> > And the question is - if that's all that is going on in that file, why
+> > is asm/tlbflush.h being added to it?  What in _that_ file uses anything
+> > from asm/tlbflush.h (nothing apparantly from what I can see)?
+> > 
+> > So, I'm tempted to kill this change off unless someone can justify why
+> > that addition happened - it looks completely inappropriate to me.
+> > 
 > 
-> Ah crap, you're using a platform device.
+> Hi Russell,
+> I needed tlbflush.h for the definition of flush_pmd_entry, called by set_pmd_at
+> in pgtable-3level.h.
 > 
-> {sigh}
+> It was pulled into pgtable.h as it would also be needed for the equivalent
+> set_pmd_at function for 2-levels of paging.
 > 
-> Why?  Why not use a "real" device which has a "real" class, and then use
-> the interfaces there?
 
-And why aren't platform devices "real" devices?  If platform devices are
-second class devices then that's pretty crap because virtually all
-devices on ARM are platform devices, not something like "first class"
-PCI devices.
+I was a little quick sending this sorry....
 
-We could make them PCI devices if you want us to totally fsck with the
-PCI code to bend it in ways it was never meant to, but I suspect that'll
-upset the PCI guys.
+I have tried converting set_pmd_at into a macro to allow for delayed expansion.
+(As I've noticed that other functions in pgtable-3level.h do this to call
+flush_pmd_entry.)
 
-No, platform devices must be first class devices just like any other.
+Unfortunately, even with set_pmd_at defined as a macro, I get undefined
+references to flush_pmd_entry and clean_pmd_entry (called from
+pmdp_test_and_clear_young and pmdp_get_and_clear in asm-generic/pgtable.h).
+
+I'm having a look to see if there's anything else I can do.
+Apologies for causing this problem.
+
+Best,
+-- 
+Steve
