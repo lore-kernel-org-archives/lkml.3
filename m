@@ -1,35 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab3FZP36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:29:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:32815 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab3FZP34 (ORCPT
+	id S1752022Ab3FZPbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:31:16 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:43340 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab3FZPbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:29:56 -0400
-Date: Wed, 26 Jun 2013 12:42:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Mike Galbraith <bitbucket@online.de>, Dave Chiluk <chiluk@canonical.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Scheduler accounting inflated for io bound processes.
-Message-ID: <20130626104243.GE28407@twins.programming.kicks-ass.net>
-References: <51C35C05.1070005@canonical.com>
- <1372176104.7497.86.camel@marge.simpson.net>
- <1372182534.7497.129.camel@marge.simpson.net>
- <20130626093713.GA27385@gmail.com>
+	Wed, 26 Jun 2013 11:31:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626093713.GA27385@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130626172446.51f0bd5f@skate>
+References: <CA+icZUWDDCsXBK4+s4fEbM_AGj3EnfCRAe2=yE+8_MT4mauPXg@mail.gmail.com>
+	<CA+icZUXtTxVUfOmFak9GzyUdGa7bBuxTr2CJEY0vNn0bH2-4Vw@mail.gmail.com>
+	<20130626172446.51f0bd5f@skate>
+Date: Wed, 26 Jun 2013 17:31:13 +0200
+Message-ID: <CA+icZUUktKZMg=paGYsPNrFTdDi80xw9ms_kE5di8Bc8-JXQPw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jun 26 [ vfs | block | fuse (cpuidle)
+ releated? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 11:37:13AM +0200, Ingo Molnar wrote:
-> Would be very nice to randomize the sampling rate, by randomizing the 
-> intervals within a 1% range or so - perf tooling will probably recognize 
-> the different weights.
+On Wed, Jun 26, 2013 at 5:24 PM, Thomas Petazzoni
+<thomas.petazzoni@free-electrons.com> wrote:
+> Dear Sedat Dilek,
+>
+> On Wed, 26 Jun 2013 16:50:55 +0200, Sedat Dilek wrote:
+>
+>> [ TO/CC char-misc folks ]
+>>
+>> The CULPRIT commit [1] due to my git-bisecting is:
+>>
+>> commit 585d98e00ba7a5e2abe65f7a1eff631cb612289b
+>> "char: misc: assign file->private_data in all cases"
+>>
+>> After reverting it, my system boots up fine again.
+>>
+>> Can someone from the char-misc folks look at that?
+>
+> Ok. My understanding is that the misc device registered by
+> fs/fuse/dev.c:fuse_dev_init() makes the assumption that
+> file->private_data == NULL when a misc device is opened. But I'm not
+> sure to fully understand the code flow of the FUSE filesystem.
+>
+> And since it doesn't provide its own implementation of the ->open()
+> operation, the misc infrastructure was leaving the file->private_data
+> defined to NULL before my patch.
+>
+> With my patch, the file->private_data gets assigned unconditionally
+> (regardless of whether the misc driver provides or does not provide a
+> ->open() operation) which modifies the unwritten assumption that fuse
+> was making about the initial value of file->private_data. I believe the
+> assumption made by fuse over the initial value of this variable is a
+> bit fragile.
+>
+> Maybe the FUSE code needs to be slightly adjusted to not make this
+> assumption?
+>
 
-You're suggesting adding noise to the regular kernel tick?
+Hi Thomas,
+
+( Fast response like a "free electron". )
+
+That's a question for Miklos :-).
+
+As said I have here a WUBI (fuse/loop/ext4) installation which is not
+quite common, but catched some nice bugs people normally do not hit.
+I can only confirm your change let's me no more boot into my system.
+
+- Sedat -
+
+> Best regards,
+>
+> Thomas
+> --
+> Thomas Petazzoni, Free Electrons
+> Kernel, drivers, real-time and embedded Linux
+> development, consulting, training and support.
+> http://free-electrons.com
