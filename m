@@ -1,186 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab3FZPZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:25:03 -0400
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:59872 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab3FZPY7 (ORCPT
+	id S1752521Ab3FZPZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:25:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60795 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab3FZPYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:24:59 -0400
-From: Nicolas Schichan <nschichan@freebox.fr>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <edumazet@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        Nicolas Schichan <nschichan@freebox.fr>
-Subject: [PATCH v3.10-rc7] net: fix kernel deadlock with interface rename and netdev name retrieval.
-Date: Wed, 26 Jun 2013 17:23:42 +0200
-Message-Id: <1372260222-8597-1-git-send-email-nschichan@freebox.fr>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 26 Jun 2013 11:24:52 -0400
+Date: Wed, 26 Jun 2013 12:36:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 2/8] perf,x86: drop event->flags and use
+ hw.constraint->flags
+Message-ID: <20130626103653.GC28407@twins.programming.kicks-ass.net>
+References: <1371824448-7306-1-git-send-email-eranian@google.com>
+ <1371824448-7306-3-git-send-email-eranian@google.com>
+ <20130624084510.GK28407@twins.programming.kicks-ass.net>
+ <CABPqkBQRchnjhnEC05w-noizoeSRnNio7NDQ6_+vXym_7rkGaw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQRchnjhnEC05w-noizoeSRnNio7NDQ6_+vXym_7rkGaw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the kernel (compiled with CONFIG_PREEMPT=n) is performing the
-rename of a network interface, it can end up waiting for a workqueue
-to complete. If userland is able to invoke a SIOCGIFNAME ioctl or a
-SO_BINDTODEVICE getsockopt in between, the kernel will deadlock due to
-the fact that read_secklock_begin() will spin forever waiting for the
-writer process (the one doing the interface rename) to update the
-devnet_rename_seq sequence.
+On Wed, Jun 26, 2013 at 09:36:39AM +0200, Stephane Eranian wrote:
+> On Mon, Jun 24, 2013 at 10:45 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, Jun 21, 2013 at 04:20:42PM +0200, Stephane Eranian wrote:
+> >> Now that we use the contraints directly from the event, we
+> >> do not need the event->flags field so drop it.
+> >>
+> >> Signed-off-by: Stephane Eranian <eranian@google.com>
+> >
+> > Same for this one I suppose; its not really related to the series at
+> > hand.
+> 
+> Correct. I can submit separately if needed.
 
-This patch fixes the problem by adding a helper (netdev_get_name())
-and using it in the code handling the SIOCGIFNAME ioctl and
-SO_BINDTODEVICE setsockopt.
-
-The netdev_get_name() helper uses raw_seqcount_begin() to avoid
-spinning forever, waiting for devnet_rename_seq->sequence to become
-even. cond_resched() is used in the contended case, before retrying
-the access to give the writer process a chance to finish.
-
-The use of raw_seqcount_begin() will incur some unneeded work in the
-reader process in the contended case, but this is better than
-deadlocking the system.
-
-Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
----
- include/linux/netdevice.h |    1 +
- net/core/dev.c            |   34 ++++++++++++++++++++++++++++++++++
- net/core/dev_ioctl.c      |   19 ++++---------------
- net/core/sock.c           |   17 ++---------------
- 4 files changed, 41 insertions(+), 30 deletions(-)
-
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 60584b1..96e4c21 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1695,6 +1695,7 @@ extern int		init_dummy_netdev(struct net_device *dev);
- extern struct net_device	*dev_get_by_index(struct net *net, int ifindex);
- extern struct net_device	*__dev_get_by_index(struct net *net, int ifindex);
- extern struct net_device	*dev_get_by_index_rcu(struct net *net, int ifindex);
-+extern int		netdev_get_name(struct net *net, char *name, int ifindex);
- extern int		dev_restart(struct net_device *dev);
- #ifdef CONFIG_NETPOLL_TRAP
- extern int		netpoll_trap(void);
-diff --git a/net/core/dev.c b/net/core/dev.c
-index fc1e289..faebb39 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -792,6 +792,40 @@ struct net_device *dev_get_by_index(struct net *net, int ifindex)
- EXPORT_SYMBOL(dev_get_by_index);
- 
- /**
-+ *	netdev_get_name - get a netdevice name, knowing its ifindex.
-+ *	@net: network namespace
-+ *	@name: a pointer to the buffer where the name will be stored.
-+ *	@ifindex: the ifindex of the interface to get the name from.
-+ *
-+ *	The use of raw_seqcount_begin() and cond_resched() before
-+ *	retrying is required as we want to give the writers a chance
-+ *	to complete when CONFIG_PREEMPT is not set.
-+ */
-+int netdev_get_name(struct net *net, char *name, int ifindex)
-+{
-+	struct net_device *dev;
-+	unsigned int seq;
-+
-+retry:
-+	seq = raw_seqcount_begin(&devnet_rename_seq);
-+	rcu_read_lock();
-+	dev = dev_get_by_index_rcu(net, ifindex);
-+	if (!dev) {
-+		rcu_read_unlock();
-+		return -ENODEV;
-+	}
-+
-+	strcpy(name, dev->name);
-+	rcu_read_unlock();
-+	if (read_seqcount_retry(&devnet_rename_seq, seq)) {
-+		cond_resched();
-+		goto retry;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-  *	dev_getbyhwaddr_rcu - find a device by its hardware address
-  *	@net: the applicable net namespace
-  *	@type: media type of device
-diff --git a/net/core/dev_ioctl.c b/net/core/dev_ioctl.c
-index 6cc0481..5b7d0e1 100644
---- a/net/core/dev_ioctl.c
-+++ b/net/core/dev_ioctl.c
-@@ -19,9 +19,8 @@
- 
- static int dev_ifname(struct net *net, struct ifreq __user *arg)
- {
--	struct net_device *dev;
- 	struct ifreq ifr;
--	unsigned seq;
-+	int error;
- 
- 	/*
- 	 *	Fetch the caller's info block.
-@@ -30,19 +29,9 @@ static int dev_ifname(struct net *net, struct ifreq __user *arg)
- 	if (copy_from_user(&ifr, arg, sizeof(struct ifreq)))
- 		return -EFAULT;
- 
--retry:
--	seq = read_seqcount_begin(&devnet_rename_seq);
--	rcu_read_lock();
--	dev = dev_get_by_index_rcu(net, ifr.ifr_ifindex);
--	if (!dev) {
--		rcu_read_unlock();
--		return -ENODEV;
--	}
--
--	strcpy(ifr.ifr_name, dev->name);
--	rcu_read_unlock();
--	if (read_seqcount_retry(&devnet_rename_seq, seq))
--		goto retry;
-+	error = netdev_get_name(net, ifr.ifr_name, ifr.ifr_ifindex);
-+	if (error)
-+		return error;
- 
- 	if (copy_to_user(arg, &ifr, sizeof(struct ifreq)))
- 		return -EFAULT;
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 88868a9..d6d024c 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -571,9 +571,7 @@ static int sock_getbindtodevice(struct sock *sk, char __user *optval,
- 	int ret = -ENOPROTOOPT;
- #ifdef CONFIG_NETDEVICES
- 	struct net *net = sock_net(sk);
--	struct net_device *dev;
- 	char devname[IFNAMSIZ];
--	unsigned seq;
- 
- 	if (sk->sk_bound_dev_if == 0) {
- 		len = 0;
-@@ -584,20 +582,9 @@ static int sock_getbindtodevice(struct sock *sk, char __user *optval,
- 	if (len < IFNAMSIZ)
- 		goto out;
- 
--retry:
--	seq = read_seqcount_begin(&devnet_rename_seq);
--	rcu_read_lock();
--	dev = dev_get_by_index_rcu(net, sk->sk_bound_dev_if);
--	ret = -ENODEV;
--	if (!dev) {
--		rcu_read_unlock();
-+	ret = netdev_get_name(net, devname, sk->sk_bound_dev_if);
-+	if (ret)
- 		goto out;
--	}
--
--	strcpy(devname, dev->name);
--	rcu_read_unlock();
--	if (read_seqcount_retry(&devnet_rename_seq, seq))
--		goto retry;
- 
- 	len = strlen(devname) + 1;
- 
--- 
-1.7.10.4
-
+I applied the first patch; this one failed to apply.. Remind me again if
+I fail to remember looking at the rejects once I've collected all other
+patches I planned to ship to mingo today.
