@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab3FZKQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 06:16:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49405 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751285Ab3FZKQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 06:16:55 -0400
-Date: Wed, 26 Jun 2013 13:16:47 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: George Cherian <george.cherian@ti.com>
-CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: core: continue probe even if usb3 phy is not
- available
-Message-ID: <20130626101647.GT12640@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1372238954-29047-1-git-send-email-george.cherian@ti.com>
+	id S1752211Ab3FZKRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 06:17:25 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751513Ab3FZKRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 06:17:23 -0400
+Message-ID: <51CABFAC.1040505@nod.at>
+Date: Wed, 26 Jun 2013 12:17:16 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z3PcgjD2qOzdkXVS"
-Content-Disposition: inline
-In-Reply-To: <1372238954-29047-1-git-send-email-george.cherian@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang <gang.chen@asianux.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, Jeff Dike <jdike@addtoit.com>,
+        Arnd Bergmann <arnd@arndb.de>, David Sharp <dhsharp@google.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
+References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at> <51CAA78C.5040900@asianux.com> <51CAA8D6.9000505@nod.at> <51CAAD1D.8050801@asianux.com> <51CAAE7C.9090003@nod.at> <51CAB556.4070700@asianux.com> <51CAB689.70008@nod.at> <CAMuHMdXw6VYhnNWcVfWc9ssxKTqKFcDbN4WXL5i=eNGy+gXcRA@mail.gmail.com> <51CABBDD.403@asianux.com>
+In-Reply-To: <51CABBDD.403@asianux.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---z3PcgjD2qOzdkXVS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Am 26.06.2013 12:01, schrieb Chen Gang:
+> On 06/26/2013 05:48 PM, Geert Uytterhoeven wrote:
+>> On Wed, Jun 26, 2013 at 11:38 AM, Richard Weinberger <richard@nod.at> wrote:
+>>>>>> Since the API itself already contents the meaning: "return NULL means
+>>>>>> the arch has no related io memory",
+>> No, NULL means it could not map the I/O memory.
+>>
+> 
+> "it could not map the I/O memory" includes "has no related io memory".
+> So it is enough for our case.
+> 
+>>>>>> Why not define a generic dummy one in "include/asm-generic/io.h" instead
+>>>>>> of "HAS_IOMEM" (which has already spread many various places, and also,
+>>>>>> most of new drivers have to know about it).
+>>>>>>
+>>>>>> e.g: in "include/asm-generic/io.h", if "CONFIG_HAS_IOMEM=n", define a
+>>>>>> dummy ioremap() which return NULL ... (also need consider more details).
+>>>>
+>>>> Because we don't even want to build these drivers and not make them fail while
+>>>> executing io memory related functions.
+>> Indeed, it doesn't make sense to build drivers that cannot work.
+>> And they may fail in a very bad way.
+> 
+> That is our 'platform' guys feeling, not the 'module' guys, as
+> 'platform' guys, it is better to provide the choice to 'module' guys,
+> and let them decide by themselves, not forced by us.
 
-Hi,
+FYI, this is my last reply to this thread.
 
-On Wed, Jun 26, 2013 at 02:59:14PM +0530, George Cherian wrote:
-> There can be configurations in which DWC3 is hoooked up only to USB2 PHY.
-> In such cases we should not return -EPROBE_DEFER, rather continue probe
-> even if there is no USB3 PHY.
->=20
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->  drivers/usb/dwc3/core.c | 31 ++++++++++++++++++++++++-------
->  1 file changed, 24 insertions(+), 7 deletions(-)
->=20
-> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> index c35d49d..d5e6f3e 100644
-> --- a/drivers/usb/dwc3/core.c
-> +++ b/drivers/usb/dwc3/core.c
-> @@ -100,7 +100,9 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
->  	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
-> =20
->  	usb_phy_init(dwc->usb2_phy);
-> -	usb_phy_init(dwc->usb3_phy);
-> +
-> +	if (dwc->usb3_phy)
-> +		usb_phy_init(dwc->usb3_phy);
+As Geert and I said, drivers which need io memory have to depend on HAS_IOMEM=y.
+If an arch does not have io memory these drivers cannot work and therefore we don't
+want them built.
 
-I would feel more comfortable if you would move our maximum_speed module
-parameter to DT with a property such as:
-
-snps,maximum_speed =3D "highspeed";
-
-then on driver you could:
-
-ret =3D of_property_read_string(np, "snps,maximum_speed", &maximum_speed);
-if (ret < 0)
-	bailout();
-
-if (strncmp(maximum_speed, "superspeed", 10) =3D=3D 0) {
-	/* grab USB3 PHY, return EPROBE_DEFER if not found */
-	grab_usb3_phy();
-}
-
-if ((strncmp(maximum_speed, "highspeed", 9) =3D=3D 0) ||
-	(strncmp(maximum_speed, "fullspeed", 9) =3D=3D 0) ||
-	(strncmp(maximum_speed, "lowspeed", 8) =3D=3D 0)) {
-	/* grab USB2 PHY, return EPROBE_DEFER if not found */
-	grab_usb2_phy();
-}
-
-this way, we depend solely on setting maximum_speed to highspeed for
-AM437x :-)
-
-ps: don't forget to default to superspeed in case no property is passed.
-
---=20
-balbi
-
---z3PcgjD2qOzdkXVS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRyr+PAAoJEIaOsuA1yqREPgwQAIiUlQ8T/i6WRco9c7pA4TuS
-x7FxBlz3ExUZF+8CNT8esEAXwIGfnO73pafkWOkKeIeA9+eS+bZ8mrjlPimmES0b
-Tkd+dy0WPScodB201zsPOapwSTQm8shaqwTKpE0ja917n9UoBZKjDIK4vGO5tUGD
-wXpzGAMXhIhDZNM42L3IqaCM3ws5Audhr31ZU8L0KDn0S0v8/xEcxD9PyxQmkRw2
-lrmaCPqTmV717/OvwyrVJnTKHcKishoW2aAhEGeSScmMaMe47ggvLs+DwJ99MzmD
-tmTeIew+BlgohLMl6ho2W84I+FsDanrVHNG/TMuVWkYdiQPL2HO+M1rgNHgLAvJY
-/f5i2tNV2vljYIeQfczC93VOj5MO/BAK7wTHv+b4qTRTd/2g2r8ssoP62zanHQL5
-H/vbipcg+bfnBuKNX+ptLlgjV/g2QfKFd68XtxmgSQ9EP3xTG4tVATxo9OQthNcT
-H6EPC7B7MUTa0gtg2l2gXuGPsWFZCP/NtiLttcn8VztM7j5n1cBvHwPzEZjCOgzr
-lnNYq3puZ2NvwKdPxLr8cxYQ85bKujX0uUEqIukuPz01jneHvPiRQSAoCr5sJViU
-4aBz+x+ri+jArmstNiDIfRjFW99rVw3+DtBV2s+GIvaImPL0Be5PFplum6y1f04T
-G30gQHdaU3sY5No92Ih5
-=lSsz
------END PGP SIGNATURE-----
-
---z3PcgjD2qOzdkXVS--
+Over and out,
+//richard
