@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246Ab3FZEDg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 00:03:36 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:65268 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab3FZEDf (ORCPT
+	id S1751355Ab3FZEHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 00:07:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58420 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab3FZEHl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 00:03:35 -0400
-Date: Tue, 25 Jun 2013 21:03:31 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
-        minchan@kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] vmpressure: implement strict mode
-Message-ID: <20130626040331.GA7993@teo>
-References: <20130625175129.7c0d79e1@redhat.com>
+	Wed, 26 Jun 2013 00:07:41 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Fernandes, Joel" <joelagnel@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>, Matt Porter <matt@ohporter.com>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        Chris Ball <cjb@laptop.org>
+CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: RE: [PATCH 5/5] mmc: omap_hsmmc: Add reg-offset to bindings
+ documentation
+Thread-Topic: [PATCH 5/5] mmc: omap_hsmmc: Add reg-offset to bindings
+ documentation
+Thread-Index: AQHOcgwxbYUj9dwpPUuW5SjrhzTkVplHYJfw
+Date: Wed, 26 Jun 2013 04:06:31 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC43DB1@DBDE04.ent.ti.com>
+References: <1372209901-6715-1-git-send-email-joelagnel@ti.com>
+In-Reply-To: <1372209901-6715-1-git-send-email-joelagnel@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130625175129.7c0d79e1@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 05:51:29PM -0400, Luiz Capitulino wrote:
-> Currently, applications are notified for the level they registered for
-> _plus_ higher levels.
+On Wed, Jun 26, 2013 at 06:55:01, Fernandes, Joel wrote:
+> From: Joel A Fernandes <agnel.joel@gmail.com>
 > 
-> This is a problem if the application wants to implement different
-> actions for different levels. For example, an application might want
-> to release 10% of its cache on level low, 50% on medium and 100% on
-> critical. To do this, the application has to register a different fd
-> for each event. However, fd low is always going to be notified and
-> and all fds are going to be notified on level critical.
+> A new reg-offset property was added to account for register offsets
+> in some omap-hsmmc's. Document the new property.
 > 
-> Strict mode solves this problem by strictly notifiying the event
-> an fd has registered for. It's optional. By default we still notify
-> on higher levels.
+
+Small nitpick
+
+I usually get feedback that any driver DT changes and the associated
+Binding doc update should come in one single patch for better readability.
+
+In this case, I believe it would be patch 1/5 & 5/5
+
+
+Regards, 
+Gururaja
+
+
+> Signed-off-by: Joel A Fernandes <agnel.joel@gmail.com>
+> ---
+>  .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-
-In the documentation I would add more information about why exactly the
-strict mode makes sense.
-
-For example, the non-strict fd listener hooked onto the low level makes
-sense for apps that just monitor reclaiming activity (like current Android
-Activity Manager), hooking onto 'medium' non-strict mode makes sense for
-simple load-balancing logic, and the new strict mode is for the cases when
-an application wants to implement some fancy logic as it makes a decision
-based on a concrete level.
-
-Otherwise, it looks good.
-
-Acked-by: Anton Vorontsov <anton@enomsg.org>
-
-Thanks!
-
-Anton
+> diff --git a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> index 8c8908a..33f4b1e 100644
+> --- a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> +++ b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> @@ -20,6 +20,9 @@ ti,dual-volt: boolean, supports dual voltage cards
+>  ti,non-removable: non-removable slot (like eMMC)
+>  ti,needs-special-reset: Requires a special softreset sequence
+>  ti,needs-special-hs-handling: HSMMC IP needs special setting for handling High Speed
+> +reg-offset: Supplementing the common reg property (described in bindings/mmc/mmc.txt),
+> +some omap-hsmmc's can start an offset from reg but are otherwise identical to others.
+> +The registers between start to offset are considered reserved.
+>  dmas: List of DMA specifiers with the controller specific format
+>  as described in the generic DMA client binding. A tx and rx
+>  specifier is required.
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
