@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab3FZGPa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 02:15:30 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45924 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751309Ab3FZGP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 02:15:29 -0400
-Subject: [PATCH v4] SUNRPC: fix races on PipeFS UMOUNT notifications
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, devel@openvz.org, linux-kernel@vger.kernel.org,
-        jlayton@redhat.com
-Date: Wed, 26 Jun 2013 10:15:14 +0400
-Message-ID: <20130626061448.32202.192.stgit@localhost.localdomain>
-In-Reply-To: <20130624075245.17104.6279.stgit@localhost.localdomain>
-References: <20130624075245.17104.6279.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1751661Ab3FZGVN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 02:21:13 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:54436 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab3FZGVM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 02:21:12 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] powerpc/vfio: Add missing locks for take/release TCE table ownership
+Date: Wed, 26 Jun 2013 16:21:02 +1000
+Message-Id: <1372227662-28302-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPU#0                                   CPU#1
------------------------------           -----------------------------
-rpc_kill_sb
-sn->pipefs_sb = NULL                    rpc_release_client
-(UMOUNT_EVENT)                          rpc_free_auth
-rpc_pipefs_event
-rpc_get_client_for_event
-!atomic_inc_not_zero(cl_count)
-<skip the client>
-                                        atomic_inc(cl_count)
-                                        rpc_free_client
-                                        rpc_clnt_remove_pipedir
-                                        <skip client dir removing>
+VFIO IOMMU driver for sPAPR TCE locks the whole DMA window by setting
+ones to iommu_table.it_map. However this was not protected by the locks
+which other clients of iommu_table use.
 
-To fix this, this patch does the following:
+The patch fixes this.
 
-1) Calls RPC_PIPEFS_UMOUNT notification with sn->pipefs_sb_lock being held.
-2) Removes SUNRPC client from the list AFTER pipes destroying.
-3) Doesn't hold RPC client on notification: if client in the list, then it
-can't be destroyed while sn->pipefs_sb_lock in hold by notification caller.
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: stable@vger.kernel.org
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- net/sunrpc/clnt.c     |    5 +----
- net/sunrpc/rpc_pipe.c |    2 +-
- 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index b827a4b..41f180c 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -236,8 +236,6 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
- 			continue;
- 		if (rpc_clnt_skip_event(clnt, event))
- 			continue;
--		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
--			continue;
- 		spin_unlock(&sn->rpc_client_lock);
- 		return clnt;
- 	}
-@@ -254,7 +252,6 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
+v1->v2:
+* Fixed a potential warning from lockdep.
+
+---
+ arch/powerpc/kernel/iommu.c |   25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+index b20ff17..5c1fc89 100644
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -1076,25 +1076,42 @@ EXPORT_SYMBOL_GPL(iommu_put_tce_user_mode);
+ int iommu_take_ownership(struct iommu_table *tbl)
+ {
+ 	unsigned long sz = (tbl->it_size + 7) >> 3;
++	unsigned long i, flags;
++	int ret = 0;
++
++	spin_lock_irqsave(&tbl->large_pool.lock, flags);
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_lock(&tbl->pools[i].lock);
  
- 	while ((clnt = rpc_get_client_for_event(sb->s_fs_info, event))) {
- 		error = __rpc_pipefs_event(clnt, event, sb);
--		rpc_release_client(clnt);
- 		if (error)
- 			break;
+ 	if (tbl->it_offset == 0)
+ 		clear_bit(0, tbl->it_map);
+ 
+ 	if (!bitmap_empty(tbl->it_map, tbl->it_size)) {
+ 		pr_err("iommu_tce: it_map is not empty");
+-		return -EBUSY;
++		ret = -EBUSY;
++		goto unlock_exit;
  	}
-@@ -641,8 +638,8 @@ rpc_free_client(struct rpc_clnt *clnt)
- 			rcu_dereference(clnt->cl_xprt)->servername);
- 	if (clnt->cl_parent != clnt)
- 		rpc_release_client(clnt->cl_parent);
--	rpc_unregister_client(clnt);
- 	rpc_clnt_remove_pipedir(clnt);
-+	rpc_unregister_client(clnt);
- 	rpc_free_iostats(clnt->cl_metrics);
- 	kfree(clnt->cl_principal);
- 	clnt->cl_metrics = NULL;
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index c512448..9b4ec5b 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -1165,12 +1165,12 @@ static void rpc_kill_sb(struct super_block *sb)
- 		goto out;
- 	}
- 	sn->pipefs_sb = NULL;
--	mutex_unlock(&sn->pipefs_sb_lock);
- 	dprintk("RPC:       sending pipefs UMOUNT notification for net %p%s\n",
- 		net, NET_NAME(net));
- 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
- 					   RPC_PIPEFS_UMOUNT,
- 					   sb);
-+	mutex_unlock(&sn->pipefs_sb_lock);
- 	put_net(net);
- out:
- 	kill_litter_super(sb);
+ 
+ 	memset(tbl->it_map, 0xff, sz);
+ 	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
+ 
+-	return 0;
++unlock_exit:
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_unlock(&tbl->pools[i].lock);
++	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(iommu_take_ownership);
+ 
+ void iommu_release_ownership(struct iommu_table *tbl)
+ {
+ 	unsigned long sz = (tbl->it_size + 7) >> 3;
++	unsigned long i, flags;
++
++	spin_lock_irqsave(&tbl->large_pool.lock, flags);
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_lock(&tbl->pools[i].lock);
+ 
+ 	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
+ 	memset(tbl->it_map, 0, sz);
+@@ -1102,6 +1119,10 @@ void iommu_release_ownership(struct iommu_table *tbl)
+ 	/* Restore bit#0 set by iommu_init_table() */
+ 	if (tbl->it_offset == 0)
+ 		set_bit(0, tbl->it_map);
++
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_unlock(&tbl->pools[i].lock);
++	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(iommu_release_ownership);
+ 
+-- 
+1.7.10.4
 
