@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab3FZKH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 06:07:29 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:11351 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab3FZKH2 (ORCPT
+	id S1752049Ab3FZKJC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 06:09:02 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:38950 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab3FZKJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 06:07:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 26 Jun 2013 03:04:01 -0700
-From: Wei Ni <wni@nvidia.com>
-To: <a.zummo@towertech.it>, <ldewangan@nvidia.com>
-CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
-        Wei Ni <wni@nvidia.com>
-Subject: [PATCH] rtc: palmas: init wakeup before device register
-Date: Wed, 26 Jun 2013 18:05:37 +0800
-Message-ID: <1372241137-8175-1-git-send-email-wni@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Wed, 26 Jun 2013 06:09:00 -0400
+Message-ID: <51CABDA9.4010607@synopsys.com>
+Date: Wed, 26 Jun 2013 15:38:41 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+CC: <netdev@vger.kernel.org>, Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>, Joe Perches <joe@perches.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: Re: [PATCH v2] arch/arc: angel4.dts - add description for "arc_emac"
+References: <1372240938-28733-1-git-send-email-abrodkin@synopsys.com>
+In-Reply-To: <1372240938-28733-1-git-send-email-abrodkin@synopsys.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.141]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable dev as wakeup device before calling rtc_device_register(),
-so that it can create the "wakealarm" sysfs.
+On 06/26/2013 03:32 PM, Alexey Brodkin wrote:
+> With this patch we introduce DT "arc_emac" description for ARCangel4.
+> Description is based on info/example in
+> "Documentation/devicetree/bindings/net/arc_emac.txt".
+>
+> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
-Signed-off-by: Wei Ni <wni@nvidia.com>
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/rtc/rtc-palmas.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Applied to arc for-next
 
-diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
-index 50204d4..a1fecc8 100644
---- a/drivers/rtc/rtc-palmas.c
-+++ b/drivers/rtc/rtc-palmas.c
-@@ -265,6 +265,7 @@ static int palmas_rtc_probe(struct platform_device *pdev)
- 
- 	palmas_rtc->irq = platform_get_irq(pdev, 0);
- 
-+	device_init_wakeup(&pdev->dev, 1);
- 	palmas_rtc->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
- 				&palmas_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(palmas_rtc->rtc)) {
-@@ -283,7 +284,6 @@ static int palmas_rtc_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	device_set_wakeup_capable(&pdev->dev, 1);
- 	return 0;
- }
- 
--- 
-1.7.9.5
-
+Thx,
+-Vineet
