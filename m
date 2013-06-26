@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab3FZVq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:46:27 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:59871 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab3FZVqZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:46:25 -0400
+	id S1753225Ab3FZVsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:48:24 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52465 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752733Ab3FZVsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 17:48:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        dave.martin@arm.com
+Subject: Re: [PATCH 13/13] cpufreq: make sure frequency transitions are serialized
+Date: Wed, 26 Jun 2013 23:57:51 +0200
+Message-ID: <2081161.dnl1xTqcUT@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohponyMG-uA93ZpH-KD+EOQPmk5tT_QoaQ7+NCEf48vYj5-w@mail.gmail.com>
+References: <cover.1371630975.git.viresh.kumar@linaro.org> <2165396.dF1lQyPRVT@vostro.rjw.lan> <CAKohponyMG-uA93ZpH-KD+EOQPmk5tT_QoaQ7+NCEf48vYj5-w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51CB5D84.4080709@zytor.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com> <83879b07cd4ce95f086420d1faa926c1692d63b4.1372211451.git.dvhart@linux.intel.com>
- <20130626163250.GA29299@google.com> <1372266904.8177.83.camel@envy.home>
- <CAErSpo6=1i76RRmJSUi+BpD9D0WrXaML4HkGLn0C=+6=ohB0uQ@mail.gmail.com> <51CB5D84.4080709@zytor.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Jun 2013 15:46:04 -0600
-Message-ID: <CAErSpo6Dss9hj33QRP-Leob05WT-uN-MWUAZBfh+VDtUvCWNkA@mail.gmail.com>
-Subject: Re: [PATCH 7/8] pci: Add CircuitCo VENDOR ID and MinnowBoard DEVICE ID
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders@circuitco.com, vishal.l.verma@intel.com,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 3:30 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/26/2013 12:37 PM, Bjorn Helgaas wrote:
->>
->> Yeah, that's what I was thinking.
->>
->> But Peter's comment makes more sense to me now.  The spec refers to
->> that config register as "Subsystem ID," not "Subsystem Device ID," but
->> I was confused because most existing usage treats it as a device ID.
->> For example, the field in struct pci_device_id is named "subdevice,"
->> and all the existing #defines in pci_ids.h are of the form
->> PCI_SUBDEVICE_ID_*.
->>
->> Device IDs are pretty specific identifiers, so I was thinking that a
->> "sub-device ID" would be even more specific.  Then it would make no
->> sense to have a "sub-device ID" that was as generic as "MINNOWBOARD."
->> But the register is actually *not* a "sub-device ID," and I can see
->> that using the same Subsystem ID for all the devices on a board might
->> make sense.
->>
->
-> Subsystem IDs is basically a board ID in the traditional PC view, but
-> they didn't call it that because it would have been confusing in other,
-> nontraditional configurations.
->
-> Microsoft has a "best practices" document, which may end up becoming
-> basis for a future PCI-SIG document clarifying the standard:
->
-> http://msdn.microsoft.com/en-us/library/windows/hardware/gg463287.aspx
+On Monday, June 24, 2013 07:01:59 PM Viresh Kumar wrote:
+> On 24 June 2013 19:03, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Looks OK, but since transition_ongoing is either 0 or 1 now, as far as I can
+> > say, it would be better to make it a bool and use = true/false instead of
+> > ++/-- I suppose.
+> 
+> Another fixup:
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 6ca7eac..49d942a 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -108,7 +108,7 @@ static BLOCKING_NOTIFIER_HEAD(cpufreq_policy_notifier_list);
+>  static struct srcu_notifier_head cpufreq_transition_notifier_list;
+> 
+>  /* Tracks status of transition */
+> -static int transition_ongoing;
+> +static bool transition_ongoing;
+> 
+>  static bool init_cpufreq_transition_notifier_list_called;
+>  static int __init init_cpufreq_transition_notifier_list(void)
+> @@ -271,7 +271,7 @@ void __cpufreq_notify_transition(struct
+> cpufreq_policy *policy,
+>                                 "In middle of another frequency transition\n"))
+>                         return;
+> 
+> -               transition_ongoing++;
+> +               transition_ongoing = true;
+> 
+>                 /* detect if the driver reported a value as "old frequency"
+>                  * which is not equal to what the cpufreq core thinks is
+> @@ -296,7 +296,7 @@ void __cpufreq_notify_transition(struct
+> cpufreq_policy *policy,
+>                                 "No frequency transition in progress\n"))
+>                         return;
+> 
+> -               transition_ongoing--;
+> +               transition_ongoing = false;
+> 
+>                 adjust_jiffies(CPUFREQ_POSTCHANGE, freqs);
+>                 pr_debug("FREQ: %lu - CPU: %lu", (unsigned long)freqs->new,
 
-Interesting, thanks for the link.  If I read that correctly, the
-MinnowBoard is basically a motherboard, and any board layout change or
-component value change will require a new Subsystem ID, which will in
-turn require a pch_gbe update.  That doesn't sound optimal, but maybe
-people don't actually interpret it that strictly.
+Well, now, seeing that the locking around this seems to be kind of haphazard,
+I'm wondering what prevents two different threads from doing CPUFREQ_PRECHANGE
+concurrently in such a way that thread A will check transition_ongoing
+and thread B will check transition_ongoing and then both will set it if it
+was 'false' before.  And then one of them will trigger the WARN() in
+CPUFREQ_POSTCHANGE.
 
-Bjorn
+Is there any protection in place and if so then how does it work?
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
