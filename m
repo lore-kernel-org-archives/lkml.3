@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab3FZCta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 22:49:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54113 "EHLO
+	id S1752117Ab3FZCt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 22:49:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54116 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751458Ab3FZCpY (ORCPT
+	by vger.kernel.org with ESMTP id S1751853Ab3FZCpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 22:45:24 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Catalin Marinas" <catalin.marinas@arm.com>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Simon Baatz" <gmbnomis@gmail.com>
-Date: Wed, 26 Jun 2013 03:35:58 +0100
-Message-ID: <lsq.1372214158.657310117@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Guillaume Nault" <g.nault@alphalink.fr>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 26 Jun 2013 03:35:59 +0100
+Message-ID: <lsq.1372214159.34128801@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [04/26] ARM: 7755/1: handle user space mapped pages in
- flush_kernel_dcache_page
+Subject: [24/26] l2tp: Fix PPP header erasure and memory leak
 In-Reply-To: <lsq.1372214158.425780530@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,80 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Baatz <gmbnomis@gmail.com>
+From: Guillaume Nault <g.nault@alphalink.fr>
 
-commit 1bc39742aab09248169ef9d3727c9def3528b3f3 upstream.
+[ Upstream commit 55b92b7a11690bc377b5d373872a6b650ae88e64 ]
 
-Commit f8b63c1 made flush_kernel_dcache_page a no-op assuming that
-the pages it needs to handle are kernel mapped only.  However, for
-example when doing direct I/O, pages with user space mappings may
-occur.
+Copy user data after PPP framing header. This prevents erasure of the
+added PPP header and avoids leaking two bytes of uninitialised memory
+at the end of skb's data buffer.
 
-Thus, continue to do lazy flushing if there are no user space
-mappings.  Otherwise, flush the kernel cache lines directly.
-
-Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/include/asm/cacheflush.h |    4 +---
- arch/arm/mm/flush.c               |   33 +++++++++++++++++++++++++++++++++
- 2 files changed, 34 insertions(+), 3 deletions(-)
+ net/l2tp/l2tp_ppp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -301,9 +301,7 @@ static inline void flush_anon_page(struc
- }
+diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
+index 6f60175..8ab041b 100644
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -350,12 +350,12 @@ static int pppol2tp_sendmsg(struct kiocb *iocb, struct socket *sock, struct msgh
+ 	skb_put(skb, 2);
  
- #define ARCH_HAS_FLUSH_KERNEL_DCACHE_PAGE
--static inline void flush_kernel_dcache_page(struct page *page)
--{
--}
-+extern void flush_kernel_dcache_page(struct page *);
+ 	/* Copy user data into skb */
+-	error = memcpy_fromiovec(skb->data, m->msg_iov, total_len);
++	error = memcpy_fromiovec(skb_put(skb, total_len), m->msg_iov,
++				 total_len);
+ 	if (error < 0) {
+ 		kfree_skb(skb);
+ 		goto error_put_sess_tun;
+ 	}
+-	skb_put(skb, total_len);
  
- #define flush_dcache_mmap_lock(mapping) \
- 	spin_lock_irq(&(mapping)->tree_lock)
---- a/arch/arm/mm/flush.c
-+++ b/arch/arm/mm/flush.c
-@@ -304,6 +304,39 @@ void flush_dcache_page(struct page *page
- EXPORT_SYMBOL(flush_dcache_page);
+ 	l2tp_xmit_skb(session, skb, session->hdr_len);
  
- /*
-+ * Ensure cache coherency for the kernel mapping of this page. We can
-+ * assume that the page is pinned via kmap.
-+ *
-+ * If the page only exists in the page cache and there are no user
-+ * space mappings, this is a no-op since the page was already marked
-+ * dirty at creation.  Otherwise, we need to flush the dirty kernel
-+ * cache lines directly.
-+ */
-+void flush_kernel_dcache_page(struct page *page)
-+{
-+	if (cache_is_vivt() || cache_is_vipt_aliasing()) {
-+		struct address_space *mapping;
-+
-+		mapping = page_mapping(page);
-+
-+		if (!mapping || mapping_mapped(mapping)) {
-+			void *addr;
-+
-+			addr = page_address(page);
-+			/*
-+			 * kmap_atomic() doesn't set the page virtual
-+			 * address for highmem pages, and
-+			 * kunmap_atomic() takes care of cache
-+			 * flushing already.
-+			 */
-+			if (!IS_ENABLED(CONFIG_HIGHMEM) || addr)
-+				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
-+		}
-+	}
-+}
-+EXPORT_SYMBOL(flush_kernel_dcache_page);
-+
-+/*
-  * Flush an anonymous page so that users of get_user_pages()
-  * can safely access the data.  The expected sequence is:
-  *
 
