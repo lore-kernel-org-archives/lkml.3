@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab3FZJqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:46:39 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:50831 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab3FZJqi (ORCPT
+	id S1751778Ab3FZJsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:48:22 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:36916 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab3FZJsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:46:38 -0400
-Date: Wed, 26 Jun 2013 11:46:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Robert Richter <rric@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/14] perf, persistent: Kernel updates for perf tool
- integration
-Message-ID: <20130626094634.GA29181@gmail.com>
-References: <1370968960-22527-1-git-send-email-rric@kernel.org>
- <20130624152557.GU28407@twins.programming.kicks-ass.net>
- <20130624194510.GC4065@gmail.com>
- <20130625175729.GI21579@rric.localhost>
- <20130625191654.GH4855@pd.tnic>
- <20130626081223.GB21788@rric.localhost>
- <20130626082408.GA20274@pd.tnic>
+	Wed, 26 Jun 2013 05:48:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626082408.GA20274@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51CAB689.70008@nod.at>
+References: <51CA8AB8.7080504@asianux.com>
+	<51CA900E.9020407@nod.at>
+	<51CA9E92.4000107@asianux.com>
+	<51CAA0C6.60007@nod.at>
+	<51CAA78C.5040900@asianux.com>
+	<51CAA8D6.9000505@nod.at>
+	<51CAAD1D.8050801@asianux.com>
+	<51CAAE7C.9090003@nod.at>
+	<51CAB556.4070700@asianux.com>
+	<51CAB689.70008@nod.at>
+Date: Wed, 26 Jun 2013 11:48:20 +0200
+X-Google-Sender-Auth: 08liAzN_82wt5Lb-sosjYaZOhDY
+Message-ID: <CAMuHMdXw6VYhnNWcVfWc9ssxKTqKFcDbN4WXL5i=eNGy+gXcRA@mail.gmail.com>
+Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Chen Gang <gang.chen@asianux.com>, Jeff Dike <jdike@addtoit.com>,
+        Arnd Bergmann <arnd@arndb.de>, David Sharp <dhsharp@google.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 26, 2013 at 11:38 AM, Richard Weinberger <richard@nod.at> wrote:
+>> Since the API itself already contents the meaning: "return NULL means
+>> the arch has no related io memory",
 
-* Borislav Petkov <bp@alien8.de> wrote:
+No, NULL means it could not map the I/O memory.
 
-> On Wed, Jun 26, 2013 at 10:12:23AM +0200, Robert Richter wrote:
-> > We get a new fd by opening the persistent event with the syscall.
-> > There would be 2 new ioctls:
-> > 
-> >  ioctl(fd, PERF_EVENT_IOC_DETACH, 0);
-> >  ioctl(fd, PERF_EVENT_IOC_ATTACH, 0);
-> > 
-> > This would be fine and reuses existing infrastructure.
-> 
-> Well, how are you going to say that you want to open an already existing 
-> persistent event or your want to create exactly the same persistent 
-> event? Are we even going to allow identical persistent events to 
-> coexist?
+>> Why not define a generic dummy one in "include/asm-generic/io.h" instead
+>> of "HAS_IOMEM" (which has already spread many various places, and also,
+>> most of new drivers have to know about it).
+>>
+>> e.g: in "include/asm-generic/io.h", if "CONFIG_HAS_IOMEM=n", define a
+>> dummy ioremap() which return NULL ... (also need consider more details).
+>
+> Because we don't even want to build these drivers and not make them fail while
+> executing io memory related functions.
 
-If already existing persistent events show up somewhere in sysfs (or in a 
-separate pseudofilesystem) then an open() of them [given sufficient 
-privileges of the caller, etc.] could attach to them.
+Indeed, it doesn't make sense to build drivers that cannot work.
+And they may fail in a very bad way.
 
-Thanks,
+Gr{oetje,eeting}s,
 
-	Ingo
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
