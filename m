@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab3FZPhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:37:18 -0400
-Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:48042
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752392Ab3FZPhQ (ORCPT
+	id S1752517Ab3FZPhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:37:34 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40234 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752118Ab3FZPhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:37:16 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
-X-WSS-ID: 0MP0BDW-01-DPM-02
-X-M-MSG: 
-Date: Wed, 26 Jun 2013 10:37:06 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Borislav Petkov <bp@alien8.de>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 0/2] x86/microcode/amd: early loading fixes
-Message-ID: <20130626153706.GA8253@jshin-Toonie>
-References: <1370658140-5299-1-git-send-email-jacob.shin@amd.com>
- <20130612193119.GB15934@jshin-Toonie>
- <20130620103053.GA9609@gmail.com>
- <20130620151616.GA2045@jshin-Toonie>
- <20130620152414.GA6676@jshin-Toonie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130620152414.GA6676@jshin-Toonie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Wed, 26 Jun 2013 11:37:31 -0400
+Message-ID: <1372261045.2168.33.camel@dabdike>
+Subject: Re: [PATCH 1/1] bfa: Fixes for 0-terminated strncpy and possible
+ null pointer dereference
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Jakob Normark <jakobnormark@gmail.com>
+Cc: Anil Gurumurthy <agurumur@brocade.com>,
+        Vijaya Mohan Guvva <vmohan@brocade.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 26 Jun 2013 08:37:25 -0700
+In-Reply-To: <1368646911-22620-1-git-send-email-jakobnormark@gmail.com>
+References: <1368646911-22620-1-git-send-email-jakobnormark@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 10:24:14AM -0500, Jacob Shin wrote:
-> On Thu, Jun 20, 2013 at 10:16:16AM -0500, Jacob Shin wrote:
-> > On Thu, Jun 20, 2013 at 12:30:53PM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Jacob Shin <jacob.shin@amd.com> wrote:
-> > > 
-> > > > On Fri, Jun 07, 2013 at 09:22:18PM -0500, Jacob Shin wrote:
-> > > > > This patchset addreses two problems with early loading on AMD.
-> > > > > 
-> > > > > First, feedback from Yinghai that find_ucode_in_initrd() should be
-> > > > > marked __init:
-> > > > >   https://lkml.org/lkml/2013/6/4/695
-> > > > > 
-> > > > > And second, feedback from Henrique that Intel early loading supports
-> > > > > multiple microcode firmware concatenated together, whereas the current
-> > > > > AMD implementation lacks this support:
-> > > > >   https://lkml.org/lkml/2013/5/31/4
-> > > > > 
-> > > > > V3:
-> > > > > * style fix -- reduce multiple if statements into a single one
-> > > > 
-> > > > Hi hpa or Yinghai, just wondering if you had the chance to look at this
-> > > > V3 yet.
-> > > 
-> > > It appears Peter applied v2 to tip:x86/microcode two days before you sent 
-> > > v3 - please send any changes in v3 as delta patches.
-> > 
-> > I actually recieved the tip-bot email <https://lkml.org/lkml/2013/6/12/468>
-> > couple of days after sending out the above message, so I assumed that
-> > V3 was committed in.
-> > 
-> > I should have read the tip-bot message thoroughly and noticed
-> > it. Sorry about that. Here is the delta patch:
+On Wed, 2013-05-15 at 21:41 +0200, Jakob Normark wrote:
+> This patch fixes two cppcheck errors in drivers/scsi/bfa/bfad_im.c
 > 
-> Sigh :-( .. sorry, forgot to sign off. Here it is again:
+> Signed-off-by: Jakob Normark <jakobnormark@gmail.com>
+> ---
+>  drivers/scsi/bfa/bfad_im.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
 > 
-> ---8<---
-> 
-> From 1445587da716b306f39feef46fb7150f292060c7 Mon Sep 17 00:00:00 2001
-> From: Jacob Shin <jacob.shin@amd.com>
-> Date: Thu, 20 Jun 2013 09:52:50 -0500
-> Subject: [PATCH] x86, microcode, amd: another early loading fixup
-> 
-> commit cd1c32ca969ebfd65e61312c988223bb14f09c2e is an early premature
-> rendition of the patch. Augment it with this delta patch to:
->   * correctly mark offset and size of the matching bin file
->   * use __pa instead of __pa_nodebug during AP load
->   * check for !initrd_start before using it
-> 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> diff --git a/drivers/scsi/bfa/bfad_im.c b/drivers/scsi/bfa/bfad_im.c
+> index 5864f98..9489c56 100644
+> --- a/drivers/scsi/bfa/bfad_im.c
+> +++ b/drivers/scsi/bfa/bfad_im.c
+> @@ -944,13 +944,15 @@ static int
+>  bfad_im_slave_alloc(struct scsi_device *sdev)
+>  {
+>  	struct fc_rport *rport = starget_to_rport(scsi_target(sdev));
+> -	struct bfad_itnim_data_s *itnim_data =
+> -				(struct bfad_itnim_data_s *) rport->dd_data;
+> -	struct bfa_s *bfa = itnim_data->itnim->bfa_itnim->bfa;
+> +	struct bfad_itnim_data_s *itnim_data;
+> +	struct bfa_s *bfa;
+>  
+>  	if (!rport || fc_remote_port_chkready(rport))
+>  		return -ENXIO;
+>  
+> +	itnim_data = (struct bfad_itnim_data_s *) rport->dd_data;
+> +	bfa = itnim_data->itnim->bfa_itnim->bfa;
+> +
+>  	if (bfa_get_lun_mask_status(bfa) == BFA_LUNMASK_ENABLED) {
+>  		/*
+>  		 * We should not mask LUN 0 - since this will translate
+> @@ -1037,6 +1039,7 @@ bfad_fc_host_init(struct bfad_im_port_s *im_port)
+>  
+>  	strncpy(symname, bfad->bfa_fcs.fabric.bport.port_cfg.sym_name.symname,
+>  		BFA_SYMNAME_MAXLEN);
+> +	symname[BFA_SYMNAME_MAXLEN - 1] = '\0';
 
-Hi hpa, checking back to see if you had the chance to look at this
-delta patch. It is needed to properly support concatenated microcode
-binaries on AMD early load. (Intel already supports this).
+This isn't correct, it's effectively a handrolled version of strlcpy.
+The correct fix is to replace strncpy with strlcpy.  I fixed it up in
+the patch version.
 
-Thank you,
+James
+
 
