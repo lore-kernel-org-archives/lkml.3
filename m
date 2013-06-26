@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab3FZOLj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:11:39 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:55450 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3FZOLh (ORCPT
+	id S1751952Ab3FZONI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:13:08 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:57420 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab3FZOND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:11:37 -0400
-Date: Wed, 26 Jun 2013 16:11:30 +0200
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, hpa@linux.intel.com, tglx@linutronix.de
-Subject: Re: [PATCH 2/4] x86: efi: break efi_lookup_mapped_addr out to
- generic code
-Message-ID: <20130626141130.GC9078@rocoto.smurfnet.nu>
-References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
- <1372183863-11333-3-git-send-email-leif.lindholm@linaro.org>
- <20130626133217.GO22026@console-pimps.org>
+	Wed, 26 Jun 2013 10:13:03 -0400
+Message-ID: <51CAF624.6060004@linux.vnet.ibm.com>
+Date: Wed, 26 Jun 2013 19:39:40 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626133217.GO22026@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, walken@google.com, vincent.guittot@linaro.org,
+        laijs@cn.fujitsu.com, rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
+        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com> <20130625220026.GG3828@linux.vnet.ibm.com>
+In-Reply-To: <20130625220026.GG3828@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062614-4790-0000-0000-000008FC33DF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 02:32:17PM +0100, Matt Fleming wrote:
-> On Tue, 25 Jun, at 07:11:01PM, Leif Lindholm wrote:
-> > efi_lookup_mapped_addr is a handy helper function for translating
-> > a physical address to the corresponding virtual one by scanning
-> > through memmap.map.
-> > 
-> > This patch breaks it out into a new file for use elsewhere.
-> > 
-> > Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> > ---
-> >  arch/x86/platform/efi/efi.c       |   28 ----------------------------
-> >  drivers/firmware/efi/Makefile     |    2 +-
-> >  drivers/firmware/efi/efi-helper.c |   33 +++++++++++++++++++++++++++++++++
-> >  3 files changed, 34 insertions(+), 29 deletions(-)
-> >  create mode 100644 drivers/firmware/efi/efi-helper.c
+On 06/26/2013 03:30 AM, Paul E. McKenney wrote:
+> On Wed, Jun 26, 2013 at 01:57:55AM +0530, Srivatsa S. Bhat wrote:
+>> Once stop_machine() is gone from the CPU offline path, we won't be able
+>> to depend on disabling preemption to prevent CPUs from going offline
+>> from under us.
+>>
+>> In RCU code, rcu_implicit_dynticks_qs() checks if a CPU is offline,
+>> while being protected by a spinlock. Use the get/put_online_cpus_atomic()
+>> APIs to prevent CPUs from going offline, while invoking from atomic context.
 > 
-> I'm not sure this function needs its own file. drivers/firmware/efi/efi.c
-> is a suitable place for this.
+> I am not completely sure that this is needed.  Here is a (quite possibly
+> flawed) argument for its not being needed:
+> 
+> o	rcu_gp_init() holds off CPU-hotplug operations during
+> 	grace-period initialization.  Therefore, RCU will avoid
+> 	looking for quiescent states from CPUs that were offline
+> 	(and thus in an extended quiescent state) at the beginning
+> 	of the grace period.
+> 
+> o	If force_qs_rnp() is looking for a quiescent state from
+> 	a given CPU, and if it senses that CPU as being offline,
+> 	then even without synchronization we know that the CPU
+> 	was offline some time during the current grace period.
+> 
+> 	After all, it was online at the beginning of the grace
+> 	period (otherwise, we would not be looking at it at all),
+> 	and our later sampling of its state must have therefore
+> 	happened after the start of the grace period.  Given that
+> 	the grace period has not yet ended, it also has to happened
+> 	before the end of the grace period.
+> 
+> o	Therefore, we should be able to sample the offline state
+> 	without synchronization.
+>
 
-Sure.
-Would you be happy for me to start moving the other things mentioned
-(config table parsing, common debug printout, global structs) in there too?
+Thanks a lot for explaining the synchronization design in detail, Paul!
+I agree that get/put_online_cpus_atomic() is not necessary here.
 
-/
-    Leif
+Regarding the debug checks under CONFIG_DEBUG_HOTPLUG_CPU, to avoid
+false-positives, I'm thinking of introducing a few _nocheck() variants,
+on a case-by-case basis, like cpu_is_offline_nocheck() (useful here in RCU)
+and for_each_online_cpu_nocheck() (useful in percpu-counter code, as
+pointed out by Tejun Heo). These fine synchronization details are kinda
+hard to encapsulate in that debug logic, so we can use the _nocheck()
+variants here to avoid getting splats when running with DEBUG_HOTPLUG_CPU
+enabled.
+
+Regards,
+Srivatsa S. Bhat
+
