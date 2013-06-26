@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab3FZJVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:21:05 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:35619 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3FZJVB (ORCPT
+	id S1752570Ab3FZJVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:21:12 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:52685 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752379Ab3FZJVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:21:01 -0400
-Message-ID: <51CAB27A.3080805@acm.org>
-Date: Wed, 26 Jun 2013 11:20:58 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 05:21:07 -0400
+Message-ID: <51CAB11B.1070209@st.com>
+Date: Wed, 26 Jun 2013 10:15:07 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Maxim Uvarov <maxim.uvarov@oracle.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com
-Subject: Re: [PATCH] scsi_prep_fn() check for empty queue
-References: <1372237363-5156-1-git-send-email-maxim.uvarov@oracle.com>
-In-Reply-To: <1372237363-5156-1-git-send-email-maxim.uvarov@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Olof Johansson <olof@lixom.net>
+Cc: Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Rob Landley <rob@landley.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 0/7] ARM:sti: Add STiH415/STiH416 platform and board
+ support
+References: <1372158822-19160-1-git-send-email-srinivas.kandagatla@st.com> <20130625203002.GA15068@quad.lixom.net> <CAOesGMhsaGcpW80CjBRtwVjJLOaRj8yTa6xFz_gjG1WPqTAKLQ@mail.gmail.com>
+In-Reply-To: <CAOesGMhsaGcpW80CjBRtwVjJLOaRj8yTa6xFz_gjG1WPqTAKLQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/13 11:02, Maxim Uvarov wrote:
-> This fix:
-> end_request: I/O error, dev sdc, sector 976576
->   rport-0:0-3: blocked FC remote port time out: removing target and saving
-> binding
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000400
-> IP: [<ffffffff812f0cc2>] scsi_prep_state_check+0xe/0x99
->   [<ffffffff812f1f9d>] scsi_setup_blk_pc_cmnd+0x1b/0x115
->   [<ffffffff812f20c0>] scsi_prep_fn+0x29/0x3b
->   [<ffffffff8121cfb9>] blk_peek_request+0xe1/0x1b3
->   [<ffffffff812f1400>] scsi_request_fn+0x3a/0x4d2
->   [<ffffffff8121d916>] __generic_unplug_device+0x32/0x36
->   [<ffffffff81220f4b>] blk_execute_rq_nowait+0x77/0x9e
->   [<ffffffff81221018>] blk_execute_rq+0xa6/0xde
->   [<ffffffff8144f24b>] ? printk+0x41/0x46
->   [<ffffffffa00a21c5>] ? get_rdac_req+0x81/0xe8 [scsi_dh_rdac]
->   [<ffffffffa00a273a>] send_mode_select+0x29f/0x489 [scsi_dh_rdac]
->   [<ffffffff810c5d9b>] ? probe_workqueue_execution+0xb1/0xce
->   [<ffffffff81071e38>] worker_thread+0x1a9/0x237
->   [<ffffffffa00a249b>] ? send_mode_select+0x0/0x489 [scsi_dh_rdac]
->   [<ffffffff8107651b>] ? autoremove_wake_function+0x0/0x39
->   [<ffffffff81071c8f>] ? worker_thread+0x0/0x237
->   [<ffffffff81076222>] kthread+0x7f/0x87
->   [<ffffffff81012d2a>] child_rip+0xa/0x20
->   [<ffffffff810761a3>] ? kthread+0x0/0x87
->   [<ffffffff81012d20>] ? child_rip+0x0/0x20
-> Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
-> ---
->   drivers/scsi/scsi_lib.c |    3 +++
->   1 file changed, 3 insertions(+)
->
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 86d5220..8e89ed9 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -1295,6 +1295,9 @@ int scsi_prep_fn(struct request_queue *q, struct request *req)
->   	struct scsi_device *sdev = q->queuedata;
->   	int ret = BLKPREP_KILL;
->
-> +	if (!sdev)
-> +		return ret;
-> +
->   	if (req->cmd_type == REQ_TYPE_BLOCK_PC)
->   		ret = scsi_setup_blk_pc_cmnd(sdev, req);
->   	return scsi_prep_return(q, req, ret);
+On 25/06/13 21:47, Olof Johansson wrote:
+> On Tue, Jun 25, 2013 at 1:30 PM, Olof Johansson <olof@lixom.net> wrote:
+>> On Tue, Jun 25, 2013 at 12:13:42PM +0100, Srinivas KANDAGATLA wrote:
+>>> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>>
+>>> This patch-set adds basic support for STMicroelectronics STi series SOCs
+>>> which includes STiH415 and STiH416 with B2000 and B2020 board support.
+>>>
+>>> STiH415 and STiH416 are dual-core ARM Cortex-A9 CPU, designed for use in
+>>> Set-top-boxes. The SOC support is available in mach-sti which contains
+>>> support code for STiH415, STiH416 SOCs including the generic board support.
+>>>
+>>> The reason for adding two SOCs at this patch set is to show that no new
+>>> C code is required for second SOC(STiH416) support.
+>>>
+>>> This patch-set only contains the SOC support, all the driver support for
+>>> this platform are submitted to respective mailing lists.
+>>>
+>>> Changes since v4:
+>>>       - Renamed mach-stixxxx to mach-sti as suggested by Olof J.
+>>
+>> Thanks!
+>>
+>> I've merged this into next/late, and I'll drop the previous test merge by Arnd
+>> of the last version of the patch set.
+> 
+Thanks Olof.
+> I noticed that the defconfig update contained new drivers/options that
+> won't make it into 3.11. So to avoid churn, I dropped those. We'll do
+> a patch to enable all new platforms and drivers towards the end of the
+> merge window and apply on top of next/late, I think, so it should be
+> taken care of by that.
+Ok..
+> 
+> The rest of the code from the series is in though.
+> 
+> -Olof
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+> 
 
-Sorry but this patch does not look like a proper fix to me. What you 
-probably need is a scsi_device_get() call in scsi_dh_rdac.c somewhere 
-before the queue_work(kmpath_rdacd, &ctlr->ms_work) call and a 
-scsi_device_put() call once send_mode_select() has finished using the sdev.
-
-Bart.
