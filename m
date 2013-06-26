@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab3FZWOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 18:14:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57852 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab3FZWOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 18:14:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Subject: Re: [PATCH 0/2] arm: add early_ioremap() support
-Date: Thu, 27 Jun 2013 00:13:55 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, nico@linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-References: <1372182401-11029-1-git-send-email-leif.lindholm@linaro.org> <201306262323.50691.arnd@arndb.de> <20130626213409.GA18151@rocoto.smurfnet.nu>
-In-Reply-To: <20130626213409.GA18151@rocoto.smurfnet.nu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753288Ab3FZWPR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 18:15:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18121 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752993Ab3FZWPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 18:15:16 -0400
+Message-ID: <1372284901.30572.625.camel@ul30vt.home>
+Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Date: Wed, 26 Jun 2013 16:15:01 -0600
+In-Reply-To: <CAErSpo6aQMtav89V8wyu+NZxro91o1MnB1ViG-4ExrCgLPKmjg@mail.gmail.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+	 <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
+	 <20130625141556.2f9de7b1@jbarnes-desktop> <20130626121757.GP9294@intel.com>
+	 <CAErSpo6aQMtav89V8wyu+NZxro91o1MnB1ViG-4ExrCgLPKmjg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306270013.55333.arnd@arndb.de>
-X-Provags-ID: V02:K0:v89Y/KOiCaV9bR1bpLdm8HEnHf43cTSfZ8I/nR+HG82
- Qv5KveVf+XR4eulru8GvonwgCffZuBLHpWff2WRaFSo+UhR1Ra
- ShNWcABM75/SiPidgCD4r45f4rEaXqac5V1fY+ngp4lnmcBNdK
- CS91W+OZlK4A263SW1qdAcbXSrimhE19kcZ9ZPdDT2KcbqDbs3
- 4/jJnJOz4I/S/aYTik61CYW2JMnAI/Kuyr2ECS+WzUj7DMwYTt
- o8Bsz49C/dOJq0k20kn8XExDXzZw3A1cuHSo4LkQS7P8eyCsYW
- 8qLUBHh4IEU0RfRk7x4uqrlJTqxCsNqyr8mTpQ1Ksrj5WkJZAx
- MMYK4vFapY8OrlOh3UaE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 June 2013, Leif Lindholm wrote:
-> On Wed, Jun 26, 2013 at 11:23:50PM +0200, Arnd Bergmann wrote:
-> > > Is this an issue here, since (unlike x86) this early_ioremap only works
-> > > before paging_init()?
-> > 
-> > The main problem is that the total fixmap size is only around 900kb,
-> > and we want to reserve at least 64kb per cpu for kmap_atomic.
-> > If you want to fit multiple 128kb mappings in there, you run out of
-> > space really fast.
->  
-> Sorry, I still don't get it. Are you saying that kmap_atomic is
-> available before kmap_init() (in paging_init())?
+On Wed, 2013-06-26 at 14:59 -0600, Bjorn Helgaas wrote:
+> [+cc Alex]
 > 
-> If not, all of my mappings are discarded (well, abandoned to be more
-> correct), so I don't see how it affects kmap.
-
-Sorry, I was under the assumption that the mappings are meant to
-stay around.
-
-> > > > Extending the iotable mechanism on ARM would be the convenient
-> > > > solution for us I think.
-> > > 
-> > > Could that easily be extended to give similar semantics sufficiently
-> > > that we can progress with merging more of the UEFI and ACPI support 
-> > > together as common code with x86/ia64?
-> > 
-> > I don't know what the requirements are, but the idea with iotable
-> > is that the mappings stay around at run time, while it seems you want
-> > to discard them at some point.
->  
-> Indeed - almost immediately.
+> On Wed, Jun 26, 2013 at 6:17 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > On Tue, Jun 25, 2013 at 02:15:56PM -0700, Jesse Barnes wrote:
+> >> On Tue, 25 Jun 2013 19:22:10 +0300
+> >> Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> >>
+> >> > +   if (!(pci_probe & PCI_NOASSIGN_ROMS)) {
+> >> > +           pr_info("Thunderbolt host router detected disabling ROMs\n");
+> >> > +           pci_probe |= PCI_NOASSIGN_ROMS;
+> >> > +   }
+> >>
+> >> I wonder if this should just be the default on x86?  Or do we allocate
+> >> ROM space to address some other platform where we need it and the BIOS
+> >> doesn't do it for the devices we care about?
+> >
+> > Good question. In our case it definitely helps to have pci=norom the
+> > default. Can't tell if it might break something that depends on the current
+> > behaviour.
 > 
-> x86 early_ioremap can coexist with kmap; the intent of my
-> implementation is to use the kmap region only before kmap is available.
+> I think the current default behavior is that if the BIOS has assigned
+> the ROM BAR, we keep that assignment, and if it hasn't, we allocate
+> MEM space for it.  And "pci=norom" means that we don't allocate MEM
+> space for it, even if the BIOS hasn't assigned it.
+> 
+> "pci=norom" is only implemented on x86.  I think most other arches
+> allocate MEM space for ROMs, with no way to turn that off.  PA-RISC
+> seems to ignore ROMs (dino_fixup_bus()), but that looks like the
+> exception.
+>
+> I'm slightly concerned that if we make the x86 default be "never
+> assign space for ROMs unless the BIOS has done it," we might break
+> virtualized guests that need access to ROMs.  Alex?
 
-So if you never plan to use fixmap and early_ioremap at the same time,
-why even bother using the fixmap code? Wouldn't it be easier to just
-use the same memory area and ensure we never use fixmap before 
-we're done with early_ioremap?
+Yep, I'm more than slightly concerned by that too.  Whenever possible we
+want to pass the ROM to the guest since it may end up being a boot
+device or drivers within the guest may require it.  We can pass the ROM
+to the guest from an image file, but that requires someplace from which
+to dump the image, which is usually PCI sysfs.  Thanks,
 
-	Arnd
+Alex
+
