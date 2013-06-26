@@ -1,92 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333Ab3FZLmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 07:42:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39155 "EHLO bear.ext.ti.com"
+	id S1752390Ab3FZLmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 07:42:38 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:14968 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab3FZLmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 07:42:10 -0400
-Message-ID: <51CAD385.8060400@ti.com>
-Date: Wed, 26 Jun 2013 14:41:57 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752189Ab3FZLmg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 07:42:36 -0400
+Date: Wed, 26 Jun 2013 13:42:01 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: Re: [PATCH 1/4] Make non-linear GPIO ranges accesible from gpiolib
+Message-ID: <20130626114159.GA7095@ab42.lan>
+References: <20130618092516.GC18663@ab42.lan>
+ <1371547751-13873-1-git-send-email-christian.ruppert@abilis.com>
+ <CACRpkdbhTsRAGSkxQURd01_yd5arw7=ktVXAmeEo22gFg4U38Q@mail.gmail.com>
+ <51C1F531.3050205@wwwdotorg.org>
 MIME-Version: 1.0
-To: <monstr@monstr.eu>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        Timur Tabi <timur@tabi.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-fbdev@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v4 0/7] xilinxfb changes
-References: <cover.1370254386.git.michal.simek@xilinx.com> <20130617085640.GE305@game.jcrosoft.org> <51BED093.1040207@monstr.eu> <201306172307.19114.arnd@arndb.de> <51CABC2A.50209@monstr.eu>
-In-Reply-To: <51CABC2A.50209@monstr.eu>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2UIAOQTNPGVXGEMFPLXBL"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <51C1F531.3050205@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2UIAOQTNPGVXGEMFPLXBL
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 19, 2013 at 12:15:13PM -0600, Stephen Warren wrote:
+> On 06/19/2013 06:03 AM, Linus Walleij wrote:
+> > On Tue, Jun 18, 2013 at 11:29 AM, Christian Ruppert
+> > <christian.ruppert@abilis.com> wrote:
+> > 
+> >> This patch adds the infrastructure required to register non-linear gpio
+> >> ranges through gpiolib and the standard GPIO device tree bindings.
+> >>
+> >> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > 
+> > I'm basically fine with this, but would like Stephen's ACK if possible.
+> > 
+> >> +In addition, named groups of pins can be mapped to pin groups of a given
+> >> +pin controller:
+> >> +
+> >> +       gpio_pio_g: gpio-controller@1480 {
+> >> +               #gpio-cells = <2>;
+> >> +               compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
+> >> +               reg = <0x1480 0x18>;
+> >> +               gpio-controller;
+> >> +               gpio-ranges = <&pinctrl1 0 0 0>, <&pinctrl2 3 0 0>;
+> >> +               gpio-ranges-group-names = "foo", "bar";
+> >> +       };
+> >> +
+> >> +where,
+> >> +   &pinctrl1 and &pinctrl2 is the phandle to the pinctrl DT node.
+> >> +
+> >> +   The following value specifies the base GPIO offset of the pin range with
+> >> +   respect to the GPIO controller's base. The remaining two values must be
+> >> +   0 to indicate that a named pin group should be used for the respective
+> >> +   range. The number of pins in the range is the number of pins in the pin
+> >> +   group.
+> > 
+> > So while this works, these zeroes seem a bit awkward, but maybe
+> > it's the only way?
+> > 
+> > I'm not good enough on device tree conventions, but isn't this possible:
+> > 
+> >               gpio-ranges = <&pinctrl1 0>, <&pinctrl2 3>;
+> >               gpio-ranges-group-names = "foo", "bar";
+> > 
+> > Since we don't have any #gpio-ranges-cells or anything like that I
+> > guess we can define this to have a flexible number of cells
+> > depending on use case?
+> 
+> If we're willing to have gpio-ranges be either *all* group names, or
+> *all* IDs, we can define the format of gpio-ranges to have two cells
+> (phandle and GPIO number) if the property gpio-ranges-group-names
+> exists, but four cells (phandle, GPIO number, pin number, count)
+> otherwise. However, that's a little restrictive, since then what if one
+> GPIO controller is hooked to two different pinmux controllers, and you
+> want to use different formats for the references to each. A
+> #gpio-ranges-cells in the target of the phandle would allow this, but I
+> don't think this is something the pinctrl node should dictate to those
+> who reference it; it's quite legitimate for a GPIO node to use the pure
+> numeric mapping even if the pin controller happens to expose some pin
+> groups that allow you to do the mapping by name.
 
-Hi,
+I actually had a version of the patch with #gpio-range-cells specifying
+the format (one argument for named ranges, three for classical ranges)
+before deciding to use a separate property and sending that version. As
+I said in a previous mail, I don't have a preference which of the
+following three possibilities to use and would be grateful for some
+guidance (if it matters at all).
 
-On 26/06/13 13:02, Michal Simek wrote:
-> On 06/17/2013 11:07 PM, Arnd Bergmann wrote:
->> On Monday 17 June 2013, Michal Simek wrote:
->>> On 06/17/2013 10:56 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>> On 07:23 Mon 17 Jun     , Michal Simek wrote:
->>>>> On 06/06/2013 06:23 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>>> On 12:13 Mon 03 Jun     , Michal Simek wrote:
->>>>>>> Hi,
->>>>>>>
->>>>>>
->>>>>> Arnd can you take look on it again please
->>>>>>
->>>>>> I'll take a look on it next week
->>>>>
->>>>> Any update on this?
->>>> look ok but I want the Ack from Arnd
->>
->> Sorry for the delay, everything looks good to me.
->>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->=20
-> Jean-Christophe: Will you apply this series?
-> Or should I take it through my microblaze tree?
+1.) separate property:
+	gpio {
+		gpio-ranges = <&pinctrl1 0 0 5>;
+		gpio-range-groups = <&pinctrl2 5>;
+		gpio-range-group-names = "gpios";
+	};
 
-I've added this to my fbdev-3.11 branch.
+2.) fixed number of three arguments:
+	gpio {
+		gpio-ranges = <&pinctrl1 0 0 5>, <&pinctrl2 5 0 0>;
+		gpio-range-names = "", "gpios";
+	};
 
- Tomi
+3.) pinctrl-defined format.
+	pinctrl1: pctl1 {
+		#gpio-range-cells = <3>;
+	};
+	pinctrl2: pctl2 {
+		#gpio-range-cells = <1>;
+	};
+	gpio {
+		gpio-ranges = <&pinctrl1 0 0 5>, <&pinctrl2 5>;
+		gpio-range-names = "", "gpios";
+	};
 
-
-
-------enig2UIAOQTNPGVXGEMFPLXBL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRytOFAAoJEPo9qoy8lh71xjgP/0fcVcyg77HowYq0FLm5lDW1
-lyV2s6OQy6umgnNKaxoWETjtoi/zDWQIekOwexTbaBPd4UEzg7oQBb2ETOxbE/IW
-5BoaBgpM8YJ3XBInLzQjP2Yi45DO9bGyvCYzh5VgrgYr2xaQvnKe9KeeS5mqE7vI
-YRx/i9NfEDl5lzNCa0+HWbmO+bHfrqhvJjRjj2P/KEnmgAPWlWC/JF1nw+cDG+r+
-5aZn4Y1M586aLPKQz1Qx318QMKFe5W9hhCFAuKNO7cYQcyGHGvZBnkfQKyxhkE3u
-nfCMBkAKasOwXo5QB7t4+cLcASkmB+xp1ivirtgFVpnmpTjLRi7Lq+Cb2HD0NUZA
-04GdTJv4iNYAYUydtIucGWPpBvuYbWxt2NHae84MgclAdENIQvL6XgIv4Upi5Dgp
-+mIpAM96g1uAePfygetCYiKLnDu1Xuj4LZLLUpAGVX+UHePWYX6D4O75o6+OJbua
-6WgvXdo3pW6gNlHL5Kkyki3VH5Axa/VduU5GC9PuGCDSpI9mZzZjyXB53l/2eix1
-QA1qBFTtGatbGyrY2U7RWPFxVIcw0jvDfCK5HrGKUQREclMScpwZyRkIC6Z/6p/Z
-f36v6Ct4sYNFpFEx+RAaSPdeO8tv8HvaDYpIktwyA6a1xQpKBYkx35jIP+KoeYDP
-/uXigGCpNrfgOCAGuB9N
-=PjFZ
------END PGP SIGNATURE-----
-
-------enig2UIAOQTNPGVXGEMFPLXBL--
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
