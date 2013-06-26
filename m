@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711Ab3FZHYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 03:24:18 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:45600 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3FZHYR (ORCPT
+	id S1751786Ab3FZHZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 03:25:55 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:41927 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab3FZHZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 03:24:17 -0400
-Message-ID: <51CA9700.3040600@ahsoftware.de>
-Date: Wed, 26 Jun 2013 09:23:44 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 26 Jun 2013 03:25:54 -0400
+Message-ID: <51CA977D.3050802@suse.cz>
+Date: Wed, 26 Jun 2013 09:25:49 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-To: Dean Jenkins <Dean_Jenkins@mentor.com>
-CC: Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: BUG: tty: memory corruption through tty_release/tty_ldisc_release
-References: <519480A1.6030909@ahsoftware.de> <5194E380.1030109@hurleysoftware.com> <5194E64A.3040003@ahsoftware.de> <5195553C.90608@hurleysoftware.com> <5195B561.3090503@ahsoftware.de> <51C9A6A9.3000202@mentor.com>
-In-Reply-To: <51C9A6A9.3000202@mentor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Darren Hart <dvhart@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
+        andriy.shevchenko@linux.intel.com, danders@circuitco.com,
+        vishal.l.verma@intel.com, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 2/8] pch_uart: Add uart_clk selection for the MinnowBoard
+References: <cover.1372211451.git.dvhart@linux.intel.com>   <6cc125b9eb85dd3cae4a2496fdb7f0d17b18f930.1372211451.git.dvhart@linux.intel.com>   <20130626023143.GB23320@kroah.com> <1372216578.8177.9.camel@envy.home>   <20130626033926.GA27165@kroah.com> <1372219125.8177.12.camel@envy.home>  <51CA8D91.6000708@suse.cz> <1372231162.8177.70.camel@envy.home>
+In-Reply-To: <1372231162.8177.70.camel@envy.home>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.06.2013 16:18, schrieb Dean Jenkins:
-> On 17/05/13 05:43, Alexander Holler wrote:
+On 06/26/2013 09:19 AM, Darren Hart wrote:
+> You can't actually use this driver on 64 bit as there is no hardware,
 
->> To reproduce it, call rfcomm connect /dev/rfcommN and after the
->> connection to the remote device happened, power down the remote device
->> and wait 20s (the timeout until a connection drop will be discovered).
-> I expect this behaviour depends on the remote device. Does the device
-> close the RFCOMM session cleanly ? Perhaps an out of range test would be
-> better so that the connection drops.
+Oh, so is this another candidate for adding dependson (X86_32 ||
+COMPILE_TEST) as well as the other *_PCH options?
 
-Yes. With power down I meant a hard power down, such that the remote 
-doesn't has the chance to close the session cleanly. It's easier to do 
-than putting it out of range, at least if the remote isn't a 
-battery-powered device. I should have described that more clearly.
-
-> Is there a bugzilla bug report that is tracking this issue ? If I can
-> reproduce this issue then I would like to add more information to a bug
-> report.
-
-I haven't written a bugzilla bug report and won't write one.
-
-Furthermore I've already found and described the problem, so more crash 
-reports should not be necessary.
-
-And they don't make much sense because they happen because of a 
-disastreous memory corruption, which means the BUGs can include almost 
-everything (hopefully nothing which eats your disk contents).
-
-Regards,
-
-Alexander Holler
-
+-- 
+js
+suse labs
