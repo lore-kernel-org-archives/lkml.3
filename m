@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab3FZOtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:49:09 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:37813 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750729Ab3FZOtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:49:07 -0400
-Date: Wed, 26 Jun 2013 09:49:04 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, holt@sgi.com, travis@sgi.com,
-        rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        yinghai@kernel.org, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, x86@kernel.org, linux-doc@vger.kernel.org,
+	id S1752355Ab3FZOtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:49:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51314 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729Ab3FZOtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 10:49:17 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Bob Liu <lliubbo@gmail.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 2/2] x86_64, mm: Reinsert the absent memory
-Message-ID: <20130626144903.GA2210@asylum.americas.sgi.com>
-References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com> <1371831934-156971-3-git-send-email-nzimmer@sgi.com> <20130623092840.GB13445@gmail.com> <20130624203657.GA107621@asylum.americas.sgi.com> <20130626121430.GA4980@gmail.com>
+        =?UTF-8?q?Cristian=20Rodr=C3=ADguez?= <crrodriguez@opensuse.org>
+Subject: [PATCH] zcache: initialize module properly when zcache=FOO is given
+Date: Wed, 26 Jun 2013 16:49:02 +0200
+Message-Id: <1372258142-7019-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626121430.GA4980@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 02:14:30PM +0200, Ingo Molnar wrote:
-> 
-> * Nathan Zimmer <nzimmer@sgi.com> wrote:
-> 
-> > perf seems to struggle with 512 cpus, but I did get some data.
-> 
-> Btw., mind outlining in what way it struggles?
-> 
-> Thanks,
-> 
-> 	Ingo
+835f2f51 (staging: zcache: enable zcache to be built/loaded as a module)
+introduced in 3.10-rc1 has introduced a bug for zcache=FOO module
+parameter processing.
 
-System interactivity take a nose dive, including the ability to halt perf.
-The commands do get through but they take a while.
-Other processes tend to make signifigantly reduced progress.
-Also it tends to slow down all running processes. 
-My guess it is the NMIs overwhelming the system but I have not found a good way
-to profile perf gone wild so it is only a guess.
+zcache_comp_init return code doesn't agree with crypto_has_comp which
+uses 1 for the success unlike zcache_comp_init which uses 0. This
+causes module loading failure even if the given algorithm is supported:
+[    0.815330] zcache: compressor initialization failed
 
-The issue mitigate somewhat by restrictring the number of cpus perf is 
-recording or by not using the -g option, but sometimes I do need data on the
-whole system.
+Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ drivers/staging/zcache/zcache-main.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-
-Nate
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index dcceed2..0fe530b 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
+ #else
+ 	if (*zcache_comp_name != '\0') {
+ 		ret = crypto_has_comp(zcache_comp_name, 0, 0);
+-		if (!ret)
++		if (!ret) {
+ 			pr_info("zcache: %s not supported\n",
+ 					zcache_comp_name);
+-		goto out;
++			goto out;
++		}
++		goto out_alloc;
+ 	}
+ 	if (!ret)
+ 		strcpy(zcache_comp_name, "lzo");
+@@ -1827,6 +1829,7 @@ static int zcache_comp_init(void)
+ 	pr_info("zcache: using %s compressor\n", zcache_comp_name);
+ 
+ 	/* alloc percpu transforms */
++out_alloc:
+ 	ret = 0;
+ 	zcache_comp_pcpu_tfms = alloc_percpu(struct crypto_comp *);
+ 	if (!zcache_comp_pcpu_tfms)
+-- 
+1.8.3.1
 
