@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab3FZVAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:00:23 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:44016 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576Ab3FZVAR (ORCPT
+	id S1753042Ab3FZVBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:01:05 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:63528 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab3FZVBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:00:17 -0400
+	Wed, 26 Jun 2013 17:01:04 -0400
+Message-ID: <51CB568B.4030605@gmail.com>
+Date: Wed, 26 Jun 2013 15:00:59 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130626121757.GP9294@intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
- <20130625141556.2f9de7b1@jbarnes-desktop> <20130626121757.GP9294@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Jun 2013 14:59:56 -0600
-Message-ID: <CAErSpo6aQMtav89V8wyu+NZxro91o1MnB1ViG-4ExrCgLPKmjg@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephane Eranian <eranian@google.com>
+CC: Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-13-git-send-email-adrian.hunter@intel.com> <51CB53A9.80004@gmail.com> <CABPqkBR=5TxFX=3J=p7EAPcbwK7E93rM1X4GKGsuw0Eopcf+6Q@mail.gmail.com>
+In-Reply-To: <CABPqkBR=5TxFX=3J=p7EAPcbwK7E93rM1X4GKGsuw0Eopcf+6Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Alex]
-
-On Wed, Jun 26, 2013 at 6:17 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Tue, Jun 25, 2013 at 02:15:56PM -0700, Jesse Barnes wrote:
->> On Tue, 25 Jun 2013 19:22:10 +0300
->> Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+On 6/26/13 2:54 PM, Stephane Eranian wrote:
+> On Wed, Jun 26, 2013 at 10:48 PM, David Ahern <dsahern@gmail.com> wrote:
+>> Arnaldo:
 >>
->> > +   if (!(pci_probe & PCI_NOASSIGN_ROMS)) {
->> > +           pr_info("Thunderbolt host router detected disabling ROMs\n");
->> > +           pci_probe |= PCI_NOASSIGN_ROMS;
->> > +   }
+>> I noticed this patch in your perf/core branch. I do not think this one is
+>> ready to be committed. It does not fully solve the problem of allowing
+>> non-matching sample types.
 >>
->> I wonder if this should just be the default on x86?  Or do we allocate
->> ROM space to address some other platform where we need it and the BIOS
->> doesn't do it for the devices we care about?
->
-> Good question. In our case it definitely helps to have pci=norom the
-> default. Can't tell if it might break something that depends on the current
-> behaviour.
+>> I have a set of patches here on github that work fine for one use case --
+>> mixed s/w and tracepoint events:
+>> https://github.com/dsahern/linux/tree/multiple-sample_type
+>>
+>> I'll push the patches out, but wanted to run some more test cases first.
+>>
+> All those solutions address the need of perf but they do not fix the fundamental
+> problem that the kernel is exporting a un-parseable file in case of different
+> sample_type for each event. We need to fix the generic case so that other
+> tools don't have to deal with this. I will post a patch which can solve this
+> in the kernel and yet remain backward compatible. But I don't  have the
+> perf portion of the patch, hoping somebody can help with developing it.
 
-I think the current default behavior is that if the BIOS has assigned
-the ROM BAR, we keep that assignment, and if it hasn't, we allocate
-MEM space for it.  And "pci=norom" means that we don't allocate MEM
-space for it, even if the BIOS hasn't assigned it.
+The patchset in the URL above attempts to find the id which correlates 
+to the evsel which has the sample_type. It starts at the max index (IP, 
+TID, TIME and ADDR all requested which means an index of 4 for the ID) 
+and then works its way in (meaning one of the above is not requested).
 
-"pci=norom" is only implemented on x86.  I think most other arches
-allocate MEM space for ROMs, with no way to turn that off.  PA-RISC
-seems to ignore ROMs (dino_fixup_bus()), but that looks like the
-exception.
+Would be better for the event sample to put the id at the front or the 
+sample_type at the front, but that ship has sailed. It would be nice to 
+have a userspace option that works with existing kernels.
 
-I'm slightly concerned that if we make the x86 default be "never
-assign space for ROMs unless the BIOS has done it," we might break
-virtualized guests that need access to ROMs.  Alex?
+I'll take a look at your kernel change when you post it to see what I am 
+overlooking here but the patches have worked fine for me so far.
 
-Bjorn
+David
+
