@@ -1,86 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab3FZVSu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 17:18:50 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51830 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab3FZVRH (ORCPT
+	id S1753068Ab3FZVU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 17:20:58 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:58867 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab3FZVU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 17:17:07 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 6/8] clocksource: sun4i: Remove TIMER_SCAL variable
-Date: Wed, 26 Jun 2013 23:16:59 +0200
-Message-Id: <1372281421-2099-7-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 26 Jun 2013 17:20:56 -0400
+Date: Wed, 26 Jun 2013 14:20:47 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tim Hockin <thockin@hockin.org>
+Cc: Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130626212047.GB4536@htj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
+ <20130422214159.GG12543@htj.dyndns.org>
+ <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
+ <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+ <20130625000118.GT1918@mtj.dyndns.org>
+ <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prescaler is only used when using the internal low frequency
-oscillator (at 32kHz). Since we're using the higher frequency oscillator
-at 24MHz, we can just remove it.
+Hello, Tim.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/clocksource/sun4i_timer.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+On Mon, Jun 24, 2013 at 09:07:47PM -0700, Tim Hockin wrote:
+> I really want to understand why this is SO IMPORTANT that you have to
+> break userspace compatibility?  I mean, isn't Linux supposed to be the
+> OS with the stable kernel interface?  I've seen Linus rant time and
+> time again about this - why is it OK now?
 
-diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 7f3b248..912d3e0 100644
---- a/drivers/clocksource/sun4i_timer.c
-+++ b/drivers/clocksource/sun4i_timer.c
-@@ -36,7 +36,6 @@
- #define TIMER_INTVAL_REG(val)	(0x10 * val + 0x14)
- #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
- 
--#define TIMER_SCAL		16
- #define TIMER_CNT64_CTL_REG	0xa0
- #define TIMER_CNT64_CTL_CLR		BIT(0)
- #define TIMER_CNT64_CTL_RL		BIT(1)
-@@ -141,7 +140,6 @@ static cycle_t sun4i_timer_clksrc_read(struct clocksource *c)
- 
- static void __init sun4i_timer_init(struct device_node *node)
- {
--	unsigned long rate = 0;
- 	struct clk *clk;
- 	int ret, irq;
- 	u32 val;
-@@ -159,15 +157,13 @@ static void __init sun4i_timer_init(struct device_node *node)
- 		panic("Can't get timer clock");
- 	clk_prepare_enable(clk);
- 
--	rate = clk_get_rate(clk);
--
- 	writel(TIMER_CNT64_CTL_CLR, timer_base + TIMER_CNT64_CTL_REG);
- 	setup_sched_clock(sun4i_timer_sched_read, 32, clk_get_rate(clk));
- 	clocksource_mmio_init(timer_base + TIMER_CNT64_LOW_REG, node->name,
- 			      clk_get_rate(clk), 300, 32,
- 			      sun4i_timer_clksrc_read);
- 
--	writel(rate / (TIMER_SCAL * HZ),
-+	writel(clk_get_rate(clk) / HZ,
- 	       timer_base + TIMER_INTVAL_REG(0));
- 
- 	/* set clock source to HOSC, 16 pre-division */
-@@ -191,8 +187,8 @@ static void __init sun4i_timer_init(struct device_node *node)
- 
- 	sun4i_clockevent.cpumask = cpumask_of(0);
- 
--	clockevents_config_and_register(&sun4i_clockevent, rate / TIMER_SCAL,
--					0x1, 0xff);
-+	clockevents_config_and_register(&sun4i_clockevent, clk_get_rate(clk),
-+					0x1, 0xffffffff);
- }
- CLOCKSOURCE_OF_DECLARE(sun4i, "allwinner,sun4i-timer",
- 		       sun4i_timer_init);
+What the hell are you talking about?  Nobody is breaking userland
+interface.  A new version of interface is being phased in and the old
+one will stay there for the foreseeable future.  It will be phased out
+eventually but that's gonna take a long time and it will have to be
+something hardly noticeable.  Of course new features will only be
+available with the new interface and there will be efforts to nudge
+people away from the old one but the existing interface will keep
+working it does.
+
+> Examples?  we obviously don't grant full access, but our kernel gang
+> and security gang seem to trust the bits we're enabling well enough...
+
+Then the security gang doesn't have any clue what's going on, or at
+least operating on very different assumptions (ie. the workloads are
+trusted by default).  You can OOM the whole kernel by creating many
+cgroups, completely mess up controllers by creating deep hierarchies,
+affect your siblings by adjusting your weight and so on.  It's really
+easy to DoS the whole system if you have write access to a cgroup
+directory.
+
+> The non-DTF jobs have a combined share that is small but non-trivial.
+> If we cut that share in half, giving one slice to prod and one slice
+> to batch, we get bad sharing under contention.  We tried this.  We
+
+Why is that tho?  It *should* work fine and I can't think of a reason
+why that would behave particularly badly off the top of my head.
+Maybe I forgot too much of the iosched modification used in google.
+Anyways, if there's a problem, that should be fixable, right?  And
+controller-specific issues like that should really dictate the
+architectural design too much.
+
+> could add control loops in userspace code which try to balance the
+> shares in proportion to the load.  We did that with CPU, and it's sort
+
+Yeah, that is horrible.
+
+> of horrible.  We're moving AWAY from all this craziness in favor of
+> well-defined hierarchical behaviors.
+
+But I don't follow the conclusion here.  For short term workaround,
+sure, but having that dictate the whole architecture decision seems
+completely backwards to me.
+
+> It's a bit naive to think that this is some absolute truth, don't you
+> think?  It just isn't so.  You should know better than most what
+> craziness our users do, and what (legit) rationales they can produce.
+> I have $large_number of machines running $huge_number of jobs from
+> thousands of developers running for years upon years backing up my
+> worldview.
+
+If so, you aren't communicating it very well.  I've talked with quite
+a few people about multiple orthogonal hierarchies including people
+inside google.  Sure, some are using it as it is there but I couldn't
+find strong enough rationale to continue that way given the amount of
+crazys it implies / encourages.  On the other hand, most people agreed
+that having a unified hierarchy with differing level of granularities
+would serve their cases well enough while not being crazy.
+
+Really, I have $huge_number of machines configured certain way isn't
+much of an argument when unified hierarchy isn't gonna break them and
+many people involved in cgroup both on kernel and userland sides share
+the view that the whole thing is a hellish mess which can only be used
+by crafting very specialized configurations for each setup.
+
+> I'm not sure I really grok that statement.  I'm OK with defining new
+
+That's about google's blkcg modifications to support blkcg on
+writeback IOs.  It works but can't be upstreamed as it requires
+tagging each page both with memcg and blkcg tags.
+
+> rules that bring some order to the chaos.  Give us new rules to live
+> by.  All-or-nothing would be fine.  What if mounting cgroupfs gives me
+> N sub-dirs, one for each compiled-in controller?  You could make THAT
+> the mount option - you can have either a unified hierarchy of all
+> controllers or fully disjoint hierarchies.  Or some other rule.
+
+Now I'm lost what you're talking about.  But the summary is, in the
+future, use a single unified hierarchy with differing granularities.
+It's still being worked on, so, for now, try not to depend on creating
+completely orthogonal hierarchies for different controllers.
+
+> The time frame you talk about IS reason for panic.  If I know that
+
+What time frame are you referring to?
+
+> you're going to completely screw me in a a year and a half, I have to
+
+How the hell am I gonna screw you in a year and half?  What are you
+talking about?  Where is this coming from?
+
+> start moving NOW to find new ways to hack around the mess you're
+> making, make my userspace mesh with it, test those things with
+> critical customers, find a way to deploy it safely to a bajillion
+> machines, handle inevitable rollback issues, and so on and so on.
+> Moving from single hierarchy to split hierarchy LITERALLY took 2
+> years.
+> 
+> So yeah, I'm in a bit of a panic.  You're making a huge amount of work
+> for us.  You're breaking binary compatibility of the (probably)
+> largest single installation of Linux in the world.  And you're being
+> kind of flip about the reality of it, which is so weird to me,
+> considering you have first-hand experience with it all.
+
+I frankly have no idea what you're talking about.  Calm down and try
+to understand what's actually going on.
+
+Thanks.
+
 -- 
-1.8.3.1
-
+tejun
