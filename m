@@ -1,186 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab3FZP3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:29:46 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:44720 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751516Ab3FZP3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:29:44 -0400
-Message-ID: <1372260541.6211.12.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [RFC/PATCH 11/11] ARM: msm: Move MSM's DT based hardware to
- multi-platform support
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Wed, 26 Jun 2013 18:29:01 +0300
-In-Reply-To: <1371600281-6118-12-git-send-email-sboyd@codeaurora.org>
-References: <1371600281-6118-1-git-send-email-sboyd@codeaurora.org>
-	 <1371600281-6118-12-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752322Ab3FZP37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:29:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:32813 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab3FZP3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 11:29:55 -0400
+Date: Wed, 26 Jun 2013 13:54:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        andi@firstfloor.org
+Subject: Re: [PATCH 0/7] perf, x86: Haswell LBR call stack support
+Message-ID: <20130626115420.GG28407@twins.programming.kicks-ass.net>
+References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen, 
-
-On Tue, 2013-06-18 at 17:04 -0700, Stephen Boyd wrote:
-> The DT based MSM platforms can join the multi-platform builds, so
-> introduce a DT based ARCH_MSM option. This option allows DT based
-> MSM platforms to be built into the multi-platform kernel. Also
-> introduce a hidden ARCH_MSM config that both the DT and non-DT
-> platform support code select to avoid churn in places that depend
-> on CONFIG_ARCH_MSM.
+On Tue, Jun 25, 2013 at 04:47:12PM +0800, Yan, Zheng wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
 > 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
+> Haswell has a new feature that utilizes the existing Last Branch Record
+> facility to record call chains. When the feature is enabled, function
+> call will be collected as normal, but as return instructions are executed
+> the last captured branch record is popped from the on-chip LBR registers.
+> The LBR call stack facility can help perf to get call chains of progam
+> without frame pointer. When perf tool requests PERF_SAMPLE_CALLCHAIN +
+> PERF_SAMPLE_BRANCH_USER, this feature is dynamically enabled by default.
+> This feature can be disabled/enabled through an attribute file in the cpu
+> pmu sysfs directory.
 > 
-> RFC because this has problems with msm_sdcc and usb_otg using
-> mach specific APIs. See the cover letter for more details.
+> The LBR call stack has following known limitations
+>  1. Zero length calls are not filtered out by hardware
+>  2. Exception handing such as setjmp/longjmp will have calls/returns not
+>     match
+>  3. Pushing different return address onto the stack will have calls/returns
+>     not match
 > 
 
-You probably already know, but this patch causes compile error:
+You fail to mention what happens when the callstack is deeper than the
+LBR is big -- a rather common issue I'd think.
 
-arch/arm/mach-msm/board-dt-8660.c:20:24: fatal error: mach/board.h: No such file or directory
+>From what I gather if you push when full, the TOS rotates and eats the
+tail allowing you to add another entry to the head.
 
-I have fixed it locally like this:
+If you pop when empty; nothing happens.
 
---- a/arch/arm/mach-msm/board-dt-8660.c
-+++ b/arch/arm/mach-msm/board-dt-8660.c
-@@ -17,14 +17,8 @@
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- 
--#include <mach/board.h>
- #include "common.h"
- 
--static void __init msm8x60_init_late(void)
--{
--	smd_debugfs_init();
--}
--
- static struct of_dev_auxdata msm_auxdata_lookup[] __initdata = {
- 	{}
- };
-@@ -45,6 +39,5 @@ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
- 	.smp = smp_ops(msm_smp_ops),
- 	.map_io = debug_ll_io_init,
- 	.init_machine = msm8x60_dt_init,
--	.init_late = msm8x60_init_late,
- 	.dt_compat = msm8x60_fluid_match,
- MACHINE_END
+So on pretty much every program you'd be lucky to get the top of the
+callstack but can end up with nearly nothing.
 
-
-Regards, 
-Ivan
-
->  arch/arm/Kconfig          |  3 ++-
->  arch/arm/mach-msm/Kconfig | 55 +++++++++++++++++++++++++++++------------------
->  2 files changed, 36 insertions(+), 22 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 430c922..22d4fff 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -618,8 +618,9 @@ config ARCH_PXA
->  	help
->  	  Support for Intel/Marvell's PXA2xx/PXA3xx processor line.
->  
-> -config ARCH_MSM
-> +config ARCH_MSM_NODT
->  	bool "Qualcomm MSM"
-> +	select ARCH_MSM
->  	select ARCH_REQUIRE_GPIOLIB
->  	select CLKDEV_LOOKUP
->  	select CLKSRC_OF if OF
-> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-> index 614e41e..09f996a 100644
-> --- a/arch/arm/mach-msm/Kconfig
-> +++ b/arch/arm/mach-msm/Kconfig
-> @@ -1,12 +1,42 @@
-> +config ARCH_MSM
-> +	bool
-> +
-> +config ARCH_MSM_DT
-> +	bool "Qualcomm MSM DT support" if ARCH_MULTI_V7
-> +	select ARCH_MSM
-> +	select ARCH_REQUIRE_GPIOLIB
-> +	select CLKSRC_OF if OF
-> +	select GENERIC_CLOCKEVENTS
-> +	help
-> +	  Support for Qualcomm's DT-based MSM systems.
-> +
->  if ARCH_MSM
->  
-> -comment "Qualcomm MSM SoC Type"
-> -	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
-> +menu "MSM options"
-> +	depends on ARCH_MSM_DT
-> +
-> +config ARCH_MSM8X60
-> +	bool "Enable support for MSM8X60"
-> +	select ARM_GIC
-> +	select CPU_V7
-> +	select GPIO_MSM_V2
-> +	select HAVE_SMP
-> +	select MSM_SCM if SMP
-> +
-> +config ARCH_MSM8960
-> +	bool "Enable support for MSM8960"
-> +	select ARM_GIC
-> +	select CPU_V7
-> +	select HAVE_SMP
-> +	select GPIO_MSM_V2
-> +	select MSM_SCM if SMP
-> +
-> +endmenu
->  
->  choice
->  	prompt "Qualcomm MSM SoC Type"
->  	default ARCH_MSM7X00A
-> -	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
-> +	depends on ARCH_MSM_NODT
->  
->  config ARCH_MSM7X00A
->  	bool "MSM7x00A / MSM7x01A"
-> @@ -42,24 +72,6 @@ config ARCH_QSD8X50
->  
->  endchoice
->  
-> -config ARCH_MSM8X60
-> -	bool "MSM8X60"
-> -	select ARM_GIC
-> -	select CPU_V7
-> -	select GPIO_MSM_V2
-> -	select HAVE_SMP
-> -	select MSM_SCM if SMP
-> -	select USE_OF
-> -
-> -config ARCH_MSM8960
-> -	bool "MSM8960"
-> -	select ARM_GIC
-> -	select CPU_V7
-> -	select HAVE_SMP
-> -	select GPIO_MSM_V2
-> -	select MSM_SCM if SMP
-> -	select USE_OF
-> -
->  config MSM_HAS_DEBUG_UART_HS
->  	bool
->  
-> @@ -75,6 +87,7 @@ config  MSM_VIC
->  	bool
->  
->  menu "Qualcomm MSM Board Type"
-> +	depends on ARCH_MSM_NODT
->  
->  config MACH_HALIBUT
->  	depends on ARCH_MSM
-
-
+Given that, and the other limitations I don't think its a fair
+replacement for user callchains.
