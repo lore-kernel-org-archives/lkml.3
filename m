@@ -1,208 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab3FZJRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:17:22 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46399 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab3FZJRR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:17:17 -0400
-Message-ID: <51CAB199.8080306@windriver.com>
-Date: Wed, 26 Jun 2013 17:17:13 +0800
-From: "tiejun.chen" <tiejun.chen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752533Ab3FZJTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:19:17 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:40673 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751212Ab3FZJTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:19:13 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [PATCH v2 2/6] misc: sram: add ability to mark sram sections as reserved
+Date: Wed, 26 Jun 2013 11:18:43 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <201306251046.04873.heiko@sntech.de> <201306251047.12899.heiko@sntech.de> <1372155425.3981.67.camel@pizza.hi.pengutronix.de>
+In-Reply-To: <1372155425.3981.67.camel@pizza.hi.pengutronix.de>
 MIME-Version: 1.0
-To: Bhushan Bharat-R65777 <R65777@freescale.com>
-CC: "kvm-ppc@vger.kernel.org" <kvm-ppc@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikey@neuling.org" <mikey@neuling.org>
-Subject: Re: [PATCH 4/6 v5] KVM: PPC: exit to user space on "ehpriv" instruction
-References: <1372225346-5029-1-git-send-email-Bharat.Bhushan@freescale.com> <1372225346-5029-5-git-send-email-Bharat.Bhushan@freescale.com> <51CA903A.4070809@windriver.com> <6A3DF150A5B70D4F9B66A25E3F7C888D07086C2F@039-SN2MPN1-013.039d.mgd.msft.net>
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D07086C2F@039-SN2MPN1-013.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.212]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201306261118.44637.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 04:44 PM, Bhushan Bharat-R65777 wrote:
->
->
->> -----Original Message-----
->> From: tiejun.chen [mailto:tiejun.chen@windriver.com]
->> Sent: Wednesday, June 26, 2013 12:25 PM
->> To: Bhushan Bharat-R65777
->> Cc: kvm-ppc@vger.kernel.org; kvm@vger.kernel.org; agraf@suse.de; Wood Scott-
->> B07421; benh@kernel.crashing.org; linuxppc-dev@lists.ozlabs.org; linux-
->> kernel@vger.kernel.org; mikey@neuling.org; Bhushan Bharat-R65777
->> Subject: Re: [PATCH 4/6 v5] KVM: PPC: exit to user space on "ehpriv" instruction
->>
->> On 06/26/2013 01:42 PM, Bharat Bhushan wrote:
->>> "ehpriv" instruction is used for setting software breakpoints
->>> by user space. This patch adds support to exit to user space
->>> with "run->debug" have relevant information.
->>>
->>> As this is the first point we are using run->debug, also defined
->>> the run->debug structure.
->>>
->>> Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
->>> ---
->>>    arch/powerpc/include/asm/disassemble.h |    4 ++++
->>>    arch/powerpc/include/uapi/asm/kvm.h    |   21 +++++++++++++++++----
->>>    arch/powerpc/kvm/e500_emulate.c        |   27 +++++++++++++++++++++++++++
->>>    3 files changed, 48 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/arch/powerpc/include/asm/disassemble.h
->> b/arch/powerpc/include/asm/disassemble.h
->>> index 9b198d1..856f8de 100644
->>> --- a/arch/powerpc/include/asm/disassemble.h
->>> +++ b/arch/powerpc/include/asm/disassemble.h
->>> @@ -77,4 +77,8 @@ static inline unsigned int get_d(u32 inst)
->>>    	return inst & 0xffff;
->>>    }
->>>
->>> +static inline unsigned int get_oc(u32 inst)
->>> +{
->>> +	return (inst >> 11) & 0x7fff;
->>> +}
->>>    #endif /* __ASM_PPC_DISASSEMBLE_H__ */
->>> diff --git a/arch/powerpc/include/uapi/asm/kvm.h
->> b/arch/powerpc/include/uapi/asm/kvm.h
->>> index 0fb1a6e..ded0607 100644
->>> --- a/arch/powerpc/include/uapi/asm/kvm.h
->>> +++ b/arch/powerpc/include/uapi/asm/kvm.h
->>> @@ -269,7 +269,24 @@ struct kvm_fpu {
->>>    	__u64 fpr[32];
->>>    };
->>>
->>> +/*
->>> + * Defines for h/w breakpoint, watchpoint (read, write or both) and
->>> + * software breakpoint.
->>> + * These are used as "type" in KVM_SET_GUEST_DEBUG ioctl and "status"
->>> + * for KVM_DEBUG_EXIT.
->>> + */
->>> +#define KVMPPC_DEBUG_NONE		0x0
->>> +#define KVMPPC_DEBUG_BREAKPOINT		(1UL << 1)
->>> +#define KVMPPC_DEBUG_WATCH_WRITE	(1UL << 2)
->>> +#define KVMPPC_DEBUG_WATCH_READ		(1UL << 3)
->>>    struct kvm_debug_exit_arch {
->>> +	__u64 address;
->>> +	/*
->>> +	 * exiting to userspace because of h/w breakpoint, watchpoint
->>> +	 * (read, write or both) and software breakpoint.
->>> +	 */
->>> +	__u32 status;
->>> +	__u32 reserved;
->>>    };
->>>
->>>    /* for KVM_SET_GUEST_DEBUG */
->>> @@ -281,10 +298,6 @@ struct kvm_guest_debug_arch {
->>>    		 * Type denotes h/w breakpoint, read watchpoint, write
->>>    		 * watchpoint or watchpoint (both read and write).
->>>    		 */
->>> -#define KVMPPC_DEBUG_NONE		0x0
->>> -#define KVMPPC_DEBUG_BREAKPOINT		(1UL << 1)
->>> -#define KVMPPC_DEBUG_WATCH_WRITE	(1UL << 2)
->>> -#define KVMPPC_DEBUG_WATCH_READ		(1UL << 3)
->>>    		__u32 type;
->>>    		__u32 reserved;
->>>    	} bp[16];
->>> diff --git a/arch/powerpc/kvm/e500_emulate.c b/arch/powerpc/kvm/e500_emulate.c
->>> index b10a012..dab9d07 100644
->>> --- a/arch/powerpc/kvm/e500_emulate.c
->>> +++ b/arch/powerpc/kvm/e500_emulate.c
->>> @@ -26,6 +26,8 @@
->>>    #define XOP_TLBRE   946
->>>    #define XOP_TLBWE   978
->>>    #define XOP_TLBILX  18
->>> +#define XOP_EHPRIV  270
->>> +#define EHPRIV_OC_DEBUG 0
->>
->> As I think the case, "OC = 0", is a bit specific since IIRC, if the OC
->> operand is omitted, its equal 0 by default. So I think we should start this OC
->> value from 1 or other magic number.
->
-> ehpriv instruction is defined to be used as:
-> 	ehpriv OC // where OC can be 0,1, ... n
-> and in extended for it can be used as
-> 	ehpriv // With no OC, and here it assumes OC = 0
-> So OC = 0 is not specific but "ehpriv" is same as "ehpriv 0".
+Hi Philipp,
 
-Yes, this is just what I mean.
+Am Dienstag, 25. Juni 2013, 12:17:05 schrieb Philipp Zabel:
+> Hi Heiko,
+> 
+> Am Dienstag, den 25.06.2013, 10:47 +0200 schrieb Heiko Stübner:
+> > Some SoCs need parts of their sram for special purposes. So while being
+> > part of the periphal, it should not be part of the genpool controlling
+> > the sram.
+> > 
+> > Threfore add an option mmio-sram-reserved to keep arbitary portions of
+> > the sram from being part of the pool.
+> > 
+> > Suggested-by: Rob Herring <robherring2@gmail.com>
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > ---
+> > 
+> >  Documentation/devicetree/bindings/misc/sram.txt |    8 +++
+> >  drivers/misc/sram.c                             |   86
+> >  +++++++++++++++++++++-- 2 files changed, 88 insertions(+), 6
+> >  deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/misc/sram.txt
+> > b/Documentation/devicetree/bindings/misc/sram.txt index 4d0a00e..eae080e
+> > 100644
+> > --- a/Documentation/devicetree/bindings/misc/sram.txt
+> > +++ b/Documentation/devicetree/bindings/misc/sram.txt
+> > 
+> > @@ -8,9 +8,17 @@ Required properties:
+> >  - reg : SRAM iomem address range
+> > 
+> > +Optional properties:
+> > +
+> > +- mmio-sram-reserved: ordered list of reserved chunks inside the sram
+> > that +  should not become part of the genalloc pool.
+> > +  Format is <base size>, <base size>, ...; with base being relative to
+> > the +  reg property base.
+> > +
+> 
+> the keyword to reserve blocks of ram is /memreserve/ - should this
+> property name be aligned with that?
 
->
-> I do not think of any special reason to reserve "ehpriv" and "ehpriv 0".
+The mmio-sram-reserved name was suggested by Rob Herring, who I suppose has 
+some slight experience with devicetree :-) .
 
-So I still prefer we can reserve the 'ehpriv' without OC operand as one simple 
-approach to test or develop something for KVM quickly because its really 
-convenient to trap into the hypervisor only with one 'ehpriv' instruction easily.
+I wasn't able to find real documentation on /memreserve/ but it looks more 
+like it's used to reserve generic memregions, not being node-specific.
+So reusing this might also cause confusion when the reserve-data now is 
+relative to it's node reg.
 
-But I have no further objection if you guys are fine to this ;-)
 
-Tiejun
+> >  Example:
+> >  
+> >  sram: sram@5c000000 {
+> >  
+> >  	compatible = "mmio-sram";
+> >  	reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000 */
+> > 
+> > +	mmio-sram-reserved = <0x0 0x100>; /* reserve 0x5c000000-0x5c000100 */
+> > 
+> >  };
+> > 
+> > diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
+> > index afe66571..5fccbe3 100644
+> > --- a/drivers/misc/sram.c
+> > +++ b/drivers/misc/sram.c
+> > @@ -42,6 +42,8 @@ static int sram_probe(struct platform_device *pdev)
+> > 
+> >  	struct sram_dev *sram;
+> >  	struct resource *res;
+> >  	unsigned long size;
+> > 
+> > +	const __be32 *reserved_list = NULL;
+> > +	int reserved_size = 0;
+> > 
+> >  	int ret;
+> >  	
+> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > 
+> > @@ -65,12 +67,89 @@ static int sram_probe(struct platform_device *pdev)
+> > 
+> >  	if (!sram->pool)
+> >  	
+> >  		return -ENOMEM;
+> > 
+> > -	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
+> > -				res->start, size, -1);
+> > -	if (ret < 0) {
+> > -		if (sram->clk)
+> > -			clk_disable_unprepare(sram->clk);
+> > -		return ret;
+> > +	if (pdev->dev.of_node) {
+> > +		reserved_list = of_get_property(pdev->dev.of_node,
+> > +						"mmio-sram-reserved",
+> > +						&reserved_size);
+> > +		if (reserved_list) {
+> > +			reserved_size /= sizeof(*reserved_list);
+> > +			if (!reserved_size || reserved_size % 2) {
+> > +				dev_warn(&pdev->dev, "wrong number of arguments in
+> > mmio-sram-reserved\n"); +				reserved_list = NULL;
+> > +			}
+> > +		}
+> > +	}
+> > +
+> > +	if (!reserved_list) {
+> > +		ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
+> > +					res->start, size, -1);
+> > +		if (ret < 0) {
+> > +			if (sram->clk)
+> > +				clk_disable_unprepare(sram->clk);
+> > +			return ret;
+> > +		}
+> 
+> Moving the clk_prepare_enable() further down would allow to avoid the
+> clk_disable_unprepare() in every error path,
+> 
+> > +	} else {
+> > +		unsigned int cur_start = 0;
+> > +		unsigned int cur_size;
+> > +		unsigned int rstart;
+> > +		unsigned int rsize;
+> > +		int i;
+> > +
+> > +		for (i = 0; i < reserved_size; i += 2) {
+> > +			/* get the next reserved block */
+> > +			rstart = be32_to_cpu(*reserved_list++);
+> > +			rsize = be32_to_cpu(*reserved_list++);
+> > +
+> > +			/* catch unsorted list entries */
+> > +			if (rstart < cur_start) {
+> > +				dev_err(&pdev->dev, "unsorted reserved list (0x%x before 
+current
+> > 0x%x)\n", +					rstart, cur_start);
+> > +				if (sram->clk)
+> > +					clk_disable_unprepare(sram->clk);
+> 
+> like here
+> 
+> > +				return -EINVAL;
+> > +			}
+> > +
+> > +			dev_dbg(&pdev->dev, "found reserved block 0x%x-0x%x\n",
+> > +				 rstart, rstart + rsize);
+> > +
+> > +			/* current start is in a reserved block */
+> > +			if (rstart <= cur_start) {
+> > +				cur_start = rstart + rsize;
+> > +				continue;
+> > +			}
+> > +
+> > +			/*
+> > +			 * allocate the space between the current starting
+> > +			 * address and the following reserved block
+> > +			 */
+> > +			cur_size = rstart - cur_start;
+> > +
+> > +			dev_dbg(&pdev->dev, "adding chunk 0x%x-0x%x\n",
+> > +				 cur_start, cur_start + cur_size);
+> > +			ret = gen_pool_add_virt(sram->pool,
+> > +					(unsigned long)virt_base + cur_start,
+> > +					res->start + cur_start, cur_size, -1);
+> > +			if (ret < 0) {
+> > +				if (sram->clk)
+> > +					clk_disable_unprepare(sram->clk);
+> 
+> and here.
+> 
+> > +				return ret;
+> > +			}
+> > +
+> > +			/* next allocation after this reserved block */
+> > +			cur_start = rstart + rsize;
+> > +		}
+> > +
+> > +		/* allocate the space after the last reserved block */
+> > +		if (cur_start < size) {
+> > +			cur_size = size - cur_start;
+> > +
+> > +			dev_dbg(&pdev->dev, "adding chunk 0x%x-0x%x\n",
+> > +				 cur_start, cur_start + cur_size);
+> > +			ret = gen_pool_add_virt(sram->pool,
+> > +					(unsigned long)virt_base + cur_start,
+> > +					res->start + cur_start, cur_size, -1);
+> > +		}
+> > +
+> > 
+> >  	}
+> >  	
+> >  	platform_set_drvdata(pdev, sram);
+> 
+> Also, I think you could reduce the duplication of gen_pool_add_virt()
+> function calls, somehow like this:
+> 
+> 	unsigned int cur_start = 0;
+> 	unsigned int cur_size;
+> 	unsigned int rstart;
+> 	unsigned int rsize;
+> 	int i = 0;
+> 
+> 	if (!reserved_list)
+> 		reserved_size = 0;
+> 
+> 	for (i = 0; i < (reserved_size + 2); i += 2) {
+> 		if (i < reserved_size) {
+> 			/* get the next reserved block */
+> 			rstart = be32_to_cpu(*reserved_list++);
+> 			rsize = be32_to_cpu(*reserved_list++);
+> 
+> 			/* catch unsorted list entries */
+> 			if (rstart < cur_start) {
+> 				dev_err(&pdev->dev,
+> 					"unsorted reserved list (0x%x before current 0x%x)\n",
+> 					rstart, cur_start);
+> 				return -EINVAL;
+> 			}
+> 
+> 			dev_dbg(&pdev->dev,
+> 				"found reserved block 0x%x-0x%x\n",
+> 				rstart, rstart + rsize);
+> 		} else {
+> 			/* the last chunk extends to the end of the region */
+> 			rstart = size;
+> 		}
+> 
+> 		/* current start is in a reserved block */
+> 		if (rstart <= cur_start) {
+> 			cur_start = rstart + rsize;
+> 			continue;
+> 		}
+> 
+> 		/*
+> 		 * allocate the space between the current starting
+> 		 * address and the following reserved block, or the
+> 		 * end of the region.
+> 		 */
+> 		cur_size = rstart - cur_start;
+> 
+> 		dev_dbg(&pdev->dev, "adding chunk 0x%x-0x%x\n",
+> 			cur_start, cur_start + cur_size);
+> 		ret = gen_pool_add_virt(sram->pool,
+> 				(unsigned long)virt_base + cur_start,
+> 				res->start + cur_start, cur_size, -1);
+> 		if (ret < 0)
+> 			return ret;
+> 	}
 
->
-> Thanks
-> -Bharat
->
->>
->> And if possible, we'd better add some comments to describe this to make the OC
->> definition readable.
->>
->> Tiejun
->>
->>>
->>>    #ifdef CONFIG_KVM_E500MC
->>>    static int dbell2prio(ulong param)
->>> @@ -82,6 +84,26 @@ static int kvmppc_e500_emul_msgsnd(struct kvm_vcpu *vcpu,
->> int rb)
->>>    }
->>>    #endif
->>>
->>> +static int kvmppc_e500_emul_ehpriv(struct kvm_run *run, struct kvm_vcpu
->> *vcpu,
->>> +				   unsigned int inst, int *advance)
->>> +{
->>> +	int emulated = EMULATE_DONE;
->>> +
->>> +	switch (get_oc(inst)) {
->>> +	case EHPRIV_OC_DEBUG:
->>> +		run->exit_reason = KVM_EXIT_DEBUG;
->>> +		run->debug.arch.address = vcpu->arch.pc;
->>> +		run->debug.arch.status = 0;
->>> +		kvmppc_account_exit(vcpu, DEBUG_EXITS);
->>> +		emulated = EMULATE_EXIT_USER;
->>> +		*advance = 0;
->>> +		break;
->>> +	default:
->>> +		emulated = EMULATE_FAIL;
->>> +	}
->>> +	return emulated;
->>> +}
->>> +
->>>    int kvmppc_core_emulate_op(struct kvm_run *run, struct kvm_vcpu *vcpu,
->>>                               unsigned int inst, int *advance)
->>>    {
->>> @@ -130,6 +152,11 @@ int kvmppc_core_emulate_op(struct kvm_run *run, struct
->> kvm_vcpu *vcpu,
->>>    			emulated = kvmppc_e500_emul_tlbivax(vcpu, ea);
->>>    			break;
->>>
->>> +		case XOP_EHPRIV:
->>> +			emulated = kvmppc_e500_emul_ehpriv(run, vcpu, inst,
->>> +							   advance);
->>> +			break;
->>> +
->>>    		default:
->>>    			emulated = EMULATE_FAIL;
->>>    		}
->>>
->>
->
+yep, this looks nicer - same for moving the clk_prepare_enable to below this 
+loop to unclutter the error-path.
 
+So I will incorporate this in v3.
+
+
+Thanks
+Heiko
