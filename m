@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab3FZKXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 06:23:48 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:54103 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab3FZKXr (ORCPT
+	id S1751912Ab3FZK00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 06:26:26 -0400
+Received: from protonic.xs4all.nl ([213.84.116.84]:6847 "EHLO
+	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3FZK0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 06:23:47 -0400
-Message-ID: <51CAC127.8070106@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 15:53:35 +0530
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>, ananth@in.ibm.com,
-        mahesh@linux.vnet.ibm.com, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Colin Cross <ccross@android.com>
-Subject: Re: [PATCH v2] pstore: Fail to unlink if a driver has not defined
- pstore_erase
-References: <20130625090253.26584.65072.stgit@aruna-ThinkPad-T420> <CAGXu5jKSMtaLsTGYqpxnEM-dW+99SYhE1+SzLsD3gngxhxYN7w@mail.gmail.com> <CA+8MBbJ5Fa_q0_iS34g+5A5ghm087feODsCgMUJZJAGWTo_ZPg@mail.gmail.com>
-In-Reply-To: <CA+8MBbJ5Fa_q0_iS34g+5A5ghm087feODsCgMUJZJAGWTo_ZPg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062610-5564-0000-0000-00000887DE0D
+	Wed, 26 Jun 2013 06:26:24 -0400
+From: Robin van der Gracht <robin@protonic.nl>
+To: thierry.reding@gmail.com
+Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shawn.guo@linaro.org, robin@protonic.nl
+Subject: [PATCH v2] pwm: pwm-mxs: Wait for configuration to apply before disabling PWM.
+Date: Wed, 26 Jun 2013 12:26:13 +0200
+Message-Id: <1372242373-17962-1-git-send-email-robin@protonic.nl>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 June 2013 10:40 PM, Tony Luck wrote:
-> On Tue, Jun 25, 2013 at 9:41 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Tue, Jun 25, 2013 at 2:03 AM, Aruna Balakrishnaiah
->> <aruna@linux.vnet.ibm.com> wrote:
->>> pstore_erase is used to erase the record from the persistent store.
->>> So if a driver has not defined pstore_erase callback return
-> How do people manage devices like this?  With no erase function
-> they just keep getting more and more pstore entries. Eventually
-> they fill up.
+We have to be sure that the last configuration has been applied. In most
+cases drivers will have set the duty-cycle to 0%. To prevent the PWM
+from locking at a 100% duty-cycle, we delay disabling the PWM for a
+whole period to make sure any new configuration has been latched.
 
-We dont keep old records in the device. We have logs only of the
-recent / last crash.  The device has a predefined space for each type
-of messages.  For example:  Every time a crash occurs the data gets
-overwritten in the device allocated to store crash log.
+Signed-off-by: Robin van der Gracht <robin@protonic.nl>
+---
+ drivers/pwm/pwm-mxs.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
->
->>> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
->> Acked-by: Kees Cook <keescook@chromium.org>
-> Applied - thanks.
->
-> -Tony
->
+diff --git a/drivers/pwm/pwm-mxs.c b/drivers/pwm/pwm-mxs.c
+index a53d309..7e1fa0a 100644
+--- a/drivers/pwm/pwm-mxs.c
++++ b/drivers/pwm/pwm-mxs.c
+@@ -10,6 +10,7 @@
+  */
+ 
+ #include <linux/clk.h>
++#include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
+ #include <linux/kernel.h>
+@@ -113,6 +114,12 @@ static int mxs_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ static void mxs_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct mxs_pwm_chip *mxs = to_mxs_pwm_chip(chip);
++	unsigned int period;
++
++	/* Ensure latest configuration applied. */
++	period = pwm_get_period(pwm);
++	period = DIV_ROUND_UP(period, NSEC_PER_USEC);
++	usleep_range(period, period + 1000);
+ 
+ 	writel(1 << pwm->hwpwm, mxs->base + PWM_CTRL + CLR);
+ 
+-- 
+1.7.9.5
 
