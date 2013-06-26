@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab3FZJzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 05:55:54 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:61251 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3FZJzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 05:55:53 -0400
-X-Spam-Score: -100.8
-Message-ID: <51CABA73.6020003@asianux.com>
-Date: Wed, 26 Jun 2013 17:54:59 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752013Ab3FZJ4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 05:56:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49909 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751619Ab3FZJ4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 05:56:35 -0400
+Date: Wed, 26 Jun 2013 11:56:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Robert Richter <rric@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/14] perf, persistent: Kernel updates for perf tool
+ integration
+Message-ID: <20130626095631.GB20274@pd.tnic>
+References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+ <20130624152557.GU28407@twins.programming.kicks-ass.net>
+ <20130624194510.GC4065@gmail.com>
+ <20130625175729.GI21579@rric.localhost>
+ <20130625191654.GH4855@pd.tnic>
+ <20130626081223.GB21788@rric.localhost>
+ <20130626082408.GA20274@pd.tnic>
+ <20130626094634.GA29181@gmail.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
-        dhsharp@google.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
-References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at> <51CAA78C.5040900@asianux.com> <51CAA8D6.9000505@nod.at> <51CAAD1D.8050801@asianux.com> <51CAAE7C.9090003@nod.at> <51CAB556.4070700@asianux.com> <51CAB689.70008@nod.at>
-In-Reply-To: <51CAB689.70008@nod.at>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130626094634.GA29181@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 05:38 PM, Richard Weinberger wrote:
-> Am 26.06.2013 11:33, schrieb Chen Gang:
->> > On 06/26/2013 05:03 PM, Richard Weinberger wrote:
->>> >> Am 26.06.2013 10:58, schrieb Chen Gang:
->>>>> >>>> On 06/26/2013 04:39 PM, Richard Weinberger wrote:
->>>>>>>>>>>>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>> The drivers internal code has already check the related return value,
->>>>>>>>>>>>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>> so it is the architecture's duty to 'tell' the driver whether support
->>>>>>>>>>>>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>> io memory (e.g. define ioremap, but return NULL).
->>>>>>>>>>>>>>> >>>>>>>>>>>>>> It does so already by setting CONFIG_HAS_IOMEM=n
->>>>>>>>>>> >>>>>>>>>>
->>>>>>>>>>> >>>>>>>>>> Excuse me, I use "grep -rn ioremap *" under "include/" and "arch/um/"
->>>>>>>>>>> >>>>>>>>>> directory, but can not find the related definition for 'ioremap'.
->>>>>>>>>>> >>>>>>>>>>
->>>>>>>>>>> >>>>>>>>>> Is there another declaration or definition way which I don't know ?
->>>>>>>>>>> >>>>>>>>>> (maybe it is).
->>>>>>> >>>>>> Both UML and s390 (in the !CONFIG_PCI) do not define ioremap() because
->>>>>>> >>>>>> without io memory you cannot have a ioremap().
->>>>>>> >>>>>>
->>>>> >>>>
->>>>> >>>> I assume if ioremap() return NULL, it means "without io memory", is it
->>>>> >>>> correct ?
->>>>> >>>>
->>>>> >>>> If it is correct, "define a dummy ioremap(), and return NULL" is just
->>>>> >>>> the meaning that you mentioned above.
->>>>> >>>>
->>>>> >>>> If so, for UML, it is not requirement, but recommend to define a dummy
->>>>> >>>> ioremap() which return NULL, so can be generic enough to mach all cases.
->>> >> No.
->>> >> Not setting CONFIG_HAS_IOMEM=y means "This arch has no io memory and therefore no
->>> >> functions to mess with it".
->>> >>
->> > 
->> > Since the API itself already contents the meaning: "return NULL means
->> > the arch has no related io memory",
->> > 
->> > Why not define a generic dummy one in "include/asm-generic/io.h" instead
->> > of "HAS_IOMEM" (which has already spread many various places, and also,
->> > most of new drivers have to know about it).
->> > 
->> > e.g: in "include/asm-generic/io.h", if "CONFIG_HAS_IOMEM=n", define a
->> > dummy ioremap() which return NULL ... (also need consider more details).
-> Because we don't even want to build these drivers and not make them fail while
-> executing io memory related functions.
-> 
+On Wed, Jun 26, 2013 at 11:46:34AM +0200, Ingo Molnar wrote:
+> If already existing persistent events show up somewhere in sysfs
+> (or in a separate pseudofilesystem) then an open() of them [given
+> sufficient privileges of the caller, etc.] could attach to them.
 
-It is one reason, but it seems not quite enough for it, it depends on
-our requirements.
+Yep, I think we want to say sys_perf_event_open(attr.persistent=1) which
+would give you a file descriptor to an already existing persistent event
+with attr.config=<id>.
 
-If we are also the 'platform' of all kernel modules (not only for user
-mode), and "include/asm-generic/*" plays an important role for it.
+If it doesn't exist, it creates it.
 
-It is the modules their own choice to determine which architectures they
-want to support, and which architecture they won't, not need be directed
-or forced by 'platform'.
-
-Also better to let kernel modules free to determine whether build in or
-not, when actually do not support the specific features of architecture
-currently, not need be directed or forced by 'platform'.
-
-
-Thanks.
 -- 
-Chen Gang
+Regards/Gruss,
+    Boris.
 
-Asianux Corporation
+Sent from a fat crate under my desk. Formatting is fine.
+--
