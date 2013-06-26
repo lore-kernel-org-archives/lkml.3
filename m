@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab3FZByS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 21:54:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:59621 "EHLO mga01.intel.com"
+	id S1752224Ab3FZByQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 21:54:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22403 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab3FZBxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751445Ab3FZBxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jun 2013 21:53:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,940,1363158000"; 
-   d="scan'208";a="360531386"
+   d="scan'208";a="335543127"
 From: Darren Hart <dvhart@linux.intel.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>, peter.p.waskiewicz.jr@intel.com,
@@ -18,9 +18,9 @@ Cc: Matthew Garrett <matthew.garrett@nebula.com>,
         Grant Likely <grant.likely@linaro.org>,
         Linus Walleij <linus.walleij@linaro.org>,
         platform-driver-x86@vger.kernel.org
-Subject: [PATCH 6/8] minnowboard-keys: Bind MinnowBoard buttons to arrow keys
-Date: Tue, 25 Jun 2013 18:53:26 -0700
-Message-Id: <1ded9714150de50fac7fb6ee82166fbcb5621f7d.1372211451.git.dvhart@linux.intel.com>
+Subject: [PATCH 5/8] minnowboard-gpio: Export MinnowBoard expansion GPIO
+Date: Tue, 25 Jun 2013 18:53:25 -0700
+Message-Id: <c7bed09378e5edf88872e277b238ecc3f52634aa.1372211451.git.dvhart@linux.intel.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1372211451.git.dvhart@linux.intel.com>
 References: <cover.1372211451.git.dvhart@linux.intel.com>
@@ -30,10 +30,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Configure the four buttons tied to the E6XX GPIO lines on the
-MinnowBoard as keys using the gpio-keys-polled platform driver. From
-left to right, bind them to LEFT, DOWN, UP, RIGHT, similar to the VI
-directional keys.
+Request and export the user-configurable GPIO lines to sysfs. This provides a
+label readable in /debugfs/gpio and a simple interface for experimenting with
+GPIO on the MinnowBoard.
 
 This is separate from the minnowboard driver to provide users with the
 flexibility to write kernel drivers for their own devices using these GPIO
@@ -48,55 +47,59 @@ Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Cc: platform-driver-x86@vger.kernel.org
 ---
- drivers/platform/x86/Kconfig            |  14 +++++
+ drivers/platform/x86/Kconfig            |  18 +++++
  drivers/platform/x86/Makefile           |   1 +
- drivers/platform/x86/minnowboard-keys.c | 108 ++++++++++++++++++++++++++++++++
- 3 files changed, 123 insertions(+)
- create mode 100644 drivers/platform/x86/minnowboard-keys.c
+ drivers/platform/x86/minnowboard-gpio.c | 115 ++++++++++++++++++++++++++++++++
+ 3 files changed, 134 insertions(+)
+ create mode 100644 drivers/platform/x86/minnowboard-gpio.c
 
 diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index c8755cb..b9ff98c 100644
+index 154dbf6..c8755cb 100644
 --- a/drivers/platform/x86/Kconfig
 +++ b/drivers/platform/x86/Kconfig
-@@ -50,6 +50,20 @@ config MINNOWBOARD_GPIO
- 	  If you have a MinnowBoard, and want to experiment with the GPIO,
- 	  say Y or M here.
+@@ -35,6 +35,24 @@ config MINNOWBOARD
  
-+config MINNOWBOARD_KEYS
-+	tristate "MinnowBoard GPIO Keys"
+ 	  If you have a MinnowBoard, say Y or M here.
+ 
++if MINNOWBOARD
++config MINNOWBOARD_GPIO
++	tristate "MinnowBoard Expansion GPIO"
 +	depends on MINNOWBOARD
-+	depends on KEYBOARD_GPIO_POLLED
 +	default n
 +	---help---
-+	  Configure the four buttons tied to the E6XX GPIO lines on the
-+	  MinnowBoard as keys using the gpio-keys-polled platform driver. From
-+	  left to right, bind them to LEFT, DOWN, UP, RIGHT, similar to the VI
-+	  directional keys.
++	  Export the EG20T (gpio-pch) lines on the expansion connector to sysfs
++	  for easy manipulation from userspace. These will be named
++	  "minnow_gpio_pch[0-7]". If LVDS is not in use, export the E6XX
++	  (gpio-sch) lines on the expansion connector to sysfs, these will be
++	  named "minnow_gpio_aux[0-4]".
 +
-+	  If you have a MinnowBoard and want to use the buttons as arrow keys,
++	  If you have a MinnowBoard, and want to experiment with the GPIO,
 +	  say Y or M here.
 +
- endif # MINNOWBOARD
- 
- 
++endif # MINNOWBOARD
++
++
+ config ACER_WMI
+ 	tristate "Acer WMI Laptop Extras"
+ 	depends on ACPI
 diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index 4dac9f0..2f55903 100644
+index 45ede1c..4dac9f0 100644
 --- a/drivers/platform/x86/Makefile
 +++ b/drivers/platform/x86/Makefile
-@@ -4,6 +4,7 @@
+@@ -3,6 +3,7 @@
+ # x86 Platform-Specific Drivers
  #
  obj-$(CONFIG_MINNOWBOARD)	+= minnowboard.o
- obj-$(CONFIG_MINNOWBOARD_GPIO)	+= minnowboard-gpio.o
-+obj-$(CONFIG_MINNOWBOARD_KEYS)	+= minnowboard-keys.o
++obj-$(CONFIG_MINNOWBOARD_GPIO)	+= minnowboard-gpio.o
  obj-$(CONFIG_ASUS_LAPTOP)	+= asus-laptop.o
  obj-$(CONFIG_ASUS_WMI)		+= asus-wmi.o
  obj-$(CONFIG_ASUS_NB_WMI)	+= asus-nb-wmi.o
-diff --git a/drivers/platform/x86/minnowboard-keys.c b/drivers/platform/x86/minnowboard-keys.c
+diff --git a/drivers/platform/x86/minnowboard-gpio.c b/drivers/platform/x86/minnowboard-gpio.c
 new file mode 100644
-index 0000000..de96df1
+index 0000000..c33c438
 --- /dev/null
-+++ b/drivers/platform/x86/minnowboard-keys.c
-@@ -0,0 +1,108 @@
++++ b/drivers/platform/x86/minnowboard-gpio.c
+@@ -0,0 +1,115 @@
 +/*
 + * MinnowBoard Linux platform driver
 + * Copyright (c) 2013, Intel Corporation.
@@ -126,51 +129,39 @@ index 0000000..de96df1
 +#include <linux/minnowboard.h>
 +#include "minnowboard-gpio.h"
 +
-+/* VI-style direction keys seem like as good as anything */
-+#define GPIO_BTN0_KEY KEY_LEFT
-+#define GPIO_BTN1_KEY KEY_DOWN
-+#define GPIO_BTN2_KEY KEY_UP
-+#define GPIO_BTN3_KEY KEY_RIGHT
-+
-+/* Timing in milliseconds */
-+#define GPIO_DEBOUNCE 1
-+#define BUTTON_POLL_INTERVAL 300
-+
-+/* gpio-keys platform device structures */
-+static struct gpio_keys_button minnow_buttons[] = {
-+	{ .code = GPIO_BTN0_KEY, .gpio = GPIO_BTN0, .active_low = 1,
-+	  .desc = "minnow_btn0", .type = EV_KEY, .wakeup = 0,
-+	  .debounce_interval = GPIO_DEBOUNCE, .can_disable = true },
-+	{ .code = GPIO_BTN1_KEY, .gpio = GPIO_BTN1, .active_low = 1,
-+	  .desc = "minnow_btn1", .type = EV_KEY, .wakeup = 0,
-+	  .debounce_interval = GPIO_DEBOUNCE, .can_disable = true },
-+	{ .code = GPIO_BTN2_KEY, .gpio = GPIO_BTN2, .active_low = 1,
-+	  .desc = "minnow_btn2", .type = EV_KEY, .wakeup = 0,
-+	  .debounce_interval = GPIO_DEBOUNCE, .can_disable = true },
-+	{ .code = GPIO_BTN3_KEY, .gpio = GPIO_BTN3, .active_low = 1,
-+	  .desc = "minnow_btn3", .type = EV_KEY, .wakeup = 0,
-+	  .debounce_interval = GPIO_DEBOUNCE, .can_disable = true },
++static struct gpio expansion_gpios[] = {
++	{ GPIO_PCH0, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_pch0" },
++	{ GPIO_PCH1, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_pch1" },
++	{ GPIO_PCH2, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_pch2" },
++	{ GPIO_PCH3, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_pch3" },
++	{ GPIO_PCH4, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_pch4" },
++	{ GPIO_PCH5, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_pch5" },
++	{ GPIO_PCH6, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_pch6" },
++	{ GPIO_PCH7, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_pch7" },
 +};
 +
-+static const struct gpio_keys_platform_data minnow_buttons_platform_data = {
-+	.buttons = minnow_buttons,
-+	.nbuttons = ARRAY_SIZE(minnow_buttons),
-+	.poll_interval = BUTTON_POLL_INTERVAL,
-+	.rep = 1,
-+	.enable = NULL,
-+	.disable = NULL,
-+	.name = "minnow_buttons",
++static struct gpio expansion_aux_gpios[] = {
++	{ GPIO_AUX0, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_aux0" },
++	{ GPIO_AUX1, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_aux1" },
++	{ GPIO_AUX2, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_aux2" },
++	{ GPIO_AUX3, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_aux3" },
++	{ GPIO_AUX4, GPIOF_DIR_IN | GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE,
++	  "minnow_gpio_aux4" },
 +};
 +
-+static struct platform_device minnow_gpio_buttons = {
-+	.name = "gpio-keys-polled",
-+	.id = -1,
-+	.dev = {
-+		.platform_data = (void *) &minnow_buttons_platform_data,
-+	},
-+};
-+
-+static int __init minnow_keys_module_init(void)
++static int __init minnow_gpio_module_init(void)
 +{
 +	int err;
 +
@@ -185,10 +176,26 @@ index 0000000..de96df1
 +#endif
 +#endif
 +
-+	/* Export GPIO buttons to sysfs */
-+	err = platform_device_register(&minnow_gpio_buttons);
++	/* Auxillary Expansion GPIOs */
++	if (!minnow_lvds_detect()) {
++		pr_debug("LVDS_DETECT not asserted, configuring Aux GPIO lines\n");
++		err = gpio_request_array(expansion_aux_gpios,
++					 ARRAY_SIZE(expansion_aux_gpios));
++		if (err) {
++			pr_err("Failed to request expansion aux GPIO lines\n");
++			goto out;
++		}
++	} else {
++		pr_debug("LVDS_DETECT asserted, ignoring aux GPIO lines\n");
++	}
++
++	/* Expansion GPIOs */
++	err = gpio_request_array(expansion_gpios, ARRAY_SIZE(expansion_gpios));
 +	if (err) {
-+		pr_err("Failed to register gpio-keys-polled platform device\n");
++		pr_err("Failed to request expansion GPIO lines\n");
++		if (minnow_lvds_detect())
++			gpio_free_array(expansion_aux_gpios,
++					ARRAY_SIZE(expansion_aux_gpios));
 +		goto out;
 +	}
 +
@@ -196,13 +203,16 @@ index 0000000..de96df1
 +	return err;
 +}
 +
-+static void __exit minnow_keys_module_exit(void)
++static void __exit minnow_gpio_module_exit(void)
 +{
-+	platform_device_unregister(&minnow_gpio_buttons);
++	if (minnow_lvds_detect())
++		gpio_free_array(expansion_aux_gpios,
++				ARRAY_SIZE(expansion_aux_gpios));
++	gpio_free_array(expansion_gpios, ARRAY_SIZE(expansion_gpios));
 +}
 +
-+module_init(minnow_keys_module_init);
-+module_exit(minnow_keys_module_exit);
++module_init(minnow_gpio_module_init);
++module_exit(minnow_gpio_module_exit);
 +
 +MODULE_LICENSE("GPL");
 -- 
