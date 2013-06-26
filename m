@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab3FZMP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 08:15:59 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:28426 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3FZMP5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 08:15:57 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-08-51cadb7b7dfb
-Date: Wed, 26 Jun 2013 14:15:48 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, t.figa@samsung.com
-Subject: Re: [PATCH v4 1/7] cpufreq: Store cpufreq policies in a list
-Message-id: <20130626141548.31cda5ed@amdc308.digital.local>
-In-reply-to: <CAKohpo=aaJyhZ1U2W=DUyi8wGH=rLCL47SBSO7TgsxHXamdotA@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-2-git-send-email-l.majewski@samsung.com>
- <CAKohpomStuSGyQHnk9jNLpije=SAkb4zHg40zHDgLRCUQeZC1A@mail.gmail.com>
- <20130626125411.5dc935bf@amdc308.digital.local>
- <CAKohpom1yJOAVZ1XE+Q+dtrZM1N6Zqd7DjURSA_f2fhQ1OiCJA@mail.gmail.com>
- <20130626130407.021c05cb@amdc308.digital.local>
- <CAKohpo=aaJyhZ1U2W=DUyi8wGH=rLCL47SBSO7TgsxHXamdotA@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t9jAd3q26cCDTZONbL483Y5q8XTph/s
-	FvM+y1qs2f+TyaLz7BNmi94FV9ks3jzitri8aw6bxefeI4wWtxtXsFn0L+xlsnjysI/NYv2M
-	1ywWHUe+MVts/OrhwO+xeM9LJo871/aweayb9pbZo2/LKkaPR4tbGD2O39jO5PF5k1wAexSX
-	TUpqTmZZapG+XQJXxuRzdQXvmStm7d3G1sD4g6mLkZNDQsBEYuqzlywQtpjEhXvr2boYuTiE
-	BBYxSsz6sIYdwmlnkvix5wlYFYuAqsSp7xPZQWw2AT2Jz3efAk3i4BAR0JJ4eTMVpJ5Z4DSL
-	xI4H19hB4sICrhLXzyuClPMKWEvMudYO1sopECzx728fE8T8b8wSu88cZwZJ8AtISrT/+8EM
-	cZGdxLlPG9ghmgUlfky+B3YDM9CuzduaWCFseYnNa94yT2AUnIWkbBaSsllIyhYwMq9iFE0t
-	SC4oTkrPNdQrTswtLs1L10vOz93ECI6tZ1I7GFc2WBxiFOBgVOLhVdh6MlCINbGsuDL3EKME
-	B7OSCO+b+acChXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBK
-	NTCK7WEo/eUgcjXGQLXN6XpA+D+phJhTE7I9njXGn4w9NeHuqabi1lhnZxdObZ2yQ087prc/
-	r5k0t6io3OBZa96pY+Yejm0VbKdqnpnH6/1Vdm2RZmBe0732xvzZP8QWXxKv57U5EbKL+feS
-	tW/n2Nx/lHVpWSzjGcnXSxtv1/QtWyh47s/l891KLMUZiYZazEXFiQCrIaHgqQIAAA==
+	id S1751571Ab3FZMQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 08:16:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49597 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751408Ab3FZMQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 08:16:32 -0400
+Message-ID: <51CADB9D.3070206@ti.com>
+Date: Wed, 26 Jun 2013 17:46:29 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <sarah.a.sharp@linux.intel.com>
+Subject: Re: [PATCH] usb: host: xhci-plat: Enable XHCI_SPURIOUS_SUCCESS quirk
+ for xhci-plat
+References: <1372237137-17351-1-git-send-email-george.cherian@ti.com> <20130626090213.GQ12640@arwen.pp.htv.fi>
+In-Reply-To: <20130626090213.GQ12640@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jun 2013 16:38:15 +0530, Viresh Kumar wrote:
+On 6/26/2013 2:32 PM, Felipe Balbi wrote:
+> Hi,
+>
+> On Wed, Jun 26, 2013 at 02:28:57PM +0530, George Cherian wrote:
+>> Synopsis xhci controllers with hci_version > 0.96 gives spurious success
+>> events on short packet completion. During webcam capture the
+>> "ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+>> The same application works fine with synopsis controllers hci_version 0.96.
+>>
+>> Signed-off-by: George Cherian<george.cherian@ti.com>
+>> ---
+>>   drivers/usb/host/xhci-plat.c | 10 ++++++++++
+>>   1 file changed, 10 insertions(+)
+>>
+>> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+>> index 93ad67e..e63c6d3 100644
+>> --- a/drivers/usb/host/xhci-plat.c
+>> +++ b/drivers/usb/host/xhci-plat.c
+>> @@ -25,6 +25,16 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
+>>   	 * dev struct in order to setup MSI
+>>   	 */
+>>   	xhci->quirks |= XHCI_BROKEN_MSI;
+>> +
+>> +	/*
+>> +	 * In some xhci controllers which follows xhci 1.0 spec gives a spurious
+>> +	 * success event after a short transfer. This quirk will ignore such
+>> +	 * spurious event. Hit this issue in synopsis xhci controllers with
+>> +	 * hci_version > 0.96
+>> +	 */
+>> +
+>> +	if (xhci->hci_version > 0x96)
+>> +		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+>>   }
+> doesn't look like the correct way to do this. What if enabling that
+> quirk on hosts which don't have the quirk cause problems ?
+For a controller which does not have this issue will never get a 
+spurious success for short packet ( and that too for only ISOCH).
 
-> On 26 June 2013 16:34, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > err_out_kobj_put:
-> >         list_del(&cpufreq_policy_list);
-> >         [rest of error path]
-> 
-> I couldn't find err_out_kobj_put in existing code :)
-> 
-> BTW, just add to the list only once everything passed.
+per this commit ad808333d Intel xhci: Ignore spurious successful event.
 
-Ok, we can do it like that :-)
+This spurious successful event behavior isn't technically disallowed by
+the xHCI specification, so make the xHCI driver just ignore the spurious
+completion event.
+> I would suggest adding a platform_data which (in our case) dwc3 will
+> pass to xhci-plat. Then you can do proper revision detection of the
+> synopsys controller and set the quirk only on the failing hosts.
+>
+> BTW, do you have the STARS number for this errata ?
+No STARS number yet.
 
--- 
-Best regards,
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Regards
+-George
