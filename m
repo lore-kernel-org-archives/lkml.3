@@ -1,63 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab3FZUoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 16:44:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47224 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3FZUoG (ORCPT
+	id S1751731Ab3FZUrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 16:47:11 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:34005 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab3FZUrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 16:44:06 -0400
-Date: Wed, 26 Jun 2013 13:44:05 -0700 (PDT)
-Message-Id: <20130626.134405.464630881670006463.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: nschichan@freebox.fr, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        edumazet@google.com, xiyou.wangcong@gmail.com
-Subject: Re: [PATCH v3.10-rc7] net: fix kernel deadlock with interface
- rename and netdev name retrieval.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1372264414.3301.198.camel@edumazet-glaptop>
-References: <1372260222-8597-1-git-send-email-nschichan@freebox.fr>
-	<1372264414.3301.198.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jun 2013 16:47:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130621234647.GA3763@intel.com>
+References: <20130621234647.GA3763@intel.com>
+Date: Wed, 26 Jun 2013 13:47:07 -0700
+X-Google-Sender-Auth: e-aGSgApecYNHcSMdGMD6GzJUUQ
+Message-ID: <CAA9_cmePsWFfqmnEGB6XBJj7dsY7dSJtSLvy+s3NzVkttviRWQ@mail.gmail.com>
+Subject: Re: [PATCH v2] dmatest: masking tests for channel capabilities
+From: Dan Williams <djbw@fb.com>
+To: Jubin Mehta <jubin.mehta@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Jon Mason <jon.mason@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 26 Jun 2013 09:33:34 -0700
+On Fri, Jun 21, 2013 at 4:46 PM, Jubin Mehta <jubin.mehta@intel.com> wrote:
+> The current dmatest module tests all the hardware capabilities (MEMCPY, XOR
+> and PQ) supported by a particular DMA channel and these tests are performed
+> concurrently by default. This patch allows the user to enable or disable the
+> test performed for any particular capability. The mask bits for enabling the
+> tests are set using the debugfs.
+>
+> Signed-off-by: Jubin Mehta <jubin.mehta@intel.com>
+[..]
+> diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+> index d8ce4ec..c152755 100644
+> --- a/drivers/dma/dmatest.c
+> +++ b/drivers/dma/dmatest.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/debugfs.h>
+>  #include <linux/uaccess.h>
+>  #include <linux/seq_file.h>
+> +#include <linux/string.h>
+>
+>  static unsigned int test_buf_size = 16384;
+>  module_param(test_buf_size, uint, S_IRUGO);
+> @@ -66,6 +67,11 @@ module_param(timeout, uint, S_IRUGO);
+>  MODULE_PARM_DESC(timeout, "Transfer Timeout in msec (default: 3000), "
+>                  "Pass -1 for infinite timeout");
+>
+> +static char test_cap_mask[20] = "copy,xor,pq";
+> +module_param_string(cap_mask, test_cap_mask, sizeof(test_cap_mask), S_IRUGO);
 
-> On Wed, 2013-06-26 at 17:23 +0200, Nicolas Schichan wrote:
->> When the kernel (compiled with CONFIG_PREEMPT=n) is performing the
->> rename of a network interface, it can end up waiting for a workqueue
->> to complete. If userland is able to invoke a SIOCGIFNAME ioctl or a
->> SO_BINDTODEVICE getsockopt in between, the kernel will deadlock due to
->> the fact that read_secklock_begin() will spin forever waiting for the
->> writer process (the one doing the interface rename) to update the
->> devnet_rename_seq sequence.
->> 
->> This patch fixes the problem by adding a helper (netdev_get_name())
->> and using it in the code handling the SIOCGIFNAME ioctl and
->> SO_BINDTODEVICE setsockopt.
->> 
->> The netdev_get_name() helper uses raw_seqcount_begin() to avoid
->> spinning forever, waiting for devnet_rename_seq->sequence to become
->> even. cond_resched() is used in the contended case, before retrying
->> the access to give the writer process a chance to finish.
->> 
->> The use of raw_seqcount_begin() will incur some unneeded work in the
->> reader process in the contended case, but this is better than
->> deadlocking the system.
->> 
->> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
->> ---
-> 
-> This goes back to commit c91f6df2db49
-> ("sockopt: Change getsockopt() of SO_BINDTODEVICE to return an interface
-> name") in linux-3.8
-> 
-> Acked-by: Eric Dumazet <edumazet@google.com>
+Let's just make this module parameter writable so we don't need to add
+a new debugfs file.
 
-Applied and queued up for -stable, thanks everyone.
+The 'get' routine can also display the available testable operation types.
+
+> +MODULE_PARM_DESC(cap_mask, "Mask bits for different capability test "
+> +                "(default: copy,xor,pq)");
+> +
+>  /* Maximum amount of mismatched bytes in buffer to print */
+>  #define MAX_ERROR_COUNT                32
+>
+> @@ -164,6 +170,7 @@ struct dmatest_chan {
+>   * @xor_sources:       number of xor source buffers
+>   * @pq_sources:                number of p+q source buffers
+>   * @timeout:           transfer timeout in msec, -1 for infinite timeout
+> + * @cap_mask:          mask for different hardware capabilities tests
+>   */
+>  struct dmatest_params {
+>         unsigned int    buf_size;
+> @@ -175,6 +182,7 @@ struct dmatest_params {
+>         unsigned int    xor_sources;
+>         unsigned int    pq_sources;
+>         int             timeout;
+> +       char            cap_mask[128];
+
+This can be the capability mask directly... see below:
+
+>  };
+>
+>  /**
+> @@ -883,11 +891,44 @@ static int dmatest_add_threads(struct dmatest_info *info,
+>         return i;
+>  }
+>
+> +static int dmatest_cap_check(struct dmatest_info *info,
+> +               dma_cap_mask_t *test_cap_mask)
+> +{
+> +       struct dmatest_params   *params;
+> +       char                    *cap;
+> +       unsigned char c;
+> +       int i;
+> +
+> +       params = &info->params;
+> +       cap = (params->cap_mask);
+> +
+> +       for (i = 0; i < 3; i++) {
+> +               if (!strncmp(cap, "copy", 4)) {
+> +                       dma_cap_set(DMA_MEMCPY, *test_cap_mask);
+> +                       cap += 4;
+> +               } else if (!strncmp(cap, "xor", 3)) {
+> +                       dma_cap_set(DMA_XOR, *test_cap_mask);
+> +                       cap += 3;
+> +               } else if (!strncmp(cap, "pq", 2)) {
+> +                       dma_cap_set(DMA_PQ, *test_cap_mask);
+> +                       cap += 2;
+> +               } else {
+> +                       return -1;
+> +               }
+> +               c = *cap++;
+> +               if (c != ',')
+> +                       break;
+> +       }
+> +       return 0;
+> +}
+
+We can run this routine when the capabilities are set to return error
+on invalid capability masks directly.  Then we can set the
+test_cap_mask before dmatest_add_channel().
+
+> +
+>  static int dmatest_add_channel(struct dmatest_info *info,
+>                 struct dma_chan *chan)
+>  {
+>         struct dmatest_chan     *dtc;
+>         struct dma_device       *dma_dev = chan->device;
+> +       struct dmatest_params   *params;
+> +       dma_cap_mask_t          test_cap_mask;
+>         unsigned int            thread_count = 0;
+>         int cnt;
+>
+> @@ -900,15 +941,28 @@ static int dmatest_add_channel(struct dmatest_info *info,
+>         dtc->chan = chan;
+>         INIT_LIST_HEAD(&dtc->threads);
+>
+> -       if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
+> +       params = &info->params;
+> +
+> +       dma_cap_zero(test_cap_mask);
+> +       cnt = dmatest_cap_check(info, &test_cap_mask);
+> +       if (cnt) {
+> +               pr_warn("dmatest: Invalid Capability Mask Paramters\n");
+> +               return -EINVAL;
+> +       }
+
+As above I think this too late to be validating the parameters.
+
+> +
+> +       /* Run dmatest threads for the supported and enabled capabilities */
+> +       if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)
+> +           && dma_has_cap(DMA_MEMCPY, test_cap_mask)) {
+>                 cnt = dmatest_add_threads(info, dtc, DMA_MEMCPY);
+>                 thread_count += cnt > 0 ? cnt : 0;
+>         }
+> -       if (dma_has_cap(DMA_XOR, dma_dev->cap_mask)) {
+> +       if (dma_has_cap(DMA_XOR, dma_dev->cap_mask)
+> +           && dma_has_cap(DMA_XOR, test_cap_mask)) {
+>                 cnt = dmatest_add_threads(info, dtc, DMA_XOR);
+>                 thread_count += cnt > 0 ? cnt : 0;
+>         }
+> -       if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)) {
+> +       if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)
+> +           && dma_has_cap(DMA_PQ, test_cap_mask)) {
+>                 cnt = dmatest_add_threads(info, dtc, DMA_PQ);
+>                 thread_count += cnt > 0 ? cnt : 0;
+>         }
+
+Could above be written simpler with one bitmap_and(test_cap_mask,
+dma_dev->cap_mask, test_cap_mask) at the start and then
+for_each_set_bit(test_cap_mask)?
+
+
+--
+Dan
