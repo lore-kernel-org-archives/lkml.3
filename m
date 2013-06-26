@@ -1,128 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab3FZOmw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:42:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832Ab3FZOiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:38:11 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/8] sched: Track NUMA hinting faults on per-node basis
-Date: Wed, 26 Jun 2013 15:38:01 +0100
-Message-Id: <1372257487-9749-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1372257487-9749-1-git-send-email-mgorman@suse.de>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+	id S1751588Ab3FZOnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:43:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46892 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab3FZOnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 10:43:52 -0400
+Date: Wed, 26 Jun 2013 16:43:46 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH 0/2] some uio patches
+Message-ID: <20130626144346.GB27010@pengutronix.de>
+References: <1366970549-16292-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20130626100038.GV11232@pengutronix.de>
+ <20130626143857.GA13583@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130626143857.GA13583@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch tracks what nodes numa hinting faults were incurred on.  Greater
-weight is given if the pages were to be migrated on the understanding
-that such faults cost significantly more. If a task has paid the cost to
-migrating data to that node then in the future it would be preferred if the
-task did not migrate the data again unnecessarily. This information is later
-used to schedule a task on the node incurring the most NUMA hinting faults.
+On Wed, Jun 26, 2013 at 07:38:57AM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Jun 26, 2013 at 12:00:38PM +0200, Uwe Kleine-König wrote:
+> > Hello,
+> > 
+> > On Fri, Apr 26, 2013 at 12:02:27PM +0200, Uwe Kleine-König wrote:
+> > > these two patches are not really related, I only sent them in a series because
+> > > they touch the same file and fail to apply in reversed order.
+> > > 
+> > > Patch 1 is useful for debugging with gdb, patch 2 is a cleanup. Note that patch
+> > > 2 is only compile-tested because I don't have an uio driver that uses a
+> > > non-physical map.
+> > ping
+> 
+> ping on what?  I don't have your patches in my to-review queue anymore,
+> you need to resend them please, like I recently asked for all UIO
+> patches to be resent.
+> But my trees are now closed for 3.11, so please wait until after
+> 3.11-rc1 is out before sending them as I can't do anything with them
+> until then.
+It seems I did miss the request do resend all UIO stuff. So ok, will
+come back to you when the merge window is over.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/sched.h |  2 ++
- kernel/sched/core.c   |  3 +++
- kernel/sched/fair.c   | 12 +++++++++++-
- kernel/sched/sched.h  | 12 ++++++++++++
- 4 files changed, 28 insertions(+), 1 deletion(-)
+Best regards
+Uwe
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e692a02..72861b4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1505,6 +1505,8 @@ struct task_struct {
- 	unsigned int numa_scan_period;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
-+
-+	unsigned long *numa_faults;
- #endif /* CONFIG_NUMA_BALANCING */
- 
- 	struct rcu_head rcu;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 67d0465..f332ec0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1594,6 +1594,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
- 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
- 	p->numa_work.next = &p->numa_work;
-+	p->numa_faults = NULL;
- #endif /* CONFIG_NUMA_BALANCING */
- }
- 
-@@ -1853,6 +1854,8 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	if (mm)
- 		mmdrop(mm);
- 	if (unlikely(prev_state == TASK_DEAD)) {
-+		task_numa_free(prev);
-+
- 		/*
- 		 * Remove function-return probe instances associated with this
- 		 * task and put them back on the free list.
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7a33e59..904fd6f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -815,7 +815,14 @@ void task_numa_fault(int node, int pages, bool migrated)
- 	if (!sched_feat_numa(NUMA))
- 		return;
- 
--	/* FIXME: Allocate task-specific structure for placement policy here */
-+	/* Allocate buffer to track faults on a per-node basis */
-+	if (unlikely(!p->numa_faults)) {
-+		int size = sizeof(*p->numa_faults) * nr_node_ids;
-+
-+		p->numa_faults = kzalloc(size, GFP_KERNEL);
-+		if (!p->numa_faults)
-+			return;
-+	}
- 
- 	/*
- 	 * If pages are properly placed (did not migrate) then scan slower.
-@@ -826,6 +833,9 @@ void task_numa_fault(int node, int pages, bool migrated)
- 			p->numa_scan_period + jiffies_to_msecs(10));
- 
- 	task_numa_placement(p);
-+
-+	/* Record the fault, double the weight if pages were migrated */
-+	p->numa_faults[node] += pages << migrated;
- }
- 
- static void reset_ptenuma_scan(struct task_struct *p)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index cc03cfd..9c26d88 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -503,6 +503,18 @@ DECLARE_PER_CPU(struct rq, runqueues);
- #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
- #define raw_rq()		(&__raw_get_cpu_var(runqueues))
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+extern void sched_setnuma(struct task_struct *p, int node, int shared);
-+static inline void task_numa_free(struct task_struct *p)
-+{
-+	kfree(p->numa_faults);
-+}
-+#else /* CONFIG_NUMA_BALANCING */
-+static inline void task_numa_free(struct task_struct *p)
-+{
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- #ifdef CONFIG_SMP
- 
- #define rcu_dereference_check_sched_domain(p) \
 -- 
-1.8.1.4
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
