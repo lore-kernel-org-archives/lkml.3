@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab3FZDLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jun 2013 23:11:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40894 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab3FZDLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jun 2013 23:11:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,941,1363158000"; 
-   d="scan'208";a="335567569"
-Message-ID: <1372216282.8177.4.camel@envy.home>
-Subject: Re: [PATCH 8/8] pch_gbe: Add MinnowBoard support
-From: Darren Hart <dvhart@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders@circuitco.com, vishal.l.verma@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
-Date: Tue, 25 Jun 2013 20:11:22 -0700
-In-Reply-To: <CAErSpo4PuKOqKM19Ra5D_jCH0SEtNTo95_EhyXVxYAB3J_27zg@mail.gmail.com>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
-	 <6c27e79870ec93f7a8c6692d4bcfebaee589fa6b.1372211451.git.dvhart@linux.intel.com>
-	 <CAErSpo4PuKOqKM19Ra5D_jCH0SEtNTo95_EhyXVxYAB3J_27zg@mail.gmail.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
+	id S1751677Ab3FZDPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jun 2013 23:15:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39008 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab3FZDPe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jun 2013 23:15:34 -0400
+Date: Wed, 26 Jun 2013 11:15:27 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: sage <sage@inktank.com>
+Cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH] ceph: Reconstruct the func ceph_reserve_caps.
+X-Priority: 3
+X-GUID: F902CAEB-0E08-4FD8-B02E-87353B707EB6
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Message-ID: <201306261115191951258@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5Q3FfFT003095
 
-On Tue, 2013-06-25 at 20:35 -0600, Bjorn Helgaas wrote:
-> On Tue, Jun 25, 2013 at 7:53 PM, Darren Hart <dvhart@linux.intel.com> wrote:
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ fs/ceph/caps.c  | 21 +++++++--------------
+ fs/ceph/super.h |  2 +-
+ 2 files changed, 8 insertions(+), 15 deletions(-)
 
-> >  static DEFINE_PCI_DEVICE_TABLE(pch_gbe_pcidev_id) = {
-> >         {.vendor = PCI_VENDOR_ID_INTEL,
-> >          .device = PCI_DEVICE_ID_INTEL_IOH1_GBE,
-> > +        .subvendor = PCI_VENDOR_ID_CIRCUITCO,
-> > +        .subdevice = PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD,
-> 
-> "MINNOWBOARD" seems like a pretty generic name for something that
-> probably refers only to the gigabit ethernet device in the EG20T.  If
-> you expect to use that same subdevice ID on other devices, I guess we
-> can add PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD to pci_ids.h.  If it will
-> only be used for the gigabit ethernet device, we would normally not
-> add a #define for it and would just use the hex constant here (see the
-> comment at the top of pci_ids.h).
-
-The firmware populates the subsystem vendor and device ID for every
-device on the PCH with PCI_VENDOR_ID_CIRCUITCO and
-PCI_DEVICE_ID_CIRCUITCO_MINNOWBOARD, respectively. Currently I have
-only made changes to pch_gbe to make use of it, but there is the
-possibility of using this ID elsewhere. I don't currently have plans to
-do so however. So if it is preferable, I can leave
-PCI_VENDOR_ID_CIRCUITCO in pci_ids.h and use 0x0001 here for the
-subsystem device ID.
-
+diff --git a/fs/ceph/caps.c b/fs/ceph/caps.c
+index da0f9b8..6d2655c 100644
+--- a/fs/ceph/caps.c
++++ b/fs/ceph/caps.c
+@@ -147,7 +147,7 @@ void ceph_adjust_min_caps(struct ceph_mds_client *mdsc, int delta)
+ 	spin_unlock(&mdsc->caps_list_lock);
+ }
+ 
+-int ceph_reserve_caps(struct ceph_mds_client *mdsc,
++void ceph_reserve_caps(struct ceph_mds_client *mdsc,
+ 		      struct ceph_cap_reservation *ctx, int need)
+ {
+ 	int i;
+@@ -155,7 +155,6 @@ int ceph_reserve_caps(struct ceph_mds_client *mdsc,
+ 	int have;
+ 	int alloc = 0;
+ 	LIST_HEAD(newcaps);
+-	int ret = 0;
+ 
+ 	dout("reserve caps ctx=%p need=%d\n", ctx, need);
+ 
+@@ -174,14 +173,15 @@ int ceph_reserve_caps(struct ceph_mds_client *mdsc,
+ 
+ 	for (i = have; i < need; i++) {
+ 		cap = kmem_cache_alloc(ceph_cap_cachep, GFP_NOFS);
+-		if (!cap) {
+-			ret = -ENOMEM;
+-			goto out_alloc_count;
+-		}
++		if (!cap)
++			break;
+ 		list_add(&cap->caps_item, &newcaps);
+ 		alloc++;
+ 	}
+-	BUG_ON(have + alloc != need);
++	/* we didn't manage to reserve as much as we needed */
++	if (have + alloc != need)
++		pr_warn("reserve caps ctx=%p ENOMEM need=%d got=%d\n",
++			ctx, need, have + alloc);
+ 
+ 	spin_lock(&mdsc->caps_list_lock);
+ 	mdsc->caps_total_count += alloc;
+@@ -197,13 +197,6 @@ int ceph_reserve_caps(struct ceph_mds_client *mdsc,
+ 	dout("reserve caps ctx=%p %d = %d used + %d resv + %d avail\n",
+ 	     ctx, mdsc->caps_total_count, mdsc->caps_use_count,
+ 	     mdsc->caps_reserve_count, mdsc->caps_avail_count);
+-	return 0;
+-
+-out_alloc_count:
+-	/* we didn't manage to reserve as much as we needed */
+-	pr_warning("reserve caps ctx=%p ENOMEM need=%d got=%d\n",
+-		   ctx, need, have);
+-	return ret;
+ }
+ 
+ int ceph_unreserve_caps(struct ceph_mds_client *mdsc,
+diff --git a/fs/ceph/super.h b/fs/ceph/super.h
+index 7ccfdb4..dfbb729 100644
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -534,7 +534,7 @@ extern int __ceph_caps_mds_wanted(struct ceph_inode_info *ci);
+ extern void ceph_caps_init(struct ceph_mds_client *mdsc);
+ extern void ceph_caps_finalize(struct ceph_mds_client *mdsc);
+ extern void ceph_adjust_min_caps(struct ceph_mds_client *mdsc, int delta);
+-extern int ceph_reserve_caps(struct ceph_mds_client *mdsc,
++extern void ceph_reserve_caps(struct ceph_mds_client *mdsc,
+ 			     struct ceph_cap_reservation *ctx, int need);
+ extern int ceph_unreserve_caps(struct ceph_mds_client *mdsc,
+ 			       struct ceph_cap_reservation *ctx);
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
-
+1.8.1.2
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
