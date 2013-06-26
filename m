@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab3FZScN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 14:32:13 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35549 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab3FZScL (ORCPT
+	id S1753022Ab3FZScf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 14:32:35 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51808 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab3FZScd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 14:32:11 -0400
-Message-ID: <51CB32E0.3040106@linux.vnet.ibm.com>
-Date: Wed, 26 Jun 2013 23:58:48 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 26 Jun 2013 14:32:33 -0400
+Message-ID: <51CB33BE.2020601@wwwdotorg.org>
+Date: Wed, 26 Jun 2013 12:32:30 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, peterz@infradead.org,
-        fweisbec@gmail.com, oleg@redhat.com, walken@google.com,
-        mingo@kernel.org, linux-arch@vger.kernel.org,
-        vincent.guittot@linaro.org, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, namhyung@kernel.org, tglx@linutronix.de,
-        laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sbw@mit.edu,
-        David Laight <David.Laight@ACULAB.COM>, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent
- CPU offline
-References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com> <20130625220026.GG3828@linux.vnet.ibm.com> <51CAF624.6060004@linux.vnet.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com> <20130626143424.GN3828@linux.vnet.ibm.com> <1372258271.18733.256.camel@gandalf.local.home> <20130626152148.GA4405@mtj.dyndns.org> <1372260823.18733.263.camel@gandalf.local.home> <20130626172948.GD4405@mtj.dyndns.org>
-In-Reply-To: <20130626172948.GD4405@mtj.dyndns.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
+Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org> <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org> <51CA2B03.4080106@wwwdotorg.org> <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com>
+In-Reply-To: <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062618-4790-0000-0000-000008FD11DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 10:59 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Jun 26, 2013 at 11:33:43AM -0400, Steven Rostedt wrote:
->> I thought the whole deal with this patchset was to remove stop_machine
->> from CPU hotplug. Why halt all CPUs just to remove one? stomp_machine()
->> is extremely intrusive for the entire system, where as one CPU making
->> sure all CPUs schedule isn't very intrusive at all.
+On 06/26/2013 07:20 AM, Grant Likely wrote:
+> On Wed, Jun 26, 2013 at 12:42 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 06/25/2013 12:11 PM, Leif Lindholm wrote:
+>>> This patch provides documentation of the [U]EFI runtime services and
+>>> configuration features.
 >>
->> I didn't think the idea of this patch set was to make CPU hotplug
->> faster, just less intrusive to the system.
+>>
+>>> diff --git a/Documentation/arm/uefi.txt b/Documentation/arm/uefi.txt
+>>
+>>> +The implementation depends on receiving pointers to the UEFI memory map
+>>> +and System Table in a Flattened Device Tree - so is only available with
+>>> +CONFIG_OF.
+>>> +
+>>> +It (early) parses the FDT for the following parameters:
+>>
+>> Part of this document (the raw requirements for DT content, rather than
+>> the discussion of OS implementation/behaviour in parsing/interpreting
+>> the properties) should be part of a file in
+>> Documentation/devicetree/bindings/ (arm/uefi.txt?).
+>>
+>> What node are these properties expected to be contained within?
+>>
+>> Shouldn't that node be required to contain a compatible value, which
+>> would define the schema for the other properties?
 > 
-> Yeap, removal of stop_machine is a great improvement in itself.
-
-Absolutely. To make hotplug less intrusive on the system.
-
->  ISTR
-> mentions of hot-unplug latency but I could be mistaken.  Srivatsa, can
-> you please chime in on that?
+> Typically, a compatible property isn't only used for nodes that
+> represent a device or a so-called 'virtual' device (ie. such as to
+> describe how all the sound complex is wired together) since that
+> should be the clue to an OS that a device driver will bind against the
+> node. I think these properties can be dropped into /chosen without
+> defining a new compatible value.
 > 
+>>> +- 'efi-system-table':
+>>> +  Physical address of the system table. (required)
+>>> +- 'efi-runtime-mmap':
+>>> +  Physical address of an EFI memory map, containing at least
+>>> +  the regions to be preserved. (required)
+>>> +- 'efi-runtime-mmap-size':
+>>> +  Size in bytes of the provided memory map. (required)
+>>> +- 'efi-mmap-desc-size':
+>>> +  Size of each descriptor in the memory map. (override default)
+>>> +- 'efi-mmap-desc-ver':
+>>> +  Memory descriptor format version. (override default)
+>>> +
+>>> +Since UEFI firmware on ARM systems are required to use a 1:1 memory map
+>>> +even on LPAE-capable systems, the above fields are 32-bit regardless.
+>>
+>> What about ARMv8? Is the intention to have a separate definition for the
+>> UEFI bindings on ARMv8, so that compatibility isn't an issue? What if a
+>> future version of UEFI allows LPAE usage?
+> 
+> It is unlikely that will happen on v7 since newer versions of UEFI are
+> expected to remain backwards compatible with the current spec.
 
-Yes, we were discussing hot-unplug latency for use-cases such as
-suspend/resume. We didn't want to make those operations slower in the
-process of removing stop_machine() from hotplug.
+The expectation of backwards-compatibility sounds nice, but it seems a
+little dangerous to outright rely on it.
 
-Regards,
-Srivatsa S. Bhat
+Even if not a regular compatible property, can we define a property that
+indicates the UEFI revision or revision of this DT binding, so that if
+we ever have to change it, there is some way of explicitly indicating
+which exact schema the DT corresponds to, rather than having to
+reverse-engineer it from the set of properties that "just happen" to be
+present in DT?
 
+This is rather like the firmware node discussion that happened recently,
+where we were expecting to represent a firmware (secure mode) interface
+by a DT node, which would have a compatible value, which in turn would
+convey information about which "OS" the secure firmware was running, and
+well as any potential SoC-/OEM-/board-specific interface provided by it.
+
+And who knows, what if UEFI gets replaced someday; presumably we'd want
+some way of explicitly stating "running under UEFI" vs. "running under
+something else"?
