@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab3FZPWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 11:22:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59704 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3FZPWo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 11:22:44 -0400
-Date: Wed, 26 Jun 2013 16:22:10 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, wfp5p@virginia.edu,
-        vinod.koul@linux.intel.com, ramesh.babu@intel.com,
-        namartax.kohli@intel.com, yongjun_wei@trendmicro.com.cn,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130626152210.GR27646@sirena.org.uk>
-References: <CAPgLHd89RzJrpMEs+zR8cQvGHruWvne8e0kGb1LeCqoHdKogHA@mail.gmail.com>
+	id S1751968Ab3FZPXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 11:23:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35628 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751380Ab3FZPXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 11:23:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,945,1363158000"; 
+   d="scan'208";a="360880001"
+Message-ID: <51CB0761.1020103@intel.com>
+Date: Wed, 26 Jun 2013 23:23:13 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w1WLgcEPVIWvtHEy"
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd89RzJrpMEs+zR8cQvGHruWvne8e0kGb1LeCqoHdKogHA@mail.gmail.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH -next] ASoC: mid-x86: Convert to use devm_* APIs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [Resend patch v8 0/13] use runnable load in schedule balance
+References: <1371694737-29336-1-git-send-email-alex.shi@intel.com> <20130626142759.GM28407@twins.programming.kicks-ass.net>
+In-Reply-To: <20130626142759.GM28407@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---w1WLgcEPVIWvtHEy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> > 
+>> > [Resend patch v8 01/13] Revert "sched: Introduce temporary
+>> > [Resend patch v8 02/13] sched: move few runnable tg variables into
+>> > [Resend patch v8 03/13] sched: set initial value of runnable avg for
+>> > [Resend patch v8 04/13] sched: fix slept time double counting in
+>> > [Resend patch v8 05/13] sched: update cpu load after task_tick.
+>> > [Resend patch v8 06/13] sched: compute runnable load avg in cpu_load
+>> > [Resend patch v8 07/13] sched: consider runnable load average in
+>> > [Resend patch v8 08/13] sched/tg: remove blocked_load_avg in balance
+>> > [Resend patch v8 09/13] sched: change cfs_rq load avg to unsigned
+>> > [Resend patch v8 10/13] sched/tg: use 'unsigned long' for load
+>> > [Resend patch v8 11/13] sched/cfs_rq: change atomic64_t removed_load
+>> > [Resend patch v8 12/13] sched/tg: remove tg.load_weight
+>> > [Resend patch v8 13/13] sched: get_rq_runnable_load() can be static
+> I applied all except patch 8.
 
-On Tue, Jun 25, 2013 at 10:16:56AM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->=20
-> devm_* APIs are device managed and make code simpler.
+Uh, I will reconsider the patch 8th later. And millions thanks for
+picking up others! :)
 
-Applied, thanks.
-
---w1WLgcEPVIWvtHEy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIbBAEBAgAGBQJRywcfAAoJELSic+t+oim93ZsP+PCyAc5HubQFBzarNnVXlhEo
-zYozhcA5oLg6PqopnqavLV0Zn1lEZE14EBMRo2tdUm6UWeV7sYrdatDkLTriqgm9
-I4b5cm9tRRAjwlqJrsY4nE39hPpMECFADO80vyEfKrCpNFvSGFVZhGFOH8J/al7a
-N+Gy2Yr7/qU0m1paaoKpkAYeZg1v0yVqUJvryQVIQcG2RdhsEswIOyGZGRU6E1jU
-pdIhy+fBsvwwitJdz5aoVUUKQiSJYlzq6r4L6TYf8Ul1aunSkrGNmL8qygeGrmv3
-tCJeZ/qfmeIltKupszNm6y5lvRhpLggGBG1tK/jGqAOKM60iVloW3wUgOfzWhrav
-kB4zQac3F2iNI37PBUBqfUhPN7DHEOhoBNJQSoyMZvdXut5q8ixo8A2gMq7xgYFX
-1OyHvz2//0fj3jG7p2Jh0KbTNAdWrs/mDfBFGe1YCOMmi0rIohOvPjoVo5ENIMwG
-tm2U/GfpF/3fvEDcy1csMVfkBBvOGqVklhoFsUxAjjRVL4Vs4Xew6UVtAIquKVLZ
-1PPdfrv+Pr89O6sV7vqH6hVTKjGn9wJz6j3sKJzEFtBF3PRufjE4hWI85CxNWYds
-dzUyT3/dSasdlXXMowL9w7/uEw/Aw04A9yEViOhSqWpeCB1z5Yj1WRk30P7GxlZc
-ZCJFnnUN9wuqmk0dc6w=
-=oLF2
------END PGP SIGNATURE-----
-
---w1WLgcEPVIWvtHEy--
+-- 
+Thanks
+    Alex
