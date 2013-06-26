@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3FZOkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 10:40:14 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57619 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab3FZOkK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 10:40:10 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 26 Jun 2013 07:40:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org,
-        Greg Ungerer <gerg@uclinux.org>
-Subject: Re: [ 00/17] 3.0.84-stable review
-Message-ID: <20130626144016.GC31998@roeck-us.net>
-References: <20130625183915.443950649@linuxfoundation.org>
- <20130625192300.GA10427@roeck-us.net>
- <CAMuHMdVzqOLTVWHeGEFpkpDTt8hpor9zQpnn4bPDaNEGWnb=SQ@mail.gmail.com>
- <20130625193951.GF15184@roeck-us.net>
- <CAMuHMdWK9xorBaTH+Zg9z1XU=JMsSffzGEfv5KHXnMZLX04PCw@mail.gmail.com>
+	id S1752660Ab3FZOki (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 10:40:38 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57208 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752645Ab3FZOke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 10:40:34 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Nishanth Menon <nm@ti.com>
+Subject: [-next PATCH 2/2] ARM: scu: provide inline dummy functions when SCU is not present
+Date: Wed, 26 Jun 2013 09:39:47 -0500
+Message-ID: <1372257587-21720-3-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372257587-21720-1-git-send-email-nm@ti.com>
+References: <1372257587-21720-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMuHMdWK9xorBaTH+Zg9z1XU=JMsSffzGEfv5KHXnMZLX04PCw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 09:34:42AM +0200, Geert Uytterhoeven wrote:
-> On Tue, Jun 25, 2013 at 9:39 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On Tue, Jun 25, 2013 at 09:32:26PM +0200, Geert Uytterhoeven wrote:
-> >> Hi G¸nther,
-> >>
-> >> On Tue, Jun 25, 2013 at 9:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >> > Build m68k:defconfig passed
-> >> > Build m68k:apollo_defconfig passed
-> >> > Build m68k:m5272c3_defconfig failed
-> >> > Build m68k:m5307c3_defconfig failed
-> >> > Build m68k:m5249evb_defconfig failed
-> >> > Build m68k:m5407c3_defconfig failed
-> >> > Build m68k:mac_defconfig passed
-> >> > Build m68k:multi_defconfig passed
-> >> > Build m68k:sun3_defconfig passed
-> >> > Build m68k:sun3x_defconfig passed
-> >> > Build m68k:mvme16x_defconfig passed
-> >> > Build m68k:hp300_defconfig passed
-> >>
-> >> m68k:defconfig is an alias for m68k:multi_defconfig, so you can drop
-> >> one of them.
-> >>
-> >> Furthermore, m68k:multi_defconfig is the union of all m68k "classic MMU"
-> >> defconfigs, except for sun3_defconfig (due to the incompatible MMU type).
-> >> Hence dropping apollo_defconfig, mac_defconfig, sun3x_defconfig,
-> >> mvme16x_defconfig, and hp300_defconfig would reduce your build coverage
-> >> only marginally. Of course, if you have too many spare cycles ;-)
-> >>
-> > Thanks, I'll do that. The complete build for three releases takes 15+ hours
-> > with i7-3700k, so reducing that a bit doesn't hurt.
-> 
-> FYI, you still built m68k:mvme16x_defconfig for v3.9.7-95-g6a2f14b.
-> 
-Thanks for the note. Must have mmissed it.
+On platforms such as Cortex-A15 based OMAP5, SCU is not used, however
+since much code is shared between Cortex-A9 based OMAP4 (which uses
+SCU) and OMAP5, It does help to have inline functions returning error
+values when SCU is not present on the platform.
 
-> > Would there be any useful builds to add ?
-> 
-> You could add m68k:m5475evb_defconfig, which is the only Coldfire
-> defconfig with MMU=y.
-> 
-Done, thanks!
+arch/arm/mach-omap2/omap-smp.c which is common between OMAP4 and 5
+handles the SCU usage only for OMAP4.
 
-Guenter
+This fixes the following build failure with OMAP5 only build:
+arch/arm/mach-omap2/built-in.o: In function `omap4_smp_init_cpus':
+arch/arm/mach-omap2/omap-smp.c:185: undefined reference to `scu_get_core_count'
+arch/arm/mach-omap2/built-in.o: In function `omap4_smp_prepare_cpus':
+arch/arm/mach-omap2/omap-smp.c:211: undefined reference to `scu_enable'
+
+Reported-by: Pekon Gupta <pekon@ti.com>
+Reported-by: Vincent Stehl√© <v-stehle@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/include/asm/smp_scu.h |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/smp_scu.h b/arch/arm/include/asm/smp_scu.h
+index 18d1693..433f9d9 100644
+--- a/arch/arm/include/asm/smp_scu.h
++++ b/arch/arm/include/asm/smp_scu.h
+@@ -23,10 +23,21 @@ static inline unsigned long scu_a9_get_base(void)
+ 	return pa;
+ }
+ 
++#ifdef CONFIG_HAVE_ARM_SCU
+ unsigned int scu_get_core_count(void __iomem *);
+ int scu_power_mode(void __iomem *, unsigned int);
++#else
++static inline unsigned int scu_get_core_count(void __iomem *scu_base)
++{
++	return 0;
++}
++static inline int scu_power_mode(void __iomem *scu_base, unsigned int mode)
++{
++	return -EINVAL;
++}
++#endif
+ 
+-#ifdef CONFIG_SMP
++#if defined(CONFIG_SMP) && defined(CONFIG_HAVE_ARM_SCU)
+ void scu_enable(void __iomem *scu_base);
+ #else
+ static inline void scu_enable(void __iomem *scu_base) {}
+-- 
+1.7.9.5
+
