@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab3FZR2A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 13:28:00 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:37016 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab3FZR17 (ORCPT
+	id S1752806Ab3FZR2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 13:28:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52939 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab3FZR2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 13:27:59 -0400
-Date: Wed, 26 Jun 2013 10:27:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] rculist: list_first_or_null_rcu() should use
- list_entry_rcu()
-Message-ID: <20130626172753.GC4405@mtj.dyndns.org>
-References: <20130621003244.GD11837@mtj.dyndns.org>
+	Wed, 26 Jun 2013 13:28:18 -0400
+Date: Wed, 26 Jun 2013 10:28:17 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/11] staging/lustre: fix build error on non-x86
+ platforms
+Message-ID: <20130626172817.GB6842@kroah.com>
+References: <1372119326-3565-1-git-send-email-bergwolf@gmail.com>
+ <1372119326-3565-8-git-send-email-bergwolf@gmail.com>
+ <20130625022244.GG18752@kroah.com>
+ <CA+a=Yy6GD6xAG=qULGbwOA1wCt-seVtCv1tufGvmmO-jpbgL3A@mail.gmail.com>
+ <220AF645-E299-4B35-9E15-858C7A10FF3E@intel.com>
+ <20130625152003.GB20244@kroah.com>
+ <CA+a=Yy48DH0q7-m8J0r-0oBGLbEBx5AwrBKCEb2pZ3AsPJg-Xw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130621003244.GD11837@mtj.dyndns.org>
+In-Reply-To: <CA+a=Yy48DH0q7-m8J0r-0oBGLbEBx5AwrBKCEb2pZ3AsPJg-Xw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-list_first_or_null() should test whether the list is empty and return
-pointer to the first entry if not in a RCU safe manner.  It's broken
-in several ways.
+On Wed, Jun 26, 2013 at 04:52:03PM +0800, Peng Tao wrote:
+> Since it takes time to patch kernel's generic watchdog, can we get
+> this patch in so that we have a build-able Lustre base, and then we
+> can work on push necessary bits to kernel watchdog? I understand that
+> we shouldn't reinvent things. Just don't want it to be a blocking
+> issue for build and if we simply delete it, we lose a feature that is
+> still missing in kernel watchdog.
 
-* It compares __kernel @__ptr with __rcu @__next triggering the
-  following sparse warning.
+Why not delete it, and then work on getting the feature into the
+upstream watchdog?  Given that this stuff isn't going to be enabled
+until 3.12 anyway, you have time, right?
 
-  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
+Shortcuts aren't really allowed in upstream kernel development, you know
+that :)
 
-* It doesn't perform rcu_dereference*() and computes the entry address
-  using container_of() directly from the __rcu pointer which is
-  inconsitent with other rculist interface.  As a result, all three
-  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
-  dereference the pointer w/o going through read barrier.
+thanks,
 
-* While ->next dereference passes through list_next_rcu(), the
-  compiler is still free to fetch ->next more than once and thus
-  nullify the "__ptr != __next" condition check.
-
-Fix it by making list_first_or_null_rcu() dereference ->next directly
-using ACCESS_ONCE() and then use list_entry_rcu() on it like other
-rculist accessors.
-
-v2: Paul pointed out that the compiler may fetch the pointer more than
-    once nullifying the condition check.  ACCESS_ONCE() added on
-    ->next dereference.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: stable@vger.kernel.org
----
-Paul, I was mistaken.  For list_first_or_null_rcu(), @ptr is constant.
-It's a value which can't change and usually not even a l-value.
-ACCESS_ONCE() is necessary when dereferencing @ptr->next, which may
-change while list_first_or_null_rcu() is in progress.
-
-Thanks.
-
- include/linux/rculist.h |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -266,9 +266,10 @@ static inline void list_splice_init_rcu(
-  * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
-  */
- #define list_first_or_null_rcu(ptr, type, member) \
--	({struct list_head *__ptr = (ptr); \
--	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
--	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
-+	({struct list_head *__ptr = ptr; \
-+	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
-+	  likely(__ptr != __next) ? \
-+		list_entry_rcu(__next, type, member) : NULL; \
- 	})
- 
- /**
+greg k-h
