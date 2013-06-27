@@ -1,196 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab3F0OEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:04:33 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:62271 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3F0OEc (ORCPT
+	id S1752609Ab3F0OG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:06:28 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46710 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3F0OG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:04:32 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH] clk: add MOXA ART SoCs clock driver
-Date: Thu, 27 Jun 2013 16:03:54 +0200
-Message-Id: <1372341834-6557-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
+	Thu, 27 Jun 2013 10:06:27 -0400
+Date: Thu, 27 Jun 2013 15:06:14 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] delayed kobject release: help find buggy code
+Message-ID: <20130627140613.GB12530@flint.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds MOXA ART SoCs clock driver support.
+Greg,
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+This is an updated copy of my delayed kobject release debugging patch
+from 2011, which I notice hasn't hit mainline.  Please consider merging
+this so that driver authors and subsystem maintainers have a way to test
+code for kobject refcounting errors.
+
+Moreover, please also consider whether to make the debug option default
+to 'y' when CONFIG_DEBUG_KERNEL is enabled.
+
+8<====
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: kobject: delayed kobject release: help find buggy drivers
+
+Implement debugging for kobject release functions.  kobjects are
+reference counted, so the drop of the last reference to them is not
+predictable. However, the common case is for the last reference to be
+the kobject's removal from a subsystem, which results in the release
+function being immediately called.
+
+This can hide subtle bugs, which can occur when another thread holds a
+reference to the kobject at the same time that a kobject is removed.
+This results in the release method being delayed.
+
+In order to make these kinds of problems more visible, the following
+patch implements a delayed release; this has the effect that the
+release function will be out of order with respect to the removal of
+the kobject in the same manner that it would be if a reference was
+being held.
+
+This provides us with an easy way to allow driver writers to debug
+their drivers and fix otherwise hidden problems.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
+ include/linux/kobject.h |    4 ++++
+ lib/Kconfig.debug       |   19 +++++++++++++++++++
+ lib/kobject.c           |   22 +++++++++++++++++++---
+ 3 files changed, 42 insertions(+), 3 deletions(-)
 
-Notes:
-    Applies to next-20130619
-
- drivers/clk/Makefile     |   1 +
- drivers/clk/clk-moxart.c | 141 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 142 insertions(+)
- create mode 100644 drivers/clk/clk-moxart.c
-
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index f41e3e3..92e4532 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
- obj-$(CONFIG_ARCH_ZYNQ)		+= zynq/
- obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
- obj-$(CONFIG_PLAT_SAMSUNG)	+= samsung/
-+obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
+diff --git a/include/linux/kobject.h b/include/linux/kobject.h
+index 939b112..de6dcbcc 100644
+--- a/include/linux/kobject.h
++++ b/include/linux/kobject.h
+@@ -26,6 +26,7 @@
+ #include <linux/kernel.h>
+ #include <linux/wait.h>
+ #include <linux/atomic.h>
++#include <linux/workqueue.h>
  
- obj-$(CONFIG_X86)		+= x86/
+ #define UEVENT_HELPER_PATH_LEN		256
+ #define UEVENT_NUM_ENVP			32	/* number of env pointers */
+@@ -65,6 +66,9 @@ struct kobject {
+ 	struct kobj_type	*ktype;
+ 	struct sysfs_dirent	*sd;
+ 	struct kref		kref;
++#ifdef CONFIG_DEBUG_KOBJECT_RELEASE
++	struct delayed_work	release;
++#endif
+ 	unsigned int state_initialized:1;
+ 	unsigned int state_in_sysfs:1;
+ 	unsigned int state_add_uevent_sent:1;
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 566cf2b..1f9de06 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -688,6 +688,25 @@ config DEBUG_KOBJECT
+ 	  If you say Y here, some extra kobject debugging messages will be sent
+ 	  to the syslog. 
  
-diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
-new file mode 100644
-index 0000000..893a63b
---- /dev/null
-+++ b/drivers/clk/clk-moxart.c
-@@ -0,0 +1,141 @@
-+/*
-+ * MOXA ART SoCs clock driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
++config DEBUG_KOBJECT_RELEASE
++	bool "kobject release debugging"
++	depends on DEBUG_KERNEL
++	help
++	  kobjects are reference counted objects.  This means that their
++	  last reference count put is not predictable, and the kobject can
++	  live on past the point at which a driver decides to drop it's
++	  initial reference to the kobject gained on allocation.  An
++	  example of this would be a struct device which has just been
++	  unregistered.
 +
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
++	  However, some buggy drivers assume that after such an operation,
++	  the memory backing the kobject can be immediately freed.  This
++	  goes completely against the principles of a refcounted object.
 +
-+static DEFINE_SPINLOCK(_lock);
++	  If you say Y here, the kernel will delay the release of kobjects
++	  on the last reference count to improve the visibility of this
++	  kind of kobject release bug.
 +
-+struct clk_device {
-+	struct clk_hw	hw;
-+	void __iomem	*reg_pmu;
-+	spinlock_t		*lock;
-+};
-+
-+static unsigned long moxart_recalc_rate(struct clk_hw *c_hw,
-+	unsigned long parent_rate)
+ config DEBUG_HIGHMEM
+ 	bool "Highmem debugging"
+ 	depends on DEBUG_KERNEL && HIGHMEM
+diff --git a/lib/kobject.c b/lib/kobject.c
+index b7e29a6..3b1dbdc 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -545,8 +545,8 @@ static void kobject_cleanup(struct kobject *kobj)
+ 	struct kobj_type *t = get_ktype(kobj);
+ 	const char *name = kobj->name;
+ 
+-	pr_debug("kobject: '%s' (%p): %s\n",
+-		 kobject_name(kobj), kobj, __func__);
++	pr_debug("kobject: '%s' (%p): %s, parent %p\n",
++		 kobject_name(kobj), kobj, __func__, kobj->parent);
+ 
+ 	if (t && !t->release)
+ 		pr_debug("kobject: '%s' (%p): does not have a release() "
+@@ -580,9 +580,25 @@ static void kobject_cleanup(struct kobject *kobj)
+ 	}
+ }
+ 
++#ifdef CONFIG_DEBUG_KOBJECT_RELEASE
++static void kobject_delayed_cleanup(struct work_struct *work)
 +{
-+	unsigned int mul, val, div;
-+	unsigned long ret;
-+	struct clk_device *dev_clk = container_of(c_hw, struct clk_device, hw);
-+
-+	mul = (readl(dev_clk->reg_pmu + 0x30) >> 3) & 0x1ff;
-+	val = (readl(dev_clk->reg_pmu + 0x0c) >> 4) & 0x7;
-+
-+	switch (val) {
-+	case 0:
-+		div = 2;
-+		break;
-+	case 1:
-+		div = 3;
-+		break;
-+	case 2:
-+		div = 4;
-+		break;
-+	case 3:
-+		div = 6;
-+		break;
-+	case 4:
-+		div = 8;
-+		break;
-+	default:
-+		div = 2;
-+		break;
-+	}
-+
-+	ret = (mul * 1200000 / div);
-+
-+	/* UC-7112-LX: ret=48000000 mul=80 div=2 val=0 */
-+	pr_debug("%s: ret=%lu mul=%d div=%d val=%d\n",
-+		__func__, ret, mul, div, val);
-+	return ret;
++	kobject_cleanup(container_of(to_delayed_work(work),
++				     struct kobject, release));
 +}
++#endif
 +
-+static const struct clk_ops moxart_clk_ops = {
-+	.recalc_rate = moxart_recalc_rate,
-+};
-+
-+static const struct of_device_id moxart_pmu_match[] = {
-+	{ .compatible = "moxa,moxart-pmu" },
-+	{ },
-+};
-+
-+static const struct of_device_id moxart_sysclk_match[] = {
-+	{ .compatible = "moxa,moxart-sysclk" },
-+	{ }
-+};
-+
-+void __init moxart_of_clk_init(void)
-+{
-+	struct device_node *node, *clk_node;
-+	struct clk *clk;
-+	struct clk_device *dev_clk;
-+	struct clk_init_data init;
-+	int err;
-+	const char *clk_name;
-+
-+	dev_clk = kzalloc(sizeof(*dev_clk), GFP_KERNEL);
-+	if (WARN_ON(!dev_clk))
-+		return;
-+
-+	dev_clk->lock = &_lock;
-+
-+	node = of_find_matching_node(NULL, moxart_pmu_match);
-+	if (!node) {
-+		pr_err("%s: can't find PMU DT node\n", __func__);
-+		return;
-+	}
-+
-+	dev_clk->reg_pmu = of_iomap(node, 0);
-+	if (IS_ERR(dev_clk->reg_pmu)) {
-+		pr_err("%s: of_iomap failed\n", __func__);
-+		return;
-+	}
-+
-+	clk_node = of_find_matching_node(NULL, moxart_sysclk_match);
-+	if (!clk_node) {
-+		pr_err("%s: can't find sys_clk DT node\n", __func__);
-+		return;
-+	}
-+
-+	clk_name = clk_node->name;
-+
-+	of_property_read_string(clk_node, "clock-output-names",
-+		&clk_name);
-+
-+	init.name = clk_name;
-+	init.ops = &moxart_clk_ops;
-+	init.flags = CLK_IS_ROOT;
-+	init.num_parents = 0;
-+
-+	dev_clk->hw.init = &init;
-+
-+	clk = clk_register(NULL, &dev_clk->hw);
-+
-+	if (WARN_ON(IS_ERR(clk))) {
-+		kfree(dev_clk);
-+		return;
-+	}
-+
-+	clk_register_clkdev(clk, NULL, clk_name);
-+
-+	err = of_clk_add_provider(clk_node, of_clk_src_simple_get, clk);
-+
-+	pr_info("%s: %s finished\n", node->full_name, __func__);
-+}
+ static void kobject_release(struct kref *kref)
+ {
+-	kobject_cleanup(container_of(kref, struct kobject, kref));
++	struct kobject *kobj = container_of(kref, struct kobject, kref);
++#ifdef CONFIG_DEBUG_KOBJECT_RELEASE
++	pr_debug("kobject: '%s' (%p): %s, parent %p (delayed)\n",
++		 kobject_name(kobj), kobj, __func__, kobj->parent);
++	INIT_DELAYED_WORK(&kobj->release, kobject_delayed_cleanup);
++	schedule_delayed_work(&kobj->release, HZ);
++#else
++	kobject_cleanup(kobj);
++#endif
+ }
+ 
+ /**
+
 -- 
-1.8.2.1
-
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
