@@ -1,225 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab3F0NGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:06:05 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:62414 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752902Ab3F0Mug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:50:36 -0400
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 08/51] Input: atmel_mxt_ts - Initialise IRQ before probing
-Date: Thu, 27 Jun 2013 13:48:43 +0100
-Message-Id: <1372337366-9286-9-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+	id S1753992Ab3F0NGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:06:11 -0400
+Received: from mga14.intel.com ([143.182.124.37]:8169 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752902Ab3F0NGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 09:06:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,952,1363158000"; 
+   d="scan'208";a="260896702"
+Date: Thu, 27 Jun 2013 16:09:40 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
+Message-ID: <20130627130940.GV9294@intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
+ <20130625141556.2f9de7b1@jbarnes-desktop>
+ <20130626121757.GP9294@intel.com>
+ <CAErSpo6aQMtav89V8wyu+NZxro91o1MnB1ViG-4ExrCgLPKmjg@mail.gmail.com>
+ <1372284901.30572.625.camel@ul30vt.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372284901.30572.625.camel@ul30vt.home>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the interrupt handler to be used to detect CHG line during config
-download. We need to make sure we do not report events if input device not yet
-registered.
+On Wed, Jun 26, 2013 at 04:15:01PM -0600, Alex Williamson wrote:
+> On Wed, 2013-06-26 at 14:59 -0600, Bjorn Helgaas wrote:
+> > [+cc Alex]
+> > 
+> > On Wed, Jun 26, 2013 at 6:17 AM, Mika Westerberg
+> > <mika.westerberg@linux.intel.com> wrote:
+> > > On Tue, Jun 25, 2013 at 02:15:56PM -0700, Jesse Barnes wrote:
+> > >> On Tue, 25 Jun 2013 19:22:10 +0300
+> > >> Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> > >>
+> > >> > +   if (!(pci_probe & PCI_NOASSIGN_ROMS)) {
+> > >> > +           pr_info("Thunderbolt host router detected disabling ROMs\n");
+> > >> > +           pci_probe |= PCI_NOASSIGN_ROMS;
+> > >> > +   }
+> > >>
+> > >> I wonder if this should just be the default on x86?  Or do we allocate
+> > >> ROM space to address some other platform where we need it and the BIOS
+> > >> doesn't do it for the devices we care about?
+> > >
+> > > Good question. In our case it definitely helps to have pci=norom the
+> > > default. Can't tell if it might break something that depends on the current
+> > > behaviour.
+> > 
+> > I think the current default behavior is that if the BIOS has assigned
+> > the ROM BAR, we keep that assignment, and if it hasn't, we allocate
+> > MEM space for it.  And "pci=norom" means that we don't allocate MEM
+> > space for it, even if the BIOS hasn't assigned it.
+> > 
+> > "pci=norom" is only implemented on x86.  I think most other arches
+> > allocate MEM space for ROMs, with no way to turn that off.  PA-RISC
+> > seems to ignore ROMs (dino_fixup_bus()), but that looks like the
+> > exception.
+> >
+> > I'm slightly concerned that if we make the x86 default be "never
+> > assign space for ROMs unless the BIOS has done it," we might break
+> > virtualized guests that need access to ROMs.  Alex?
+> 
+> Yep, I'm more than slightly concerned by that too.  Whenever possible we
+> want to pass the ROM to the guest since it may end up being a boot
+> device or drivers within the guest may require it.  We can pass the ROM
+> to the guest from an image file, but that requires someplace from which
+> to dump the image, which is usually PCI sysfs.  Thanks,
 
-data->enable_reporting is checked in each of the possible message handling
-function paths rather than higher up (such as at mxt_proc_message) because
-some objects may be used for completions (T6).
-
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   73 +++++++++++++++++++++---------
- 1 file changed, 51 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 55d7667..1e24e54 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -2,6 +2,7 @@
-  * Atmel maXTouch Touchscreen driver
-  *
-  * Copyright (C) 2010 Samsung Electronics Co.Ltd
-+ * Copyright (C) 2011-2012 Atmel Corporation
-  * Copyright (C) 2012 Google, Inc.
-  *
-  * Author: Joonyoung Shim <jy0922.shim@samsung.com>
-@@ -261,6 +262,9 @@ struct mxt_data {
- 
- 	/* for fw update in bootloader */
- 	struct completion bl_completion;
-+
-+	/* Enable reporting of input events */
-+	bool enable_reporting;
- };
- 
- static inline size_t mxt_obj_size(const struct mxt_object *obj)
-@@ -568,6 +572,10 @@ static void mxt_input_button(struct mxt_data *data, struct mxt_message *message)
- 	bool button;
- 	int i;
- 
-+	/* do not report events if input device not yet registered */
-+	if (!data->enable_reporting)
-+		return;
-+
- 	/* Active-low switch */
- 	for (i = 0; i < pdata->t19_num_keys; i++) {
- 		if (pdata->t19_keymap[i] == KEY_RESERVED)
-@@ -588,6 +596,10 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	int area;
- 	int pressure;
- 
-+	/* do not report events if input device not yet registered */
-+	if (!data->enable_reporting)
-+		return;
-+
- 	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
- 	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
- 	if (data->max_x < 1024)
-@@ -667,7 +679,7 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
- 		}
- 	} while (reportid != 0xff);
- 
--	if (update_input) {
-+	if (data->enable_reporting && update_input) {
- 		input_mt_report_pointer_emulation(data->input_dev, false);
- 		input_sync(data->input_dev);
- 	}
-@@ -685,6 +697,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 		return IRQ_HANDLED;
- 	}
- 
-+	if (!data->object_table)
-+		return IRQ_NONE;
-+
- 	return mxt_process_messages_until_invalid(data);
- }
- 
-@@ -746,6 +761,19 @@ static int mxt_make_highchg(struct mxt_data *data)
- 	return 0;
- }
- 
-+static int mxt_acquire_irq(struct mxt_data *data)
-+{
-+	int error;
-+
-+	enable_irq(data->irq);
-+
-+	error = mxt_make_highchg(data);
-+	if (error)
-+		return error;
-+
-+	return 0;
-+}
-+
- static int mxt_get_info(struct mxt_data *data)
- {
- 	struct i2c_client *client = data->client;
-@@ -819,6 +847,7 @@ static void mxt_free_object_table(struct mxt_data *data)
- {
- 	kfree(data->object_table);
- 	data->object_table = NULL;
-+	data->enable_reporting = false;
- 	data->T6_reportid = 0;
- 	data->T9_reportid_min = 0;
- 	data->T9_reportid_max = 0;
-@@ -849,6 +878,10 @@ static int mxt_initialize(struct mxt_data *data)
- 	if (error)
- 		goto err_free_object_table;
- 
-+	error = mxt_acquire_irq(data);
-+	if (error)
-+		goto err_free_object_table;
-+
- 	/* Check register init values */
- 	error = mxt_check_reg_init(data);
- 	if (error)
-@@ -886,6 +919,8 @@ static int mxt_initialize(struct mxt_data *data)
- 			info->matrix_xsize, info->matrix_ysize,
- 			info->object_num);
- 
-+	data->enable_reporting = true;
-+
- 	return 0;
- 
- err_free_object_table:
-@@ -1087,11 +1122,7 @@ static ssize_t mxt_update_fw_store(struct device *dev,
- 		dev_dbg(dev, "The firmware update succeeded\n");
- 		mxt_free_object_table(data);
- 
--		mxt_initialize(data);
--
--		enable_irq(data->irq);
--
--		error = mxt_make_highchg(data);
-+		error = mxt_initialize(data);
- 		if (error)
- 			return error;
- 	}
-@@ -1188,9 +1219,19 @@ static int mxt_probe(struct i2c_client *client,
- 
- 	mxt_calc_resolution(data);
- 
-+	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
-+				     pdata->irqflags | IRQF_ONESHOT,
-+				     client->name, data);
-+	if (error) {
-+		dev_err(&client->dev, "Failed to register interrupt\n");
-+		goto err_free_mem;
-+	}
-+
-+	disable_irq(client->irq);
-+
- 	error = mxt_initialize(data);
- 	if (error)
--		goto err_free_mem;
-+		goto err_free_irq;
- 
- 	__set_bit(EV_ABS, input_dev->evbit);
- 	__set_bit(EV_KEY, input_dev->evbit);
-@@ -1241,21 +1282,9 @@ static int mxt_probe(struct i2c_client *client,
- 	input_set_drvdata(input_dev, data);
- 	i2c_set_clientdata(client, data);
- 
--	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
--				     pdata->irqflags | IRQF_ONESHOT,
--				     client->name, data);
--	if (error) {
--		dev_err(&client->dev, "Failed to register interrupt\n");
--		goto err_free_object;
--	}
--
--	error = mxt_make_highchg(data);
--	if (error)
--		goto err_free_irq;
--
- 	error = input_register_device(input_dev);
- 	if (error)
--		goto err_free_irq;
-+		goto err_free_object;
- 
- 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
- 	if (error)
-@@ -1266,10 +1295,10 @@ static int mxt_probe(struct i2c_client *client,
- err_unregister_device:
- 	input_unregister_device(input_dev);
- 	input_dev = NULL;
--err_free_irq:
--	free_irq(client->irq, data);
- err_free_object:
- 	kfree(data->object_table);
-+err_free_irq:
-+	free_irq(client->irq, data);
- err_free_mem:
- 	input_free_device(input_dev);
- 	kfree(data);
--- 
-1.7.10.4
-
+OK, then I guess changing the default is out of the question. We don't want
+to break things.
