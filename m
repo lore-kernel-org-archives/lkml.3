@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab3F0DS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 23:18:59 -0400
-Received: from ozlabs.org ([203.10.76.45]:34579 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751673Ab3F0DS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 23:18:57 -0400
-Date: Thu, 27 Jun 2013 13:18:54 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@elte.hu, acme@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, mlpesant@us.ibm.com
-Subject: Re: [PATCH 15/15] perf, tools: Add perf stat --transaction v3
-Message-ID: <20130627031854.GA9793@concordia>
-References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
- <1366485563-16209-16-git-send-email-andi@firstfloor.org>
- <20130619085159.GA25177@concordia>
- <20130619144621.GW6123@two.firstfloor.org>
+	id S1752055Ab3F0DW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 23:22:29 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:45461 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab3F0DW1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 23:22:27 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3/5] Drivers: scsi: storvsc: Implement multi-channel
+ support
+Thread-Topic: [PATCH 3/5] Drivers: scsi: storvsc: Implement multi-channel
+ support
+Thread-Index: AQHOcuWLp2Kg5yHSpkeh+3gHvDVLmg==
+Date: Thu, 27 Jun 2013 03:22:25 +0000
+Message-ID: <1372303344.557.6.camel@dabdike>
+References: <1370372674-10046-1-git-send-email-kys@microsoft.com>
+	 <1370372709-10098-1-git-send-email-kys@microsoft.com>
+	 <1370372709-10098-3-git-send-email-kys@microsoft.com>
+In-Reply-To: <1370372709-10098-3-git-send-email-kys@microsoft.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.18.112.117]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <CDDDE8B0D64E6F43980E82A027B77EE3@sw.swsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619144621.GW6123@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5R3MXOU010992
 
-On Wed, Jun 19, 2013 at 04:46:21PM +0200, Andi Kleen wrote:
-> > This hard coded list isn't going to work for us on powerpc.
-> > 
-> > We don't have HLE, so we won't ever have an event for el-start.
-> > 
-> > I don't quite grok what the cycles-ct is about, checkpointed cycles?
-> 
-> The counter is check pointed on a transaction start, and set back to
-> the checkpoint when an abort happens. This allows to count the cycles
-> wasted in aborts, when you subtract from cycles-t.
+On Tue, 2013-06-04 at 12:05 -0700, K. Y. Srinivasan wrote:
+> Implement multi-channel support for the storage devices.
 
-OK. I'm still confused by that one sorry. In the patch you do:
+This doesn't compile:
 
-+       else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX_CP)))
-+               update_stats(&runtime_cycles_in_txcp_stats[0], count[0]);
+  CC [M]  drivers/scsi/storvsc_drv.o
+drivers/scsi/storvsc_drv.c: In function â€˜handle_sc_creationâ€™:
+drivers/scsi/storvsc_drv.c:763:35: error: â€˜struct vmbus_channelâ€™ has no
+member named â€˜primary_channelâ€™
+drivers/scsi/storvsc_drv.c: In function â€˜handle_multichannel_storageâ€™:
+drivers/scsi/storvsc_drv.c:805:2: error: implicit declaration of
+function
+â€˜vmbus_set_sc_create_callbackâ€™ [-Werror=implicit-function-declaration]
+drivers/scsi/storvsc_drv.c:812:2: error: implicit declaration of
+function
+â€˜vmbus_are_subchannels_presentâ€™ [-Werror=implicit-function-declaration]
+drivers/scsi/storvsc_drv.c: In function â€˜storvsc_on_channel_callbackâ€™:
+drivers/scsi/storvsc_drv.c:1223:13: error: â€˜struct vmbus_channelâ€™ has no
+member named â€˜primary_channelâ€™
+drivers/scsi/storvsc_drv.c:1224:19: error: â€˜struct vmbus_channelâ€™ has no
+member named â€˜primary_channelâ€™
+drivers/scsi/storvsc_drv.c: In function â€˜storvsc_do_ioâ€™:
+drivers/scsi/storvsc_drv.c:1341:2: error: implicit declaration of
+function
+â€˜vmbus_get_outgoing_channelâ€™ [-Werror=implicit-function-declaration]
+drivers/scsi/storvsc_drv.c:1341:19: warning: assignment makes pointer
+from integer without a cast [enabled by default]
+cc1: some warnings being treated as errors
+make[2]: *** [drivers/scsi/storvsc_drv.o] Error 1
 
-But then I don't see where you use runtime_cycles_in_txcp_stats ?
+I assume this is a cross tree dependency?  What's the relevant branch I
+need?
 
-> > But I don't think we have anything equivalent.
-> 
-> But you have cycles-t and tx-start?
+James
 
-We have:
- - cycles
- - cycles in transactional state
- - cycles spent in successful transactions
-
-So your cycles-t is "cycles in transactional state".
-
-We would calculate cycles wasted in aborts with:
-
- "cycles in transactional" - "cycles in successful transactions"
-
-Which I think is what you're describing above with cycles-ct.
-
-
-Does "tx-start" just count the number of transactions begun? Does it
-count nested transactions?
-
-We have one counter for non-nested transactions and one for nested, but
-I think we could just count the non-nested as "tx-start", that's
-probably of most interest.
-
-> > I guess the simplest option is to make it a per-arch list inside the
-> > perf tool?
-> 
-> I'm not sure that would be acceptable to the perf maintainers.
-> Although I'm just guessing, I haven't heard any comments on
-> this patch recently.
-
-Yeah sure. Although I agree with the desire to make the perf tool work
-similarly across architectures, I think as we add more of these detailed
-analysis tools we are eventually going to come across something that
-can't be handled generically. But I guess we'll see.
-
-cheers
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
