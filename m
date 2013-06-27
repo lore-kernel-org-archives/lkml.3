@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab3F0UM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 16:12:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60602 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754342Ab3F0T4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:56:50 -0400
-Message-ID: <51CC98E6.1020104@ti.com>
-Date: Thu, 27 Jun 2013 14:56:22 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754790Ab3F0UNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 16:13:07 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:42384 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747Ab3F0UNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 16:13:00 -0400
+Date: Thu, 27 Jun 2013 13:12:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, walken@google.com, vincent.guittot@linaro.org,
+        laijs@cn.fujitsu.com, David.Laight@aculab.com, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        sbw@mit.edu, fweisbec@gmail.com, zhong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v3 16/45] rcu: Use cpu_is_offline_nocheck() to avoid
+ false-positive warnings
+Message-ID: <20130627201246.GA3828@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
+ <20130627195517.29830.64108.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
-References: <1372149330-24335-1-git-send-email-coelho@ti.com>   <51CBC1C8.1040301@gmail.com> <1372322851.18889.53.camel@cumari.coelho.fi>   <20130627125131.GA27285@kahuna>  <1372337887.8383.12.camel@cumari.coelho.fi>   <CAGo_u6qbt9dANgKq49xR=1qsCpUBhmVaPL4EK04XvTw+=4Z23g@mail.gmail.com>   <1372339148.8383.17.camel@cumari.coelho.fi> <51CC3CEE.3050004@ti.com>   <1372339810.8383.20.camel@cumari.coelho.fi>   <CAGo_u6pWZX9gbHgBae=gcWk8i6-TnhxH1TdM9QdEDLTow6Pn5A@mail.gmail.com>  <1372359090.21065.12.camel@cumari.coelho.fi> <51CC8E80.5030206@ti.com> <1372362418.21065.25.camel@cumari.coelho.fi>
-In-Reply-To: <1372362418.21065.25.camel@cumari.coelho.fi>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627195517.29830.64108.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062720-5518-0000-0000-00000FED0CBD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 02:46 PM, Luciano Coelho wrote:
-> On Thu, 2013-06-27 at 14:12 -0500, Nishanth Menon wrote:
-[...]
->> Indexes to another entity is always a maintenance burden in the longer
->> run and needs judicious control. If it is possible to avoid it by
->> selecting the right parameters, I am a hard advocate for the same.
->
-> I tend to agree.  But you need a balance.  In theory you're right.  But
-> I think if you take the real world example, it is over-engineering.
->
-> Anyway, if you *really* think this needs to be changed, I think we're in
-> a deadlock here and I'd like to hear other people's opinions.  I don't
-> mind making the change, but I'm still not convinced it is worth it,
-> since it just adds complexity.
->
-> And hey, this is too much bikeshedding for such a small detail.
-Lol :)
+On Fri, Jun 28, 2013 at 01:25:17AM +0530, Srivatsa S. Bhat wrote:
+> In RCU code, rcu_implicit_dynticks_qs() checks if a CPU is offline,
+> while being protected by a spinlock. At first, it appears as if we need to
+> use the get/put_online_cpus_atomic() APIs to properly synchronize with CPU
+> hotplug, once we get rid of stop_machine(). However, RCU has adequate
+> synchronization with CPU hotplug, making that unnecessary. But since the
+> locking details are non-trivial, it is hard to teach this to the rudimentary
+> hotplug locking validator.
+> 
+> So use the _nocheck() variants of the cpu accessor functions to prevent false-
+> positive warnings from the CPU hotplug debug code. Also, add a comment
+> explaining the hotplug synchronization design used in RCU, so that its easy
+> to see why it is justified to use the _nocheck() variants.
+> 
+> Cc: Dipankar Sarma <dipankar@in.ibm.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Alrite, if no one else is complaining, I am not going to block it either.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
--- 
-Regards,
-Nishanth Menon
+> ---
+> 
+>  kernel/rcutree.c |   12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index cf3adc6..ced28a45 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -794,7 +794,17 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
+>  	if (ULONG_CMP_GE(rdp->rsp->gp_start + 2, jiffies))
+>  		return 0;  /* Grace period is not old enough. */
+>  	barrier();
+> -	if (cpu_is_offline(rdp->cpu)) {
+> +
+> +	/*
+> +	 * It is safe to use the _nocheck() version of cpu_is_offline() here
+> +	 * (to avoid false-positive warnings from CPU hotplug debug code),
+> +	 * because:
+> +	 * 1. rcu_gp_init() holds off CPU hotplug operations during grace
+> +	 *    period initialization.
+> +	 * 2. The current grace period has not ended yet.
+> +	 * So it is safe to sample the offline state without synchronization.
+> +	 */
+> +	if (cpu_is_offline_nocheck(rdp->cpu)) {
+>  		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, "ofl");
+>  		rdp->offline_fqs++;
+>  		return 1;
+> 
+
