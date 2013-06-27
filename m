@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab3F0JOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:14:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069Ab3F0JO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:14:28 -0400
-Date: Thu, 27 Jun 2013 12:14:24 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] KVM: MMU: fast invalidate all mmio sptes
-Message-ID: <20130627091424.GA10758@redhat.com>
-References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1370595088-3315-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130627082900.GD18508@redhat.com>
- <20130627090110.GE18508@redhat.com>
+	id S1753365Ab3F0JOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:14:36 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:55641 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab3F0JOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 05:14:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627090110.GE18508@redhat.com>
+In-Reply-To: <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+	<a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
+Date: Thu, 27 Jun 2013 11:14:30 +0200
+Message-ID: <CACRpkda8QGdoAvjsUs7Uu+ukUu7ST63g=H9arA7SS7ceWmMTaQ@mail.gmail.com>
+Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the MinnowBoard
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "peter.p.waskiewicz.jr" <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        danders <danders@circuitco.com>,
+        "vishal.l.verma" <vishal.l.verma@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 12:01:10PM +0300, Gleb Natapov wrote:
-> On Thu, Jun 27, 2013 at 11:29:00AM +0300, Gleb Natapov wrote:
-> > On Fri, Jun 07, 2013 at 04:51:26PM +0800, Xiao Guangrong wrote:
-> > > This patch tries to introduce a very simple and scale way to invalidate
-> > > all mmio sptes - it need not walk any shadow pages and hold mmu-lock
-> > > 
-> > > KVM maintains a global mmio valid generation-number which is stored in
-> > > kvm->memslots.generation and every mmio spte stores the current global
-> > > generation-number into his available bits when it is created
-> > > 
-> > > When KVM need zap all mmio sptes, it just simply increase the global
-> > > generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
-> > > then it walks the shadow page table and get the mmio spte. If the
-> > > generation-number on the spte does not equal the global generation-number,
-> > > it will go to the normal #PF handler to update the mmio spte
-> > > 
-> > > Since 19 bits are used to store generation-number on mmio spte, we zap all
-> > > mmio sptes when the number is round
-> > > 
-> > So this commit makes Fedora 9 32 bit reboot during boot, Fedora 9 64
-> > fails too, but I haven't checked what happens exactly.
-> > 
-> Something wrong with gfn calculation during mmio:
-> 
-> qemu-system-x86-17003 [000]  3962.625103: handle_mmio_page_fault: addr:c00ba6c0 gfn 100000000ba access a92
-> qemu-system-x86-17003 [000]  3962.774862: handle_mmio_page_fault: addr:ffffb170 gfn 100000fee00 access a92
-> 
-Hmm, so I wounder why get_mmio_spte_gfn() does not clear gen bits.
+On Wed, Jun 26, 2013 at 3:53 AM, Darren Hart <dvhart@linux.intel.com> wrote:
 
---
-			Gleb.
+> Provide a minimal public interface:
+>         minnow_detect()
+>         minnow_lvds_detect()
+>         minnow_hwid()
+>         minnow_phy_reset()
+
+So instead of these calling drivers issueing gpio_request() themselves
+to obtain a resource, they make a function call to this proxy that issue
+gpio_request() for them.
+
+This is generally not how we do things. A driver should request its
+GPIO just as it requests its regulator or clock or IRQ line or anything
+else. Centralizing resource handling is not a good idea IMO, it's better
+that each driver request it's GPIO pin(s) and do the stuff it needs
+with them.
+
+This of course creates the problem of associating the GPIOs to a
+driver and how it should look that up, which I guess ACPI can do,
+isn't that what acpi_find_gpio() is for?
+
+Yours,
+Linus Walleij
