@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652Ab3F0Ben (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 21:34:43 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41902 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751447Ab3F0Bem (ORCPT
+	id S1751754Ab3F0BhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 21:37:18 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:39505 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab3F0BhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 21:34:42 -0400
-Message-ID: <1372296879.557.3.camel@dabdike>
-Subject: Re: [PATCH RESEND v2 2/2] scsi: 64-bit port of buslogic driver
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Khalid Aziz <khalid@gonehiking.org>
-Date: Wed, 26 Jun 2013 18:34:39 -0700
-In-Reply-To: <97daf2d29ceb78bdef3ddf6358dc634de35d0345.1368754556.git.khalid.aziz@oracle.com>
-References: <cover.1368754558.git.khalid.aziz@oracle.com>
-	 <97daf2d29ceb78bdef3ddf6358dc634de35d0345.1368754556.git.khalid.aziz@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 26 Jun 2013 21:37:16 -0400
+Date: Thu, 27 Jun 2013 03:37:14 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
+ update of refcount
+Message-ID: <20130627013714.GM6123@two.firstfloor.org>
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com>
+ <1372268603-46748-2-git-send-email-Waiman.Long@hp.com>
+ <20130626201713.GH6123@two.firstfloor.org>
+ <51CB57F6.6010003@hp.com>
+ <20130626212221.GI6123@two.firstfloor.org>
+ <51CB7898.5070206@hp.com>
+ <20130627010658.GL6123@two.firstfloor.org>
+ <51CB9233.7020508@hp.com>
+ <51CB9450.80601@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CB9450.80601@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-24 at 14:26 -0600, Khalid Aziz wrote: 
-> @@ -5072,17 +5039,15 @@ static void FPT_busMstrSGDataXferStart(unsigned long p_port,
->   * Description: 
->   *
->   *---------------------------------------------------------------------*/
-> -static void FPT_busMstrDataXferStart(unsigned long p_port,
-> -				     struct sccb *pcurrSCCB)
-> +static void FPT_busMstrDataXferStart(u32 p_port, struct sccb *pcurrSCCB)
->  {
-> -	unsigned long addr, count;
-> +	u32 addr, count;
->  
->  	if (!(pcurrSCCB->Sccb_XferState & F_AUTO_SENSE)) {
->  
->  		count = pcurrSCCB->Sccb_XferCnt;
->  
-> -		addr =
-> -		    (unsigned long)pcurrSCCB->DataPointer + pcurrSCCB->Sccb_ATC;
-> +		addr = (u32)pcurrSCCB->DataPointer + pcurrSCCB->Sccb_ATC;
+> It will be hard to know what changes will be needed without knowing
+> the exact semantics of the spinlock functions with lock elision. Can
+> you explain a little more what bizarre semantics you are referring
+> to?
 
-This is giving
+Totally independent of elision.
 
-In file included from drivers/scsi/BusLogic.c:57:0:
-drivers/scsi/FlashPoint.c: In function ‘FPT_busMstrDataXferStart’:
-drivers/scsi/FlashPoint.c:5050:10: warning: cast from pointer to integer
-of different size [-Wpointer-to-int-cast]
+For example, what semantics does spin_unlock_wait() have with a ticket
+lock. Where in the queue does it wait?
+It doesn't really make sense with a ticket lock.
 
-to do this cast, you need first to cast to unsigned long and then
-truncate the long with u32.  I fixed it up.
+What semantics would lockdep put on it?
 
-James
-
-
+-Andi
