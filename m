@@ -1,125 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab3F0AY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 20:24:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29243 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581Ab3F0AY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 20:24:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,947,1363158000"; 
-   d="scan'208";a="360196013"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <1372282560.22432.139.camel@schen9-DESK>
-References: <1371165992.27102.573.camel@schen9-DESK>
-	 <20130619131611.GC24957@gmail.com> <1371660831.27102.663.camel@schen9-DESK>
-	 <1372205996.22432.119.camel@schen9-DESK> <20130626095108.GB29181@gmail.com>
-	 <1372282560.22432.139.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Jun 2013 17:25:01 -0700
-Message-ID: <1372292701.22432.152.camel@schen9-DESK>
+	id S1752937Ab3F0A0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 20:26:13 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54146 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751663Ab3F0A0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 20:26:12 -0400
+Message-ID: <1372292770.2172.2.camel@joe-AO722>
+Subject: Re: [PATCH] staging: ozwpan: Convert printk to dev_dbg()
+From: Joe Perches <joe@perches.com>
+To: Jason Baron <jasonbaron0@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Rupesh Gujare <rupesh.gujare@atmel.com>, devel@linuxdriverproject.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shigekatsu.tateno@atmel.com, jim.cromie@gmail.com, trenn@suse.de
+Date: Wed, 26 Jun 2013 17:26:10 -0700
+In-Reply-To: <51CB2907.4010100@gmail.com>
+References: <1372177802-11360-1-git-send-email-rupesh.gujare@atmel.com>
+	 <20130625170205.GA21328@kroah.com> <1372181390.1245.68.camel@joe-AO722>
+	 <51CB2907.4010100@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 14:36 -0700, Tim Chen wrote:
-> On Wed, 2013-06-26 at 11:51 +0200, Ingo Molnar wrote: 
-> > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> > 
-> > > On Wed, 2013-06-19 at 09:53 -0700, Tim Chen wrote: 
-> > > > On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
-> > > > 
-> > > > > > vmstat for mutex implementation: 
-> > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > > > > > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
-> > > > > > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
-> > > > > > 
-> > > > > > vmstat for rw-sem implementation (3.10-rc4)
-> > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > > > > > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
-> > > > > > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
-> > > > > 
-> > > > > It appears the main difference is that the rwsem variant context-switches 
-> > > > > about 36% more than the mutex version, right?
-> > > > > 
-> > > > > I'm wondering how that's possible - the lock is mostly write-locked, 
-> > > > > correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
-> > > > > ought to have brought roughly the same lock-stealing behavior as mutexes 
-> > > > > do, right?
-> > > > > 
-> > > > > So the next analytical step would be to figure out why rwsem lock-stealing 
-> > > > > is not behaving in an equivalent fashion on this workload. Do readers come 
-> > > > > in frequently enough to disrupt write-lock-stealing perhaps?
-> > > 
-> > > Ingo, 
-> > > 
-> > > I did some instrumentation on the write lock failure path.  I found that
-> > > for the exim workload, there are no readers blocking for the rwsem when
-> > > write locking failed.  The lock stealing is successful for 9.1% of the
-> > > time and the rest of the write lock failure caused the writer to go to
-> > > sleep.  About 1.4% of the writers sleep more than once. Majority of the
-> > > writers sleep once.
-> > > 
-> > > It is weird that lock stealing is not successful more often.
-> > 
-> > For this to be comparable to the mutex scalability numbers you'd have to 
-> > compare wlock-stealing _and_ adaptive spinning for failed-wlock rwsems.
-> > 
-> > Are both techniques applied in the kernel you are running your tests on?
-> > 
-> 
-> Ingo,
-> 
-> The previous experiment was done on a kernel without spinning. 
-> I've redone the testing on two kernel for a 15 sec stretch of the
-> workload run.  One with the adaptive (or optimistic) 
-> spinning and the other without.  Both have the patches from Alex to avoid 
-> cmpxchg induced cache bouncing.
-> 
-> With the spinning, I sleep much less for lock acquisition (18.6% vs 91.58%).
-> However, I've got doubling of write lock acquisition getting
-> blocked.  So that offset the gain from spinning which may be why
-> I didn't see gain for this particular workload.
-> 
-> 						No Opt Spin	Opt Spin
-> Writer acquisition blocked count		3448946		7359040
-> Blocked by reader				0.00%		0.55%
-> Lock acquired first attempt (lock stealing)	8.42%		16.92%
-> Lock acquired second attempt (1 sleep)		90.26%		17.60%
-> Lock acquired after more than 1 sleep		1.32%		1.00%
-> Lock acquired with optimistic spin		N/A		64.48%
-> 
+On Wed, 2013-06-26 at 13:46 -0400, Jason Baron wrote:
 
-Adding also the mutex statistics for the 3.10-rc4 kernel with mutex
-implemenation of lock for anon_vma tree.  Wonder if Ingo has any
-insight on why mutex performs better from these stats.
+> echo "grouping control_var level N +p" > /debugfs/dynamic_debug/control
+> 
+> or
+> 
+> echo "grouping control_var mask 0xN +p" > /debugfs/dynamic_debug/control
+> 
+> So we can think of the 'control_var' as 'grouping' debug statements
+> together. So it would provide a nice way of associating statements
+> together other than the existing: module, func, file, format, and line
+> selectors.
 
-Mutex acquisition blocked count			14380340
-Lock acquired in slowpath (no sleep)		0.06%
-Lock acquired in slowpath (1 sleep)		0.24%
-Lock acquired in slowpath more than 1 sleep	0.98%
-Lock acquired with optimistic spin		99.6%
+As well as making them compatible with the current
+module debug control vars by using their address when
+appropriate.
 
-Thanks.
-
-Tim
 
