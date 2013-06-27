@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab3F0Kso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 06:48:44 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:33306 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab3F0Ksl (ORCPT
+	id S1753041Ab3F0KtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 06:49:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53792 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab3F0KtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 06:48:41 -0400
-Message-ID: <51CC1881.5060500@ozlabs.ru>
-Date: Thu, 27 Jun 2013 20:48:33 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 27 Jun 2013 06:49:07 -0400
+Date: Thu, 27 Jun 2013 12:48:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 2/8] perf,x86: drop event->flags and use
+ hw.constraint->flags
+Message-ID: <20130627104833.GC27378@dyad.programming.kicks-ass.net>
+References: <1371824448-7306-1-git-send-email-eranian@google.com>
+ <1371824448-7306-3-git-send-email-eranian@google.com>
+ <20130624084510.GK28407@twins.programming.kicks-ass.net>
+ <CABPqkBQRchnjhnEC05w-noizoeSRnNio7NDQ6_+vXym_7rkGaw@mail.gmail.com>
+ <20130626103653.GC28407@twins.programming.kicks-ass.net>
+ <CABPqkBQuYy3TeE81tTXVruMG4D84TQ2U5g69T2ResGgjPjK4Cg@mail.gmail.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linuxppc-dev@lists.ozlabs.org,
-        kvm@vger.kernel.org, linux-doc@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH 3/8] vfio: add external user support
-References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru>  <1372309356-28320-4-git-send-email-aik@ozlabs.ru>  <20130627165929.3828c261c957845a549ad95b@canb.auug.org.au> <1372326166.18612.42.camel@pasglop>
-In-Reply-To: <1372326166.18612.42.camel@pasglop>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQuYy3TeE81tTXVruMG4D84TQ2U5g69T2ResGgjPjK4Cg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 07:42 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-06-27 at 16:59 +1000, Stephen Rothwell wrote:
->>> +/* Allows an external user (for example, KVM) to unlock an IOMMU
->> group */
->>> +static void vfio_group_del_external_user(struct file *filep)
->>> +{
->>> +     struct vfio_group *group = filep->private_data;
->>> +
->>> +     BUG_ON(filep->f_op != &vfio_group_fops);
->>
->> We usually reserve BUG_ON for situations where there is no way to
->> continue running or continuing will corrupt the running kernel.  Maybe
->> WARN_ON() and return?
+On Thu, Jun 27, 2013 at 12:23:00PM +0200, Stephane Eranian wrote:
+> Peter,
 > 
-> Not even that. This is a user space provided "fd", we shouldn't oops the
-> kernel because we passed a wrong argument, just return -EINVAL or
-> something like that (add a return code).
+> I don't this see patch in tip.git yet.
 
-I'll change to WARN_ON but...
-This is going to be called on KVM exit on a file pointer previously
-verified for correctness. If it is a wrong file*, then something went
-terribly wrong.
-
-
--- 
-Alexey
+Didn't apply and I didn't get around to beating it into shape; could you resend
+against tip/master. Ingo just pushed out all the other bits.
