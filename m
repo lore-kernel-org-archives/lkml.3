@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab3F0KGm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 06:06:42 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:47798 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab3F0KGl (ORCPT
+	id S1752880Ab3F0KIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 06:08:42 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:48569 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab3F0KIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 06:06:41 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tux3@tux3.org
-Subject: Re: [PATCH] Optimize wait_sb_inodes()
-References: <87ehbpntuk.fsf@devron.myhome.or.jp>
-	<20130626231143.GC28426@dastard> <87wqpg76ls.fsf@devron.myhome.or.jp>
-	<20130627044705.GB29790@dastard> <87y59w5dye.fsf@devron.myhome.or.jp>
-	<20130627063816.GD29790@dastard> <87ppv83tnn.fsf@devron.myhome.or.jp>
-	<20130627094042.GZ29338@dastard>
-Date: Thu, 27 Jun 2013 19:06:37 +0900
-In-Reply-To: <20130627094042.GZ29338@dastard> (Dave Chinner's message of "Thu,
-	27 Jun 2013 19:40:42 +1000")
-Message-ID: <87mwqb3m1e.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Thu, 27 Jun 2013 06:08:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <51CA08A2.4030204@wwwdotorg.org>
+References: <1372169952-22439-1-git-send-email-linus.walleij@stericsson.com>
+	<51CA08A2.4030204@wwwdotorg.org>
+Date: Thu, 27 Jun 2013 12:08:40 +0200
+Message-ID: <CACRpkdZJ3oP9ARDhwZ1h8CkFXpDTznPChLiSgivTYKGDkWbOZA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: elaborate a bit on arrangements in doc
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Landley <rob@landley.net>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+On Tue, Jun 25, 2013 at 11:16 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/25/2013 08:19 AM, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> This elaborates a bit on the pinctrl vs GPIO arangements
+>> in the hardware.
+>>
+>> Inspired by some drawings in a mail from Christian
+>> Ruppert.
+(...)
+> I'm not really sure quite what these diagrams are attempting to convey
+> within the context of this document.
 
->> >> > Fix the root cause of the problem - the sub-optimal VFS code.
->> >> > Hacking around it specifically for out-of-tree code is not the way
->> >> > things get done around here...
->> >> 
->> >> I'm thinking the root cause is vfs can't have knowledge of FS internal,
->> >> e.g. FS is handling data transactional way, or not.
->> >
->> > If the filesystem has transactional data/metadata that the VFS is
->> > not tracking, then that is what the ->sync_fs call is for. i.e. so
->> > the filesystem can then do what ever extra writeback/waiting it
->> > needs to do that the VFS is unaware of.
->> >
->> > We already cater for what Tux3 needs in the VFS - all you've done is
->> > found an inefficient algorithm that needs fixing.
->> 
->> write_cache_pages() is library function to be called from per-FS. So, it
->> is not under vfs control can be assume already. And it doesn't do right
->> things via write_cache_pages() for data=journal, because it handles for
->> each inodes, not at once. So, new dirty data can be inserted while
->> marking.
+I am trying to help pinctrl kernel developers understand hardware
+terminology.
+
+>> +In (A) the GPIO-like functionality of the pin is *always* available.
 >
-> Sure it can. But that newly dirtied data has occurred after the data
-> integrity writeback call was begun, so it's not part of what the
-> writeback code call needs to write back. We are quite entitled to
-> ignore it for the purposes of a data integrity sync because it as
-> dirtied *after* write_cache_pages() was asked to sync the range of
-> the inode.
+> Well, that can't really be true.
 >
-> IOWs, the VFS draws a line in the sand at a point in time when each
-> inode is written for a data integrity sync. You have to do that
-> somewhere, and there's little point in making that a global barrier
-> when it is not necessary to do so.
+> It may be possible that you can always read the physical pin's value via
+> a GPIO input register.
 >
-> tux3 draws a different line in the sand, as does ext3/4
-> data=journal.  In effect, tux3 and ext3/4 data=journal define a
-> global point in time that everything is "in sync", and that's way
-> above what is necessary for a sync(2) operation.  The VFS already
-> has equivalent functionality - it's the state we force filesystems
-> into when they are frozen. i.e. freezing a filesystem forces it down
-> into a state where it is transactionally consistent on disk w.r.t
-> both data and metadata.  sync(2) does not require these
-> "transactionally consistent" semantics, so the VFS does not try to
-> provide them.
+> However, you obviously can't always write to a GPIO output register to
+> set the pin's value. If you could, the pin would simply be a GPIO, and
+> never serve any other function.
 
-It is what I'm calling the unnecessary wait.
+This is possible on the U300. What happens in practice is
+that what you send out on the output from e.g. the I2C block is
+OR:ed with the GPIO output, so if that is not zero, you jam it to 1.
 
-> Anyway, this is a moot discussion. I've already got prototype code
-> that fixes the wait_sb_inodes() problem as somebody is having
-> problems with many concurrent executions of wait_sb_inodes() causing
-> severe lock contention...
+> If you're saying that it's always possible to put the pin into a mode
+> where you can use the GPIO output register to driver the pin value, well
+> then that's just regular pin-muxing, so I'm not sure why it's worth
+> mentioning.
 
-Sorry, but sounds like you are just saying "it doesn't need for me".
+That's not really the case. It can drive the pin at the same time.
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> In (a) there are really two levels of pinmux configuration, one in the
+> GPIO HW block (GPIO-vs-whatever-pinctrl-selects).
+>
+> In (b) there is another level of pinmux configuration; some block has to
+> exist between the physical pins and both GPIO/pinctrl HW modules; it
+> simply isn't drawn in the diagram
+
+I've redrawn these a bit to reflect the cases I know exist.
+Check the v2 patch.
+
+> In all cases though, this is just attempting to enumerate different HW
+> designs for pin-muxing I think. Isn't it better to just let each SoC's
+> datasheet specify exactly how things are hooked up?
+
+The intention of this is to understand the datasheet from a kernel
+point of view.
+
+Yours,
+Linus Walleij
