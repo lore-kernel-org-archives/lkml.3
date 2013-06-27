@@ -1,25 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab3F0QKZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:10:25 -0400
-Received: from mail.ifpa.edu.br ([200.129.129.30]:41540 "EHLO mail.ifpa.edu.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab3F0QKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:10:23 -0400
-X-Greylist: delayed 3885 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Jun 2013 12:10:21 EDT
-Date: Thu, 27 Jun 2013 11:08:23 -0300 (BRT)
-From: BNP PARIBAS FORTIS <luzia.alves@ifpa.edu.br>
-Reply-To: Luzia Alves <luzia.alves@ifpa.edu.br>
-Subject: Belangrijke mededeling.
-Message-ID: <505f02bb-dfbd-428a-9de0-dd43235edd37@mail>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1753053Ab3F0QLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:11:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60971 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab3F0QLh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 12:11:37 -0400
+Date: Thu, 27 Jun 2013 18:11:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
+Message-ID: <20130627161127.GZ28407@twins.programming.kicks-ass.net>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-6-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-X-Originating-IP: [192.168.0.1]
-X-Mailer: Zimbra 7.1.2_GA_3268 (zclient/7.1.2_GA_3268)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372257487-9749-6-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<html><head><style> body {height: 100%; color:#000000; font-size:12pt; font-family:Arial;}</style></head><body><div class="App Managed" id="PageElt"><div class="AppInner"><div class="t_mbgc slideOnResize RPOff Inbox" id="BelowHeader"><div class="Middle slideOnResize" id="Middle"><div class="ContentRight WithRightRail" id="contentRight"></div></div></div></div></div></body></html>
+On Wed, Jun 26, 2013 at 03:38:04PM +0100, Mel Gorman wrote:
+> +/* Returns true if the destination node has incurred more faults */
+> +static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+> +{
+> +	int src_nid, dst_nid;
+> +
+> +	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
+> +		return false;
+> +
+> +	src_nid = cpu_to_node(env->src_cpu);
+> +	dst_nid = cpu_to_node(env->dst_cpu);
+> +
+> +	if (src_nid == dst_nid)
+> +		return false;
+> +
+> +	if (p->numa_migrate_seq < sysctl_numa_balancing_settle_count &&
+> +	    p->numa_preferred_nid == dst_nid)
+> +		return true;
+> +
+> +	return false;
+> +}
+
+Also, until I just actually _read_ that function; I assumed it would
+compare p->numa_faults[src_nid] and p->numa_faults[dst_nid]. Because
+even when the dst_nid isn't the preferred nid; it might still have more
+pages than where we currently are.
+
+Idem with the proposed migrate_degrades_locality().
+
+Something like so I suppose
+
+---
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3969,6 +3969,7 @@ task_hot(struct task_struct *p, u64 now,
+ 	return delta < (s64)sysctl_sched_migration_cost;
+ }
+ 
++#ifdef CONFIG_NUMA_BALANCING
+ /* Returns true if the destination node has incurred more faults */
+ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ {
+@@ -3983,13 +3984,50 @@ static bool migrate_improves_locality(st
+ 	if (src_nid == dst_nid)
+ 		return false;
+ 
+-	if (p->numa_migrate_seq < sysctl_numa_balancing_settle_count &&
+-	    p->numa_preferred_nid == dst_nid)
++	if (p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
++		return false;
++
++	if (p->numa_preferred_nid == dst_nid)
++		return true;
++
++	if (p->numa_faults[src_nid] < p->numa_faults[dst_nid])
++		return true;
++
++	return false;
++}
++
++static vool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
++{
++	int src_nid, dst_nid;
++
++	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
++		return false;
++
++	src_nid = cpu_to_node(env->src_cpu);
++	dst_nid = cpu_to_node(env->dst_cpu);
++
++	if (src_nid == dst_nid)
++		return false;
++
++	if (p->numa_faults[src_nid] > p->numa_faults[dst_nid])
+ 		return true;
+ 
+ 	return false;
+ }
+ 
++#else
++
++static inline bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
++{
++	return false;
++}
++
++static inline bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
++{
++	return false;
++}
++
++#endif /* CONFIG_NUMA_BALANCING */
+ 
+ /*
+  * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
+@@ -4055,8 +4093,10 @@ int can_migrate_task(struct task_struct
+ 		return 1;
+ 
+ 	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
++	if (!tsk_cache_hot)
++		tsk_cache_hot = migrate_degrades_locality(p, env);
+ 	if (!tsk_cache_hot ||
+-		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
++	    env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
+ 
+ 		if (tsk_cache_hot) {
+ 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
+
