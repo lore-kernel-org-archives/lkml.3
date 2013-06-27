@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab3F0Kxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 06:53:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53844 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab3F0Kxb (ORCPT
+	id S1753239Ab3F0Kxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 06:53:37 -0400
+Received: from www.xora.org.uk ([80.68.91.202]:35241 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab3F0Kxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 06:53:31 -0400
-Date: Thu, 27 Jun 2013 12:53:03 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        tglx@linutronix.de
-Subject: Re: deadlock in scheduler enabling HRTICK feature
-Message-ID: <20130627105303.GD27378@dyad.programming.kicks-ass.net>
-References: <51CA0622.8010105@gmail.com>
- <20130625211713.GA18796@laptop.programming.kicks-ass.net>
- <51CA0980.8010409@gmail.com>
- <20130626070533.GA3601@dyad.programming.kicks-ass.net>
- <51CB1AE9.5090709@gmail.com>
- <20130627104309.GQ28407@twins.programming.kicks-ass.net>
+	Thu, 27 Jun 2013 06:53:34 -0400
+Message-ID: <51CC19A1.90706@slimlogic.co.uk>
+Date: Thu, 27 Jun 2013 11:53:21 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627104309.GQ28407@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+CC: rob@landley.net, sameo@linux.intel.com, grant.likely@linaro.org,
+        rob.herring@calxeda.com, balajitk@ti.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH v1 0/2] TWL6030, TWL6032 GPADC driver
+References: <1372329818-12384-1-git-send-email-oleksandr.kozaruk@ti.com>
+In-Reply-To: <1372329818-12384-1-git-send-email-oleksandr.kozaruk@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 12:43:09PM +0200, Peter Zijlstra wrote:
-> On Wed, Jun 26, 2013 at 10:46:33AM -0600, David Ahern wrote:
-> > On 6/26/13 1:05 AM, Peter Zijlstra wrote:
-> > >>What is the expectation that the feature provides? not a whole lot of
-> > >>documentation on it. I walked down the path wondering if it solved an odd
-> > >>problem we are seeing with the CFS in 2.6.27 kernel.
-> > >
-> > >Its supposed to use hrtimers for slice expiry instead of the regular tick.
-> > 
-> > So theoretically CPU bound tasks would get preempted sooner? That was my
-> > guess/hope anyways.
-> 
-> Doth the below worketh?
-> 
+I suspect this will find a better home in drivers/iio that subsystem did
+not exist when driver was originally written.
 
-Related to all this; the reason its not enabled by default is that mucking
-about with hrtimers all the while is god awful expensive.
+It would need converted to new API.
 
-I've had ideas about making this a special purpose 'hard-coded' timer in the
-hrtimer guts that's only ever re-programmed when the new value is sooner.
+Graeme
 
-By making it a 'special' timer we can avoid the whole rb-tree song and dance;
-and by taking 'spurious' short interrupts we can avoid prodding the hardware
-too often.
+On 27/06/13 11:43, Oleksandr Kozaruk wrote:
+> Hello
+>
+> TWL603[02] GPADC is used to measure battery voltage,
+> battery temperature, battery presence ID, and could
+> be used to measure twl603[02] die temperature.
+> This is used on TI blaze, blaze tablet platforms.
+>
+> The TWL6030 and TWL6032 have GPADC with 17 and 19
+> channels respectively. Some channels have current
+> source and are used for measuring voltage drop
+> on resistive load for detecting battery ID resistance,
+> or measuring voltage drop on NTC resistors for external
+> temperature measurements. Some channels measure voltage,
+> (i.e. battery voltage), and have inbuilt voltage dividers,
+> thus, capable to scale voltage. Some channels are dedicated
+> for measuring die temperature.
+>
+> Some channels could be calibrated in 2 points, having
+> offsets from ideal values in trim registers.
+>
+> The difference between GPADC in TWL6030 and TWL6032:
+> - 10 bit vs 12 bit ADC;
+> - 17 vs 19 channels;
+> - channels have different purpose(i. e. battery voltage
+>   channel 8 vs channel 18);
+> - trim values are interpreted differently.
+>
+> The driver exports function returning converted value for
+> requested channels: raw code, corrected code, and converted
+> to mV result.
+>
+> Sysfs entries are added to start and read conversion result
+> in millivolts for channel if it has calibration data, or
+> ADC code(for temperature and test network channels).
+>
+> The driver is derived from git://git.omapzoom.org/kernel/omap.git
+> The original driver's authors and contributors are Balaji T K,
+> Graeme Gregory, Ambresh K, Girish S Ghongdemath.
+>
+> The changes to the original driver:
+> - device tree adaptation;
+> - drop ioctl support - never been used;
+> - unified measurement method for both devices;
+> - get rid of "if (device == X)" code style to data driven;
+> - drop polling end of conversion and use interrupt instead;
+> - simplified (hopefully) exported external function interface to the driver.
+>
+> Tested with on blaze tablet 2 with OMAP4430(twl6030), and
+> OMAP4470(twl6032) SOMs.
+>
+> The patches were tested against 3.10-rc7
+>
+> Oleksandr Kozaruk (2):
+>   ARM: dts: twl: Add GPADC data to device tree
+>   mfd: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
+>
+>  .../testing/sysfs-devices-platform-twl6030_gpadc   |    5 +
+>  arch/arm/boot/dts/twl6030.dtsi                     |    5 +
+>  drivers/mfd/Kconfig                                |    8 +
+>  drivers/mfd/Makefile                               |    1 +
+>  drivers/mfd/twl6030-gpadc.c                        | 1053 ++++++++++++++++++++
+>  include/linux/i2c/twl6030-gpadc.h                  |   51 +
+>  6 files changed, 1123 insertions(+)
+>  create mode 100644 Documentation/ABI/testing/sysfs-devices-platform-twl6030_gpadc
+>  create mode 100644 drivers/mfd/twl6030-gpadc.c
+>  create mode 100644 include/linux/i2c/twl6030-gpadc.h
+>
 
-Then again; Thomas will likely throw frozen seafood my way for even proposing
-stuff like this and I'm not even sure that's going to be enough to make the
-cost acceptable.
