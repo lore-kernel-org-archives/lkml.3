@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab3F0I4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:56:05 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:47838 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab3F0I4C (ORCPT
+	id S1753457Ab3F0I6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:58:17 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:44879 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab3F0I6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:56:02 -0400
-X-Spam-Score: -100.9
-Message-ID: <51CBFDED.9090203@asianux.com>
-Date: Thu, 27 Jun 2013 16:55:09 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 27 Jun 2013 04:58:12 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Hirokazu Takata <takata@linux-m32r.org>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch: m32r: include: asm: add ioread*_rep() and iowrite*_rep()
-References: <51CBA43F.9050000@asianux.com> <51CBAA1E.8000206@asianux.com> <51CBB1A9.5080203@asianux.com> <51CBC186.3080401@asianux.com> <CAMuHMdVCv=MOJ8C4U=QHntQKZ=rThoKvXorgcR6jFRCA8hLULQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdVCv=MOJ8C4U=QHntQKZ=rThoKvXorgcR6jFRCA8hLULQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1371661969-7660-5-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1371661969-7660-1-git-send-email-l.majewski@samsung.com>
+	<1371661969-7660-5-git-send-email-l.majewski@samsung.com>
+Date: Thu, 27 Jun 2013 14:28:11 +0530
+Message-ID: <CAKohpokf8TZkP5Nzpp+m5KaUK8zJ6mwiuiW-td7boHQ7NtB-DQ@mail.gmail.com>
+Subject: Re: [PATCH v4 4/7] cpufreq:exynos:Extend Exynos cpufreq driver to
+ support boost framework
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 03:07 PM, Geert Uytterhoeven wrote:
-> On Thu, Jun 27, 2013 at 6:37 AM, Chen Gang <gang.chen@asianux.com> wrote:
->> --- a/arch/m32r/include/asm/io.h
->> +++ b/arch/m32r/include/asm/io.h
->> @@ -169,6 +169,20 @@ static inline void _writel(unsigned long l, unsigned long addr)
->>  #define iowrite16 writew
->>  #define iowrite32 writel
->>
->> +#define ioread8_rep(p, dst, count) \
->> +       insb((unsigned long) (p), (dst), (count))
-> 
-> As ioread8() is mapped to readb() (I/O memory space), not inb() (I/O
-> port space),
-> ioread8_rep() should map to readsb() (which m32r doesn't have yet
-> BTW), not insb().
-> For m32r this does matter, as inb() and readb() use different mechanisms
-> internally.
-> 
+On 19 June 2013 22:42, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> The struct cpufreq_driver has been extended to embrace the information
+> related to boost support.
+>
+> When "boost_mode" device tree attribute is defined for a platform, the
+> boost_supported flag is set. Moreover boost related attributes were
+> exported.
+>
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+>
+> Changes for v4:
+> - None
+>
+> Changes for v3:
+> - Remove low level boost code
+> - Move boost management code to cpufreq core code
+> - Use boost_supported flag to indicate if driver supports over clocking
+>
+> Changes for v2:
+> - Removal of struct cpufreq_boost
+> - Removal of the CONFIG_CPU_FREQ_BOOST flag
+> - low_level_boost with valid address when boost is supported
+> ---
+>  drivers/cpufreq/exynos-cpufreq.c |    4 ++++
+>  1 file changed, 4 insertions(+)
 
-Reasonable, but excuse me, I am not quite familiar with it, can any
-other members (or maintainer) to help implement it ?
+Yes, this looks fine..
 
-Thanks firstly.
-
-:-)
-
-> It seems include/asm-generic/io.h also has this wrong?
-> 
-
-I think it need improvement, if readsb has been defined, it should use
-readsb() instead, or just use insb().
-
-Thank you to provide a good chance to send another generic patch.  ;-)
-
-
--- 
-Chen Gang
+I will Ack the whole series in the end, so no individual acks :)
