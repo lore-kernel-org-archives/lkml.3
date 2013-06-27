@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3F0Rfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 13:35:37 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:56890 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752037Ab3F0Rfg (ORCPT
+	id S1753258Ab3F0Rg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 13:36:56 -0400
+Received: from guitar.tcltek.co.il ([192.115.133.116]:33146 "EHLO
+	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3F0Rgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 13:35:36 -0400
-Date: Thu, 27 Jun 2013 13:35:32 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "David 'Digit' Turner" <digit@android.com>,
-        Xiaohui Xin <xiaohui.xin@intel.com>,
-        Yunhong Jiang <yunhong.jiang@intel.com>,
-        Jun Nakajima <jun.nakajima@intel.com>,
-        Tom Keel <thomas.keel@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: goldfish driver: Missing get_user_pages in
-	goldfish_pipe_read_write()
-Message-ID: <20130627173532.GA29405@Krystal>
+	Thu, 27 Jun 2013 13:36:55 -0400
+Date: Thu, 27 Jun 2013 20:36:43 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, kevin@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/8] clocksource: sun4i: Add clocksource and sched clock
+ drivers
+Message-ID: <20130627173643.GQ4824@tarshish>
+References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
+ <20130627060234.GD4824@tarshish>
+ <20130627093558.GB8437@lukather>
+ <20130627094649.GM4824@tarshish>
+ <20130627172144.GD4319@lukather>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130627172144.GD4319@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following code snippet:
+Hi Maxime,
 
-drivers/platform/goldfish/goldfish_pipe.c:
-goldfish_pipe_read_write()
+On Thu, Jun 27, 2013 at 07:21:44PM +0200, Maxime Ripard wrote:
+> On Thu, Jun 27, 2013 at 12:46:49PM +0300, Baruch Siach wrote:
+> > On Thu, Jun 27, 2013 at 11:35:58AM +0200, Maxime Ripard wrote:
+> > > On Thu, Jun 27, 2013 at 09:02:34AM +0300, Baruch Siach wrote:
+> > > > On Wed, Jun 26, 2013 at 11:16:55PM +0200, Maxime Ripard wrote:
+> > > > > +static u32 sun4i_timer_sched_read(void)
+> > > > 
+> > > > You commit message mentions "64 bits free running counter", but this one only 
+> > > > returns 32 bit.
+> > > 
+> > > Yeah, the callback setup by setup_sched_clock is supposed to be
+> > > returning a u32, and clocksource_mmio_init only accepts up to 32 bits as
+> > > well, so I'm only using the lower 32bits of this 64 bits counter.
+> > > 
+> > > I'll amend the commit log to state this.
+> > 
+> > But using 64 bit counter for sched_clock is much easier that using 32 bit one. 
+> 
+> Easier in what aspect? Both API looks similar.
 
-                /* Ensure that the corresponding page is properly mapped */
-                /* FIXME: this isn't safe or sufficient - use get_user_pages */
-                if (is_write) {
-                        char c;
-                        /* Ensure that the page is mapped and readable */
-                        if (__get_user(c, (char __user *)address)) {
-                                if (!ret)
-                                        ret = -EFAULT;
-                                break;
-                        }
-                } else {
-                        /* Ensure that the page is mapped and writable */
-                        if (__put_user(0, (char __user *)address)) {
-                                if (!ret)
-                                        ret = -EFAULT;
-                                break;
-                        }
-                }
+You can just implement your own simple sched_clock() that just returns the 
+current value of this 64 bit counter, and do away with all the tricky code in 
+kernel/time/sched_clock.c (in tip.git) that is needed to make the 32 -> 64 
+extension safe. This is not compatible with multi-platform kernel, though.
 
-Seems to lack the kind of validation required to make it fail properly
-if the memory range is not fully populated.
+> > You can either wait for the rest of Stephen's patch set 
+> > (http://thread.gmane.org/gmane.linux.ports.arm.msm/4092) before adding 64 
+> > bit, or you can just make the trivial change to the now generic 
+> > sched_clock code.
+> 
+> I'll wait for the Stephen's patches to be merged then, and add support
+> for 64bits counters to clocksource_mmio_init.
 
-I see that this feature has been merged in Linux kernel 3.9, but the
-FIXME is still there in 3.10-rc7. Any plans on fixing this ?
+Sound reasonable.
 
-Thanks,
-
-Mathieu
+baruch
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
