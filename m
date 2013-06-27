@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab3F0TUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 15:20:11 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53469 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752622Ab3F0TUJ convert rfc822-to-8bit (ORCPT
+	id S1754077Ab3F0TVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 15:21:09 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:52683 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753654Ab3F0TVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:20:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Naresh Bhat <naresh.bhat@linaro.org>
-Cc: linux-acpi@vger.kernel.org, len.brown@intel.com, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI/fan: Initialize acpi_state variable
-Date: Thu, 27 Jun 2013 21:29:39 +0200
-Message-ID: <1990033.Jb3giURhtn@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAFoFrHaUbjHbvDDVO0+1j4WSTdhdrWF64MrNvzKNJXaLKSv_jw@mail.gmail.com>
-References: <1372331314-31010-1-git-send-email-naresh.bhat@linaro.org> <6743122.cV0P3hQa28@vostro.rjw.lan> <CAFoFrHaUbjHbvDDVO0+1j4WSTdhdrWF64MrNvzKNJXaLKSv_jw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Thu, 27 Jun 2013 15:21:07 -0400
+Date: Thu, 27 Jun 2013 21:21:04 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Guenter Roeck <linux@roeck-us.net>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] Xilinx watchdog changes
+Message-ID: <20130627192104.GA30433@spo001.leaseweb.com>
+References: <cover.1369979787.git.michal.simek@xilinx.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1369979787.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 27, 2013 06:37:35 PM Naresh Bhat wrote:
-> Hi Rafael,
+Hi Michal,
+
+> The patchset fixes license header and add 1.00.a IP to compatible
+> list.
 > 
-> You mean I need to initialize using ACPI_STATE_D0 ? and resend the patch ?
+> Thanks for your review,
+> Michal
+> 
+> Remove the 3rd patch from this series which incorrectly
+> tried to support set timeout feature.
+> 
+> Changes in v2:
+> - Extend compatible list with 1.00.a instead of replacing 1.01.a
+>   reported by Guenter Roeck <linux@roeck-us.net>
+> 
+> Michal Simek (2):
+>   watchdog: xilinx: Fix driver header
+>   watchdog: xilinx: Setup the origin compatible string
+> 
+>  drivers/watchdog/of_xilinx_wdt.c | 31 +++++++++++--------------------
+>  1 file changed, 11 insertions(+), 20 deletions(-)
 
-Yes, please.
+Both patches added to linux-watchdog-next.
 
-Although this is a false positive anyway ...
+Kind regards,
+Wim.
 
-Thanks,
-Rafael
-
-
-> On 27 June 2013 17:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, June 27, 2013 04:38:34 PM naresh.bhat@linaro.org wrote:
-> >> From: Naresh Bhat <naresh.bhat@linaro.org>
-> >>
-> >>   CC      drivers/acpi/fan.o
-> >> drivers/acpi/fan.c: In function ‘fan_get_cur_state’:
-> >> drivers/acpi/fan.c:96:9: warning: ‘acpi_state’ may be used uninitialized in this function [-Wuninitialized]
-> >> ---
-> >>  drivers/acpi/fan.c |    2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
-> >> index f815da8..f61f7fd 100644
-> >> --- a/drivers/acpi/fan.c
-> >> +++ b/drivers/acpi/fan.c
-> >> @@ -84,7 +84,7 @@ static int fan_get_cur_state(struct thermal_cooling_device *cdev, unsigned long
-> >>  {
-> >>       struct acpi_device *device = cdev->devdata;
-> >>       int result;
-> >> -     int acpi_state;
-> >> +     int acpi_state = 0;
-> >
-> > Please use an appropriate symbol here.
-> >
-> >>
-> >>       if (!device)
-> >>               return -EINVAL;
-> >>
-> >
-> > Thanks,
-> > Rafael
-> >
-> >
-> > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
