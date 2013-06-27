@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3F0A2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 20:28:36 -0400
-Received: from 100.204.216.81.static.g-hkn.siw.siwnet.net ([81.216.204.100]:53616
-	"EHLO iko.pp.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752197Ab3F0A2f (ORCPT
+	id S1752850Ab3F0Abe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 20:31:34 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:32601 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3F0Abd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 20:28:35 -0400
-Message-Id: <201306270028.r5R0SNop031909@eskarina.iko.pp.se>
-X-Face: ^"+mumOlNwo;yI>`\39\txuVze?eiR9uqpo2*mE!9MWXgXI0v(3ArwymNWe'.q:eLl!=guD
- x{jGFEWN6,#HoN%2qRW;7.CL]9%Ap,067"u1%!NUqS.MhV'+,6$Fj-;W2Z}Y,JUZ'L+f<?~E{ID*=T
- V\NxAOu>)|B@3k3n;gLl*#i[(J-os#fNnDJ8m["|JWNwpORh|_.MGkR#|a~QS!"4hEQ{O{[Ii14{xD
- PU/:5wuv7m1=TK=.>G8wdfpY~]{H(Qa\1`%|Hz:!)c3f9UOW|WgE"4d\E7?oDu9.
-From: Anders Hammarquist <iko@iko.pp.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [ 17/17] USB: serial: ti_usb_3410_5052: new device id for Abbot strip port cable
-In-Reply-To: Message from Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-   of "Wed, 26 Jun 2013 10:21:22 -0700." <20130626172122.GB14661@kroah.com>
-References: <20130625183915.443950649@linuxfoundation.org> <20130625183917.373592561@linuxfoundation.org> <201306252139.r5PLdQpP017104@eskarina.iko.pp.se><20130626172122.GB14661@kroah.com>
+	Wed, 26 Jun 2013 20:31:33 -0400
+X-Spam-Score: -100.8
+Message-ID: <51CB87B0.8030805@asianux.com>
+Date: Thu, 27 Jun 2013 08:30:40 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <31907.1372292903.1@eskarina.iko.pp.se>
-Date: Thu, 27 Jun 2013 02:28:23 +0200
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (iko.pp.se [127.0.0.1]); Thu, 27 Jun 2013 02:28:25 +0200 (MEST)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] arch: arm64: include: asm: add pci.h to pass compiling
+References: <51CA5F71.207@asianux.com> <20130626140730.GB23309@arm.com>
+In-Reply-To: <20130626140730.GB23309@arm.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a message of Wed, 26 Jun 2013 10:21:22 -0700, Greg Kroah-Hartman writes:
->On Tue, Jun 25, 2013 at 11:39:26PM +0200, Anders Hammarquist wrote:
->> In a message of Tue, 25 Jun 2013 11:39:32 -0700, Greg Kroah-Hartman writes:
->> >3.0-stable review patch.  If anyone has any objections, please let me know.
->> >
->> >From: Anders Hammarquist <iko@iko.pp.se>
->> >
->> >commit 35a2fbc941accd0e9f1bfadd669311786118d874 upstream.
->> >
->> >Add product id for Abbott strip port cable for Precision meter which
->> >uses the TI 3410 chip.
->> 
->> Given the statically sized arrays, I think this patch should not go in
->> alone. It needs to go together with the later patches I sent you that
->> fix the array sizing.
->> 
->> (this applies to all trees)
->
->Yes, but, thanks to the fact that you are only adding one more device
->id, I don't think we are overflowing anything with this patch alone,
->right?  The only "bad" thing that could happen here is if a user
->specifies a device/vendor id on the module command line, is it would
->replace the device id you added, so all should be fine.
->
->Or am I reading the code wrong?
+On 06/26/2013 10:07 PM, Catalin Marinas wrote:
+> On Wed, Jun 26, 2013 at 04:26:41AM +0100, Chen Gang wrote:
+>> > Need add pci.h for compiling, the related error (with allmodconfig):
+>> > 
+>> >   drivers/media/usb/b2c2/flexcop-usb.c: In function ¡®flexcop_usb_transfer_exit¡¯:
+>> >   drivers/media/usb/b2c2/flexcop-usb.c:393:3: error: implicit declaration of function ¡®pci_free_consistent¡¯ [-Werror=implicit-function-declaration]
+>> >   drivers/media/usb/b2c2/flexcop-usb.c: In function ¡®flexcop_usb_transfer_init¡¯:
+>> >   drivers/media/usb/b2c2/flexcop-usb.c:410:2: error: implicit declaration of function ¡®pci_alloc_consistent¡¯ [-Werror=implicit-function-declaration]
+>> >   drivers/media/usb/b2c2/flexcop-usb.c:410:21: warning: assignment makes pointer from integer without a cast [enabled by default]
+>> >   cc1: some warnings being treated as errors
+>> > 
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > ---
+>> >  arch/arm64/include/asm/pci.h |   11 +++++++++++
+>> >  1 files changed, 11 insertions(+), 0 deletions(-)
+>> >  create mode 100644 arch/arm64/include/asm/pci.h
+>> > 
+>> > diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
+>> > new file mode 100644
+>> > index 0000000..2ed467f
+>> > --- /dev/null
+>> > +++ b/arch/arm64/include/asm/pci.h
+>> > @@ -0,0 +1,11 @@
+>> > +#ifndef ASMARM64_PCI_H
+>> > +#define ASMARM64_PCI_H
+>> > +
+>> > +#ifdef __KERNEL__
+>> > +
+>> > +#include <asm-generic/pci-dma-compat.h>
+>> > +#include <asm-generic/pci.h>
+>> > +
+>> > +#endif /* __KERNEL__ */
+>> > +
+>> > +#endif
+> I wonder whether it makes sense to include pci-dma-compat.h in
+> asm-generic/pci.h, I don't see why one would want the generic pci.h but
+> not the generic pci-dma-compat.h (cc'ing Arnd).
 
-I'm reading the code the same way you are. From what I can see there
-is no place that counts on there enough space beyond the last entry,
-so nothing truly bad should happen.
+I think, it will let architecture guys easier to add their own
+pci-dma-compat.h (although they still need generic pci_dma_compat.h, and
+generic pci.h, too).
 
-/Anders
+e.g. one architecture want include generic pci-dma-compat.h firstly,
+then define its own features in its own pci-dma-compat.h.
+
+Thanks.
+-- 
+Chen Gang
