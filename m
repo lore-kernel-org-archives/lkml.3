@@ -1,55 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab3F0XK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 19:10:56 -0400
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:44307 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab3F0XKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 19:10:55 -0400
-From: William Gulland <wgulland@google.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Ming Lei <ming.lei@canonical.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: William Gulland <wgulland@google.com>
-Subject: [PATCH] usb: Clear both buffers when clearing a control transfer TT buffer.
-Date: Thu, 27 Jun 2013 16:10:20 -0700
-Message-Id: <1372374620-11790-1-git-send-email-wgulland@google.com>
-X-Mailer: git-send-email 1.8.3
+	id S1754063Ab3F0XQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 19:16:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58968 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753707Ab3F0XQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 19:16:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,955,1363158000"; 
+   d="scan'208";a="356937988"
+Subject: [RFC][PATCH] mm: madvise: MADV_POPULATE for quick pre-faulting
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Thu, 27 Jun 2013 16:16:05 -0700
+Message-Id: <20130627231605.8F9F12E6@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    Control transfers have both IN and OUT (or SETUP) packets, so when
-    clearing TT buffers for a control transfer it's necessary to send
-    two HUB_CLEAR_TT_BUFFER requests to the hub.
 
-Signed-off-by: William Gulland <wgulland@google.com>
+I've been doing some testing involving large amounts of
+page cache.  It's quite painful to get hundreds of GB
+of page cache mapped in, especially when I am trying to
+do it in parallel threads.  This is true even when the
+page cache is already allocated and I only need to map
+it in.  The test:
+
+1. take 160 16MB files
+2. clone 160 threads, mmap the 16MB files, and either
+  a. walk through the file touching each page
+  b. run MADV_POPULATE on the file
+3. MADV_DONTNEED on the mmap()'d area
+
+160 threads/processes:
+	    faulting | MADV_POPULATE
+  Threads:       698 |        102239 (146x speedup)
+Proceeses:    154247 |        297518 (1.9x speedup)
+
+single threaded:
+	    faulting | MADV_POPULATE
+                1908 |          3710 (1.9x speedup)
+
+To fix the thread suckage, this patch just walks the
+VMAs and maps all the pages in.  Since it does a
+bunch of them in one go, it amortizes the cost of
+acquiring the mmap_sem across all of those pages.
+
+FAQ:
+
+Why do threads suck so much?
+
+	Bouncing the mmap_sem cacheline around, plus anything
+	else that we write to during a fault.  We do one page,
+	move the cachelines to another CPU, do one more page,
+	etc...
+
+Does MADV_DONTNEED work for this?
+
+	No.  It brings the pages in to the page cache, but
+	does not map them the way it is implemented at the
+	moment.  I guess we'd be within our rights to make
+	it behave like MADV_POPULATE if we want though.
+
+
+
 ---
- drivers/usb/core/hub.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index feef935..868ad74 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -668,6 +668,15 @@ resubmit:
- static inline int
- hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
- {
-+	/* Need to clear both directions for control ep */
-+	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
-+			USB_ENDPOINT_XFER_CONTROL) {
-+		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
-+				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
-+				devinfo ^ 0x8000, tt, NULL, 0, 1000);
-+		if (status)
-+			return status;
+ linux.git-davehans/include/uapi/asm-generic/mman-common.h |    1 
+ linux.git-davehans/mm/madvise.c                           |   40 +++++++++++++-
+ 2 files changed, 40 insertions(+), 1 deletion(-)
+
+diff -puN include/uapi/asm-generic/mman-common.h~madv_populate include/uapi/asm-generic/mman-common.h
+--- linux.git/include/uapi/asm-generic/mman-common.h~madv_populate	2013-06-27 15:22:35.651854196 -0700
++++ linux.git-davehans/include/uapi/asm-generic/mman-common.h	2013-06-27 15:22:35.656854418 -0700
+@@ -51,6 +51,7 @@
+ #define MADV_DONTDUMP   16		/* Explicity exclude from the core dump,
+ 					   overrides the coredump filter bits */
+ #define MADV_DODUMP	17		/* Clear the MADV_NODUMP flag */
++#define MADV_POPULATE	18		/* Fill in mapping like faults would */
+ 
+ /* compatibility flags */
+ #define MAP_FILE	0
+diff -puN mm/madvise.c~madv_populate mm/madvise.c
+--- linux.git/mm/madvise.c~madv_populate	2013-06-27 15:22:35.652854240 -0700
++++ linux.git-davehans/mm/madvise.c	2013-06-27 15:22:35.656854418 -0700
+@@ -19,6 +19,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
++#include "internal.h"
+ 
+ /*
+  * Any behaviour which results in changes to the vma->vm_flags needs to
+@@ -31,6 +32,7 @@ static int madvise_need_mmap_write(int b
+ 	case MADV_REMOVE:
+ 	case MADV_WILLNEED:
+ 	case MADV_DONTNEED:
++	case MADV_POPULATE:
+ 		return 0;
+ 	default:
+ 		/* be safe, default to 1. list exceptions explicitly */
+@@ -252,6 +254,39 @@ static long madvise_willneed(struct vm_a
+ }
+ 
+ /*
++ * Do not just populate the page cache (WILLNEED), also map the pages.
++ */
++static long madvise_populate(struct vm_area_struct * vma,
++			     struct vm_area_struct ** prev,
++			     unsigned long start, unsigned long end)
++{
++	struct file *file = vma->vm_file;
++	int locked = 1;
++	int ret;
++
++	if (file && file->f_mapping->a_ops->get_xip_mem) {
++		/* no bad return value, but ignore advice */
++		return 0;
 +	}
- 	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
- 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
- 			       tt, NULL, 0, 1000);
--- 
-1.8.3
-
++
++	ret = __mlock_vma_pages_range(vma, start, end, &locked);
++	/*
++	 * Make sure that out down_read() matches (read vs.
++	 * write) what we did in sys_madvise.
++	 */
++	BUG_ON(madvise_need_mmap_write(MADV_POPULATE));
++	if (!locked) {
++		down_read(&current->mm->mmap_sem);
++		/* tell sys_madvise we drop mmap_sem: */
++		*prev = NULL;
++	} else {
++		*prev = vma;
++	}
++
++	return ret;
++}
++
++/*
+  * Application no longer needs these pages.  If the pages are dirty,
+  * it's OK to just throw them away.  The app will be more careful about
+  * data it wants to keep.  Be sure to free swap resources too.  The
+@@ -378,6 +413,8 @@ madvise_vma(struct vm_area_struct *vma,
+ 		return madvise_remove(vma, prev, start, end);
+ 	case MADV_WILLNEED:
+ 		return madvise_willneed(vma, prev, start, end);
++	case MADV_POPULATE:
++		return madvise_populate(vma, prev, start, end);
+ 	case MADV_DONTNEED:
+ 		return madvise_dontneed(vma, prev, start, end);
+ 	default:
+@@ -407,6 +444,7 @@ madvise_behavior_valid(int behavior)
+ #endif
+ 	case MADV_DONTDUMP:
+ 	case MADV_DODUMP:
++	case MADV_POPULATE:
+ 		return 1;
+ 
+ 	default:
+@@ -536,7 +574,7 @@ SYSCALL_DEFINE3(madvise, unsigned long,
+ 			goto out;
+ 		if (prev)
+ 			vma = prev->vm_next;
+-		else	/* madvise_remove dropped mmap_sem */
++		else	/* madvise_remove/populate dropped mmap_sem */
+ 			vma = find_vma(current->mm, start);
+ 	}
+ out:
+_
