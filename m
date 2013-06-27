@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab3F0SJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 14:09:29 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:33690 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753849Ab3F0SJ2 (ORCPT
+	id S1753990Ab3F0SJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 14:09:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40025 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753849Ab3F0SJl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 14:09:28 -0400
-Date: Thu, 27 Jun 2013 14:09:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Manjunath Goudar <manjunath.goudar@linaro.org>
-cc: linux-usb@vger.kernel.org, <linux-arm-kernel@lists.infradead.org>,
-        <patches@linaro.org>, <arnd@linaro.org>,
-        <linaro-kernel@lists.linaro.org>, Greg KH <greg@kroah.com>,
-        Wan ZongShun <mcuos.com@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: EHCI: make ehci-w90X900 a separate driver
-In-Reply-To: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
-Message-ID: <Pine.LNX.4.44L0.1306271405030.1167-100000@iolanthe.rowland.org>
+	Thu, 27 Jun 2013 14:09:41 -0400
+From: "Fernandes, Joel" <joelf@ti.com>
+To: "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+CC: "lars@metafoo.de" <lars@metafoo.de>, Tony Lindgren <tony@atomide.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>, Matt Porter <matt@ohporter.com>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
+        "Russell King" <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        "Koen Kooi" <koen@beagleboard.org>, Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, "lars@metafoo.de" <lars@metafoo.de>
+Subject: RE: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD data
+Thread-Topic: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD data
+Thread-Index: AQHOc0JBa2Q1+uiBuUi8y9XUd9fX75lKE40A///GQbA=
+Date: Thu, 27 Jun 2013 18:08:55 +0000
+Message-ID: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4F0F95@DLEE08.ent.ti.com>
+References: <1372209808-6532-1-git-send-email-joelagnel@ti.com>
+ <CAD=GYpbdVVrh-tiqOcbHi3mkWRJUBdx0EsEZEFVVbgFgcCWgsw@mail.gmail.com>
+ <51CC2A1E.2040003@ti.com>
+ <CAD=GYpa9LQ1fV6=O9B65sJURVAigsgXCPLWav8cHXTuGQXPc9A@mail.gmail.com>
+ <51CC67CA.2070805@ti.com>
+In-Reply-To: <51CC67CA.2070805@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013, Manjunath Goudar wrote:
+Hi Balaji,
 
-> Separate the W90X900(W90P910) on-chip host controller driver from
-> ehci-hcd host code so that it can be built as a separate driver module.
-> This work is part of enabling multi-platform kernels on ARM;
-> however, note that other changes are still needed before W90X900(W90P910)
-> can be booted with a multi-platform kernel
+> -----Original Message-----
+> From: Krishnamoorthy, Balaji T
+> Sent: Thursday, June 27, 2013 11:27 AM
+> To: Cousson, Benoit; Fernandes, Joel
+> Cc: lars@metafoo.de; Tony Lindgren; Nori, Sekhar; Matt Porter; Grant Likely;
+> Rob Herring; Vinod Koul; Mark Brown; Russell King; Rob Landley; Andrew
+> Morton; Jason Kridner; Koen Kooi; Chris Ball; Devicetree Discuss; Linux OMAP
+> List; Linux ARM Kernel List; Linux DaVinci Kernel List; Linux Kernel Mailing List;
+> Linux MMC List; Arnd Bergmann
+> Subject: Re: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD
+> data
 > 
-> and an ehci driver that only works on one of them.
+> On Thursday 27 June 2013 07:56 PM, Joel A Fernandes wrote:
+> > Hi Benoit,
+> >
+> > On Thu, Jun 27, 2013 at 7:03 AM, Benoit Cousson <b-cousson@ti.com> wrote:
+> >> Hi Joel,
+> >>
+> >> On 06/26/2013 05:28 AM, Joel A Fernandes wrote:
+> >>> On Tue, Jun 25, 2013 at 8:23 PM, Joel A Fernandes <joelagnel@ti.com>
+> wrote:
+> >>>> From: Joel A Fernandes <agnel.joel@gmail.com>
+> >>>>
+> >>>> This series is fixes to get MMC working on AM33XX without HWMOD
+> data.
+> >>>> On removal of HWMOD data, interrupt and register properties need to
+> >>>> be provided for the driver to function correctly.
+> >>>
+> >>> Please don't pull patches authored by me in this series. I have
+> >>> posted them with my wrong email address by mistake. I will correct
+> >>> my email during the next repost, after a round of review. Matt's
+> >>> patches in the series are still good though.
+> >>
+> >> In that case, please repost these in two series to avoid pulling the
+> >> DTS files in the MMC tree.
+> >
+> > The series has been replaced with the single patch:
+> > "[PATCH v2] ARM: dts: add AM33XX MMC support"
+> > http://marc.info/?l=linux-omap&m=137230403815943&w=2
+> >
+> > Some patches were squashed and others dropped in the series resulting
+> > in the single patch above. This patch should be good to apply
+> Hi Joel,
 > 
-> With the infrastructure added by Alan Stern in patch 3e0232039
-> "USB: EHCI: prepare to make ehci-hcd a library module", we can
-> avoid this problem by turning a bus glue into a separate
-> module, as we do here for the w90X900 bus glue.
+> Before pushing mmc dts support for am335x, Can you please let me
+> know if below 2 patches [1] are merged/accepted,
+> IIRC these patches are needed for MMC to work properly.
+> 
+> I suggest to hold the dts patch until slave_sg_limit gets merged
+> otherwise it will cause regression in am335x mmc.
+> 
+> [PATCH v4 1/3] dmaengine: add dma_get_slave_sg_limits()
+> [PATCH v4 2/3] dma: edma: add device_slave_sg_limits() support
 
+Actually this is an independent regression and is currently worked on by Lars-Peter Clausen [1].
 
-> diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
-> index 59e0e24..d9ecd79 100644
-> --- a/drivers/usb/host/ehci-w90x900.c
-> +++ b/drivers/usb/host/ehci-w90x900.c
-> @@ -11,13 +11,28 @@
->   *
->   */
->  
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/usb.h>
-> +#include <linux/usb/hcd.h>
-> +#include <linux/dma-mapping.h>
-> +#include <linux/of.h>
+Currently not having the MMC DTS merged is also a regression, so I suggest lets take it one
+step at a time and get the DTS merged in first. Also there will be overhead of reposting this
+DTS patch later again which will not change. What do you say?
 
-Alphabetical order, please.
+Thanks,
 
->  #include <linux/platform_device.h>
->  
-> +#include "ehci.h"
-> +
->  /* enable phy0 and phy1 for w90p910 */
->  #define	ENPHY		(0x01<<8)
->  #define PHY0_CTR	(0xA4)
->  #define PHY1_CTR	(0xA8)
->  
-> +#define DRIVER_DESC "w90p910 usb ehci driver!"
+-Joel
 
-I know this is what it said originally, but let's make it look more 
-like the other drivers.  It doesn't need to say "usb", and it doesn't 
-need the '!' character at the end.  Also, 'ehci' should be in capital 
-letters.
-
-Finally, shouldn't it say "w90x900" instead of "w90p910"?
-
-The rest of the patch is okay.
-
-Alan Stern
-
+[1] https://patchwork.kernel.org/patch/2228041/
