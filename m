@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab3F0Ian (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:30:43 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:32859 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab3F0Iag (ORCPT
+	id S1752907Ab3F0IcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:32:05 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:39701 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab3F0IcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:30:36 -0400
-Message-ID: <1372321835.3301.221.camel@edumazet-glaptop>
-Subject: Re: [netlink] WARNING: at mm/vmalloc.c:1487 __vunmap()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Date: Thu, 27 Jun 2013 01:30:35 -0700
-In-Reply-To: <20130627082238.GA6346@localhost>
-References: <20130614220119.GA12954@localhost>
-	 <20130617200938.GA14567@localhost>
-	 <1372250558.3301.194.camel@edumazet-glaptop>
-	 <20130627082238.GA6346@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 27 Jun 2013 04:32:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <51CA0FB0.7090608@wwwdotorg.org>
+References: <201306251455.01540.heiko@sntech.de>
+	<201306251456.36499.heiko@sntech.de>
+	<51C99581.2010403@imgtec.com>
+	<CACRpkdaVsKCNzQ9zAG5DXfDO2BFpcCzw5VbmARazOrXCW1kmeQ@mail.gmail.com>
+	<51C9AFC4.1020305@imgtec.com>
+	<51CA0FB0.7090608@wwwdotorg.org>
+Date: Thu, 27 Jun 2013 10:32:01 +0200
+Message-ID: <CACRpkdZ6KOa=bXqm_S7LbUXp8AeWzCTCS6pRSFDiRu5ELgypQg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] pinctrl: remove slew-rate parameter from tz1090
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: James Hogan <james.hogan@imgtec.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 10:22 +0200, Pablo Neira Ayuso wrote:
-> Hi Eric,
-> 
-> Thanks for looking into this.
-> 
-> On Wed, Jun 26, 2013 at 05:42:38AM -0700, Eric Dumazet wrote:
-> [...]
-> > Nope there are several issues :
-> > 
-> > 1) bug in netlink_alloc_large_skb() because it doesn't account
-> > for sizeof(struct skb_shared_info) overhead and initialization.
-> 
-> Indeed, I can send a fix for this.
-> 
-> > 2) Also, skb_clone() on such skb should be forbidden.
-> > 
-> >    Example, nl_fib_input() does a nskb = skb_clone(skb)
-> >
-> > If skb is freed before nskb, then nskb wont know skb->head must be freed
-> > by vfree()
-> > 
-> > I don't know...
-> > 
-> > 3) Do we really need this vmalloc stuff, because it sounds like we are
-> > going to add yet another test in fast path (in skb_free_head())
-> 
-> We want to send atomic rule-set updates via netlink in one single
-> batch message to kernel space. Without vmalloc, I can send up to
-> ~20000 rule updates in one single batch.
-> 
-> We considered splitting the updates in smaller batches to make netlink
-> happy, but then a process has to own the rule-set base until it has
-> finished the update to avoid any interference. However, a broken
-> user-space program may (ab)use such ownership to prevents others from
-> updating the rule-set.
-> 
-> > 4) Or we must track all skb_clone() netlink calls to attach a destructor
-> > to properly to the vfree()
-> 
-> Perhaps we can add a new specific function for this, netlink_skb_clone?
-> 
+On Tue, Jun 25, 2013 at 11:46 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/25/2013 08:57 AM, James Hogan wrote:
+>> 0: slow (half frequency)
+>> 1: fast
+>>
+>> I just got a reply back from a hardware engineer, who said that the
+>> relationship with the actual volts/usec will depend on both the drive
+>> strength and the load on the pad, and that a definite answer probably
+>> requires running a simulation.
+>
+> Tegra is similar here. The docs just say (for a 2-bit field expressed in
+> binary) "Code 11 is the least slewing of the signal, code 00 is the
+> highest slewing of the signal".
+>
+> I'm not sure that a generic parameter actually needs specific units. Why
+> can't we simply specify the units as HW-defined, even while using a
+> standardized DT property name and kernel-internal enum to represent the
+> concept of slew rate?
 
-You have also to track the kfree_skb() calls done before
-you set skb->destructor.
+That is fine I guess, that is how it is currently defined for the
+kernel internals in
+<linux/pinconf/pinconf-generic.h>:
 
-Or set skb->destructor right after netlink_alloc_large_skb()
+ * @PIN_CONFIG_SLEW_RATE: if the pin can select slew rate, the argument to
+ *      this parameter (on a custom format) tells the driver which alternative
+ *      slew rate to use.
 
-> I'll be fine to track skb_clone in existing netlink families and
-> replace it by such call in case you don't find this solution too
-> hackish.
+It's just that the very phrase "device tree" bring out the
+standards body slow-and-impersonal considering all aspects
+of the world side of me.
 
-Let see if you can do that, I'll test and review the patches.
+Unless someone from the DT camp think it is horrible to have
+this value vendor-specific I'm all game.
 
-I suggest you use build_skb() as in :
+But I guess it needs some binding doc for each and every pin
+controller in that case, so referring to the generic binding will
+not work. (And the driver needs to do some range checking
+etc I guess.)
 
-static struct sk_buff *netlink_alloc_large_skb(unsigned int size, bool broadcast)
-{
-        struct sk_buff *skb;
-        void *data;
-
-        if (size <= NLMSG_GOODSIZE || broadcast)
-                return alloc_skb(size, GFP_KERNEL);
-
-        size = SKB_DATA_ALIGN(size) +
-               SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
-
-        data = vmalloc(size);
-        if (!data)
-                return NULL;
-        skb = build_skb(data, size);
-        if (!skb)
-                vfree(data);
-        else
-                skb->head_frag = 0;
-        return skb;
-}
-
-
+Yours,
+Linus Walleij
