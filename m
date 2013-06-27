@@ -1,150 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab3F0HPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:15:51 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44224 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab3F0HPs (ORCPT
+	id S1752680Ab3F0HWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:22:11 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:47738 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368Ab3F0HWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:15:48 -0400
-Message-ID: <51CBE695.9010207@oracle.com>
-Date: Thu, 27 Jun 2013 15:15:33 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 27 Jun 2013 03:22:10 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tux3@tux3.org
+Subject: Re: [PATCH] Optimize wait_sb_inodes()
+References: <87ehbpntuk.fsf@devron.myhome.or.jp>
+	<20130626231143.GC28426@dastard> <87wqpg76ls.fsf@devron.myhome.or.jp>
+	<20130627044705.GB29790@dastard> <87y59w5dye.fsf@devron.myhome.or.jp>
+	<20130627063816.GD29790@dastard>
+Date: Thu, 27 Jun 2013 16:22:04 +0900
+In-Reply-To: <20130627063816.GD29790@dastard> (Dave Chinner's message of "Thu,
+	27 Jun 2013 16:38:16 +1000")
+Message-ID: <87ppv83tnn.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "zheng.x.li@oracle.com" <zheng.x.li@oracle.com>
-Subject: Re: kernel panic in skb_copy_bits
-References: <51CBAA48.3080802@oracle.com> <1372311118.3301.214.camel@edumazet-glaptop>
-In-Reply-To: <1372311118.3301.214.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+Dave Chinner <david@fromorbit.com> writes:
 
-Thanks for you response, will test it and get back to you.
+>> Otherwise, vfs can't know the data is whether after sync point or before
+>> sync point, and have to wait or not. FS is using the behavior like
+>> data=journal has tracking of those already, and can reuse it.
+>
+> The VFS writeback code already differentiates between data written
+> during a sync operation and that dirtied after a sync operation.
+> Perhaps you should look at the tagging for WB_SYNC_ALL writeback
+> that write_cache_pages does....
+>
+> But, anyway, we don't have to do that on the waiting side of things.
+> All we need to do is add the inode to a "under IO" list on the bdi
+> when the mapping is initially tagged with pages under writeback,
+> and remove it from that list during IO completion when the mapping
+> is no longer tagged as having pages under writeback.
+>
+> wait_sb_inodes() just needs to walk that list and wait on each inode
+> to complete IO. It doesn't require *any awareness* of the underlying
+> filesystem implementation or how the IO is actually issued - if
+> there's IO in progress at the time wait_sb_inodes() is called, then
+> it waits for it.
+>
+>> > Fix the root cause of the problem - the sub-optimal VFS code.
+>> > Hacking around it specifically for out-of-tree code is not the way
+>> > things get done around here...
+>> 
+>> I'm thinking the root cause is vfs can't have knowledge of FS internal,
+>> e.g. FS is handling data transactional way, or not.
+>
+> If the filesystem has transactional data/metadata that the VFS is
+> not tracking, then that is what the ->sync_fs call is for. i.e. so
+> the filesystem can then do what ever extra writeback/waiting it
+> needs to do that the VFS is unaware of.
+>
+> We already cater for what Tux3 needs in the VFS - all you've done is
+> found an inefficient algorithm that needs fixing.
 
-Regards,
-Joe
-On 06/27/13 13:31, Eric Dumazet wrote:
-> On Thu, 2013-06-27 at 10:58 +0800, Joe Jin wrote:
->> Hi,
->>
->> When we do fail over test with iscsi + multipath by reset the switches
->> on OVM(2.6.39) we hit the panic:
->>
->> BUG: unable to handle kernel paging request at ffff88006d9e8d48
->> IP: [<ffffffff812605bb>] memcpy+0xb/0x120
->> PGD 1798067 PUD 1fd2067 PMD 213f067 PTE 0
->> Oops: 0000 [#1] SMP 
->> CPU 7 
->> Modules linked in: dm_nfs tun nfs fscache auth_rpcgss nfs_acl xen_blkback xen_netback xen_gntdev xen_evtchn lockd sunrpc bridge stp llc bonding be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3 mdio dm_round_robin dm_multipath libiscsi_tcp libiscsi scsi_transport_iscsi xenfs xen_privcmd video sbs sbshc acpi_memhotplug acpi_ipmi ipmi_msghandler parport_pc lp parport ixgbe dca sr_mod cdrom bnx2 radeon ttm drm_kms_helper drm snd_seq_dummy i2c_algo_bit i2c_core snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss serio_raw snd_pcm snd_timer snd soundcore snd_page_alloc iTCO_wdt pcspkr iTCO_vendor_support pata_acpi dcdbas i5k_amb ata_generic hwmon floppy ghes i5000_edac edac_core hed dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage lpfc scsi_transport_fc scsi_tgt ata_piix sg shpchp mptsas mptscsih mptbase scsi_transport_sas sd_mod crc_t10dif ext!
- 3!
->   j!
->>  bd mbcache
->>
->>
->> Pid: 0, comm: swapper Tainted: G        W   2.6.39-300.32.1.el5uek #1 Dell Inc. PowerEdge 2950/0DP246
->> RIP: e030:[<ffffffff812605bb>]  [<ffffffff812605bb>] memcpy+0xb/0x120
->> RSP: e02b:ffff8801003c3d58  EFLAGS: 00010246
->> RAX: ffff880076b9e280 RBX: ffff8800714d2c00 RCX: 0000000000000057
->> RDX: 0000000000000000 RSI: ffff88006d9e8d48 RDI: ffff880076b9e280
->> RBP: ffff8801003c3dc0 R08: 00000000000bf723 R09: 0000000000000000
->> R10: 0000000000000000 R11: 000000000000000a R12: 0000000000000034
->> R13: 0000000000000034 R14: 00000000000002b8 R15: 00000000000005a8
->> FS:  00007fc1e852a6e0(0000) GS:ffff8801003c0000(0000) knlGS:0000000000000000
->> CS:  e033 DS: 002b ES: 002b CR0: 000000008005003b
->> CR2: ffff88006d9e8d48 CR3: 000000006370b000 CR4: 0000000000002660
->> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->> Process swapper (pid: 0, threadinfo ffff880077ac0000, task ffff880077abe240)
->> Stack:
->>  ffffffff8142db21 0000000000000000 ffff880076b9e280 ffff8800637097f0
->>  000002ec00000000 00000000000002b8 ffff880077ac0000 0000000000000000
->>  ffff8800637097f0 ffff880066c9a7c0 00000000fffffdb4 000000000000024c
->> Call Trace:
->>  <IRQ> 
->>  [<ffffffff8142db21>] ? skb_copy_bits+0x1c1/0x2e0
->>  [<ffffffff8142f173>] skb_copy+0xf3/0x120
->>  [<ffffffff81447fbc>] neigh_timer_handler+0x1ac/0x350
->>  [<ffffffff810573fe>] ? account_idle_ticks+0xe/0x10
->>  [<ffffffff81447e10>] ? neigh_alloc+0x180/0x180
->>  [<ffffffff8107dbaa>] call_timer_fn+0x4a/0x110
->>  [<ffffffff81447e10>] ? neigh_alloc+0x180/0x180
->>  [<ffffffff8107f82a>] run_timer_softirq+0x13a/0x220
->>  [<ffffffff81075c39>] __do_softirq+0xb9/0x1d0
->>  [<ffffffff810d9678>] ? handle_percpu_irq+0x48/0x70
->>  [<ffffffff81511d3c>] call_softirq+0x1c/0x30
->>  [<ffffffff810172e5>] do_softirq+0x65/0xa0
->>  [<ffffffff8107656b>] irq_exit+0xab/0xc0
->>  [<ffffffff812f97d5>] xen_evtchn_do_upcall+0x35/0x50
->>  [<ffffffff81511d8e>] xen_do_hypervisor_callback+0x1e/0x30
->>  <EOI> 
->>  [<ffffffff810013aa>] ? xen_hypercall_sched_op+0xa/0x20
->>  [<ffffffff810013aa>] ? xen_hypercall_sched_op+0xa/0x20
->>  [<ffffffff8100a0b0>] ? xen_safe_halt+0x10/0x20
->>  [<ffffffff8101dfeb>] ? default_idle+0x5b/0x170
->>  [<ffffffff81014ac6>] ? cpu_idle+0xc6/0xf0
->>  [<ffffffff8100a8c9>] ? xen_irq_enable_direct_reloc+0x4/0x4
->>  [<ffffffff814f7bbe>] ? cpu_bringup_and_idle+0xe/0x10
->> Code: 01 c6 43 4c 04 19 c0 4c 8b 65 f0 4c 8b 6d f8 83 e0 fc 83 c0 08 88 43 4d 48 8b 5d e8 c9 c3 90 90 48 89 f8 89 d1 c1 e9 03 83 e2 07 <f3> 48 a5 89 d1 f3 a4 c3 20 48 83 ea 20 4c 8b 06 4c 8b 4e 08 4c 
->> RIP  [<ffffffff812605bb>] memcpy+0xb/0x120
->>  RSP <ffff8801003c3d58>
->> CR2: ffff88006d9e8d48
->>
->> Reviewed vmcore I found the skb->users is 1 at the moment, checked network neighbour 
->> history I found skb_get() be replaced by skb_copy by commit 7e36763b2c:
->>
->> commit 7e36763b2c204d59de4e88087f84a2c0c8421f25                               
->> Author: Frank Blaschka <frank.blaschka@de.ibm.com>                            
->> Date:   Mon Mar 3 12:16:04 2008 -0800
->>
->>     [NET]: Fix race in generic address resolution.                            
->>         
->>     neigh_update sends skb from neigh->arp_queue while neigh_timer_handler    
->>     has increased skbs refcount and calls solicit with the                    
->>     skb. neigh_timer_handler should not increase skbs refcount but make a     
->>     copy of the skb and do solicit with the copy.                             
->>     
->>     Signed-off-by: Frank Blaschka <frank.blaschka@de.ibm.com>                 
->>     Signed-off-by: David S. Miller <davem@davemloft.net>                      
->>
->> So can you please give some details of the race? per vmcore seems like the skb data
->> be freed, I suspected skb_get() lost at somewhere?
->> I reverted above commit the panic not occurred during our testing.
->>
->> Any input will appreciate!
-> 
-> Well, fact is that your crash is happening in skb_copy().
-> 
-> Frank patch is OK. I suspect using skb_clone() would work too,
-> so if these skb were fclone ready, chance of an GFP_ATOMIC allocation
-> error would be smaller.
-> 
-> So something is providing a wrong skb at the very beginning.
-> 
-> You could try to do a early skb_copy to catch the bug and see in the
-> stack trace what produced this buggy skb.
-> 
-> diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-> index 5c56b21..a7a51fd 100644
-> --- a/net/core/neighbour.c
-> +++ b/net/core/neighbour.c
-> @@ -1010,6 +1010,7 @@ int __neigh_event_send(struct neighbour *neigh, struct sk_buff *skb)
->  				NEIGH_CACHE_STAT_INC(neigh->tbl, unres_discards);
->  			}
->  			skb_dst_force(skb);
-> +			kfree_skb(skb_copy(skb, GFP_ATOMIC));
->  			__skb_queue_tail(&neigh->arp_queue, skb);
->  			neigh->arp_queue_len_bytes += skb->truesize;
->  		}
-> 
-> 
+write_cache_pages() is library function to be called from per-FS. So, it
+is not under vfs control can be assume already. And it doesn't do right
+things via write_cache_pages() for data=journal, because it handles for
+each inodes, not at once. So, new dirty data can be inserted while
+marking.
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
