@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab3F0HDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:03:55 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:23373 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab3F0HDy (ORCPT
+	id S1752656Ab3F0HEr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:04:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57616 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab3F0HEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:03:54 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: <linux-kernel@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
-        <xjtuwjp@gmail.com>, <lindar_liu@usish.com>,
-        <linux-scsi@vger.kernel.org>
-Subject: [Resend with Ack][PATCH 8/9] scsi/pm8001: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
-Date: Thu, 27 Jun 2013 15:02:49 +0800
-Message-ID: <1372316569-28376-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Thu, 27 Jun 2013 03:04:46 -0400
+Date: Thu, 27 Jun 2013 10:04:24 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <balbi@ti.com>, "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: regression caused by commit
+ 8357b48549e17b3e4e402c7f977b65708922e60f
+Message-ID: <20130627070424.GM15455@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130627061419.GE15455@arwen.pp.htv.fi>
+ <20130627163655.239cea102ba0eb968a434593@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wAI/bQb0EMvlZCHl"
+Content-Disposition: inline
+In-Reply-To: <20130627163655.239cea102ba0eb968a434593@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pci core has been saved pm cap register offset by pdev->pm_cap in pci_pm_init()
-in init path. So we can use pdev->pm_cap instead of using
-pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and simplified code.
+--wAI/bQb0EMvlZCHl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Lindar Liu <lindar_liu@usish.com>
-Tested-by: Lindar Liu <lindar_liu@usish.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: xjtuwjp@gmail.com
-Cc: lindar_liu@usish.com
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/scsi/pm8001/pm8001_init.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+On Thu, Jun 27, 2013 at 04:36:55PM +1000, Stephen Rothwell wrote:
+> Hi,
+>=20
+> On Thu, 27 Jun 2013 09:14:19 +0300 Felipe Balbi <balbi@ti.com> wrote:
+> >
+> > after commit 8357b48549e17b3e4e402c7f977b65708922e60f,
+> > omap2plus_defconfig doesn't 'hold' the answer to USB Gadget Drivers
+> > anymore. Everytime I run oldconfig, it asks me again and again what USB
+> > Gadget Drivers should be (M/y/?).
+> >=20
+> > That's certainly not expected considering it wasn't like that before.
+>=20
+> That commit has been reverted in today's kbuild tree and thus in today's
+> linux-next.
 
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index e4b9bc7..3861aa1 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -912,14 +912,13 @@ static int pm8001_pci_suspend(struct pci_dev *pdev, pm_message_t state)
- {
- 	struct sas_ha_struct *sha = pci_get_drvdata(pdev);
- 	struct pm8001_hba_info *pm8001_ha;
--	int i , pos;
-+	int i;
- 	u32 device_state;
- 	pm8001_ha = sha->lldd_ha;
- 	flush_workqueue(pm8001_wq);
- 	scsi_block_requests(pm8001_ha->shost);
--	pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
--	if (pos == 0) {
--		printk(KERN_ERR " PCI PM not supported\n");
-+	if (!pdev->pm_cap) {
-+		dev_err(&pdev->dev, " PCI PM not supported\n");
- 		return -ENODEV;
- 	}
- 	PM8001_CHIP_DISP->interrupt_disable(pm8001_ha, 0xFF);
--- 
-1.7.1
+thanks, I should fetch again :-)
 
+--=20
+balbi
 
+--wAI/bQb0EMvlZCHl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRy+P4AAoJEIaOsuA1yqREeOwP/0bSlFg87OjCrpnOfJvLr0Ua
+VVDgNPZQMbr4oSi5WVkkZljGTVnqIEm+/4XcFvXU7fPZdDvKbErIzbHdg8sg+GMC
+d3iPVaoY08lkY/iNXZgNJ9SqJZYu4qLigaUlo6jdH0tz0YTPz1MvsFDSJf9pXdUs
+ULj2tCsOAO+zh4pwC6QexSpM7IKRqC8peNcogABAQV21ccz6QfBgF/y4bcwASctf
+2QiNmieg/P5W8jH1uM1rMNXETlmYTlyYoMnTtiLpqvLkx9H01VUKtfkP2a0fWWfd
+Lzgt5dxPKdZcrXZTfy2O/ApwxSSn3XQ7sjL2XXNkUWQLuWV8b2ZLr8d3i1eEug7L
+e6KMkmpM/GAsw1vsWBoahJrw7idhFMgQdUVO8iP3riMXd2BnHgrL5WycfUsgDmkj
+1ybGmYYsIO667I+1gGpKvZwtsYREMDy42gcgiaFSeCl/X+nP7UTvgBj8KW43MvX2
+MeNDxIApI8/o9k6rjZCE/b1xWU1dDb8bjouMpsNK+OcOkjUxrIUBMqoQAy7xx6bc
+0jw+eX+KZ/cjNujYay1B+oD7sOqQ4uqcx5tQzBzDC1d8HsXlv3qr44mTNWQbZEEJ
+PRLv3quNBamYf2wfIIrhe/AgRM9tBwvGU2sLotVQBrOmlg32g7p640b1gWlCh7Hh
++AuM4b8Mgn3pCnccbdJj
+=un8b
+-----END PGP SIGNATURE-----
+
+--wAI/bQb0EMvlZCHl--
