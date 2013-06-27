@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab3F0HsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:48:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47864 "EHLO mga14.intel.com"
+	id S1752766Ab3F0HtQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:49:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58424 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286Ab3F0HsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:48:02 -0400
+	id S1752260Ab3F0HtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 03:49:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,950,1363158000"; 
-   d="scan'208";a="260786744"
-Date: Thu, 27 Jun 2013 09:47:01 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: J Keerthy <j-keerthy@ti.com>
-Cc: linux-omap@vger.kernel.org, broonie@kernel.org, ldewangan@nvidia.com,
-        grant.likely@secretlab.ca, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        gg@slimlogic.co.uk
-Subject: Re: [PATCH 4/4] regulator: Palmas: Add TPS659038 support
-Message-ID: <20130627074701.GB4576@zurbaran>
-References: <1371726135-9891-1-git-send-email-j-keerthy@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371726135-9891-1-git-send-email-j-keerthy@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="scan'208";a="361296027"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH V2 00/15] perf tools: some fixes and tweaks
+Date: Thu, 27 Jun 2013 10:54:52 +0300
+Message-Id: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi
 
-On Thu, Jun 20, 2013 at 04:32:15PM +0530, J Keerthy wrote:
-> Add TPS659038 support.
-> 
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> Acked-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/regulator/palmas-regulator.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-Applied to mfd-next, thanks.
+Here are some fixes and tweaks to perf tools (version 2).
 
-Cheers,
-Samuel.
+Changes in V2:
+	perf tools: fix missing tool parameter
+		Fixed one extra occurrence
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Made "freeing" code into a new function
+	perf tools: validate perf event header size
+		Corrected byte-swapping
+	perf tools: allow non-matching sample types
+		Added comments
+		Fixed id_pos calculation
+		id_pos/is_pos updated whenever sample_type changes
+		Removed perf_evlist__sample_type()
+		Added __perf_evlist__combined_sample_type()
+		Added perf_evlist__combined_sample_type()
+		Added perf_evlist__make_sample_types_compatible()
+	Added ack's to patches acked by Jiri Olsa
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+
+Adrian Hunter (15):
+      perf tools: remove unused parameter
+      perf tools: fix missing tool parameter
+      perf tools: fix missing 'finished_round'
+      perf tools: fix parse_events_terms() segfault on error path
+      perf tools: fix new_term() missing free on error path
+      perf tools: fix parse_events_terms() freeing local variable on error path
+      perf tools: add const specifier to perf_pmu__find name parameter
+      perf tools: tidy duplicated munmap code
+      perf tools: validate perf event header size
+      perf tools: add debug prints
+      perf tools: fix symbol_conf.nr_events
+      perf tools: allow non-matching sample types
+      perf tools: struct thread has a tid not a pid
+      perf tools: add pid to struct thread
+      perf tools: fix ppid in thread__fork()
+
+ tools/perf/builtin-inject.c    |  40 +++++-----
+ tools/perf/builtin-kmem.c      |   2 +-
+ tools/perf/builtin-report.c    |   2 +-
+ tools/perf/builtin-sched.c     |  12 +--
+ tools/perf/builtin-trace.c     |   4 +-
+ tools/perf/ui/browsers/hists.c |   6 +-
+ tools/perf/util/event.c        |   2 +-
+ tools/perf/util/event.h        |  14 ++++
+ tools/perf/util/evlist.c       | 170 +++++++++++++++++++++++++++++++++++------
+ tools/perf/util/evlist.h       |   8 +-
+ tools/perf/util/evsel.c        | 116 +++++++++++++++++++++++++++-
+ tools/perf/util/evsel.h        |  10 +++
+ tools/perf/util/header.c       |   8 +-
+ tools/perf/util/header.h       |   6 +-
+ tools/perf/util/machine.c      |  57 ++++++++++----
+ tools/perf/util/machine.h      |   8 +-
+ tools/perf/util/parse-events.c |  11 ++-
+ tools/perf/util/parse-events.h |   1 +
+ tools/perf/util/pmu.c          |  16 ++--
+ tools/perf/util/pmu.h          |   2 +-
+ tools/perf/util/session.c      |  33 +++++---
+ tools/perf/util/sort.c         |   6 +-
+ tools/perf/util/thread.c       |  11 +--
+ tools/perf/util/thread.h       |   5 +-
+ tools/perf/util/tool.h         |   9 +--
+ 25 files changed, 441 insertions(+), 118 deletions(-)
+
+Regards
+Adrian
