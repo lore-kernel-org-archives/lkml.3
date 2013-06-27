@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab3F0Nzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:55:48 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:6804 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753382Ab3F0Nyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:54:45 -0400
-X-IronPort-AV: E=Sophos;i="4.87,952,1363132800"; 
-   d="scan'208";a="32195045"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <catalin.marinas@arm.com>, <arnd@arndb.de>,
-        <olof@lixom.net>, <linux@arm.linux.org.uk>, <Ian.Campbell@citrix.com>,
-        <Stefano.Stabellini@eu.citrix.com>, <will.deacon@arm.com>,
-        <marc.zyngier@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v6 5/5] xen/arm: account for stolen ticks
-Date: Thu, 27 Jun 2013 14:54:32 +0100
-Message-ID: <1372341272-12512-5-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
+	id S1753547Ab3F0N4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:56:20 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:40909 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab3F0N4T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 09:56:19 -0400
+Message-ID: <51CC4461.50207@oracle.com>
+Date: Thu, 27 Jun 2013 09:55:45 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v5 0/9] liblockdep: userspace lockdep
+References: <1371163284-6346-1-git-send-email-sasha.levin@oracle.com> <20130626122408.GJ28407@twins.programming.kicks-ass.net> <20130626155325.GB7399@gmail.com> <51CB4328.7010006@oracle.com> <20130627090722.GC4398@gmail.com>
+In-Reply-To: <20130627090722.GC4398@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register the runstate_memory_area with the hypervisor.
-Use pv_time_ops.steal_clock to account for stolen ticks.
+On 06/27/2013 05:07 AM, Ingo Molnar wrote:
+>
+> * Sasha Levin <sasha.levin@oracle.com> wrote:
+>
+>> On 06/26/2013 11:53 AM, Ingo Molnar wrote:
+>>>> Ingo, I don't think I see anything holding this back; however I remember
+>>>>> reading some email about people not liking stuff like this living in the
+>>>>> tools/ directory or such.
+>>>>>
+>>>>> Will you pick this up?
+>>> So I'd really be interested in how interesting/useful this is to userspace
+>>> developers? Does it work for something complex as Firefox, or Apache, to
+>>> the extent they make use of these locking APIs?
+>>
+>> So far I've tested it on Firefox, Apache, QEMU, LKVM, GCC and random
+>> smallish programs. I haven't really done full testing for each of those,
+>> but just made sure that liblockdep behaves as it supposed to. I'm
+>> guessing that with further work it will dig up actual issues.
+>
+> The other issue is that with lock classes disabled you have to hit an
+> actual deadlock to trigger any output.
+>
+> I.e. much of the power of lockdep is diminished :-/ When actual deadlocks
+> are triggered then it's not particularly complex to debug user-space apps:
+> gdb the hung task(s) and look at the backtraces.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Lock classes are disabled only if you're using the LD_PRELOAD method of
+testing. If you actually re-compile your code with the library (by just
+including the header and setting a #define to enable it) you will have
+lock classes.
 
 
-Changes in v4:
-- don't use paravirt_steal_rq_enabled: we do not support retrieving
-stolen ticks for vcpus other than one we are running on.
+Thanks,
+Sasha
 
-Changes in v3:
-- use BUG_ON and smp_processor_id.
----
- arch/arm/xen/enlighten.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 13609e0..49839d8 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -14,7 +14,10 @@
- #include <xen/xen-ops.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <asm/arch_timer.h>
- #include <asm/system_misc.h>
-+#include <asm/paravirt.h>
-+#include <linux/jump_label.h>
- #include <linux/interrupt.h>
- #include <linux/irqreturn.h>
- #include <linux/module.h>
-@@ -152,6 +155,19 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- }
- EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
- 
-+unsigned long long xen_stolen_accounting(int cpu)
-+{
-+	struct vcpu_runstate_info state;
-+
-+	BUG_ON(cpu != smp_processor_id());
-+
-+	xen_get_runstate_snapshot(&state);
-+
-+	WARN_ON(state.state != RUNSTATE_running);
-+
-+	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
-+}
-+
- static void __init xen_percpu_init(void *unused)
- {
- 	struct vcpu_register_vcpu_info info;
-@@ -169,6 +185,8 @@ static void __init xen_percpu_init(void *unused)
- 	BUG_ON(err);
- 	per_cpu(xen_vcpu, cpu) = vcpup;
- 
-+	xen_setup_runstate_info(cpu);
-+
- 	enable_percpu_irq(xen_events_irq, 0);
- }
- 
-@@ -300,6 +318,9 @@ static int __init xen_init_events(void)
- 
- 	on_each_cpu(xen_percpu_init, NULL, 0);
- 
-+	pv_time_ops.steal_clock = xen_stolen_accounting;
-+	static_key_slow_inc(&paravirt_steal_enabled);
-+
- 	return 0;
- }
- postcore_initcall(xen_init_events);
--- 
-1.7.2.5
 
