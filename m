@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab3F0PgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:36:19 -0400
-Received: from void.printf.net ([89.145.121.20]:60244 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753340Ab3F0PgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:36:15 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Will Newton <will.newton@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] mmc: dw_mmc: Add the ability to set the ciu clock frequency
-References: <1370580406-10254-1-git-send-email-dianders@chromium.org>
-	<1370626110-1731-1-git-send-email-dianders@chromium.org>
-	<1370626110-1731-2-git-send-email-dianders@chromium.org>
-Date: Thu, 27 Jun 2013 11:36:11 -0400
-In-Reply-To: <1370626110-1731-2-git-send-email-dianders@chromium.org> (Doug
-	Anderson's message of "Fri, 7 Jun 2013 10:28:30 -0700")
-Message-ID: <87obaro9as.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1754046Ab3F0PhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:37:00 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:43832 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab3F0Pg6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 11:36:58 -0400
+Message-ID: <1372347413.2436.6.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [RFC Patch net-next 4/5] sunrpc: use generic union inet_addr
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Cong Wang <amwang@redhat.com>
+CC: <netdev@vger.kernel.org>, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Jun 2013 16:36:53 +0100
+In-Reply-To: <1372315398-19683-5-git-send-email-amwang@redhat.com>
+References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
+	 <1372315398-19683-5-git-send-email-amwang@redhat.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19978.002
+X-TM-AS-Result: No--6.797700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On Thu, 2013-06-27 at 14:43 +0800, Cong Wang wrote:
+[...]
+> -/**
+> - * rpc_cmp_addr - compare the address portion of two sockaddrs.
+> - * @sap1: first sockaddr
+> - * @sap2: second sockaddr
+> - *
+> - * Just compares the family and address portion. Ignores port, but
+> - * compares the scope if it's a link-local address.
 
-On Fri, Jun 07 2013, Doug Anderson wrote:
-> As of now we rely on code outside of the driver to set the ciu clock
-> frequency.  There's no reason to do that.  Add support for setting up
-> the clock in the driver during probe.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-> ---
-> Changes in v2:
-> - Added example as per Jaehoon.
+You're removing the scope comparison.
 
-Thanks, pushed to mmc-next for 3.11.
+Ben.
 
-- Chris.
+> - * Returns true if the addrs are equal, false if they aren't.
+> - */
+>  static inline bool rpc_cmp_addr(const struct sockaddr *sap1,
+>  				const struct sockaddr *sap2)
+>  {
+> -	if (sap1->sa_family == sap2->sa_family) {
+> -		switch (sap1->sa_family) {
+> -		case AF_INET:
+> -			return __rpc_cmp_addr4(sap1, sap2);
+> -		case AF_INET6:
+> -			return __rpc_cmp_addr6(sap1, sap2);
+> -		}
+> -	}
+> -	return false;
+> +	return inet_addr_equal((const union inet_addr *)sap1,
+> +			       (const union inet_addr *)sap2);
+>  }
+[...]
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
