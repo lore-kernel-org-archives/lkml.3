@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab3F0Har (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:30:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50367 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab3F0Hap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:30:45 -0400
-Date: Thu, 27 Jun 2013 10:30:33 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Michael Grzeschik <mgr@pengutronix.de>
-CC: Felipe Balbi <balbi@ti.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        George Cherian <george.cherian@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] usb: dwc3: core: continue probe even if usb3 phy is not
- available
-Message-ID: <20130627073033.GN15455@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1372238954-29047-1-git-send-email-george.cherian@ti.com>
- <20130626101647.GT12640@arwen.pp.htv.fi>
- <51CAD977.6040309@ti.com>
- <20130626121210.GA12640@arwen.pp.htv.fi>
- <874nclghu2.fsf@ashishki-desk.ger.corp.intel.com>
- <20130627061416.GI3523@pengutronix.de>
- <20130627063526.GG15455@arwen.pp.htv.fi>
- <20130627072408.GJ3523@pengutronix.de>
+	id S1752769Ab3F0HbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:31:05 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62007 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752488Ab3F0HbD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 03:31:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+J+9OFMHp54zBOOVtJYJ2g
+Date: Thu, 27 Jun 2013 00:30:58 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [RFC] ARM: OMAP2+: omap_device: add pinctrl handling
+Message-ID: <20130627073058.GF5523@atomide.com>
+References: <1371826990-25820-1-git-send-email-grygorii.strashko@ti.com>
+ <CACRpkdY=m1b9Lh27+wHP8FQ4SbVZKmAOCGhxe59aP+TcuR9QaA@mail.gmail.com>
+ <20130625065811.GZ5523@atomide.com>
+ <51CAEA90.90200@ti.com>
+ <CACRpkdbKgEcfF67oO9HrczvDp4Po3Xt1hFajJ1vO8kEvsZH4jA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ie5iOtK4e9kgqh2F"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130627072408.GJ3523@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdbKgEcfF67oO9HrczvDp4Po3Xt1hFajJ1vO8kEvsZH4jA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Ie5iOtK4e9kgqh2F
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Linus Walleij <linus.walleij@linaro.org> [130626 12:37]:
+> On Wed, Jun 26, 2013 at 3:20 PM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
+> 
+> > The "Sleep" pinctrl state is optional - if "sleep" state isn't defined
+> > then "Idle" pinctrl state will be used during suspend.
+> 
+> Why? If we have a clear cut semantic that "idle" is for runtime
+> suspend, why should it be a fallback for suspend?
+> 
+> You do realize that can just be turned around (as common suspend
+> is more widely implemented than runtime suspend) so that we
+> could say that if "idle" does not exist, we go to "sleep" in
+> runtime suspend.
+> 
+> > So, final list of default pnctrl states may be defined as "default",
+> > "active", "idle", "sleep", "off":
+> > - "active", "idle", "sleep": will be handled by omap_device core
+> > - "default", "off": will be handled by driver itself (or Device core).
+> 
+> Currently the pinctrl system combines what is called "default"
+> and "active" into one, assuming that all devices shall come up
+> in the active state.
+> 
+> Also we haven't seen a device that need some "off" state that
+> is different from "sleep".
 
-Hi,
+Right, this is what I've been wondering too.
 
-On Thu, Jun 27, 2013 at 09:24:08AM +0200, Michael Grzeschik wrote:
-> > > > > right, but in DT you will define both instances and each instance=
- will
-> > > > > have a seaparate snps,maximum_speed attribute :-)
-> > > > >
-> > > > > I'm now considering if we should make maximum_speed a generic att=
-ribute,
-> > > > > Kishon ? Alex ? Alan ?
-> > > > >
-> > > > > anyone else needs such thing ?
-> > > >=20
-> > > > We have a force-full-speed attibute for chipidea on the way. This
-> > > > maximum_speed looks like a more generic alternative. Michael, what =
-say
-> > > > you?
-> > >=20
-> > > The maximum_speed attribute sounds more reasonable. I will change my
-> > > patch to it.
-> >=20
-> > thanks, perhaps we can add a generic helper in udc-core or usb-common ?
->=20
-> As this function is not only udc specific, this should go into usb-common.
-> But right, we should go with a helper here. I will write one in addition
-> to my full-speed patch as first user of it.
+Do we really need "idle", "sleep", "off"? Or is "idle" enough?
+Or "idle" and "sleep"?
 
-alright, thanks :-)
+Only one of the should be set at a time, but it would be nice
+to handle most cases in a generic way in drivers/base/pinctrl.c.
+ 
+> If you want to drive this state list home you have to give a
+> *real world example*.
+> 
+> I want to see a *real* example, for a device and it's pins,
+> that define totally different things for these states, as a
+> rationale.
 
---=20
-balbi
+Yeah me too :)
+ 
+> Else we are just defining states to make nice figures or mental
+> maps and that is not helpful for drivers writers.
 
---Ie5iOtK4e9kgqh2F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRy+oZAAoJEIaOsuA1yqRE9J0QAIZfIbQkrL/qlgq4i5THhn20
-xN3HqI0IfIheYxVthasJ/CGNPTNjgqQolSia4qUIei2QuwVh8mjAMlHaEYvUvkjC
-KbG61xpOm6AuMwrRV1MY3eSdY3Oug1qmJxwBo6d1I3O/kNDxZY/UV4h71iRp0/1n
-7wJ6VYiDbCfB3rRTWlj66uyawemzQHdv5ptSJ7MKCrw3S6iXON36cRwdfbI9ax3I
-FUJNzZu8WgxWfg3YL0SDZwndRmOuSHa+xMF4d1Ucgk8Wv06+LGH7rGpf5mTZplBZ
-qcbl+IqADgXI9TltGm621c2l5tI8IUR8w7+AOIkTgTsgKlr29/dxVT9bayPOgBil
-LVofxlKzKP0nPRPRCAiGwV85DMmRAptZxOHop+kQenFqJ1xSG4u9GA/zkbVpBDKC
-LSODPenqUTeEGalaK0DjPq1MdHfpK5h2o9IRL3ngmHenF7w20wW/n+cPM/2LIc+y
-f5+k8wWxpqrXKTdzDXZjlsIEXPvgzhCDV3IDMQ+QTJcyg11rH8y0OeohMe3pvQoO
-vaIoAGFlKZTC2XSwLlBXrvpEOPQBae8KmSV7V69nfc3aaXuQzBKtmtXW2K5N6nWx
-1f+0gh+pFTLp/UO7V1Toj677sDzfGhEoWcsAAbXqbgJXbd9c6a4juqWql8IOzX+2
-Js4z2xrUJxbuN7EK3i4d
-=obh7
------END PGP SIGNATURE-----
-
---Ie5iOtK4e9kgqh2F--
+Tony
