@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3F0Sgj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 14:36:39 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33531 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753912Ab3F0Sgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 14:36:37 -0400
-Date: Thu, 27 Jun 2013 14:36:31 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tux3@tux3.org
-Subject: Re: [PATCH] Optimize wait_sb_inodes()
-Message-ID: <20130627183631.GB22832@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-	Dave Chinner <david@fromorbit.com>,
-	Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, tux3@tux3.org
-References: <87ehbpntuk.fsf@devron.myhome.or.jp>
- <20130626231143.GC28426@dastard>
- <87wqpg76ls.fsf@devron.myhome.or.jp>
- <20130627044705.GB29790@dastard>
- <87y59w5dye.fsf@devron.myhome.or.jp>
- <20130627063816.GD29790@dastard>
- <87ppv83tnn.fsf@devron.myhome.or.jp>
- <20130627094042.GZ29338@dastard>
- <87mwqb3m1e.fsf@devron.myhome.or.jp>
+	id S1754136Ab3F0Sjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 14:39:44 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:3857 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753796Ab3F0Sjl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 14:39:41 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zzbb2dI98dI9371Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+Date: Thu, 27 Jun 2013 13:39:23 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH 8/8] KVM: PPC: Add hugepage support for IOMMU in-kernel
+ handling
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+CC: <linuxppc-dev@lists.ozlabs.org>, Alexey Kardashevskiy <aik@ozlabs.ru>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        <kvm@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kvm-ppc@vger.kernel.org>
+References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru>
+	<1372309356-28320-9-git-send-email-aik@ozlabs.ru>
+In-Reply-To: <1372309356-28320-9-git-send-email-aik@ozlabs.ru> (from
+	aik@ozlabs.ru on Thu Jun 27 00:02:36 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1372358363.8183.53@snotra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
 Content-Disposition: inline
-In-Reply-To: <87mwqb3m1e.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's go up a level.  Why are you so focused on optimizing sync(2)?
-What's the use case where you anticipate applications using sync(2) or
-syncfs(2)?    Or is this for the purpose of Tux3's benchmarketing?
+On 06/27/2013 12:02:36 AM, Alexey Kardashevskiy wrote:
+> +/*
+> + * The KVM guest can be backed with 16MB pages.
+> + * In this case, we cannot do page counting from the real mode
+> + * as the compound pages are used - they are linked in a list
+> + * with pointers as virtual addresses which are inaccessible
+> + * in real mode.
+> + *
+> + * The code below keeps a 16MB pages list and uses page struct
+> + * in real mode if it is already locked in RAM and inserted into
+> + * the list or switches to the virtual mode where it can be
+> + * handled in a usual manner.
+> + */
+> +#define KVMPPC_HUGEPAGE_HASH(gpa)	hash_32(gpa >> 24, 32)
+> +
+> +struct kvmppc_iommu_hugepage {
+> +	struct hlist_node hash_node;
+> +	unsigned long gpa;	/* Guest physical address */
+> +	unsigned long hpa;	/* Host physical address */
+> +	struct page *page;	/* page struct of the very first  
+> subpage */
+> +	unsigned long size;	/* Huge page size (always 16MB at the  
+> moment) */
+> +};
 
-In practice, sync(2) as a data integrity mechanism is a bit
-heavyweight for most applications.  In general the complaint with ext3
-or ext4 is that fsync(2) is forcing a full filesystem-wide sync, and
-not just a sync specific to the file.
+Shouldn't this be namespaced to something like "book3s" or "spapr"?
 
-System administrators use it sometimes[1], sometimes out of superstition,
-but how many applications actually use it?  And why?
-
-[1] In fact, I've heard an argument that sync(2) should be optionally
-made privileged and only accessible to root, since there were cases
-where system administrators would login to a heavily loaded server as
-a non-privileged user, type "sync" out of reflex or habit, and the
-resulting huge amounts of I/O would blow the 99.9th percentile latency
-guarantees for all of the latency-sensitive services running on that
-server.
-
-If the goal is to optimize file system freeze operations, sure.  But
-that's also not a common operation, so if it burns a little extra CPU
-time, it wouldn't cause me to think that it was a high priority issue.
-Decreasing the wall clock time for a file system freeze operation
-would probably be a far more interesting goal.
-
-Regards,
-
-						- Ted
+-Scott
