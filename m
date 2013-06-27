@@ -1,167 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab3F0Myv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:54:51 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:3776 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063Ab3F0Mys (ORCPT
+	id S1753807Ab3F0Mz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:55:29 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:62414 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753645Ab3F0Muv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:54:48 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: "David S. Miller" <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, <netdev@vger.kernel.org>
-Subject: [PATCH 2/6] net/trivial: replace numeric with standard PM state macros
-Date: Thu, 27 Jun 2013 20:53:42 +0800
-Message-ID: <1372337622-26076-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	Thu, 27 Jun 2013 08:50:51 -0400
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 40/51] Input: atmel_mxt_ts - Implement support for T15 Key Array
+Date: Thu, 27 Jun 2013 13:49:15 +0100
+Message-Id: <1372337366-9286-41-git-send-email-nick.dyer@itdev.co.uk>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use standard PM state macros PCI_Dx instead of numeric 0/1/2..
+There is a key array object in many maXTouch chips which allows some X/Y lines
+to be used as a key array. This patch maps them to a series of keys which may
+be configured in a platform data array.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/net/ethernet/8390/ne2k-pci.c             |    2 +-
- drivers/net/ethernet/emulex/benet/be_main.c      |    4 ++--
- drivers/net/ethernet/intel/e100.c                |    4 ++--
- drivers/net/ethernet/myricom/myri10ge/myri10ge.c |    2 +-
- drivers/net/ethernet/realtek/8139cp.c            |    2 +-
- drivers/net/ethernet/ti/tlan.c                   |    2 +-
- drivers/net/ethernet/via/via-velocity.c          |    2 +-
- drivers/net/wireless/orinoco/orinoco_pci.h       |    2 +-
- 8 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   57 ++++++++++++++++++++++++++++++
+ include/linux/i2c/atmel_mxt_ts.h         |    2 ++
+ 2 files changed, 59 insertions(+)
 
-diff --git a/drivers/net/ethernet/8390/ne2k-pci.c b/drivers/net/ethernet/8390/ne2k-pci.c
-index 587a885..9220108 100644
---- a/drivers/net/ethernet/8390/ne2k-pci.c
-+++ b/drivers/net/ethernet/8390/ne2k-pci.c
-@@ -676,7 +676,7 @@ static int ne2k_pci_resume (struct pci_dev *pdev)
- 	struct net_device *dev = pci_get_drvdata (pdev);
- 	int rc;
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 2e6118a..2eaa9d3 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -275,6 +275,7 @@ struct mxt_data {
+ 	u8 last_message_count;
+ 	u8 num_touchids;
+ 	u8 num_stylusids;
++	unsigned long t15_keystatus;
  
--	pci_set_power_state(pdev, 0);
-+	pci_set_power_state(pdev, PCI_D0);
- 	pci_restore_state(pdev);
- 
- 	rc = pci_enable_device(pdev);
-diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
-index a0b4be5..f4994ae 100644
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -4390,7 +4390,7 @@ static int be_resume(struct pci_dev *pdev)
- 	if (status)
- 		return status;
- 
--	pci_set_power_state(pdev, 0);
-+	pci_set_power_state(pdev, PCI_D0);
- 	pci_restore_state(pdev);
- 
- 	/* tell fw we're ready to fire cmds */
-@@ -4486,7 +4486,7 @@ static pci_ers_result_t be_eeh_reset(struct pci_dev *pdev)
- 		return PCI_ERS_RESULT_DISCONNECT;
- 
- 	pci_set_master(pdev);
--	pci_set_power_state(pdev, 0);
-+	pci_set_power_state(pdev, PCI_D0);
- 	pci_restore_state(pdev);
- 
- 	/* Check if card is ok and fw is ready */
-diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
-index d2bea3f..5115ae7 100644
---- a/drivers/net/ethernet/intel/e100.c
-+++ b/drivers/net/ethernet/intel/e100.c
-@@ -3069,7 +3069,7 @@ static int e100_resume(struct pci_dev *pdev)
- 	pci_set_power_state(pdev, PCI_D0);
- 	pci_restore_state(pdev);
- 	/* ack any pending wake events, disable PME */
--	pci_enable_wake(pdev, 0, 0);
-+	pci_enable_wake(pdev, PCI_D0, 0);
- 
- 	/* disable reverse auto-negotiation */
- 	if (nic->phy == phy_82552_v) {
-@@ -3160,7 +3160,7 @@ static void e100_io_resume(struct pci_dev *pdev)
- 	struct nic *nic = netdev_priv(netdev);
- 
- 	/* ack any pending wake events, disable PME */
--	pci_enable_wake(pdev, 0, 0);
-+	pci_enable_wake(pdev, PCI_D0, 0);
- 
- 	netif_device_attach(netdev);
- 	if (netif_running(netdev)) {
-diff --git a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-index 7be9788..967bae8 100644
---- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-+++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-@@ -3299,7 +3299,7 @@ static int myri10ge_resume(struct pci_dev *pdev)
- 	if (mgp == NULL)
- 		return -EINVAL;
- 	netdev = mgp->dev;
--	pci_set_power_state(pdev, 0);	/* zeros conf space as a side effect */
-+	pci_set_power_state(pdev, PCI_D0);	/* zeros conf space as a side effect */
- 	msleep(5);		/* give card time to respond */
- 	pci_read_config_word(mgp->pdev, PCI_VENDOR_ID, &vendor);
- 	if (vendor == 0xffff) {
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index 0352345..e6acb9f 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -1817,7 +1817,7 @@ static int cp_set_eeprom(struct net_device *dev,
- /* Put the board into D3cold state and wait for WakeUp signal */
- static void cp_set_d3_state (struct cp_private *cp)
- {
--	pci_enable_wake (cp->pdev, 0, 1); /* Enable PME# generation */
-+	pci_enable_wake(cp->pdev, PCI_D0, 1); /* Enable PME# generation */
- 	pci_set_power_state (cp->pdev, PCI_D3hot);
+ 	/* Cached parameters from object table */
+ 	u16 T5_address;
+@@ -284,6 +285,8 @@ struct mxt_data {
+ 	u16 T7_address;
+ 	u8 T9_reportid_min;
+ 	u8 T9_reportid_max;
++	u8 T15_reportid_min;
++	u8 T15_reportid_max;
+ 	u8 T19_reportid;
+ 	u8 T42_reportid_min;
+ 	u8 T42_reportid_max;
+@@ -809,6 +812,42 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
+ 	data->update_input = true;
  }
  
-diff --git a/drivers/net/ethernet/ti/tlan.c b/drivers/net/ethernet/ti/tlan.c
-index 60c400f..c80b1d5 100644
---- a/drivers/net/ethernet/ti/tlan.c
-+++ b/drivers/net/ethernet/ti/tlan.c
-@@ -372,7 +372,7 @@ static int tlan_resume(struct pci_dev *pdev)
++static void mxt_proc_t15_messages(struct mxt_data *data, u8 *msg)
++{
++	struct input_dev *input_dev = data->input_dev;
++	struct device *dev = &data->client->dev;
++	int key;
++	bool curr_state, new_state;
++	bool sync = false;
++	unsigned long keystates = le32_to_cpu(msg[2]);
++
++	/* do not report events if input device not yet registered */
++	if (!data->enable_reporting)
++		return;
++
++	for (key = 0; key < data->pdata->t15_num_keys; key++) {
++		curr_state = test_bit(key, &data->t15_keystatus);
++		new_state = test_bit(key, &keystates);
++
++		if (!curr_state && new_state) {
++			dev_dbg(dev, "T15 key press: %u\n", key);
++			__set_bit(key, &data->t15_keystatus);
++			input_event(input_dev, EV_KEY,
++				    data->pdata->t15_keymap[key], 1);
++			sync = true;
++		} else if (curr_state && !new_state) {
++			dev_dbg(dev, "T15 key release: %u\n", key);
++			__clear_bit(key, &data->t15_keystatus);
++			input_event(input_dev, EV_KEY,
++				    data->pdata->t15_keymap[key], 0);
++			sync = true;
++		}
++	}
++
++	if (sync)
++		input_sync(input_dev);
++}
++
+ static void mxt_proc_t42_messages(struct mxt_data *data, u8 *msg)
+ {
+ 	struct device *dev = &data->client->dev;
+@@ -920,6 +959,9 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
+ 		mxt_proc_t42_messages(data, message);
+ 	} else if (report_id == data->T48_reportid) {
+ 		mxt_proc_t48_messages(data, message);
++	} else if (report_id >= data->T15_reportid_min
++		   && report_id <= data->T15_reportid_max) {
++		mxt_proc_t15_messages(data, message);
+ 	} else {
+ 		mxt_dump_message(data, message);
+ 	}
+@@ -1555,6 +1597,8 @@ static void mxt_free_object_table(struct mxt_data *data)
+ 	data->T7_address = 0;
+ 	data->T9_reportid_min = 0;
+ 	data->T9_reportid_max = 0;
++	data->T15_reportid_min = 0;
++	data->T15_reportid_max = 0;
+ 	data->T19_reportid = 0;
+ 	data->T42_reportid_min = 0;
+ 	data->T42_reportid_max = 0;
+@@ -1629,6 +1673,10 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 			data->num_touchids = object->num_report_ids
+ 						* mxt_obj_instances(object);
+ 			break;
++		case MXT_TOUCH_KEYARRAY_T15:
++			data->T15_reportid_min = min_id;
++			data->T15_reportid_max = max_id;
++			break;
+ 		case MXT_PROCI_TOUCHSUPPRESSION_T42:
+ 			data->T42_reportid_min = min_id;
+ 			data->T42_reportid_max = max_id;
+@@ -2214,6 +2262,15 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
+ 			0, MT_TOOL_MAX, 0, 0);
+ 	}
  
- 	pci_set_power_state(pdev, PCI_D0);
- 	pci_restore_state(pdev);
--	pci_enable_wake(pdev, 0, 0);
-+	pci_enable_wake(pdev, PCI_D0, 0);
- 	netif_device_attach(dev);
++	/* For T15 key array */
++	if (data->T15_reportid_min) {
++		data->t15_keystatus = 0;
++
++		for (i = 0; i < data->pdata->t15_num_keys; i++)
++			input_set_capability(input_dev, EV_KEY,
++					     data->pdata->t15_keymap[i]);
++	}
++
+ 	input_set_drvdata(input_dev, data);
  
- 	if (netif_running(dev))
-diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-index fb62489..f5d7c3f 100644
---- a/drivers/net/ethernet/via/via-velocity.c
-+++ b/drivers/net/ethernet/via/via-velocity.c
-@@ -3082,7 +3082,7 @@ static int velocity_resume(struct pci_dev *pdev)
- 		return 0;
+ 	error = input_register_device(input_dev);
+diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
+index 02bf6ea..b7d2092 100644
+--- a/include/linux/i2c/atmel_mxt_ts.h
++++ b/include/linux/i2c/atmel_mxt_ts.h
+@@ -20,6 +20,8 @@ struct mxt_platform_data {
+ 	unsigned long irqflags;
+ 	u8 t19_num_keys;
+ 	const unsigned int *t19_keymap;
++	int t15_num_keys;
++	const unsigned int *t15_keymap;
+ };
  
- 	pci_set_power_state(pdev, PCI_D0);
--	pci_enable_wake(pdev, 0, 0);
-+	pci_enable_wake(pdev, PCI_D0, 0);
- 	pci_restore_state(pdev);
- 
- 	mac_wol_reset(vptr->mac_regs);
-diff --git a/drivers/net/wireless/orinoco/orinoco_pci.h b/drivers/net/wireless/orinoco/orinoco_pci.h
-index ea7231a..43f5b9f 100644
---- a/drivers/net/wireless/orinoco/orinoco_pci.h
-+++ b/drivers/net/wireless/orinoco/orinoco_pci.h
-@@ -38,7 +38,7 @@ static int orinoco_pci_resume(struct pci_dev *pdev)
- 	struct net_device *dev = priv->ndev;
- 	int err;
- 
--	pci_set_power_state(pdev, 0);
-+	pci_set_power_state(pdev, PCI_D0);
- 	err = pci_enable_device(pdev);
- 	if (err) {
- 		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
+ #endif /* __LINUX_ATMEL_MXT_TS_H */
 -- 
-1.7.1
-
+1.7.10.4
 
