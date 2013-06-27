@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab3F0WkH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 18:40:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41000 "EHLO mx1.redhat.com"
+	id S1754525Ab3F0WlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 18:41:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22354 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754513Ab3F0WkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 18:40:01 -0400
-Subject: [PATCH v2 2/3] pci: Differentiate ACS controllable from enabled
+	id S1754106Ab3F0WlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 18:41:01 -0400
+Subject: [PATCH v2 3/3] pci: ACS quirk for AMD southbridge
 To: bhelgaas@google.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-pci@vger.kernel.org, joro@8bytes.org, andihartmann@01019freenet.de,
         linux-kernel@vger.kernel.org
-Date: Thu, 27 Jun 2013 16:39:54 -0600
-Message-ID: <20130627223954.16564.78400.stgit@bling.home>
+Date: Thu, 27 Jun 2013 16:40:00 -0600
+Message-ID: <20130627224000.16564.47084.stgit@bling.home>
 In-Reply-To: <20130627222159.16564.38166.stgit@bling.home>
 References: <20130627222159.16564.38166.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -23,55 +23,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently misinterpret that in order for an ACS feature to be
-enabled it must be set in the control field.  In reality, this means
-that the feature is not only enabled, but controllable.  Many of the
-ACS capability bits are not required if the device behaves by default
-in the way specified when both the capability and control bit are set
-and does not support or allow the alternate mode.  We therefore need
-to check the capabilities and mask out flags that are enabled but not
-controllable.  Egress control seems to be the only flag which is
-purely optional.
+AMD confirmed that peer-to-peer between these devices is
+not possible.  We can therefore claim that they support a
+subset of ACS.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/pci.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/pci/quirks.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index d0c2b35..ae372ca 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2352,12 +2352,20 @@ void pci_enable_acs(struct pci_dev *dev)
- static bool pci_acs_flags_enabled(struct pci_dev *pdev, u16 acs_flags)
- {
- 	int pos;
--	u16 ctrl;
-+	u16 cap, ctrl;
- 
- 	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
- 	if (!pos)
- 		return false;
- 
-+	/*
-+	 * Except for egress control, capabilities are either required
-+	 * or only required if controllable.  Features missing from the
-+	 * capability field can therefore be assumed as hard-wired enabled.
-+	 */
-+	pci_read_config_word(pdev, pos + PCI_ACS_CAP, &cap);
-+	acs_flags &= (cap | PCI_ACS_EC);
-+
- 	pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
- 	return (ctrl & acs_flags) == acs_flags;
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 7d68aee..02855dd 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3270,11 +3270,61 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
+ 	return pci_dev_get(dev);
  }
-@@ -2432,9 +2440,6 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
- 		if (!pdev->multifunction)
- 			break;
  
--		acs_flags &= (PCI_ACS_RR | PCI_ACS_CR |
--			      PCI_ACS_EC | PCI_ACS_DT);
--
- 		return pci_acs_flags_enabled(pdev, acs_flags);
- 	}
++/*
++ * AMD has indicated that the devices below do not support peer-to-peer
++ * in any system where they are found in the southbridge with an AMD
++ * IOMMU in the system.  Multifunction devices that do not support
++ * peer-to-peer between functions can claim to support a subset of ACS.
++ * Such devices effectively enable request redirect (RR) and completion
++ * redirect (CR) since all transactions are redirected to the upstream
++ * root complex.
++ * 
++ * http://permalink.gmane.org/gmane.comp.emulators.kvm.devel/94086
++ * http://permalink.gmane.org/gmane.comp.emulators.kvm.devel/94102
++ * http://permalink.gmane.org/gmane.comp.emulators.kvm.devel/99402
++ *
++ * 1002:4385 SBx00 SMBus Controller
++ * 1002:439c SB7x0/SB8x0/SB9x0 IDE Controller
++ * 1002:4383 SBx00 Azalia (Intel HDA)
++ * 1002:439d SB7x0/SB8x0/SB9x0 LPC host controller
++ * 1002:4384 SBx00 PCI to PCI Bridge
++ * 1002:4399 SB7x0/SB8x0/SB9x0 USB OHCI2 Controller
++ */
++static int pci_quirk_amd_sb_acs(struct pci_dev *dev, u16 acs_flags)
++{
++#ifdef CONFIG_ACPI
++	struct acpi_table_header *header = NULL;
++	acpi_status status;
++
++	/* Targeting multifunction devices on the SB (appears on root bus) */
++	if (!dev->multifunction || !pci_is_root_bus(dev->bus))
++		return -ENODEV;
++
++	/* The IVRS table describes the AMD IOMMU */
++	status = acpi_get_table("IVRS", 0, &header);
++	if (ACPI_FAILURE(status))
++		return -ENODEV;
++
++	/* Filter out flags not applicable to multifunction */
++	acs_flags &= (PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_EC | PCI_ACS_DT);
++
++	return acs_flags & ~(PCI_ACS_RR | PCI_ACS_CR) ? 0 : 1;
++#else
++	return -ENODEV;
++#endif
++}
++
+ static const struct pci_dev_acs_enabled {
+ 	u16 vendor;
+ 	u16 device;
+ 	int (*acs_enabled)(struct pci_dev *dev, u16 acs_flags);
+ } pci_dev_acs_enabled[] = {
++	{ PCI_VENDOR_ID_ATI, 0x4385, pci_quirk_amd_sb_acs },
++	{ PCI_VENDOR_ID_ATI, 0x439c, pci_quirk_amd_sb_acs },
++	{ PCI_VENDOR_ID_ATI, 0x4383, pci_quirk_amd_sb_acs },
++	{ PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
++	{ PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
++	{ PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
+ 	{ 0 }
+ };
  
 
