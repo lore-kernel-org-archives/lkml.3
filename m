@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab3F0T6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 15:58:37 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36822 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab3F0T6e (ORCPT
+	id S1754640Ab3F0T6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 15:58:55 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57343 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab3F0T6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:58:34 -0400
+	Thu, 27 Jun 2013 15:58:52 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 15/45] sched/rt: Use get/put_online_cpus_atomic() to
- prevent CPU offline
+Subject: [PATCH v3 16/45] rcu: Use cpu_is_offline_nocheck() to avoid
+ false-positive warnings
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
@@ -21,10 +21,11 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 28 Jun 2013 01:24:59 +0530
-Message-ID: <20130627195458.29830.25978.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 28 Jun 2013 01:25:17 +0530
+Message-ID: <20130627195517.29830.64108.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
 References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -32,106 +33,53 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062719-1618-0000-0000-0000042B37AF
+x-cbid: 13062719-5490-0000-0000-000003BA30EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able
-to depend on disabling preemption to prevent CPUs from going offline
-from under us.
+In RCU code, rcu_implicit_dynticks_qs() checks if a CPU is offline,
+while being protected by a spinlock. At first, it appears as if we need to
+use the get/put_online_cpus_atomic() APIs to properly synchronize with CPU
+hotplug, once we get rid of stop_machine(). However, RCU has adequate
+synchronization with CPU hotplug, making that unnecessary. But since the
+locking details are non-trivial, it is hard to teach this to the rudimentary
+hotplug locking validator.
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
-offline, while invoking from atomic context.
+So use the _nocheck() variants of the cpu accessor functions to prevent false-
+positive warnings from the CPU hotplug debug code. Also, add a comment
+explaining the hotplug synchronization design used in RCU, so that its easy
+to see why it is justified to use the _nocheck() variants.
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/sched/rt.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ kernel/rcutree.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 01970c8..03d9f38 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -6,6 +6,7 @@
- #include "sched.h"
- 
- #include <linux/slab.h>
-+#include <linux/cpu.h>
- 
- int sched_rr_timeslice = RR_TIMESLICE;
- 
-@@ -28,7 +29,9 @@ static enum hrtimer_restart sched_rt_period_timer(struct hrtimer *timer)
- 		if (!overrun)
- 			break;
- 
-+		get_online_cpus_atomic();
- 		idle = do_sched_rt_period_timer(rt_b, overrun);
-+		put_online_cpus_atomic();
- 	}
- 
- 	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
-@@ -547,6 +550,7 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
- 	int i, weight, more = 0;
- 	u64 rt_period;
- 
-+	get_online_cpus_atomic();
- 	weight = cpumask_weight(rd->span);
- 
- 	raw_spin_lock(&rt_b->rt_runtime_lock);
-@@ -588,6 +592,7 @@ next:
- 		raw_spin_unlock(&iter->rt_runtime_lock);
- 	}
- 	raw_spin_unlock(&rt_b->rt_runtime_lock);
-+	put_online_cpus_atomic();
- 
- 	return more;
- }
-@@ -1168,6 +1173,10 @@ static void yield_task_rt(struct rq *rq)
- #ifdef CONFIG_SMP
- static int find_lowest_rq(struct task_struct *task);
- 
-+/*
-+ * Must be called within get/put_online_cpus_atomic(), to prevent CPUs
-+ * from going offline from under us.
-+ */
- static int
- select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- {
-@@ -1561,6 +1570,8 @@ retry:
- 		return 0;
- 	}
- 
-+	get_online_cpus_atomic();
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index cf3adc6..ced28a45 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -794,7 +794,17 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
+ 	if (ULONG_CMP_GE(rdp->rsp->gp_start + 2, jiffies))
+ 		return 0;  /* Grace period is not old enough. */
+ 	barrier();
+-	if (cpu_is_offline(rdp->cpu)) {
 +
- 	/* We might release rq lock */
- 	get_task_struct(next_task);
- 
-@@ -1611,6 +1622,7 @@ retry:
- out:
- 	put_task_struct(next_task);
- 
-+	put_online_cpus_atomic();
- 	return ret;
- }
- 
-@@ -1630,6 +1642,7 @@ static int pull_rt_task(struct rq *this_rq)
- 	if (likely(!rt_overloaded(this_rq)))
- 		return 0;
- 
-+	get_online_cpus_atomic();
- 	for_each_cpu(cpu, this_rq->rd->rto_mask) {
- 		if (this_cpu == cpu)
- 			continue;
-@@ -1695,6 +1708,7 @@ skip:
- 		double_unlock_balance(this_rq, src_rq);
- 	}
- 
-+	put_online_cpus_atomic();
- 	return ret;
- }
- 
++	/*
++	 * It is safe to use the _nocheck() version of cpu_is_offline() here
++	 * (to avoid false-positive warnings from CPU hotplug debug code),
++	 * because:
++	 * 1. rcu_gp_init() holds off CPU hotplug operations during grace
++	 *    period initialization.
++	 * 2. The current grace period has not ended yet.
++	 * So it is safe to sample the offline state without synchronization.
++	 */
++	if (cpu_is_offline_nocheck(rdp->cpu)) {
+ 		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, "ofl");
+ 		rdp->offline_fqs++;
+ 		return 1;
 
