@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3F0KXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 06:23:04 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:39539 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab3F0KXB (ORCPT
+	id S1752914Ab3F0KXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 06:23:51 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:52255 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab3F0KXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 06:23:01 -0400
+	Thu, 27 Jun 2013 06:23:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130626103653.GC28407@twins.programming.kicks-ass.net>
-References: <1371824448-7306-1-git-send-email-eranian@google.com>
-	<1371824448-7306-3-git-send-email-eranian@google.com>
-	<20130624084510.GK28407@twins.programming.kicks-ass.net>
-	<CABPqkBQRchnjhnEC05w-noizoeSRnNio7NDQ6_+vXym_7rkGaw@mail.gmail.com>
-	<20130626103653.GC28407@twins.programming.kicks-ass.net>
-Date: Thu, 27 Jun 2013 12:23:00 +0200
-Message-ID: <CABPqkBQuYy3TeE81tTXVruMG4D84TQ2U5g69T2ResGgjPjK4Cg@mail.gmail.com>
-Subject: Re: [PATCH 2/8] perf,x86: drop event->flags and use hw.constraint->flags
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <51CC1099.5060201@samsung.com>
+References: <1372064549-5872-1-git-send-email-cw00.choi@samsung.com>
+	<CAKohpokvK0fBbfH_L8DETpMPr9UKzTtRRnzOzHOrHmX=NC-jDg@mail.gmail.com>
+	<51CC1099.5060201@samsung.com>
+Date: Thu, 27 Jun 2013 15:53:49 +0530
+Message-ID: <CAKohpo=oZS8U1ZZ4Kbiz2yf_LLEMTr5HsrWFt_LiBkmRqKfdvQ@mail.gmail.com>
+Subject: Re: [PATCH v3] cpufreq: stats: Add 'load_table' debugfs file to show
+ accumulated data of CPUs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On 27 June 2013 15:44, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> On 06/26/2013 05:04 PM, Viresh Kumar wrote:
+>> On 24 June 2013 14:32, Chanwoo Choi <cw00.choi@samsung.com> wrote:
 
-I don't this see patch in tip.git yet.
-
-On Wed, Jun 26, 2013 at 12:36 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jun 26, 2013 at 09:36:39AM +0200, Stephane Eranian wrote:
->> On Mon, Jun 24, 2013 at 10:45 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Fri, Jun 21, 2013 at 04:20:42PM +0200, Stephane Eranian wrote:
->> >> Now that we use the contraints directly from the event, we
->> >> do not need the event->flags field so drop it.
->> >>
->> >> Signed-off-by: Stephane Eranian <eranian@google.com>
->> >
->> > Same for this one I suppose; its not really related to the series at
->> > hand.
+>> Maybe 10 to 1000.. Lets give others a chance to see long logs :)
 >>
->> Correct. I can submit separately if needed.
 >
-> I applied the first patch; this one failed to apply.. Remind me again if
-> I fail to remember looking at the rejects once I've collected all other
-> patches I planned to ship to mingo today.
+> OK, I'll extend the maximum value from 100 to 1000.
+
+10-1000 please.
+
+>>> +       freq.old = freq.new = policy->cur;
+>>
+>> No need to set freq.new here.
+>
+> If cpufreq governor don't change cpu frequency on specific situation,
+> cpufreq SoC driver won't send CPUFREQ_POSTCHANGE. In case of this situation,
+> I store current cpu frequency to freq.new field.
+
+You are doing this at the time of LOADCHECK notification :)
+
+               stat->load_table[last_idx].new = freq->old;
+
+>>> +static ssize_t load_table_read(struct file *file, char __user *user_buf,
+>>> +                                       size_t count, loff_t *ppos)
+>>> +{
+>>> +       struct cpufreq_policy *policy = file->private_data;
+>>> +       struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
+>>> +       struct cpufreq_freqs *load_table = stat->load_table;
+>>> +       ssize_t len = 0;
+>>> +       char *buf;
+>>> +       int i, cpu, ret;
+>>> +
+>>> +       buf = kzalloc(MAX_LINE_SIZE * stat->load_max_index, GFP_KERNEL);
+>>> +       if (!buf)
+>>> +               return 0;
+>>
+>> Above use of stat->load_max_index must be inside locks I guess. Otherwise
+>> you may allocate memory for 10 lines and by the time lock is taken, we
+>> already have 12 entries. And so, below loop will go beyond array limits.
+>>
+>
+> I store CONFIG_NR_CPU_LOAD_STORAGE to stat->load_max_index in cpufreq_stats_create_debugfs()
+> So, stat->load_max_index value isn't always 10.
+>
+> If I misunderstood for your comment, I'd like you to explain more detailed about this comment.
+
+No you didn't but looking second time at the code, i couldn't find a
+problem with it.
+
+You allocate memory for max entries and so shouldn't be a problem.
