@@ -1,107 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3F0G5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 02:57:13 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:56591 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab3F0G5L (ORCPT
+	id S1752550Ab3F0G6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 02:58:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57293 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240Ab3F0G6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 02:57:11 -0400
-Message-ID: <51CBE177.90502@linux.vnet.ibm.com>
-Date: Thu, 27 Jun 2013 12:23:43 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 27 Jun 2013 02:58:50 -0400
+Date: Thu, 27 Jun 2013 09:58:37 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: sleeping while atomic in dwc3_gadget_start
+Message-ID: <20130627065837.GL15455@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130626215256.GC11625@codeaurora.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, peterz@infradead.org,
-        fweisbec@gmail.com, oleg@redhat.com, walken@google.com,
-        mingo@kernel.org, linux-arch@vger.kernel.org,
-        vincent.guittot@linaro.org, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, namhyung@kernel.org, tglx@linutronix.de,
-        laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sbw@mit.edu,
-        David Laight <David.Laight@ACULAB.COM>, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent
- CPU offline
-References: <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com> <20130625220026.GG3828@linux.vnet.ibm.com> <51CAF624.6060004@linux.vnet.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com> <20130626143424.GN3828@linux.vnet.ibm.com> <1372258271.18733.256.camel@gandalf.local.home> <20130626152148.GA4405@mtj.dyndns.org> <1372260823.18733.263.camel@gandalf.local.home> <20130626172948.GD4405@mtj.dyndns.org> <51CB32E0.3040106@linux.vnet.ibm.com> <20130626213458.GC4536@htj.dyndns.org>
-In-Reply-To: <20130626213458.GC4536@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062706-9574-0000-0000-0000087AD10E
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hTKW8p8tUZ/8vLMe"
+Content-Disposition: inline
+In-Reply-To: <20130626215256.GC11625@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 03:04 AM, Tejun Heo wrote:
-> Hey,
-> 
-> On Wed, Jun 26, 2013 at 11:58:48PM +0530, Srivatsa S. Bhat wrote:
->> Yes, we were discussing hot-unplug latency for use-cases such as
->> suspend/resume. We didn't want to make those operations slower in the
->> process of removing stop_machine() from hotplug.
-> 
-> Can you please explain why tho?
+--hTKW8p8tUZ/8vLMe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sure.
+On Wed, Jun 26, 2013 at 02:52:56PM -0700, Stephen Boyd wrote:
+> Hi,
+>=20
+> I'm getting the folllowing BUG message on bootup with 3.10-rc5
+>=20
+> BUG: sleeping function called from invalid context at mm/slub.c:926
+> in_atomic(): 1, irqs_disabled(): 128, pid: 1, name: swapper/0
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc5-gee3e35b-09316-ge78f=
+3b35 #643
+> [<c0014220>] (unwind_backtrace+0x0/0x120) from [<c001212c>] (show_stack+0=
+x10/0x14)
+> [<c001212c>] (show_stack+0x10/0x14) from [<c0143750>] (kmem_cache_alloc_t=
+race+0x3c/0x210)
+> [<c0143750>] (kmem_cache_alloc_trace+0x3c/0x210) from [<c00e0c60>] (reque=
+st_threaded_irq+0x88/0x11c)
+> [<c00e0c60>] (request_threaded_irq+0x88/0x11c) from [<c03bf53c>] (dwc3_ga=
+dget_start+0x198/0x200)
+> [<c03bf53c>] (dwc3_gadget_start+0x198/0x200) from [<c03f7a5c>] (udc_bind_=
+to_driver+0x70/0xd8)
+> [<c03f7a5c>] (udc_bind_to_driver+0x70/0xd8) from [<c03f7b50>] (usb_gadget=
+_probe_driver+0x8c/0xb8)
+>=20
+> and I suspect this problem was introduced in commit 8698e2acf
+> (usb: dwc3: gadget: introduce and use enable/disable irq
+> methods). Is there a fix for this problem? Can we just move the
+> irq request outside the spinlock?
 
->  How much would it help in terms of
-> power-saving?  Or are there other issues in taking longer to shut down
-> cpus?
-> 
+nice :-)
 
-Basically, power-management techniques (like suspend/resume as used on
-smartphones etc) are implemented using a controlling algorithm which
-controls the aggressiveness of power-management depending on the load
-on the system.
+how about this ?
 
-Today, the cpuidle subsystem in Linux handles cpuidle transitions using
-that technique, so I'll explain using that as an example. Similar
-strategies are used for suspend/resume also.
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index b5e5b35..a8e6b8b 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1508,6 +1508,15 @@ static int dwc3_gadget_start(struct usb_gadget *g,
+ 	int			irq;
+ 	u32			reg;
+=20
++	irq =3D platform_get_irq(to_platform_device(dwc->dev), 0);
++	ret =3D request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
++			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
++	if (ret) {
++		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
++				irq, ret);
++		goto err0;
++	}
++
+ 	spin_lock_irqsave(&dwc->lock, flags);
+=20
+ 	if (dwc->gadget_driver) {
+@@ -1515,7 +1524,7 @@ static int dwc3_gadget_start(struct usb_gadget *g,
+ 				dwc->gadget.name,
+ 				dwc->gadget_driver->driver.name);
+ 		ret =3D -EBUSY;
+-		goto err0;
++		goto err1;
+ 	}
+=20
+ 	dwc->gadget_driver	=3D driver;
+@@ -1551,41 +1560,33 @@ static int dwc3_gadget_start(struct usb_gadget *g,
+ 	ret =3D __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
+-		goto err0;
++		goto err1;
+ 	}
+=20
+ 	dep =3D dwc->eps[1];
+ 	ret =3D __dwc3_gadget_ep_enable(dep, &dwc3_gadget_ep0_desc, NULL, false);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to enable %s\n", dep->name);
+-		goto err1;
++		goto err2;
+ 	}
+=20
+ 	/* begin to receive SETUP packets */
+ 	dwc->ep0state =3D EP0_SETUP_PHASE;
+ 	dwc3_ep0_out_start(dwc);
+=20
+-	irq =3D platform_get_irq(to_platform_device(dwc->dev), 0);
+-	ret =3D request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
+-			IRQF_SHARED | IRQF_ONESHOT, "dwc3", dwc);
+-	if (ret) {
+-		dev_err(dwc->dev, "failed to request irq #%d --> %d\n",
+-				irq, ret);
+-		goto err1;
+-	}
+-
+ 	dwc3_gadget_enable_irq(dwc);
+=20
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+=20
+ 	return 0;
+=20
+-err1:
++err2:
+ 	__dwc3_gadget_ep_disable(dwc->eps[0]);
+=20
+-err0:
++err1:
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+=20
++err0:
+ 	return ret;
+ }
+=20
 
-For every cpuidle state, we have atleast 2 parameters that determine
-how usable it is - 1. exit latency 2. target residency.
+--=20
+balbi
 
-The exit latency captures the amount of time it takes to come out of
-the power-saving state, from the time you asked it to come out. This
-is an estimate of how "deep" the power-saving state is. The deeper it
-is, the longer it takes to come out. (And of course, deeper states give
-higher power-savings).
+--hTKW8p8tUZ/8vLMe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The target residency is a value which represents the break-even for
-that state. It tells us how long we should stay in that idle state
-(at a minimum) before we ask it to come out, to actually get some good
-power-savings out of that state. (Note that entry and exit to an idle
-state itself consumes some power, so there won't be any power-savings
-if we keep entering and exiting a deep state without staying in that
-state long enough).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Once the idle states are characterized like this, the cpuidle subsystem
-uses a cpuidle "governor" to actually decide which of the states to
-enter, given an idle period of time. The governor keeps track of the
-load on the system and predicts the length of the next idle period, and
-based on that prediction, it selects the idle state whose characteristics
-(exit latency/target residency) match the predicted idle time closely.
+iQIcBAEBAgAGBQJRy+KdAAoJEIaOsuA1yqRERwwP/0cSNdage29MrLcanPDVGT3E
+a2mfeMMR0TDltPRGaYpN8DO1oNFq2MhkEmjyVh0ezp2HRGsgbmXontUXO8LAJjdT
+ixOPCBiSVnaYl0PGNXA20ta2/EskmrEPET1bFgG/vrs+NZYyA2ytneurS6I5pPX1
+HbYeiDZwR0Y3LVBDtYSZANBrETl4DaROhctN93ERSR3bERJhTnrKU9HmZwutDfKR
+FqvVKQ2HfgJU3eBzHUvNjc5XG7/DVwntGNnLmzcSJgHKrQKx861A9H1CdOYFfM6H
+4VsY4KrbVbk7xrbvgIfmRZCGXLN7DtrZUx5mIYeqPhnEFuwHDLllNu96Rn4ZBynV
+6hCdQtCxQlAwvGCuj8pknnurVq0iCFjEdKrrIrK/S2GFiqxrT81gjUCZg1Q7tARl
++bsFHff/hq2P8c7kgVRLSfhWOCMPZc1e8xs88ZuU785ExkLwU/hQnQu1TARtDh8l
+Sk23/aAu5sZGa0f3q6oc41BNm3SzAIpYBs0aEKoraLyDjMf8bgaE5KpcuKxiZnyU
+KSvmpCdnF0xoC2J61j1NSdF+2BwJ4FtQrPfKv4CU06y+AI/8HM5ZnAy5f9h04MnB
+bcOh6g6HuDrnREqlq/YFQbf54HiVby5ngfO1fZeIEoQ8RN1ThGkR2VivXuzhv8ye
+32LyD+jGWCQK3mIAvrxc
+=8XSH
+-----END PGP SIGNATURE-----
 
-So as we can see, the "deeper" the idle state, the lower its chance of
-getting used during regular workload runs, because it is deemed too costly.
-So entry/exit latency of an idle state is a very important aspect which
-determines how often you can use that state. Ideally we want states which
-are "deep" in the sense that they give huge power-savings, but "light"
-in the sense that their entry/exit latencies are low. Such states give
-us the best benefits, since we can use them aggressively.
-
-Now a similar argument applies for suspend/resume (on smartphones etc).
-Suspend/resume already gives good power-savings. But if we make it slower,
-the chances of using it profitably begins to reduce. That's why, IMHO,
-its important to keep a check on the latency of CPU hotplug and reduce
-it if possible. And that becomes even more important as systems keep
-sporting more and more CPUs.
-
-Regards,
-Srivatsa S. Bhat
-
+--hTKW8p8tUZ/8vLMe--
