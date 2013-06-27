@@ -1,72 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3F0DxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 23:53:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58575 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab3F0DxA (ORCPT
+	id S1750871Ab3F0EBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 00:01:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22560 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3F0EBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 23:53:00 -0400
-Message-ID: <1372305134.5871.5.camel@marge.simpson.net>
-Subject: Re: [RFC][PATCH RT 1/6] rt,rcu: Have rcu_read_lock_sched() use
- locks for PREEMPT_RT
-From: Mike Galbraith <bitbucket@online.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <clark.williams@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Thu, 27 Jun 2013 05:52:14 +0200
-In-Reply-To: <20130626193049.724948276@goodmis.org>
-References: <20130626192806.107564905@goodmis.org>
-	 <20130626193049.724948276@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Thu, 27 Jun 2013 00:01:18 -0400
+Message-ID: <51CBB908.1050909@oracle.com>
+Date: Thu, 27 Jun 2013 12:01:12 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Feng Jin <joe.jin@oracle.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chien Yen <chien.yen@oracle.com>
+Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when driver
+ load first time
+References: <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com> <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com> <5195944A.3050608@oracle.com> <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com> <20130520175706.GA27973@phenom.dumpdata.com> <20130520203855.GA30616@phenom.dumpdata.com> <519B474E.4000202@citrix.com> <20130521134059.GE492@phenom.dumpdata.com> <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com> <alpine.DEB.2.02.1305291850030.4799@kaball.uk.xensource.com> <51AECC3A.7060803@oracle.com> <alpine.DEB.2.02.1306051349380.4589@kaball.uk.xensource.com> <51C26F98.8070103@oracle.com> <alpine.DEB.2.02.1306201507010.4548@kaball.uk.xensource.com> <51C7F2FE.3090803@oracle.com> <alpine.DEB.2.02.1306241807100.4782@kaball.uk.xensource.com> <51C92B8F.6010904@oracle.com> <alpine.DEB.2.02.1306251208260.4782@kaball.uk.xensource.com> <51CA674B.3090807@oracle.com> <alpine.DEB.2.02.1306261856420.4782@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1306261856420.4782@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:KGq2eM4xpBFRp2y+5++MTYOJGPVgEI/8PbS1NhFhkem
- 01UP++Ma+9/29ZtsIbT/XwkV4bOmieCZNz9JDRBEVXb07GMGtS
- +dh7NkKknfDBkOE/jhQSETz4eUlthFDEkfMBBjke7bs6Jnfzao
- dYkGLbsaxxQSUKdV9QRb2A1uBBAWF3g+9lAmh3q+Q6USsJOInO
- CbP7xJ44TIwuDdmAsH6FGt/LhH9AemibhYA/5B2iPVNMluVURt
- AdLJGT2H0sGUwui+r5Q5pv4y37s0nyeGw7TYaRZG4f/nyVCQJX
- bEd4inmlGyr/9zKT9bG1vZ+86sc6lt44F7SO7lDc+/ER2pO8vI
- 2i0pCExjXme0xpg/tJa32uTukKd0nOVF0BIgwcK+zZC1gt85h9
- 43NxrMY7rJfOg==
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 15:28 -0400, Steven Rostedt wrote:
 
-> @@ -2491,6 +2491,31 @@ static inline int rcu_blocking_is_gp(voi
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_PREEMPT_RT_FULL
-> +DEFINE_LOCAL_IRQ_LOCK(rcu_sched_lock);
-> +/*
-> + * Real-time allows for synchronize sched to sleep but not migrate.
-> + * This is done via the local locks. When calling synchronize_sched(),
-> + * all the local locks need to be taken and released. This will ensure
-> + * that all users of rcu_read_lock_sched() will be out of their critical
-> + * sections at the completion of this function. synchronize_sched() will
-> + * still perform the normal RCU sched operations to synchronize with
-> + * locations that use disabling preemption or interrupts.
-> + */
-> +static void rcu_synchronize_sched_rt(void)
-> +{
-> +	int cpu;
-> +
-> +	for_each_possible_cpu(cpu) {
-> +		spin_lock(&per_cpu(rcu_sched_lock, cpu).lock);
-> +		spin_unlock(&per_cpu(rcu_sched_lock, cpu).lock);
-> +	}
-> +}
+On 2013-06-27 02:08, Stefano Stabellini wrote:
+> On Wed, 26 Jun 2013, Zhenzhong Duan wrote:
+>> On 2013-06-26 01:51, Stefano Stabellini wrote:
+>>> On Tue, 25 Jun 2013, DuanZhenzhong wrote:
+>>>> Stefano Stabellini wrote:
+>>>>> Trimming some of the people in CC
+>>>>>
+>>>>> On Mon, 24 Jun 2013, Zhenzhong Duan wrote:
+>>>>>     
+>>>>>> On 2013-06-20 22:21, Stefano Stabellini wrote:
+>>>>>>       
+>>>>>>> On Thu, 20 Jun 2013, Zhenzhong Duan wrote:
+>>>>>>>         
+>>>>>>>> On 2013-06-05 20:50, Stefano Stabellini wrote:
+>>>>>>>>           
+>>>>>>>>> On Wed, 5 Jun 2013, Zhenzhong Duan wrote:
+>>>>>>>>>             
+>>>>>>>>>> Stefano Stabellini wrote:
+>>>>>>>>>>
+>>>>>>>>>> On Tue, 21 May 2013, Stefano Stabellini wrote:
+>>>>>>>>>>       On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
+>>>>>>>>>>         Looking at the hypervisor code I couldn't see anything
+>>>>>>>>>> obviously
+>>>>>>>>>> wrong.
+>>>>>>>>>>             I think the culprit is "physdev_unmap_pirq":
+>>>>>>>>>>
+>>>>>>>>>>        if ( is_hvm_domain(d) )
+>>>>>>>>>>         {
+>>>>>>>>>>             spin_lock(&d->event_lock);
+>>>>>>>>>>             gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s,
+>>>>>>>>>> irq:
+>>>>>>>>>> %d\n",
+>>>>>>>>>>                 d->domain_id, pirq, domain_pirq_to_emuirq(d,
+>>>>>>>>>> pirq),
+>>>>>>>>>>                 domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ?
+>>>>>>>>>> "unbound" :
+>>>>>>>>>> "",
+>>>>>>>>>>                 domain_pirq_to_irq(d, pirq));
+>>>>>>>>>>                                                                                              if
+>>>>>>>>>> ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )
+>>>>>>>>>>                 ret = unmap_domain_pirq_emuirq(d, pirq);
+>>>>>>>>>>             spin_unlock(&d->event_lock);
+>>>>>>>>>>             if ( domid == DOMID_SELF || ret )
+>>>>>>>>>>                 goto free_domain;
+>>>>>>>>>>
+>>>>>>>>>> It always tells me unbound:
+>>>>>>>>>>
+>>>>>>>>>> (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
+>>>>>>>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>>>>>>>> (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
+>>>>>>>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>>>>>>>> (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
+>>>>>>>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>>>>>>>> (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
+>>>>>>>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>>>>>>>> (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
+>>>>>>>>>> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+>>>>>>>>>> (a bit older debug code, so the 'unbound' does not show up
+>>>>>>>>>> here).
+>>>>>>>>>>
+>>>>>>>>>> Which means that the call to unmap_domain_pirq_emuirq does not
+>>>>>>>>>> happen.
+>>>>>>>>>> The checks in unmap_domain_pirq_emuirq also look to be depend
+>>>>>>>>>> on the code being IRQ_UNBOUND.
+>>>>>>>>>>
+>>>>>>>>>> In other words, all of that code looks to only clear things
+>>>>>>>>>> when
+>>>>>>>>>> they are !IRQ_UNBOUND.
+>>>>>>>>>>
+>>>>>>>>>> But the other logic (IRQ_UNBOUND) looks to be missing a
+>>>>>>>>>> removal
+>>>>>>>>>> in the radix tree:
+>>>>>>>>>>
+>>>>>>>>>>       if ( emuirq != IRQ_PT )
+>>>>>>>>>>             radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq,
+>>>>>>>>>> emuirq);
+>>>>>>>>>>                                                                             And
+>>>>>>>>>> I think that is what is causing the leak - the radix tree
+>>>>>>>>>> needs to be pruned? Or perhaps the allocate_pirq should check
+>>>>>>>>>> the radix tree for IRQ_UNBOUND ones and re-use them?
+>>>>>>>>>>           I think that you are looking in the wrong place.
+>>>>>>>>>> The issue is that QEMU doesn't call pt_msi_disable in
+>>>>>>>>>> pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
+>>>>>>>>>>
+>>>>>>>>>> The code above is correct as is because it is trying to handle
+>>>>>>>>>> emulated
+>>>>>>>>>> IRQs and MSIs, not real passthrough MSIs. They latter are not
+>>>>>>>>>> added to
+>>>>>>>>>> that radix tree, see physdev_hvm_map_pirq and
+>>>>>>>>>> physdev_map_pirq.
+>>>>>>>>>>         This patch fixes the issue, I have only tested MSI
+>>>>>>>>>> (MSI-X
+>>>>>>>>>> completely
+>>>>>>>>>> untested).
+>>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>> diff --git a/hw/pass-through.c b/hw/pass-through.c
+>>>>>>>>>> index 304c438..079e465 100644
+>>>>>>>>>> --- a/hw/pass-through.c
+>>>>>>>>>> +++ b/hw/pass-through.c
+>>>>>>>>>> @@ -3866,7 +3866,11 @@ static int pt_msgctrl_reg_write(struct
+>>>>>>>>>> pt_dev
+>>>>>>>>>> *ptdev,
+>>>>>>>>>>              ptdev->msi->flags |= PCI_MSI_FLAGS_ENABLE;
+>>>>>>>>>>          }
+>>>>>>>>>>          else
+>>>>>>>>>> -        ptdev->msi->flags &= ~PCI_MSI_FLAGS_ENABLE;
+>>>>>>>>>> +    {
+>>>>>>>>>> +        if (ptdev->msi->flags & PT_MSI_MAPPED) {
+>>>>>>>>>> +            pt_msi_disable(ptdev);
+>>>>>>>>>> +        }
+>>>>>>>>>> +    }
+>>>>>>>>>>            /* pass through MSI_ENABLE bit when no MSI-INTx
+>>>>>>>>>> translation
+>>>>>>>>>> */
+>>>>>>>>>>          if (!ptdev->msi_trans_en) {
+>>>>>>>>>> @@ -4013,6 +4017,8 @@ static int pt_msixctrl_reg_write(struct
+>>>>>>>>>> pt_dev
+>>>>>>>>>> *ptdev,
+>>>>>>>>>>                  pt_disable_msi_translate(ptdev);
+>>>>>>>>>>              }
+>>>>>>>>>>              pt_msix_update(ptdev);
+>>>>>>>>>> +    } else if (!(*value & PCI_MSIX_ENABLE) &&
+>>>>>>>>>> ptdev->msix->enabled) {
+>>>>>>>>>> +        pt_msix_delete(ptdev);
+>>>>>>>>>>       Hi Stefano,
+>>>>>>>>>> I made a test with this patch, os reboot when driver reload.
+>>>>>>>>>> If
+>>>>>>>>>> use
+>>>>>>>>>> pt_msix_disable
+>>>>>>>>>> instead of pt_msix_delete, driver could be reloaded.
+>>>>>>>>>> But I still see some error in qemu.log and xen console. Seems
+>>>>>>>>>> four
+>>>>>>>>>> IRQs
+>>>>>>>>>> are not freed
+>>>>>>>>>> when unmap.
+>>>>>>>>>> --------------first load---------------------------
+>>>>>>>>>> pt_msix_update_one: pt_msix_update_one requested pirq = 103
+>>>>>>>>>> pt_msix_update_one: Update msix entry 0 with pirq 67 gvec 0
+>>>>>>>>>> pt_msix_update_one: pt_msix_update_one requested pirq = 102
+>>>>>>>>>> pt_msix_update_one: Update msix entry 1 with pirq 66 gvec 0
+>>>>>>>>>> pt_msix_update_one: pt_msix_update_one requested pirq = 101
+>>>>>>>>>> pt_msix_update_one: Update msix entry 2 with pirq 65 gvec 0
+>>>>>>>>>> pt_msix_update_one: pt_msix_update_one requested pirq = 100
+>>>>>>>>>> pt_msix_update_one: Update msix entry 3 with pirq 64 gvec 0
+>>>>>>>>>> ------------- first unload---------------------------
+>>>>>>>>>> pt_msix_disable: Unbind msix with pirq 67, gvec 0
+>>>>>>>>>> pt_msix_disable: Unmap msix with pirq 67
+>>>>>>>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>>>>>>>>> pt_msix_disable: Unbind msix with pirq 66, gvec 0
+>>>>>>>>>> pt_msix_disable: Unmap msix with pirq 66
+>>>>>>>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>>>>>>>>> pt_msix_disable: Unbind msix with pirq 65, gvec 0
+>>>>>>>>>> pt_msix_disable: Unmap msix with pirq 65
+>>>>>>>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>>>>>>>>> pt_msix_disable: Unbind msix with pirq 64, gvec 0
+>>>>>>>>>> pt_msix_disable: Unmap msix with pirq 64
+>>>>>>>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>>>>>>>>>               
+>>>>>>>>> Can you add some printks in Xen (the hypercall name is
+>>>>>>>>> PHYSDEVOP_unmap_pirq) to figure out exactly why they are
+>>>>>>>>> failing?
+>>>>>>>>>             
+>>>>>>>> Did some test, domain_pirq_to_emuirq(d, unmap->pirq) = IRQ_UNBOUND
+>>>>>>>> in
+>>>>>>>> physdev_unmap_pirq.
+>>>>>>>>           
+>>>>>>> That means that Linux didn't call irq_enable on the MSI-X in
+>>>>>>> question:
+>>>>>>>
+>>>>>>> irq_enable -> __startup_pirq -> EVTCHNOP_bind_pirq
+>>>>>>>
+>>>>>>> EVTCHNOP_bind_pirq is implemented by evtchn_bind_pirq in Xen and
+>>>>>>> calls
+>>>>>>> map_domain_emuirq_pirq, so domain_pirq_to_emuirq(d, unmap->pirq)
+>>>>>>> should
+>>>>>>> be IRQ_PT.
+>>>>>>>
+>>>>>>> I don't know if that's a normal condition, but in any case it should
+>>>>>>> not create any problems to physdev_unmap_pirq, in fact the folloing
+>>>>>>> check:
+>>>>>>>
+>>>>>>>        if ( domid == DOMID_SELF || ret )
+>>>>>>>                goto free_domain;
+>>>>>>>
+>>>>>>> should fail so Xen should continue and execute unmap_domain_pirq.
+>>>>>>> That's
+>>>>>>> what we want.
+>>>>>>>         
+>>>>>>   From linux side, request_irq->  request_threaded_irq-> __setup_irq->
+>>>>>> irq_startup->  startup_pirq-> EVTCHNOP_bind_pirq
+>>>>>> If irq_enable isn't called, how does the driver receive interrupt, I
+>>>>>> did
+>>>>>> see
+>>>>>> four interrupts in /proc/interrupt and driver works ok.
+>>>>>>       
+>>>>> Good to know
+>>>>>
+>>>>>     
+>>>>>> Could you have a look if there is something wrong in xen side of
+>>>>>> clearing
+>>>>>> the
+>>>>>> mapping?
+>>>>>>       
+>>>>> What I am saying is that the error you are getting:
+>>>>>
+>>>>> pt_msix_disable: Unbind msix with pirq 67, gvec 0
+>>>>> pt_msix_disable: Unmap msix with pirq 67
+>>>>> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+>>>>>
+>>>>> cannot be caused by domain_pirq_to_emuirq(d, pirq) returning
+>>>>> IRQ_UNBOUND.
+>>>>> So, why are you getting this error? What is failing?
+>>>>> I am ready to believe the problem is in Xen but Without understanding
+>>>>> why you are getting the error it's hard to find a solution.
+>>>>>     
+>>>> I found the reason, you are looking at xen-unstable, I was working with
+>>>> 4.1.30-OVM, it has patch of CVE-2012-4536 / XSA-21.
+>>>> That patch set ret to -EINVAL initially. After remove that line, unmap
+>>>> succeed.
+>>>> But we still need below patch to let driver reload succeed everytime.
+>>>> Without
+>>>> that, 1st reload failed, 2nd succeed, 3 failed, ...
+>>>>
+>>>> diff -up --new-file ./hw/pt-msi.c.old1 ./hw/pt-msi.c
+>>>> --- ./hw/pt-msi.c.old1  2013-06-26 01:36:08.000000000 +0800
+>>>> +++ ./hw/pt-msi.c       2013-06-26 01:37:41.000000000 +0800
+>>>> @@ -469,7 +469,7 @@ static void pci_msix_writel(void *opaque
+>>>>           return;
+>>>>       }
+>>>>
+>>>> -    if ( offset != 3 && entry->io_mem[offset] != val )
+>>>> +    if ( offset != 3 && (entry->io_mem[offset] != val || entry->pirq ==
+>>>> -1))
+>>>>           entry->flags = 1;
+>>>>       entry->io_mem[offset] = val;
+>>> Interesting. I don't think this is the proper fix though.
+>>> Does the appended patch change anything?
+>>>
+>>> diff --git a/hw/pt-msi.c b/hw/pt-msi.c
+>>> index 71fa6f0..cd5d9c7 100644
+>>> --- a/hw/pt-msi.c
+>>> +++ b/hw/pt-msi.c
+>>> @@ -302,7 +302,7 @@ static int pt_msix_update_one(struct pt_dev *dev, int
+>>> entry_nr)
+>>>        uint32_t gflags = __get_msi_gflags(entry->io_mem[2], gaddr);
+>>>        int ret;
+>>>    -    if ( !entry->flags )
+>>> +    if ( !entry->flags && ptdev->msix->enabled )
+>>>            return 0;
+>>>          if (!gvec) {
+>> Tested, not work.
+>> If you look at msix_capability_init in kernel, line 707,722,
+>> dev->msix->enabled is already set when pt_msix_update is called.
+> Yeah, but it shouldn't be already set in QEMU. In fact in QEMU
+> dev->msix->enabled is modified in pt_msixctrl_reg_write after calling to
+> pt_msix_update.
+It does.
+line 707,  PCI_MSIX_FLAGS_MASKALL | PCI_MSIX_FLAGS_ENABLE is set
+                  this will set dev->msix->enabled first time
+line 722, PCI_MSIX_FLAGS_ENABLE set
+                  this trigger call of pt_msix_update
+                  then dev->msix->enabled was set a second time
+> I was assuming that you needed to add "|| entry->pirq == -1" because you
+> needed to pass the check:
+>
+>      if ( !entry->flags )
+>          return 0;
+>
+> at the beginning of pt_msix_update_one. Am I getting it right?
+Right, as entry->pirq is set to -1 when driver unload.
+> If that is case that I thought that we just needed to make sure that
+> when ptdev->msix->enabled is still zero then we go through the test in
+> pt_msix_update_one. Where is the mistake?
+If you want to use dev->msix->enabled for checking, below patch could work.
+But in this case, dev->msix->enabled doesn't represent PCI_MSIX_ENABLE 
+any more,
+but a combination of PCI_MSIX_ENABLE and ~PCI_MSIX_MASK
 
-Does that have to be possible vs online?
+zduan
+***********************************************************
+diff -up ./hw/pass-through.c.old2 ./hw/pass-through.c
+--- ./hw/pass-through.c.old2    2013-06-27 11:05:30.000000000 +0800
++++ ./hw/pass-through.c 2013-06-27 11:07:35.000000000 +0800
+@@ -4027,7 +4027,7 @@ static int pt_msixctrl_reg_write(struct
+          pt_msix_disable(ptdev);
+      }
 
--Mike
+-    ptdev->msix->enabled = !!(*value & PCI_MSIX_ENABLE);
++    ptdev->msix->enabled = (*value & PCI_MSIX_ENABLE) && !(*value & 
+PCI_MSIX_MASK);
 
+      return 0;
+  }
+diff -up ./hw/pt-msi.c.old2 ./hw/pt-msi.c
+--- ./hw/pt-msi.c.old2  2013-06-27 11:26:12.000000000 +0800
++++ ./hw/pt-msi.c       2013-06-27 11:27:13.000000000 +0800
+@@ -294,7 +294,7 @@ static int pt_msix_update_one(struct pt_
+      uint32_t gflags = __get_msi_gflags(entry->io_mem[2], gaddr);
+      int ret;
+
+-    if ( !entry->flags )
++    if ( !entry->flags && dev->msix->enabled )
+          return 0;
+
+      if (!gvec) {
