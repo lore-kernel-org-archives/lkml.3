@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab3F0Jnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:43:42 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45169 "EHLO gate.crashing.org"
+	id S1752701Ab3F0Jnw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:43:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab3F0Jnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:43:40 -0400
-Message-ID: <1372326166.18612.42.camel@pasglop>
-Subject: Re: [PATCH 3/8] vfio: add external user support
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        kvm@vger.kernel.org, linux-doc@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Gibson <david@gibson.dropbear.id.au>
-Date: Thu, 27 Jun 2013 19:42:46 +1000
-In-Reply-To: <20130627165929.3828c261c957845a549ad95b@canb.auug.org.au>
-References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru>
-	 <1372309356-28320-4-git-send-email-aik@ozlabs.ru>
-	 <20130627165929.3828c261c957845a549ad95b@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751937Ab3F0Jnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 05:43:49 -0400
+From: Daniel Borkmann <dborkman@redhat.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net-next v2 1/2] lib: vsprintf: add IPv4/v6 generic %piS/%pIS format specifier
+Date: Thu, 27 Jun 2013 11:43:44 +0200
+Message-Id: <1372326225-19203-2-git-send-email-dborkman@redhat.com>
+In-Reply-To: <1372326225-19203-1-git-send-email-dborkman@redhat.com>
+References: <1372326225-19203-1-git-send-email-dborkman@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 16:59 +1000, Stephen Rothwell wrote:
-> > +/* Allows an external user (for example, KVM) to unlock an IOMMU
-> group */
-> > +static void vfio_group_del_external_user(struct file *filep)
-> > +{
-> > +     struct vfio_group *group = filep->private_data;
-> > +
-> > +     BUG_ON(filep->f_op != &vfio_group_fops);
-> 
-> We usually reserve BUG_ON for situations where there is no way to
-> continue running or continuing will corrupt the running kernel.  Maybe
-> WARN_ON() and return?
+In order to avoid making code that deals with printing both, IPv4 and
+IPv6 addresses, unnecessary complicated as for example ...
 
-Not even that. This is a user space provided "fd", we shouldn't oops the
-kernel because we passed a wrong argument, just return -EINVAL or
-something like that (add a return code).
+  if (sa.sa_family == AF_INET6)
+    printk("... %pI6 ...", sin6_addr);
+  else
+    printk("... %pI4 ...", sin_addr.s_addr);
 
-Ben.
+... it would be better to introduce a format specifier that can deal
+with those kind of situations internally; just as we have a "struct
+sockaddr" for generic mapping into "struct sockaddr_in" or "struct
+sockaddr_in6" as e.g. done in "union sctp_addr". Then, we could
+reduce the above statement into something like:
 
+  printk("... %pIS ..", &sockaddr);
 
+While we're at it, support for both %piS/%pIS, where 'S' stands for
+sockaddr, comes for free. In case our pointer is NULL, pointer() then
+deals with that already at an earlier point in time internally.
+
+Likely, there are many other areas than just SCTP in the kernel to make
+use of this extension as well.
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+CC: linux-kernel@vger.kernel.org
+---
+ v1->v2:
+  - Added documentation into printk-formats.txt, thanks Vlad Yasevich
+  - Changed %pig/%pIg into %piS/%pIS, thanks Joe Perches
+  - Changed braces/indent in pointer(), thanks Joe Perches
+  - Also CC lkml, thanks Andy Shevchenko
+
+ Documentation/printk-formats.txt | 11 +++++++++++
+ lib/vsprintf.c                   | 16 ++++++++++++++--
+ 2 files changed, 25 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 3af5ae6..8794953 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -121,6 +121,17 @@ IPv6 addresses:
+ 	print a compressed IPv6 address as described by
+ 	http://tools.ietf.org/html/rfc5952
+ 
++Generic IPv4/IPv6 addresses:
++
++	%pIS
++	%piS
++
++	For printing an IP address without the need to distinguish weather it's
++	of type AF_INET or AF_INET6, a pointer to a 'struct sockaddr', specified
++	through 'IS' or 'iS', can be passed to this format specifier, which will
++	then be further processed by the above IPv4 ('I4', 'i4') or IPv6 ('I6',
++	'i6') handler.
++
+ UUID/GUID addresses:
+ 
+ 	%pUb	00010203-0405-0607-0809-0a0b0c0d0e0f
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index e149c64..a587a90 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -1004,10 +1004,10 @@ int kptr_restrict __read_mostly;
+  * - 'MF' For a 6-byte MAC FDDI address, it prints the address
+  *       with a dash-separated hex notation
+  * - '[mM]R' For a 6-byte MAC address, Reverse order (Bluetooth)
+- * - 'I' [46] for IPv4/IPv6 addresses printed in the usual way
++ * - 'I' [46S] for IPv4/IPv6 addresses printed in the usual way
+  *       IPv4 uses dot-separated decimal without leading 0's (1.2.3.4)
+  *       IPv6 uses colon separated network-order 16 bit hex with leading 0's
+- * - 'i' [46] for 'raw' IPv4/IPv6 addresses
++ * - 'i' [46S] for 'raw' IPv4/IPv6 addresses
+  *       IPv6 omits the colons (01020304...0f)
+  *       IPv4 uses dot-separated decimal with leading 0's (010.123.045.006)
+  * - '[Ii]4[hnbl]' IPv4 addresses in host, network, big or little endian order
+@@ -1093,6 +1093,16 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 			return ip6_addr_string(buf, end, ptr, spec, fmt);
+ 		case '4':
+ 			return ip4_addr_string(buf, end, ptr, spec, fmt);
++		case 'S': {
++			const struct sockaddr *sa = ptr;
++
++			if (sa->sa_family == AF_INET6) {
++				ptr = &((struct sockaddr_in6 *) sa)->sin6_addr;
++				return ip6_addr_string(buf, end, ptr, spec, fmt);
++			} else {
++				ptr = &((struct sockaddr_in *) sa)->sin_addr.s_addr;
++				return ip4_addr_string(buf, end, ptr, spec, fmt);
++			}}
+ 		}
+ 		break;
+ 	case 'U':
+@@ -1370,6 +1380,8 @@ qualifier:
+  * %pI6 print an IPv6 address with colons
+  * %pi6 print an IPv6 address without colons
+  * %pI6c print an IPv6 address as specified by RFC 5952
++ * %pIS depending on sa_family of 'struct sockaddr *' switch to %pI6/%pI4
++ * %piS depending on sa_family of 'struct sockaddr *' switch to %pi6/%pi4
+  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
+  *   case.
+  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
+-- 
+1.7.11.7
 
