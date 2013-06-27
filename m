@@ -1,74 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3F0Xhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 19:37:48 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:47988 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab3F0Xhq (ORCPT
+	id S1754107Ab3F0Xn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 19:43:56 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:53168 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684Ab3F0Xny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 19:37:46 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tux3@tux3.org
-Subject: Re: [PATCH] Optimize wait_sb_inodes()
-References: <87ehbpntuk.fsf@devron.myhome.or.jp>
-	<20130626231143.GC28426@dastard> <87wqpg76ls.fsf@devron.myhome.or.jp>
-	<20130627044705.GB29790@dastard> <87y59w5dye.fsf@devron.myhome.or.jp>
-	<20130627063816.GD29790@dastard> <87ppv83tnn.fsf@devron.myhome.or.jp>
-	<20130627094042.GZ29338@dastard> <87mwqb3m1e.fsf@devron.myhome.or.jp>
-	<20130627183631.GB22832@thunk.org>
-Date: Fri, 28 Jun 2013 08:37:40 +0900
-In-Reply-To: <20130627183631.GB22832@thunk.org> (Theodore Ts'o's message of
-	"Thu, 27 Jun 2013 14:36:31 -0400")
-Message-ID: <871u7nrupn.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 27 Jun 2013 19:43:54 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-5a-51ccce33cab0
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, "'Stanislaw Gruszka'" <sgruszka@redhat.com>,
+        "'John W. Linville'" <linville@tuxdriver.com>, cpgs@samsung.com
+References: 
+In-reply-to: 
+Subject: [PATCH 3.9-stable]  iwlegacy: fix rate control regression
+Date: Fri, 28 Jun 2013 08:43:46 +0900
+Message-id: <002401ce7390$2aebe2b0$80c3a810$%choi@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMAAA5gYwAMf3LxAFffBYYA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zfV3jc2cCDX5vVLV4eUjTYkkzt8Xl
+	XXPYLLb2SFgsnnOGxWLBxkeMDmwe7/ddZfPo27KK0ePK99WMHp83yQWwRHHZpKTmZJalFunb
+	JXBl9MzPLtjMW7F3gUQD40buLkZODgkBE4kN23+zQ9hiEhfurWfrYuTiEBJYxihx/+0PRpii
+	f/87GCESixgl7l37DVX1l1FiV+9MNpAqNgFdiWPrt7CC2CIC3hKnpvxiBrGZBToYJfqOAsU5
+	gBq4JVY3B4GEOQV4JNb96QQrERZwkuja8ZIZpIRFQFXiQnsOSJhXwE7i+uIFzBC2oMSPyfdY
+	ICZqSazfeZwJwpaX2LzmLVirhIC6xKO/uhAHTGGU+LzGAqJERGLfi3dg50sIXGKXWPT7AdjD
+	LAICEt8mH2KB6JWV2HSAGeJdSYmDK26wTGCUmIVk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPS
+	i0z1ihNzi0vz0vWS83M3MUKic+IOxvsHrA8xJgOtn8gsJZqcD4zuvJJ4Q2MzIwtTE1NjI3NL
+	M9KElcR51VusA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwGl/j89a4x309KDf34YojH5On
+	BVcGna5V7F4UVadTkPL7q/v09mT7FRHrvm+7/iu6c+Kb8ocLF0msPmf1WIPx/cn0Ft5Tp3y/
+	HMvvfvX/zJYrOz4fS1XhPBq6u+/rDvt0kYNO3yesEup8sCFDvGnWLZ2tJ81VVzJ76hSVC1il
+	/FgWViHg5JF7XImlOCPRUIu5qDgRAOYPmTzkAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jAV3jc2cCDd42KFq8PKRpsaSZ2+Ly
+	rjlsFlt7JCwWzznDYrFg4yNGBzaP9/uusnn0bVnF6HHl+2pGj8+b5AJYohoYbTJSE1NSixRS
+	85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAVisplCXmlAKFAhKLi5X0
+	7TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM3rmZxds5q3Yu0CigXEjdxcjJ4eEgInEv/8djBC2
+	mMSFe+vZuhi5OIQEFjFK3Lv2G8r5yyixq3cmG0gVm4CuxLH1W1hBbBEBb4lTU34xg9jMAh2M
+	En1HgeIcQA3cEqubg0DCnAI8Euv+dIKVCAs4SXTteMkMUsIioCpxoT0HJMwrYCdxffECZghb
+	UOLH5HssEBO1JNbvPM4EYctLbF7zFqxVQkBd4tFfXYgDpjBKfF5jAVEiIrHvxTvGCYxCs5BM
+	moVk0iwkk2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzj2n0nvYFzVYHGIUYCD
+	UYmHtyHxTKAQa2JZcWXuIUYJDmYlEd47C4BCvCmJlVWpRfnxRaU5qcWHGJOB/pzILCWanA9M
+	S3kl8YbGJmZGlkZmFkYm5uakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwBglWCxzel21
+	7k7W1CLdI1MO+27+KJF197whN+/ea/bzpsuuPtHwanJm46sjLwI/zHtbvX9x8j2J4hnC5ZvF
+	bE43/y5hswt6OItX/Udf9gt/Ly8np3mm195kSJ9+ECkr/FznW/l39cMJp07FPtTc/Z7d1OZa
+	wXGbSS8OJ7lXvXyuF1l3/12fm44SS3FGoqEWc1FxIgB5fxxgQQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Theodore Ts'o <tytso@mit.edu> writes:
+This patch looks like it should be in the 3.9-stable tree, should we apply
+it?
 
-> Let's go up a level.  Why are you so focused on optimizing sync(2)?
-> What's the use case where you anticipate applications using sync(2) or
-> syncfs(2)?    Or is this for the purpose of Tux3's benchmarketing?
->
-> In practice, sync(2) as a data integrity mechanism is a bit
-> heavyweight for most applications.  In general the complaint with ext3
-> or ext4 is that fsync(2) is forcing a full filesystem-wide sync, and
-> not just a sync specific to the file.
->
-> System administrators use it sometimes[1], sometimes out of superstition,
-> but how many applications actually use it?  And why?
->
-> [1] In fact, I've heard an argument that sync(2) should be optionally
-> made privileged and only accessible to root, since there were cases
-> where system administrators would login to a heavily loaded server as
-> a non-privileged user, type "sync" out of reflex or habit, and the
-> resulting huge amounts of I/O would blow the 99.9th percentile latency
-> guarantees for all of the latency-sensitive services running on that
-> server.
->
-> If the goal is to optimize file system freeze operations, sure.  But
-> that's also not a common operation, so if it burns a little extra CPU
-> time, it wouldn't cause me to think that it was a high priority issue.
-> Decreasing the wall clock time for a file system freeze operation
-> would probably be a far more interesting goal.
+------------------
 
-I'm not focusing on optimizing sync(2), not like you are suspecting. It
-might be an issue of visibility of our work.
+From: "Stanislaw Gruszka <sgruszka@redhat.com>"
 
-Well, anyway, it is simple. This issue was came as the performance
-regression when I was experimenting to use kernel bdi flusher from own
-flusher. The issue was sync(2) like I said.  And this was just I
-couldn't solve this issue by tux3 side unlike other optimizations.
+commit a8cf0194b7187fb65dfff28a1c5153d442e3836a upstream
 
-Simple patch was enough to optimize that. And there was no reason to
-keep to hide the patch, then share this lack of vfs with community.
+Since driver does not use control.rates[0].count, we have never set that
+variable. But currently, after rate control API rewrite, this is required
+by mac80211. Otherwise legacy rates control does not work and we transmit
+always at 1Mbit/s on pre 11n networks.
 
-Thanks.
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ drivers/net/wireless/iwlegacy/3945-rs.c |    1 +
+ drivers/net/wireless/iwlegacy/4965-rs.c |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/iwlegacy/3945-rs.c
+b/drivers/net/wireless/iwlegacy/3945-rs.c
+index d4fd29a..dde7ff0 100644
+--- a/drivers/net/wireless/iwlegacy/3945-rs.c
++++ b/drivers/net/wireless/iwlegacy/3945-rs.c
+@@ -816,6 +816,7 @@ out:
+ 		rs_sta->last_txrate_idx = idx;
+ 		info->control.rates[0].idx = rs_sta->last_txrate_idx;
+ 	}
++	info->control.rates[0].count = 1;
+ 
+ 	D_RATE("leave: %d\n", idx);
+ }
+diff --git a/drivers/net/wireless/iwlegacy/4965-rs.c
+b/drivers/net/wireless/iwlegacy/4965-rs.c
+index 6c7493c..38fb9e1 100644
+--- a/drivers/net/wireless/iwlegacy/4965-rs.c
++++ b/drivers/net/wireless/iwlegacy/4965-rs.c
+@@ -2268,7 +2268,7 @@ il4965_rs_get_rate(void *il_r, struct ieee80211_sta
+*sta, void *il_sta,
+ 		info->control.rates[0].flags = 0;
+ 	}
+ 	info->control.rates[0].idx = rate_idx;
+-
++	info->control.rates[0].count = 1;
+ }
+ 
+ static void *
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+1.7.9.5
+
