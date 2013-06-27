@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab3F0PSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:18:01 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:37177 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753806Ab3F0PR6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:17:58 -0400
-Message-ID: <51CC57A3.6020601@itdev.co.uk>
-Date: Thu, 27 Jun 2013 16:17:55 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753724Ab3F0PTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:19:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752302Ab3F0PTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 11:19:32 -0400
+Date: Thu, 27 Jun 2013 11:19:22 -0400
+From: Dave Jones <davej@redhat.com>
+To: Chris Mason <chris.mason@fusionio.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: btrfs triggered lockdep WARN.
+Message-ID: <20130627151922.GA1438@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Chris Mason <chris.mason@fusionio.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-btrfs@vger.kernel.org
+References: <20130627145824.GA21540@redhat.com>
+ <20130627150130.14981.39849@localhost.localdomain>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver - v6
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
-In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627150130.14981.39849@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dimitry-
+On Thu, Jun 27, 2013 at 11:01:30AM -0400, Chris Mason wrote:
+ > Quoting Dave Jones (2013-06-27 10:58:24)
+ > > Another bug caused by this script. https://github.com/kernelslacker/io-tests/blob/master/setup.sh
+ > 
+ > I'm still struggling to reproduce that one here.  I've tried every
+ > variation I can think of but I'll try again.
+ 
+Note that this is a different trace to the other post about that script.
 
-Nick Dyer wrote:
-> Some minor updates to these patches to address review comments. I've rebased
-> them on the latest dtor/next tree.
+ > I really hope you don't already have CONFIG_DEBUG_PAGE_ALLOC turned on,
+ > maybe it will catch this?
 
-Apologies, I forgot to add Yufeng's Acked-by lines. To save cluttering up
-the list, I've pushed a new version with just that change to
+I do. Though given this is lockdep complaining about what looks like
+memory corruption, it's probably not related.
 
-git@github.com:ndyer/linux.git
+	Dave
 
-the tag is
-
-for-next-20130627-v7
