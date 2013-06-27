@@ -1,67 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab3F0U0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 16:26:13 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:47068 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889Ab3F0U0M (ORCPT
+	id S1754358Ab3F0U2W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 16:28:22 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:51774 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754133Ab3F0U2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 16:26:12 -0400
-Date: Thu, 27 Jun 2013 23:26:08 +0300
-From: Siarhei Siamashka <siarhei.siamashka@gmail.com>
-To: linux-sunxi@googlegroups.com
-Cc: maxime.ripard@free-electrons.com, Hans de Goede <hdegoede@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com
-Subject: Re: [linux-sunxi] [PATCH 0/8] clocksource: sunxi: Timer fixes and
- cleanup
-Message-ID: <20130627232608.1174558b@i7>
-In-Reply-To: <20130627165436.GB4319@lukather>
-References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
-	<51CC0566.8010302@redhat.com>
-	<20130627094307.GC8437@lukather>
-	<51CC0BC3.5090309@redhat.com>
-	<20130627165436.GB4319@lukather>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jun 2013 16:28:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130627181108.GA26334@sergelap>
+References: <CAAAKZwuKxxYoVRn6Ye72Vs7vSd_T4cbvEwiU6Q3j4D-Z+VAPrw@mail.gmail.com>
+ <20130627181108.GA26334@sergelap>
+From: Tim Hockin <thockin@hockin.org>
+Date: Thu, 27 Jun 2013 13:27:59 -0700
+X-Google-Sender-Auth: IOygGmaW_1FFP5elasoMKObVhjQ
+Message-ID: <CAAAKZwvXYBznJ5uiWaEV7fNCHbciwLa6U+E5RUJkz1ioMu=cRg@mail.gmail.com>
+Subject: Re: cgroup access daemon
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        jpoimboe <jpoimboe@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>, vrigo@google.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013 18:54:36 +0200
-Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
+On Thu, Jun 27, 2013 at 11:11 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> Quoting Tim Hockin (thockin@hockin.org):
+>
+>> For our use case this is a huge problem.  We have people who access
+>> cgroup files in a fairly tight loops, polling for information.  We
+>> have literally hundeds of jobs running on sub-second frequencies -
+>> plumbing all of that through a daemon is going to be a disaster.
+>> Either your daemon becomes a bottleneck, or we have to build something
+>> far more scalable than you really want to.  Not to mention the
+>> inefficiency of inserting a layer.
+>
+> Currently you can trivially create a container which has the
+> container's cgroups bind-mounted to the expected places
+> (/sys/fs/cgroup/$controller) by uncommenting two lines in the
+> configuration file, and handle cgroups through cgroupfs there.
+> (This is what the management agent wants to be an alternative
+> for)  The main deficiency there is that /proc/self/cgroups is
+> not filtered, so it will show /lxc/c1 for init's cgroup, while
+> the host's /sys/fs/cgroup/devices/lxc/c1/c1.real will be what
+> is seen under the container's /sys/fs/cgroup/devices (for
+> instance).  Not ideal.
 
-> On Thu, Jun 27, 2013 at 11:54:11AM +0200, Hans de Goede wrote:
-> > I notice that unlike the sunxi-3.4 code you don't do any locking,
-> > so how do you stop 2 clocksource calls from racing (and thus
-> > getting a possible wrong value because of things not
-> > being properly latched) ?
-> 
-> Hmm, right. I'll add a spinlock.
+I'm really saying that if your daemon is to provide a replacement for
+cgroupfs direct access, it needs to be designed to be scalable.  If
+we're going to get away from bind mounting cgroupfs into user
+namespaces, then let's try to solve ALL the problems.
 
-I think the best would be to ask the Allwinner people (it's good to
-have them in CC, right?) whether anything wrong can happen because of
-"things not being properly latched".
+>> We also need the ability to set up eventfds for users or to let them
+>> poll() on the socket from this daemon.
+>
+> So you'd want to be able to request updates when any cgroup value
+> is changed, right?
 
-The A10 manual from http://free-electrons.com/~maxime/pub/datasheet/
-does not seem to contain any details about what bad things may happen
-if we try to read CNT64_LO_REG while latching is still in progress and
-CNT64_RL_EN bit in CNT64_CTRL_REG has not changed to zero yet.
-I can imagine the following possible scenarios:
-  1. We read either the old stale CNT64_LO_REG value or the new
-     correct value.
-  2. We read either the old stale CNT64_LO_REG value or the new
-     correct value, or some random garbage.
-  3. The processor may deadlock, eat your dog, or do some other
-     nasty thing.
+Not necessarily ANY, but that's the terminus of this API facet.
 
-In the case of 1, we probably can get away without using any spinlocks?
+> That's currently not in my very limited set of commands, but I can
+> certainly add it, and yes it would be a simple unix sock so you can
+> set up eventfd, select/poll, etc.
 
--- 
-Best regards,
-Siarhei Siamashka
+Assuming the protocol is basically a pass-through to basic filesystem
+ops, it should be pretty easy.  You just need to add it to your
+protocol.
+
+But it brings up another point - access control.  How do you decide
+which files a child agent should have access to?  Does that ever
+change based on the child's configuration? In our world, the answer is
+almost certainly yes.
+
+>> >> > So then the idea would be that userspace (like libvirt and lxc) would
+>> >> > talk over /dev/cgroup to its manager.  Userspace inside a container
+>> >> > (which can't actually mount cgroups itself) would talk to its own
+>> >> > manager which is talking over a passed-in socket to the host manager,
+>> >> > which in turn runs natively (uses cgroupfs, and nests "create /c1" under
+>> >> > the requestor's cgroup).
+>> >>
+>> >> How do you handle updates of this agent?  Suppose I have hundreds of
+>> >> running containers, and I want to release a new version of the cgroupd
+>> >> ?
+>> >
+>> > This may change (which is part of what I want to investigate with some
+>> > POC), but right now I'm building any controller-aware smarts into it.  I
+>> > think that's what you're asking about?  The agent doesn't do "slices"
+>> > etc.  This may turn out to be insufficient, we'll see.
+>>
+>> No, what I am asking is a release-engineering problem.  Suppose we
+>> need to roll out a new version of this daemon (some new feature or a
+>> bug or something).  We have hundreds of these "child" agents running
+>> in the job containers.
+>
+> When I say "container" I mean an lxc container, with it's own isolated
+> rootfs and mntns.  I'm not sure what your "containers" are, but I if
+> they're not that, then they shouldn't need to run a child agent.  They
+> can just talk over the host cgroup agent's socket.
+
+If they talk over the host agent's socket, where is the access control
+and restriction done?  Who decides how deep I can nest groups?  Who
+says which files I may access?  Who stops me from modifying someone
+else's container?
+
+Our containers are somewhat thinner and more managed than LXC, but not
+that much.  If we're running a system agent in a user container, we
+need to manage that software.  We can't just start up a version and
+leave it running until the user decides to upgrade - we force
+upgrades.
+
+>> How do I bring down all these children, and then bring them back up on
+>> a new version in a way that does not disrupt user jobs (much)?
+>>
+>> Similarly, what happens when one of these child agents crashes?  Does
+>> someone restart it?  Do user jobs just stop working?
+>
+> An upstart^W$init_system job will restart it...
+
+What happens when the main agent crashes?  All those children on UNIX
+sockets need to reconnect, I guess.  This means your UNIX socket needs
+to be a named socket, not just a socketpair(),  making your auth model
+more complicated.
+
+What happens when the main agent hangs?  Is someone health-checking
+it?  How about all the child daemons?
+
+I guess my main point is that this SOUNDS like a simple project, but
+if you just do the simple obvious things, it will be woefully
+inadequate for anything but simple use-cases.  If we get forced into
+such a model (and there are some good reasons to do it, even
+disregarding all the other chatter), we'd rather use the same thing
+that the upstream world uses, and not re-invent the whole thing
+ourselves.
+
+Do you have a design spec, or a requirements list, or even a prototype
+that we can look at?
+
+Tim
