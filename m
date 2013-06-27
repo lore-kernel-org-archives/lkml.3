@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab3F0IS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:18:56 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:38890 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab3F0ISv (ORCPT
+	id S1753104Ab3F0IVj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:21:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59456 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab3F0IVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:18:51 -0400
-Date: Thu, 27 Jun 2013 10:18:45 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        cornelia.huck@de.ibm.com, mtosatti@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-s390@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: s390: kernel: scan all present cpu forcely.
-Message-ID: <20130627081845.GA3824@osiris>
-References: <51C8F685.6000209@asianux.com>
- <20130625064832.GA4999@osiris>
- <51C94599.1020707@asianux.com>
- <20130625090928.GA8981@osiris>
- <51CBA6B6.1010809@asianux.com>
+	Thu, 27 Jun 2013 04:21:36 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Simon Baatz <gmbnomis@gmail.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [04/26] ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_page
+References: <lsq.1372214158.657310117@decadent.org.uk>
+	<878v1x4510.fsf@canonical.com> <20130626223554.GB25104@schnuecks.de>
+Date: Thu, 27 Jun 2013 09:21:32 +0100
+In-Reply-To: <20130626223554.GB25104@schnuecks.de> (Simon Baatz's message of
+	"Thu, 27 Jun 2013 00:35:54 +0200")
+Message-ID: <87zjucvu9f.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CBA6B6.1010809@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062708-4966-0000-0000-00000621F211
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 10:43:02AM +0800, Chen Gang wrote:
-> The architectures which may support 'hotpluggable', can scan all cpus
-> during subsys_initcall().  the upper caller will skip the return value.
-> 
-> It also can initialize hotpluggable flag of all cpus in time, no matter
-> whether any cpus fail or not.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/s390/kernel/smp.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
-> index d386c4e..75a118f 100644
-> --- a/arch/s390/kernel/smp.c
-> +++ b/arch/s390/kernel/smp.c
-> @@ -1064,8 +1064,9 @@ static int __init s390_smp_init(void)
->  #endif
->  	for_each_present_cpu(cpu) {
->  		rc = smp_add_present_cpu(cpu);
-> -		if (rc)
-> -			return rc;
-> +		if (unlikely(rc))
-> +			printk(KERN_WARNING "%s: add cpu %d failed (%d)\n",
-> +			       __func__, cpu, rc);
+Simon Baatz <gmbnomis@gmail.com> writes:
 
-I have no idea how the patch description is supposed to correlate with
-your patch.
-However your patch doesn't make sense anyway.
-We have initcall_debug for .. initcall debugging, which your patch would
-break in addition, since this function would now return 0 instead of the
-return code.
+> Hi Ben, Luis,
+>
+> On Wed, Jun 26, 2013 at 10:04:11AM +0100, Luis Henriques wrote:
+>> Ben Hutchings <ben@decadent.org.uk> writes:
+>> 
+>> > 3.2.48-rc1 review patch.  If anyone has any objections, please let me know.
+>> >
+>> > ------------------
+>> >
+>> > From: Simon Baatz <gmbnomis@gmail.com>
+>> >
+>> > commit 1bc39742aab09248169ef9d3727c9def3528b3f3 upstream.
+>> 
+>> Simon suggested Greg not to queue this patch for stable kernels as it
+>> breaks no-MMU ARM configs.  He will provide a follow-up patch that
+>> should go together with this one.
+>
+> Fortunately, the follow-up patch is upstream now. It is commit
+> 63384fd0b1509acf522a8a8fcede09087eedb7df (ARM: 7772/1: Fix missing
+> flush_kernel_dcache_page() for noMMU).
+>
+> Thus, please add that patch as well. If it is too late to do this, my
+> suggestion would be to queue both of them together for the next cycle.
 
+Thanks Simon, I'll queue both for the 3.5 kernel.
+
+Cheers,
+-- 
+Luis
