@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab3F0H4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:56:07 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:53709 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab3F0H4G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:56:06 -0400
-Date: Thu, 27 Jun 2013 15:56:06 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: sage <sage@inktank.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH] ceph: Don't use ceph-sync-mode for synchronous-fs.
-X-Priority: 3
-X-GUID: 0BB5DB46-89B9-41E2-A7E8-27EFEEF5D5B7
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.90[en]
-Mime-Version: 1.0
-Message-ID: <201306271556037311581@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	id S1752871Ab3F0H47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:56:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11514 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752695Ab3F0H46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 03:56:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,950,1363158000"; 
+   d="scan'208";a="336254117"
+Message-ID: <51CBF193.60004@intel.com>
+Date: Thu, 27 Jun 2013 11:02:27 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-13-git-send-email-adrian.hunter@intel.com> <51C9BDB2.7060905@gmail.com>
+In-Reply-To: <51C9BDB2.7060905@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5R7uJaW012167
 
-At now for synchronous-fs, all write-operations use ceph_sync_mode.
-But for the file which opened with O_SYNC, it don't use sync_mode.
-The behaviour of them should be the same.
-For fs which mounted using '-o sync', it want all I/O to the filesystem
-should be done synchronously.But the ceph-sync-mode don't be suitful
-for.For example,using ceph-sync-mode the content of file don't have in
-memory.This will cause the following read only from osd rather than
-memory.
+On 25/06/13 18:56, David Ahern wrote:
+> On 6/24/13 7:16 AM, Adrian Hunter wrote:
+>> Sample types need not be identical to determine
+>> the sample id from the event.  Only the position
+>> of the sample id needs to be the same.
+>>
+>> Compatible sample types are ones in which the bits
+>> defined by PERF_COMPAT_MASK are the same.
+>> 'perf_evlist__config()' forces sample types to be
+>> compatible on that basis.
+> 
+> Something is still missing to support different sample_types for events.
+> Consider the case (S/W event + tracepoint):
+>   perf record -e cs -c1 -e sched:sched_switch -a -- sleep 1
+>   perf script
+> 
+> This patch addresses the sample_type mismatch error message, but I get no
+> event samples in the output. Besides the usual header I get:
+> 
+>   No trace sample to read. Did you call 'perf record -R'?
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- fs/ceph/file.c | 2 --
- 1 file changed, 2 deletions(-)
+Fixed in V2
 
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index 656e169..44670ad 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -659,7 +659,6 @@ again:
- 
- 	if ((got & (CEPH_CAP_FILE_CACHE|CEPH_CAP_FILE_LAZYIO)) == 0 ||
- 	    (iocb->ki_filp->f_flags & O_DIRECT) ||
--	    (inode->i_sb->s_flags & MS_SYNCHRONOUS) ||
- 	    (fi->flags & CEPH_F_SYNC))
- 		/* hmm, this isn't really async... */
- 		ret = ceph_sync_read(filp, base, len, ppos, &checkeof);
-@@ -764,7 +763,6 @@ retry_snap:
- 
- 	if ((got & (CEPH_CAP_FILE_BUFFER|CEPH_CAP_FILE_LAZYIO)) == 0 ||
- 	    (iocb->ki_filp->f_flags & O_DIRECT) ||
--	    (inode->i_sb->s_flags & MS_SYNCHRONOUS) ||
- 	    (fi->flags & CEPH_F_SYNC)) {
- 		mutex_unlock(&inode->i_mutex);
- 		written = ceph_sync_write(file, iov->iov_base, count,
--- 
-1.8.1.2
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 
+> It's a 16-cpu box with 5 VMs running. I know there should be at least a few
+> samples in 1 second.
+> 
+> Stephane: are you looking at allowing sample_types per event?
+> 
+> David
+> 
+> 
+
