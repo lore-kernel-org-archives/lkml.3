@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab3F0JTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:19:15 -0400
-Received: from victor.provo.novell.com ([137.65.250.26]:48865 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab3F0JTM (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 27 Jun 2013 05:19:12 -0400
-From: David Chang <dchang@suse.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jlee@suse.com,
-        David Chang <dchang@suse.com>
-Subject: [PATCH 2/2 net-next] usbnet: ax88179_178a: add .reset_resume hook
-Date: Thu, 27 Jun 2013 17:16:43 +0800
-Message-Id: <1372324603-4556-2-git-send-email-dchang@suse.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1372324603-4556-1-git-send-email-dchang@suse.com>
-References: <1372324603-4556-1-git-send-email-dchang@suse.com>
+	id S1752519Ab3F0JVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:21:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037Ab3F0JVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 05:21:36 -0400
+Date: Thu, 27 Jun 2013 11:21:29 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: perf tools: Introduce new -P/--parent-deep report option
+Message-ID: <20130627092129.GB3225@krava.brq.redhat.com>
+References: <20130626145853.GA2309@ghostprotocols.net>
+ <87a9mc15qm.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87a9mc15qm.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 27, 2013 at 02:29:21PM +0900, Namhyung Kim wrote:
+> Hi Arnaldo,
+> 
+> On Wed, 26 Jun 2013 11:58:53 -0300, Arnaldo Carvalho de Melo wrote:
+> > Hi Jiri,
+> >
+> > 	About the patch below, can't this be solved by using a regex
+> > instead of a simple substring search instead of adding a new command
+> > line option?
+> 
+> ???
+> 
+> IIUC he reused parent_regex for this.
+> 
+> And I think we can have the same effect by using -G and -p option
+> together without this new option.
 
-I tested with the AX88179 usb dongle, if without .reset_resume hook,
-after S3/S4 resume you have to enable network interface or reload the
-dirver module manually otherwise the network interface can not work.
+I think you're right.. I haven't realized I could reverse
+the backtrace and search the same way via -p
 
-Signed-off-by: David Chang <dchang@suse.com>
----
- drivers/net/usb/ax88179_178a.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
-index 7ce243b..1e3c302 100644
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -1433,6 +1433,7 @@ static struct usb_driver ax88179_178a_driver = {
- 	.probe =	usbnet_probe,
- 	.suspend =	ax88179_suspend,
- 	.resume =	ax88179_resume,
-+	.reset_resume =	ax88179_resume,
- 	.disconnect =	usbnet_disconnect,
- 	.supports_autosuspend = 1,
- 	.disable_hub_initiated_lpm = 1,
--- 
-1.8.1.4
-
+thanks,
+jirka
