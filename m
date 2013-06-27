@@ -1,118 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3F0GCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 02:02:46 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:43093 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3F0GCp (ORCPT
+	id S1752110Ab3F0GEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 02:04:24 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42650 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab3F0GEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 02:02:45 -0400
-Date: Thu, 27 Jun 2013 09:02:34 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, kevin@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/8] clocksource: sun4i: Add clocksource and sched clock
- drivers
-Message-ID: <20130627060234.GD4824@tarshish>
-References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
- <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 27 Jun 2013 02:04:23 -0400
+Date: Thu, 27 Jun 2013 11:34:09 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: pjt@google.com, peterz@infradead.org, mingo@kernel.org,
+        kamalesh@linux.vnet.ibm.com
+Subject: [PATCH TRIVIAL] sched: Fix typo in struct sched_avg member
+ description
+Message-ID: <20130627060409.GB18582@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062706-5140-0000-0000-0000036FF861
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+Remove extra 'for' from the description about member of
+struct sched_avg.
 
-On Wed, Jun 26, 2013 at 11:16:55PM +0200, Maxime Ripard wrote:
-> The A10 and the A13 has a 64 bits free running counter that we can use
-> as a clocksource and a sched clock, that were both not used yet on these
-> platforms.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/clocksource/sun4i_timer.c | 27 +++++++++++++++++++++++++++
->  1 file changed, 27 insertions(+)
-> 
-> diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-> index bdf34d9..1d2eaa0 100644
-> --- a/drivers/clocksource/sun4i_timer.c
-> +++ b/drivers/clocksource/sun4i_timer.c
-> @@ -23,6 +23,8 @@
->  #include <linux/of_address.h>
->  #include <linux/of_irq.h>
->  
-> +#include <asm/sched_clock.h>
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+---
+ include/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-In the tip.git tree (and -next) this header is moved to <linux/sched_clock.h> 
-in  38ff87f77a (sched_clock: Make ARM's sched_clock generic for all 
-architectures).
-
-> +
->  #define TIMER_IRQ_EN_REG	0x00
->  #define TIMER_IRQ_EN(val)		BIT(val)
->  #define TIMER_IRQ_ST_REG	0x04
-> @@ -34,6 +36,11 @@
->  #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
->  
->  #define TIMER_SCAL		16
-> +#define TIMER_CNT64_CTL_REG	0xa0
-> +#define TIMER_CNT64_CTL_CLR		BIT(0)
-> +#define TIMER_CNT64_CTL_RL		BIT(1)
-> +#define TIMER_CNT64_LOW_REG	0xa4
-> +#define TIMER_CNT64_HIGH_REG	0xa8
->  
->  static void __iomem *timer_base;
->  
-> @@ -96,6 +103,20 @@ static struct irqaction sun4i_timer_irq = {
->  	.dev_id = &sun4i_clockevent,
->  };
->  
-> +static u32 sun4i_timer_sched_read(void)
-
-You commit message mentions "64 bits free running counter", but this one only 
-returns 32 bit.
-
-baruch
-
-> +{
-> +	u32 reg = readl(timer_base + TIMER_CNT64_CTL_REG);
-> +	writel(reg | TIMER_CNT64_CTL_RL, timer_base + TIMER_CNT64_CTL_REG);
-> +	while (readl(timer_base + TIMER_CNT64_CTL_REG) & TIMER_CNT64_CTL_REG);
-> +
-> +	return readl(timer_base + TIMER_CNT64_LOW_REG);
-> +}
-> +
-> +static cycle_t sun4i_timer_clksrc_read(struct clocksource *c)
-> +{
-> +	return sun4i_timer_sched_read();
-> +}
-> +
->  static void __init sun4i_timer_init(struct device_node *node)
->  {
->  	unsigned long rate = 0;
-> @@ -117,6 +138,12 @@ static void __init sun4i_timer_init(struct device_node *node)
->  
->  	rate = clk_get_rate(clk);
->  
-> +	writel(TIMER_CNT64_CTL_CLR, timer_base + TIMER_CNT64_CTL_REG);
-> +	setup_sched_clock(sun4i_timer_sched_read, 32, clk_get_rate(clk));
-> +	clocksource_mmio_init(timer_base + TIMER_CNT64_LOW_REG, node->name,
-> +			      clk_get_rate(clk), 300, 32,
-> +			      sun4i_timer_clksrc_read);
-> +
->  	writel(rate / (TIMER_SCAL * HZ),
->  	       timer_base + TIMER_INTVAL_REG(0));
->  
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 178a8d9..a9a0ae5 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -924,7 +924,7 @@ struct load_weight {
+ struct sched_avg {
+ 	/*
+ 	 * These sums represent an infinite geometric series and so are bound
+-	 * above by 1024/(1-y).  Thus we only need a u32 to store them for for all
++	 * above by 1024/(1-y).  Thus we only need a u32 to store them for all
+ 	 * choices of y < 1-2^(-32)*1024.
+ 	 */
+ 	u32 runnable_avg_sum, runnable_avg_period;
 -- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+1.7.11.6
+
