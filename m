@@ -1,120 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab3F0BU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 21:20:26 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:62844 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3F0BUZ (ORCPT
+	id S1751729Ab3F0BYs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 21:24:48 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:39658 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab3F0BYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 21:20:25 -0400
+	Wed, 26 Jun 2013 21:24:47 -0400
+Message-ID: <51CB9450.80601@hp.com>
+Date: Wed, 26 Jun 2013 21:24:32 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <1372177330-28013-3-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1372177330-28013-3-git-send-email-mika.westerberg@linux.intel.com>
-Date: Wed, 26 Jun 2013 18:20:24 -0700
-X-Google-Sender-Auth: uEVnYilTQKXVuhQuZbQ1H7g4JJU
-Message-ID: <CAE9FiQWy9E_s34DKOtoYcZoYTdgLCfwjiuSVPSk1ncpHYAWG0g@mail.gmail.com>
-Subject: Re: [PATCH 2/6] PCI: acpiphp: enable_device(): rescan even if no new
- devices on slot
-From: Yinghai Lu <yinghai@kernel.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        John Ronciak <john.ronciak@intel.com>,
-        Miles J Penner <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <andi@firstfloor.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
+ update of refcount
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com> <1372268603-46748-2-git-send-email-Waiman.Long@hp.com> <20130626201713.GH6123@two.firstfloor.org> <51CB57F6.6010003@hp.com> <20130626212221.GI6123@two.firstfloor.org> <51CB7898.5070206@hp.com> <20130627010658.GL6123@two.firstfloor.org> <51CB9233.7020508@hp.com>
+In-Reply-To: <51CB9233.7020508@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 9:22 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On 06/26/2013 09:15 PM, Waiman Long wrote:
+> On 06/26/2013 09:06 PM, Andi Kleen wrote:
+>>> In the uncontended case, doing spin_unlock_wait will be similar to
+>>> spin_can_lock. This, when combined with a cmpxchg, is still faster
+>>> than doing 2 atomic operations in spin_lock/spin_unlock.
+>> I'm totally against any new users of spin_unlock_wait()
+>>
+>> It has bizarre semantics, most likely will make various
+>> lock optimizations impossible, it's race condition hell
+>> for most users etc.
+>>
+>> spin_can_lock() is not quite as bad has a lot of the similar problems.
+>>
+>>> BTW, spin_can_lock is just the negation of spin_is_locked.
+>> e.g. with elision it's not.
+>>
+>> -Andi
 >
-> pci_scan_slot() returns number of new devices connected *directly*
-> connected to the slot. Current enable_device() checks the return value
-> and stops if it doesn't see a new device.
->
-> In Thunderbolt chaining case the new device can be deeper in hierarchy, so
-> do the rescan anyway.
->
-> Because of that we must make sure that pcibios_resource_survey_bus() and
-> check_hotplug_bridge() get called only for a just found bus and not the
-> ones already added to the system. Failure to do so will lead to resource
-> conflicts.
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/pci/hotplug/acpiphp_glue.c | 18 +++++++-----------
->  1 file changed, 7 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index b983e29..80a6ea1 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -685,18 +685,13 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->         struct pci_dev *dev;
->         struct pci_bus *bus = slot->bridge->pci_bus;
->         struct acpiphp_func *func;
-> -       int num, max, pass;
-> +       int max, pass;
->         LIST_HEAD(add_list);
->
->         list_for_each_entry(func, &slot->funcs, sibling)
->                 acpiphp_bus_add(func);
->
-> -       num = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
-> -       if (num == 0) {
-> -               /* Maybe only part of funcs are added. */
-> -               dbg("No new device found\n");
-> -               goto err_exit;
-> -       }
-> +       pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
->
->         max = acpiphp_max_busnr(bus);
->         for (pass = 0; pass < 2; pass++) {
-> @@ -707,8 +702,11 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->                             dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
->                                 max = pci_scan_bridge(bus, dev, max, pass);
->                                 if (pass && dev->subordinate) {
-> -                                       check_hotplug_bridge(slot, dev);
-> -                                       pcibios_resource_survey_bus(dev->subordinate);
-> +                                       if (!dev->subordinate->is_added) {
-> +                                               check_hotplug_bridge(slot, dev);
-> +                                               pcibios_resource_survey_bus(
-> +                                                       dev->subordinate);
-> +                                       }
+> OK, it is about Haswell's lock elision feature. I will see what I can 
+> do to remove those problematic function calls.
 
-No,
-this change will totally disable calling
-check_hotplug_bridge/pcibios_resource_survey_bus()
+It will be hard to know what changes will be needed without knowing the 
+exact semantics of the spinlock functions with lock elision. Can you 
+explain a little more what bizarre semantics you are referring to?
 
-as pci_scan_bridge/pci_scan_child_bus will set dev->subordinate->is_added...
-
-Please note: recently is_added setting is moved early before
-pci_bus_add_devices...
-
->                                         __pci_bus_size_bridges(dev->subordinate,
->                                                                &add_list);
->                                 }
-> @@ -742,8 +740,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->                 }
->         }
->
-> -
-> - err_exit:
->         return 0;
->  }
->
-> --
-> 1.8.3.1
->
+regards,
+Longman
