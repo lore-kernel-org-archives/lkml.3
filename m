@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab3F0Ttc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 15:49:32 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:43334 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab3F0Tta convert rfc822-to-8bit (ORCPT
+	id S1754063Ab3F0TvJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 15:51:09 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:60653 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab3F0TvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:49:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1990033.Jb3giURhtn@vostro.rjw.lan>
-References: <1372331314-31010-1-git-send-email-naresh.bhat@linaro.org>
-	<6743122.cV0P3hQa28@vostro.rjw.lan>
-	<CAFoFrHaUbjHbvDDVO0+1j4WSTdhdrWF64MrNvzKNJXaLKSv_jw@mail.gmail.com>
-	<1990033.Jb3giURhtn@vostro.rjw.lan>
-Date: Fri, 28 Jun 2013 01:19:30 +0530
-Message-ID: <CAFoFrHba+O0OL8YNAedXGoY=_LsnuH-NfHJ5iLO20g_P3tX-JQ@mail.gmail.com>
-Subject: Re: [PATCH] ACPI/fan: Initialize acpi_state variable
-From: Naresh Bhat <naresh.bhat@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, len.brown@intel.com,
-        Patch Tracking <patches@linaro.org>, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Thu, 27 Jun 2013 15:51:08 -0400
+Date: Thu, 27 Jun 2013 22:51:01 +0300
+From: Siarhei Siamashka <siarhei.siamashka@gmail.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-sunxi@googlegroups.com, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com
+Subject: Re: [linux-sunxi] [PATCH 2/8] clocksource: sun4i: Add clocksource
+ and sched clock drivers
+Message-ID: <20130627225101.358208c1@i7>
+In-Reply-To: <20130627170228.GC4319@lukather>
+References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
+	<1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
+	<20130627131729.5fff8468@i7>
+	<20130627170228.GC4319@lukather>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Done.
+On Thu, 27 Jun 2013 19:02:28 +0200
+Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
 
-Thank you very much
+> Hi Siarhei,
+> 
+> On Thu, Jun 27, 2013 at 01:17:29PM +0300, Siarhei Siamashka wrote:
+> > On Wed, 26 Jun 2013 23:16:55 +0200
+> > Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
+> > 
+> > > The A10 and the A13 has a 64 bits free running counter that we can use
+> > > as a clocksource and a sched clock, that were both not used yet on these
+> > > platforms.
+> > > 
+> > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > > ---
+> > >  drivers/clocksource/sun4i_timer.c | 27 +++++++++++++++++++++++++++
+> > >  1 file changed, 27 insertions(+)
+> > > 
+> > > diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+> > > index bdf34d9..1d2eaa0 100644
+> > > --- a/drivers/clocksource/sun4i_timer.c
+> > > +++ b/drivers/clocksource/sun4i_timer.c
+> > > @@ -23,6 +23,8 @@
+> > >  #include <linux/of_address.h>
+> > >  #include <linux/of_irq.h>
+> > >  
+> > > +#include <asm/sched_clock.h>
+> > > +
+> > >  #define TIMER_IRQ_EN_REG	0x00
+> > >  #define TIMER_IRQ_EN(val)		BIT(val)
+> > >  #define TIMER_IRQ_ST_REG	0x04
+> > > @@ -34,6 +36,11 @@
+> > >  #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
+> > >  
+> > >  #define TIMER_SCAL		16
+> > > +#define TIMER_CNT64_CTL_REG	0xa0
+> > > +#define TIMER_CNT64_CTL_CLR		BIT(0)
+> > > +#define TIMER_CNT64_CTL_RL		BIT(1)
+> > > +#define TIMER_CNT64_LOW_REG	0xa4
+> > > +#define TIMER_CNT64_HIGH_REG	0xa8
+> > >  
+> > >  static void __iomem *timer_base;
+> > >  
+> > > @@ -96,6 +103,20 @@ static struct irqaction sun4i_timer_irq = {
+> > >  	.dev_id = &sun4i_clockevent,
+> > >  };
+> > >  
+> > > +static u32 sun4i_timer_sched_read(void)
+> > > +{
+> > > +	u32 reg = readl(timer_base + TIMER_CNT64_CTL_REG);
+> > 
+> > If we can be absolutely sure that nothing else may ever change
+> > the TIMER_CNT64_CTL_REG, then its default value can be probably
+> > cached instead of doing expensive read from the hardware register
+> > each time?
+> 
+> Since it's a free-running counter, its value will always change, so the
+> caching will bring no additions at all, right?
 
--Naresh Bhat
+Sorry, 'caching' was not a very good description for something that is
+already a compile time constant. I mean just replace
 
-On 28 June 2013 00:59, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, June 27, 2013 06:37:35 PM Naresh Bhat wrote:
->> Hi Rafael,
->>
->> You mean I need to initialize using ACPI_STATE_D0 ? and resend the patch ?
->
-> Yes, please.
->
-> Although this is a false positive anyway ...
->
-> Thanks,
-> Rafael
->
->
->> On 27 June 2013 17:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Thursday, June 27, 2013 04:38:34 PM naresh.bhat@linaro.org wrote:
->> >> From: Naresh Bhat <naresh.bhat@linaro.org>
->> >>
->> >>   CC      drivers/acpi/fan.o
->> >> drivers/acpi/fan.c: In function ‘fan_get_cur_state’:
->> >> drivers/acpi/fan.c:96:9: warning: ‘acpi_state’ may be used uninitialized in this function [-Wuninitialized]
->> >> ---
->> >>  drivers/acpi/fan.c |    2 +-
->> >>  1 file changed, 1 insertion(+), 1 deletion(-)
->> >>
->> >> diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
->> >> index f815da8..f61f7fd 100644
->> >> --- a/drivers/acpi/fan.c
->> >> +++ b/drivers/acpi/fan.c
->> >> @@ -84,7 +84,7 @@ static int fan_get_cur_state(struct thermal_cooling_device *cdev, unsigned long
->> >>  {
->> >>       struct acpi_device *device = cdev->devdata;
->> >>       int result;
->> >> -     int acpi_state;
->> >> +     int acpi_state = 0;
->> >
->> > Please use an appropriate symbol here.
->> >
->> >>
->> >>       if (!device)
->> >>               return -EINVAL;
->> >>
->> >
->> > Thanks,
->> > Rafael
->> >
->> >
->> > --
->> > I speak only for myself.
->> > Rafael J. Wysocki, Intel Open Source Technology Center.
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+    u32 reg = readl(timer_base + TIMER_CNT64_CTL_REG);
+
+with 
+
+    u32 reg = TIMER_CNT64_CTL_CLR;
+
+Because we know that the TIMER_CNT64_CTL_REG is already supposed
+to have the default TIMER_CNT64_CTL_CLR value (initialized in the
+'sun4i_timer_init' function) between calls to 'sun4i_timer_sched_read'.
+Inside of 'sun4i_timer_sched_read' we set an extra TIMER_CNT64_CTL_RL
+bit in this register, but wait until it clears, effectively reverting
+TIMER_CNT64_CTL_REG register back to the default TIMER_CNT64_CTL_CLR
+value.
+
+Removing this extra HW register read can save roughly a hundred of CPU
+cycles here and provide a ~10% overall improvement for gettimeofday
+(these estimates are based on the earlier benchmarks done with the
+Allwinner 3.4 kernel).
+
+Or maybe I'm overlooking something?
+
+-- 
+Best regards,
+Siarhei Siamashka
