@@ -1,77 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab3F0M2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:28:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61871 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab3F0M2a (ORCPT
+	id S1752408Ab3F0MeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:34:00 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:64766 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab3F0Md6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:28:30 -0400
-Message-ID: <1372336081.5871.168.camel@marge.simpson.net>
-Subject: Re: deadlock in scheduler enabling HRTICK feature
-From: Mike Galbraith <bitbucket@online.de>
+	Thu, 27 Jun 2013 08:33:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130627111445.GR28407@twins.programming.kicks-ass.net>
+References: <1371824448-7306-1-git-send-email-eranian@google.com>
+	<1371824448-7306-3-git-send-email-eranian@google.com>
+	<20130624084510.GK28407@twins.programming.kicks-ass.net>
+	<CABPqkBQRchnjhnEC05w-noizoeSRnNio7NDQ6_+vXym_7rkGaw@mail.gmail.com>
+	<20130626103653.GC28407@twins.programming.kicks-ass.net>
+	<CABPqkBQuYy3TeE81tTXVruMG4D84TQ2U5g69T2ResGgjPjK4Cg@mail.gmail.com>
+	<20130627104833.GC27378@dyad.programming.kicks-ass.net>
+	<CABPqkBSwrz_GSobSuXn+AvU1zp14nAccCer4o7DHmG2c90cxRA@mail.gmail.com>
+	<20130627111445.GR28407@twins.programming.kicks-ass.net>
+Date: Thu, 27 Jun 2013 14:33:58 +0200
+Message-ID: <CABPqkBTU5kM_mgxj_3+Li+r=Ofq+xG4_PP2wu94pzeJ4y3m92Q@mail.gmail.com>
+Subject: Re: [PATCH 2/8] perf,x86: drop event->flags and use hw.constraint->flags
+From: Stephane Eranian <eranian@google.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de
-Date: Thu, 27 Jun 2013 14:28:01 +0200
-In-Reply-To: <20130627105303.GD27378@dyad.programming.kicks-ass.net>
-References: <51CA0622.8010105@gmail.com>
-	 <20130625211713.GA18796@laptop.programming.kicks-ass.net>
-	 <51CA0980.8010409@gmail.com>
-	 <20130626070533.GA3601@dyad.programming.kicks-ass.net>
-	 <51CB1AE9.5090709@gmail.com>
-	 <20130627104309.GQ28407@twins.programming.kicks-ass.net>
-	 <20130627105303.GD27378@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:/+wJpMFhpTDBQiTMH353HefAmH6G2cYMghjcXXzzVUD
- ZjX/yPxC5iOvF1rs5W3axhI+R6KwuXClZlf8xi5/N0zNzWnCZt
- UR1DLiyEQzAiypipY57fcxWL7N9ynrg8BUzPSrjQLPuXyVlJy1
- hXW1fncDyzkM8JKpRh2mfE7KRA/yVM2TKwm8Kr70sEkbNg7lBz
- qTOVG3GVnO5vM0M/YIGAvtEDMsclP1EGOWzNCfn3F4HHnHjLPU
- znloNWyaodUhQiI4dddUht8EIPp51nXVQ1YKs0Nvq8cY9UqkDd
- oUdESoC3pgCOKNude9oR4VfEkcwrUwkYU6mvMpKw5j1yfSw7GL
- 9NN9QdmJ4fqU0PVAxP34HE5xCecWTzjJDUDjb0ZnFdYuVB1TnS
- 7fuHoQRGb4mKg==
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 12:53 +0200, Peter Zijlstra wrote: 
-> On Thu, Jun 27, 2013 at 12:43:09PM +0200, Peter Zijlstra wrote:
-> > On Wed, Jun 26, 2013 at 10:46:33AM -0600, David Ahern wrote:
-> > > On 6/26/13 1:05 AM, Peter Zijlstra wrote:
-> > > >>What is the expectation that the feature provides? not a whole lot of
-> > > >>documentation on it. I walked down the path wondering if it solved an odd
-> > > >>problem we are seeing with the CFS in 2.6.27 kernel.
-> > > >
-> > > >Its supposed to use hrtimers for slice expiry instead of the regular tick.
-> > > 
-> > > So theoretically CPU bound tasks would get preempted sooner? That was my
-> > > guess/hope anyways.
-> > 
-> > Doth the below worketh?
-> > 
-> 
-> Related to all this; the reason its not enabled by default is that mucking
-> about with hrtimers all the while is god awful expensive.
+Peter,
 
-That cost sprang to mind when you mentioned that deadline needs hrtick.
+Let's drop this patch.
 
-> I've had ideas about making this a special purpose 'hard-coded' timer in the
-> hrtimer guts that's only ever re-programmed when the new value is sooner.
-> 
-> By making it a 'special' timer we can avoid the whole rb-tree song and dance;
-> and by taking 'spurious' short interrupts we can avoid prodding the hardware
-> too often.
-> 
-> Then again; Thomas will likely throw frozen seafood my way for even proposing
-> stuff like this and I'm not even sure that's going to be enough to make the
-> cost acceptable.
+It does not work anymore with the offcore-response
+scheduling fix. The constraint->flags are shared, so cannot
+use the flags there to store X86_COMMITTED. So we have
+to keep a copy in the event->hw.flags.
 
-Could be worse, flaming marshmallows stick.
+Sorry about the confusion.
 
--Mike
 
+
+
+On Thu, Jun 27, 2013 at 1:14 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Jun 27, 2013 at 01:01:02PM +0200, Stephane Eranian wrote:
+>> Ok, the chunks that do not apply can be ignored for perf_event_intel.c.
+>
+> Just to verify; I did a force apply ignoring the 2 hunks in perf_event_intel.c.
+> The result is the below patch; which gives:
+>
+> # nice make O=defconfig-build/ -j16 -s
+> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c: In function ‘x86_schedule_events’:
+> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:780:9: error: ‘struct hw_perf_event’ has no member named ‘flags’
+> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:794:14: error: ‘struct hw_perf_event’ has no member named ‘flags’
+> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c: In function ‘x86_pmu_del’:
+> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:1180:11: error: ‘struct hw_perf_event’ has no member named ‘flags’
+> make[4]: *** [arch/x86/kernel/cpu/perf_event.o] Error 1
+>
+>
+> Please resend one that builds.
+>
+> ---
+> Subject: perf,x86: Drop event->flags and use hw.constraint->flags
+> From: Stephane Eranian <eranian@google.com>
+> Date: Fri, 21 Jun 2013 16:20:42 +0200
+>
+> Now that we use the constraints directly from the event, we
+> do not need the event->flags field so drop it.
+>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/1371824448-7306-3-git-send-email-eranian@google.com
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c |   19 ++++++++++---------
+>  include/linux/perf_event.h                |    1 -
+>  2 files changed, 10 insertions(+), 10 deletions(-)
+>
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -623,7 +623,6 @@ struct event_constraint *intel_pebs_cons
+>         if (x86_pmu.pebs_constraints) {
+>                 for_each_event_constraint(c, x86_pmu.pebs_constraints) {
+>                         if ((event->hw.config & c->cmask) == c->code) {
+> -                               event->hw.flags |= c->flags;
+>                                 return c;
+>                         }
+>                 }
+> @@ -636,14 +635,15 @@ void intel_pmu_pebs_enable(struct perf_e
+>  {
+>         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>         struct hw_perf_event *hwc = &event->hw;
+> +       int flags = event->hw.constraint->flags;
+>
+>         hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+>
+>         cpuc->pebs_enabled |= 1ULL << hwc->idx;
+>
+> -       if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
+> +       if (flags & PERF_X86_EVENT_PEBS_LDLAT)
+>                 cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
+> -       else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
+> +       else if (flags & PERF_X86_EVENT_PEBS_ST)
+>                 cpuc->pebs_enabled |= 1ULL << 63;
+>  }
+>
+> @@ -651,12 +651,13 @@ void intel_pmu_pebs_disable(struct perf_
+>  {
+>         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>         struct hw_perf_event *hwc = &event->hw;
+> +       int flags = event->hw.constraint->flags;
+>
+>         cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
+>
+> -       if (event->hw.constraint->flags & PERF_X86_EVENT_PEBS_LDLAT)
+> +       if (flags & PERF_X86_EVENT_PEBS_LDLAT)
+>                 cpuc->pebs_enabled &= ~(1ULL << (hwc->idx + 32));
+> -       else if (event->hw.constraint->flags & PERF_X86_EVENT_PEBS_ST)
+> +       else if (flags & PERF_X86_EVENT_PEBS_ST)
+>                 cpuc->pebs_enabled &= ~(1ULL << 63);
+>
+>         if (cpuc->enabled)
+> @@ -772,14 +773,14 @@ static void __intel_pmu_pebs_event(struc
+>         struct perf_sample_data data;
+>         struct pt_regs regs;
+>         u64 sample_type;
+> +       int flags = event->hw.constraint->flags;
+>         int fll, fst;
+>
+>         if (!intel_pmu_save_and_restart(event))
+>                 return;
+>
+> -       fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
+> -       fst = event->hw.flags & (PERF_X86_EVENT_PEBS_ST |
+> -                                PERF_X86_EVENT_PEBS_ST_HSW);
+> +       fll = flags & PERF_X86_EVENT_PEBS_LDLAT;
+> +       fst = flags & (PERF_X86_EVENT_PEBS_ST | PERF_X86_EVENT_PEBS_ST_HSW);
+>
+>         perf_sample_data_init(&data, 0, event->hw.last_period);
+>
+> @@ -802,7 +803,7 @@ static void __intel_pmu_pebs_event(struc
+>                 if (sample_type & PERF_SAMPLE_DATA_SRC) {
+>                         if (fll)
+>                                 data.data_src.val = load_latency_data(pebs->dse);
+> -                       else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
+> +                       else if (flags & PERF_X86_EVENT_PEBS_ST_HSW)
+>                                 data.data_src.val =
+>                                         precise_store_data_hsw(pebs->dse);
+>                         else
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -134,7 +134,6 @@ struct hw_perf_event {
+>                         int             event_base_rdpmc;
+>                         int             idx;
+>                         int             last_cpu;
+> -                       int             flags;
+>
+>                         struct hw_perf_event_extra extra_reg;
+>                         struct hw_perf_event_extra branch_reg;
+>
