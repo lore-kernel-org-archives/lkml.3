@@ -1,299 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab3F0XbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 19:31:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38940 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab3F0XbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 19:31:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,955,1363158000"; 
-   d="scan'208";a="360768997"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <1372366385.22432.185.camel@schen9-DESK>
-References: <1371165992.27102.573.camel@schen9-DESK>
-	 <20130619131611.GC24957@gmail.com> <1371660831.27102.663.camel@schen9-DESK>
-	 <1372205996.22432.119.camel@schen9-DESK> <20130626095108.GB29181@gmail.com>
-	 <1372282560.22432.139.camel@schen9-DESK>
-	 <1372292701.22432.152.camel@schen9-DESK>  <20130627083651.GA3730@gmail.com>
-	 <1372366385.22432.185.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Jun 2013 16:31:13 -0700
-Message-ID: <1372375873.22432.200.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754210Ab3F0Xhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 19:37:48 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:47988 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab3F0Xhq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 19:37:46 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tux3@tux3.org
+Subject: Re: [PATCH] Optimize wait_sb_inodes()
+References: <87ehbpntuk.fsf@devron.myhome.or.jp>
+	<20130626231143.GC28426@dastard> <87wqpg76ls.fsf@devron.myhome.or.jp>
+	<20130627044705.GB29790@dastard> <87y59w5dye.fsf@devron.myhome.or.jp>
+	<20130627063816.GD29790@dastard> <87ppv83tnn.fsf@devron.myhome.or.jp>
+	<20130627094042.GZ29338@dastard> <87mwqb3m1e.fsf@devron.myhome.or.jp>
+	<20130627183631.GB22832@thunk.org>
+Date: Fri, 28 Jun 2013 08:37:40 +0900
+In-Reply-To: <20130627183631.GB22832@thunk.org> (Theodore Ts'o's message of
+	"Thu, 27 Jun 2013 14:36:31 -0400")
+Message-ID: <871u7nrupn.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 13:53 -0700, Tim Chen wrote:
-> On Thu, 2013-06-27 at 10:36 +0200, Ingo Molnar wrote:
-> > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> > 
-> > > On Wed, 2013-06-26 at 14:36 -0700, Tim Chen wrote:
-> > > > On Wed, 2013-06-26 at 11:51 +0200, Ingo Molnar wrote: 
-> > > > > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> > > > > 
-> > > > > > On Wed, 2013-06-19 at 09:53 -0700, Tim Chen wrote: 
-> > > > > > > On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
-> > > > > > > 
-> > > > > > > > > vmstat for mutex implementation: 
-> > > > > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> > > > > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > > > > > > > > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
-> > > > > > > > > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
-> > > > > > > > > 
-> > > > > > > > > vmstat for rw-sem implementation (3.10-rc4)
-> > > > > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> > > > > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > > > > > > > > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
-> > > > > > > > > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
-> > > > > > > > 
-> > > > > > > > It appears the main difference is that the rwsem variant context-switches 
-> > > > > > > > about 36% more than the mutex version, right?
-> > > > > > > > 
-> > > > > > > > I'm wondering how that's possible - the lock is mostly write-locked, 
-> > > > > > > > correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
-> > > > > > > > ought to have brought roughly the same lock-stealing behavior as mutexes 
-> > > > > > > > do, right?
-> > > > > > > > 
-> > > > > > > > So the next analytical step would be to figure out why rwsem lock-stealing 
-> > > > > > > > is not behaving in an equivalent fashion on this workload. Do readers come 
-> > > > > > > > in frequently enough to disrupt write-lock-stealing perhaps?
-> > > > > > 
-> > > > > > Ingo, 
-> > > > > > 
-> > > > > > I did some instrumentation on the write lock failure path.  I found that
-> > > > > > for the exim workload, there are no readers blocking for the rwsem when
-> > > > > > write locking failed.  The lock stealing is successful for 9.1% of the
-> > > > > > time and the rest of the write lock failure caused the writer to go to
-> > > > > > sleep.  About 1.4% of the writers sleep more than once. Majority of the
-> > > > > > writers sleep once.
-> > > > > > 
-> > > > > > It is weird that lock stealing is not successful more often.
-> > > > > 
-> > > > > For this to be comparable to the mutex scalability numbers you'd have to 
-> > > > > compare wlock-stealing _and_ adaptive spinning for failed-wlock rwsems.
-> > > > > 
-> > > > > Are both techniques applied in the kernel you are running your tests on?
-> > > > > 
-> > > > 
-> > > > Ingo,
-> > > > 
-> > > > The previous experiment was done on a kernel without spinning. 
-> > > > I've redone the testing on two kernel for a 15 sec stretch of the
-> > > > workload run.  One with the adaptive (or optimistic) 
-> > > > spinning and the other without.  Both have the patches from Alex to avoid 
-> > > > cmpxchg induced cache bouncing.
-> > > > 
-> > > > With the spinning, I sleep much less for lock acquisition (18.6% vs 91.58%).
-> > > > However, I've got doubling of write lock acquisition getting
-> > > > blocked.  So that offset the gain from spinning which may be why
-> > > > I didn't see gain for this particular workload.
-> > > > 
-> > > > 						No Opt Spin	Opt Spin
-> > > > Writer acquisition blocked count		3448946		7359040
-> > > > Blocked by reader				0.00%		0.55%
-> > > > Lock acquired first attempt (lock stealing)	8.42%		16.92%
-> > > > Lock acquired second attempt (1 sleep)	90.26%		17.60%
-> > > > Lock acquired after more than 1 sleep	1.32%		1.00%
-> > > > Lock acquired with optimistic spin		N/A		64.48%
-> > > > 
-> > > 
-> > > Adding also the mutex statistics for the 3.10-rc4 kernel with mutex
-> > > implemenation of lock for anon_vma tree.  Wonder if Ingo has any
-> > > insight on why mutex performs better from these stats.
-> > > 
-> > > Mutex acquisition blocked count			14380340
-> > > Lock acquired in slowpath (no sleep)		0.06%
-> > > Lock acquired in slowpath (1 sleep)		0.24%
-> > > Lock acquired in slowpath more than 1 sleep	0.98%
-> > > Lock acquired with optimistic spin		99.6%
-> > 
-> > This is how I interpret the stats:
-> > 
-> > It does appear that in the mutex case we manage to acquire via spinning 
-> > with a very high percentage - i.e. it essentialy behaves as a spinlock.
-> > 
-> > That is actually good news in a way, because it makes it rather simple how 
-> > rwsems should behave in this case: since they have no substantial 
-> > read-locking aspect in this workload, the down_write()/up_write()s should 
-> > essentially behave like spinlocks as well, right?
-> 
-> Yes, it makes sense.
-> 
-> > 
-> > Yet in the rwsem-spinning case the stats show that we only acquire the 
-> > lock via spinning in 65% of the cases, plus we lock-steal in 16.9% of the 
-> > cases:
-> > 
-> > Because lock stealing is essentially a single-spin spinning as well:
-> > 
-> > > > Lock acquired first attempt (lock stealing)	......		16.92%
-> > 
-> > So rwsems in this case behave like spinlocks in 65%+16.9% == 81.9% of the 
-> > time.
-> > 
-> > What remains is the sleeping component:
-> > 
-> > > > Lock acquired second attempt (1 sleep)	......		17.60%
-> > 
-> > Yet the 17.6% sleep percentage is still much higher than the 1% in the 
-> > mutex case. Why doesn't spinning work - do we time out of spinning 
-> > differently?
-> 
-> I have some stats for the 18.6% cases (including 1% more than 
-> 1 sleep cases) that go to sleep and failed optimistic spinning. 
-> There are 3 abort points in the rwsem_optimistic_spin code: 
-> 
-> 1. 11.8% is due to abort point #1, where we don't find an owner and
-> assumed that probably a reader owned lock as we've just tried
-> to acquire lock previously for lock stealing.  I think I will need
-> to actually check the sem->count to make sure we have reader owned lock 
-> before aborting spin.  
+Theodore Ts'o <tytso@mit.edu> writes:
 
-I tried some tweaking that checks sem->count for read owned lock. 
-Even though it reduces the percentage of acquisitions that
-need sleeping by 8.14% (from 18.6% to 10.46%), it increases the writer
-acquisition blocked count by 11%. This change still doesn't boost
-throughput and has a tiny regression for the workload.
+> Let's go up a level.  Why are you so focused on optimizing sync(2)?
+> What's the use case where you anticipate applications using sync(2) or
+> syncfs(2)?    Or is this for the purpose of Tux3's benchmarketing?
+>
+> In practice, sync(2) as a data integrity mechanism is a bit
+> heavyweight for most applications.  In general the complaint with ext3
+> or ext4 is that fsync(2) is forcing a full filesystem-wide sync, and
+> not just a sync specific to the file.
+>
+> System administrators use it sometimes[1], sometimes out of superstition,
+> but how many applications actually use it?  And why?
+>
+> [1] In fact, I've heard an argument that sync(2) should be optionally
+> made privileged and only accessible to root, since there were cases
+> where system administrators would login to a heavily loaded server as
+> a non-privileged user, type "sync" out of reflex or habit, and the
+> resulting huge amounts of I/O would blow the 99.9th percentile latency
+> guarantees for all of the latency-sensitive services running on that
+> server.
+>
+> If the goal is to optimize file system freeze operations, sure.  But
+> that's also not a common operation, so if it burns a little extra CPU
+> time, it wouldn't cause me to think that it was a high priority issue.
+> Decreasing the wall clock time for a file system freeze operation
+> would probably be a far more interesting goal.
 
-						Opt Spin Opt Spin
-							 (with tweak)	
-Writer acquisition blocked count		7359040	8168006
-Blocked by reader				 0.55%	 0.52%
-Lock acquired first attempt (lock stealing)	16.92%	19.70%
-Lock acquired second attempt (1 sleep)		17.60%	 9.32%
-Lock acquired after more than 1 sleep		 1.00%	 1.14%
-Lock acquired with optimistic spin		64.48%	69.84%
-Optimistic spin abort 1 			11.77%	 1.14%
-Optimistic spin abort 2				 6.81%	 9.22%
-Optimistic spin abort 3				 0.02%	 0.10%
+I'm not focusing on optimizing sync(2), not like you are suspecting. It
+might be an issue of visibility of our work.
 
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -221,16 +221,21 @@ static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
- {
-        int retval;
-        struct task_struct *owner;
-+       long count;
- 
-        rcu_read_lock();
-        owner = ACCESS_ONCE(sem->owner);
- 
--       /* Spin only if active writer running */
-+       /* Don't spin if active writer not running or reader holds lock */
-        if (owner)
-                retval = owner->on_cpu;
--       else
--               retval = false;
--
-+       else {
-+               count = ACCESS_ONCE(sem->count);
-+               if (count > RWSEM_WAITING_BIAS)
-+                       retval = false;
-+               else
-+                       retval = true;
-+       }
-        rcu_read_unlock();
-        /*
+Well, anyway, it is simple. This issue was came as the performance
+regression when I was experimenting to use kernel bdi flusher from own
+flusher. The issue was sync(2) like I said.  And this was just I
+couldn't solve this issue by tux3 side unlike other optimizations.
+
+Simple patch was enough to optimize that. And there was no reason to
+keep to hide the patch, then share this lack of vfs with community.
 
 Thanks.
-
-Tim
-
-> 2. 6.8% is due to abort point #2, where the mutex owner switches
-> to another writer or we need rescheduling.
-> 
-> 3. Minuscule amount due to abort point #3, where we don't have
-> a owner of the lock but need rescheduling
-> 
-> int rwsem_optimistic_spin(struct rw_semaphore *sem)
-> {
->        struct  task_struct     *owner;
->        int     ret = 0;
-> 
->        /* sem->wait_lock should not be held when doing optimistic spinning */
->        if (!rwsem_can_spin_on_owner(sem))
->                return ret;  <------------------------------- abort (1)
-> 
->        preempt_disable();
->        for (;;) {
->                owner = ACCESS_ONCE(sem->owner);
->                if (owner && !rwsem_spin_on_owner(sem, owner))
->                        break;   <--------------------------- abort (2)
-> 
->                /* wait_lock will be acquired if write_lock is obtained */
->                if (rwsem_try_write_lock(sem->count, true, sem)) {
->                        ret = 1;
->                        break;
->                }
-> 
->                /*
->                 * When there's no owner, we might have preempted between the
->                 * owner acquiring the lock and setting the owner field. If
->                 * we're an RT task that will live-lock because we won't let
->                 * the owner complete.
->                 */
->                if (!owner && (need_resched() || rt_task(current)))
->                        break;   <---------------------------- abort (3)
-> 
->                /*
->                 * The cpu_relax() call is a compiler barrier which forces
->                 * everything in this loop to be re-loaded. We don't need
->                 * memory barriers as we'll eventually observe the right
->                 * values at the cost of a few extra spins.
->                 */
->                arch_mutex_cpu_relax();
-> 
->        }
-> 
->        preempt_enable();
->        return ret;
-> 
-> See the other thread for complete patch of rwsem optimistic spin code:
-> https://lkml.org/lkml/2013/6/26/692
-> 
-> Any suggestions on tweaking this is appreciated.
-> 
-> > Is there some other aspect that defeats optimistic spinning and forces the 
-> > slowpath and creates sleeping, scheduling and thus extra overhead?
-> > 
-> There are other aspects that are different from mutex in my optimistic
-> spinning for rwsem:
-> 
-> 1. Mutex spinning has MCS lock.
-> 	I have disabled MCS lock in mutex and get same profile and
->  	performance for my tests.  So this is probably not a reason for
->  	performance difference.
-> 
-> 2. Preemption was disabled at the beginning of mutex acquisition. 
-> 	I have tried moving the preemption disable of rwsem from
-> 	the optimistic spin to the top of rwsem_down_write_failed.
-> 	However, I didn't see a change in performance.
-> 
-> 
-> > For example after a failed lock-stealing, do we still try optimistic 
-> > spinning to write-acquire the rwsem, or go into the slowpath and thus 
-> > trigger excessive context-switches?
-> 
-> I do try optimistic spinning after a failed lock stealing.  However,
-> not after we have gone to sleep.
-> 
-
-
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
