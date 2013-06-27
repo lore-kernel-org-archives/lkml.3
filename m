@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab3F0DW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 23:22:29 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:45461 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab3F0DW1 (ORCPT
+	id S1752053Ab3F0Dak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 23:30:40 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:37323 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3F0Dai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 23:22:27 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 3/5] Drivers: scsi: storvsc: Implement multi-channel
- support
-Thread-Topic: [PATCH 3/5] Drivers: scsi: storvsc: Implement multi-channel
- support
-Thread-Index: AQHOcuWLp2Kg5yHSpkeh+3gHvDVLmg==
-Date: Thu, 27 Jun 2013 03:22:25 +0000
-Message-ID: <1372303344.557.6.camel@dabdike>
-References: <1370372674-10046-1-git-send-email-kys@microsoft.com>
-	 <1370372709-10098-1-git-send-email-kys@microsoft.com>
-	 <1370372709-10098-3-git-send-email-kys@microsoft.com>
-In-Reply-To: <1370372709-10098-3-git-send-email-kys@microsoft.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.18.112.117]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <CDDDE8B0D64E6F43980E82A027B77EE3@sw.swsoft.com>
+	Wed, 26 Jun 2013 23:30:38 -0400
+X-Spam-Score: -100.8
+Message-ID: <51CBB1A9.5080203@asianux.com>
+Date: Thu, 27 Jun 2013 11:29:45 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Hirokazu Takata <takata@linux-m32r.org>
+CC: linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: m32r: include: asm: add ioread*be() and iowrite*be()
+References: <51CBA43F.9050000@asianux.com> <51CBAA1E.8000206@asianux.com>
+In-Reply-To: <51CBAA1E.8000206@asianux.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5R3MXOU010992
 
-On Tue, 2013-06-04 at 12:05 -0700, K. Y. Srinivasan wrote:
-> Implement multi-channel support for the storage devices.
+Add generic ioread*be() and iowrite*be(), or compiling fails.
 
-This doesn't compile:
+The related error (with allmodconfig):
 
-  CC [M]  drivers/scsi/storvsc_drv.o
-drivers/scsi/storvsc_drv.c: In function â€˜handle_sc_creationâ€™:
-drivers/scsi/storvsc_drv.c:763:35: error: â€˜struct vmbus_channelâ€™ has no
-member named â€˜primary_channelâ€™
-drivers/scsi/storvsc_drv.c: In function â€˜handle_multichannel_storageâ€™:
-drivers/scsi/storvsc_drv.c:805:2: error: implicit declaration of
-function
-â€˜vmbus_set_sc_create_callbackâ€™ [-Werror=implicit-function-declaration]
-drivers/scsi/storvsc_drv.c:812:2: error: implicit declaration of
-function
-â€˜vmbus_are_subchannels_presentâ€™ [-Werror=implicit-function-declaration]
-drivers/scsi/storvsc_drv.c: In function â€˜storvsc_on_channel_callbackâ€™:
-drivers/scsi/storvsc_drv.c:1223:13: error: â€˜struct vmbus_channelâ€™ has no
-member named â€˜primary_channelâ€™
-drivers/scsi/storvsc_drv.c:1224:19: error: â€˜struct vmbus_channelâ€™ has no
-member named â€˜primary_channelâ€™
-drivers/scsi/storvsc_drv.c: In function â€˜storvsc_do_ioâ€™:
-drivers/scsi/storvsc_drv.c:1341:2: error: implicit declaration of
-function
-â€˜vmbus_get_outgoing_channelâ€™ [-Werror=implicit-function-declaration]
-drivers/scsi/storvsc_drv.c:1341:19: warning: assignment makes pointer
-from integer without a cast [enabled by default]
-cc1: some warnings being treated as errors
-make[2]: *** [drivers/scsi/storvsc_drv.o] Error 1
+  drivers/ipack/ipack.c: In function ‘ipack_device_read_id’:
+  drivers/ipack/ipack.c:376:3: error: implicit declaration of function ‘ioread16be’ [-Werror=implicit-function-declaration]
 
-I assume this is a cross tree dependency?  What's the relevant branch I
-need?
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/m32r/include/asm/io.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-James
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/arch/m32r/include/asm/io.h b/arch/m32r/include/asm/io.h
+index 4010f1f..9f9b609 100644
+--- a/arch/m32r/include/asm/io.h
++++ b/arch/m32r/include/asm/io.h
+@@ -164,10 +164,14 @@ static inline void _writel(unsigned long l, unsigned long addr)
+ 
+ #define ioread8 read
+ #define ioread16 readw
++#define ioread16be(addr)	__be16_to_cpu(__raw_readw(addr))
+ #define ioread32 readl
++#define ioread32be(addr)	__be32_to_cpu(__raw_readl(addr))
+ #define iowrite8 writeb
+ #define iowrite16 writew
++#define iowrite16be(v, addr)	__raw_writew(__cpu_to_be16(v), addr)
+ #define iowrite32 writel
++#define iowrite32be(v, addr)	__raw_writel(__cpu_to_be32(v), addr)
+ 
+ #define mmiowb()
+ 
+-- 
+1.7.7.6
