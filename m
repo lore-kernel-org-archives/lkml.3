@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab3F0FYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 01:24:38 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:22612 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab3F0FYf (ORCPT
+	id S1752037Ab3F0F3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 01:29:23 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:47696 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab3F0F3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 01:24:35 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68e-b7f276d000002279-08-51cbcc9161aa
-Content-transfer-encoding: 8BIT
-Message-id: <1372310676.28480.89.camel@kjgkr>
-Subject: Re: [PATCH 2/2] f2fs: add sysfs support for controlling the gc_thread
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Date: Thu, 27 Jun 2013 14:24:36 +0900
-In-reply-to: <CAKYAXd-NEKCuEyoLwWHLrN165yq7EKRRcz9RknfdbR5EOO6cvQ@mail.gmail.com>
-References: <1369533945-6955-1-git-send-email-linkinjeon@gmail.com>
- <1369619214.10521.25.camel@kjgkr>
- <CAKYAXd_QZronHD536LOfeFWLmtCoweRq3gbH94R4_7oKC7hv3w@mail.gmail.com>
- <1369704867.10521.46.camel@kjgkr>
- <CAKYAXd-OO5niMiFv+ysStw=c-NQXT4AkTz3m7o1wTRZRd=WYFw@mail.gmail.com>
- <1372140227.28480.69.camel@kjgkr>
- <CAKYAXd-NEKCuEyoLwWHLrN165yq7EKRRcz9RknfdbR5EOO6cvQ@mail.gmail.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t8zQ91JZ04HGsz+xWhx/e4tZotLi9wt
-	9uw9yWJxedccNosf0+stfuw6z+zA5rFz1l12j90LPjN59G1ZxejxeZNcAEsUl01Kak5mWWqR
-	vl0CV8bGMx2sBes5Kw7+uM/UwLiDvYuRk0NCwERi4fWNjBC2mMSFe+vZuhi5OIQEljFKbJt/
-	mLWLkQOsaNUDH4j4dEaJfTtaWEAaeAUEJX5MvscCUsMsIC9x5FI2SJhZQF1i0rxFzBD1rxkl
-	rn/5wApRryuxb+ousGXCAn4SEyf8YgbpZRPQlti83wAkLCSgKPF2/12wtSICahITnqVCjNzB
-	KNF00BzEZhFQlfj+Zw/Y+ZwCwRKzzx5gh1jVwizxZkUr2Cp+AVGJwwu3M0P8pSSxu70TrEhC
-	4Ba7xOEJ7xkhJglIfJt8iAXiR1mJTQeg6iUlDq64wTKBUWIWki9nIXw5C8mXCxiZVzGKphYk
-	FxQnpRcZ6RUn5haX5qXrJefnbmKERGLfDsabB6wPMSYDbZzILCWanA+M5LySeENjMyMLUxNT
-	YyNzSzPShJXEedVarAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MC6pj5o48VjIeYcPK1pN
-	2X0nGW2bUPPFcrud2IvrwpdOmKrY7532wHonc8OTHQ+Tp57x3+tmzFumo7sggyPW7kX/mp9r
-	gz5kVF1tvifsVH5h44tNucm7ZzA9fqieL7SFW/VR/Zxbh34yNwa9PZBb9t3sVUJev5VCfp+D
-	4XNuuZMyau62P/1f3lJiKc5INNRiLipOBADOo5v02gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jQd2JZ04HGmw9qmlx/e4tZotLi9wt
-	9uw9yWJxedccNosf0+stfuw6z+zA5rFz1l12j90LPjN59G1ZxejxeZNcAEtUA6NNRmpiSmqR
-	Qmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBuJYWyxJxSoFBAYnGx
-	kr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhHWPGxjMdrAXrOSsO/rjP1MC4g72LkYNDQsBEYtUD
-	ny5GTiBTTOLCvfVsXYxcHEIC0xkl9u1oYQFJ8AoISvyYfI8FpJ5ZQF7iyKVskDCzgLrEpHmL
-	mCHqXzNKXP/ygRWiXldi39RdjCC2sICfxMQJv5hBetkEtCU27zcACQsJKEq83X+XFSQsIqAm
-	MeFZKsTIHYwSTQfNQWwWAVWJ73/2sIPYnALBErPPHmCHWNXCLPFmRSvYKn4BUYnDC7czQ9yv
-	JLG7vZN9AqPQLCRXz0K4ehaSqxcwMq9iFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7zZ1I7
-	GFc2WBxiFOBgVOLh9WA5HSjEmlhWXJl7iFGCg1lJhDc0ByjEm5JYWZValB9fVJqTWnyIMRno
-	8onMUqLJ+cAUlFcSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFIN
-	jKJFmfHxO3IS5GTs0+/P+PhQa//yKvv/+bqOAvVqAV1TTF+fFo7Kiqv5YMyoV3Tmi9ibjYGL
-	DggkPjxy5l9MnUUDk2JV5JejUTsfTk6wWf52VdDVPJUjzywmH0tyf3pHMXdbrvnn611HfL/V
-	ToicEHwn6sqcvhW/u8WVFyTnCP07H7cuKrXknBJLcUaioRZzUXEiACuQ3NQ3AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 27 Jun 2013 01:29:22 -0400
+X-AuditID: 9c93017e-b7cd1ae000002371-b7-51cbcdb166a0
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: perf tools: Introduce new -P/--parent-deep report option
+References: <20130626145853.GA2309@ghostprotocols.net>
+Date: Thu, 27 Jun 2013 14:29:21 +0900
+In-Reply-To: <20130626145853.GA2309@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Wed, 26 Jun 2013 11:58:53 -0300")
+Message-ID: <87a9mc15qm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Arnaldo,
 
-2013-06-26 (수), 14:10 +0900, Namjae Jeon:
-> 2013/6/25, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> >> > - any priority scheme for cleaning?
-> >> Could you plz tell me a little more detail ?
-> >
-> > I meant, as well as the GC times, user also gives a kind of status like:
-> > LONG_IDLE, SHORT_IDLE, something like that.
-> > Therefore, how about using this information to select a victim selection
-> > policy between cost-benefit and greedy algorithms?
-> currently we will provide the option of updating the time values from
-> the ‘sysfs’ interface, and the GC policy is selected by default from
-> GC thread based upon the gc type, BG or FG.
-> So, do you mean we should provide an option to select the default GC
-> policy for the user using ‘sysfs’ interface? Like, if the user sets
-> “LONG_IDLE” – we choose Cost Benefit and in case of SHORT_IDLE
-> “Greedy” ? Please elaborate more on this.
+On Wed, 26 Jun 2013 11:58:53 -0300, Arnaldo Carvalho de Melo wrote:
+> Hi Jiri,
+>
+> 	About the patch below, can't this be solved by using a regex
+> instead of a simple substring search instead of adding a new command
+> line option?
 
-Yes, exact.
-For example, if an user configures a small period of GC interval but
-gives LONG_IDLE, we can choose cost-benefit.
-But, if SHORT_IDLE is given with a long GC period, we need to choose
-greedy.
-How do you think?
+???
+
+IIUC he reused parent_regex for this.
+
+And I think we can have the same effect by using -G and -p option
+together without this new option.
+
 Thanks,
+Namhyung
 
--- 
-Jaegeuk Kim
-Samsung
-
+>
+> - Arnaldo
+>
+> commit 5b42ff035ec784c5c42c4a6bb9e7fada882f097e
+> Author: Jiri Olsa <jolsa@redhat.com>
+> Date:   Tue Jun 18 18:31:50 2013 +0200
+>
+>     perf tools: Introduce new -P/--parent-deep report option
+>     
+>     Introducing new -P/--parent-deep report option. It does the
+>     same as '-p' but it force the deep search of the callchain
+>     and looks for the deepest possible match.
+>     
+>     The -p option searches for the first match of the parent
+>     pattern in the callchain.
+>     
+>       $ perf report -i perf.data.delete -p perf_session__delete -s parent
+>     
+>       +  99.51%  [other]
+>       +   0.46%  perf_session__delete_dead_threads
+>       +   0.03%  perf_session__delete
+>       +   0.00%  perf_session__delete_threads
+>     
+>     so we got multiple 'different' matches instancies, while
+>     they all belong under perf_session__delete function:
+>     
+>       $ perf report -i perf.data.delete -P perf_session__delete -s parent
+>     
+>       +  99.51%  [other]
+>       +   0.49%  perf_session__delete
+>     
+>     NOTE the 'p' vs 'P' difference in above commands above.
