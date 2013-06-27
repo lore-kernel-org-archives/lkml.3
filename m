@@ -1,176 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab3F0OyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:54:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46114 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab3F0OyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:54:15 -0400
-Date: Thu, 27 Jun 2013 16:54:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130627145411.GA24206@dhcp22.suse.cz>
-References: <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
- <20130618024623.GP29338@dastard>
- <20130618063104.GB20528@localhost.localdomain>
- <20130618082414.GC13677@dhcp22.suse.cz>
- <20130618104443.GH13677@dhcp22.suse.cz>
- <20130618135025.GK13677@dhcp22.suse.cz>
- <20130625022754.GP29376@dastard>
- <20130626081509.GF28748@dhcp22.suse.cz>
- <20130626232426.GA29034@dastard>
+	id S1753716Ab3F0Oyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:54:55 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:55314 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab3F0Oyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 10:54:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626232426.GA29034@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372314821.557.33.camel@dabdike>
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
+ <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
+ <51CA2B03.4080106@wwwdotorg.org> <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com>
+ <20130626135311.GA9078@rocoto.smurfnet.nu> <20130626135933.GQ22026@console-pimps.org>
+ <1372257499.2168.5.camel@dabdike> <20130627013219.GA346@srcf.ucam.org>
+ <CACxGe6uFkbuJ3BxM=A0Lu=jZQ79Ba8SmNsdBdTOO13szTfTZ=Q@mail.gmail.com> <1372314821.557.33.camel@dabdike>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 27 Jun 2013 15:54:33 +0100
+X-Google-Sender-Auth: j5LLDCNxRMKR4ie6OqLElXqMrjg
+Message-ID: <CACxGe6uyMjT8HGb16+eqgCwZEDOuC6nkORvej2uGra3oCnyLwg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 27-06-13 09:24:26, Dave Chinner wrote:
-> On Wed, Jun 26, 2013 at 10:15:09AM +0200, Michal Hocko wrote:
-> > On Tue 25-06-13 12:27:54, Dave Chinner wrote:
-> > > On Tue, Jun 18, 2013 at 03:50:25PM +0200, Michal Hocko wrote:
-> > > > And again, another hang. It looks like the inode deletion never
-> > > > finishes. The good thing is that I do not see any LRU related BUG_ONs
-> > > > anymore. I am going to test with the other patch in the thread.
-> > > > 
-> > > > 2476 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0	<<< waiting for an inode to go away
-> > > > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> > > > [<ffffffff8118525f>] iget_locked+0x4f/0x180
-> > > > [<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-> > > > [<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-> > > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > > > [<ffffffff8117815e>] do_last+0x2de/0x780			<<< holds i_mutex
-> > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > > > [<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-> > > > [<ffffffffffffffff>] 0xffffffffffffffff
-> > > 
-> > > I don't think this has anything to do with LRUs.
-> > 
-> > I am not claiming that. It might be a timing issue which never mattered
-> > but it is strange I can reproduce this so easily and repeatedly with the
-> > shrinkers patchset applied.
-> > As I said earlier, this might be breakage in my -mm tree as well
-> > (missing some patch which didn't go via Andrew or misapplied patch). The
-> > situation is worsen by the state of linux-next which has some unrelated
-> > issues.
-> > 
-> > I really do not want to delay the whole patchset just because of some
-> > problem on my side. Do you have any tree that I should try to test?
-> 
-> No, I've just been testing Glauber's tree and sending patches for
-> problems back to him based on it.
-> 
-> > > I won't have seen this on XFS stress testing, because it doesn't use
-> > > the VFS inode hashes for inode lookups. Given that XFS is not
-> > > triggering either problem you are seeing, that makes me think
-> > 
-> > I haven't tested with xfs.
-> 
-> That might be worthwhile if you can easily do that - another data
-> point indicating a hang or absence of a hang will help point us in
-> the right direction here...
+On Thu, Jun 27, 2013 at 7:33 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Thu, 2013-06-27 at 07:23 +0100, Grant Likely wrote:
+>> On Thu, Jun 27, 2013 at 2:32 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> > On Wed, Jun 26, 2013 at 07:38:19AM -0700, James Bottomley wrote:
+>> >> The fixed virtual address scheme currently being looked at for x86_64 to
+>> >> make SetVirtualAddressMap() kexec invariant doesn't work on 32 bit
+>> >> because the address space isn't big enough.  For ARM, given that we've
+>> >> much more opportunity to work with the vendors, can we just avoid
+>> >> transitioning to a virtual address map and always just install a
+>> >> physical mapping before doing efi calls?
+>> >
+>> > We can probably get away with that now, but it does risk us ending up
+>> > with some firmware that expects to run in physical mode (boards designed
+>> > for Linux) and some firmware that expects to run in virtual mode (boards
+>> > designed for Windows). The degree of lockdown in the Windows ecosystem
+>> > at present means it's not a real problem at the moment, but if that ever
+>> > changes we're going to risk incompatibility.
+>>
+>> What is the problem trying to be avoided by not using the virtual map?
+>> Is it passing the virtual mapping data from one kernel to the next
+>> when kexecing? Or something else?
+>
+> Where to begin ... SetVirtualAddressMap() is one massive hack job ...
+> just look at the tiano core implementation.   Basically it has a fixed
+> idea of where all the pointers are and it tries to convert them all to
+> the new address space.  The problem we see in x86 is that this
+> conversion process isn't exhaustive due to implementation cockups, so
+> the post virtual address map image occasionally tries to access
+> unconverted pointers via the old physical address and oopses the kernel.
 
-OK, still hanging (with inode_lru_isolate-fix.patch). It is not the same
-thing, though, as xfs seem to do lookup slightly differently.
-12467 [<ffffffffa02ca03e>] xfs_iget+0xbe/0x190 [xfs]
-[<ffffffffa02d6e98>] xfs_lookup+0xe8/0x110 [xfs]
-[<ffffffffa02cdad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81177e25>] lookup_open+0x175/0x1d0
-[<ffffffff8117815e>] do_last+0x2de/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-12667 [<ffffffffa02ca03e>] xfs_iget+0xbe/0x190 [xfs]
-[<ffffffffa02d6e98>] xfs_lookup+0xe8/0x110 [xfs]
-[<ffffffffa02cdad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81177e25>] lookup_open+0x175/0x1d0
-[<ffffffff8117815e>] do_last+0x2de/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-13830 [<ffffffffa02ca03e>] xfs_iget+0xbe/0x190 [xfs]
-[<ffffffffa02d6e98>] xfs_lookup+0xe8/0x110 [xfs]
-[<ffffffffa02cdad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81175254>] __lookup_hash+0x34/0x40
-[<ffffffff81179872>] path_lookupat+0x7a2/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff81169c30>] sys_faccessat+0xe0/0x230
-[<ffffffff81169d93>] sys_access+0x13/0x20
-[<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-13913 [<ffffffffa02ca03e>] xfs_iget+0xbe/0x190 [xfs]
-[<ffffffffa02d6e98>] xfs_lookup+0xe8/0x110 [xfs]
-[<ffffffffa02cdad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81177e25>] lookup_open+0x175/0x1d0
-[<ffffffff8117815e>] do_last+0x2de/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-14245 [<ffffffff81178144>] do_last+0x2c4/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-14365 [<ffffffffa02ca03e>] xfs_iget+0xbe/0x190 [xfs]
-[<ffffffffa02d6e98>] xfs_lookup+0xe8/0x110 [xfs]
-[<ffffffffa02cdad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81177e25>] lookup_open+0x175/0x1d0
-[<ffffffff8117815e>] do_last+0x2de/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-14384 [<ffffffff81179862>] path_lookupat+0x792/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-[<ffffffff81170116>] vfs_stat+0x16/0x20
-[<ffffffff8117013f>] sys_newstat+0x1f/0x50
-[<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-14413 [<ffffffff81179862>] path_lookupat+0x792/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-[<ffffffff81170116>] vfs_stat+0x16/0x20
-[<ffffffff8117013f>] sys_newstat+0x1f/0x50
-[<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
+Would it be possible to run the UEFI hooks in some form of pseudo
+userspace thread that protects against dereferencing addresses that
+are no longer UEFI addresses?
 
--- 
-Michal Hocko
-SUSE Labs
+> The problem for kexec is that SetVirtualAddressMap isn't idempotent.  In
+> fact by API fiat it can only ever be called once for the entire lifetime
+> of the UEFI bios, which could be many kernels in a kexec situation.  So,
+> somehow the subsequent kernels have to know not to call it, plus,
+> obviously, the virtual address map of the previous kernel has to work in
+> the next because it can't set up a new one.
+
+For this problem at least I think we've got a solution on ARM because
+the virtual map can be passed across the kexec boundary via the device
+tree. It will still (probably) need to be located in the ioremap
+region and the size of the map will push down the maximum address for
+ioremapping. The value of VMALLOC_END on arm 32bit is 0xff000000 and
+that is a pretty stable number. As long as both the new and old
+kernels have the same VMALLOC_END (very likely) then it should be okay
+to pass the map over.
+
+Let me know if I'm missing something important.
+
+g.
