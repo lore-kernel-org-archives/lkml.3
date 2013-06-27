@@ -1,134 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab3F0Qyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:54:40 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:56033 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab3F0Qyj (ORCPT
+	id S1753663Ab3F0Qyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:54:51 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:43895 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab3F0Qys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:54:39 -0400
-Date: Thu, 27 Jun 2013 18:54:36 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: linux-sunxi@googlegroups.com, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com
-Subject: Re: [linux-sunxi] [PATCH 0/8] clocksource: sunxi: Timer fixes and
- cleanup
-Message-ID: <20130627165436.GB4319@lukather>
-References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
- <51CC0566.8010302@redhat.com>
- <20130627094307.GC8437@lukather>
- <51CC0BC3.5090309@redhat.com>
+	Thu, 27 Jun 2013 12:54:48 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="61jdw2sOBCFtR2d/"
-Content-Disposition: inline
-In-Reply-To: <51CC0BC3.5090309@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130627163246.GZ9294@intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-3-git-send-email-mika.westerberg@linux.intel.com>
+ <CAErSpo4hvH08bNrObYODFVcwhhiGOj4cKntyJD6Aw6CjecgCow@mail.gmail.com>
+ <20130627130229.GT9294@intel.com> <20130627163246.GZ9294@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 27 Jun 2013 10:54:27 -0600
+Message-ID: <CAErSpo5pi+bSDw7kb7J=C5VDpyGCPN=Z2zCWTPp+brfo+9iAGQ@mail.gmail.com>
+Subject: Re: [PATCH 2/6] PCI: acpiphp: enable_device(): rescan even if no new
+ devices on slot
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 27, 2013 at 10:32 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Thu, Jun 27, 2013 at 04:02:29PM +0300, Mika Westerberg wrote:
+>> On Wed, Jun 26, 2013 at 05:37:58PM -0600, Bjorn Helgaas wrote:
+>> > > @@ -707,8 +702,11 @@ static int __ref enable_device(struct acpiphp_slot *slot)
+>> > >                             dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
+>> > >                                 max = pci_scan_bridge(bus, dev, max, pass);
+>> > >                                 if (pass && dev->subordinate) {
+>> > > -                                       check_hotplug_bridge(slot, dev);
+>> > > -                                       pcibios_resource_survey_bus(dev->subordinate);
+>> > > +                                       if (!dev->subordinate->is_added) {
+>> > > +                                               check_hotplug_bridge(slot, dev);
+>> > > +                                               pcibios_resource_survey_bus(
+>> > > +                                                       dev->subordinate);
+>> >
+>> > It's a shame that pcibios_resource_survey_bus() can't be called twice.
+>> >  It would be nice if it were smart enough to notice on the second call
+>> > that "oh, resources have already been assigned, so there's nothing
+>> > more to be done."  Did you look to see whether that's feasible?
+>>
+>> I didn't but now that you mentioned I went and checked. I'm pretty sure we
+>> can handle it there in the next revision and drop this change.
+>
+> With following patch that fixes pcibios_resource_survey_bus() Thunderbolt
+> seems to be working just fine (and the quirk is gone).
+>
+> If it looks okay, I'll include it into the next iteration of the patches.
 
---61jdw2sOBCFtR2d/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That looks great, thanks a lot for exploring this!
 
-On Thu, Jun 27, 2013 at 11:54:11AM +0200, Hans de Goede wrote:
-> Hi,
->=20
-> On 06/27/2013 11:43 AM, Maxime Ripard wrote:
-> >On Thu, Jun 27, 2013 at 11:27:02AM +0200, Hans de Goede wrote:
-> >>Hi,
-> >>
-> >>On 06/26/2013 11:16 PM, Maxime Ripard wrote:
-> >>>Hi everyone,
-> >>>
-> >>
-> >><snip>
-> >>
-> >>>It also finally adds a clocksource from the free running counter found=
- in the
-> >>>A10/A13 SoCs.
-> >>
-> >>Hmm, have you benchmarked this? There have been reports from linux-sunx=
-i kernel
-> >>users (xbmc project) that the waiting for the latch is quite slow. Note=
- we
-> >>don't have anything better yet in the linux-sunxi kernel.
-> >
-> >No. I didn't.
-> >
-> >Do you have any pointers to these discussions?
-> >
->=20
-> The original discussion should be somewhere here:
-> https://groups.google.com/forum/#!forum/linux-sunxi
->=20
-> But I could not find it (it is probably hidden under
-> an unlogical subject).
-
-I searched a bit and it seems to be that discussion:
-https://groups.google.com/d/msg/linux-sunxi/gaTDngPT7Is/oeLtWb1N1wIJ
-
-> Looking at my own notes (a small TODO file), I've
-> written down that the reporter reports:
->=20
->  -current clocksource can cause us to run with interrupts disabled for 17%
->   of the time, see "perf top" output
->=20
-> This is with a workload which does a lot of gettimeofday
-> calls.
-
-Siarhei however notes that even higher-end SoCs like the exynos5 have
-similar performances with that regard. So I'm not sure we can do
-something about it, except what is suggested in the above mail, which
-looks rather unsafe.
-
-Anyway, like you said, we have no easy other solution, and we lacked
-such support until now.
-
-So why not merge this code for now, and try to optimise it later if we
-find it's needed.
-
-> I notice that unlike the sunxi-3.4 code you don't do any locking,
-> so how do you stop 2 clocksource calls from racing (and thus
-> getting a possible wrong value because of things not
-> being properly latched) ?
-
-Hmm, right. I'll add a spinlock.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---61jdw2sOBCFtR2d/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRzG5MAAoJEBx+YmzsjxAgJy0P/im+hVimsLdzPzQLWOSEVzVU
-D9JRPSjvS4PE80SZC89HPHJhet454AiV9hyBJAoBhnH+VO7r3/5b+VJc0xcv4bON
-oiP3Xi5jZ9dfO5DnOod2o5hEtU0xSRNCDRmlZd114NH7gmpiiUBVjJK3BgP1NCa8
-52CTFlO+uAY0tPkbh0jWpnzADIW5tgGkTAJb6Nu+qY8/WhRTGnFdaGfcwf4WrdHV
-BL5LJOYqMHMTnnLcFJbeT2fUuKEVQnzVQjZIVSagWoqyKKrjX1Gu6gR6ctGRdjwc
-OoyXkpGIASG4m296a2iwttrzyM0GhMpHlIr5tuAmKJBe1MuR4NyNfFG5IjhTFr0P
-LTjUYnuQu1V8zzvdjsikiIEo6V+rP9KK8Zn9QxLxAwH95xBR7jJdYZZoCJRQqQmz
-qbvAKGEtUbIORfUzECoQrABUCy/mNG2LIX8BMbL05pCgTXuTDX2ccWk6i/5IkKy9
-OnNqYbdrz5CXwrdB7UCOSEtvGPWt4wgF8t3ZOuYkvCagMC9t/5g8QBR4wo4Mu0nd
-UO+9rNySH+5k8/60z97mwhPoISv04MdTGzZte4ApWQvJmoVhdgX/Ki/sSAR9VWgb
-NjYHi+HS0htUk4GXGcLEz/UhggEMrEY7ZaM3LXeJt4nEDp0d6Ifv/ZWakFJOh9Td
-OnI2hwh0NMDJDihk0lDe
-=HYce
------END PGP SIGNATURE-----
-
---61jdw2sOBCFtR2d/--
+> diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+> index 94919e3..db6b1ab 100644
+> --- a/arch/x86/pci/i386.c
+> +++ b/arch/x86/pci/i386.c
+> @@ -210,6 +210,8 @@ static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
+>                 r = &dev->resource[idx];
+>                 if (!r->flags)
+>                         continue;
+> +               if (r->parent)  /* Already allocated */
+> +                       continue;
+>                 if (!r->start || pci_claim_resource(dev, idx) < 0) {
+>                         /*
+>                          * Something is wrong with the region.
+> @@ -318,6 +320,8 @@ static void pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
+>         r = &dev->resource[PCI_ROM_RESOURCE];
+>         if (!r->flags || !r->start)
+>                 return;
+> +       if (r->parent) /* Already allocated */
+> +               return;
+>
+>         if (pci_claim_resource(dev, PCI_ROM_RESOURCE) < 0) {
+>                 r->end -= r->start;
