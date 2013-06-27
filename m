@@ -1,293 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515Ab3F0MNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:13:35 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39223 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916Ab3F0MNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:13:34 -0400
-Date: Thu, 27 Jun 2013 17:42:31 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 v3] tracing/uprobes: Support ftrace_event_file base
- multibuffer
-Message-ID: <20130627121231.GB8362@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <51C90ECC.9030303@huawei.com>
+	id S1752687Ab3F0MNz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:13:55 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:40725 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab3F0MNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 08:13:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <51C90ECC.9030303@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-x-cbid: 13062712-7182-0000-0000-0000078BEA7D
+In-Reply-To: <20130627081225.GJ5803@lukather>
+References: <20130627081225.GJ5803@lukather>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 27 Jun 2013 14:13:31 +0200
+Message-ID: <CACQ1gAiHVxjnt2qx5Y9dEMAbZs5Ki_wEHLhOjDRcPc+xjBU76A@mail.gmail.com>
+Subject: Re: RTL8192CU on ARM not working
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Larry.Finger@lwfinger.net, chaoming_li@realsil.com.cn,
+        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Brian Lilly <brian@crystalfontz.com>,
+        Brent-Crosby <brent@crystalfontz.com>, Jim Wall <jimwall@q.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* zhangwei(Jovi) <jovi.zhangwei@huawei.com> [2013-06-25 11:30:20]:
+2013/6/27 Maxime Ripard <maxime.ripard@free-electrons.com>:
+> Hi everyone,
+>
+> I'm currently trying to use a RTL8192CU on an ARM (Freescale imx28,
+> armv5) platform, using 3.10-rc3.
+>
+> Trouble is, while the chip is correctly detected and you can use iw on it
+> without any problem it seems, once you start an association to an access
+> point, the association goes on, seems to associate, displaying a WARN()
+> message [1] and then, after what looks like a random amount of time (could
+> be right away, could be after a few minutes), deassociate [2].
+>
+> During the time where it's associated, we never seem to transmit any
+> packets, while iw reports packets being sent, I guess we can assume that
+> they are actually never transmitted as well [3].
+>
+> What seems odd to me as well is that the signal power reported for the access
+> point is excessively high when using iw scan (10 dbm), and once connected, the
+> signal strength is -64dbm, which makes quite a huge difference.
+>
+> Do you have any suggestions on how to solve this issue?
+>
+> Thanks,
+> Maxime
+>
+>
+> [1]:
+> # iw wlan0 connect FreeWifi 2447
+> # [  485.010858] wlan0: authenticate with f4:ca:e5:c9:f5:91
+> [  485.065514] wlan0: send auth to f4:ca:e5:c9:f5:91 (try 1/3)
+> [  485.075963] wlan0: authenticated
+> [  485.088915] wlan0: associate with f4:ca:e5:c9:f5:91 (try 1/3)
+> [  485.117137] wlan0: RX AssocResp from f4:ca:e5:c9:f5:91 (capab=0x401 status=0 aid=1)
+> [  485.130607] wlan0: associated
+> [  486.917555] ------------[ cut here ]------------
+> [  486.922277] WARNING: at kernel/workqueue.c:1365 __queue_work+0x1f0/0x2f4()
+> [  486.929175] Modules linked in:
+> [  486.932284] CPU: 0 PID: 615 Comm: kworker/0:2 Not tainted 3.10.0-rc3 #2
+> [  486.938958] Workqueue: rtl92c_usb rtl_watchdog_wq_callback
+> [  486.944548] [<c00147dc>] (unwind_backtrace+0x0/0xf0) from [<c00120a0>] (show_stack+0x10/0x14)
+> [  486.953132] [<c00120a0>] (show_stack+0x10/0x14) from [<c001d2ec>] (warn_slowpath_common+0x4c/0x68)
+> [  486.962140] [<c001d2ec>] (warn_slowpath_common+0x4c/0x68) from [<c001d324>] (warn_slowpath_null+0x1c/0x24)
+> [  486.971844] [<c001d324>] (warn_slowpath_null+0x1c/0x24) from [<c003769c>] (__queue_work+0x1f0/0x2f4)
+> [  486.981025] [<c003769c>] (__queue_work+0x1f0/0x2f4) from [<c0037830>] (queue_work_on+0x80/0x88)
+> [  486.989777] [<c0037830>] (queue_work_on+0x80/0x88) from [<c0267ca4>] (rtl_watchdog_wq_callback+0x5dc/0x8bc)
+> [  486.999572] [<c0267ca4>] (rtl_watchdog_wq_callback+0x5dc/0x8bc) from [<c0038cbc>] (process_one_work+0x1c0/0x4c8)
+> [  487.009795] [<c0038cbc>] (process_one_work+0x1c0/0x4c8) from [<c0039684>] (worker_thread+0x140/0x3ac)
+> [  487.019065] [<c0039684>] (worker_thread+0x140/0x3ac) from [<c003f914>] (kthread+0xa4/0xb0)
+> [  487.027381] [<c003f914>] (kthread+0xa4/0xb0) from [<c000f0c0>] (ret_from_fork+0x14/0x34)
+> [  487.035498] ---[ end trace 93341a0c249e647e ]---
+>
+>
+> [2]:
+>
+> # [  786.086127] wlan0: deauthenticated from f4:ca:e5:c9:f5:91 (Reason: 2)
+> [  786.126368] cfg80211: Calling CRDA to update world regulatory domain
+>
+>
+> [3]:
+> # iw wlan0 station dump
+> Station f4:ca:e5:c9:f5:91 (on wlan0)
+>         inactive time:  55430 ms
+>         rx bytes:       77826
+>         rx packets:     1026
+>         tx packets:     2
+>         tx retries:     0
+>         tx failed:      0
+>         signal:         -64 dBm
+>         signal avg:     -63 dBm
+>         tx bitrate:     1.0 MBit/s
+>         authorized:     yes
+>         authenticated:  yes
+>         preamble:       long
+>         WMM/WME:        yes
+>         MFP:            no
+>         TDLS peer:      no
 
-> Support multi-buffer on uprobe-based dynamic events by
-> using ftrace_event_file.
-> 
-> This patch is based kprobe-based dynamic events multibuffer
-> support work initially, commited by Masami(commit 41a7dd420c),
-> but revised as below:
-> 
-> Oleg changed the kprobe-based multibuffer design from
-> array-pointers of ftrace_event_file into simple list,
-> so this patch also change to the list degisn.
-> 
-> rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
-> to synchronize with ftrace_event_file list add and delete.
-> 
-> Even though we allow multi-uprobes instances now,
-> but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive
-> in probe_event_enable currently, this means we cannot allow
-> one user is using uprobe-tracer, and another user is using
-> perf-probe on same uprobe concurrently.
-> (Perhaps this will be fix in future, kprobe dont't have this
-> limitation now)
-> 
-> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  kernel/trace/trace_uprobe.c |  118 +++++++++++++++++++++++++++++++++++--------
->  1 file changed, 97 insertions(+), 21 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 32494fb0..dbbb4a9 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -53,6 +53,7 @@ struct trace_uprobe {
->  	struct list_head		list;
->  	struct ftrace_event_class	class;
->  	struct ftrace_event_call	call;
-> +	struct list_head		files;
->  	struct trace_uprobe_filter	filter;
->  	struct uprobe_consumer		consumer;
->  	struct inode			*inode;
-> @@ -65,6 +66,11 @@ struct trace_uprobe {
->  	struct probe_arg		args[];
->  };
-> 
-> +struct event_file_link {
-> +	struct ftrace_event_file	*file;
-> +	struct list_head		list;
-> +};
-> +
->  #define SIZEOF_TRACE_UPROBE(n)			\
->  	(offsetof(struct trace_uprobe, args) +	\
->  	(sizeof(struct probe_arg) * (n)))
-> @@ -124,6 +130,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
->  		goto error;
-> 
->  	INIT_LIST_HEAD(&tu->list);
-> +	INIT_LIST_HEAD(&tu->files);
->  	tu->consumer.handler = uprobe_dispatcher;
->  	if (is_ret)
->  		tu->consumer.ret_handler = uretprobe_dispatcher;
-> @@ -511,7 +518,8 @@ static const struct file_operations uprobe_profile_ops = {
->  };
-> 
->  static void uprobe_trace_print(struct trace_uprobe *tu,
-> -				unsigned long func, struct pt_regs *regs)
-> +				unsigned long func, struct pt_regs *regs,
-> +				struct ftrace_event_file *ftrace_file)
->  {
->  	struct uprobe_trace_entry_head *entry;
->  	struct ring_buffer_event *event;
-> @@ -520,9 +528,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
->  	int size, i;
->  	struct ftrace_event_call *call = &tu->call;
-> 
-> +	WARN_ON(call != ftrace_file->event_call);
-> +
->  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> -	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
-> -						  size + tu->size, 0, 0);
-> +	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
-> +						call->event.type,
-> +						size + tu->size, 0, 0);
->  	if (!event)
->  		return;
-> 
-> @@ -546,15 +557,28 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
->  /* uprobe handler */
->  static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  {
-> -	if (!is_ret_probe(tu))
-> -		uprobe_trace_print(tu, 0, regs);
-> +	struct event_file_link *link;
-> +
-> +	if (is_ret_probe(tu))
-> +		return 0;
-> +
-> +	rcu_read_lock();
-> +	list_for_each_entry(link, &tu->files, list)
-> +		uprobe_trace_print(tu, 0, regs, link->file);
-> +	rcu_read_unlock();
-> +
->  	return 0;
->  }
-> 
->  static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
->  				struct pt_regs *regs)
->  {
-> -	uprobe_trace_print(tu, func, regs);
-> +	struct event_file_link *link;
-> +
-> +	rcu_read_lock();
-> +	list_for_each_entry(link, &tu->files, list)
-> +		uprobe_trace_print(tu, func, regs, link->file);
-> +	rcu_read_unlock();
->  }
-> 
->  /* Event entry printers */
-> @@ -605,33 +629,84 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
->  				struct mm_struct *mm);
-> 
->  static int
-> -probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
-> +probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
-> +		   filter_func_t filter)
->  {
-> +	int enabled = 0;
->  	int ret = 0;
-> 
-> +	/* we cannot call uprobe_register twice for same tu */
->  	if (is_trace_uprobe_enabled(tu))
-> -		return -EINTR;
-> +		enabled = 1;
-> +
-> +	if (file) {
-> +		struct event_file_link *link;
-> +
-> +		if (tu->flags & TP_FLAG_PROFILE)
-> +			return -EINTR;
-> +
-> +		link = kmalloc(sizeof(*link), GFP_KERNEL);
-> +		if (!link)
-> +			return -ENOMEM;
-> +
-> +		link->file = file;
-> +		list_add_rcu(&link->list, &tu->files);
-> +
-> +		tu->flags |= TP_FLAG_TRACE;
-> +	} else {
-> +		if (tu->flags & TP_FLAG_TRACE)
-> +			return -EINTR;
-> +
-> +		tu->flags |= TP_FLAG_PROFILE;
-> +	}
-> 
->  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
-> 
-> -	tu->flags |= flag;
-> -	tu->consumer.filter = filter;
-> -	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> -	if (ret)
-> -		tu->flags &= ~flag;
-> +	if (!enabled) {
-> +		tu->consumer.filter = filter;
-> +		ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> +		if (ret)
-> +			tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
+Hi Maxime,
 
-Dont we need to free link here? or where does the link that got
-allocated freed?
+You should have a look at https://lkml.org/lkml/2013/6/11/300
+(in short, use 3.10-rc7)
 
-Think the list of files also needs to be cleaned up. No?
+The warning is still there, but I managed use this device on ARM
+(sam9g35) as a client.
 
-> +	}
-> 
->  	return ret;
->  }
-> 
-> -static void probe_event_disable(struct trace_uprobe *tu, int flag)
-> +static struct event_file_link *
-> +find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
->  {
-> -	if (!is_trace_uprobe_enabled(tu))
-> -		return;
-> +	struct event_file_link *link;
-> +
-> +	list_for_each_entry(link, &tu->files, list)
-> +		if (link->file == file)
-> +			return link;
-> +
-> +	return NULL;
-> +}
-> +
-> +static void
-> +probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
-> +{
-> +	if (file) {
-> +		struct event_file_link *link;
-> +
-> +		link = find_event_file_link(tu, file);
-> +		if (!link)
-> +			return;
-> +
-> +		list_del_rcu(&link->list);
-> +		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
-> +		synchronize_sched();
-> +		kfree(link);
-> +
-> +		if (!list_empty(&tu->files))
-> +			return;
-> +	}
-> 
->  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
-> 
->  	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
-> -	tu->flags &= ~flag;
-> +	tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
->  }
-> 
->  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
-> @@ -867,21 +942,22 @@ static
->  int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
->  {
->  	struct trace_uprobe *tu = event->data;
-> +	struct ftrace_event_file *file = data;
-> 
->  	switch (type) {
->  	case TRACE_REG_REGISTER:
-> -		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
-> +		return probe_event_enable(tu, file, NULL);
-> 
->  	case TRACE_REG_UNREGISTER:
-> -		probe_event_disable(tu, TP_FLAG_TRACE);
-> +		probe_event_disable(tu, file);
->  		return 0;
-> 
->  #ifdef CONFIG_PERF_EVENTS
->  	case TRACE_REG_PERF_REGISTER:
-> -		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
-> +		return probe_event_enable(tu, NULL, uprobe_perf_filter);
-> 
->  	case TRACE_REG_PERF_UNREGISTER:
-> -		probe_event_disable(tu, TP_FLAG_PROFILE);
-> +		probe_event_disable(tu, NULL);
->  		return 0;
-> 
->  	case TRACE_REG_PERF_OPEN:
-> -- 
-> 1.7.9.7
-> 
-> 
-
--- 
-Thanks and Regards
-Srikar Dronamraju
-
+Regards,
+Richard
