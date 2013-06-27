@@ -1,177 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab3F0JAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:00:24 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:47939 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab3F0JAU (ORCPT
+	id S1752688Ab3F0JBC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:01:02 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:61546 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3F0JA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:00:20 -0400
-Date: Thu, 27 Jun 2013 11:00:16 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] mutex: do not unnecessarily deal with waiters
-Message-ID: <20130627090016.GA4398@gmail.com>
-References: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
+	Thu, 27 Jun 2013 05:00:58 -0400
+Date: Thu, 27 Jun 2013 11:00:50 +0200
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
+Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
+Message-ID: <20130627090050.GC18151@rocoto.smurfnet.nu>
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
+ <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
+ <51CA2B03.4080106@wwwdotorg.org>
+ <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com>
+ <20130626135311.GA9078@rocoto.smurfnet.nu>
+ <20130626135933.GQ22026@console-pimps.org>
+ <1372257499.2168.5.camel@dabdike>
+ <20130627013219.GA346@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <20130627013219.GA346@srcf.ucam.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-
-> From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+On Thu, Jun 27, 2013 at 02:32:19AM +0100, Matthew Garrett wrote:
+> On Wed, Jun 26, 2013 at 07:38:19AM -0700, James Bottomley wrote:
+> > The fixed virtual address scheme currently being looked at for x86_64 to
+> > make SetVirtualAddressMap() kexec invariant doesn't work on 32 bit
+> > because the address space isn't big enough.  For ARM, given that we've
+> > much more opportunity to work with the vendors, can we just avoid
+> > transitioning to a virtual address map and always just install a
+> > physical mapping before doing efi calls?
 > 
-> Upon entering the slowpath, we immediately attempt to acquire the lock
-> by checking if it is already unlocked. If we are lucky enough that this
-> is the case, then we don't need to deal with any waiter related logic.
-> 
-> Furthermore any checks for an empty wait_list are unnecessary as we
-> already know that count is non-negative and hence no one is waiting for
-> the lock.
-> 
-> Move the count check and xchg calls to be done before any waiters are
-> setup - including waiter debugging. Upon failure to acquire the lock,
-> the xchg sets the counter to 0, instead of -1 as it was originally.
-> This can be done here since we set it back to -1 right at the beginning
-> of the loop so other waiters are woken up when the lock is released.
-> 
-> When tested on a 8-socket (80 core) system against a vanilla 3.10-rc1
-> kernel, this patch provides some small performance benefits (+2-6%).
-> While it could be considered in the noise level, the average percentages
-> were stable across multiple runs and no performance regressions were seen.
-> Two big winners, for small amounts of users (10-100), were the short and
-> compute workloads had a +19.36% and +%15.76% in jobs per minute.
->   
-> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> ---
->  kernel/mutex.c | 26 ++++++++++++++------------
->  1 file changed, 14 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/mutex.c b/kernel/mutex.c
-> index ad53a66..a8cd741 100644
-> --- a/kernel/mutex.c
-> +++ b/kernel/mutex.c
-> @@ -306,7 +306,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		owner = ACCESS_ONCE(lock->owner);
->  		if (owner && !mutex_spin_on_owner(lock, owner)) {
->  			mspin_unlock(MLOCK(lock), &node);
-> -			break;
-> +			goto slowpath;
->  		}
->  
->  		if ((atomic_read(&lock->count) == 1) &&
-> @@ -314,8 +314,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  			lock_acquired(&lock->dep_map, ip);
->  			mutex_set_owner(lock);
->  			mspin_unlock(MLOCK(lock), &node);
-> -			preempt_enable();
-> -			return 0;
-> +			goto done;
->  		}
->  		mspin_unlock(MLOCK(lock), &node);
->  
-> @@ -326,7 +325,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		 * the owner complete.
->  		 */
->  		if (!owner && (need_resched() || rt_task(task)))
-> -			break;
-> +			goto slowpath;
->  
->  		/*
->  		 * The cpu_relax() call is a compiler barrier which forces
-> @@ -340,6 +339,14 @@ slowpath:
->  #endif
->  	spin_lock_mutex(&lock->wait_lock, flags);
->  
-> +	/* once more, can we acquire the lock? */
-> +	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
-> +		lock_acquired(&lock->dep_map, ip);
-> +		mutex_set_owner(lock);
-> +		spin_unlock_mutex(&lock->wait_lock, flags);
-> +		goto done;
-> +	}
-> +
->  	debug_mutex_lock_common(lock, &waiter);
->  	debug_mutex_add_waiter(lock, &waiter, task_thread_info(task));
->  
-> @@ -347,9 +354,6 @@ slowpath:
->  	list_add_tail(&waiter.list, &lock->wait_list);
->  	waiter.task = task;
->  
-> -	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, -1) == 1))
-> -		goto done;
-> -
->  	lock_contended(&lock->dep_map, ip);
->  
->  	for (;;) {
-> @@ -363,7 +367,7 @@ slowpath:
->  		 * other waiters:
->  		 */
->  		if (MUTEX_SHOW_NO_WAITER(lock) &&
-> -		   (atomic_xchg(&lock->count, -1) == 1))
-> +		    (atomic_xchg(&lock->count, -1) == 1))
->  			break;
->  
->  		/*
-> @@ -388,9 +392,8 @@ slowpath:
->  		spin_lock_mutex(&lock->wait_lock, flags);
->  	}
->  
-> -done:
-> +	/* got the lock - cleanup and rejoice! */
->  	lock_acquired(&lock->dep_map, ip);
-> -	/* got the lock - rejoice! */
->  	mutex_remove_waiter(lock, &waiter, current_thread_info());
->  	mutex_set_owner(lock);
->  
-> @@ -399,10 +402,9 @@ done:
->  		atomic_set(&lock->count, 0);
->  
->  	spin_unlock_mutex(&lock->wait_lock, flags);
-> -
->  	debug_mutex_free_waiter(&waiter);
-> +done:
->  	preempt_enable();
-> -
->  	return 0;
->  }
+> We can probably get away with that now, but it does risk us ending up 
+> with some firmware that expects to run in physical mode (boards designed 
+> for Linux) and some firmware that expects to run in virtual mode (boards 
+> designed for Windows). The degree of lockdown in the Windows ecosystem 
+> at present means it's not a real problem at the moment, but if that ever 
+> changes we're going to risk incompatibility.
 
-So I tried this out yesterday, but it interacted with the Wait/Wound 
-patches in tip:core/mutexes.
+Is there anything preventing calling SetVirtualAddressMap() with a
+1:1 map?
 
-Maarten Lankhorst pointed out that if this patch is applied on top of the 
-WW patches as-is, then we get this semantic merge conflict:
+Or do you simply mean that some platforms might cruise along with
+undetected bugs in their relocation hooks?
 
-> > @@ -340,6 +339,14 @@ slowpath:
-> >  #endif
-> >     spin_lock_mutex(&lock->wait_lock, flags);
-> >  
-> > +   /* once more, can we acquire the lock? */
-> > +   if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
-> > +           lock_acquired(&lock->dep_map, ip);
-> > +           mutex_set_owner(lock);
-> > +           spin_unlock_mutex(&lock->wait_lock, flags);
-> > +           goto done;
-> > +   }
-> >
-> ^^^^^^^^^^^^^^
->
-> This part skips the whole if (!__builtin_constant_p(ww_ctx == NULL)) { 
-> section with the wait_lock held.
-
-Mind resolving that and merging this patch on top of the latest tip:master 
-tree? Please also keep Maarten Cc:-ed.
-
-Thanks,
-
-	Ingo
+/
+    Leif
