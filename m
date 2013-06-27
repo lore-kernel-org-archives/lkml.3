@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab3F0Mz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:55:29 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:62414 "EHLO
+	id S1753632Ab3F0Muu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:50:50 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:36964 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753645Ab3F0Muv (ORCPT
+	with ESMTP id S1753595Ab3F0Mus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:50:51 -0400
+	Thu, 27 Jun 2013 08:50:48 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
@@ -15,9 +15,9 @@ Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
         linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
         Benson Leung <bleung@chromium.org>,
         Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 40/51] Input: atmel_mxt_ts - Implement support for T15 Key Array
-Date: Thu, 27 Jun 2013 13:49:15 +0100
-Message-Id: <1372337366-9286-41-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 33/51] Input: atmel_mxt_ts - Split message handler into separate functions
+Date: Thu, 27 Jun 2013 13:49:08 +0100
+Message-Id: <1372337366-9286-34-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,140 +25,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a key array object in many maXTouch chips which allows some X/Y lines
-to be used as a key array. This patch maps them to a series of keys which may
-be configured in a platform data array.
+This is in preparation for support of the T44 message count object.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   57 ++++++++++++++++++++++++++++++
- include/linux/i2c/atmel_mxt_ts.h         |    2 ++
- 2 files changed, 59 insertions(+)
+ drivers/input/touchscreen/atmel_mxt_ts.c |  111 ++++++++++++++++--------------
+ 1 file changed, 58 insertions(+), 53 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 2e6118a..2eaa9d3 100644
+index 3890ed5..ef68bf1 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -275,6 +275,7 @@ struct mxt_data {
- 	u8 last_message_count;
- 	u8 num_touchids;
- 	u8 num_stylusids;
-+	unsigned long t15_keystatus;
+@@ -252,8 +252,10 @@ struct mxt_data {
+ 	struct t7_config t7_cfg;
+ 	u8 *msg_buf;
+ 	u8 t6_status;
++	bool update_input;
  
  	/* Cached parameters from object table */
- 	u16 T5_address;
-@@ -284,6 +285,8 @@ struct mxt_data {
- 	u16 T7_address;
- 	u8 T9_reportid_min;
- 	u8 T9_reportid_max;
-+	u8 T15_reportid_min;
-+	u8 T15_reportid_max;
- 	u8 T19_reportid;
- 	u8 T42_reportid_min;
- 	u8 T42_reportid_max;
-@@ -809,6 +812,42 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 	data->update_input = true;
++	u16 T5_address;
+ 	u8 T5_msg_size;
+ 	u8 T6_reportid;
+ 	u16 T6_address;
+@@ -668,20 +670,6 @@ static void mxt_proc_t6_messages(struct mxt_data *data, u8 *msg)
+ 	data->t6_status = status;
  }
  
-+static void mxt_proc_t15_messages(struct mxt_data *data, u8 *msg)
-+{
-+	struct input_dev *input_dev = data->input_dev;
-+	struct device *dev = &data->client->dev;
-+	int key;
-+	bool curr_state, new_state;
-+	bool sync = false;
-+	unsigned long keystates = le32_to_cpu(msg[2]);
-+
-+	/* do not report events if input device not yet registered */
-+	if (!data->enable_reporting)
-+		return;
-+
-+	for (key = 0; key < data->pdata->t15_num_keys; key++) {
-+		curr_state = test_bit(key, &data->t15_keystatus);
-+		new_state = test_bit(key, &keystates);
-+
-+		if (!curr_state && new_state) {
-+			dev_dbg(dev, "T15 key press: %u\n", key);
-+			__set_bit(key, &data->t15_keystatus);
-+			input_event(input_dev, EV_KEY,
-+				    data->pdata->t15_keymap[key], 1);
-+			sync = true;
-+		} else if (curr_state && !new_state) {
-+			dev_dbg(dev, "T15 key release: %u\n", key);
-+			__clear_bit(key, &data->t15_keystatus);
-+			input_event(input_dev, EV_KEY,
-+				    data->pdata->t15_keymap[key], 0);
-+			sync = true;
-+		}
-+	}
-+
-+	if (sync)
-+		input_sync(input_dev);
-+}
-+
- static void mxt_proc_t42_messages(struct mxt_data *data, u8 *msg)
+-static int mxt_read_message(struct mxt_data *data, u8 *message)
+-{
+-	struct mxt_object *object;
+-	u16 reg;
+-
+-	object = mxt_get_object(data, MXT_GEN_MESSAGE_T5);
+-	if (!object)
+-		return -EINVAL;
+-
+-	reg = object->start_address;
+-	return __mxt_read_reg(data->client, reg,
+-			data->T5_msg_size, message);
+-}
+-
+ static void mxt_input_button(struct mxt_data *data, u8 *message)
+ {
+ 	struct input_dev *input = data->input_dev;
+@@ -708,7 +696,7 @@ static void mxt_input_sync(struct input_dev *input_dev)
+ 	input_sync(input_dev);
+ }
+ 
+-static void mxt_input_touchevent(struct mxt_data *data, u8 *message)
++static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
  {
  	struct device *dev = &data->client->dev;
-@@ -920,6 +959,9 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
- 		mxt_proc_t42_messages(data, message);
- 	} else if (report_id == data->T48_reportid) {
- 		mxt_proc_t48_messages(data, message);
-+	} else if (report_id >= data->T15_reportid_min
-+		   && report_id <= data->T15_reportid_max) {
-+		mxt_proc_t15_messages(data, message);
- 	} else {
- 		mxt_dump_message(data, message);
+ 	struct input_dev *input_dev = data->input_dev;
+@@ -772,44 +760,61 @@ static void mxt_input_touchevent(struct mxt_data *data, u8 *message)
+ 		/* Touch no longer active, close out slot */
+ 		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
  	}
-@@ -1555,6 +1597,8 @@ static void mxt_free_object_table(struct mxt_data *data)
- 	data->T7_address = 0;
- 	data->T9_reportid_min = 0;
- 	data->T9_reportid_max = 0;
-+	data->T15_reportid_min = 0;
-+	data->T15_reportid_max = 0;
- 	data->T19_reportid = 0;
- 	data->T42_reportid_min = 0;
- 	data->T42_reportid_max = 0;
-@@ -1629,6 +1673,10 @@ static int mxt_get_object_table(struct mxt_data *data)
- 			data->num_touchids = object->num_report_ids
- 						* mxt_obj_instances(object);
- 			break;
-+		case MXT_TOUCH_KEYARRAY_T15:
-+			data->T15_reportid_min = min_id;
-+			data->T15_reportid_max = max_id;
-+			break;
- 		case MXT_PROCI_TOUCHSUPPRESSION_T42:
- 			data->T42_reportid_min = min_id;
- 			data->T42_reportid_max = max_id;
-@@ -2214,6 +2262,15 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
- 			0, MT_TOOL_MAX, 0, 0);
- 	}
- 
-+	/* For T15 key array */
-+	if (data->T15_reportid_min) {
-+		data->t15_keystatus = 0;
 +
-+		for (i = 0; i < data->pdata->t15_num_keys; i++)
-+			input_set_capability(input_dev, EV_KEY,
-+					     data->pdata->t15_keymap[i]);
++	data->update_input = true;
+ }
+ 
+-static bool mxt_is_T9_message(struct mxt_data *data, u8 *msg)
++static int mxt_proc_message(struct mxt_data *data, u8 *message)
+ {
+-	u8 id = msg[0];
+-	return (id >= data->T9_reportid_min && id <= data->T9_reportid_max);
++	u8 report_id = message[0];
++
++	if (report_id == MXT_RPTID_NOMSG)
++		return 0;
++
++	if (report_id == data->T6_reportid) {
++		mxt_proc_t6_messages(data, message);
++	} else if (report_id >= data->T9_reportid_min
++	    && report_id <= data->T9_reportid_max) {
++		mxt_proc_t9_message(data, message);
++	} else if (report_id == data->T19_reportid) {
++		mxt_input_button(data, message);
++		data->update_input = true;
++	} else {
++		mxt_dump_message(data, message);
 +	}
 +
- 	input_set_drvdata(input_dev, data);
++	return 1;
+ }
  
- 	error = input_register_device(input_dev);
-diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
-index 02bf6ea..b7d2092 100644
---- a/include/linux/i2c/atmel_mxt_ts.h
-+++ b/include/linux/i2c/atmel_mxt_ts.h
-@@ -20,6 +20,8 @@ struct mxt_platform_data {
- 	unsigned long irqflags;
- 	u8 t19_num_keys;
- 	const unsigned int *t19_keymap;
-+	int t15_num_keys;
-+	const unsigned int *t15_keymap;
- };
+-static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
++static int mxt_read_and_process_message(struct mxt_data *data)
+ {
+-	u8 *message = &data->msg_buf[0];
+ 	struct device *dev = &data->client->dev;
+-	u8 reportid;
+-	bool update_input = false;
++	int ret;
  
- #endif /* __LINUX_ATMEL_MXT_TS_H */
+-	do {
+-		if (mxt_read_message(data, message)) {
+-			dev_err(dev, "Failed to read message\n");
+-			return IRQ_NONE;
+-		}
++	ret = __mxt_read_reg(data->client, data->T5_address,
++				data->T5_msg_size, data->msg_buf);
++	if (ret) {
++		dev_err(dev, "Error %d reading message\n", ret);
++		return ret;
++	}
+ 
+-		reportid = message[0];
++	return mxt_proc_message(data, data->msg_buf);
++}
+ 
+-		if (reportid == data->T6_reportid) {
+-			mxt_proc_t6_messages(data, message);
+-		} else if (mxt_is_T9_message(data, message)) {
+-			mxt_input_touchevent(data, message);
+-			update_input = true;
+-		} else if (reportid == data->T19_reportid) {
+-			mxt_input_button(data, message);
+-			update_input = true;
+-		} else {
+-			mxt_dump_message(data, message);
+-		}
+-	} while (reportid != MXT_RPTID_NOMSG);
++static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
++{
++	int ret;
++
++	do {
++		ret = mxt_read_and_process_message(data);
++		if (ret < 0)
++			return IRQ_NONE;
++	} while (ret > 0);
+ 
+-	if (data->enable_reporting && update_input)
++	if (data->enable_reporting && data->update_input) {
+ 		mxt_input_sync(data->input_dev);
++		data->update_input = false;
++	}
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -1256,21 +1261,19 @@ static int mxt_make_highchg(struct mxt_data *data)
+ {
+ 	struct device *dev = &data->client->dev;
+ 	int count = 10;
+-	int error;
++	int ret;
+ 
+-	/* Read dummy message to make high CHG pin */
++	/* Read messages until we force an invalid */
+ 	do {
+-		error = mxt_read_message(data, data->msg_buf);
+-		if (error)
+-			return error;
+-	} while (data->msg_buf[0] != MXT_RPTID_NOMSG && --count);
+-
+-	if (!count) {
+-		dev_err(dev, "CHG pin isn't cleared\n");
+-		return -EBUSY;
+-	}
++		ret = mxt_read_and_process_message(data);
++		if (ret == 0)
++			return 0;
++		else if (ret < 0)
++			return ret;
++	} while (--count);
+ 
+-	return 0;
++	dev_err(dev, "CHG pin isn't cleared\n");
++	return -EBUSY;
+ }
+ 
+ static int mxt_acquire_irq(struct mxt_data *data)
+@@ -1307,6 +1310,7 @@ static void mxt_free_object_table(struct mxt_data *data)
+ 	kfree(data->msg_buf);
+ 	data->msg_buf = NULL;
+ 	data->enable_reporting = false;
++	data->T5_address = 0;
+ 	data->T5_msg_size = 0;
+ 	data->T6_reportid = 0;
+ 	data->T7_address = 0;
+@@ -1359,6 +1363,7 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 		case MXT_GEN_MESSAGE_T5:
+ 			/* CRC not enabled, therefore don't read last byte */
+ 			data->T5_msg_size = mxt_obj_size(object) - 1;
++			data->T5_address = object->start_address;
+ 		case MXT_GEN_COMMAND_T6:
+ 			data->T6_reportid = min_id;
+ 			data->T6_address = object->start_address;
 -- 
 1.7.10.4
 
