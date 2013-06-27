@@ -1,153 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab3F0Ln5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 07:43:57 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:53378 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab3F0Lnz (ORCPT
+	id S1752593Ab3F0LpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 07:45:10 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:55559 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab3F0LpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 07:43:55 -0400
-Message-ID: <51CC2651.507@linux.vnet.ibm.com>
-Date: Thu, 27 Jun 2013 17:17:29 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Thu, 27 Jun 2013 07:45:07 -0400
+Date: Thu, 27 Jun 2013 15:44:32 +0400
+From: Artem Savkov <artem.savkov@gmail.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [BUG]: missing shinfo with netlink_alloc_large_skb
+Message-ID: <20130627114432.GA22103@cpv436-motbuntu>
+Mail-Followup-To: Pablo Neira Ayuso <pablo@netfilter.org>,
+	"David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Andrew Jones <drjones@redhat.com>, gleb@redhat.com
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 0/18] Paravirtualized ticket spinlocks
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624131716.GA11948@hawk.usersys.redhat.com> <51CAA764.7000006@linux.vnet.ibm.com>
-In-Reply-To: <51CAA764.7000006@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062711-5816-0000-0000-000008A77354
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 02:03 PM, Raghavendra K T wrote:
-> On 06/24/2013 06:47 PM, Andrew Jones wrote:
->> On Mon, Jun 24, 2013 at 06:10:14PM +0530, Raghavendra K T wrote:
->>>
->>> Results:
->>> =======
->>> base = 3.10-rc2 kernel
->>> patched = base + this series
->>>
->>> The test was on 32 core (model: Intel(R) Xeon(R) CPU X7560) HT disabled
->>> with 32 KVM guest vcpu 8GB RAM.
->>
->> Have you ever tried to get results with HT enabled?
->>
->>>
->>> +-----------+-----------+-----------+------------+-----------+
->>>                 ebizzy (records/sec) higher is better
->>> +-----------+-----------+-----------+------------+-----------+
->>>      base        stdev        patched    stdev        %improvement
->>> +-----------+-----------+-----------+------------+-----------+
->>> 1x  5574.9000   237.4997    5618.0000    94.0366     0.77311
->>> 2x  2741.5000   561.3090    3332.0000   102.4738    21.53930
->>> 3x  2146.2500   216.7718    2302.3333    76.3870     7.27237
->>> 4x  1663.0000   141.9235    1753.7500    83.5220     5.45701
->>> +-----------+-----------+-----------+------------+-----------+
->>
->> This looks good. Are your ebizzy results consistent run to run
->> though?
->>
->>> +-----------+-----------+-----------+------------+-----------+
->>>                dbench  (Throughput) higher is better
->>> +-----------+-----------+-----------+------------+-----------+
->>>      base        stdev        patched    stdev        %improvement
->>> +-----------+-----------+-----------+------------+-----------+
->>> 1x 14111.5600   754.4525   14645.9900   114.3087     3.78718
->>> 2x  2481.6270    71.2665    2667.1280    73.8193     7.47498
->>> 3x  1510.2483    31.8634    1503.8792    36.0777    -0.42173
->>> 4x  1029.4875    16.9166    1039.7069    43.8840     0.99267
->>> +-----------+-----------+-----------+------------+-----------+
->>
->> Hmm, I wonder what 2.5x looks like. Also, the 3% improvement with
->> no overcommit is interesting. What's happening there? It makes
->> me wonder what < 1x looks like.
->>
->
-> Hi Andrew,
->
-> I tried 2.5x case sort where I used 3 guests with 27 vcpu each on 32
-> core (HT disabled machine) and here is the output. almost no gain there.
->
->               throughput avg    stdev
-> base:     1768.7458 MB/sec     54.044221
-> patched:  1772.5617 MB/sec     41.227689
-> gain %0.226
->
-> I am yet to try HT enabled cases that would give 0.5x to 2x performance
-> results.
->
+Hello,
 
-I have the result of HT enabled case now.
-config: total 64 cpu (HT on) 32 vcpu guests.
-I am seeing some inconsistency in ebizzy results in this case (May be 
-Drew had tried with HT on and had observed the same in ebizzy runs).
+I ran into a bug while running trinity with write/writev syscalls. Seems like
+it has been introduced by "netlink: allow large data transfers from user-space"
+commit. nf_fib_input calls skb_clone which expects skb_shinfo to be allocated,
+but netlink_alloc_large_skb doesn't do that, should it?.
+Relevant dmesg log below.
 
-patched-nonple and  base  performance in case of 1.5x and 2x also have 
-been little inconsistent for dbench too. Overall I see pvspinlock + ple 
-on case more stable.
-and overall pvspinlock performance seem to be very impressive in HT 
-enabled case.
+[  894.990671] BUG: unable to handle kernel paging request at ffffc9000047b001
+[  894.991034] IP: [<ffffffff81a212c4>] skb_clone+0x24/0xc0
+[  894.991034] PGD 1e43c067 PUD 1e43d067 PMD 1c2fb067 PTE 0
+[  894.991034] Oops: 0000 [#1] SMP 
+[  894.991034] Modules linked in:
+[  894.991034] CPU: 0 PID: 21014 Comm: trinity-child0 Not tainted 3.10.0-rc7-next-20130627 #96
+[  894.991034] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[  894.991034] task: ffff88001b110000 ti: ffff880018fba000 task.ti: ffff880018fba000
+[  894.991034] RIP: 0010:[<ffffffff81a212c4>]  [<ffffffff81a212c4>] skb_clone+0x24/0xc0
+[  894.991034] RSP: 0018:ffff880018fbbad8  EFLAGS: 00010286
+[  894.991034] RAX: 0000000000003000 RBX: ffff880019dcc480 RCX: 00000000000050c0
+[  894.991034] RDX: ffffc90000478000 RSI: 00000000000000d0 RDI: ffff880019dcc480
+[  894.991034] RBP: ffff880018fbbae8 R08: 0000000000000000 R09: 0000000000000001
+[  894.991034] R10: 0000000000000001 R11: 0000000000010530 R12: 00000000000000d0
+[  894.991034] R13: ffff880019dcc480 R14: 0000000000000000 R15: ffff880018fbbba0
+[  894.991034] FS:  00007f731abaa700(0000) GS:ffff88001f600000(0000) knlGS:0000000000000000
+[  894.991034] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  894.991034] CR2: ffffc9000047b001 CR3: 0000000018f04000 CR4: 00000000000006f0
+[  894.991034] Stack:
+[  894.991034]  ffffffff824d5b40 ffff880019e640f8 ffff880018fbbb78 ffffffff81ad299a
+[  894.991034]  ffffffff824da678 ffffffff824da660 ffff88001d740948 ffff88001e615a78
+[  894.991034]  0000000000000000 ffffffff824da660 ffff880018fbbb48 ffffffff81c3b7e6
+[  894.991034] Call Trace:
+[  894.991034]  [<ffffffff81ad299a>] nl_fib_input+0x6a/0x240
+[  894.991034]  [<ffffffff81c3b7e6>] ? _raw_read_unlock+0x26/0x40
+[  894.991034]  [<ffffffff81a5f189>] netlink_unicast+0x169/0x1e0
+[  894.991034]  [<ffffffff81a601e1>] netlink_sendmsg+0x251/0x3d0
+[  894.991034]  [<ffffffff81a13a4d>] sock_aio_write+0x16d/0x180
+[  894.991034]  [<ffffffff814f400b>] ? T.1667+0x5b/0x90
+[  894.991034]  [<ffffffff81170d48>] do_sync_readv_writev+0x68/0xa0
+[  894.991034]  [<ffffffff81172737>] do_readv_writev+0xd7/0x2b0
+[  894.991034]  [<ffffffff8108bba8>] ? sched_clock_cpu+0xb8/0x100
+[  894.991034]  [<ffffffff81a138e0>] ? sock_aio_read+0x190/0x190
+[  894.991034]  [<ffffffff81c3bb1b>] ? _raw_spin_unlock_irq+0x2b/0x50
+[  894.991034]  [<ffffffff81172958>] vfs_writev+0x48/0x60
+[  894.991034]  [<ffffffff81172a9d>] SyS_writev+0x5d/0xd0
+[  894.991034]  [<ffffffff81554cee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[  894.991034]  [<ffffffff81c44852>] system_call_fastpath+0x16/0x1b
+[  894.991034] Code: e9 37 ff ff ff 66 90 55 48 89 e5 48 83 ec 10 48 89 1c 24 4c 89 64 24 08 48 89 fb 8b 87 cc 00 00 00 48 8b 97 d0 00 00 00 41 89 f4 <f6> 44 02 01 08 75 6b 0f b6 43 7d 83 e0 18 3c 08 75 3a 48 8d bb 
+[  894.991034] RIP  [<ffffffff81a212c4>] skb_clone+0x24/0xc0
+[  894.991034]  RSP <ffff880018fbbad8>
+[  894.991034] CR2: ffffc9000047b001
+[  894.991034] ---[ end trace d83aeb9c553c5c5e ]---
+[  894.991034] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
+[  894.991034] in_atomic(): 0, irqs_disabled(): 1, pid: 21014, name: trinity-child0
+[  894.991034] INFO: lockdep is turned off.
+[  894.991034] irq event stamp: 33740
+[  894.991034] hardirqs last  enabled at (33739): [<ffffffff81125c6d>] get_page_from_freelist+0x47d/0x940
+[  894.991034] hardirqs last disabled at (33740): [<ffffffff81c3c333>] error_sti+0x5/0x6
+[  894.991034] softirqs last  enabled at (33298): [<ffffffff81054ec8>] __do_softirq+0x1c8/0x3f0
+[  894.991034] softirqs last disabled at (33293): [<ffffffff81055205>] irq_exit+0xa5/0xb0
+[  894.991034] CPU: 0 PID: 21014 Comm: trinity-child0 Tainted: G      D      3.10.0-rc7-next-20130627 #96
+[  894.991034] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[  894.991034]  ffffffff8216d6a7 ffff880018fbb6e8 ffffffff81c358cc ffff880018fbb6e8
+[  894.991034]  ffff88001b110000 ffff880018fbb718 ffffffff81086074 ffff880018fbb758
+[  894.991034]  ffff88001b6dbc40 ffff88001b6dbca0 ffff880018fbba28 ffff880018fbb748
+[  894.991034] Call Trace:
+[  894.991034]  [<ffffffff81c358cc>] dump_stack+0x59/0x7d
+[  894.991034]  [<ffffffff81086074>] __might_sleep+0x174/0x220
+[  894.991034]  [<ffffffff81c38555>] down_read+0x25/0xa0
+[  894.991034]  [<ffffffff8106382f>] exit_signals+0x1f/0x140
+[  894.991034]  [<ffffffff81051987>] do_exit+0xb7/0xc80
+[  894.991034]  [<ffffffff8104eb88>] ? kmsg_dump+0x1d8/0x2a0
+[  894.991034]  [<ffffffff8104e9d1>] ? kmsg_dump+0x21/0x2a0
+[  894.991034]  [<ffffffff81c3cce3>] oops_end+0xa3/0xf0
+[  894.991034]  [<ffffffff8103f5f5>] no_context+0x115/0x2d0
+[  894.991034]  [<ffffffff81125c6d>] ? get_page_from_freelist+0x47d/0x940
+[  894.991034]  [<ffffffff8103f8dd>] __bad_area_nosemaphore+0x12d/0x230
+[  894.991034]  [<ffffffff8103f9ee>] bad_area_nosemaphore+0xe/0x10
+[  894.991034]  [<ffffffff81c3f8fe>] __do_page_fault+0x12e/0x4f0
+[  894.991034]  [<ffffffff8108ba85>] ? sched_clock_local+0x25/0x90
+[  894.991034]  [<ffffffff8108bba8>] ? sched_clock_cpu+0xb8/0x100
+[  894.991034]  [<ffffffff81554d2d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[  894.991034]  [<ffffffff81c3fcc9>] do_page_fault+0x9/0x10
+[  894.991034]  [<ffffffff81c3c142>] page_fault+0x22/0x30
+[  894.991034]  [<ffffffff81a212c4>] ? skb_clone+0x24/0xc0
+[  894.991034]  [<ffffffff81ad299a>] nl_fib_input+0x6a/0x240
+[  894.991034]  [<ffffffff81c3b7e6>] ? _raw_read_unlock+0x26/0x40
+[  894.991034]  [<ffffffff81a5f189>] netlink_unicast+0x169/0x1e0
+[  894.991034]  [<ffffffff81a601e1>] netlink_sendmsg+0x251/0x3d0
+[  894.991034]  [<ffffffff81a13a4d>] sock_aio_write+0x16d/0x180
+[  894.991034]  [<ffffffff814f400b>] ? T.1667+0x5b/0x90
+[  894.991034]  [<ffffffff81170d48>] do_sync_readv_writev+0x68/0xa0
+[  894.991034]  [<ffffffff81172737>] do_readv_writev+0xd7/0x2b0
+[  894.991034]  [<ffffffff8108bba8>] ? sched_clock_cpu+0xb8/0x100
+[  894.991034]  [<ffffffff81a138e0>] ? sock_aio_read+0x190/0x190
+[  894.991034]  [<ffffffff81c3bb1b>] ? _raw_spin_unlock_irq+0x2b/0x50
+[  894.991034]  [<ffffffff81172958>] vfs_writev+0x48/0x60
+[  894.991034]  [<ffffffff81172a9d>] SyS_writev+0x5d/0xd0
+[  894.991034]  [<ffffffff81554cee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[  894.991034]  [<ffffffff81c44852>] system_call_fastpath+0x16/0x1b
 
-patched = pvspinv10_hton
-+-----------+-----------+-----------+------------+-----------+
-                               ebizzy
-+----+----------+-----------+-----------+------------+-----------+
-         base        stdev       patched   stdev        %improvement
-+----+---------+-----------+-----------+------------+-----------+
-  0.5x  6925.3000    74.4342	  7317.0000    86.3018	   5.65607
-  1.0x  2379.8000   405.3519	  3427.0000   574.8789	  44.00370
-  1.5x  1850.8333    97.8114	  2733.4167   459.8016	  47.68573
-  2.0x  1477.6250   105.2411	  2525.2500    97.5921	  70.89925
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-                               dbench
-+----+----------+-----------+-----------+------------+-----------+
-         base        stdev       patched   stdev        %improvement
-+----+---------+-----------+-----------+------------+-----------+
-  0.5x 9045.9950   463.1447	 16482.7200    57.6017	  82.21014
-  1.0x 6251.1680   543.8219	 11212.7600   380.7542	  79.37064
-  1.5x 3095.7475   231.1567	  4308.8583   266.5873	  39.18636
-  2.0x 1219.1200    75.4294	  1979.6750   134.6934	  62.38557
-+-----------+-----------+-----------+------------+-----------+
-
-patched = pvspinv10_hton_nople
-+-----------+-----------+-----------+------------+-----------+
-                               ebizzy
-+----+----------+-----------+-----------+------------+-----------+
-         base        stdev       patched   stdev        %improvement
-+----+---------+-----------+-----------+------------+-----------+
-  0.5x 6925.3000    74.4342	  7473.8000   224.6344	   7.92023
-  1.0x 2379.8000   405.3519	  6176.2000   417.1133	 159.52601
-  1.5x 1850.8333    97.8114	  2214.1667   515.6875	  19.63080
-  2.0x 1477.6250   105.2411	   758.0000   108.8131	 -48.70146
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-                               dbench
-+----+----------+-----------+-----------+------------+-----------+
-         base        stdev       patched   stdev        %improvement
-+----+---------+-----------+-----------+------------+-----------+
-  0.5x 9045.9950   463.1447	 15195.5000   711.8794	  67.98042
-  1.0x 6251.1680   543.8219	 11327.8800   404.7115	  81.21222
-  1.5x 3095.7475   231.1567	  4960.2722  3822.6534	  60.22858
-  2.0x 1219.1200    75.4294	  1982.2828  1016.4083	  62.59948
-+----+-----------+-----------+-----------+------------+-----------+
-
+-- 
+Regards,
+    Artem
