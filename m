@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab3F0TFF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 15:05:05 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:56294 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab3F0TFD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:05:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
-Date: Thu, 27 Jun 2013 12:05:02 -0700
-X-Google-Sender-Auth: pFvdnxQiXqjJ6C937qGaXjUYHcQ
-Message-ID: <CAE9FiQVt4gCiz20SmJVP6d7tXOior5Ehg+-c_fG7wFsDUj7H4Q@mail.gmail.com>
-Subject: Re: [PATCH 4/6] PCI: acpiphp: check for new devices on enabled host
-From: Yinghai Lu <yinghai@kernel.org>
+	id S1753979Ab3F0TG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 15:06:26 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53459 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227Ab3F0TGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 15:06:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        John Ronciak <john.ronciak@intel.com>,
-        Miles J Penner <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [ACPI+PM] Changes for v3.11 merge window, no more new material for v3.11 (please)
+Date: Thu, 27 Jun 2013 21:15:50 +0200
+Message-ID: <16355875.t52aFJBBuQ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130627190842.GA9294@intel.com>
+References: <2857260.qHcRpz1Po6@vostro.rjw.lan> <20130627190842.GA9294@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 9:22 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> Current acpiphp_check_bridge() implementation is pretty dumb:
->  - it enables the slot if it's not enabled and the slot status is
->    ACPI_STA_ALL;
->  - it disables the slot if it's enabled and slot is not in ACPI_STA_ALL
->    state.
->
-> This behavior is not enough to handle Thunderbolt chaining case
-> properly. We need to actually rescan for new devices even if a device
-> has already in the slot.
->
-> The new implementation disables and stops the slot if it's not in
-> ACPI_STA_ALL state.
->
-> For ACPI_STA_ALL state we first trim devices which don't respond and
-> look for the ones after that. We do that even if slot already enabled
-> (SLOT_ENABLED).
+On Thursday, June 27, 2013 10:08:42 PM Mika Westerberg wrote:
+> On Thu, Jun 27, 2013 at 02:27:01PM +0200, Rafael J. Wysocki wrote:
+> > Hi All,
+> > 
+> > Below is a summary of my current queue for the v3.11 merge window.
+> > 
+> > I will be very reluctant to add anything that is not a fix for a serious
+> > problem to it from now on.  If you have such a fix, please let me know,
+> > however.
+> > 
+> > Other material will be queued up for 3.12, but I'd very much appreciate it
+> > if people refrained from sending me stuff which is not fixes until the
+> > release of 3.11-rc1.
+> 
+> I wonder what happened to the acpi_os_get_timer() patch?
+> 
+> https://patchwork.kernel.org/patch/2605021/
 
-that is not right, some time BUS_CHECK is even sent root bus.
-in that case, stop all devices in slots and load driver again.
+Well, I'm not sure to be honest.  I'll take it for 3.11.
 
-like you put one card in one slots, but all devices in other slots get stop
-and enable again.
+Thanks,
+Rafael
 
-Thanks
 
-Yinghai
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
