@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab3F0OLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:11:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58295 "EHLO
+	id S1752927Ab3F0OM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:12:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58336 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3F0OLU (ORCPT
+	with ESMTP id S1752124Ab3F0OM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:11:20 -0400
-Date: Thu, 27 Jun 2013 16:10:40 +0200
+	Thu, 27 Jun 2013 10:12:58 -0400
+Date: Thu, 27 Jun 2013 16:12:09 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 2/8] perf,x86: drop event->flags and use
- hw.constraint->flags
-Message-ID: <20130627141040.GA29209@dyad.programming.kicks-ass.net>
-References: <1371824448-7306-1-git-send-email-eranian@google.com>
- <1371824448-7306-3-git-send-email-eranian@google.com>
- <20130624084510.GK28407@twins.programming.kicks-ass.net>
- <CABPqkBQRchnjhnEC05w-noizoeSRnNio7NDQ6_+vXym_7rkGaw@mail.gmail.com>
- <20130626103653.GC28407@twins.programming.kicks-ass.net>
- <CABPqkBQuYy3TeE81tTXVruMG4D84TQ2U5g69T2ResGgjPjK4Cg@mail.gmail.com>
- <20130627104833.GC27378@dyad.programming.kicks-ass.net>
- <CABPqkBSwrz_GSobSuXn+AvU1zp14nAccCer4o7DHmG2c90cxRA@mail.gmail.com>
- <20130627111445.GR28407@twins.programming.kicks-ass.net>
- <CABPqkBTU5kM_mgxj_3+Li+r=Ofq+xG4_PP2wu94pzeJ4y3m92Q@mail.gmail.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com,
+        catalin.marinas@arm.com, arnd@arndb.de, olof@lixom.net,
+        linux@arm.linux.org.uk, Ian.Campbell@citrix.com, will.deacon@arm.com,
+        marc.zyngier@arm.com, mingo@redhat.com
+Subject: Re: [PATCH v6 2/5] kernel: missing include in cputime.c
+Message-ID: <20130627141209.GB29209@dyad.programming.kicks-ass.net>
+References: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
+ <1372341272-12512-2-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBTU5kM_mgxj_3+Li+r=Ofq+xG4_PP2wu94pzeJ4y3m92Q@mail.gmail.com>
+In-Reply-To: <1372341272-12512-2-git-send-email-stefano.stabellini@eu.citrix.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 02:33:58PM +0200, Stephane Eranian wrote:
-> Peter,
+On Thu, Jun 27, 2013 at 02:54:29PM +0100, Stefano Stabellini wrote:
+> steal_account_process_tick calls paravirt_steal_clock, but paravirt.h is
+> currently missing amoung the included header files.
+> Add include asm/paravirt.h ifdef CONFIG_PARAVIRT.
 > 
-> Let's drop this patch.
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: mingo@redhat.com
+> CC: peterz@infradead.org
 > 
-> It does not work anymore with the offcore-response
-> scheduling fix. The constraint->flags are shared, so cannot
-> use the flags there to store X86_COMMITTED. So we have
-> to keep a copy in the event->hw.flags.
+> Changes in v5:
+> - add ifdef CONFIG_PARAVIRT.
+> ---
+>  kernel/sched/cputime.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> Sorry about the confusion.
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index cc2dc3ee..317a578 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -5,7 +5,9 @@
+>  #include <linux/static_key.h>
+>  #include <linux/context_tracking.h>
+>  #include "sched.h"
+> -
+> +#ifdef CONFIG_PARAVIRT
+> +#include <asm/paravirt.h>
+> +#endif
 
-n/p I've already forgotten all about it ;-)
+Why isn't that CONFIG stuff inside the header instead of around it?
