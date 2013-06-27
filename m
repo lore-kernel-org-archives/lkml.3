@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3F0V2X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 17:28:23 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42557 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab3F0V2V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 17:28:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGa+x87SZyOU3SWcBEUGKzke8whbHhudRzsj0VjgGU_VkhnJZA@mail.gmail.com>
-References: <1370519244-49918-1-git-send-email-holt@sgi.com>
-	<12642293.RmlRtOVM54@wuerfel>
-	<20130619102141.411c8e39.akpm@linux-foundation.org>
-	<201306192016.00659.arnd@arndb.de>
-	<CAGa+x87SZyOU3SWcBEUGKzke8whbHhudRzsj0VjgGU_VkhnJZA@mail.gmail.com>
-Date: Thu, 27 Jun 2013 14:28:20 -0700
-Message-ID: <CAGa+x85UP6_3n-m76w_NHMF5Ld-rEu+ufSbRbAE4RhdU7GuKnw@mail.gmail.com>
-Subject: Re: [PATCH -v11 resend 10/11] arm, change reboot_mode to use enum reboot_mode
-From: Kevin Hilman <khilman@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Russ Anderson <rja@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753948Ab3F0Vhi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 17:37:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33689 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751569Ab3F0Vhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 17:37:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,954,1363158000"; 
+   d="scan'208";a="336640117"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Another mce cleanup for the 3.11 queue
+Date: Thu, 27 Jun 2013 14:37:36 -0700
+Message-Id: <51ccb0a019950f07cd@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 2:41 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> On Wed, Jun 19, 2013 at 11:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Wednesday 19 June 2013, Andrew Morton wrote:
->>> This patchset gets a lot of rejects which I keep on fixing up.  Please
->>> merge up early in the merge window and compile-test (and review) the
->>> linux-next changes to make sure I didn't muck up the reject-fixing,
->>> then we should be fine.
->>
->> Ok, good. The patch below is what I used locally to get everything to
->> build. Please fold that into the larger patch.
->
-> I'm still seeing build breaks in linux-next due to the original patch.
->
-> Will the fix below from Arnd be folded into the original?
+The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
 
-Actually, there's even more ARM build fallout from this patch not
-covered by Arnd's fix.  For example, building the ixp4xx_defconfig now
-has an include nesting mess[1] that is not a trivial fixup (at least
-that I have found yet).
+  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
 
-IMO, this patch needs to be dropped from -next until it gets better
-build coverage testing on ARM.
+are available in the git repository at:
 
-Kevin
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-mce
 
-[1] https://ci.linaro.org/jenkins/job/khilman-kernel-arm-next/99/arch=arm,defconfig=ixp4xx_defconfig,label=kernel_cloud/consoleFull
+for you to fetch changes up to 33d7885b594e169256daef652e8d3527b2298e75:
+
+  x86/mce: Update MCE severity condition check (2013-06-27 13:45:52 -0700)
+
+----------------------------------------------------------------
+Changes to simplify the SDM mean that we can also simplify
+the code for SRAR (software recoverable action required) errors.
+
+----------------------------------------------------------------
+Chen Gong (1):
+      x86/mce: Update MCE severity condition check
+
+ arch/x86/kernel/cpu/mcheck/mce-severity.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
