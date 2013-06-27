@@ -1,60 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3F0Dmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 23:42:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38588 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588Ab3F0Dmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752119Ab3F0Dmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 23:42:45 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:60076 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3F0Dmm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Jun 2013 23:42:42 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: [PATCH v2 0/2] DMA: EDMA: Config and comments
-Date: Wed, 26 Jun 2013 22:41:45 -0500
-Message-ID: <1372304505-30707-1-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130627010427.GF4536@htj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org> <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
+ <20130422214159.GG12543@htj.dyndns.org> <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
+ <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+ <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+ <20130626212047.GB4536@htj.dyndns.org> <CAAAKZws1qkSik4G4pRr7z+067Jp9-jHfpx9-euqbvmdHjoN_Zg@mail.gmail.com>
+ <20130627010427.GF4536@htj.dyndns.org>
+From: Tim Hockin <thockin@hockin.org>
+Date: Wed, 26 Jun 2013 20:42:21 -0700
+X-Google-Sender-Auth: sYL5VxlvCx_hu0pYJcMkWv3M-Lg
+Message-ID: <CAAAKZwsMT7FRccyVxSn77GR8+9JsSeqmDO6oOy7ycNCY7Desnw@mail.gmail.com>
+Subject: Re: cgroup: status-quo and userland efforts
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor patches remaining after EDMA series was posted.
+On Wed, Jun 26, 2013 at 6:04 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Wed, Jun 26, 2013 at 05:06:02PM -0700, Tim Hockin wrote:
+>> The first assertion, as I understood, was that (eventually) cgroupfs
+>> will not allow split hierarchies - that unified hierarchy would be the
+>> only mode.  Is that not the case?
+>
+> No, unified hierarchy would be an optional thing for quite a while.
+>
+>> The second assertion, as I understood, was that (eventually) cgroupfs
+>> would not support granting access to some cgroup control files to
+>> users (through chown/chmod).  Is that not the case?
+>
+> Again, it'll be an opt-in thing.  The hierarchy controller would be
+> able to notice that and issue warnings if it wants to.
+>
+>> Hmm, so what exactly is changing then?  If, as you say here, the
+>> existing interfaces will keep working - what is changing?
+>
+> New interface is being added and new features will be added only for
+> the new interface.  The old one will eventually be deprecated and
+> removed, but that *years* away.
 
-First patch adds the TI_EDMA option which people can forget to add and
-can result in failure without any informative errors of why DMA is not
-working. There was a discussion on avoiding Kconfig and putting this in
-the defconfig instead.
+OK, then what I don't know is what is the new interface?  A new cgroupfs?
 
-Second patch adds comments to the EDMA code for the calculations in the
-A-sync case. From my experience, this code is not-so-obvious. Hopefully
-this makes the life of readers of the code a little better.
+>> As I said, it's controlled delegated access.  And we have some patches
+>> that we carry to prevent some of these DoS situations.
+>
+> I don't know.  You can probably hack around some of the most serious
+> problems but the whole thing isn't built for proper delgation and
+> that's not the direction the upstream kernel is headed at the moment.
+>
+>> I actually can not speak to the details of the default IO problem, as
+>> it happened before I really got involved.  But just think through it.
+>> If one half of the split has 5 processes running and the other half
+>> has 200, the processes in the 200 set each get FAR less spindle time
+>> than those in the 5 set.  That is NOT the semantic we need.  We're
+>> trying to offer ~equal access for users of the non-DTF class of jobs.
+>>
+>> This is not the tail doing the wagging.  This is your assertion that
+>> something should work, when it just doesn't.  We have two, totally
+>> orthogonal classes of applications on two totally disjoint sets of
+>> resources.  Conjoining them is the wrong answer.
+>
+> As I've said multiple times, there sure are things that you cannot
+> achieve without orthogonal multiple hierarchies, but given the options
+> we have at hands, compromising inside a unified hierarchy seems like
+> the best trade-off.  Please take a step back from the immediate detail
+> and think of the general hierarchical organization of workloads.  If
+> DTF / non-DTF is a fundamental part of your workload classfication,
+> that should go above.
 
-Joel Fernandes (2):
-  ARM: configs: Enable TI_EDMA in omap2plus_defconfig
-  DMA: EDMA: Add comments for A-sync case calculations
+DTF and CPU and cpuset all have "default" groups for some tasks (and
+not others) in our world today.  DTF actually has default, prio, and
+"normal".  I was simplifying before.  I really wish it were as simple
+as you think it is.  But if it were, do you think I'd still be
+arguing?
 
- arch/arm/configs/omap2plus_defconfig |    1 +
- drivers/dma/edma.c                   |   22 ++++++++++++++++++++++
- 2 files changed, 23 insertions(+)
+> I don't really understand your example anyway because you can classify
+> by DTF / non-DTF first and then just propagate cpuset settings along.
+> You won't lose anything that way, right?
 
--- 
-1.7.9.5
+This really doesn't scale when I have thousands of jobs running.
+Being able to disable at some levels on some controllers probably
+helps some, but I can't say for sure without knowing the new interface
 
+> Again, in general, you might not be able to achieve *exactly* what
+> you've been doing, but, an acceptable compromise should be possible
+> and not doing so leads to complete mess.
+
+We tried it in unified hierarchy.  We had our Top People on the
+problem.  The best we could get was bad enough that we embarked on a
+LITERAL 2 year transition to make it better.
+
+>> > But I don't follow the conclusion here.  For short term workaround,
+>> > sure, but having that dictate the whole architecture decision seems
+>> > completely backwards to me.
+>>
+>> My point is that the orthogonality of resources is intrinsic.  Letting
+>> "it's hard to make it work" dictate the architecture is what's
+>> backwards.
+>
+> No, it's not "it's hard to make it work".  It's more "it's
+> fundamentally broken".  You can't identify a resource to be belonging
+> to a cgroup independent of who's looking at the resource.
+
+What if you could ensure that for a given TID (or PID if required) in
+dir X of controller C, all of the other TIDs in that cgroup were in
+the same group, but maybe not the same sub-path, under every
+controller?  This gives you what it sounds like you wanted elsewhere -
+a container abstraction.
+
+In other words, define a container as a set of cgroups, one under each
+each active controller type.  A TID enters the container atomically,
+joining all of the cgroups or none of the cgroups.
+
+container C1 = { /cgroup/cpu/foo, /cgroup/memory/bar,
+/cgroup/io/default/foo/bar, /cgroup/cpuset/
+
+This is an abstraction that we maintain in userspace (more or less)
+and we do actually have headaches from split hierarchies here
+(handling partial failures, non-atomic joins, etc)
+
+>> I'm not sure what "differing level of granularities" means?  But that
+>
+> It means that you'll be able to ignore subtrees depending on
+> controllers.
+
+I'm still a bit fuzzy - is all of this written somewhere?
+
+>> aside, who have you spoken to here?  On our internal discussions I
+>> have not heard a SINGLE member of our prod-kernel team nor our cluster
+>> management team who think this is a good idea.  Not one.
+>
+> Some of memcg and blkcg people in infra kernel team.
+
+Well, if anyone there feels like we should be moving in this
+direction, I hope they will come and talk to me and enlighten me.
+
+>> I still don't really get what the hellish mess is, and why it can't be
+>> solved another way.  Your statement of "unified hierarchy isn't gonna
+>> break them" is patently false, though.  If we did this it would a)
+>> cause a large amount of work to happen and b) cause a major regression
+>> for our users.
+>
+> No, what I meant was that unified hierarchy won't break the multiple
+> hierarchy support immediately.
+
+I did not realize you were building a parallel <thing>.  This at least
+makes me believe I have time to adapt better (or have our teams hack
+some more), if I can't bring you to your senses.
+
+>> I'm trying to understand your root problem so that I can try to find
+>> other solutions.  "Just do what I say" is not a great way to defend
+>> your position in the face of evidence to the contrary.  I'm presenting
+>> you real life cases of situations that simply do not work, neither
+>> philosophically nor in practice, and you continue to assert that it's
+>> fine.  It's not fine.
+>
+> I wrote about that many times, but here are two of the problems.
+>
+> * There's no way to designate a cgroup to a resource, because cgroup
+>   is only defined by the combination of who's looking at it for which
+>   controller.  That's how you end up with tagging the same resource
+>   multiple times for different controllers and even then it's broken
+>   as when you move resources from one cgroup to another, you can't
+>   tell what to do with other tags.
+>
+>   While allowing obscene level of flexibility, multiple hierarchies
+>   destroy a very fundamental concept that it *should* provide - that
+>   of a resource container.  It can't because a "cgroup" is undefined
+>   under multiple hierarchies.
+
+It sounds like you're missing a layer of abstraction.  Why not add the
+abstraction you want to expose on top of powerful primitives, instead
+of dumbing down the primitives?
+
+> * The level of flexibility makes it very difficult to scope the common
+>   usage models.  It's a problem for both the kernel and userland.  The
+>   kernel has to be prepared to cope with anything - e.g. with unified
+>   hierarchy, we can assume things like either all tasks in a cgroup
+>   are frozen or not, with multiple, any combination is possible - and
+>   the userland is generally lost on what to do and has been in a
+>   complete disarray, and it's not really userland's fault because
+>   enforcing any rule would mean hindering some crazy setup that
+>   someone is using.
+>
+> cgroup as it currently stands invites pretty insane usages which we
+> can't back out of later on.  Well, it's already painful to back out
+> but the sooner the better.  And all that for what?  Allowing exotic
+> specialized configurations which in all likelihood will be served
+> acceptably with unified hierarchy anyway?
+
+Again, not served acceptably.  Saying it over and over does not make
+it true.  Please believe me when I say that I understand how hard it
+is to back out of overly-flexible APIs that are hard to support.
+
+But it seems vastly better to define a next-gen API that retains the
+important flexibility but adds structure where it was lacking
+previously.
+
+>> Somewhere I picked up the notion that you were talking about making
+>> these changes in O(1.5 years).  Perhaps I got that wrong.  what *is*
+>> the timeframe?  At what point will everything we depend on today no
+>> longer be supported?
+>
+> I'm making the changes as soon as possible.  There of course are two
+> steps involved here - implementing the new thing and then removing the
+> old thing.  Implementing the new thing is gonna happen, hopefully, in
+> a year's timeframe.  The latter.  I don't know for sure but probably
+> over five years.
+>
+>> OK.  So please shed some light?  Will split-hierarchies continue to
+>> work for the indefinite future?  Or will they be disabled at some
+>> point?  Or will they become so crippled or bit-rotted that they are
+>> effectively removed, without having to actually say that?
+>
+> It's gonna be properly maintained but new features in general will
+> only be implemented for the unified hierarchy.  In time, hopefully,
+> the difference in capabilities between the new and old interfaces
+> combined with other efforts will drive users towards the new
+> interface.  After the old interface's usage has sufficiently dwindled,
+> it will be deprecated.
+>
+> Thanks.
+>
+> --
+> tejun
