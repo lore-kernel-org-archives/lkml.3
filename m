@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3F0Q0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:26:54 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:56754 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab3F0Q0v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:26:51 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mszeredi@suse.cz,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 1/1] overlayfs -- ovl_path_open should not take path reference
-Date: Thu, 27 Jun 2013 17:26:42 +0100
-Message-Id: <1372350404-10359-2-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1372350404-10359-1-git-send-email-apw@canonical.com>
-References: <1372350404-10359-1-git-send-email-apw@canonical.com>
+	id S1753622Ab3F0Q16 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:27:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44199 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753514Ab3F0Q14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 12:27:56 -0400
+Message-ID: <51CC67CA.2070805@ti.com>
+Date: Thu, 27 Jun 2013 21:56:50 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Benoit Cousson <b-cousson@ti.com>, <joelf@ti.com>
+CC: <lars@metafoo.de>, Tony Lindgren <tony@atomide.com>,
+        Sekhar Nori <nsekhar@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>, Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD data
+References: <1372209808-6532-1-git-send-email-joelagnel@ti.com> <CAD=GYpbdVVrh-tiqOcbHi3mkWRJUBdx0EsEZEFVVbgFgcCWgsw@mail.gmail.com> <51CC2A1E.2040003@ti.com> <CAD=GYpa9LQ1fV6=O9B65sJURVAigsgXCPLWav8cHXTuGQXPc9A@mail.gmail.com>
+In-Reply-To: <CAD=GYpa9LQ1fV6=O9B65sJURVAigsgXCPLWav8cHXTuGQXPc9A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the commit below dentry_open now takes its own references
-as required.  We therefore should no longer take path references in
-ovl_path_open.  Doing so leaves stray mount references to the underlying
-devices preventing them being released:
+On Thursday 27 June 2013 07:56 PM, Joel A Fernandes wrote:
+> Hi Benoit,
+>
+> On Thu, Jun 27, 2013 at 7:03 AM, Benoit Cousson <b-cousson@ti.com> wrote:
+>> Hi Joel,
+>>
+>> On 06/26/2013 05:28 AM, Joel A Fernandes wrote:
+>>> On Tue, Jun 25, 2013 at 8:23 PM, Joel A Fernandes <joelagnel@ti.com> wrote:
+>>>> From: Joel A Fernandes <agnel.joel@gmail.com>
+>>>>
+>>>> This series is fixes to get MMC working on AM33XX without HWMOD data.
+>>>> On removal of HWMOD data, interrupt and register properties need to be provided
+>>>> for the driver to function correctly.
+>>>
+>>> Please don't pull patches authored by me in this series. I have posted
+>>> them with my wrong email address by mistake. I will correct my email
+>>> during the next repost, after a round of review. Matt's patches in the
+>>> series are still good though.
+>>
+>> In that case, please repost these in two series to avoid pulling the DTS
+>> files in the MMC tree.
+>
+> The series has been replaced with the single patch:
+> "[PATCH v2] ARM: dts: add AM33XX MMC support"
+> http://marc.info/?l=linux-omap&m=137230403815943&w=2
+>
+> Some patches were squashed and others dropped in the series resulting
+> in the single
+> patch above. This patch should be good to apply
+Hi Joel,
 
-    commit 765927b2d508712d320c8934db963bbe14c3fcec
-    Author: Al Viro <viro@zeniv.linux.org.uk>
-    Date:   Tue Jun 26 21:58:53 2012 +0400
+Before pushing mmc dts support for am335x, Can you please let me
+know if below 2 patches [1] are merged/accepted,
+IIRC these patches are needed for MMC to work properly.
 
-        switch dentry_open() to struct path, make it grab references itself
+I suggest to hold the dts patch until slave_sg_limit gets merged
+otherwise it will cause regression in am335x mmc.
 
-BugLink: http://bugs.launchpad.net/bugs/1098378
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- fs/overlayfs/super.c | 1 -
- 1 file changed, 1 deletion(-)
+[PATCH v4 1/3] dmaengine: add dma_get_slave_sg_limits()
+[PATCH v4 2/3] dma: edma: add device_slave_sg_limits() support
 
+[1]
+https://groups.google.com/forum/#!topic/linux.kernel/khTTcPtQpag
 
-    Found this in testing on Ubuntu raring, testing against loopback
-    mounted files.  Without this change we were unable to release the
-    loopback device for reuse.  Looking at it actually we were also leaking
-    references on the root filesystem, but these are not as obvious.
-    Applies against overlayfs.v17 as rebased to 3.8 and later.
-
-    -apw
-
-
-diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index 482c26f..9473e79 100644
---- a/fs/overlayfs/super.c
-+++ b/fs/overlayfs/super.c
-@@ -385,7 +385,6 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
- 
- struct file *ovl_path_open(struct path *path, int flags)
- {
--	path_get(path);
- 	return dentry_open(path, flags, current_cred());
- }
- 
--- 
-1.8.3.1
-
+>
+> Thanks,
+>
+> -Joel
+>
