@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab3F0Bc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 21:32:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:8873 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518Ab3F0Bcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 21:32:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,948,1363158000"; 
-   d="scan'208";a="323144582"
-Message-ID: <51CB9631.1030508@intel.com>
-Date: Thu, 27 Jun 2013 09:32:33 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v4 1/5] rwsem: check the lock before cpmxchg in down_write_trylock
-References: <cover.1372282738.git.tim.c.chen@linux.intel.com> <1372285674.22432.141.camel@schen9-DESK>
-In-Reply-To: <1372285674.22432.141.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751652Ab3F0Ben (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 21:34:43 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41902 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751447Ab3F0Bem (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 21:34:42 -0400
+Message-ID: <1372296879.557.3.camel@dabdike>
+Subject: Re: [PATCH RESEND v2 2/2] scsi: 64-bit port of buslogic driver
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Khalid Aziz <khalid@gonehiking.org>
+Date: Wed, 26 Jun 2013 18:34:39 -0700
+In-Reply-To: <97daf2d29ceb78bdef3ddf6358dc634de35d0345.1368754556.git.khalid.aziz@oracle.com>
+References: <cover.1368754558.git.khalid.aziz@oracle.com>
+	 <97daf2d29ceb78bdef3ddf6358dc634de35d0345.1368754556.git.khalid.aziz@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-06-24 at 14:26 -0600, Khalid Aziz wrote: 
+> @@ -5072,17 +5039,15 @@ static void FPT_busMstrSGDataXferStart(unsigned long p_port,
+>   * Description: 
+>   *
+>   *---------------------------------------------------------------------*/
+> -static void FPT_busMstrDataXferStart(unsigned long p_port,
+> -				     struct sccb *pcurrSCCB)
+> +static void FPT_busMstrDataXferStart(u32 p_port, struct sccb *pcurrSCCB)
+>  {
+> -	unsigned long addr, count;
+> +	u32 addr, count;
+>  
+>  	if (!(pcurrSCCB->Sccb_XferState & F_AUTO_SENSE)) {
+>  
+>  		count = pcurrSCCB->Sccb_XferCnt;
+>  
+> -		addr =
+> -		    (unsigned long)pcurrSCCB->DataPointer + pcurrSCCB->Sccb_ATC;
+> +		addr = (u32)pcurrSCCB->DataPointer + pcurrSCCB->Sccb_ATC;
 
-The following line should be added head of commit log on patches 1~4. :)
+This is giving
 
-From: Alex Shi <alex.shi@intel.com>
+In file included from drivers/scsi/BusLogic.c:57:0:
+drivers/scsi/FlashPoint.c: In function ‘FPT_busMstrDataXferStart’:
+drivers/scsi/FlashPoint.c:5050:10: warning: cast from pointer to integer
+of different size [-Wpointer-to-int-cast]
+
+to do this cast, you need first to cast to unsigned long and then
+truncate the long with u32.  I fixed it up.
+
+James
 
 
-> Cmpxchg will cause the cacheline bouning when do the value checking,
-> that cause scalability issue in a large machine (like a 80 core box).
-> 
-> So a lock pre-read can relief this contention.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-
-
--- 
-Thanks
-    Alex
