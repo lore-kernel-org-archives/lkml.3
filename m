@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3F0QlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:41:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33071 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab3F0QlN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:41:13 -0400
-Message-ID: <51CC6B09.5080809@infradead.org>
-Date: Thu, 27 Jun 2013 09:40:41 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752472Ab3F0Qor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:44:47 -0400
+Received: from void.printf.net ([89.145.121.20]:43659 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab3F0Qoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 12:44:46 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Will Newton <will.newton@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] mmc: dw_mmc: Handle late vmmc regulators with EPROBE_DEFER
+References: <1370580406-10254-1-git-send-email-dianders@chromium.org>
+	<1370626110-1731-1-git-send-email-dianders@chromium.org>
+Date: Thu, 27 Jun 2013 12:44:38 -0400
+In-Reply-To: <1370626110-1731-1-git-send-email-dianders@chromium.org> (Doug
+	Anderson's message of "Fri, 7 Jun 2013 10:28:29 -0700")
+Message-ID: <87vc4zlczt.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Xiong Zhou <jencce.kernel@gmail.com>
-CC: Ben Hutchings <ben@decadent.org.uk>, matthew.garrett@nebula.com,
-        platform-driver-x86@vger.kernel.org,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, jim.epost@gmail.com
-Subject: Re: [PATCH]amilo-rfkill: add depends on i8042 in Kconfig
-References: <alpine.DEB.2.02.1306181705530.28460@M2420> <1371560680.3495.121.camel@deadeye.wl.decadent.org.uk> <51C07608.2070406@infradead.org> <CADJHv_vZiPsDUiLrFao41rRVduf+AYFm0NuvpNaCW8S3KrAjnA@mail.gmail.com>
-In-Reply-To: <CADJHv_vZiPsDUiLrFao41rRVduf+AYFm0NuvpNaCW8S3KrAjnA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/13 18:09, Xiong Zhou wrote:
-> 2013/6/18 Randy Dunlap <rdunlap@infradead.org>:
->> On 06/18/13 06:04, Ben Hutchings wrote:
->>> On Tue, 2013-06-18 at 17:21 +0800, Xiong Zhou wrote:
->>>> From: Xiong Zhou <jencce.kernel@gmail.com>
->>>>
->>>> Fix randconfig build failure for Amilo x86 platform driver.
->>>> AMILO_RFKILL requires SERIO_I8042 being available.
->>>>
->>>> amilo-rfkill.c:(.text+0x108b5b): undefined reference to `i8042_lock_chip'
->>>> amilo-rfkill.c:(.text+0x108b69): undefined reference to `i8042_command'
->>>> amilo-rfkill.c:(.text+0x108b71): undefined reference to `i8042_unlock_chip'
->>>>
->>>> Reported-by: Jim Davis <jim.epost@gmail.com>
->>>> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
->>>
->>> Acked-by: Ben Hutchings <ben@decadent.org.uk>
->>>
->>> But I thought somehow sent this same fix a while back...
->>
->> Yes, I reported it and sent a patch for it that you acked...
->> I guess my patch was never picked up.
->>
-> 
-> ... Better someone pick this up.
-> 
+Hi Doug,
 
-This build error is still occurring in linux-next (20130627).
-I first reported it and posted a patch for it on May-15 2013.
+On Fri, Jun 07 2013, Doug Anderson wrote:
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index bc3a1bc..ab5642d 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -1895,7 +1895,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  	struct mmc_host *mmc;
+>  	struct dw_mci_slot *slot;
+>  	const struct dw_mci_drv_data *drv_data = host->drv_data;
+> -	int ctrl_id, ret;
+> +	int ctrl_id;
+>  	u8 bus_width;
+>  
+>  	mmc = mmc_alloc_host(sizeof(struct dw_mci_slot), host->dev);
+> @@ -1985,19 +1985,6 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  #endif /* CONFIG_MMC_DW_IDMAC */
+>  	}
+>  
+> -	host->vmmc = devm_regulator_get(mmc_dev(mmc), "vmmc");
+> -	if (IS_ERR(host->vmmc)) {
+> -		pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
+> -		host->vmmc = NULL;
+> -	} else {
+> -		ret = regulator_enable(host->vmmc);
+> -		if (ret) {
+> -			dev_err(host->dev,
+> -				"failed to enable regulator: %d\n", ret);
+> -			goto err_setup_bus;
+> -		}
+> -	}
+> -
+>  	if (dw_mci_get_cd(mmc))
+>  		set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+>  	else
+> @@ -2023,10 +2010,6 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  	queue_work(host->card_workqueue, &host->card_work);
+>  
+>  	return 0;
+> -
+> -err_setup_bus:
+> -	mmc_free_host(mmc);
+> -	return -EINVAL;
+>  }
+>  
+>  static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int id)
 
-Please merge either patch...
+This hunk breaks the build for me, because err_setup_bus and ret are
+used in the error path of the call to mmc_add_host() in this function.
 
-Is anybody out there?
+I'll push a version that leaves those in.  Let me know if you think
+something strange is happening that made this work okay for you, like
+a mismerge.
 
-
-> 
->>>
->>> Ben.
->>>
->>>> ---
->>>>  drivers/platform/x86/Kconfig |    1 +
->>>>  1 file changed, 1 insertion(+)
->>>>
->>>> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
->>>> index 8577261..37645b9 100644
->>>> --- a/drivers/platform/x86/Kconfig
->>>> +++ b/drivers/platform/x86/Kconfig
->>>> @@ -176,6 +176,7 @@ config FUJITSU_TABLET
->>>>  config AMILO_RFKILL
->>>>      tristate "Fujitsu-Siemens Amilo rfkill support"
->>>>      depends on RFKILL
->>>> +    depends on SERIO_I8042
->>>>      ---help---
->>>>        This is a driver for enabling wifi on some Fujitsu-Siemens Amilo
->>>>        laptops.
->>>
->>
->>
->> --
->> ~Randy
-> --
-
-
+- Chris.
 -- 
-~Randy
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
