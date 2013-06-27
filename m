@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab3F0NLj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:11:39 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:41234 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab3F0NLi (ORCPT
+	id S1752904Ab3F0NPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:15:53 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:36389 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab3F0NPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:11:38 -0400
-Date: Thu, 27 Jun 2013 15:11:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fix
-Message-ID: <20130627131134.GA9273@gmail.com>
+	Thu, 27 Jun 2013 09:15:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372337887.8383.12.camel@cumari.coelho.fi>
+References: <1372149330-24335-1-git-send-email-coelho@ti.com>
+	<51CBC1C8.1040301@gmail.com>
+	<1372322851.18889.53.camel@cumari.coelho.fi>
+	<20130627125131.GA27285@kahuna>
+	<1372337887.8383.12.camel@cumari.coelho.fi>
+Date: Thu, 27 Jun 2013 08:15:49 -0500
+X-Google-Sender-Auth: 4UcrCITyqIHR64P6kLTjO4ETaVE
+Message-ID: <CAGo_u6qbt9dANgKq49xR=1qsCpUBhmVaPL4EK04XvTw+=4Z23g@mail.gmail.com>
+Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
+From: Nishanth Menon <nm@ti.com>
+To: Luciano Coelho <coelho@ti.com>
+Cc: grant.likely@linaro.org, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        linux-omap <linux-omap@vger.kernel.org>, linux-arm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Jun 27, 2013 at 7:58 AM, Luciano Coelho <coelho@ti.com> wrote:
+> On Thu, 2013-06-27 at 07:51 -0500, Nishanth Menon wrote:
+>> On 11:47-20130627, Luciano Coelho wrote:
+>> > (added mailing lists and everyone back to the thread)
+>> >
+>> > On Wed, 2013-06-26 at 23:38 -0500, Nishanth Menon wrote:
+>> > > On 06/25/2013 03:35 AM, Luciano Coelho wrote:
+>> > > > +Optional properties:
+>> > > > +--------------------
+>> > > > +
+>> > > > +- refclock: the internal WLAN reference clock frequency (required for
+>> > > > +  WiLink6 and WiLink7; not used for WiLink8).  Must be one of the
+>> > > > +  following:
+>> > > > +       0 = 19.2 MHz
+>> > > > +       1 = 26.0 MHz
+>> > > > +       2 = 38.4 MHz
+>> > > > +       3 = 52.0 MHz
+>> > > > +       4 = 38.4 MHz, XTAL
+>> > > > +       5 = 26.0 MHz, XTAL
+>> > > > +
+>> > > > +- tcxoclock: the internal WLAN TCXO clock frequency (required for
+>> > > > +  WiLink7 not used for WiLink6 and WiLink8).  Must be one of the
+>> > > > +  following:
+>> > > > +       0 = 19.200 MHz
+>> > > > +       1 = 26.000 MHz
+>> > > > +       2 = 38.400 MHz
+>> > > > +       3 = 52.000 MHz
+>> > > > +       4 = 16.368 MHz
+>> > > > +       5 = 32.736 MHz
+>> > > > +       6 = 16.800 MHz
+>> > > > +       7 = 33.600 MHz
+>> > > >
+>> > > just a gentle query - why not use frequency itself here in Hz for
+>> > > refclock and txoclk?
+>> >
+>> > I thought about using the actual frequencies, but I decided not to do
+>> > so, because I'd have to convert them to these values anyway.  These
+>> > values are used to configure the firmware and it uses these
+>> > "enumerations".
+>> Could we not hide this under preprocessor macros instead? just wondering
+>> of txoclock = <6>; kind of usage.. easy to make mistakes and easier to
+>> confuse a new reader :).
+>
+> Yes, I guess we could create some preprocessor macros for this.  But the
+> documentation would remain the same.  I can't add preprocessor macros to
+> the bindings documentation. ;)
+>
+> For the actual DTS files, I could add a wilink.dtsi with enumerations
+> for these values so they could be used in the node definitions.  But I'm
+> not sure it's going to be that valuable in the end.
+The  way GPIO HIGH was defined might help to provide guidance I think :)
 
-Please pull the latest perf-urgent-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
-
-   HEAD: 2976b10f05bd7f6dab9f9e7524451ddfed656a89 perf: Disable monitoring on setuid processes for regular users
-
-One more fix for a recently discovered bug.
-
- Thanks,
-
-	Ingo
-
------------------->
-Stephane Eranian (1):
-      perf: Disable monitoring on setuid processes for regular users
-
-
- fs/exec.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 6430195..ffd7a81 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1135,13 +1135,6 @@ void setup_new_exec(struct linux_binprm * bprm)
- 			set_dumpable(current->mm, suid_dumpable);
- 	}
- 
--	/*
--	 * Flush performance counters when crossing a
--	 * security domain:
--	 */
--	if (!get_dumpable(current->mm))
--		perf_event_exit_task(current);
--
- 	/* An exec changes our domain. We are no longer part of the thread
- 	   group */
- 
-@@ -1205,6 +1198,15 @@ void install_exec_creds(struct linux_binprm *bprm)
- 
- 	commit_creds(bprm->cred);
- 	bprm->cred = NULL;
-+
-+	/*
-+	 * Disable monitoring for regular users
-+	 * when executing setuid binaries. Must
-+	 * wait until new credentials are committed
-+	 * by commit_creds() above
-+	 */
-+	if (get_dumpable(current->mm) != SUID_DUMP_USER)
-+		perf_event_exit_task(current);
- 	/*
- 	 * cred_guard_mutex must be held at least to this point to prevent
- 	 * ptrace_attach() from altering our determination of the task's
+Regards,
+NM
