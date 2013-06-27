@@ -1,85 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab3F0IHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:07:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13686 "EHLO mga03.intel.com"
+	id S1752811Ab3F0IKz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:10:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47045 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab3F0IHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:07:17 -0400
+	id S1752365Ab3F0IKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 04:10:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,950,1363158000"; 
-   d="scan'208";a="323268055"
-Message-ID: <51CBF2B2.8060407@intel.com>
-Date: Thu, 27 Jun 2013 16:07:14 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+   d="scan'208";a="336259491"
+Message-ID: <51CBF3AA.2030508@intel.com>
+Date: Thu, 27 Jun 2013 16:11:22 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/7] perf, x86: Haswell LBR call stack support
-References: <1372150039-15151-1-git-send-email-zheng.z.yan@intel.com> <20130626115420.GG28407@twins.programming.kicks-ass.net> <CABPqkBQxEiNWN2g3_oTuMK77SPJ5VOBGJvkeN9AoZb=5JRsJJA@mail.gmail.com>
-In-Reply-To: <CABPqkBQxEiNWN2g3_oTuMK77SPJ5VOBGJvkeN9AoZb=5JRsJJA@mail.gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>
+Subject: Re: [PATCH 3/4] ACPI / PM: Rework and clean up acpi_dev_pm_get_state()
+References: <6895318.cKDBc4OdI0@vostro.rjw.lan> <1756031.gcnLRAM3xz@vostro.rjw.lan>
+In-Reply-To: <1756031.gcnLRAM3xz@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 12:48 AM, Stephane Eranian wrote:
-> On Wed, Jun 26, 2013 at 1:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Tue, Jun 25, 2013 at 04:47:12PM +0800, Yan, Zheng wrote:
->>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->>>
->>> Haswell has a new feature that utilizes the existing Last Branch Record
->>> facility to record call chains. When the feature is enabled, function
->>> call will be collected as normal, but as return instructions are executed
->>> the last captured branch record is popped from the on-chip LBR registers.
->>> The LBR call stack facility can help perf to get call chains of progam
->>> without frame pointer. When perf tool requests PERF_SAMPLE_CALLCHAIN +
->>> PERF_SAMPLE_BRANCH_USER, this feature is dynamically enabled by default.
->>> This feature can be disabled/enabled through an attribute file in the cpu
->>> pmu sysfs directory.
->>>
->>> The LBR call stack has following known limitations
->>>  1. Zero length calls are not filtered out by hardware
->>>  2. Exception handing such as setjmp/longjmp will have calls/returns not
->>>     match
->>>  3. Pushing different return address onto the stack will have calls/returns
->>>     not match
->>>
->>
->> You fail to mention what happens when the callstack is deeper than the
->> LBR is big -- a rather common issue I'd think.
->>
-> LBR is statistical callstack. By nature, it cannot capture the entire chain.
+On 06/14/2013 08:32 PM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
->> From what I gather if you push when full, the TOS rotates and eats the
->> tail allowing you to add another entry to the head.
->>
->> If you pop when empty; nothing happens.
->>
-> Not sure they know "empty" from "non empty", they just move the LBR_TOS
-> by one entry on returns.
+> The acpi_dev_pm_get_state() function defined in device_pm.c is quite
+> convoluted, which isn't really necessary, and it doesn't validate the
+> values returned by the ACPI methods executed by it appropriately.
+> 
+> To address these shortcomings modify it in the following way.
+> 
+>  (1) Make its return value only mean whether or not it succeeded and
+>      pass the device power states determined by it through pointers.
+> 
+>  (2) Drop the d_max_in argument, used by only one of its callers,
+>      from it, and move the code related to d_max_in into that caller,
+>      acpi_pm_device_sleep_state().
+> 
+>  (3) Make it always check the return value of acpi_evaluate_integer()
+>      and handle failures as appropriate.  Moreover, make it check if
+>      the values returned by the executed ACPI methods are not out of
+>      range.
+> 
+>  (4) Make it check if the values returned by the executed ACPI
+>      methods represent valid power states of the given device and
+>      handle situations in which that's not the case gracefully.
+> 
+> Also update the kerneldoc comments of acpi_dev_pm_get_state() and
+> acpi_pm_device_sleep_state() to reflect the code changes.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/device_pm.c |  158 +++++++++++++++++++++++++++--------------------
+>  1 file changed, 92 insertions(+), 66 deletions(-)
+> 
+> Index: linux-pm/drivers/acpi/device_pm.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/device_pm.c
+> +++ linux-pm/drivers/acpi/device_pm.c
+> @@ -403,44 +403,37 @@ EXPORT_SYMBOL(acpi_bus_can_wakeup);
+>   * @dev: Device whose preferred target power state to return.
+>   * @adev: ACPI device node corresponding to @dev.
+>   * @target_state: System state to match the resultant device state.
+> - * @d_max_in: Deepest low-power state to take into consideration.
+> - * @d_min_p: Location to store the upper limit of the allowed states range.
+> - * Return value: Preferred power state of the device on success, -ENODEV
+> - * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
+> + * @d_min_p: Location to store the highest power state available to the device.
+> + * @d_max_p: Location to store the lowest power state available to the device.
+>   *
+> - * Find the lowest power (highest number) ACPI device power state that the
+> - * device can be in while the system is in the state represented by
+> - * @target_state.  If @d_min_p is set, the highest power (lowest number) device
+> - * power state that @dev can be in for the given system sleep state is stored
+> - * at the location pointed to by it.
+> + * Find the lowest power (highest number) and highest power (lowest number) ACPI
+> + * device power states that the device can be in while the system is in the
+> + * state represented by @target_state.  Store the integer numbers representing
+> + * those stats in the memory locations pointed to by @d_max_p and @d_min_p,
+> + * respectively.
+>   *
+>   * Callers must ensure that @dev and @adev are valid pointers and that @adev
+>   * actually corresponds to @dev before using this function.
+> + *
+> + * Returns 0 on success or -ENODATA when one of the ACPI methods fails or
+> + * returns a value that doesn't make sense.  The memory locations pointed to by
+> + * @d_max_p and @d_min_p are only modified on success.
+>   */
+>  static int acpi_dev_pm_get_state(struct device *dev, struct acpi_device *adev,
+> -				 u32 target_state, int d_max_in, int *d_min_p)
+> +				 u32 target_state, int *d_min_p, int *d_max_p)
+>  {
+> -	char acpi_method[] = "_SxD";
+> -	unsigned long long d_min, d_max;
+> +	char method[] = { '_', 'S', '0' + target_state, 'D', '\0' };
+> +	acpi_handle handle = adev->handle;
+> +	unsigned long long ret;
+> +	int d_min, d_max;
+>  	bool wakeup = false;
+> +	acpi_status status;
+>  
+> -	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
+> -		return -EINVAL;
+> -
+> -	if (d_max_in > ACPI_STATE_D3_HOT) {
+> -		enum pm_qos_flags_status stat;
+> -
+> -		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
+> -		if (stat == PM_QOS_FLAGS_ALL)
+> -			d_max_in = ACPI_STATE_D3_HOT;
+> -	}
+> -
+> -	acpi_method[2] = '0' + target_state;
+>  	/*
+> -	 * If the sleep state is S0, the lowest limit from ACPI is D3,
+> -	 * but if the device has _S0W, we will use the value from _S0W
+> -	 * as the lowest limit from ACPI.  Finally, we will constrain
+> -	 * the lowest limit with the specified one.
+> +	 * If the system state is S0, the lowest power state the device can be
+> +	 * in is D3cold, unless the device has _S0W and is supposed to signal
+> +	 * wakeup, in which case the return value of _S0W has to be used as the
+> +	 * lowest power state available to the device.
+>  	 */
+>  	d_min = ACPI_STATE_D0;
+>  	d_max = ACPI_STATE_D3_COLD;
+> @@ -449,12 +442,30 @@ static int acpi_dev_pm_get_state(struct
+>  	 * If present, _SxD methods return the minimum D-state (highest power
+>  	 * state) we can use for the corresponding S-states.  Otherwise, the
+>  	 * minimum D-state is D0 (ACPI 3.x).
+> -	 *
+> -	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
+> -	 * provided -- that's our fault recovery, we ignore retval.
+>  	 */
+>  	if (target_state > ACPI_STATE_S0) {
+> -		acpi_evaluate_integer(adev->handle, acpi_method, NULL, &d_min);
+> +		/*
+> +		 * We rely on acpi_evaluate_integer() not clobbering the integer
+> +		 * provided if AE_NOT_FOUND is returned.
+> +		 */
+> +		ret = d_min;
+> +		status = acpi_evaluate_integer(handle, method, NULL, &ret);
+> +		if ((ACPI_FAILURE(status) && status != AE_NOT_FOUND)
+> +		    || ret > ACPI_STATE_D3_COLD)
+> +			return -ENODATA;
+> +
+> +		/*
+> +		 * We need to handle legacy systems where D3hot and D3cold are
+> +		 * the same and 3 is returned in both cases, so fall back to
+> +		 * D3cold if D3hot is not a valid state.
+> +		 */
+> +		if (!adev->power.states[ret].flags.valid) {
+> +			if (ret == ACPI_STATE_D3_HOT)
+> +				ret = ACPI_STATE_D3_COLD;
+> +			else
+> +				return -ENODATA;
+> +		}
+> +		d_min = ret;
+>  		wakeup = device_may_wakeup(dev) && adev->wakeup.flags.valid
+>  			&& adev->wakeup.sleep_state >= target_state;
+>  	} else if (dev_pm_qos_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP) !=
+> @@ -470,36 +481,29 @@ static int acpi_dev_pm_get_state(struct
+>  	 * can wake the system.  _S0W may be valid, too.
+>  	 */
+>  	if (wakeup) {
+> -		acpi_status status;
+> -
+> -		acpi_method[3] = 'W';
+> -		status = acpi_evaluate_integer(adev->handle, acpi_method, NULL,
+> -						&d_max);
+> -		if (ACPI_FAILURE(status)) {
+> -			if (target_state != ACPI_STATE_S0 ||
+> -			    status != AE_NOT_FOUND)
+> +		method[3] = 'W';
+> +		status = acpi_evaluate_integer(handle, method, NULL, &ret);
+> +		if (status == AE_NOT_FOUND) {
+> +			if (target_state > ACPI_STATE_S0)
+>  				d_max = d_min;
+> -		} else if (d_max < d_min) {
+> -			/* Warn the user of the broken DSDT */
+> -			printk(KERN_WARNING "ACPI: Wrong value from %s\n",
+> -				acpi_method);
+> -			/* Sanitize it */
+> -			d_min = d_max;
+> +		} else if (ACPI_SUCCESS(status) && ret <= ACPI_STATE_D3_COLD) {
+> +			/* Fall back to D3cold if ret is not a valid state. */
+> +			if (!adev->power.states[ret].flags.valid)
+> +				ret = ACPI_STATE_D3_COLD;
+> +
+> +			d_max = ret > d_min ? ret : d_min;
+> +		} else {
+> +			return -ENODATA;
+>  		}
+>  	}
+>  
+> -	if (d_max_in < d_min)
+> -		return -EINVAL;
+>  	if (d_min_p)
+>  		*d_min_p = d_min;
+> -	/* constrain d_max with specified lowest limit (max number) */
+> -	if (d_max > d_max_in) {
+> -		for (d_max = d_max_in; d_max > d_min; d_max--) {
+> -			if (adev->power.states[d_max].flags.valid)
+> -				break;
+> -		}
+> -	}
+> -	return d_max;
+> +
+> +	if (d_max_p)
+> +		*d_max_p = d_max;
+> +
+> +	return 0;
+>  }
+>  
+>  /**
+> @@ -508,7 +512,8 @@ static int acpi_dev_pm_get_state(struct
+>   * @d_min_p: Location to store the upper limit of the allowed states range.
+>   * @d_max_in: Deepest low-power state to take into consideration.
+>   * Return value: Preferred power state of the device on success, -ENODEV
+> - * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
+> + * if there's no 'struct acpi_device' for @dev, -EINVAL if @d_max_in is
+> + * incorrect, or -ENODATA on ACPI method failure.
+>   *
+>   * The caller must ensure that @dev is valid before using this function.
+>   */
+> @@ -516,14 +521,39 @@ int acpi_pm_device_sleep_state(struct de
+>  {
+>  	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+>  	struct acpi_device *adev;
+> +	int ret, d_max;
+> +
+> +	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
+> +		return -EINVAL;
+> +
+> +	if (d_max_in > ACPI_STATE_D3_HOT) {
+> +		enum pm_qos_flags_status stat;
+> +
+> +		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
+> +		if (stat == PM_QOS_FLAGS_ALL)
+> +			d_max_in = ACPI_STATE_D3_HOT;
+> +	}
+>  
+>  	if (!handle || acpi_bus_get_device(handle, &adev)) {
+>  		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
+>  		return -ENODEV;
+>  	}
+>  
+> -	return acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
+> -				     d_max_in, d_min_p);
+> +	ret = acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
+> +				    d_min_p, &d_max);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (d_max_in < *d_min_p)
+> +		return -EINVAL;
 
-When pop, it decreases LBR_TOS by one and clear the popped LBR_FROM/LBR_TO MSRs.
-If pop when empty, you will get an empty callchains.
+d_min_p can be NULL here.
 
-Regards
-Yan, Zheng
+Call trace:
+acpi_pm_device_sleep_state, where d_min_p is passed as NULL
+acpi_pci_choose_state
+pci_choose_state
+atl1e_suspend
+atl1e_shutdown
+pci_device_shutdown
+device_shutdown
 
-> 
->> So on pretty much every program you'd be lucky to get the top of the
->> callstack but can end up with nearly nothing.
->>
-> You will get the calls closest to the interrupt.
-> 
->> Given that, and the other limitations I don't think its a fair
->> replacement for user callchains.
-> 
-> Well, the one advantage I see is that it works on stripped/optimized
-> binaries without fp or dwarf info. Compared to dwarf and the stack
-> snapshot, it does incur less overhead most likely. But yes, it comes
-> with limitations.
+Thanks,
+Aaron
+
+> +
+> +	if (d_max > d_max_in) {
+> +		for (d_max = d_max_in; d_max > *d_min_p; d_max--) {
+> +			if (adev->power.states[d_max].flags.valid)
+> +				break;
+> +		}
+> +	}
+> +	return d_max;
+>  }
+>  EXPORT_SYMBOL(acpi_pm_device_sleep_state);
+>  
+> @@ -674,17 +704,13 @@ struct acpi_device *acpi_dev_pm_get_node
+>  static int acpi_dev_pm_low_power(struct device *dev, struct acpi_device *adev,
+>  				 u32 system_state)
+>  {
+> -	int power_state;
+> +	int ret, state;
+>  
+>  	if (!acpi_device_power_manageable(adev))
+>  		return 0;
+>  
+> -	power_state = acpi_dev_pm_get_state(dev, adev, system_state,
+> -					    ACPI_STATE_D3_COLD, NULL);
+> -	if (power_state < ACPI_STATE_D0 || power_state > ACPI_STATE_D3_COLD)
+> -		return -EIO;
+> -
+> -	return acpi_device_set_power(adev, power_state);
+> +	ret = acpi_dev_pm_get_state(dev, adev, system_state, NULL, &state);
+> +	return ret ? ret : acpi_device_set_power(adev, state);
+>  }
+>  
+>  /**
 > 
 
