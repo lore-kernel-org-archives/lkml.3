@@ -1,143 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab3F0QjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:39:17 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:52350 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab3F0QjP (ORCPT
+	id S1753446Ab3F0QlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:41:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33071 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab3F0QlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:39:15 -0400
-Message-ID: <51CC6AAF.4030404@gmail.com>
-Date: Thu, 27 Jun 2013 10:39:11 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 27 Jun 2013 12:41:13 -0400
+Message-ID: <51CC6B09.5080809@infradead.org>
+Date: Thu, 27 Jun 2013 09:40:41 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 12/15] perf tools: allow non-matching sample types
-References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com> <1372319707-13892-13-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1372319707-13892-13-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Xiong Zhou <jencce.kernel@gmail.com>
+CC: Ben Hutchings <ben@decadent.org.uk>, matthew.garrett@nebula.com,
+        platform-driver-x86@vger.kernel.org,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, jim.epost@gmail.com
+Subject: Re: [PATCH]amilo-rfkill: add depends on i8042 in Kconfig
+References: <alpine.DEB.2.02.1306181705530.28460@M2420> <1371560680.3495.121.camel@deadeye.wl.decadent.org.uk> <51C07608.2070406@infradead.org> <CADJHv_vZiPsDUiLrFao41rRVduf+AYFm0NuvpNaCW8S3KrAjnA@mail.gmail.com>
+In-Reply-To: <CADJHv_vZiPsDUiLrFao41rRVduf+AYFm0NuvpNaCW8S3KrAjnA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/27/13 1:55 AM, Adrian Hunter wrote:
-> Sample types need not be identical to determine
-> the sample id from the event.  Only the position
-> of the sample id needs to be the same.
->
-> Compatible sample types are ones in which the bits
-> defined by PERF_COMPAT_MASK are the same.
-> 'perf_evlist__config()' forces sample types to be
-> compatible on that basis.
->
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->   tools/perf/builtin-report.c |   2 +-
->   tools/perf/util/event.h     |  14 +++++
->   tools/perf/util/evlist.c    | 135 ++++++++++++++++++++++++++++++++++++++++++--
->   tools/perf/util/evlist.h    |   8 ++-
->   tools/perf/util/evsel.c     |  64 ++++++++++++++++++++-
->   tools/perf/util/evsel.h     |  10 ++++
->   tools/perf/util/session.c   |   8 ++-
->   7 files changed, 230 insertions(+), 11 deletions(-)
->
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index ca98d34..58572ac 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -367,7 +367,7 @@ static int process_read_event(struct perf_tool *tool,
->   static int perf_report__setup_sample_type(struct perf_report *rep)
->   {
->   	struct perf_session *self = rep->session;
-> -	u64 sample_type = perf_evlist__sample_type(self->evlist);
-> +	u64 sample_type = perf_evlist__combined_sample_type(self->evlist);
->
->   	if (!self->fd_pipe && !(sample_type & PERF_SAMPLE_CALLCHAIN)) {
->   		if (sort__has_parent) {
-> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-> index 1813895..3aef78c 100644
-> --- a/tools/perf/util/event.h
-> +++ b/tools/perf/util/event.h
-> @@ -65,6 +65,20 @@ struct read_event {
->   	PERF_SAMPLE_ID | PERF_SAMPLE_STREAM_ID |	\
->   	 PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
->
-> +/*
-> + * Events have compatible sample types if the following bits all have the same
-> + * value.  This is because the order of sample members is fixed.  For sample
-> + * events the order is: PERF_SAMPLE_IP, PERF_SAMPLE_TID, PERF_SAMPLE_TIME,
-> + * PERF_SAMPLE_ADDR, PERF_SAMPLE_ID.  For non-sample events the sample members
-> + * are accessed in reverse order.  The order is: PERF_SAMPLE_ID,
-> + * PERF_SAMPLE_STREAM_ID, PERF_SAMPLE_CPU.
-> + */
-> +#define PERF_COMPAT_MASK				\
-> +	(PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |	\
-> +	 PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR      |	\
-> +	 PERF_SAMPLE_ID   | PERF_SAMPLE_STREAM_ID |	\
-> +	 PERF_SAMPLE_CPU)
-> +
->   struct sample_event {
->   	struct perf_event_header        header;
->   	u64 array[];
-> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> index a660f56..78331da 100644
-> --- a/tools/perf/util/evlist.c
-> +++ b/tools/perf/util/evlist.c
-> @@ -49,6 +49,45 @@ struct perf_evlist *perf_evlist__new(void)
->   	return evlist;
->   }
->
-> +/**
-> + * perf_evlist__set_id_pos - set the positions of event ids.
-> + * @evlist: selected event list
-> + *
-> + * Events with compatible sample types all have the same id_pos
-> + * and is_pos.  For convenience, put a copy on evlist.
-> + */
-> +static void perf_evlist__set_id_pos(struct perf_evlist *evlist)
-> +{
-> +	struct perf_evsel *first = perf_evlist__first(evlist);
-> +
-> +	evlist->id_pos = first->id_pos;
-> +	evlist->is_pos = first->is_pos;
-> +}
-> +
-> +/**
-> + * perf_evlist__make_sample_types_compatible - make sample types compatible.
-> + * @evlist: selected event list
-> + *
-> + * Events with compatible sample types all have the same id_pos and is_pos.
-> + * This can be achieved by matching the bits of PERF_COMPAT_MASK.
-> + */
-> +void perf_evlist__make_sample_types_compatible(struct perf_evlist *evlist)
-> +{
-> +	struct perf_evsel *evsel;
-> +	u64 compat = 0;
-> +
-> +	list_for_each_entry(evsel, &evlist->entries, node)
-> +		compat |= evsel->attr.sample_type & PERF_COMPAT_MASK;
-> +
-> +	list_for_each_entry(evsel, &evlist->entries, node) {
-> +		evsel->attr.sample_type |= compat;
-> +		evsel->sample_size = __perf_evsel__sample_size(evsel->attr.sample_type);
-> +		perf_evsel__calc_id_pos(evsel);
-> +	}
-> +
-> +	perf_evlist__set_id_pos(evlist);
-> +}
-> +
+On 06/18/13 18:09, Xiong Zhou wrote:
+> 2013/6/18 Randy Dunlap <rdunlap@infradead.org>:
+>> On 06/18/13 06:04, Ben Hutchings wrote:
+>>> On Tue, 2013-06-18 at 17:21 +0800, Xiong Zhou wrote:
+>>>> From: Xiong Zhou <jencce.kernel@gmail.com>
+>>>>
+>>>> Fix randconfig build failure for Amilo x86 platform driver.
+>>>> AMILO_RFKILL requires SERIO_I8042 being available.
+>>>>
+>>>> amilo-rfkill.c:(.text+0x108b5b): undefined reference to `i8042_lock_chip'
+>>>> amilo-rfkill.c:(.text+0x108b69): undefined reference to `i8042_command'
+>>>> amilo-rfkill.c:(.text+0x108b71): undefined reference to `i8042_unlock_chip'
+>>>>
+>>>> Reported-by: Jim Davis <jim.epost@gmail.com>
+>>>> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+>>>
+>>> Acked-by: Ben Hutchings <ben@decadent.org.uk>
+>>>
+>>> But I thought somehow sent this same fix a while back...
+>>
+>> Yes, I reported it and sent a patch for it that you acked...
+>> I guess my patch was never picked up.
+>>
+> 
+> ... Better someone pick this up.
+> 
 
-While this works for a combined S/W and tracepoint events session, I do 
-not like promoting sample types to the minimum compatible level for all 
-events in the session. perf needs to allow each event to have its own 
-sample_type and not force a minimal compatibility.
+This build error is still occurring in linux-next (20130627).
+I first reported it and posted a patch for it on May-15 2013.
 
-David
+Please merge either patch...
+
+Is anybody out there?
+
+
+> 
+>>>
+>>> Ben.
+>>>
+>>>> ---
+>>>>  drivers/platform/x86/Kconfig |    1 +
+>>>>  1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+>>>> index 8577261..37645b9 100644
+>>>> --- a/drivers/platform/x86/Kconfig
+>>>> +++ b/drivers/platform/x86/Kconfig
+>>>> @@ -176,6 +176,7 @@ config FUJITSU_TABLET
+>>>>  config AMILO_RFKILL
+>>>>      tristate "Fujitsu-Siemens Amilo rfkill support"
+>>>>      depends on RFKILL
+>>>> +    depends on SERIO_I8042
+>>>>      ---help---
+>>>>        This is a driver for enabling wifi on some Fujitsu-Siemens Amilo
+>>>>        laptops.
+>>>
+>>
+>>
+>> --
+>> ~Randy
+> --
+
+
+-- 
+~Randy
