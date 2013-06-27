@@ -1,266 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab3F0Tck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 15:32:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17520 "EHLO mx1.redhat.com"
+	id S1753972Ab3F0Trf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 15:47:35 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54640 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752622Ab3F0Tcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:32:39 -0400
-Date: Thu, 27 Jun 2013 15:32:02 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v5 1/5] vmcore: Introduce ELF header in new memory feature
-Message-ID: <20130627193202.GK4899@redhat.com>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
- <1370624161-2298-2-git-send-email-holzheu@linux.vnet.ibm.com>
- <20130614185401.GL12023@redhat.com>
- <20130621161703.751b5f23@holzheu>
+	id S1753288Ab3F0Trd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 15:47:33 -0400
+Message-ID: <1372362418.21065.25.camel@cumari.coelho.fi>
+Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
+From: Luciano Coelho <coelho@ti.com>
+To: Nishanth Menon <nm@ti.com>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        "Tony Lindgren" <tony@atomide.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 27 Jun 2013 22:46:58 +0300
+In-Reply-To: <51CC8E80.5030206@ti.com>
+References: <1372149330-24335-1-git-send-email-coelho@ti.com>
+	  <51CBC1C8.1040301@gmail.com> <1372322851.18889.53.camel@cumari.coelho.fi>
+	  <20130627125131.GA27285@kahuna>
+	 <1372337887.8383.12.camel@cumari.coelho.fi>
+	  <CAGo_u6qbt9dANgKq49xR=1qsCpUBhmVaPL4EK04XvTw+=4Z23g@mail.gmail.com>
+	  <1372339148.8383.17.camel@cumari.coelho.fi> <51CC3CEE.3050004@ti.com>
+	  <1372339810.8383.20.camel@cumari.coelho.fi>
+	  <CAGo_u6pWZX9gbHgBae=gcWk8i6-TnhxH1TdM9QdEDLTow6Pn5A@mail.gmail.com>
+	 <1372359090.21065.12.camel@cumari.coelho.fi> <51CC8E80.5030206@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130621161703.751b5f23@holzheu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 04:17:03PM +0200, Michael Holzheu wrote:
-> On Fri, 14 Jun 2013 14:54:02 -0400
-> Vivek Goyal <vgoyal@redhat.com> wrote:
+On Thu, 2013-06-27 at 14:12 -0500, Nishanth Menon wrote:
+> On 06/27/2013 01:51 PM, Luciano Coelho wrote:
+> > On Thu, 2013-06-27 at 08:39 -0500, Nishanth Menon wrote:
+> >> On Thu, Jun 27, 2013 at 8:30 AM, Luciano Coelho <coelho@ti.com> wrote:
+> >>> On Thu, 2013-06-27 at 08:23 -0500, Nishanth Menon wrote:
+> >>>> On 06/27/2013 08:19 AM, Luciano Coelho wrote:
+> >>>>> On Thu, 2013-06-27 at 08:15 -0500, Nishanth Menon wrote:
+> >>>>>> On Thu, Jun 27, 2013 at 7:58 AM, Luciano Coelho <coelho@ti.com> wrote:
+> >>>>>>> For the actual DTS files, I could add a wilink.dtsi with enumerations
+> >>>>>>> for these values so they could be used in the node definitions.  But I'm
+> >>>>>>> not sure it's going to be that valuable in the end.
+> >>>>>> The  way GPIO HIGH was defined might help to provide guidance I think :)
+> >>>>>
+> >>>>> Where? As far as I can see, the GPIO flags are defined in a bitmap.
+> >>>>
+> >>>> include/dt-bindings/gpio/gpio.h
+> >>>
+> >>> Thanks! I don't see these macros used anywhere, though.
+> >> umm... I'd think you have'nt looked deep enough / lists :)
+> >
+> > If you mean mailing lists, you're right, I didn't.  I just did a git
+> > grep for the macros and didn't find any users.
+> git grep "GPIO_ACTIVE_[HIGH|LOW]" arch/arm/boot/dts/|wc -l
+> 344
+> on next-20130626. anyways, besides the point.
 > 
-> > On Fri, Jun 07, 2013 at 06:55:57PM +0200, Michael Holzheu wrote:
-> > 
-> > [..]
-> > > @@ -935,10 +967,17 @@ static int __init vmcore_init(void)
-> > >  {
-> > >  	int rc = 0;
-> > >  
-> > > -	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
-> > > -	if (!(is_vmcore_usable()))
-> > > -		return rc;
-> > > +	/*
-> > > +	 * If elfcorehdr= has not been passed in cmdline, try to get the
-> > > +	 * header from 2nd kernel, then capture the dump.
-> > > +	 */
-> > > +	if (!(is_vmcore_usable())) {
-> > > +		rc = elfcorehdr_alloc();
-> > > +		if (rc)
-> > > +			return rc;
-> > > +	}
-> > 
-> > Hi Michael,
-> > 
-> > Patch description says that elfcorehdr_alloc() returns the addr and 
-> > size of elf headers. But that does not seem to be the case here. Has
-> > it been modified in later patches.
 > 
-> Sorry, that is a relict of one of my previous experiments where I tried
-> to implement elfcorehdr_addr() similar to the way as you suggest it now.
-> Because elfcorehdr_addr is a global variable, I decided to not pass
-> it in the functions. But of course I can change that again if you prefer
-> that.
->  
-> > Also will it be better if we call elfcorehdr_alloc() always and then
-> > check for is_vmcore_usable().
-> > 
-> > Something like.
-> > 
-> > elfcorehdr_addr = elfcorehdr_alloc()
-> > if (elfcorehdr_addr < )
-> > 	return elfcorehdr_addr
-> > 
-> > if (!(is_vmcore_usable()))
-> > 	return error
+> >>> This seems to be a completely different thing.  This is the header that
+> >>> contains the helper functions to get GPIO-related device tree nodes,
+> >>> isn't it?
+> >> That is true, but it also contains the flag for level which needs to
+> >> be in sync with the gpio.h dts header.
+> >>>> just a hint. not saying frequencies were defined in header. for systems
+> >>>> that define frequencies - example cpufreq OPPs, clock node usage, we do
+> >>>> not use indexing to frequency, instead, that is the responsibility of
+> >>>> driver to convert frequency back to required index.
+> >>>> git grep frequency Documentation/devicetree/bindings gives you how the
+> >>>> precedence looks like.
+> >>>>
+> >>>> Personally, if given a choice, I'd go with actual frequencies rather
+> >>>> than indexes.
+> >>>
+> >>> If I do that, I need to add also a separate flag to define whether the
+> >>> XTAL clock is used or not.  For instance, we have 26MHz and 26MHz
+> >>> crystal; and 38.4MHz and 38.4MHz crystal...
+> >> Yes, you would have to. at the same time, it is easy for module maker
+> >> to provide dtsi corresponding to exact h/w representation on his
+> >> module using wilink chip without being worried about weird index value
+> >> whose meaning is hidden in binding
+> >
+> > The module makers need to know about the bindings and read the document
+> > before they specify the node in DTS.  I think for clarity, a comment in
+> > the DTS file stating the actual frequency is good enough.  Simpler and
+> > more efficient (in terms of DT binary size and module code size) than
+> > adding the actual frequencies.
+> >
+> >
+> >> On the flip side, It also allows driver to reject frequencies /
+> >> configurations that are not supported by the corresponding chip.
+> >
+> > It's actually much easier to reject frequencies that are not valid with
+> > the enumeration.  "if (refclock > 5) { bail_out(); }".  If I need to
+> > check every frequency, I need to add an array of valid frequencies and
+> > so on.  Waste of code, IMHO.
+> >
+> >
+> >> As I said, just my 2 cents. Personally, I'd like dts files to be as
+> >> readable as c files without having to dig through bindings document.
+> >
+> > As I said before, for readability, adding a comment with the frequency
+> > is good enough.  This is what I did for PandaES's DTS (not sent out
+> > yet):
+> >
+> > 	wlan {
+> > 	     compatible = "ti,wilink6";
+> > 	     interrupt-parent = <&gpio2>;
+> > 	     interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
+> > 	     refclock = <2>;		/* 38.4 MHz */
+> > 	 };
+> >
+> > Looks more readable to me than:
+> >
+> > 	wlan {
+> > 	     compatible = "ti,wilink6";
+> > 	     interrupt-parent = <&gpio2>;
+> > 	     interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
+> > 	     refclock = <38400>;
+> > 	     refclock_xtal = <0>;
+> > 	 };
+> >
+> > The macro idea sounds better to me, but in this case this code is so
+> > simple that I don't think it's really worth it.
+> >
+> > And, from another point of view, I see this as only a specification of
+> > the module's details.  The frequency value is not really used anywhere
+> > outside the module, so we don't see it.  I don't think there's a good
+> > reason to expose the actual frequency to the kernel (and parse it back
+> > to the values the firmware needs), since nothing else inside the kernel
+> > will care about it.
+> Overview: we are adding bindings for 
+> Documentation/devicetree/bindings/net/wireless/ti-wilink.txt Which I 
+> believe is intended to be generic.
 > 
-> Ok, but then I think elfcorehdr_alloc() should also return
-> the elfcorehdr_size.
-> 
-> So what about the following patch:
+> Current frequencies supported for tcxoclock is the following for WiLink7
+> +	0 = 19.200 MHz
+> +	1 = 26.000 MHz
+> +	2 = 38.400 MHz
+> +	3 = 52.000 MHz
+> +	4 = 16.368 MHz
+> +	5 = 32.736 MHz
+> +	6 = 16.800 MHz
+> +	7 = 33.600 MHz
+> Say wilink9 comes along and redefines this map OR introduces support for 
+> 20MHz support making the map 0-8, you'd no longer be able to support 
+> this map. or say a new update of firmware magically changes this mapping 
+> or something unexpected.
 
-This patch looks good to me. There are little ugly pieces w.r.t not
-setting elfcorehdr_addr null after calling free() as there are other
-pieces depdendent on elfcorehdr_addr. I think sometime later we can
-have a separate variable to track track whether this is kdump kernel
-and remove dependency on elfcorehdr_addr being set.
+No problem with adding 20MHz support.  Look at 6 = 16.800 MHz.  That's
+already out of order, so why would 20MHz have to change the mapping?
+
+It is true that stupid changes happen in the firmware from time to time.
+But if it happens, the translation could still be done in the driver.
+
+> If the translation and validation is done in the driver, it is trivial 
+> to handle without redefining the binding and breaking older dtbs (if 
+> relevant)
+
+The validation can still be done in the driver.  I don't think anything
+has to break here.  The bindings document is the de-facto specifications
+of this stuff.  If something in the lower layers (ie. firmware) breaks,
+the driver can do the translation without having to change anything in
+the DTS.
 
 
-So I am fine with this patch.
+> Indexes to another entity is always a maintenance burden in the longer 
+> run and needs judicious control. If it is possible to avoid it by 
+> selecting the right parameters, I am a hard advocate for the same.
 
-Vivek
+I tend to agree.  But you need a balance.  In theory you're right.  But
+I think if you take the real world example, it is over-engineering.
 
-> ---
->  fs/proc/vmcore.c           |   65 +++++++++++++++++++++++++++++++++++++--------
->  include/linux/crash_dump.h |    6 ++++
->  2 files changed, 60 insertions(+), 11 deletions(-)
-> 
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -123,6 +123,36 @@ static ssize_t read_from_oldmem(char *bu
->  	return read;
->  }
->  
-> +/*
-> + * Architectures may override this function to allocate ELF header in 2nd kernel
-> + */
-> +int __weak elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size)
-> +{
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Architectures may override this function to free header
-> + */
-> +void __weak elfcorehdr_free(unsigned long long addr)
-> +{}
-> +
-> +/*
-> + * Architectures may override this function to read from ELF header
-> + */
-> +ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos)
-> +{
-> +	return read_from_oldmem(buf, count, ppos, 0);
-> +}
-> +
-> +/*
-> + * Architectures may override this function to read from notes sections
-> + */
-> +ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
-> +{
-> +	return read_from_oldmem(buf, count, ppos, 0);
-> +}
-> +
->  /* Read from the ELF header and then the crash dump. On error, negative value is
->   * returned otherwise number of bytes read are returned.
->   */
-> @@ -322,7 +352,7 @@ static int __init update_note_header_siz
->  		notes_section = kmalloc(max_sz, GFP_KERNEL);
->  		if (!notes_section)
->  			return -ENOMEM;
-> -		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-> +		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
->  		if (rc < 0) {
->  			kfree(notes_section);
->  			return rc;
-> @@ -409,7 +439,8 @@ static int __init copy_notes_elf64(const
->  		if (phdr_ptr->p_type != PT_NOTE)
->  			continue;
->  		offset = phdr_ptr->p_offset;
-> -		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-> +		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-> +					   &offset);
->  		if (rc < 0)
->  			return rc;
->  		notes_buf += phdr_ptr->p_memsz;
-> @@ -510,7 +541,7 @@ static int __init update_note_header_siz
->  		notes_section = kmalloc(max_sz, GFP_KERNEL);
->  		if (!notes_section)
->  			return -ENOMEM;
-> -		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-> +		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
->  		if (rc < 0) {
->  			kfree(notes_section);
->  			return rc;
-> @@ -597,7 +628,8 @@ static int __init copy_notes_elf32(const
->  		if (phdr_ptr->p_type != PT_NOTE)
->  			continue;
->  		offset = phdr_ptr->p_offset;
-> -		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-> +		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-> +					   &offset);
->  		if (rc < 0)
->  			return rc;
->  		notes_buf += phdr_ptr->p_memsz;
-> @@ -793,7 +825,7 @@ static int __init parse_crash_elf64_head
->  	addr = elfcorehdr_addr;
->  
->  	/* Read Elf header */
-> -	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf64_Ehdr), &addr, 0);
-> +	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf64_Ehdr), &addr);
->  	if (rc < 0)
->  		return rc;
->  
-> @@ -820,7 +852,7 @@ static int __init parse_crash_elf64_head
->  	if (!elfcorebuf)
->  		return -ENOMEM;
->  	addr = elfcorehdr_addr;
-> -	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-> +	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
->  	if (rc < 0)
->  		goto fail;
->  
-> @@ -849,7 +881,7 @@ static int __init parse_crash_elf32_head
->  	addr = elfcorehdr_addr;
->  
->  	/* Read Elf header */
-> -	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf32_Ehdr), &addr, 0);
-> +	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf32_Ehdr), &addr);
->  	if (rc < 0)
->  		return rc;
->  
-> @@ -875,7 +907,7 @@ static int __init parse_crash_elf32_head
->  	if (!elfcorebuf)
->  		return -ENOMEM;
->  	addr = elfcorehdr_addr;
-> -	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-> +	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
->  	if (rc < 0)
->  		goto fail;
->  
-> @@ -902,7 +934,7 @@ static int __init parse_crash_elf_header
->  	int rc=0;
->  
->  	addr = elfcorehdr_addr;
-> -	rc = read_from_oldmem(e_ident, EI_NIDENT, &addr, 0);
-> +	rc = elfcorehdr_read(e_ident, EI_NIDENT, &addr);
->  	if (rc < 0)
->  		return rc;
->  	if (memcmp(e_ident, ELFMAG, SELFMAG) != 0) {
-> @@ -935,7 +967,14 @@ static int __init vmcore_init(void)
->  {
->  	int rc = 0;
->  
-> -	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
-> +	/* Allow architectures to allocate ELF header in 2nd kernel */
-> +	rc = elfcorehdr_alloc(&elfcorehdr_addr, &elfcorehdr_size);
-> +	if (rc)
-> +		return rc;
-> +	/*
-> +	 * If elfcorehdr= has been passed in cmdline or created in 2nd kernel,
-> +	 * then capture the dump.
-> +	 */
->  	if (!(is_vmcore_usable()))
->  		return rc;
->  	rc = parse_crash_elf_headers();
-> @@ -943,7 +982,11 @@ static int __init vmcore_init(void)
->  		pr_warn("Kdump: vmcore not initialized\n");
->  		return rc;
->  	}
-> -
-> +	elfcorehdr_free(elfcorehdr_addr);
-> +	/*
-> +	 * elfcorehdr_addr must not be set to NULL here to keep
-> +	 * is_kdump_kernel() working.
-> +	 */
->  	proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &proc_vmcore_operations);
->  	if (proc_vmcore)
->  		proc_vmcore->size = vmcore_size;
-> --- a/include/linux/crash_dump.h
-> +++ b/include/linux/crash_dump.h
-> @@ -12,6 +12,12 @@
->  extern unsigned long long elfcorehdr_addr;
->  extern unsigned long long elfcorehdr_size;
->  
-> +extern int __weak elfcorehdr_alloc(unsigned long long *addr,
-> +				   unsigned long long *size);
-> +extern void __weak elfcorehdr_free(unsigned long long addr);
-> +extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
-> +extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
-> +
->  extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
->  						unsigned long, int);
->  
+Anyway, if you *really* think this needs to be changed, I think we're in
+a deadlock here and I'd like to hear other people's opinions.  I don't
+mind making the change, but I'm still not convinced it is worth it,
+since it just adds complexity.
+
+And hey, this is too much bikeshedding for such a small detail.
+
+--
+Luca.
+
