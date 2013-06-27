@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab3F0H47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:56:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11514 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab3F0H46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:56:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,950,1363158000"; 
-   d="scan'208";a="336254117"
-Message-ID: <51CBF193.60004@intel.com>
-Date: Thu, 27 Jun 2013 11:02:27 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
-References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-13-git-send-email-adrian.hunter@intel.com> <51C9BDB2.7060905@gmail.com>
-In-Reply-To: <51C9BDB2.7060905@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753064Ab3F0IBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:01:25 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:43522 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab3F0IBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 04:01:23 -0400
+Message-ID: <1372320082.3301.217.camel@edumazet-glaptop>
+Subject: Re: [RFC Patch net-next 3/5] inetpeer: use generic union inet_addr
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: netdev@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Date: Thu, 27 Jun 2013 01:01:22 -0700
+In-Reply-To: <1372315398-19683-4-git-send-email-amwang@redhat.com>
+References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
+	 <1372315398-19683-4-git-send-email-amwang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/13 18:56, David Ahern wrote:
-> On 6/24/13 7:16 AM, Adrian Hunter wrote:
->> Sample types need not be identical to determine
->> the sample id from the event.  Only the position
->> of the sample id needs to be the same.
->>
->> Compatible sample types are ones in which the bits
->> defined by PERF_COMPAT_MASK are the same.
->> 'perf_evlist__config()' forces sample types to be
->> compatible on that basis.
+On Thu, 2013-06-27 at 14:43 +0800, Cong Wang wrote:
+> Signed-off-by: Cong Wang <amwang@redhat.com>
+> ---
+>  include/net/inetpeer.h |   29 +++++----------
+>  net/ipv4/inetpeer.c    |   35 +++++++++++-------
+>  net/ipv4/tcp_metrics.c |   92 ++++++++++++++++++++----------------------------
+>  3 files changed, 68 insertions(+), 88 deletions(-)
 > 
-> Something is still missing to support different sample_types for events.
-> Consider the case (S/W event + tracepoint):
->   perf record -e cs -c1 -e sched:sched_switch -a -- sleep 1
->   perf script
-> 
-> This patch addresses the sample_type mismatch error message, but I get no
-> event samples in the output. Besides the usual header I get:
-> 
->   No trace sample to read. Did you call 'perf record -R'?
+> diff --git a/include/net/inetpeer.h b/include/net/inetpeer.h
+> index 53f464d..7ec33fb 100644
+> --- a/include/net/inetpeer.h
+> +++ b/include/net/inetpeer.h
+> @@ -13,24 +13,13 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/rtnetlink.h>
+>  #include <net/ipv6.h>
+> +#include <net/inet_addr.h>
+>  #include <linux/atomic.h>
+>  
+> -struct inetpeer_addr_base {
+> -	union {
+> -		__be32			a4;
+> -		__be32			a6[4];
+> -	};
+> -};
+> -
+> -struct inetpeer_addr {
+> -	struct inetpeer_addr_base	addr;
+> -	__u16				family;
+> -};
+> -
+>  struct inet_peer {
+>  	/* group together avl_left,avl_right,v4daddr to speedup lookups */
+>  	struct inet_peer __rcu	*avl_left, *avl_right;
+> -	struct inetpeer_addr	daddr;
+> +	union inet_addr		daddr;
 
-Fixed in V2
+Please compare sizeof(struct inetpeer_addr) and sizeof(union inet_addr)
 
-> 
-> It's a 16-cpu box with 5 VMs running. I know there should be at least a few
-> samples in 1 second.
-> 
-> Stephane: are you looking at allowing sample_types per event?
-> 
-> David
-> 
-> 
+If I am not mistaken, its 20 bytes instead of 28
+
+Yes, sockaddr_in6 is a bit bloated...
+
 
