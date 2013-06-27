@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab3F0ErR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 00:47:17 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:53914 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750960Ab3F0ErP (ORCPT
+	id S1752093Ab3F0Erf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 00:47:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47025 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab3F0Ere (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 00:47:15 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArsPALDCy1F5LKwQ/2dsb2JhbABbgwm6W4UgBAF+F3SCIwEBBAEnExwjBQsIAxgJJQ8FJQMhE4gIBbobFo4igR0HgwJhA5dEih+HJ4MjKg
-Date: Thu, 27 Jun 2013 14:47:05 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tux3@tux3.org
-Subject: Re: [PATCH] Optimize wait_sb_inodes()
-Message-ID: <20130627044705.GB29790@dastard>
-References: <87ehbpntuk.fsf@devron.myhome.or.jp>
- <20130626231143.GC28426@dastard>
- <87wqpg76ls.fsf@devron.myhome.or.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqpg76ls.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Jun 2013 00:47:34 -0400
+Date: Thu, 27 Jun 2013 14:47:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bharat Bhushan <r65777@freescale.com>
+Cc: <kvm-ppc@vger.kernel.org>, <kvm@vger.kernel.org>, <agraf@suse.de>,
+        <scottwood@freescale.com>, <tiejun.chen@windriver.com>,
+        <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <mikey@neuling.org>,
+        Bharat Bhushan <bharat.bhushan@freescale.com>
+Subject: Re: [PATCH 3/6 v5] powerpc: export debug registers save function
+ for KVM
+Message-Id: <20130627144721.c57718a17c50469db8050520@canb.auug.org.au>
+In-Reply-To: <1372225346-5029-4-git-send-email-Bharat.Bhushan@freescale.com>
+References: <1372225346-5029-1-git-send-email-Bharat.Bhushan@freescale.com>
+	<1372225346-5029-4-git-send-email-Bharat.Bhushan@freescale.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Jun_2013_14_47_21_+1000_SMWQdE16V9eV2+6+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 09:14:07AM +0900, OGAWA Hirofumi wrote:
-> Dave Chinner <david@fromorbit.com> writes:
-> 
-> >> On another view, wait_sb_inodes() would (arguably) be necessary for
-> >> legacy FSes. But, for example, if data=journal on ext*, wait_sb_inodes()
-> >> would be more than useless, because ext* can be done it by own
-> >> transaction list (and more efficient way).
-> >> 
-> >> Likewise, on tux3, the state is same with data=journal.
-> >> 
-> >> Also, even if data=ordered, ext* might be able to check in-flight I/O by
-> >> ordered data list (with some new additional check, I'm not sure).
-> >
-> > Why would you bother solving this problem differently in every
-> > single filesystem? It's solvable at the VFS by tracking inodes that
-> > are no longer dirty but still under writeback on the BDI. Then
-> > converting wait_sb_inodes() to walk all the dirty and writeback
-> > inodes would be sufficient for data integrity purposes, and it would
-> > be done under the bdi writeback lock, not the inode_sb_list_lock....
-> >
-> > Alternatively, splitting up the inode sb list and lock (say via the
-> > per-node list_lru structures in -mm and -next that are being added
-> > for exactly this purpose) would also significantly reduce lock
-> > contention on both the create/evict fast paths and the
-> > wait_sb_inodes() walk that is currently done....
-> >
-> > So I think that you should address the problem properly at the VFS
-> > level so everyone benefits, not push interfaces that allow
-> > filesystem specific hacks to work around VFS level deficiencies...
-> 
-> Optimizing wait_sb_inodes() might help lock contention, but it doesn't
-> help unnecessary wait/check.
+--Signature=_Thu__27_Jun_2013_14_47_21_+1000_SMWQdE16V9eV2+6+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You have your own wait code, that doesn't make what the VFS does
-unnecesary. Quite frankly, I don't trust individual filesystems to
-get it right - there's a long history of filesystem specific data
-sync problems (including in XFS), and the best way to avoid that is
-to ensure the VFS gets it right for you.
+Hi,
 
-Indeed, we've gone from having sooper special secret sauce data sync
-code in XFS to using the VFS over the past few years, and the result
-is that it is now more reliable and faster than when we were trying
-to be smart and do it all ourselves. We got to where we are by
-fixing the problems in the VFS rather than continuing to try to work
-around them.
+On Wed, 26 Jun 2013 11:12:23 +0530 Bharat Bhushan <r65777@freescale.com> wr=
+ote:
+>
+> diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/=
+asm/switch_to.h
+> index 200d763..50b357f 100644
+> --- a/arch/powerpc/include/asm/switch_to.h
+> +++ b/arch/powerpc/include/asm/switch_to.h
+> @@ -30,6 +30,10 @@ extern void enable_kernel_spe(void);
+>  extern void giveup_spe(struct task_struct *);
+>  extern void load_up_spe(struct task_struct *);
+> =20
+> +#ifdef CONFIG_PPC_ADV_DEBUG_REGS
+> +extern void switch_booke_debug_regs(struct thread_struct *new_thread);
+> +#endif
 
-> Since some FSes know about current
-> in-flight I/O already in those internal, so I think, those FSes can be
-> done it here, or are already doing in ->sync_fs().
+We usually don't bother guarding function declarations.
 
-Sure, do your internal checks in ->sync_fs(), but if
-wait_sb_inodes() does not have any lock contention and very little
-overhead, then why do you need to avoid it? This wait has to be done
-somewhere between sync_inodes_sb() dispatching all the IO and
-->sync_fs completing, so what's the problem with hving the VFS do
-that *for everyone* efficiently?
-
-Fix the root cause of the problem - the sub-optimal VFS code.
-Hacking around it specifically for out-of-tree code is not the way
-things get done around here...
-
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Thu__27_Jun_2013_14_47_21_+1000_SMWQdE16V9eV2+6+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRy8PdAAoJEECxmPOUX5FEoI8P/RMTVTsiHT2RCaoXGOCP1sxj
+eChTNLnBLqXjdDvNJTlCmisfwpLHxLGRKo6kYdKSDxKmDhclehDSaKECZ1hgKGK4
+x0seA/GdsEL/KGq9DmAcD9wuTOTDupNpldUzcjeIX5mOW47RGPQP/bhNc+1AdLR/
+SPc9O3jcG/gnHMM3SvVaBdGzptv886eDh+RjA+7u21k1kOzo8Yr2UAIY86EFRkng
+PXLxtrCO4zi1iCan4nXtB0AY9I6CYiqtH9AeTmE6lEEE3d5SB3p9JRYHVMBw7TPw
+dRhVwWZS/i3BSne0/2FZxz7Cnofn6P9t33hiAWz0idLb7hkkhkbVfYN7Np8q1Bnm
+QCMw4cpvzL844xJgBTLCBbhNnLGxt5lh/ScVGgWXPSsCg1dD9viJnx9giYEmA1Ki
+e4XBNQBp/UQlz09zd1ZI+RCk5whd/15GROfpKrD/kq32DJVVznVgQQ7ObDBvLjcE
+IsWTGyJhhVzDp5CwbCiajLxCyMGIFqFMRWI8IgXEWYmhquHe0amXU4iQzzg9gCbn
+Oqr5NQnjqOYG/ymghw0rnmRnDEXp6GaNdokcRQz82Fb5eZ847GVkIx8QSzb5k+oY
+yolV5UYNNDSusZ4RI0AvSFQWWbqvCdOcuu3NYlSmPKwOEtMfdHelq4GBYHIwTliL
+QzFxbev03+VWBDpV+Wz9
+=atgb
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__27_Jun_2013_14_47_21_+1000_SMWQdE16V9eV2+6+--
