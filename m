@@ -1,165 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab3F0MeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:34:00 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:64766 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab3F0Md6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:33:58 -0400
+	id S1752464Ab3F0MfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:35:18 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:24793
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751819Ab3F0MfQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 08:35:16 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzc89bhzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h93fhd24he5bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>
+To: <linux-next@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, <trivial@kernel.org>
+Subject: [PATCH linux-next] videomode: fix compilation warning
+Date: Thu, 27 Jun 2013 14:34:57 +0200
+Message-ID: <1372336497-2005-1-git-send-email-vincent.stehle@freescale.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <20130627111445.GR28407@twins.programming.kicks-ass.net>
-References: <1371824448-7306-1-git-send-email-eranian@google.com>
-	<1371824448-7306-3-git-send-email-eranian@google.com>
-	<20130624084510.GK28407@twins.programming.kicks-ass.net>
-	<CABPqkBQRchnjhnEC05w-noizoeSRnNio7NDQ6_+vXym_7rkGaw@mail.gmail.com>
-	<20130626103653.GC28407@twins.programming.kicks-ass.net>
-	<CABPqkBQuYy3TeE81tTXVruMG4D84TQ2U5g69T2ResGgjPjK4Cg@mail.gmail.com>
-	<20130627104833.GC27378@dyad.programming.kicks-ass.net>
-	<CABPqkBSwrz_GSobSuXn+AvU1zp14nAccCer4o7DHmG2c90cxRA@mail.gmail.com>
-	<20130627111445.GR28407@twins.programming.kicks-ass.net>
-Date: Thu, 27 Jun 2013 14:33:58 +0200
-Message-ID: <CABPqkBTU5kM_mgxj_3+Li+r=Ofq+xG4_PP2wu94pzeJ4y3m92Q@mail.gmail.com>
-Subject: Re: [PATCH 2/8] perf,x86: drop event->flags and use hw.constraint->flags
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+Add missing include file to fix the following compilation warning:
 
-Let's drop this patch.
+  In file included from drivers/video/wm8505fb.c:35:0:
+  include/video/of_display_timing.h:18:10: warning: ‘struct display_timing’ declared inside parameter list [enabled by default]
+  include/video/of_display_timing.h:18:10: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
 
-It does not work anymore with the offcore-response
-scheduling fix. The constraint->flags are shared, so cannot
-use the flags there to store X86_COMMITTED. So we have
-to keep a copy in the event->hw.flags.
-
-Sorry about the confusion.
-
+Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: trivial@kernel.org
+---
 
 
+Hi,
 
-On Thu, Jun 27, 2013 at 1:14 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Jun 27, 2013 at 01:01:02PM +0200, Stephane Eranian wrote:
->> Ok, the chunks that do not apply can be ignored for perf_event_intel.c.
->
-> Just to verify; I did a force apply ignoring the 2 hunks in perf_event_intel.c.
-> The result is the below patch; which gives:
->
-> # nice make O=defconfig-build/ -j16 -s
-> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c: In function ‘x86_schedule_events’:
-> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:780:9: error: ‘struct hw_perf_event’ has no member named ‘flags’
-> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:794:14: error: ‘struct hw_perf_event’ has no member named ‘flags’
-> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c: In function ‘x86_pmu_del’:
-> /usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:1180:11: error: ‘struct hw_perf_event’ has no member named ‘flags’
-> make[4]: *** [arch/x86/kernel/cpu/perf_event.o] Error 1
->
->
-> Please resend one that builds.
->
-> ---
-> Subject: perf,x86: Drop event->flags and use hw.constraint->flags
-> From: Stephane Eranian <eranian@google.com>
-> Date: Fri, 21 Jun 2013 16:20:42 +0200
->
-> Now that we use the constraints directly from the event, we
-> do not need the event->flags field so drop it.
->
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/1371824448-7306-3-git-send-email-eranian@google.com
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_ds.c |   19 ++++++++++---------
->  include/linux/perf_event.h                |    1 -
->  2 files changed, 10 insertions(+), 10 deletions(-)
->
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -623,7 +623,6 @@ struct event_constraint *intel_pebs_cons
->         if (x86_pmu.pebs_constraints) {
->                 for_each_event_constraint(c, x86_pmu.pebs_constraints) {
->                         if ((event->hw.config & c->cmask) == c->code) {
-> -                               event->hw.flags |= c->flags;
->                                 return c;
->                         }
->                 }
-> @@ -636,14 +635,15 @@ void intel_pmu_pebs_enable(struct perf_e
->  {
->         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
->         struct hw_perf_event *hwc = &event->hw;
-> +       int flags = event->hw.constraint->flags;
->
->         hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
->
->         cpuc->pebs_enabled |= 1ULL << hwc->idx;
->
-> -       if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
-> +       if (flags & PERF_X86_EVENT_PEBS_LDLAT)
->                 cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
-> -       else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
-> +       else if (flags & PERF_X86_EVENT_PEBS_ST)
->                 cpuc->pebs_enabled |= 1ULL << 63;
->  }
->
-> @@ -651,12 +651,13 @@ void intel_pmu_pebs_disable(struct perf_
->  {
->         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
->         struct hw_perf_event *hwc = &event->hw;
-> +       int flags = event->hw.constraint->flags;
->
->         cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
->
-> -       if (event->hw.constraint->flags & PERF_X86_EVENT_PEBS_LDLAT)
-> +       if (flags & PERF_X86_EVENT_PEBS_LDLAT)
->                 cpuc->pebs_enabled &= ~(1ULL << (hwc->idx + 32));
-> -       else if (event->hw.constraint->flags & PERF_X86_EVENT_PEBS_ST)
-> +       else if (flags & PERF_X86_EVENT_PEBS_ST)
->                 cpuc->pebs_enabled &= ~(1ULL << 63);
->
->         if (cpuc->enabled)
-> @@ -772,14 +773,14 @@ static void __intel_pmu_pebs_event(struc
->         struct perf_sample_data data;
->         struct pt_regs regs;
->         u64 sample_type;
-> +       int flags = event->hw.constraint->flags;
->         int fll, fst;
->
->         if (!intel_pmu_save_and_restart(event))
->                 return;
->
-> -       fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
-> -       fst = event->hw.flags & (PERF_X86_EVENT_PEBS_ST |
-> -                                PERF_X86_EVENT_PEBS_ST_HSW);
-> +       fll = flags & PERF_X86_EVENT_PEBS_LDLAT;
-> +       fst = flags & (PERF_X86_EVENT_PEBS_ST | PERF_X86_EVENT_PEBS_ST_HSW);
->
->         perf_sample_data_init(&data, 0, event->hw.last_period);
->
-> @@ -802,7 +803,7 @@ static void __intel_pmu_pebs_event(struc
->                 if (sample_type & PERF_SAMPLE_DATA_SRC) {
->                         if (fll)
->                                 data.data_src.val = load_latency_data(pebs->dse);
-> -                       else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
-> +                       else if (flags & PERF_X86_EVENT_PEBS_ST_HSW)
->                                 data.data_src.val =
->                                         precise_store_data_hsw(pebs->dse);
->                         else
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -134,7 +134,6 @@ struct hw_perf_event {
->                         int             event_base_rdpmc;
->                         int             idx;
->                         int             last_cpu;
-> -                       int             flags;
->
->                         struct hw_perf_event_extra extra_reg;
->                         struct hw_perf_event_extra branch_reg;
->
+This warning happens on linux-next tag next-20130627, for ARM multi_v7_defconfig.
+
+Best regards,
+
+V.
+
+
+ include/video/of_display_timing.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/video/of_display_timing.h b/include/video/of_display_timing.h
+index 6562ad9..d43be98 100644
+--- a/include/video/of_display_timing.h
++++ b/include/video/of_display_timing.h
+@@ -9,6 +9,8 @@
+ #ifndef __LINUX_OF_DISPLAY_TIMING_H
+ #define __LINUX_OF_DISPLAY_TIMING_H
+ 
++#include <video/display_timing.h>
++
+ struct device_node;
+ struct display_timings;
+ 
+-- 
+1.7.10.4
+
+
+
