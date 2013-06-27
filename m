@@ -1,67 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab3F0N5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:57:03 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:41417 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3F0N5B (ORCPT
+	id S1752302Ab3F0OEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:04:33 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:62271 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3F0OEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:57:01 -0400
-Message-ID: <51CC44A9.60809@gmail.com>
-Date: Thu, 27 Jun 2013 07:56:57 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 06/19] perf ftrace: Add support for --pid option
-References: <1372230862-15861-1-git-send-email-namhyung@kernel.org> <1372230862-15861-7-git-send-email-namhyung@kernel.org> <51CB20F3.8000805@gmail.com> <87ehbo15zx.fsf@sejong.aot.lge.com>
-In-Reply-To: <87ehbo15zx.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jun 2013 10:04:32 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH] clk: add MOXA ART SoCs clock driver
+Date: Thu, 27 Jun 2013 16:03:54 +0200
+Message-Id: <1372341834-6557-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/26/13 11:23 PM, Namhyung Kim wrote:
-> On Wed, 26 Jun 2013 11:12:19 -0600, David Ahern wrote:
->> On 6/26/13 1:14 AM, Namhyung Kim wrote:
->>> @@ -196,6 +222,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
->>>    	const struct option ftrace_options[] = {
->>>    	OPT_STRING('t', "tracer", &ftrace.tracer, "tracer",
->>>    		   "tracer to use"),
->>> +	OPT_STRING('p', "pid", &ftrace.target.tid, "pid",
->>> +		   "trace on existing process id"),
->>>    	OPT_INCR('v', "verbose", &verbose,
->>>    		 "be more verbose"),
->>>    	OPT_END()
->>
->> You are calling it pid but assigning it as a tid which is inconsistent
->> with other perf commands. e.g., perf-record allows a list of pids (-p)
->> or tids (-t). Why not support that in perf-ftrace? And that leads to
->> the comment about consistency of options across perf commands: -t is
->> used here for tracer type to use.
->
-> Sorry, I should've mentioned it.
->
-> The pid filtering in ftrace is done via set_ftrace_pid file under the
-> tracing debugfs directory.  IIRC It only supports process filtering not
-> thread filtering by iterating all threads in the kernel code.  So --tid
-> option cannot be implemented as other perf commands.
->
-> So I chose not to and assigned -t option to --tracer.
+This patch adds MOXA ART SoCs clock driver support.
 
-Could that ever change? With the current code why call it pid in the 
-option but assign it to target.tid? Seems a like a source for confusion 
-later. Would be better to just assign to target.pid and let the 
-machinery do the right thing.
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-David
+Notes:
+    Applies to next-20130619
+
+ drivers/clk/Makefile     |   1 +
+ drivers/clk/clk-moxart.c | 141 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 142 insertions(+)
+ create mode 100644 drivers/clk/clk-moxart.c
+
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index f41e3e3..92e4532 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
+ obj-$(CONFIG_ARCH_ZYNQ)		+= zynq/
+ obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
+ obj-$(CONFIG_PLAT_SAMSUNG)	+= samsung/
++obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
+ 
+ obj-$(CONFIG_X86)		+= x86/
+ 
+diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
+new file mode 100644
+index 0000000..893a63b
+--- /dev/null
++++ b/drivers/clk/clk-moxart.c
+@@ -0,0 +1,141 @@
++/*
++ * MOXA ART SoCs clock driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/io.h>
++#include <linux/of_address.h>
++#include <linux/clkdev.h>
++
++static DEFINE_SPINLOCK(_lock);
++
++struct clk_device {
++	struct clk_hw	hw;
++	void __iomem	*reg_pmu;
++	spinlock_t		*lock;
++};
++
++static unsigned long moxart_recalc_rate(struct clk_hw *c_hw,
++	unsigned long parent_rate)
++{
++	unsigned int mul, val, div;
++	unsigned long ret;
++	struct clk_device *dev_clk = container_of(c_hw, struct clk_device, hw);
++
++	mul = (readl(dev_clk->reg_pmu + 0x30) >> 3) & 0x1ff;
++	val = (readl(dev_clk->reg_pmu + 0x0c) >> 4) & 0x7;
++
++	switch (val) {
++	case 0:
++		div = 2;
++		break;
++	case 1:
++		div = 3;
++		break;
++	case 2:
++		div = 4;
++		break;
++	case 3:
++		div = 6;
++		break;
++	case 4:
++		div = 8;
++		break;
++	default:
++		div = 2;
++		break;
++	}
++
++	ret = (mul * 1200000 / div);
++
++	/* UC-7112-LX: ret=48000000 mul=80 div=2 val=0 */
++	pr_debug("%s: ret=%lu mul=%d div=%d val=%d\n",
++		__func__, ret, mul, div, val);
++	return ret;
++}
++
++static const struct clk_ops moxart_clk_ops = {
++	.recalc_rate = moxart_recalc_rate,
++};
++
++static const struct of_device_id moxart_pmu_match[] = {
++	{ .compatible = "moxa,moxart-pmu" },
++	{ },
++};
++
++static const struct of_device_id moxart_sysclk_match[] = {
++	{ .compatible = "moxa,moxart-sysclk" },
++	{ }
++};
++
++void __init moxart_of_clk_init(void)
++{
++	struct device_node *node, *clk_node;
++	struct clk *clk;
++	struct clk_device *dev_clk;
++	struct clk_init_data init;
++	int err;
++	const char *clk_name;
++
++	dev_clk = kzalloc(sizeof(*dev_clk), GFP_KERNEL);
++	if (WARN_ON(!dev_clk))
++		return;
++
++	dev_clk->lock = &_lock;
++
++	node = of_find_matching_node(NULL, moxart_pmu_match);
++	if (!node) {
++		pr_err("%s: can't find PMU DT node\n", __func__);
++		return;
++	}
++
++	dev_clk->reg_pmu = of_iomap(node, 0);
++	if (IS_ERR(dev_clk->reg_pmu)) {
++		pr_err("%s: of_iomap failed\n", __func__);
++		return;
++	}
++
++	clk_node = of_find_matching_node(NULL, moxart_sysclk_match);
++	if (!clk_node) {
++		pr_err("%s: can't find sys_clk DT node\n", __func__);
++		return;
++	}
++
++	clk_name = clk_node->name;
++
++	of_property_read_string(clk_node, "clock-output-names",
++		&clk_name);
++
++	init.name = clk_name;
++	init.ops = &moxart_clk_ops;
++	init.flags = CLK_IS_ROOT;
++	init.num_parents = 0;
++
++	dev_clk->hw.init = &init;
++
++	clk = clk_register(NULL, &dev_clk->hw);
++
++	if (WARN_ON(IS_ERR(clk))) {
++		kfree(dev_clk);
++		return;
++	}
++
++	clk_register_clkdev(clk, NULL, clk_name);
++
++	err = of_clk_add_provider(clk_node, of_clk_src_simple_get, clk);
++
++	pr_info("%s: %s finished\n", node->full_name, __func__);
++}
+-- 
+1.8.2.1
 
