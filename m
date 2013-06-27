@@ -1,121 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab3F0Gi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 02:38:26 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:14394 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751003Ab3F0GiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 02:38:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArsPAO7cy1F5LKwQ/2dsb2JhbABbgwm6VIUgBAF8F3SCIwEBBAEnExwjBQsIAxgJJQ8FJQMhE4gIBboXFo4igR0HgwJhA5dEih+HJ4MjKg
-Date: Thu, 27 Jun 2013 16:38:16 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tux3@tux3.org
-Subject: Re: [PATCH] Optimize wait_sb_inodes()
-Message-ID: <20130627063816.GD29790@dastard>
-References: <87ehbpntuk.fsf@devron.myhome.or.jp>
- <20130626231143.GC28426@dastard>
- <87wqpg76ls.fsf@devron.myhome.or.jp>
- <20130627044705.GB29790@dastard>
- <87y59w5dye.fsf@devron.myhome.or.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y59w5dye.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752377Ab3F0GoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 02:44:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49339 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab3F0GoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 02:44:13 -0400
+From: Cong Wang <amwang@redhat.com>
+To: netdev@vger.kernel.org
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Jiri Pirko <jiri@resnulli.us>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: [RFC Patch net-next 2/5] net: introduce generic inet_pton()
+Date: Thu, 27 Jun 2013 14:43:15 +0800
+Message-Id: <1372315398-19683-3-git-send-email-amwang@redhat.com>
+In-Reply-To: <1372315398-19683-1-git-send-email-amwang@redhat.com>
+References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 02:18:17PM +0900, OGAWA Hirofumi wrote:
-> Dave Chinner <david@fromorbit.com> writes:
-> 
-> >> Optimizing wait_sb_inodes() might help lock contention, but it doesn't
-> >> help unnecessary wait/check.
-> >
-> > You have your own wait code, that doesn't make what the VFS does
-> > unnecesary. Quite frankly, I don't trust individual filesystems to
-> > get it right - there's a long history of filesystem specific data
-> > sync problems (including in XFS), and the best way to avoid that is
-> > to ensure the VFS gets it right for you.
-> >
-> > Indeed, we've gone from having sooper special secret sauce data sync
-> > code in XFS to using the VFS over the past few years, and the result
-> > is that it is now more reliable and faster than when we were trying
-> > to be smart and do it all ourselves. We got to where we are by
-> > fixing the problems in the VFS rather than continuing to try to work
-> > around them.
-> 
-> I guess you are assuming FS which is using data=writeback or such.
+Signed-off-by: Cong Wang <amwang@redhat.com>
+---
+ include/net/inet_addr.h |   20 ++++++++++++++++++++
+ net/core/netpoll.c      |   24 ++----------------------
+ 2 files changed, 22 insertions(+), 22 deletions(-)
 
-No, I'm not asumming anything about the filesystem. Indeed, many
-filesystems don't work like ext4 data=writeback/ordered, and to
-assume that they do at the VFS level is completely wrong.
-
-I'm saying that the VFS - which is tracking all the inodes with
-dirty data, and is starting IO on them - needs to also provide
-correct and efficient "wait for all inodes under IO" behaviour. it
-currently provides "correct", but it's not efficient.
-
-> 
-> >> Since some FSes know about current
-> >> in-flight I/O already in those internal, so I think, those FSes can be
-> >> done it here, or are already doing in ->sync_fs().
-> >
-> > Sure, do your internal checks in ->sync_fs(), but if
-> > wait_sb_inodes() does not have any lock contention and very little
-> > overhead, then why do you need to avoid it? This wait has to be done
-> > somewhere between sync_inodes_sb() dispatching all the IO and
-> > ->sync_fs completing, so what's the problem with hving the VFS do
-> > that *for everyone* efficiently?
-> 
-> Are you saying the vfs should track all in-flight I/O with some sort of
-> transactional way?
-
-The VFs doesn't need to know a thing about filesystem transactions.
-
-> Otherwise, vfs can't know the data is whether after sync point or before
-> sync point, and have to wait or not. FS is using the behavior like
-> data=journal has tracking of those already, and can reuse it.
-
-The VFS writeback code already differentiates between data written
-during a sync operation and that dirtied after a sync operation.
-Perhaps you should look at the tagging for WB_SYNC_ALL writeback
-that write_cache_pages does....
-
-But, anyway, we don't have to do that on the waiting side of things.
-All we need to do is add the inode to a "under IO" list on the bdi
-when the mapping is initially tagged with pages under writeback,
-and remove it from that list during IO completion when the mapping
-is no longer tagged as having pages under writeback.
-
-wait_sb_inodes() just needs to walk that list and wait on each inode
-to complete IO. It doesn't require *any awareness* of the underlying
-filesystem implementation or how the IO is actually issued - if
-there's IO in progress at the time wait_sb_inodes() is called, then
-it waits for it.
-
-> > Fix the root cause of the problem - the sub-optimal VFS code.
-> > Hacking around it specifically for out-of-tree code is not the way
-> > things get done around here...
-> 
-> I'm thinking the root cause is vfs can't have knowledge of FS internal,
-> e.g. FS is handling data transactional way, or not.
-
-If the filesystem has transactional data/metadata that the VFS is
-not tracking, then that is what the ->sync_fs call is for. i.e. so
-the filesystem can then do what ever extra writeback/waiting it
-needs to do that the VFS is unaware of.
-
-We already cater for what Tux3 needs in the VFS - all you've done is
-found an inefficient algorithm that needs fixing.
-
-Cheers,
-
-Dave.
+diff --git a/include/net/inet_addr.h b/include/net/inet_addr.h
+index 66a16fe..1379287 100644
+--- a/include/net/inet_addr.h
++++ b/include/net/inet_addr.h
+@@ -4,6 +4,7 @@
+ #include <linux/in.h>
+ #include <linux/in6.h>
+ #include <linux/socket.h>
++#include <linux/inet.h>
+ #include <net/addrconf.h>
+ 
+ union inet_addr {
+@@ -59,4 +60,23 @@ static inline bool inet_addr_multicast(const union inet_addr *ipa)
+ }
+ #endif
+ 
++static inline int inet_pton(const char *str, union inet_addr *addr)
++{
++	const char *end;
++
++	if (!strchr(str, ':') &&
++	    in4_pton(str, -1, (void *)addr, -1, &end) > 0) {
++		if (!*end)
++			return 0;
++	}
++	if (in6_pton(str, -1, addr->sin6.sin6_addr.s6_addr, -1, &end) > 0) {
++#if IS_ENABLED(CONFIG_IPV6)
++		if (!*end)
++			return 1;
++#else
++		return -1;
++#endif
++	}
++	return -1;
++}
+ #endif
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index c300358..6631b5e 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -907,26 +907,6 @@ void netpoll_print_options(struct netpoll *np)
+ }
+ EXPORT_SYMBOL(netpoll_print_options);
+ 
+-static int netpoll_parse_ip_addr(const char *str, union inet_addr *addr)
+-{
+-	const char *end;
+-
+-	if (!strchr(str, ':') &&
+-	    in4_pton(str, -1, (void *)addr, -1, &end) > 0) {
+-		if (!*end)
+-			return 0;
+-	}
+-	if (in6_pton(str, -1, addr->sin6.sin6_addr.s6_addr, -1, &end) > 0) {
+-#if IS_ENABLED(CONFIG_IPV6)
+-		if (!*end)
+-			return 1;
+-#else
+-		return -1;
+-#endif
+-	}
+-	return -1;
+-}
+-
+ int netpoll_parse_options(struct netpoll *np, char *opt)
+ {
+ 	char *cur=opt, *delim;
+@@ -946,7 +926,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+ 		if ((delim = strchr(cur, '/')) == NULL)
+ 			goto parse_failed;
+ 		*delim = 0;
+-		ipv6 = netpoll_parse_ip_addr(cur, &np->local_ip);
++		ipv6 = inet_pton(cur, &np->local_ip);
+ 		if (ipv6 < 0)
+ 			goto parse_failed;
+ 		else
+@@ -982,7 +962,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+ 	if ((delim = strchr(cur, '/')) == NULL)
+ 		goto parse_failed;
+ 	*delim = 0;
+-	ipv6 = netpoll_parse_ip_addr(cur, &np->remote_ip);
++	ipv6 = inet_pton(cur, &np->remote_ip);
+ 	if (ipv6 < 0)
+ 		goto parse_failed;
+ 	else if (np->ipv6 != (bool)ipv6)
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.7.6
+
