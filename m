@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab3F0SP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 14:15:59 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46720 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712Ab3F0SP6 (ORCPT
+	id S1754113Ab3F0SQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 14:16:47 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:50527 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab3F0SQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 14:15:58 -0400
-Date: Thu, 27 Jun 2013 19:15:46 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] delayed kobject release: help find buggy code
-Message-ID: <20130627181545.GC12530@flint.arm.linux.org.uk>
-References: <20130627140613.GB12530@flint.arm.linux.org.uk> <20130627153612.GA25244@kroah.com>
+	Thu, 27 Jun 2013 14:16:45 -0400
+Message-ID: <51CC81AA.7090406@windriver.com>
+Date: Thu, 27 Jun 2013 14:17:14 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627153612.GA25244@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: linux-next: manual merge of the cpuinit tree with the mips tree
+References: <20130627184826.416dcb8c84d77f8455794829@canb.auug.org.au>
+In-Reply-To: <20130627184826.416dcb8c84d77f8455794829@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 08:36:12AM -0700, Greg KH wrote:
-> On Thu, Jun 27, 2013 at 03:06:14PM +0100, Russell King wrote:
-> > Greg,
-> > 
-> > This is an updated copy of my delayed kobject release debugging patch
-> > from 2011, which I notice hasn't hit mainline.  Please consider merging
-> > this so that driver authors and subsystem maintainers have a way to test
-> > code for kobject refcounting errors.
-> > 
-> > Moreover, please also consider whether to make the debug option default
-> > to 'y' when CONFIG_DEBUG_KERNEL is enabled.
+On 13-06-27 04:48 AM, Stephen Rothwell wrote:
+> Hi Paul,
 > 
-> Nice, I had forgotten about this code.  Have you run it in a while to
-> see if things still work well?
+> Today's linux-next merge of the cpuinit tree got a conflict in
+> arch/mips/mm/tlbex.c between commits 8c24cb9d180b ("MIPS: Move generated
+> code to .text for microMIPS") and d45accb44e19 ("MIPS: mm: Use scratch
+> for PGD when !CONFIG_MIPS_PGD_C0_CONTEXT") from the mips tree and commit
+> "MIPS: Delete __cpuinit/__CPUINIT usage from MIPS code" from the cpuinit
+> tree.
 
-Not since I originally posted it, and had other people use it to find
-bugs a few years ago.  Since then it's virtually unchanged - the changes
-are basically introducing the config option rather than the fixed #define
-in the header file enabling it, and changing a pr_info() to a pr_debug().
+Now fixed/refreshed, thanks!
 
-The patch applied with just a few lines of offset too, and I did build
-test it before sending in both enabled and disabled states.
+P.
+--
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> Ralf, your merge commit e6d254aea905 ("Merge branch '3.10-fixes' into
+> mips-for-linux-next") left some conflict markers in this file which I
+> have removed as well.
+> 
