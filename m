@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab3F0XrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 19:47:08 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14069 "EHLO
+	id S1754344Ab3F0Xx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 19:53:58 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15274 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab3F0XrG (ORCPT
+	with ESMTP id S1753948Ab3F0Xx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 19:47:06 -0400
-X-AuditID: cbfee68e-b7f276d000002279-4f-51cccef7efb8
+	Thu, 27 Jun 2013 19:53:56 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-df-51ccd090e0ed
 From: Jonghwan Choi <jhbird.choi@samsung.com>
 To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org,
-        "'Gustavo Padovan'" <gustavo.padovan@collabora.co.uk>,
-        "'Daniel Drake'" <dsd@laptop.org>,
-        "'Marcel Holtmann'" <marcel@holtmann.org>
+Cc: stable@vger.kernel.org, "'Johannes Berg'" <johannes.berg@intel.com>,
+        "'Moshe Benji'" <Moshe.Benji@intel.com>, cpgs@samsung.com
 References: 
 In-reply-to: 
-Subject: [PATCH 3.9-stable]  Bluetooth: btmrvl: fix thread stopping race
-Date: Fri, 28 Jun 2013 08:47:02 +0900
-Message-id: <002501ce7390$9f7c4750$de74d5f0$%choi@samsung.com>
+Subject: [PATCH 3.9-stable] iwlwifi: fix rate control regression
+Date: Fri, 28 Jun 2013 08:53:52 +0900
+Message-id: <002601ce7391$93c61ed0$bb525c70$%choi@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMAAA5gYwAMf3LxAFffBYYAAAIZFQ
+Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMAAA5gYwAMf3LxAFffBYYAAAYQ2g
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t8zI93v584EGuz7z2Exf/ZEVotPq1vZ
-	LZY0c1tc3jWHzeLbp1+MFgs2PmJ0YPP4+/w6i8f63cvZPQ5dWcvo0bdlFaPH501yAaxRXDYp
-	qTmZZalF+nYJXBnz+1kLVvFXnLhwlrmB8S5PFyMnh4SAiUT7y9OsELaYxIV769m6GLk4hASW
-	MUqsn3SfEaboZ+9fFojEdEaJNwsXQFX9ZZS42TGRHaSKTUBX4tj6LWCjRAS8JU5N+cUMUsQs
-	MJdRYmfrN6BRHEAd3BKrm4NAajgFeCTW/elkBrGFBTwknk66yARiswioSmy7vQpsDq+AnUT7
-	igtsELagxI/J91hAbGYBLYn1O48zQdjyEpvXvGUGGS8hoC7x6K8uyFoRgRmMEktOdEPVi0js
-	e/GOESQhIfCSXWLr8jfsEMsEJL5NPsQC0SwrsekAM8THkhIHV9xgmcAoMQvJ6llIVs9CsnoW
-	khULGFlWMYqmFiQXFCelFxnpFSfmFpfmpesl5+duYoTEbN8OxpsHrA8xJgOtn8gsJZqcD4z5
-	vJJ4Q2MzIwtTE1NjI3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwNmlb
-	x4V9qdnz79ZGCx7PBTkX77WFPt09d9fkkGWvZ95o+trQLPx/ewb3naTEafZx99gXeT5hrjh3
-	YNFnp+v1hTanuXp+zt4eecb3+kRFJqPWNRrxHQJJ8m2O5v3K/jdqHttsSzvGsXOj2MtVFtl+
-	MQIcm5VnvX/f+3r+8U+vjbSm+ynW7vf4qsRSnJFoqMVcVJwIANyANizvAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jQd3v584EGsw5ymIxf/ZEVotPq1vZ
-	LZY0c1tc3jWHzeLbp1+MFgs2PmJ0YPP4+/w6i8f63cvZPQ5dWcvo0bdlFaPH501yAaxRDYw2
-	GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUAXKCmUJeaU
-	AoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz5vezFqzirzhx4SxzA+Ndni5GTg4J
-	AROJn71/WSBsMYkL99azdTFycQgJTGeUeLNwAZTzl1HiZsdEdpAqNgFdiWPrt7CC2CIC3hKn
-	pvxiBiliFpjLKLGz9RtjFyMHUAe3xOrmIJAaTgEeiXV/OplBbGEBD4mnky4ygdgsAqoS226v
-	ApvDK2An0b7iAhuELSjxY/I9sIuYBbQk1u88zgRhy0tsXvOWGWS8hIC6xKO/uiBrRQRmMEos
-	OdENVS8ise/FO8YJjEKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/
-	dxMjOCE8k9rBuLLB4hCjAAejEg9vY+KZQCHWxLLiytxDjBIczEoivHcWAIV4UxIrq1KL8uOL
-	SnNSiw8xJgN9OpFZSjQ5H5is8kriDY1NzIwsjcwsjEzMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQ
-	WgSzhYmDU6qB0TCg/fCdmXxr9doec0s/vyUrrf9EIpPhJ/OriBVvVqTds5cqPz8hUks92eTs
-	vbSeT6wXCjb/k18azeXdJi0YHMVqcvaL6NZXygZ7lb5JsEeu+7hczXOJRPmrAzIvW2d+EFt0
-	yrlwjyGz+NHvTU/y7s2oyfV5ostzQ/jpiR9vjkQeOib79do7BiWW4oxEQy3mouJEAKv639JM	AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zfd0JF84EGlx9amLx8pCmxZJmbotH
+	K2axW1zeNYfN4vii30wWCzY+YnRg81i85yWTR9+WVYwenzfJBTBHcdmkpOZklqUW6dslcGVs
+	/s1SsJa/Yk/rK7YGxh7eLkZODgkBE4mz95+zQ9hiEhfurWfrYuTiEBJYxiixYvZyVpiifytn
+	MUEkFjFKzN69ggXC+cso8Wn6PDaQKjYBXYlj67eAdYgIeEucmvKLGaSIWaCBUeLp2ctADgdQ
+	B7fE6uYgkBpOAR6JdX86mUFsYQEHiXttr8B6WQRUJT7ffcQEYvMK2Em8uPcDyhaU+DH5HguI
+	zSygJbF+53EmCFteYvOat2DjJQTUJR791QVZKyIwg1Hi/ZfT7BA1IhL7XrxjBElICFxjlzh6
+	YRkjxDIBiW+TD7FANMtKbDrADPGxpMTBFTdYJjBKzEKyehaS1bOQrJ6FZMUCRpZVjKKpBckF
+	xUnpRYZ6xYm5xaV56XrJ+bmbGCHR2buD8fYB60OMyUDrJzJLiSbnA6M7ryTe0NjMyMLUxNTY
+	yNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2McyZrCmlHcck1V8xXYX7z
+	0voZT2+K0uML1TXiB8tC9frYjrBfzs0RTMgr3MohfsT7XMmiJUJp3TaKz4LT8wutdiTrrtid
+	c2Xd0YtdDTxpvYszf3d+Sf2lslGgsCLnUq3ZlUrJiWrJ/mduL2IuWHzm0XHJtdVbnq0wU5Y5
+	IZbaobCLYdvlV4pKLMUZiYZazEXFiQA/Wby25AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jAd0JF84EGhxfZWDx8pCmxZJmbotH
+	K2axW1zeNYfN4vii30wWCzY+YnRg81i85yWTR9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeen
+	ZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtVVIoS8wpBQoFJBYXK+nbYZoQ
+	GuKmawHTGKHrGxIE12NkgAYS1jFmbP7NUrCWv2JP6yu2BsYe3i5GTg4JAROJfytnMUHYYhIX
+	7q1n62Lk4hASWMQoMXv3ChYI5y+jxKfp89hAqtgEdCWOrd/CCmKLCHhLnJryixmkiFmggVHi
+	6dnLQA4HUAe3xOrmIJAaTgEeiXV/OplBbGEBB4l7ba/AelkEVCU+330EtplXwE7ixb0fULag
+	xI/J91hAbGYBLYn1O48zQdjyEpvXvAUbLyGgLvHory7IWhGBGYwS77+cZoeoEZHY9+Id4wRG
+	oVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc+8+kdzCuarA4
+	xCjAwajEw9uQeCZQiDWxrLgy9xCjBAezkgjvnQVAId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYS
+	Tc4HpqW8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamDkfz/7
+	9t7ZmZ/exTxIfbRMW0RP96pix+uF/psyb0y7Hh3kqinaYJjyQfny7qiLhg8sr3Gc1nX7MUHg
+	y/+fzXdllNVe3c2bmv+qjOFs0pmnJz4ftj+6486nMAmz/Vujq7fuLfq4ZPnTHzu32ucrL5ld
+	MkNd6ajwrv883feXeDLNOzTJbsIFc6vWfUosxRmJhlrMRcWJAEBUDmFBAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,60 +60,55 @@ it?
 
 ------------------
 
-From: "Daniel Drake <dsd@laptop.org>"
+From: "Moshe Benji <Moshe.Benji@intel.com>"
 
-commit ea05fea9042620ac3b8ab9a3e5e4d2ed80c89244 upstream
+commit 622ebe994f6866b8d46ee5d3bcc329ed65d3722d upstream
 
-There is currently a race condition in the btmrvl_remove_card() which
-is causing hangs on suspend for OLPC. When the race occurs,
-kthread_stop() never returns.
+Since driver does not use control.rates[0].count, we have never set that
+variable. But currently, after rate control API rewrite, this is required
+by mac80211. Otherwise legacy rates control does not work and we transmit
+always at 1Mbit/s on pre 11n networks.
 
-The problem is that btmrvl_service_main_thread() calls kthread_should_stop()
-and then does a fair number of things before restarting the loop and
-sleeping.
+[same fix as for iwlegacy, thanks Stanislaw!]
 
-If the thread gets stopped after kthread_should_stop() is checked, but
-before the sleep happens, the thread will go to sleep and won't necessarily
-be woken up.
-
-Move the kthread_should_stop() check into a race-free place.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Moshe Benji <Moshe.Benji@intel.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 ---
- drivers/bluetooth/btmrvl_main.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/rs.c |    2 +-
+ drivers/net/wireless/iwlwifi/mvm/rs.c |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/bluetooth/btmrvl_main.c
-b/drivers/bluetooth/btmrvl_main.c
-index 3a4343b..9a9f518 100644
---- a/drivers/bluetooth/btmrvl_main.c
-+++ b/drivers/bluetooth/btmrvl_main.c
-@@ -498,6 +498,10 @@ static int btmrvl_service_main_thread(void *data)
- 		add_wait_queue(&thread->wait_q, &wait);
- 
- 		set_current_state(TASK_INTERRUPTIBLE);
-+		if (kthread_should_stop()) {
-+			BT_DBG("main_thread: break from main thread");
-+			break;
-+		}
- 
- 		if (adapter->wakeup_tries ||
- 				((!adapter->int_count) &&
-@@ -513,11 +517,6 @@ static int btmrvl_service_main_thread(void *data)
- 
- 		BT_DBG("main_thread woke up");
- 
--		if (kthread_should_stop()) {
--			BT_DBG("main_thread: break from main thread");
--			break;
--		}
+diff --git a/drivers/net/wireless/iwlwifi/dvm/rs.c
+b/drivers/net/wireless/iwlwifi/dvm/rs.c
+index abe3042..5de2dbf 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/rs.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rs.c
+@@ -2799,7 +2799,7 @@ static void rs_get_rate(void *priv_r, struct
+ieee80211_sta *sta, void *priv_sta,
+ 		info->control.rates[0].flags = 0;
+ 	}
+ 	info->control.rates[0].idx = rate_idx;
 -
- 		spin_lock_irqsave(&priv->driver_lock, flags);
- 		if (adapter->int_count) {
- 			adapter->int_count = 0;
++	info->control.rates[0].count = 1;
+ }
+ 
+ static void *rs_alloc_sta(void *priv_rate, struct ieee80211_sta *sta,
+diff --git a/drivers/net/wireless/iwlwifi/mvm/rs.c
+b/drivers/net/wireless/iwlwifi/mvm/rs.c
+index 56b636d..fefcbc5 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/rs.c
++++ b/drivers/net/wireless/iwlwifi/mvm/rs.c
+@@ -2544,6 +2544,7 @@ static void rs_get_rate(void *mvm_r, struct
+ieee80211_sta *sta, void *mvm_sta,
+ 		info->control.rates[0].flags = 0;
+ 	}
+ 	info->control.rates[0].idx = rate_idx;
++	info->control.rates[0].count = 1;
+ }
+ 
+ static void *rs_alloc_sta(void *mvm_rate, struct ieee80211_sta *sta,
 -- 
 1.7.9.5
 
