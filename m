@@ -1,312 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab3F0IKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:10:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47045 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab3F0IKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:10:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,950,1363158000"; 
-   d="scan'208";a="336259491"
-Message-ID: <51CBF3AA.2030508@intel.com>
-Date: Thu, 27 Jun 2013 16:11:22 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752872Ab3F0IMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:12:43 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:53586 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab3F0IMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 04:12:40 -0400
+Date: Thu, 27 Jun 2013 10:12:25 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Larry.Finger@lwfinger.net, chaoming_li@realsil.com.cn,
+        linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Brian Lilly <brian@crystalfontz.com>,
+        Brent-Crosby <brent@crystalfontz.com>, Jim Wall <jimwall@q.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>
+Subject: RTL8192CU on ARM not working
+Message-ID: <20130627081225.GJ5803@lukather>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>
-Subject: Re: [PATCH 3/4] ACPI / PM: Rework and clean up acpi_dev_pm_get_state()
-References: <6895318.cKDBc4OdI0@vostro.rjw.lan> <1756031.gcnLRAM3xz@vostro.rjw.lan>
-In-Reply-To: <1756031.gcnLRAM3xz@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mPOSj6iWmtyhwOMz"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 08:32 PM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The acpi_dev_pm_get_state() function defined in device_pm.c is quite
-> convoluted, which isn't really necessary, and it doesn't validate the
-> values returned by the ACPI methods executed by it appropriately.
-> 
-> To address these shortcomings modify it in the following way.
-> 
->  (1) Make its return value only mean whether or not it succeeded and
->      pass the device power states determined by it through pointers.
-> 
->  (2) Drop the d_max_in argument, used by only one of its callers,
->      from it, and move the code related to d_max_in into that caller,
->      acpi_pm_device_sleep_state().
-> 
->  (3) Make it always check the return value of acpi_evaluate_integer()
->      and handle failures as appropriate.  Moreover, make it check if
->      the values returned by the executed ACPI methods are not out of
->      range.
-> 
->  (4) Make it check if the values returned by the executed ACPI
->      methods represent valid power states of the given device and
->      handle situations in which that's not the case gracefully.
-> 
-> Also update the kerneldoc comments of acpi_dev_pm_get_state() and
-> acpi_pm_device_sleep_state() to reflect the code changes.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/device_pm.c |  158 +++++++++++++++++++++++++++--------------------
->  1 file changed, 92 insertions(+), 66 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/device_pm.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/device_pm.c
-> +++ linux-pm/drivers/acpi/device_pm.c
-> @@ -403,44 +403,37 @@ EXPORT_SYMBOL(acpi_bus_can_wakeup);
->   * @dev: Device whose preferred target power state to return.
->   * @adev: ACPI device node corresponding to @dev.
->   * @target_state: System state to match the resultant device state.
-> - * @d_max_in: Deepest low-power state to take into consideration.
-> - * @d_min_p: Location to store the upper limit of the allowed states range.
-> - * Return value: Preferred power state of the device on success, -ENODEV
-> - * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
-> + * @d_min_p: Location to store the highest power state available to the device.
-> + * @d_max_p: Location to store the lowest power state available to the device.
->   *
-> - * Find the lowest power (highest number) ACPI device power state that the
-> - * device can be in while the system is in the state represented by
-> - * @target_state.  If @d_min_p is set, the highest power (lowest number) device
-> - * power state that @dev can be in for the given system sleep state is stored
-> - * at the location pointed to by it.
-> + * Find the lowest power (highest number) and highest power (lowest number) ACPI
-> + * device power states that the device can be in while the system is in the
-> + * state represented by @target_state.  Store the integer numbers representing
-> + * those stats in the memory locations pointed to by @d_max_p and @d_min_p,
-> + * respectively.
->   *
->   * Callers must ensure that @dev and @adev are valid pointers and that @adev
->   * actually corresponds to @dev before using this function.
-> + *
-> + * Returns 0 on success or -ENODATA when one of the ACPI methods fails or
-> + * returns a value that doesn't make sense.  The memory locations pointed to by
-> + * @d_max_p and @d_min_p are only modified on success.
->   */
->  static int acpi_dev_pm_get_state(struct device *dev, struct acpi_device *adev,
-> -				 u32 target_state, int d_max_in, int *d_min_p)
-> +				 u32 target_state, int *d_min_p, int *d_max_p)
->  {
-> -	char acpi_method[] = "_SxD";
-> -	unsigned long long d_min, d_max;
-> +	char method[] = { '_', 'S', '0' + target_state, 'D', '\0' };
-> +	acpi_handle handle = adev->handle;
-> +	unsigned long long ret;
-> +	int d_min, d_max;
->  	bool wakeup = false;
-> +	acpi_status status;
->  
-> -	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
-> -		return -EINVAL;
-> -
-> -	if (d_max_in > ACPI_STATE_D3_HOT) {
-> -		enum pm_qos_flags_status stat;
-> -
-> -		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
-> -		if (stat == PM_QOS_FLAGS_ALL)
-> -			d_max_in = ACPI_STATE_D3_HOT;
-> -	}
-> -
-> -	acpi_method[2] = '0' + target_state;
->  	/*
-> -	 * If the sleep state is S0, the lowest limit from ACPI is D3,
-> -	 * but if the device has _S0W, we will use the value from _S0W
-> -	 * as the lowest limit from ACPI.  Finally, we will constrain
-> -	 * the lowest limit with the specified one.
-> +	 * If the system state is S0, the lowest power state the device can be
-> +	 * in is D3cold, unless the device has _S0W and is supposed to signal
-> +	 * wakeup, in which case the return value of _S0W has to be used as the
-> +	 * lowest power state available to the device.
->  	 */
->  	d_min = ACPI_STATE_D0;
->  	d_max = ACPI_STATE_D3_COLD;
-> @@ -449,12 +442,30 @@ static int acpi_dev_pm_get_state(struct
->  	 * If present, _SxD methods return the minimum D-state (highest power
->  	 * state) we can use for the corresponding S-states.  Otherwise, the
->  	 * minimum D-state is D0 (ACPI 3.x).
-> -	 *
-> -	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
-> -	 * provided -- that's our fault recovery, we ignore retval.
->  	 */
->  	if (target_state > ACPI_STATE_S0) {
-> -		acpi_evaluate_integer(adev->handle, acpi_method, NULL, &d_min);
-> +		/*
-> +		 * We rely on acpi_evaluate_integer() not clobbering the integer
-> +		 * provided if AE_NOT_FOUND is returned.
-> +		 */
-> +		ret = d_min;
-> +		status = acpi_evaluate_integer(handle, method, NULL, &ret);
-> +		if ((ACPI_FAILURE(status) && status != AE_NOT_FOUND)
-> +		    || ret > ACPI_STATE_D3_COLD)
-> +			return -ENODATA;
-> +
-> +		/*
-> +		 * We need to handle legacy systems where D3hot and D3cold are
-> +		 * the same and 3 is returned in both cases, so fall back to
-> +		 * D3cold if D3hot is not a valid state.
-> +		 */
-> +		if (!adev->power.states[ret].flags.valid) {
-> +			if (ret == ACPI_STATE_D3_HOT)
-> +				ret = ACPI_STATE_D3_COLD;
-> +			else
-> +				return -ENODATA;
-> +		}
-> +		d_min = ret;
->  		wakeup = device_may_wakeup(dev) && adev->wakeup.flags.valid
->  			&& adev->wakeup.sleep_state >= target_state;
->  	} else if (dev_pm_qos_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP) !=
-> @@ -470,36 +481,29 @@ static int acpi_dev_pm_get_state(struct
->  	 * can wake the system.  _S0W may be valid, too.
->  	 */
->  	if (wakeup) {
-> -		acpi_status status;
-> -
-> -		acpi_method[3] = 'W';
-> -		status = acpi_evaluate_integer(adev->handle, acpi_method, NULL,
-> -						&d_max);
-> -		if (ACPI_FAILURE(status)) {
-> -			if (target_state != ACPI_STATE_S0 ||
-> -			    status != AE_NOT_FOUND)
-> +		method[3] = 'W';
-> +		status = acpi_evaluate_integer(handle, method, NULL, &ret);
-> +		if (status == AE_NOT_FOUND) {
-> +			if (target_state > ACPI_STATE_S0)
->  				d_max = d_min;
-> -		} else if (d_max < d_min) {
-> -			/* Warn the user of the broken DSDT */
-> -			printk(KERN_WARNING "ACPI: Wrong value from %s\n",
-> -				acpi_method);
-> -			/* Sanitize it */
-> -			d_min = d_max;
-> +		} else if (ACPI_SUCCESS(status) && ret <= ACPI_STATE_D3_COLD) {
-> +			/* Fall back to D3cold if ret is not a valid state. */
-> +			if (!adev->power.states[ret].flags.valid)
-> +				ret = ACPI_STATE_D3_COLD;
-> +
-> +			d_max = ret > d_min ? ret : d_min;
-> +		} else {
-> +			return -ENODATA;
->  		}
->  	}
->  
-> -	if (d_max_in < d_min)
-> -		return -EINVAL;
->  	if (d_min_p)
->  		*d_min_p = d_min;
-> -	/* constrain d_max with specified lowest limit (max number) */
-> -	if (d_max > d_max_in) {
-> -		for (d_max = d_max_in; d_max > d_min; d_max--) {
-> -			if (adev->power.states[d_max].flags.valid)
-> -				break;
-> -		}
-> -	}
-> -	return d_max;
-> +
-> +	if (d_max_p)
-> +		*d_max_p = d_max;
-> +
-> +	return 0;
->  }
->  
->  /**
-> @@ -508,7 +512,8 @@ static int acpi_dev_pm_get_state(struct
->   * @d_min_p: Location to store the upper limit of the allowed states range.
->   * @d_max_in: Deepest low-power state to take into consideration.
->   * Return value: Preferred power state of the device on success, -ENODEV
-> - * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
-> + * if there's no 'struct acpi_device' for @dev, -EINVAL if @d_max_in is
-> + * incorrect, or -ENODATA on ACPI method failure.
->   *
->   * The caller must ensure that @dev is valid before using this function.
->   */
-> @@ -516,14 +521,39 @@ int acpi_pm_device_sleep_state(struct de
->  {
->  	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
->  	struct acpi_device *adev;
-> +	int ret, d_max;
-> +
-> +	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
-> +		return -EINVAL;
-> +
-> +	if (d_max_in > ACPI_STATE_D3_HOT) {
-> +		enum pm_qos_flags_status stat;
-> +
-> +		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
-> +		if (stat == PM_QOS_FLAGS_ALL)
-> +			d_max_in = ACPI_STATE_D3_HOT;
-> +	}
->  
->  	if (!handle || acpi_bus_get_device(handle, &adev)) {
->  		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
->  		return -ENODEV;
->  	}
->  
-> -	return acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
-> -				     d_max_in, d_min_p);
-> +	ret = acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
-> +				    d_min_p, &d_max);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (d_max_in < *d_min_p)
-> +		return -EINVAL;
 
-d_min_p can be NULL here.
+--mPOSj6iWmtyhwOMz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Call trace:
-acpi_pm_device_sleep_state, where d_min_p is passed as NULL
-acpi_pci_choose_state
-pci_choose_state
-atl1e_suspend
-atl1e_shutdown
-pci_device_shutdown
-device_shutdown
+Hi everyone,
+
+I'm currently trying to use a RTL8192CU on an ARM (Freescale imx28,
+armv5) platform, using 3.10-rc3.
+
+Trouble is, while the chip is correctly detected and you can use iw on it
+without any problem it seems, once you start an association to an access
+point, the association goes on, seems to associate, displaying a WARN()
+message [1] and then, after what looks like a random amount of time (could
+be right away, could be after a few minutes), deassociate [2].
+
+During the time where it's associated, we never seem to transmit any
+packets, while iw reports packets being sent, I guess we can assume that
+they are actually never transmitted as well [3].
+
+What seems odd to me as well is that the signal power reported for the acce=
+ss
+point is excessively high when using iw scan (10 dbm), and once connected, =
+the
+signal strength is -64dbm, which makes quite a huge difference.
+
+Do you have any suggestions on how to solve this issue?
 
 Thanks,
-Aaron
+Maxime
 
-> +
-> +	if (d_max > d_max_in) {
-> +		for (d_max = d_max_in; d_max > *d_min_p; d_max--) {
-> +			if (adev->power.states[d_max].flags.valid)
-> +				break;
-> +		}
-> +	}
-> +	return d_max;
->  }
->  EXPORT_SYMBOL(acpi_pm_device_sleep_state);
->  
-> @@ -674,17 +704,13 @@ struct acpi_device *acpi_dev_pm_get_node
->  static int acpi_dev_pm_low_power(struct device *dev, struct acpi_device *adev,
->  				 u32 system_state)
->  {
-> -	int power_state;
-> +	int ret, state;
->  
->  	if (!acpi_device_power_manageable(adev))
->  		return 0;
->  
-> -	power_state = acpi_dev_pm_get_state(dev, adev, system_state,
-> -					    ACPI_STATE_D3_COLD, NULL);
-> -	if (power_state < ACPI_STATE_D0 || power_state > ACPI_STATE_D3_COLD)
-> -		return -EIO;
-> -
-> -	return acpi_device_set_power(adev, power_state);
-> +	ret = acpi_dev_pm_get_state(dev, adev, system_state, NULL, &state);
-> +	return ret ? ret : acpi_device_set_power(adev, state);
->  }
->  
->  /**
-> 
 
+[1]:
+# iw wlan0 connect FreeWifi 2447
+# [  485.010858] wlan0: authenticate with f4:ca:e5:c9:f5:91
+[  485.065514] wlan0: send auth to f4:ca:e5:c9:f5:91 (try 1/3)
+[  485.075963] wlan0: authenticated
+[  485.088915] wlan0: associate with f4:ca:e5:c9:f5:91 (try 1/3)
+[  485.117137] wlan0: RX AssocResp from f4:ca:e5:c9:f5:91 (capab=3D0x401 st=
+atus=3D0 aid=3D1)
+[  485.130607] wlan0: associated
+[  486.917555] ------------[ cut here ]------------
+[  486.922277] WARNING: at kernel/workqueue.c:1365 __queue_work+0x1f0/0x2f4=
+()
+[  486.929175] Modules linked in:
+[  486.932284] CPU: 0 PID: 615 Comm: kworker/0:2 Not tainted 3.10.0-rc3 #2
+[  486.938958] Workqueue: rtl92c_usb rtl_watchdog_wq_callback
+[  486.944548] [<c00147dc>] (unwind_backtrace+0x0/0xf0) from [<c00120a0>] (=
+show_stack+0x10/0x14)
+[  486.953132] [<c00120a0>] (show_stack+0x10/0x14) from [<c001d2ec>] (warn_=
+slowpath_common+0x4c/0x68)
+[  486.962140] [<c001d2ec>] (warn_slowpath_common+0x4c/0x68) from [<c001d32=
+4>] (warn_slowpath_null+0x1c/0x24)
+[  486.971844] [<c001d324>] (warn_slowpath_null+0x1c/0x24) from [<c003769c>=
+] (__queue_work+0x1f0/0x2f4)
+[  486.981025] [<c003769c>] (__queue_work+0x1f0/0x2f4) from [<c0037830>] (q=
+ueue_work_on+0x80/0x88)
+[  486.989777] [<c0037830>] (queue_work_on+0x80/0x88) from [<c0267ca4>] (rt=
+l_watchdog_wq_callback+0x5dc/0x8bc)
+[  486.999572] [<c0267ca4>] (rtl_watchdog_wq_callback+0x5dc/0x8bc) from [<c=
+0038cbc>] (process_one_work+0x1c0/0x4c8)
+[  487.009795] [<c0038cbc>] (process_one_work+0x1c0/0x4c8) from [<c0039684>=
+] (worker_thread+0x140/0x3ac)
+[  487.019065] [<c0039684>] (worker_thread+0x140/0x3ac) from [<c003f914>] (=
+kthread+0xa4/0xb0)
+[  487.027381] [<c003f914>] (kthread+0xa4/0xb0) from [<c000f0c0>] (ret_from=
+_fork+0x14/0x34)
+[  487.035498] ---[ end trace 93341a0c249e647e ]---
+
+
+[2]:
+
+# [  786.086127] wlan0: deauthenticated from f4:ca:e5:c9:f5:91 (Reason: 2)
+[  786.126368] cfg80211: Calling CRDA to update world regulatory domain
+
+
+[3]:
+# iw wlan0 station dump
+Station f4:ca:e5:c9:f5:91 (on wlan0)
+	inactive time:	55430 ms
+	rx bytes:	77826
+	rx packets:	1026
+	tx packets:	2
+	tx retries:	0
+	tx failed:	0
+	signal:  	-64 dBm
+	signal avg:	-63 dBm
+	tx bitrate:	1.0 MBit/s
+	authorized:	yes
+	authenticated:	yes
+	preamble:	long
+	WMM/WME:	yes
+	MFP:		no
+	TDLS peer:	no
+
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--mPOSj6iWmtyhwOMz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRy/PpAAoJEBx+YmzsjxAgGgIP/2VmiorFlIS68NWNSOQ5/9pk
+IryntlepA/YjNeAXeoxbyndFc0Yoy+cmFAEXGsM6ij8a+Yldam7WLAvmHl7fppDk
+oDkkrMvXoO9oE5Xh3wQG7sKjV/NSKyml3WliAqLIJjz0I0uxPfQ3yL4V8eBPAyjf
+6AgyA8EPt/Uyl8rjbrqmzUAWZloa9d36HjHoP59bQf2K5J5zPKjhjQ+4MjgA9k8j
+AaRSTzi7tmZcDpc7m5zj2aRE6Bt7Z1Z3cwV6hr+irt6quK3B3R8aoDCnUQh6U5oz
+KyU45uQ00YEDlpkMQ+YEmxBlRR1awFU1cqNGkLFrbl8Mvkfh969CjAoaTbCCzgCG
+EAIxLK+Ent8yxdqSSIek3h2L7ea9mi0YCzjyzQ2JHYLJF3Qu1oC5RGdY9n+EM1k8
+p7i6kp/rH5aZ5dC1AMszqkH3rXrRe9vO4Q+uvudxr/88lDMVckPZyNQZjjyImVyw
+sRQcv8aznfGyFPpQo7DAfz9LCaqUQBO6lcXxYmCh1OKcB3kZugho9/fYakQDXaE5
+lj8HbQgQKxSJ1L/YLMdaQMfvkILZnVJFwzKJj6ucIXQ/8HPmxaq54hJXcFd+vk/M
+60Z7ZEAg/vCwPMJtyzMeMwhwot78iCmo3DDJpi9DHjb3E811rpuJi/QiBG7SQ3b7
+FVOHdAKtsQBuGKafTkDJ
+=tmFI
+-----END PGP SIGNATURE-----
+
+--mPOSj6iWmtyhwOMz--
