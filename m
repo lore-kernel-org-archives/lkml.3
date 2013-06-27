@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab3F0JIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:08:30 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:61481 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab3F0JIY (ORCPT
+	id S1753639Ab3F0JIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:08:40 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:52162 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab3F0JIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:08:24 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-33-51cc0106686b
-Date: Thu, 27 Jun 2013 11:08:13 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH v4 4/7] cpufreq:exynos:Extend Exynos cpufreq driver to
- support boost framework
-Message-id: <20130627110813.6797b1fe@amdc308.digital.local>
-In-reply-to: <CAKohpokf8TZkP5Nzpp+m5KaUK8zJ6mwiuiW-td7boHQ7NtB-DQ@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-5-git-send-email-l.majewski@samsung.com>
- <CAKohpokf8TZkP5Nzpp+m5KaUK8zJ6mwiuiW-td7boHQ7NtB-DQ@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jAV02xjOBBlN6VSz+vF3OavG06Qe7
-	xbzPshZr9v9ksug8+4TZonfBVTaLN4+4LS7vmsNm8bn3CKPF7cYVbBb9C3uZLJ487GOz6Djy
-	jdli41cPBz6PxXteMnncubaHzWPdtLfMHn1bVjF6PFrcwuhx/MZ2Jo/Pm+QC2KO4bFJSczLL
-	Uov07RK4Mtbsci94x1nx4uhpxgbGO+xdjJwcEgImEk/avjFC2GISF+6tZ+ti5OIQEljEKHHp
-	/0qwhJBAO5PEhf1BIDaLgKrEhSl/WUFsNgE9ic93nzJ1MXJwiAhoSby8mQrSyyywnUXiUtMs
-	NpAaYYEUiRsPj4LN4RWwljhw7CsLiM0pECzxo3ExI8SyFiaJK382gxXxC0hKtP/7wQxxkZ3E
-	uU8b2CGaBSV+TL4H1swMtGzztiZWCFteYvOat8wTGAVnISmbhaRsFpKyBYzMqxhFUwuSC4qT
-	0nON9IoTc4tL89L1kvNzNzGCI+qZ9A7GVQ0WhxgFOBiVeHg/MJ4OFGJNLCuuzD3EKMHBrCTC
-	e5HhTKAQb0piZVVqUX58UWlOavEhRmkOFiVx3oOt1oFCAumJJanZqakFqUUwWSYOTqkGxpID
-	YXuC9+f/UzFSvt3V/bardOP7lE+58z3qbVdmWx3KyWZOsZi/4/Ymq83yJgvUxerOn1WLOuh2
-	cKverb+88s+O7Lx123z3goRsm31Jqw6/vR+a5Ou/9Yzk2R3yk5bdDJE3OWaftEQ5Y7d+8IE1
-	P5O3apnZJzDYObhXNi5dZPnv6RybrHtRvUosxRmJhlrMRcWJAD6nw/6kAgAA
+	Thu, 27 Jun 2013 05:08:34 -0400
+Message-ID: <51CC010D.70503@numascale-asia.com>
+Date: Thu, 27 Jun 2013 17:08:29 +0800
+From: Daniel J Blueman <daniel@numascale-asia.com>
+Organization: Numascale Asia
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Steffen Persvold <sp@numascale.com>
+Subject: Re: 13GB dcache+inode cache hash tables
+References: <51C95B3A.10809@numascale-asia.com> <1372153697.3301.98.camel@edumazet-glaptop>
+In-Reply-To: <1372153697.3301.98.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013 14:28:11 +0530, Viresh Kumar wrote:
+On 25/06/2013 17:48, Eric Dumazet wrote:
+> On Tue, 2013-06-25 at 16:56 +0800, Daniel J Blueman wrote:
+>> As memory capacity increases, we see the dentry and inode cache hash
+>> tables grow to wild sizes [1], eg 13GB is consumed on a 4.5TB system.
+>>
+>> Perhaps a better approach adds a linear component to an exponent to give
+>> tuned scaling, given that spatial locality is an advantage in hash table
+>> and careful use of resources.
+>>
+>> The same approach would fit to other hash tables (mount-cache, TCP
+>> established, TCP bind, UDP, UDP-Lite, Dquot-cache) with different
+>> coefficients, so perhaps we could generalise.
+>>
+>
+> TCP hash table is limited to 512K slots, unless overridden.
+> TCP bind limited to 64K slots.
+> UDP limited to 64K slots.
+>
+>> If so what are reasonable reference points and assumptions?
+>
+> I do not know what you have in mind, please show us a patch ;)
+[...]
 
-> On 19 June 2013 22:42, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > The struct cpufreq_driver has been extended to embrace the
-> > information related to boost support.
-> >
-> > When "boost_mode" device tree attribute is defined for a platform,
-> > the boost_supported flag is set. Moreover boost related attributes
-> > were exported.
-> >
-> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-> >
-> > Changes for v4:
-> > - None
-> >
-> > Changes for v3:
-> > - Remove low level boost code
-> > - Move boost management code to cpufreq core code
-> > - Use boost_supported flag to indicate if driver supports over
-> > clocking
-> >
-> > Changes for v2:
-> > - Removal of struct cpufreq_boost
-> > - Removal of the CONFIG_CPU_FREQ_BOOST flag
-> > - low_level_boost with valid address when boost is supported
-> > ---
-> >  drivers/cpufreq/exynos-cpufreq.c |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> 
-> Yes, this looks fine..
-> 
-> I will Ack the whole series in the end, so no individual acks :)
+Alright, I'll see what I can get together in the next week or so when I 
+can fit it in.
 
-Ok.
-
+Dan
 -- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Daniel J Blueman
+Principal Software Engineer, Numascale Asia
