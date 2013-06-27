@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3F0Wjx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 18:39:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14955 "EHLO mx1.redhat.com"
+	id S1754509Ab3F0Wj7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 18:39:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30098 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914Ab3F0Wjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 18:39:52 -0400
-Subject: [PATCH v2 0/3] pci: ACS fixes & quirks
+	id S1754458Ab3F0Wj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 18:39:57 -0400
+Subject: [PATCH v2 1/3] pci: Fix flaw in pci_acs_enabled()
 To: bhelgaas@google.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-pci@vger.kernel.org, joro@8bytes.org, andihartmann@01019freenet.de,
         linux-kernel@vger.kernel.org
-Date: Thu, 27 Jun 2013 16:39:41 -0600
-Message-ID: <20130627222159.16564.38166.stgit@bling.home>
+Date: Thu, 27 Jun 2013 16:39:48 -0600
+Message-ID: <20130627223948.16564.6654.stgit@bling.home>
+In-Reply-To: <20130627222159.16564.38166.stgit@bling.home>
+References: <20130627222159.16564.38166.stgit@bling.home>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,49 +23,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
+The multifunction ACS rules do not apply to downstream ports.  Those
+should be tested regardless of whether they are single function or
+multifunciton.  The PCIe spec also fully specifies which PCIe types
+are subject to the multifunction rules and excludes event collectors
+and PCIe-to-PCI bridges entirely.  Document each rule to the section
+of the PCIe spec and provide overall documentation of the function.
 
-Revised patch 1/ to match comments from Bjorn.  PCIe event collectors
-and PCIe-to-PCI bridges now indicate that they do not support ACS.
-I've reached out to try to get clarification on this, but I think it's
-reasonable to proceed with a conservative approach until then.  I also
-added PCI-to-PCIe bridges for the sake of being complete.  Also added
-more comments about the purpose and behavior of pci_acs_enabled().  If
-I've overlooked anything else that needs to be addressed, please let
-me know.
-
-Patch 2/ had no comments, it's unchanged.
-
-Patch 3/ is added.  This was sent as an RFC nearly a year ago and
-Joerg confirmed for us that these devices do not support p2p on AMD
-systems with AMD IOMMU.  We can't simply use iommu_present() to test
-for an IOMMU because it's setup just after we need this function.  
-Instead we test for the ACPI IVRS table that describes the IOMMU.  It
-would probably suffice to skip an actual AMD IOMMU check, but I don't
-want it to later come bite us if these ASICs get re-used, maybe with
-a different IOMMU, and don't make the same guarantees.
-
-Joerg, I was also curious back when we investigated this patch if the
-same rules hold true for these other southbridge devices:
-
-1002:43a0 SB700/SB800/SB900 PCI to PCI bridge (PCIE port 0)
-1002:43a1 SB700/SB800/SB900 PCI to PCI bridge (PCIE port 1)
-1002:43a2 SB900 PCI to PCI bridge (PCIE port 2)
-1002:43a3 SB900 PCI to PCI bridge (PCIE port 3)
-
-If you remember or have contacts to poke, I'd be happy to follow-up
-with another patch to add them.  Thanks,
-
-Alex
-
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
+ drivers/pci/pci.c |   84 ++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 70 insertions(+), 14 deletions(-)
 
-Alex Williamson (3):
-      pci: Fix flaw in pci_acs_enabled()
-      pci: Differentiate ACS controllable from enabled
-      pci: ACS quirk for AMD southbridge
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index a899d8b..d0c2b35 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2349,6 +2349,19 @@ void pci_enable_acs(struct pci_dev *dev)
+ 	pci_write_config_word(dev, pos + PCI_ACS_CTRL, ctrl);
+ }
+ 
++static bool pci_acs_flags_enabled(struct pci_dev *pdev, u16 acs_flags)
++{
++	int pos;
++	u16 ctrl;
++
++	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
++	if (!pos)
++		return false;
++
++	pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
++	return (ctrl & acs_flags) == acs_flags;
++}
++
+ /**
+  * pci_acs_enabled - test ACS against required flags for a given device
+  * @pdev: device to test
+@@ -2356,36 +2369,79 @@ void pci_enable_acs(struct pci_dev *dev)
+  *
+  * Return true if the device supports the provided flags.  Automatically
+  * filters out flags that are not implemented on multifunction devices.
++ *
++ * Note that this interface checks the effective ACS capabilities of the
++ * device rather than the actual capabilities.  For instance, most single
++ * function endpoints are not required to support ACS because they have no
++ * opportunity for peer-to-peer access.  We therefore return 'true'
++ * regardless of whether the device exposes an ACS capability.  This makes
++ * it much easier for callers of this function to ignore the actual type
++ * or topology of the device when testing ACS support.
+  */
+ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
+ {
+-	int pos, ret;
+-	u16 ctrl;
++	int ret;
+ 
+ 	ret = pci_dev_specific_acs_enabled(pdev, acs_flags);
+ 	if (ret >= 0)
+ 		return ret > 0;
+ 
++	/*
++	 * Conventional PCI and PCI-X devices never support ACS, either
++	 * effectively or actually.  The shared bus topology implies that
++	 * any device on the bus can receive or snoop DMA.
++	 */
+ 	if (!pci_is_pcie(pdev))
+ 		return false;
+ 
+-	/* Filter out flags not applicable to multifunction */
+-	if (pdev->multifunction)
++	switch (pci_pcie_type(pdev)) {
++	/*
++	 * PCI/X-to-PCIe bridges are not specifically mentioned by the spec,
++	 * but since their primary inteface is PCI/X, we conservatively
++	 * handle them as we would a non-PCIe device.
++	 */
++	case PCI_EXP_TYPE_PCIE_BRIDGE:
++	/*
++	 * PCIe 3.0, 6.12.1 excludes ACS on these devices.  "ACS is never
++	 * applicable... must never implement an ACS Extended Capability...".
++	 * This seems arbitrary, but we take a conservative interpretation
++	 * of this statement.
++	 */
++	case PCI_EXP_TYPE_PCI_BRIDGE:
++	case PCI_EXP_TYPE_RC_EC:
++		return false;
++	/*
++	 * PCIe 3.0, 6.12.1.1 specifies that downstream and root ports should
++	 * implement ACS in order to indicate their peer-to-peer capabilities,
++	 * regardless of whether they are single- or multi-function devices.
++	 */
++	case PCI_EXP_TYPE_DOWNSTREAM:
++	case PCI_EXP_TYPE_ROOT_PORT:
++		return pci_acs_flags_enabled(pdev, acs_flags);
++	/*
++	 * PCIe 3.0, 6.12.1.2 specifies ACS capabilities that should be
++	 * implemented by the remaining PCIe types to indicate peer-to-peer
++	 * capabilities, but only when they are part of a multifunciton
++	 * device.  The footnote for section 6.12 indicates the specific
++	 * PCIe types included here.
++	 */
++	case PCI_EXP_TYPE_ENDPOINT:
++	case PCI_EXP_TYPE_UPSTREAM:
++	case PCI_EXP_TYPE_LEG_END:
++	case PCI_EXP_TYPE_RC_END:
++		if (!pdev->multifunction)
++			break;
++
+ 		acs_flags &= (PCI_ACS_RR | PCI_ACS_CR |
+ 			      PCI_ACS_EC | PCI_ACS_DT);
+ 
+-	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM ||
+-	    pci_pcie_type(pdev) == PCI_EXP_TYPE_ROOT_PORT ||
+-	    pdev->multifunction) {
+-		pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
+-		if (!pos)
+-			return false;
+-
+-		pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
+-		if ((ctrl & acs_flags) != acs_flags)
+-			return false;
++		return pci_acs_flags_enabled(pdev, acs_flags);
+ 	}
+ 
++	/*
++	 * PCIe 3.0, 6.12.1.3 specifies no ACS capabilties are applicable
++	 * to single function devices with the exception of downstream ports.
++	 */
+ 	return true;
+ }
+ 
 
-
- drivers/pci/pci.c    |   93 +++++++++++++++++++++++++++++++++++++++++---------
- drivers/pci/quirks.c |   50 +++++++++++++++++++++++++++
- 2 files changed, 127 insertions(+), 16 deletions(-)
