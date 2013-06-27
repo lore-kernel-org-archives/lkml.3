@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab3F0W2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 18:28:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39254 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab3F0W2C (ORCPT
+	id S1754383Ab3F0W3C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 18:29:02 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:60563 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab3F0W3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 18:28:02 -0400
-Date: Thu, 27 Jun 2013 15:28:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paul Clements <paul.clements@us.sios.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        "nbd-general@lists.sourceforge.net" 
-	<nbd-general@lists.sourceforge.net>
-Subject: Re: [PATCH] nbd: correct disconnect behavior
-Message-Id: <20130627152800.494a6043607a62feb35e9739@linux-foundation.org>
-In-Reply-To: <CAECXXi54NUvQLY1O0oWKqgDpdXWUCCcs_4jJkRJE29DctMYVUA@mail.gmail.com>
-References: <20130619210918.DF616222D8@clements>
-	<20130626162107.9237360f7646ec25f23cf5aa@linux-foundation.org>
-	<CAECXXi54NUvQLY1O0oWKqgDpdXWUCCcs_4jJkRJE29DctMYVUA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 27 Jun 2013 18:29:01 -0400
+Message-ID: <51CCBCA9.1000200@gmail.com>
+Date: Thu, 27 Jun 2013 16:28:57 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: deadlock in scheduler enabling HRTICK feature
+References: <51CA0622.8010105@gmail.com> <20130625211713.GA18796@laptop.programming.kicks-ass.net> <51CA0980.8010409@gmail.com> <20130626070533.GA3601@dyad.programming.kicks-ass.net> <51CB1AE9.5090709@gmail.com> <20130627104309.GQ28407@twins.programming.kicks-ass.net>
+In-Reply-To: <20130627104309.GQ28407@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013 18:20:37 -0400 Paul Clements <paul.clements@us.sios.com> wrote:
+On 6/27/13 4:43 AM, Peter Zijlstra wrote:
+> On Wed, Jun 26, 2013 at 10:46:33AM -0600, David Ahern wrote:
+>> On 6/26/13 1:05 AM, Peter Zijlstra wrote:
+>>>> What is the expectation that the feature provides? not a whole lot of
+>>>> documentation on it. I walked down the path wondering if it solved an odd
+>>>> problem we are seeing with the CFS in 2.6.27 kernel.
+>>>
+>>> Its supposed to use hrtimers for slice expiry instead of the regular tick.
+>>
+>> So theoretically CPU bound tasks would get preempted sooner? That was my
+>> guess/hope anyways.
+>
+> Doth the below worketh?
 
-> > --- a/drivers/block/nbd.c
-> > > +++ b/drivers/block/nbd.c
-> > > @@ -623,6 +623,8 @@ static int __nbd_ioctl(struct block_device *bdev,
-> > struct nbd_device *nbd,
-> > >               if (!nbd->sock)
-> > >                       return -EINVAL;
-> > >
-> > > +             nbd->disconnect = 1;
-> > > +
-> > >               nbd_send_req(nbd, &sreq);
-> > >                  return 0;
-> > >       }
-> > > @@ -654,6 +656,7 @@ static int __nbd_ioctl(struct block_device *bdev,
-> > struct nbd_device *nbd,
-> > >                               nbd->sock = SOCKET_I(inode);
-> > >                               if (max_part > 0)
-> > >                                       bdev->bd_invalidated = 1;
-> > > +                             nbd->disconnect = 0; /* we're connected
-> > now */
-> > >                               return 0;
-> > >                       } else {
-> > >                               fput(file);
-> > > @@ -742,6 +745,8 @@ static int __nbd_ioctl(struct block_device *bdev,
-> > struct nbd_device *nbd,
-> > >               set_capacity(nbd->disk, 0);
-> > >               if (max_part > 0)
-> > >                       ioctl_by_bdev(bdev, BLKRRPART, 0);
-> > > +             if (nbd->disconnect) /* user requested, ignore socket
-> > errors */
-> > > +                     return 0;
-> > >               return nbd->harderror;
-> > >       }
-> >
-> > hm, how does nbd work...  Hard to tell as nothing seems to be documented
-> > anywhere :(
-> >
-> 
-> I think most people look at the nbd-client to see. :)
-> 
-> But I will work on some docs for the ioctls...
-> 
-> Briefly, though, it goes something like this:
-> 
-> nbd-client and nbd-server negotiate parameters, including the server
-> telling the client how big the export is
-> 
-> Then the nbd-client does a series of ioctls to set up the device:
-> 
-> NBD_SET_SIZE - set the size of the device
-> NBD_SET_SOCK - tell the kernel which socket to use
-> NBD_DO_IT - this ioctl lasts for the life of the device and causes
-> nbd-client to go into a receive loop, handling I/O replies from the
-> nbd-server
-> 
-> NBD_DISCONNECT, meanwhile, can be called from a separate thread (usually
-> "nbd-client -d" calls it). This requests a disconnect of the device.
+It doth.
 
-OK, but.  "Would it be safer to clear ->disconnect in NBD_DO_IT?"
+Usually make -j 8 for a kernel build in a VM would lock it up pretty 
+quickly. With the patch I was able to run full builds multiple times.
 
-If not safer, would it be cleaner?
+As for the solution you are avoiding the nesting by not waking up the 
+softirq daemon.
 
-> > The cool kids are using bool lately ;)
-> >
-> 
-> Hey, maybe I want to be able to compile with gcc 2.7.2 ? :)
+I'll backport to 2.6.27 and see what happens. Thanks for the patch.
 
-Sob, I miss 2.7.2.  It was a good 50% faster than the new improved
-models.  But I don't think this yearning makes us cool.
+David
+
