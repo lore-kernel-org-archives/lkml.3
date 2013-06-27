@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab3F0Mom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:44:42 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:39334 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab3F0Moh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:44:37 -0400
-Date: Thu, 27 Jun 2013 05:44:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 0/8] Provide infrastructure for full-system
- idle
-Message-ID: <20130627124424.GW3828@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130625213721.GA19452@linux.vnet.ibm.com>
- <20130626122022.GI28407@twins.programming.kicks-ass.net>
- <20130626222442.GU3828@linux.vnet.ibm.com>
- <20130627094226.GP28407@twins.programming.kicks-ass.net>
+	id S1752804Ab3F0Mtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:49:45 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:10244
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752204Ab3F0Mto convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 08:49:44 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzc89bhzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h93fhd24he5bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>
+To: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>,
+        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+        <trivial@kernel.org>
+Subject: [PATCH linux-next] ARM: keystone: fix compilation warning
+Date: Thu, 27 Jun 2013 14:49:27 +0200
+Message-ID: <1372337367-6708-1-git-send-email-vincent.stehle@freescale.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627094226.GP28407@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062712-7606-0000-0000-00000CD52AE3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 11:42:26AM +0200, Peter Zijlstra wrote:
-> On Wed, Jun 26, 2013 at 03:24:42PM -0700, Paul E. McKenney wrote:
-> > Just to make sure I understand...  You are saying that it is OK for
-> > NO_HZ_FULL to shut down timekeeping if all CPUs are idle, even if some
-> > of them are taking NMIs from time to time, right?
-> 
-> Yeah.. its what we currently do and I don't see any reason to have
-> NO_HZ_FULL behave differently there.
+Fix the following compilation warning:
 
-Whew!!!  ;-)
+  arch/arm/mach-keystone/keystone.c:74:2: warning: initialization from incompatible pointer type [enabled by default]
+  arch/arm/mach-keystone/keystone.c:74:2: warning: (near initialization for ‘__mach_desc_KEYSTONE.restart’) [enabled by default]
 
-							Thanx, Paul
+Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: trivial@kernel.org
+---
+
+
+Hi,
+
+This warning was seen on linux-next tag next-20130627, with config ARM
+multi_v7_defconfig.
+
+Best regards,
+
+V.
+
+
+ arch/arm/mach-keystone/keystone.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
+index fe4d9ff..b661c5c 100644
+--- a/arch/arm/mach-keystone/keystone.c
++++ b/arch/arm/mach-keystone/keystone.c
+@@ -49,7 +49,7 @@ static const char *keystone_match[] __initconst = {
+ 	NULL,
+ };
+ 
+-void keystone_restart(char mode, const char *cmd)
++void keystone_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	u32 val;
+ 
+-- 
+1.7.10.4
+
+
 
