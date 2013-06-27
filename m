@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab3F0NQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:16:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41909 "EHLO mx2.suse.de"
+	id S1752777Ab3F0NSt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:18:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50806 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab3F0NQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:16:50 -0400
-Date: Thu, 27 Jun 2013 15:16:48 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, rtitmuss@logitech.com,
-        ogay@logitech.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Jean-Daniel Zanone <jzanone@logitech.com>,
-        =?ISO-8859-15?Q?Franti=A8ek_Fuka?= <fuka@fuxoft.cz>
-Subject: Logitech M705: Thumb button (was Re: [PATCH v4] HID: Add full support
- for Logitech Unifying receivers)
-In-Reply-To: <CAN+gG=E90-y--6C-Ok8TibcFZGAaL2X-KxnchquDLCUUniip1Q@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1306271513180.3538@pobox.suse.cz>
-References: <1315638713-3731-1-git-send-email-benjamin.tissoires@gmail.com> <20110910072826.GA1611@x4.trippels.de> <CAN+gG=H2jfT2zdn5H19hyn9JtDU7U1ensX_aUDgv0jk4d81jXg@mail.gmail.com> <CAN+gG=E90-y--6C-Ok8TibcFZGAaL2X-KxnchquDLCUUniip1Q@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752165Ab3F0NSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 09:18:47 -0400
+Message-ID: <51CC3B8E.8070702@ti.com>
+Date: Thu, 27 Jun 2013 08:18:06 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <vincent.stehle@freescale.com>
+CC: <linux-next@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Robin Holt <holt@sgi.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, <trivial@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH linux-next] ARM: OMAP2+: fix omap4-restart compilation
+References: <1372335961-31401-1-git-send-email-vincent.stehle@freescale.com>
+In-Reply-To: <1372335961-31401-1-git-send-email-vincent.stehle@freescale.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-[ Frantisek Fuka added to CC ]
-
-On Wed, 14 Sep 2011, Benjamin Tissoires wrote:
-
-> >> Nice. Does this mean I will be able to use the thumb-button of my M705
-> >> mouse in the near future?
-> >>
-> >> (Someone asked the same question 1.5 years ago, but nothing happened 
-> >> till then: http://thread.gmane.org/gmane.linux.kernel.input/11791 )
-> >
-> > This is quite weird. I was going to say that it will work, but with
-> > the M705 I've got at home,this thumb button doesn't work at all
-> > (anything is emitted from the usb, even with this driver).
-> > But I'm pretty sure I made it work with the one I got at work.
-> >
-> > I'll give a try on Monday unless people at Logitech gave us the solution.
-
-> I got some information for you. Apparently, it won't be possible to
-> enable this thumb button right now.
-> To enable it, the Windows driver put the mouse in a kind of debug mode
-> that need to be handled properly, which is not the case as of today.
-> 
-> I was able to make it work at home because there were different series
-> of M705, the latest sending the thumb button by default.
-
-Let me resurrect this 2 years old thread, as I have received multiple 
-reports since then, stating that some revisions of M705 don't have working 
-thumb button.
-
-Question mostly to the Logitech guys: Nestor, Olivier, could you please 
-provide us with the sequence that needs to be sent to (certain revisisons 
-of) M705 to let enter the debug mode, making the thumb button actually 
-emit a USB message?
-
-Thanks,
+On 06/27/2013 07:26 AM, Vincent Stehlé wrote:
+> Fix following compilation error due to missing include file:
+>
+>    arch/arm/mach-omap2/omap4-restart.c:21:28: warning: ‘enum reboot_mode’ declared inside parameter list [enabled by default]
+>    arch/arm/mach-omap2/omap4-restart.c:21:28: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+>    arch/arm/mach-omap2/omap4-restart.c:21:40: error: parameter 1 (‘mode’) has incomplete type
+>    arch/arm/mach-omap2/omap4-restart.c:21:6: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
+>    make[1]: *** [arch/arm/mach-omap2/omap4-restart.o] Error 1
+>
+> Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
+> Cc: Robin Holt <holt@sgi.com>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: trivial@kernel.org
+> ---
+>
+>
+> Hi,
+>
+> This fixes the build of linux-next for arch ARM, config multi_v7_defconfig, tag
+> next-20130627.
+>
+> Best regards,
+>
+> V.
+>
+>
+>   arch/arm/mach-omap2/omap4-restart.c |    1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/arch/arm/mach-omap2/omap4-restart.c b/arch/arm/mach-omap2/omap4-restart.c
+> index 652adde..41dfd7d 100644
+> --- a/arch/arm/mach-omap2/omap4-restart.c
+> +++ b/arch/arm/mach-omap2/omap4-restart.c
+> @@ -8,6 +8,7 @@
+>    */
+>
+>   #include <linux/types.h>
+> +#include <linux/reboot.h>
+>   #include "prminst44xx.h"
+>
+>   /**
+>
+Same was covered already?
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/178209.html
 
 -- 
-Jiri Kosina
-SUSE Labs
+Regards,
+Nishanth Menon
