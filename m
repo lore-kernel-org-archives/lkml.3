@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab3F0Stp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 14:49:45 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:47430
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752593Ab3F0Stn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 14:49:43 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz1b0bIzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dhbe9i1155h)
-From: Stehle Vincent-B46079 <B46079@freescale.com>
-To: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: next-20130627 breaks i.MX6 sabre sd UART console
-Thread-Topic: next-20130627 breaks i.MX6 sabre sd UART console
-Thread-Index: Ac5zZxBZeupdDlSIRDWI6ggVo3oJ5Q==
-Date: Thu, 27 Jun 2013 18:49:36 +0000
-Message-ID: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.137.29]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754202Ab3F0SvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 14:51:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34641 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3F0SvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 14:51:15 -0400
+Date: Thu, 27 Jun 2013 13:51:04 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mike Galbraith <bitbucket@online.de>, Tim Hockin <thockin@hockin.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        jpoimboe <jpoimboe@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130627185104.GA2018@sergelap>
+References: <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
+ <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+ <20130625000118.GT1918@mtj.dyndns.org>
+ <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+ <20130626212047.GB4536@htj.dyndns.org>
+ <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627132206.GE4003@sergelap>
+ <20130627174850.GC5599@mtj.dyndns.org>
+ <20130627181457.GB26334@sergelap>
+ <20130627184541.GA6400@mtj.dyndns.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627184541.GA6400@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Quoting Tejun Heo (tj@kernel.org):
+> Hello, Serge.
+> 
+> On Thu, Jun 27, 2013 at 01:14:57PM -0500, Serge Hallyn wrote:
+> > I should find a good, up-to-date summary of the current behaviors of
+> > each controller so I can talk more intelligently about it.  (I'll
+> > start by looking at the kernel Documentation/cgroups, but don't
+> > feel too confident that they'll be uptodate :)
+> 
+> Heh, it's hopelessly outdated.  Sorry about that.  I'll get around to
+> updating it eventually.  Right now everything is in flux.
+> 
+> > Right,  I'm not attached to my toy implementation at all - except for
+> > the ability, in some fashion, to have nested agents which don't have
+> > cgroupfs access but talk to another agent to get the job done.
+> 
+> I think it probably would be better to allow organization and RO
 
-FYI I remark that today's Linux next 'next-20130627' breaks i.MX6 sabre sd UART console with ARM config imx_v6_v7_defconfig.
+What do you mean by "organization"?  Creating cgroups and moving tasks
+between them, without setting other cgroup values?
 
-This was working fine yesterday with 'next-20130626'.
-
-Bisecting gave me this commit:
-
-  064706514ec3fea740c2656e03c4f01f6a551ac4  clocksource: Add generic dummy timer driver
-
-If I revert it I do indeed get the boot messages on the UART console again, but the kernel then crashes in wm8962_probe(). So there is more to find out...
-
-Best regards,
-
-V.
-
-
+> access to knobs and stat files inside containers, for lower overhead,
+> if nothing else, and have comm channel for operations which need
+> supervision at a wider level.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
