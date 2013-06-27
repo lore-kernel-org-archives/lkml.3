@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab3F0JCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:02:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46006 "EHLO
+	id S1753572Ab3F0JCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:02:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46023 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab3F0JCP (ORCPT
+	with ESMTP id S1752051Ab3F0JC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:02:15 -0400
-Date: Thu, 27 Jun 2013 02:01:39 -0700
+	Thu, 27 Jun 2013 05:02:27 -0400
+Date: Thu, 27 Jun 2013 02:01:57 -0700
 From: tip-bot for Alex Shi <tipbot@zytor.com>
-Message-ID: <tip-fa6bddeb14d59d701f846b174b59c9982e926e66@git.kernel.org>
+Message-ID: <tip-282cf499f03ec1754b6c8c945c9674b02631fb0f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, alex.shi@intel.com, tglx@linutronix.de
+        peterz@infradead.org, pjt@google.com, alex.shi@intel.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, alex.shi@intel.com
-In-Reply-To: <1371694737-29336-3-git-send-email-alex.shi@intel.com>
-References: <1371694737-29336-3-git-send-email-alex.shi@intel.com>
+        pjt@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alex.shi@intel.com
+In-Reply-To: <1371694737-29336-5-git-send-email-alex.shi@intel.com>
+References: <1371694737-29336-5-git-send-email-alex.shi@intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:sched/core] sched:
-  Move a few runnable tg variables into CONFIG_SMP
-Git-Commit-ID: fa6bddeb14d59d701f846b174b59c9982e926e66
+  Fix sleep time double accounting in enqueue entity
+Git-Commit-ID: 282cf499f03ec1754b6c8c945c9674b02631fb0f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,47 +30,59 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 27 Jun 2013 02:01:45 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 27 Jun 2013 02:02:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fa6bddeb14d59d701f846b174b59c9982e926e66
-Gitweb:     http://git.kernel.org/tip/fa6bddeb14d59d701f846b174b59c9982e926e66
+Commit-ID:  282cf499f03ec1754b6c8c945c9674b02631fb0f
+Gitweb:     http://git.kernel.org/tip/282cf499f03ec1754b6c8c945c9674b02631fb0f
 Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Thu, 20 Jun 2013 10:18:46 +0800
+AuthorDate: Thu, 20 Jun 2013 10:18:48 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 27 Jun 2013 10:07:29 +0200
+CommitDate: Thu, 27 Jun 2013 10:07:32 +0200
 
-sched: Move a few runnable tg variables into CONFIG_SMP
+sched: Fix sleep time double accounting in enqueue entity
 
-The following 2 variables are only used under CONFIG_SMP, so its
-better to move their definiation into CONFIG_SMP too.
+The woken migrated task will __synchronize_entity_decay(se); in
+migrate_task_rq_fair, then it needs to set
+`se->avg.last_runnable_update -= (-se->avg.decay_count) << 20' before
+update_entity_load_avg, in order to avoid sleep time is updated twice
+for se.avg.load_avg_contrib in both __syncchronize and
+update_entity_load_avg.
 
-        atomic64_t load_avg;
-        atomic_t runnable_avg;
+However if the sleeping task is woken up from the same cpu, it miss
+the last_runnable_update before update_entity_load_avg(se, 0, 1), then
+the sleep time was used twice in both functions.  So we need to remove
+the double sleep time accounting.
+
+Paul also contributed some code comments in this commit.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
+Reviewed-by: Paul Turner <pjt@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1371694737-29336-3-git-send-email-alex.shi@intel.com
+Link: http://lkml.kernel.org/r/1371694737-29336-5-git-send-email-alex.shi@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/sched.h | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/sched/fair.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 77ce668..31d25f8 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -149,9 +149,11 @@ struct task_group {
- 	unsigned long shares;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e1602a0..9bbc303 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1571,7 +1571,13 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 		}
+ 		wakeup = 0;
+ 	} else {
+-		__synchronize_entity_decay(se);
++		/*
++		 * Task re-woke on same cpu (or else migrate_task_rq_fair()
++		 * would have made count negative); we must be careful to avoid
++		 * double-accounting blocked time after synchronizing decays.
++		 */
++		se->avg.last_runnable_update += __synchronize_entity_decay(se)
++							<< 20;
+ 	}
  
- 	atomic_t load_weight;
-+#ifdef	CONFIG_SMP
- 	atomic64_t load_avg;
- 	atomic_t runnable_avg;
- #endif
-+#endif
- 
- #ifdef CONFIG_RT_GROUP_SCHED
- 	struct sched_rt_entity **rt_se;
+ 	/* migrated tasks did not contribute to our blocked load */
