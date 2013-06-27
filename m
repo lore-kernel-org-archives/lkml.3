@@ -1,164 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab3F0OG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:06:28 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46710 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3F0OG1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:06:27 -0400
-Date: Thu, 27 Jun 2013 15:06:14 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] delayed kobject release: help find buggy code
-Message-ID: <20130627140613.GB12530@flint.arm.linux.org.uk>
+	id S1753195Ab3F0OHJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:07:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36075 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685Ab3F0OHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 10:07:07 -0400
+Message-ID: <51CC45D3.2000305@ti.com>
+Date: Thu, 27 Jun 2013 17:01:55 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [RFC] ARM: OMAP2+: omap_device: add pinctrl handling
+References: <1371826990-25820-1-git-send-email-grygorii.strashko@ti.com> <CACRpkdY=m1b9Lh27+wHP8FQ4SbVZKmAOCGhxe59aP+TcuR9QaA@mail.gmail.com> <20130625065811.GZ5523@atomide.com> <51CAEA90.90200@ti.com> <CACRpkdbKgEcfF67oO9HrczvDp4Po3Xt1hFajJ1vO8kEvsZH4jA@mail.gmail.com>
+In-Reply-To: <CACRpkdbKgEcfF67oO9HrczvDp4Po3Xt1hFajJ1vO8kEvsZH4jA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+Hi Linus,
+On 06/26/2013 10:31 PM, Linus Walleij wrote:
+> On Wed, Jun 26, 2013 at 3:20 PM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
+>
+>> The "Sleep" pinctrl state is optional - if "sleep" state isn't defined
+>> then "Idle" pinctrl state will be used during suspend.
+>
+> Why? If we have a clear cut semantic that "idle" is for runtime
+> suspend, why should it be a fallback for suspend?
 
-This is an updated copy of my delayed kobject release debugging patch
-from 2011, which I notice hasn't hit mainline.  Please consider merging
-this so that driver authors and subsystem maintainers have a way to test
-code for kobject refcounting errors.
+Seems, some misunderstanding is here :)
 
-Moreover, please also consider whether to make the debug option default
-to 'y' when CONFIG_DEBUG_KERNEL is enabled.
+This is OMAP specific - for OMAP the "Idle" state is typically used, and 
+"sleep" state is rather optional. Historically, three states have been 
+defined for OMAP:
+- "enabled"
+- "idle"
+- "off"
 
-8<====
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: kobject: delayed kobject release: help find buggy drivers
+Most of OMAP drivers use Runtime PM only to manage their states - but, 
+any calls to pm_runtime_xxx() helpers are redirected to *OMAP device* 
+framework which physically configures power state/clocks/pins of device.
 
-Implement debugging for kobject release functions.  kobjects are
-reference counted, so the drop of the last reference to them is not
-predictable. However, the common case is for the last reference to be
-the kobject's removal from a subsystem, which results in the release
-function being immediately called.
+It's the usual situation, when the device is in "Active/ON" state when 
+system is going to suspend, because PM runtime *do not allow* to disable 
+device during system wide suspend. To workaround this, the *OMAP device* 
+framework disables all active devices forcibly at .suspend_noirq() stage 
+- and, at this moment, it should apply "Idle" or "Sleep" configuration 
+on PINs.
 
-This can hide subtle bugs, which can occur when another thread holds a
-reference to the kobject at the same time that a kobject is removed.
-This results in the release method being delayed.
+I need to note here that "Sleep" state is/will be *not* used during PM 
+runtime operation - it's very specific.
 
-In order to make these kinds of problems more visible, the following
-patch implements a delayed release; this has the effect that the
-release function will be out of order with respect to the removal of
-the kobject in the same manner that it would be if a reference was
-being held.
+"off" state is used very rare now - and for the cases when device driver 
+is removed or device need to completely switched off (HSI omap_hsi.c and 
+RPROC remoteproc.c).
 
-This provides us with an easy way to allow driver writers to debug
-their drivers and fix otherwise hidden problems.
+I think, In the future the OMAP pinctrl configurations would be manged 
+in more flexible way then now (thanks to "pinctrl PM helpers" and you;))
+- "Idle" state will be splitted to "Idle"/"sleep"
+- "default" state will be splitted to "default"/"active"
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- include/linux/kobject.h |    4 ++++
- lib/Kconfig.debug       |   19 +++++++++++++++++++
- lib/kobject.c           |   22 +++++++++++++++++++---
- 3 files changed, 42 insertions(+), 3 deletions(-)
+>
+> You do realize that can just be turned around (as common suspend
+> is more widely implemented than runtime suspend) so that we
+> could say that if "idle" does not exist, we go to "sleep" in
+> runtime suspend.
+>
+>> So, final list of default pnctrl states may be defined as "default",
+>> "active", "idle", "sleep", "off":
+>> - "active", "idle", "sleep": will be handled by omap_device core
+>> - "default", "off": will be handled by driver itself (or Device core).
+>
+> Currently the pinctrl system combines what is called "default"
+> and "active" into one, assuming that all devices shall come up
+> in the active state.
+>
+> Also we haven't seen a device that need some "off" state that
+> is different from "sleep".
+>
+> If you want to drive this state list home you have to give a
+> *real world example*.
+>
+> I want to see a *real* example, for a device and it's pins,
+> that define totally different things for these states, as a
+> rationale.
+>
+> Else we are just defining states to make nice figures or mental
+> maps and that is not helpful for drivers writers.
+OK. Please pay attention to the following example (taken from TI Android 
+product kernel 3.4 - need to have the same in mainline kernel):
+static const struct omap_device_pad port1_phy_pads[] __initconst = {
+	{
+		.name = "usbb1_ulpitll_stp.usbb1_ulpiphy_stp",
+		.flags  = OMAP_DEVICE_PAD_REMUX,
+		.enable = OMAP_PIN_OUTPUT | OMAP_MUX_MODE4,
+		.idle = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE7,
+		.off = OMAP_PIN_OFF_OUTPUT_LOW | OMAP_MUX_MODE7,
+	},
+	{
+		.name = "usbb1_ulpitll_clk.usbb1_ulpiphy_clk",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dir.usbb1_ulpiphy_dir",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_nxt.usbb1_ulpiphy_nxt",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dat0.usbb1_ulpiphy_dat0",
+		.flags  = OMAP_DEVICE_PAD_REMUX |OMAP_DEVICE_PAD_WAKEUP,
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+		.idle = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dat1.usbb1_ulpiphy_dat1",
+		.flags  = OMAP_DEVICE_PAD_REMUX |OMAP_DEVICE_PAD_WAKEUP,
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+		.idle = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dat2.usbb1_ulpiphy_dat2",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dat3.usbb1_ulpiphy_dat3",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dat4.usbb1_ulpiphy_dat4",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dat5.usbb1_ulpiphy_dat5",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dat6.usbb1_ulpiphy_dat6",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+	{
+		.name = "usbb1_ulpitll_dat7.usbb1_ulpiphy_dat7",
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+	},
+};
 
-diff --git a/include/linux/kobject.h b/include/linux/kobject.h
-index 939b112..de6dcbcc 100644
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -26,6 +26,7 @@
- #include <linux/kernel.h>
- #include <linux/wait.h>
- #include <linux/atomic.h>
-+#include <linux/workqueue.h>
- 
- #define UEVENT_HELPER_PATH_LEN		256
- #define UEVENT_NUM_ENVP			32	/* number of env pointers */
-@@ -65,6 +66,9 @@ struct kobject {
- 	struct kobj_type	*ktype;
- 	struct sysfs_dirent	*sd;
- 	struct kref		kref;
-+#ifdef CONFIG_DEBUG_KOBJECT_RELEASE
-+	struct delayed_work	release;
-+#endif
- 	unsigned int state_initialized:1;
- 	unsigned int state_in_sysfs:1;
- 	unsigned int state_add_uevent_sent:1;
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 566cf2b..1f9de06 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -688,6 +688,25 @@ config DEBUG_KOBJECT
- 	  If you say Y here, some extra kobject debugging messages will be sent
- 	  to the syslog. 
- 
-+config DEBUG_KOBJECT_RELEASE
-+	bool "kobject release debugging"
-+	depends on DEBUG_KERNEL
-+	help
-+	  kobjects are reference counted objects.  This means that their
-+	  last reference count put is not predictable, and the kobject can
-+	  live on past the point at which a driver decides to drop it's
-+	  initial reference to the kobject gained on allocation.  An
-+	  example of this would be a struct device which has just been
-+	  unregistered.
-+
-+	  However, some buggy drivers assume that after such an operation,
-+	  the memory backing the kobject can be immediately freed.  This
-+	  goes completely against the principles of a refcounted object.
-+
-+	  If you say Y here, the kernel will delay the release of kobjects
-+	  on the last reference count to improve the visibility of this
-+	  kind of kobject release bug.
-+
- config DEBUG_HIGHMEM
- 	bool "Highmem debugging"
- 	depends on DEBUG_KERNEL && HIGHMEM
-diff --git a/lib/kobject.c b/lib/kobject.c
-index b7e29a6..3b1dbdc 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -545,8 +545,8 @@ static void kobject_cleanup(struct kobject *kobj)
- 	struct kobj_type *t = get_ktype(kobj);
- 	const char *name = kobj->name;
- 
--	pr_debug("kobject: '%s' (%p): %s\n",
--		 kobject_name(kobj), kobj, __func__);
-+	pr_debug("kobject: '%s' (%p): %s, parent %p\n",
-+		 kobject_name(kobj), kobj, __func__, kobj->parent);
- 
- 	if (t && !t->release)
- 		pr_debug("kobject: '%s' (%p): does not have a release() "
-@@ -580,9 +580,25 @@ static void kobject_cleanup(struct kobject *kobj)
- 	}
- }
- 
-+#ifdef CONFIG_DEBUG_KOBJECT_RELEASE
-+static void kobject_delayed_cleanup(struct work_struct *work)
-+{
-+	kobject_cleanup(container_of(to_delayed_work(work),
-+				     struct kobject, release));
-+}
-+#endif
-+
- static void kobject_release(struct kref *kref)
- {
--	kobject_cleanup(container_of(kref, struct kobject, kref));
-+	struct kobject *kobj = container_of(kref, struct kobject, kref);
-+#ifdef CONFIG_DEBUG_KOBJECT_RELEASE
-+	pr_debug("kobject: '%s' (%p): %s, parent %p (delayed)\n",
-+		 kobject_name(kobj), kobj, __func__, kobj->parent);
-+	INIT_DELAYED_WORK(&kobj->release, kobject_delayed_cleanup);
-+	schedule_delayed_work(&kobj->release, HZ);
-+#else
-+	kobject_cleanup(kobj);
-+#endif
- }
- 
- /**
+As you can see, from 12 pins only 3 pins need to be reconfigured while 
+switching from "active"->"idle" states and back (and as I mentioned 
+above for OMAP "idle" == "sleep" now).
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Regarding "OFF" state:
+OMAP mux HW defines special state for unused pins which is selected by 
+default after reset and need to be selected when device isn't used, for 
+example:
+_MUXMODE - Functional multiplexing selection for pad
+0x0: Select usbb1_hsic_data
+0x3: Select gpio_96
+0x7: Select safe_mode <<--- pin unused
+
+In opposite, in "sleep" state some pins need to be reconfigured in 
+special way to avoid glitches/support wake up/follow HW requirements:
+	{
+		.name = "usbb1_ulpitll_dat0.usbb1_ulpiphy_dat0",
+		.flags  = OMAP_DEVICE_PAD_REMUX |OMAP_DEVICE_PAD_WAKEUP,
+		.enable = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+<<- "active" PIN is input+pulldown
+		.idle = OMAP_PIN_INPUT_PULLDOWN | OMAP_MUX_MODE4,
+<<- "idle/sleep" PIN is input+pulldown+wakeup_en
+	},
+- or -
+	{
+		.name	= "uart2_rts.uart2_rts",
+		.flags  = OMAP_DEVICE_PAD_REMUX,
+		.enable	= OMAP_PIN_OUTPUT | OMAP_MUX_MODE0,
+<<- "active" PIN is output
+		.idle   = OMAP_PIN_OFF_INPUT_PULLUP | OMAP_MUX_MODE7,
+<<- "idle/sleep" PIN is input+pullup+safe
+	},
+
+
+More over, OAMP mux HW allow to define special state for PIN which
+will be applied in suspend/OFF mode (OFF-mode deepest possible PM state 
+for OMAP) automatically.
+X_OFFMODEPULLTYPESELECT OffMode mode pullup/down selection for pad
+X_OFFMODEPULLUDENABLE OffMode mode pullup/down enable for pad
+X_OFFMODEOUTVALUE OffMode mode output value for pad
+X_OFFMODEOUTENABLE OffMode mode output enable value for pad
+X_OFFMODEENABLE OffMode mode override control for pad
+
+>
+> Yours,
+> Linus Walleij
+>
+
+Regards,
+-grygorii
