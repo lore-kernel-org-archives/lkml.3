@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab3F0Ono (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:43:44 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:39751 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3F0Onn (ORCPT
+	id S1753892Ab3F0On7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:43:59 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:38096 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab3F0On6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:43:43 -0400
-X-IronPort-AV: E=Sophos;i="4.87,952,1363132800"; 
-   d="scan'208";a="32211575"
-Date: Thu, 27 Jun 2013 15:43:35 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
-        <catalin.marinas@arm.com>, <arnd@arndb.de>, <olof@lixom.net>,
-        <linux@arm.linux.org.uk>, <Ian.Campbell@citrix.com>,
-        <will.deacon@arm.com>, <marc.zyngier@arm.com>, <mingo@redhat.com>
-Subject: Re: [PATCH v6 2/5] kernel: missing include in cputime.c
-In-Reply-To: <20130627141718.GA10056@gmail.com>
-Message-ID: <alpine.DEB.2.02.1306271542530.4782@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com> <1372341272-12512-2-git-send-email-stefano.stabellini@eu.citrix.com> <20130627141209.GB29209@dyad.programming.kicks-ass.net> <20130627141718.GA10056@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 27 Jun 2013 10:43:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <CA+icZUUvaBhMATa=nRg2BZjLeB5gw1pwkubnzePH=nr5kfqu6g@mail.gmail.com>
+References: <CADDKRnBf4i8ZQ4EXC15Sa6z9CZ55w0vBDnXG26sjWgdO9zH45w@mail.gmail.com>
+	<CADDKRnCP_s2hL2wr8TsKeToNRt5nXF3NBYAqkmCCUPX8HbY_yQ@mail.gmail.com>
+	<CA+icZUXJK2ks7TQbH0AiPYAWrFuQC85Uw2sSM6d_YD5yS7unhA@mail.gmail.com>
+	<CA+icZUUvaBhMATa=nRg2BZjLeB5gw1pwkubnzePH=nr5kfqu6g@mail.gmail.com>
+Date: Thu, 27 Jun 2013 16:43:57 +0200
+Message-ID: <CADDKRnA1WKZYErApo7_aus2+semjJh0qeN3yHQhJYVGXNLBc8g@mail.gmail.com>
+Subject: Re: [v3.10-rc2] iwlwifi regression
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Thu, Jun 27, 2013 at 02:54:29PM +0100, Stefano Stabellini wrote:
-> > > steal_account_process_tick calls paravirt_steal_clock, but paravirt.h is
-> > > currently missing amoung the included header files.
-> > > Add include asm/paravirt.h ifdef CONFIG_PARAVIRT.
-> > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > CC: mingo@redhat.com
-> > > CC: peterz@infradead.org
-> > > 
-> > > Changes in v5:
-> > > - add ifdef CONFIG_PARAVIRT.
-> > > ---
-> > >  kernel/sched/cputime.c |    4 +++-
-> > >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> > > index cc2dc3ee..317a578 100644
-> > > --- a/kernel/sched/cputime.c
-> > > +++ b/kernel/sched/cputime.c
-> > > @@ -5,7 +5,9 @@
-> > >  #include <linux/static_key.h>
-> > >  #include <linux/context_tracking.h>
-> > >  #include "sched.h"
-> > > -
-> > > +#ifdef CONFIG_PARAVIRT
-> > > +#include <asm/paravirt.h>
-> > > +#endif
-> > 
-> > Why isn't that CONFIG stuff inside the header instead of around it?
-> 
-> Indeed.
-> 
-> Once that is fixed then the #ifdef around asm/paravirt.h in 
-> kernel/sched/core.c could be removed as well.
+2013/6/27 Sedat Dilek <sedat.dilek@gmail.com>:
+> On Wed, Jun 26, 2013 at 6:37 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Wed, Jun 26, 2013 at 6:16 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
+>>> 2013/5/25 Jörg Otte <jrg.otte@gmail.com>:
+>>>> If iwlwifi/iwldvm are built into the kernel (no loadable modules)
+>>>> following error is written to console and syslog since v3.10-rc:
+>>>>
+>>>> iwlwifi 0000:08:00.0: failed to load module iwldvm (error -38), is
+>>>> dynamic loading enabled?
+>>>>
+>>>> reverting
+>>>> commit 1618b2b02a3a0ee7a6863fed4b0d22e697e7e97c
+>>>> Author: Johannes Berg <johannes.berg@intel.com>
+>>>> Date:   Thu Apr 4 10:35:23 2013 +0200
+>>>>     iwlwifi: print warning on request_module failure
+>>>>
+>>>> fixes the problem for me.
+>>>>
+>>>> Jörg
+>>>>
+>>>> I'm not subscribed,please CC me in answeres
+>>>
+>>> We have rc-7 now and it's still not fixed. What is the problem?
+>>>
+>>
+>> The patch is pending in wireless.git and is not in mainline, right.
+>> AFAICS there was a recent pull request... so should be in rc8.
+>>
+>> commit 8edf3fd6eb0649b0f19363baf23bca39c6fbdba4
+>> "iwlwifi: don't print module loading error if not modular"
+>>
+>> - Sedat -
+>>
+>> http://git.kernel.org/cgit/linux/kernel/git/linville/wireless.git/commit/?id=8edf3fd6eb0649b0f19363baf23bca39c6fbdba4
+>>
+>
+> Hi Jörg,
+>
+> the fix you are waiting for hit mainline several minutes ago.
+>
+> Regards,
+> - Sedat -
+>
+> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=98b6ed0f2bf4abfb759206aa70690636372bdee7
+>
+>>> Thanks, Jörg
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Right, that should work.
-I'll make the change and resend with an additional patch to remove the
-ifdef in kernel/sched/core.c.
+Works for me!
+
+Thanks, Jörg
