@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3F0Nxo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:53:44 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:39005 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab3F0Nxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:53:43 -0400
-X-IronPort-AV: E=Sophos;i="4.87,952,1363132800"; 
-   d="scan'208";a="32194799"
-Date: Thu, 27 Jun 2013 14:53:37 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH v6 0/5] xen/arm/arm64: CONFIG_PARAVIRT and stolen ticks
- accounting
-Message-ID: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753367Ab3F0Nyf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:54:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17984 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685Ab3F0Nyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 09:54:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,952,1363158000"; 
+   d="scan'208";a="356649656"
+Date: Thu, 27 Jun 2013 16:58:19 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
+Message-ID: <20130627135819.GX9294@intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
+ <CAErSpo58bCG4=hwC73VY+nXPk9-dZUb5eWERZ_wTtAfrXtBVmg@mail.gmail.com>
+ <CAE9FiQW9xuu6WjH59td6Jve10kokoxU4mNqj4DRyg7beqBzHDA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQW9xuu6WjH59td6Jve10kokoxU4mNqj4DRyg7beqBzHDA@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series introduces stolen ticks accounting for Xen on ARM and
-ARM64.
-Stolen ticks are clocksource ticks that have been "stolen" from the cpu,
-typically because Linux is running in a virtual machine and the vcpu has
-been descheduled.
-To account for these ticks we introduce CONFIG_PARAVIRT and pv_time_ops
-so that we can make use of:
+On Wed, Jun 26, 2013 at 03:26:59PM -0700, Yinghai Lu wrote:
+> On Wed, Jun 26, 2013 at 3:18 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > On Tue, Jun 25, 2013 at 10:22 AM, Mika Westerberg
+> > <mika.westerberg@linux.intel.com> wrote:
+> >> Thunderbolt PCI-to-PCI bridges typically use BIOS "assisted" enumeration.
+> >> This means that the BIOS will allocate bridge resources based on some
+> >> assumptions of a maximum Thunderbolt chain. It also disables native PCIe
+> >> hotplug of the root port where the Thunderbolt host router is connected.
+> 
+> We should not need tricks in this patch after
+> 
+> https://patchwork.kernel.org/patch/2766521/
+> 
+> [2/3] PCI / ACPI: Use boot-time resource allocation rules during hotplug
 
-kernel/sched/cputime.c:steal_account_process_tick
-
-
-In this last iteration I have added support for stolen ticks to arm64
-and rebased on Catalin's upstream branch (that contains support for Xen
-on arm64).
-
-
-
-Stefano Stabellini (5):
-      xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
-      kernel: missing include in cputime.c
-      arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-      arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-      xen/arm: account for stolen ticks
-
- arch/arm/Kconfig                  |   20 ++++++++
- arch/arm/include/asm/paravirt.h   |   19 ++++++++
- arch/arm/kernel/Makefile          |    1 +
- arch/arm/kernel/paravirt.c        |   25 ++++++++++
- arch/arm/xen/enlighten.c          |   21 +++++++++
- arch/arm64/Kconfig                |   20 ++++++++
- arch/arm64/include/asm/paravirt.h |   19 ++++++++
- arch/arm64/kernel/Makefile        |    1 +
- arch/arm64/kernel/paravirt.c      |   25 ++++++++++
- arch/ia64/xen/time.c              |   48 +++-----------------
- arch/x86/xen/time.c               |   76 +------------------------------
- drivers/xen/Makefile              |    2 +-
- drivers/xen/time.c                |   91 +++++++++++++++++++++++++++++++++++++
- include/xen/xen-ops.h             |    5 ++
- kernel/sched/cputime.c            |    4 +-
- 15 files changed, 258 insertions(+), 119 deletions(-)
- create mode 100644 arch/arm/include/asm/paravirt.h
- create mode 100644 arch/arm/kernel/paravirt.c
- create mode 100644 arch/arm64/include/asm/paravirt.h
- create mode 100644 arch/arm64/kernel/paravirt.c
- create mode 100644 drivers/xen/time.c
-
-
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git lost_ticks_6
-
-Cheers,
-
-Stefano
+Unfortunately that patch is not enough :-( We still need to make sure that
+we don't add anything to the bridge window sizes like __pci_bus_size_bridges()
+is currently doing (e.g similar to pci=hpmemsize=0,hpiosize=0 for the
+Thunderbolt bridges).
