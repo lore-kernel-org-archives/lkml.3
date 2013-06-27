@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab3F0PRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:17:55 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:40031 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751893Ab3F0PRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:17:54 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        Fengguang Wu <fengguang.wu@intel.com>, Bob Liu <lliubbo@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [RESEND][PATCH] zswap: fix Kconfig to depend on CRYPTO=y
-Date: Thu, 27 Jun 2013 10:17:43 -0500
-Message-Id: <1372346263-6005-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.3.1
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062715-7182-0000-0000-0000078CD682
+	id S1753912Ab3F0PSB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:18:01 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:37177 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753806Ab3F0PR6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 11:17:58 -0400
+Message-ID: <51CC57A3.6020601@itdev.co.uk>
+Date: Thu, 27 Jun 2013 16:17:55 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver - v6
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig entry for zswap currently allows CRYPTO=m to satisfy the
-zswap dependency.  However zswap is boolean (i.e. built-in) and has
-symbol dependencies on CRYPTO.  Additionally, because the CRYPTO dependency
-is satisfied with =m, the additional selects zswap does can also
-be satisfied with =m, which leads to additional linking errors.
+Hi Dimitry-
 
->From the report:
-=====
-tree:   git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git since-3.9
-head:   57cefddb141d6c9d0ab4f5a8589dd017f796a3f7
-commit: 563f51c95b552e0d663df5bdf6cfc8e8a72d3ec6 [494/499] zswap: add to mm/
-config: x86_64-randconfig-x004-0619 (attached as .config)
+Nick Dyer wrote:
+> Some minor updates to these patches to address review comments. I've rebased
+> them on the latest dtor/next tree.
 
-All error/warnings:
+Apologies, I forgot to add Yufeng's Acked-by lines. To save cluttering up
+the list, I've pushed a new version with just that change to
 
-   mm/built-in.o: In function `zswap_frontswap_invalidate_area':
->> zswap.c:(.text+0x3a705): undefined reference to `zbud_free'
-   mm/built-in.o: In function `zswap_free_entry':
->> zswap.c:(.text+0x3a76b): undefined reference to `zbud_free'
->> zswap.c:(.text+0x3a789): undefined reference to `zbud_get_pool_size'
-on and on...
-=====
+git@github.com:ndyer/linux.git
 
-This patch makes CRYPTO a built-in dependency of ZSWAP.  This has the
-side effect of also making the selects built-in.
+the tag is
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
----
-
-Andrew, please merge this into your mmotm ASAP as it fixes a demonstrable
-build break.
-
- mm/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 949e8de..81763ae 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -490,7 +490,7 @@ config ZBUD
- 
- config ZSWAP
- 	bool "Compressed cache for swap pages (EXPERIMENTAL)"
--	depends on FRONTSWAP && CRYPTO
-+	depends on FRONTSWAP && CRYPTO=y
- 	select CRYPTO_LZO
- 	select ZBUD
- 	default n
--- 
-1.8.3.1
-
+for-next-20130627-v7
