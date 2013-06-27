@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3F0PiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:38:05 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:43869 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab3F0PiC (ORCPT
+	id S1754008Ab3F0PjD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:39:03 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:51364 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340Ab3F0PjA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:38:02 -0400
-Message-ID: <1372347477.2436.7.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [RFC Patch net-next 4/5] sunrpc: use generic union inet_addr
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Cong Wang <amwang@redhat.com>
-CC: <netdev@vger.kernel.org>, Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 27 Jun 2013 16:37:57 +0100
-In-Reply-To: <1372315398-19683-5-git-send-email-amwang@redhat.com>
-References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
-	 <1372315398-19683-5-git-send-email-amwang@redhat.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Thu, 27 Jun 2013 11:39:00 -0400
+X-ASG-Debug-ID: 1372347539-0421b50221949b0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19978.002
-X-TM-AS-Result: No--5.363100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Transfer-Encoding: 8BIT
+To: Dave Jones <davej@redhat.com>
+From: Chris Mason <chris.mason@fusionio.com>
+In-Reply-To: <20130627151922.GA1438@redhat.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>
+References: <20130627145824.GA21540@redhat.com>
+ <20130627150130.14981.39849@localhost.localdomain>
+ <20130627151922.GA1438@redhat.com>
+Message-ID: <20130627153857.14981.14731@localhost.localdomain>
+User-Agent: alot/0.3.4
+Subject: Re: btrfs triggered lockdep WARN.
+Date: Thu, 27 Jun 2013 11:38:57 -0400
+X-ASG-Orig-Subj: Re: btrfs triggered lockdep WARN.
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1372347539
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.135126
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 14:43 +0800, Cong Wang wrote:
-[...]
-> --- a/include/net/inet_addr.h
-> +++ b/include/net/inet_addr.h
-> @@ -60,6 +60,62 @@ static inline bool inet_addr_multicast(const union inet_addr *ipa)
->  }
->  #endif
+Quoting Dave Jones (2013-06-27 11:19:22)
+> On Thu, Jun 27, 2013 at 11:01:30AM -0400, Chris Mason wrote:
+>  > Quoting Dave Jones (2013-06-27 10:58:24)
+>  > > Another bug caused by this script. https://github.com/kernelslacker/io-tests/blob/master/setup.sh
+>  > 
+>  > I'm still struggling to reproduce that one here.  I've tried every
+>  > variation I can think of but I'll try again.
 >  
-> +/**
-> + * inet_addr_copy - copy the address portion of one sockaddr to another
-> + * @dst: destination sockaddr
-> + * @src: source sockaddr
-> + *
-> + * Just copies the address portion and family. Ignores port, scope, etc.
-> + * Caller is responsible for making certain that dst is large enough to hold
-> + * the address in src. Returns true if address family is supported. Returns
-> + * false otherwise.
-> + */
-> +static inline bool inet_addr_copy(union inet_addr *dst,
-> +				  const union inet_addr *src)
-> +{
-> +	dst->sa.sa_family = src->sa.sa_family;
-> +
-> +	switch (src->sa.sa_family) {
-> +	case AF_INET:
-> +		dst->sin.sin_addr.s_addr = src->sin.sin_addr.s_addr;
-> +		return true;
-> +#if IS_ENABLED(CONFIG_IPV6)
-> +	case AF_INET6:
-> +		dst->sin6.sin6_addr = src->sin6.sin6_addr;
-> +		dst->sin6.sin6_scope_id = src->sin6.sin6_scope_id;
-> +		return true;
-> +#endif
+> Note that this is a different trace to the other post about that script.
 
-Most of the other functions work on IPv6 addresses without CONFIG_IPV6;
-why should this be different?
+Yeah, but I haven't hit anything unusual at all yet.
 
-Ben.
+> 
+>  > I really hope you don't already have CONFIG_DEBUG_PAGE_ALLOC turned on,
+>  > maybe it will catch this?
+> 
+> I do. Though given this is lockdep complaining about what looks like
+> memory corruption, it's probably not related.
 
-> +	}
-> +
-> +	return false;
-> +}
-[...]
+Ok, could you please try this with some heavy memory pressure?  I'm
+hoping to trigger a use-after-free that points us in the right
+direction.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+-chris
 
