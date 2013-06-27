@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab3F0GhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 02:37:11 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59206 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab3F0GhJ (ORCPT
+	id S1752458Ab3F0Ghp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 02:37:45 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:59711 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab3F0Gho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 02:37:09 -0400
-Date: Thu, 27 Jun 2013 16:36:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <balbi@ti.com>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: Re: regression caused by commit
- 8357b48549e17b3e4e402c7f977b65708922e60f
-Message-Id: <20130627163655.239cea102ba0eb968a434593@canb.auug.org.au>
-In-Reply-To: <20130627061419.GE15455@arwen.pp.htv.fi>
-References: <20130627061419.GE15455@arwen.pp.htv.fi>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Jun_2013_16_36_55_+1000_QZGLmCS5rz9frsBx"
+	Thu, 27 Jun 2013 02:37:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <51C9E83A.8070700@sgi.com>
+References: <1371831934-156971-1-git-send-email-nzimmer@sgi.com>
+	<20130621165142.GA32125@kroah.com>
+	<51C48745.9030304@zytor.com>
+	<CAE9FiQX3Opcv0E7+PXNAUoJtgoa0Cxv5wOK=R_ERvQjN79poXQ@mail.gmail.com>
+	<20130621185056.GA23473@kroah.com>
+	<51C4C5F3.3050800@sgi.com>
+	<CAE9FiQXaUNbK9+g-7j6gfvLrSvUJFWWKapDv658LPe4VfbH=tQ@mail.gmail.com>
+	<51C9D4ED.5070805@sgi.com>
+	<51C9DEC1.6030602@zytor.com>
+	<CAE9FiQV5z+3AXy5c=aaU3vq1V3fibJ6PhhA4VW5H8BWVzhxXPA@mail.gmail.com>
+	<51C9E523.7000803@zytor.com>
+	<51C9E83A.8070700@sgi.com>
+Date: Wed, 26 Jun 2013 23:37:43 -0700
+X-Google-Sender-Auth: pyiucjYedOR0siDA3mhGK6v6-mI
+Message-ID: <CAE9FiQWzzQeBMRizdL4Ym2AM424yF9+CEZ3vt5Maunb6tfxKyQ@mail.gmail.com>
+Subject: Re: [RFC 0/2] Delay initializing of large sections of memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: Mike Travis <travis@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Nathan Zimmer <nzimmer@sgi.com>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Jun_2013_16_36_55_+1000_QZGLmCS5rz9frsBx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jun 25, 2013 at 11:58 AM, Mike Travis <travis@sgi.com> wrote:
+> experimenting as soon as I can.  Our 32TB system is being
+> brought back to 16TB (we found a number of problems as we
+> get closer and closer to the 64TB limit), but that's still
+> a significant size.
 
-Hi,
+Hi, Mike,
 
-On Thu, 27 Jun 2013 09:14:19 +0300 Felipe Balbi <balbi@ti.com> wrote:
->
-> after commit 8357b48549e17b3e4e402c7f977b65708922e60f,
-> omap2plus_defconfig doesn't 'hold' the answer to USB Gadget Drivers
-> anymore. Everytime I run oldconfig, it asks me again and again what USB
-> Gadget Drivers should be (M/y/?).
->=20
-> That's certainly not expected considering it wasn't like that before.
+Can you post e820 memory map on system that have 32TiB or more?
 
-That commit has been reverted in today's kbuild tree and thus in today's
-linux-next.
+Is there one range size more than 16TiB? like [16TiB, 32TiB)...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks
 
---Signature=_Thu__27_Jun_2013_16_36_55_+1000_QZGLmCS5rz9frsBx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRy92LAAoJEECxmPOUX5FEqzkP/3vkmnp780Y09d8gLRpCweKL
-CFR0tt4qRvMTDGxpjHwF889VFQ57n5qqJSHXNowig7XP9AP8x+9lwu9a32eJVLGr
-aPvzo0bKf8Iowyw58r+arUEdfNyCBH7Ld2SLWZ0qC5OhJXpnQTwI1W73gPqRkRw7
-klmFE+f0k8T3Lg0QjqjmwZXrVahoc/LwMU4JipLYV9VtDJH7ONwTP0ls25dnZHL9
-Unto/68Cl1Kc2nzOqW0EIgoNdDubZI9Fcgh95flIslTRNU8CVPAiWHjEvy6HBh8q
-bIC5gePSlSu6V/lE+1X/hbQnN6pJ6vO+FGBSJS7sf9OKYDJqU4E20qQfwqalVqJr
-uDGqeYkcFoBzuShhTFlLhf6Q4LNmhBeLdSgbKw/Oxo1Z/88anfsi8kdrGITicKfl
-l2KnAATBxUXy2ff6/pr2Rkq5SvIbJgGMjaA0tbKdVU3NRey7KUD42S+VPDN13KlC
-Rf3lsnICmgzn4+cgBld8W4s1MoUPO0ormQJbNssa+pJCM9qozdsWVwCjQZdJV0YC
-knuab+wVWzq84T7kpodWffch8J+YRt1U4pdJAkbL5uchR0RE1BhV97blBed3iaVz
-KaONJ80uG3xFTB5uU8URbbqiHb66FZiiY2+7mQ5uvUxImyrm5wC/4vVVeb0VhICn
-MDuQDj6g7wgFMEli9eyA
-=mx26
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_Jun_2013_16_36_55_+1000_QZGLmCS5rz9frsBx--
+Yinghai
