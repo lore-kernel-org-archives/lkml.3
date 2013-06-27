@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab3F0PhA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:37:00 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:43832 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab3F0Pg6 (ORCPT
+	id S1754036Ab3F0Phi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:37:38 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:44942 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab3F0Phg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:36:58 -0400
-Message-ID: <1372347413.2436.6.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [RFC Patch net-next 4/5] sunrpc: use generic union inet_addr
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Cong Wang <amwang@redhat.com>
-CC: <netdev@vger.kernel.org>, Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 27 Jun 2013 16:36:53 +0100
-In-Reply-To: <1372315398-19683-5-git-send-email-amwang@redhat.com>
-References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
-	 <1372315398-19683-5-git-send-email-amwang@redhat.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Thu, 27 Jun 2013 11:37:36 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19978.002
-X-TM-AS-Result: No--6.797700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <1372345790.2522.26.camel@dabdike>
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
+ <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
+ <51CA2B03.4080106@wwwdotorg.org> <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com>
+ <20130626135311.GA9078@rocoto.smurfnet.nu> <20130626135933.GQ22026@console-pimps.org>
+ <1372257499.2168.5.camel@dabdike> <20130627013219.GA346@srcf.ucam.org>
+ <CACxGe6uFkbuJ3BxM=A0Lu=jZQ79Ba8SmNsdBdTOO13szTfTZ=Q@mail.gmail.com>
+ <1372314821.557.33.camel@dabdike> <20130627143714.GA12900@srcf.ucam.org> <1372345790.2522.26.camel@dabdike>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 27 Jun 2013 16:37:16 +0100
+X-Google-Sender-Auth: wzrRLE9gb3Dh8id5lVaPKp9-19I
+Message-ID: <CACxGe6u2xU=+MzYLUbDLFB-9kA23TT2=otzM59zrbGWYt8x7Uw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 14:43 +0800, Cong Wang wrote:
-[...]
-> -/**
-> - * rpc_cmp_addr - compare the address portion of two sockaddrs.
-> - * @sap1: first sockaddr
-> - * @sap2: second sockaddr
-> - *
-> - * Just compares the family and address portion. Ignores port, but
-> - * compares the scope if it's a link-local address.
+On Thu, Jun 27, 2013 at 4:09 PM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Thu, 2013-06-27 at 15:37 +0100, Matthew Garrett wrote:
+>> On Wed, Jun 26, 2013 at 11:33:41PM -0700, James Bottomley wrote:
+>> > On Thu, 2013-06-27 at 07:23 +0100, Grant Likely wrote:
+>> > > What is the problem trying to be avoided by not using the virtual map?
+>> > > Is it passing the virtual mapping data from one kernel to the next
+>> > > when kexecing? Or something else?
+>> >
+>> > Where to begin ... SetVirtualAddressMap() is one massive hack job ...
+>> > just look at the tiano core implementation.   Basically it has a fixed
+>> > idea of where all the pointers are and it tries to convert them all to
+>> > the new address space.  The problem we see in x86 is that this
+>> > conversion process isn't exhaustive due to implementation cockups, so
+>> > the post virtual address map image occasionally tries to access
+>> > unconverted pointers via the old physical address and oopses the kernel.
+>>
+>> And yet it's the only mode in which the firmrware is actually tested
+>> against an OS, so we don't have any real choice in the matter.
+>
+> Agree for x86 ... we just have to cope with the implementations we see
+> in the field.  However, ARM has much more scope to have the UEFI
+> implementation developed collaboratively with Linux as the reference
+> platform.  If we can convince the ARM implementors that
+> SetVirtualAddressMap is an accident waiting to happen, they might be
+> more flexible.
 
-You're removing the scope comparison.
+We may not have any success convincing them of that; but given the
+larger scope for Linux on ARM UEFI implementations, it will actually
+get tested. If Linux chooses to use a 1:1 mapping, then the hardware
+vendors will make sure a 1:1 mapping will actually work.
 
-Ben.
+I must say that I'm a whole lot more comfortable with this approach.
+I've never been comfortable with calling out to UEFI functions while
+leaving the entirety of kernel space accessable. Sure UEFI can still
+do nasty things if it really wants to and important devices get
+mapped, but at least it will protect against accidental accesses.
 
-> - * Returns true if the addrs are equal, false if they aren't.
-> - */
->  static inline bool rpc_cmp_addr(const struct sockaddr *sap1,
->  				const struct sockaddr *sap2)
->  {
-> -	if (sap1->sa_family == sap2->sa_family) {
-> -		switch (sap1->sa_family) {
-> -		case AF_INET:
-> -			return __rpc_cmp_addr4(sap1, sap2);
-> -		case AF_INET6:
-> -			return __rpc_cmp_addr6(sap1, sap2);
-> -		}
-> -	}
-> -	return false;
-> +	return inet_addr_equal((const union inet_addr *)sap1,
-> +			       (const union inet_addr *)sap2);
->  }
-[...]
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+g.
