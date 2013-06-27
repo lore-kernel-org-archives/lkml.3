@@ -1,158 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab3F0TMf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 15:12:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41672 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839Ab3F0TMd (ORCPT
+	id S1753860Ab3F0TQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 15:16:51 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:56622 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab3F0TQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:12:33 -0400
-Message-ID: <51CC8E80.5030206@ti.com>
-Date: Thu, 27 Jun 2013 14:12:00 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 27 Jun 2013 15:16:50 -0400
+Date: Thu, 27 Jun 2013 21:16:47 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, kevin@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/8] clocksource: sun4i: Add clocksource and sched clock
+ drivers
+Message-ID: <20130627191647.GE4319@lukather>
+References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
+ <20130627060234.GD4824@tarshish>
+ <20130627093558.GB8437@lukather>
+ <20130627094649.GM4824@tarshish>
+ <20130627172144.GD4319@lukather>
+ <20130627173643.GQ4824@tarshish>
 MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
-References: <1372149330-24335-1-git-send-email-coelho@ti.com>  <51CBC1C8.1040301@gmail.com> <1372322851.18889.53.camel@cumari.coelho.fi>  <20130627125131.GA27285@kahuna> <1372337887.8383.12.camel@cumari.coelho.fi>  <CAGo_u6qbt9dANgKq49xR=1qsCpUBhmVaPL4EK04XvTw+=4Z23g@mail.gmail.com>  <1372339148.8383.17.camel@cumari.coelho.fi> <51CC3CEE.3050004@ti.com>  <1372339810.8383.20.camel@cumari.coelho.fi>  <CAGo_u6pWZX9gbHgBae=gcWk8i6-TnhxH1TdM9QdEDLTow6Pn5A@mail.gmail.com> <1372359090.21065.12.camel@cumari.coelho.fi>
-In-Reply-To: <1372359090.21065.12.camel@cumari.coelho.fi>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gDGSpKKIBgtShtf+"
+Content-Disposition: inline
+In-Reply-To: <20130627173643.GQ4824@tarshish>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 01:51 PM, Luciano Coelho wrote:
-> On Thu, 2013-06-27 at 08:39 -0500, Nishanth Menon wrote:
->> On Thu, Jun 27, 2013 at 8:30 AM, Luciano Coelho <coelho@ti.com> wrote:
->>> On Thu, 2013-06-27 at 08:23 -0500, Nishanth Menon wrote:
->>>> On 06/27/2013 08:19 AM, Luciano Coelho wrote:
->>>>> On Thu, 2013-06-27 at 08:15 -0500, Nishanth Menon wrote:
->>>>>> On Thu, Jun 27, 2013 at 7:58 AM, Luciano Coelho <coelho@ti.com> wrote:
->>>>>>> For the actual DTS files, I could add a wilink.dtsi with enumerations
->>>>>>> for these values so they could be used in the node definitions.  But I'm
->>>>>>> not sure it's going to be that valuable in the end.
->>>>>> The  way GPIO HIGH was defined might help to provide guidance I think :)
->>>>>
->>>>> Where? As far as I can see, the GPIO flags are defined in a bitmap.
->>>>
->>>> include/dt-bindings/gpio/gpio.h
->>>
->>> Thanks! I don't see these macros used anywhere, though.
->> umm... I'd think you have'nt looked deep enough / lists :)
->
-> If you mean mailing lists, you're right, I didn't.  I just did a git
-> grep for the macros and didn't find any users.
-git grep "GPIO_ACTIVE_[HIGH|LOW]" arch/arm/boot/dts/|wc -l
-344
-on next-20130626. anyways, besides the point.
 
+--gDGSpKKIBgtShtf+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>> This seems to be a completely different thing.  This is the header that
->>> contains the helper functions to get GPIO-related device tree nodes,
->>> isn't it?
->> That is true, but it also contains the flag for level which needs to
->> be in sync with the gpio.h dts header.
->>>> just a hint. not saying frequencies were defined in header. for systems
->>>> that define frequencies - example cpufreq OPPs, clock node usage, we do
->>>> not use indexing to frequency, instead, that is the responsibility of
->>>> driver to convert frequency back to required index.
->>>> git grep frequency Documentation/devicetree/bindings gives you how the
->>>> precedence looks like.
->>>>
->>>> Personally, if given a choice, I'd go with actual frequencies rather
->>>> than indexes.
->>>
->>> If I do that, I need to add also a separate flag to define whether the
->>> XTAL clock is used or not.  For instance, we have 26MHz and 26MHz
->>> crystal; and 38.4MHz and 38.4MHz crystal...
->> Yes, you would have to. at the same time, it is easy for module maker
->> to provide dtsi corresponding to exact h/w representation on his
->> module using wilink chip without being worried about weird index value
->> whose meaning is hidden in binding
->
-> The module makers need to know about the bindings and read the document
-> before they specify the node in DTS.  I think for clarity, a comment in
-> the DTS file stating the actual frequency is good enough.  Simpler and
-> more efficient (in terms of DT binary size and module code size) than
-> adding the actual frequencies.
->
->
->> On the flip side, It also allows driver to reject frequencies /
->> configurations that are not supported by the corresponding chip.
->
-> It's actually much easier to reject frequencies that are not valid with
-> the enumeration.  "if (refclock > 5) { bail_out(); }".  If I need to
-> check every frequency, I need to add an array of valid frequencies and
-> so on.  Waste of code, IMHO.
->
->
->> As I said, just my 2 cents. Personally, I'd like dts files to be as
->> readable as c files without having to dig through bindings document.
->
-> As I said before, for readability, adding a comment with the frequency
-> is good enough.  This is what I did for PandaES's DTS (not sent out
-> yet):
->
-> 	wlan {
-> 	     compatible = "ti,wilink6";
-> 	     interrupt-parent = <&gpio2>;
-> 	     interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
-> 	     refclock = <2>;		/* 38.4 MHz */
-> 	 };
->
-> Looks more readable to me than:
->
-> 	wlan {
-> 	     compatible = "ti,wilink6";
-> 	     interrupt-parent = <&gpio2>;
-> 	     interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
-> 	     refclock = <38400>;
-> 	     refclock_xtal = <0>;
-> 	 };
->
-> The macro idea sounds better to me, but in this case this code is so
-> simple that I don't think it's really worth it.
->
-> And, from another point of view, I see this as only a specification of
-> the module's details.  The frequency value is not really used anywhere
-> outside the module, so we don't see it.  I don't think there's a good
-> reason to expose the actual frequency to the kernel (and parse it back
-> to the values the firmware needs), since nothing else inside the kernel
-> will care about it.
-Overview: we are adding bindings for 
-Documentation/devicetree/bindings/net/wireless/ti-wilink.txt Which I 
-believe is intended to be generic.
+On Thu, Jun 27, 2013 at 08:36:43PM +0300, Baruch Siach wrote:
+> Hi Maxime,
+>=20
+> On Thu, Jun 27, 2013 at 07:21:44PM +0200, Maxime Ripard wrote:
+> > On Thu, Jun 27, 2013 at 12:46:49PM +0300, Baruch Siach wrote:
+> > > On Thu, Jun 27, 2013 at 11:35:58AM +0200, Maxime Ripard wrote:
+> > > > On Thu, Jun 27, 2013 at 09:02:34AM +0300, Baruch Siach wrote:
+> > > > > On Wed, Jun 26, 2013 at 11:16:55PM +0200, Maxime Ripard wrote:
+> > > > > > +static u32 sun4i_timer_sched_read(void)
+> > > > >=20
+> > > > > You commit message mentions "64 bits free running counter", but t=
+his one only=20
+> > > > > returns 32 bit.
+> > > >=20
+> > > > Yeah, the callback setup by setup_sched_clock is supposed to be
+> > > > returning a u32, and clocksource_mmio_init only accepts up to 32 bi=
+ts as
+> > > > well, so I'm only using the lower 32bits of this 64 bits counter.
+> > > >=20
+> > > > I'll amend the commit log to state this.
+> > >=20
+> > > But using 64 bit counter for sched_clock is much easier that using 32=
+ bit one.=20
+> >=20
+> > Easier in what aspect? Both API looks similar.
+>=20
+> You can just implement your own simple sched_clock() that just returns th=
+e=20
+> current value of this 64 bit counter, and do away with all the tricky cod=
+e in=20
+> kernel/time/sched_clock.c (in tip.git) that is needed to make the 32 -> 6=
+4=20
+> extension safe. This is not compatible with multi-platform kernel, though.
 
-Current frequencies supported for tcxoclock is the following for WiLink7
-+	0 = 19.200 MHz
-+	1 = 26.000 MHz
-+	2 = 38.400 MHz
-+	3 = 52.000 MHz
-+	4 = 16.368 MHz
-+	5 = 32.736 MHz
-+	6 = 16.800 MHz
-+	7 = 33.600 MHz
-Say wilink9 comes along and redefines this map OR introduces support for 
-20MHz support making the map 0-8, you'd no longer be able to support 
-this map. or say a new update of firmware magically changes this mapping 
-or something unexpected.
+Which is a deal-breaker for us.
 
-If the translation and validation is done in the driver, it is trivial 
-to handle without redefining the binding and breaking older dtbs (if 
-relevant)
+I'll use the setup_sched_clock_64 introduced by Stephen then :)
 
-Indexes to another entity is always a maintenance burden in the longer 
-run and needs judicious control. If it is possible to avoid it by 
-selecting the right parameters, I am a hard advocate for the same.
+Thanks for the time you took to review these patches!
 
--- 
-Regards,
-Nishanth Menon
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--gDGSpKKIBgtShtf+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzI+fAAoJEBx+YmzsjxAgsc4QAIVIFry/X42maC7Wb9gfZ31d
+KodztwtV5dxGJWTzcYXr5WgWC3WVKFcP0rs+YzQQm4ElGM0x5BjNkWzyPk0VK3Zb
+FkXrEiwKy6FRPH65Ru9KJ7mIpsmGZP6rvzVY1PkmM3gHlCg4Gl7F38WrqpvLI2wS
+aYGmUzGjaOu9hvStgLDX0But90SU/SWXBXQLUXYbzfXfDhO6KUWHWegcPZqoCFhk
+JKwaM1wG/AoiwZjONXF6E41EKlJXEEvF4uk1f9raX5A05erqyly1wprefeiFpSdm
+Nl2gdGmKYZMIjN8p5RC1djwikkPgRANHpGr7M1Srvu+Xx8b2C0TIXxhMpGLPtBwn
+8QKgWGA8iqImy3pn/eaZ8U3yZCuCDbmR7wJ/EAyibWm+7C0fzQ3aKzYLJo8yNkk7
+KcWoPn+jbOmFKTyLV4Q+jjhzMiNrAW0Yhf5d04y7JStm6YxRRGTefyxNdgtaeoO5
+5jK0lrwS3bzwCLbHvcb9f5e4+i460KwDYwqLLLtxTx8vVIuDMZ3YzX68l7iicKtC
+yvKnHLRwxL20puKKaWhETfLYTUNLxT196iwnR/U0HPlnMaBKXN4NToK4tYpu4mye
+nA5m1E/19LX6eul9OtRtYgDiou/qCJeYwgSSGvigcfdrBH8UYL4Q1AdQnEN1yXDR
+RrnaWYrOcs7x3AouZfz1
+=Cdpq
+-----END PGP SIGNATURE-----
+
+--gDGSpKKIBgtShtf+--
