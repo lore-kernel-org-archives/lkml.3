@@ -1,176 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3F0T4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 15:56:09 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:60787 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab3F0T4F (ORCPT
+	id S1754191Ab3F0UTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 16:19:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54693 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752933Ab3F0UTK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:56:05 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 01/45] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com,
-        David.Laight@aculab.com
-Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
-        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 28 Jun 2013 01:22:38 +0530
-Message-ID: <20130627195238.29830.41452.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
-References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Thu, 27 Jun 2013 16:19:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,954,1363158000"; 
+   d="scan'208";a="356854050"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Ben Guthro <Benjamin.Guthro@citrix.com>
+CC: Jan Beulich <JBeulich@suse.com>, "Zheng, Lv" <lv.zheng@intel.com>,
+        "Box, David E" <david.e.box@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Rafaell J . Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Box, David E" <david.e.box@intel.com>
+Subject: RE: [PATCH v4 3/5] acpi: Adjust linux acpi OS functions to new
+ extended parameter
+Thread-Topic: [PATCH v4 3/5] acpi: Adjust linux acpi OS functions to new
+ extended parameter
+Thread-Index: AQHOc0dpl7G7TargmEKMBkRA2R2VNJlKIASA//+XarCAAHmvgP//zfxA
+Date: Thu, 27 Jun 2013 20:19:05 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E36FE96A69@ORSMSX103.amr.corp.intel.com>
+References: <1372345323-9266-1-git-send-email-benjamin.guthro@citrix.com>
+ <1372345323-9266-4-git-send-email-benjamin.guthro@citrix.com>
+ <51CC724702000078000E149B@nat28.tlf.novell.com>
+ <94F2FBAB4432B54E8AACC7DFDE6C92E36FE969D3@ORSMSX103.amr.corp.intel.com>
+ <51CC647F.6070302@citrix.com>
+In-Reply-To: <51CC647F.6070302@citrix.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062719-5564-0000-0000-0000088FC34D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current CPU offline code uses stop_machine() internally. And disabling
-preemption prevents stop_machine() from taking effect, thus also preventing
-CPUs from going offline, as a side effect.
+I'm the ACPICA owner.
 
-There are places where this side-effect of preempt_disable() (or equivalent)
-is used to synchronize with CPU hotplug. Typically these are in atomic
-sections of code, where they can't make use of get/put_online_cpus(), because
-the latter set of APIs can sleep.
+The issue I have is that acpi_os_prepare_sleep causes a divergence between the raw ACPICA source code and the "linux" version of the ACPICA code.
 
-Going forward, we want to get rid of stop_machine() from the CPU hotplug
-offline path. And then, with stop_machine() gone, disabling preemption will
-no longer prevent CPUs from going offline.
+If it is possible to implement the functionality that is needed without changes to ACPICA, then that would be best. If not, we are willing to integrate this interface into ACPICA. However, this has an impact on all operating systems that use ACPICA, so this is always the last resort.
 
-So provide a set of APIs for such atomic hotplug readers, to prevent (any)
-CPUs from going offline. For now, they will default to preempt_disable()
-and preempt_enable() itself, but this will help us do the tree-wide conversion,
-as a preparatory step to remove stop_machine() from CPU hotplug.
+Bob
 
-(Besides, it is good documentation as well, since it clearly marks places
-where we synchronize with CPU hotplug, instead of combining it subtly with
-disabling preemption).
 
-In future, when actually removing stop_machine(), we will alter the
-implementation of these APIs to a suitable synchronization scheme.
-
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- include/linux/cpu.h |   20 ++++++++++++++++++++
- kernel/cpu.c        |   38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 58 insertions(+)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 9f3c7e8..a57b25a 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -17,6 +17,8 @@
- #include <linux/node.h>
- #include <linux/compiler.h>
- #include <linux/cpumask.h>
-+#include <linux/percpu.h>
-+#include <linux/smp.h>
- 
- struct device;
- 
-@@ -175,6 +177,8 @@ extern struct bus_type cpu_subsys;
- 
- extern void get_online_cpus(void);
- extern void put_online_cpus(void);
-+extern unsigned int get_online_cpus_atomic(void);
-+extern void put_online_cpus_atomic(void);
- extern void cpu_hotplug_disable(void);
- extern void cpu_hotplug_enable(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
-@@ -202,6 +206,22 @@ static inline void cpu_hotplug_driver_unlock(void)
- #define put_online_cpus()	do { } while (0)
- #define cpu_hotplug_disable()	do { } while (0)
- #define cpu_hotplug_enable()	do { } while (0)
-+
-+static inline unsigned int get_online_cpus_atomic(void)
-+{
-+	/*
-+	 * Disable preemption to avoid getting complaints from the
-+	 * debug_smp_processor_id() code.
-+	 */
-+	preempt_disable();
-+	return smp_processor_id();
-+}
-+
-+static inline void put_online_cpus_atomic(void)
-+{
-+	preempt_enable();
-+}
-+
- #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 198a388..2d03398 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -154,6 +154,44 @@ void cpu_hotplug_enable(void)
- 	cpu_maps_update_done();
- }
- 
-+/*
-+ * get_online_cpus_atomic - Prevent any CPU from going offline
-+ *
-+ * Atomic hotplug readers (tasks which wish to prevent CPUs from going
-+ * offline during their critical section, but can't afford to sleep)
-+ * can invoke this function to synchronize with CPU offline. This function
-+ * can be called recursively, provided it is matched with an equal number
-+ * of calls to put_online_cpus_atomic().
-+ *
-+ * Note: This does NOT prevent CPUs from coming online! It only prevents
-+ * CPUs from going offline.
-+ *
-+ * Lock ordering rule: Strictly speaking, there is no lock ordering
-+ * requirement here, but it is advisable to keep the locking consistent.
-+ * As a simple rule-of-thumb, use these functions in the outer-most blocks
-+ * of your critical sections, outside of other locks.
-+ *
-+ * Returns the current CPU number, with preemption disabled.
-+ */
-+unsigned int get_online_cpus_atomic(void)
-+{
-+	/*
-+	 * The current CPU hotplug implementation uses stop_machine() in
-+	 * the CPU offline path. And disabling preemption prevents
-+	 * stop_machine() from taking effect. Thus, this prevents any CPU
-+	 * from going offline.
-+	 */
-+	preempt_disable();
-+	return smp_processor_id();
-+}
-+EXPORT_SYMBOL_GPL(get_online_cpus_atomic);
-+
-+void put_online_cpus_atomic(void)
-+{
-+	preempt_enable();
-+}
-+EXPORT_SYMBOL_GPL(put_online_cpus_atomic);
-+
- #else /* #if CONFIG_HOTPLUG_CPU */
- static void cpu_hotplug_begin(void) {}
- static void cpu_hotplug_done(void) {}
-
+> -----Original Message-----
+> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
+> Sent: Thursday, June 27, 2013 9:13 AM
+> To: Moore, Robert
+> Cc: Jan Beulich; Zheng, Lv; Box, David E; Brown, Len; xen-
+> devel@lists.xen.org; Konrad Rzeszutek Wilk; Rafaell J . Wysocki; linux-
+> acpi@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v4 3/5] acpi: Adjust linux acpi OS functions to new
+> extended parameter
+> 
+> 
+> 
+> On 06/27/2013 11:59 AM, Moore, Robert wrote:
+> > I have not seen a discussion of the details on this, so can someone
+> explain to me just why acpi_os_prepare_sleep is needed, what does it do,
+> and why these changes are being made to ACPICA code?
+> 
+> Hi Bob,
+> 
+> I'm not familiar with your background here, so I apologize if I am stating
+> obvious things below.
+> 
+> acpi_os_prepare_sleep() has been in the acpica code for some time now,
+> allowing for OS specific hooks to account for differences between OS
+> architectures.
+> 
+> Specifically, it has been in since:
+> 
+> commit 09f98a825a821f7a3f1b162f9ed023f37213a63b
+> Author: Tang Liang <liang.tang@oracle.com>
+> Date:   Fri Dec 9 10:05:54 2011 +0800
+> 
+>     x86, acpi, tboot: Have a ACPI os prepare sleep instead of calling
+> tboot_sleep.
+> 
+>     The ACPI suspend path makes a call to tboot_sleep right before
+>     it writes the PM1A, PM1B values. We replace the direct call to
+>     tboot via an registration callback similar to __acpi_register_gsi.
+> 
+>     CC: Len Brown <len.brown@intel.com>
+>     Acked-by: Joseph Cihula <joseph.cihula@intel.com>
+>     Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+>     [v1: Added __attribute__ ((unused))]
+>     [v2: Introduced a wrapper instead of changing tboot_sleep return
+> values]
+>     [v3: Added return value AE_CTRL_SKIP for acpi_os_sleep_prepare]
+>     Signed-off-by: Tang Liang <liang.tang@oracle.com>
+>     [v1: Fix compile issues on IA64 and PPC64]
+>     [v2: Fix where __acpi_os_prepare_sleep==NULL and did not go in sleep
+> properly]
+>     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> 
+> 
+> In this case, the Xen hypervisor, and not linux needs to actually put the
+> system into S3, so this hook gives the architecture to do so.
+> 
+> This change does not introduce this functionality, but simply moves the
+> code around into the proper locations, such that the acpica code no longer
+> need to include linux specific headers.
+> 
+> I hope this helps.
+> If you have specific questions, please let me know.
+> 
+> Regards,
+> Ben
+> 
+> >
+> > Thanks,
+> > Bob
+> >
+> >
+> >> -----Original Message-----
+> >> From: Jan Beulich [mailto:JBeulich@suse.com]
+> >> Sent: Thursday, June 27, 2013 8:12 AM
+> >> To: Ben Guthro
+> >> Cc: Moore, Robert; xen-devel@lists.xen.org; Konrad Rzeszutek Wilk;
+> >> Rafaell J . Wysocki; linux-acpi@vger.kernel.org;
+> >> linux-kernel@vger.kernel.org
+> >> Subject: Re: [PATCH v4 3/5] acpi: Adjust linux acpi OS functions to
+> >> new extended parameter
+> >>
+> >>>>> On 27.06.13 at 17:02, Ben Guthro <benjamin.guthro@citrix.com> wrote:
+> >>> Change the function definitions of acpi_os_prepare_sleep() and
+> >>> acpi_os_set_prepare_sleep() to pass along the new extended sleep
+> >>> parameter.
+> >>>
+> >>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> >>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+> >>> Cc: Bob Moore <robert.moore@intel.com>
+> >>> Cc: Rafaell J. Wysocki <rjw@sisk.pl>
+> >>> Cc: linux-acpi@vger.kernel.org
+> >>> ---
+> >>>   drivers/acpi/osl.c   |   16 ++++++++--------
+> >>>   include/linux/acpi.h |    6 +++---
+> >>>   2 files changed, 11 insertions(+), 11 deletions(-)
+> >>>
+> >>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c index
+> >>> e721863..0251c9b 100644
+> >>> --- a/drivers/acpi/osl.c
+> >>> +++ b/drivers/acpi/osl.c
+> >>> @@ -77,8 +77,8 @@ EXPORT_SYMBOL(acpi_in_debugger);  extern char
+> >>> line_buf[80];
+> >>>   #endif				/*ENABLE_DEBUGGER */
+> >>>
+> >>> -static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+> >>> -				      u32 pm1b_ctrl);
+> >>> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 val_a,
+> >>> +u32
+> >> val_b,
+> >>> +				      bool extended);
+> >>
+> >> So from here till patch 5 the build will be half broken because of
+> >> the type mismatches? I think at least the types of the consumers need
+> >> to be changed in this patch; leaving the meat of the Xen change to
+> >> patch 4 is perhaps fine.
+> >>
+> >> Jan
+> >>
+> >>>
+> >>>   static acpi_osd_handler acpi_irq_handler;  static void
+> >>> *acpi_irq_context; @@ -1757,13 +1757,13 @@ acpi_status
+> >>> acpi_os_terminate(void)
+> >>>   	return AE_OK;
+> >>>   }
+> >>>
+> >>> -acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
+> >>> -				  u32 pm1b_control)
+> >>> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32
+> val_b,
+> >>> +				  u8 extended)
+> >>>   {
+> >>>   	int rc = 0;
+> >>>   	if (__acpi_os_prepare_sleep)
+> >>> -		rc = __acpi_os_prepare_sleep(sleep_state,
+> >>> -					     pm1a_control, pm1b_control);
+> >>> +		rc = __acpi_os_prepare_sleep(sleep_state, val_a, val_b,
+> >>> +					     extended);
+> >>>   	if (rc < 0)
+> >>>   		return AE_ERROR;
+> >>>   	else if (rc > 0)
+> >>> @@ -1772,8 +1772,8 @@ acpi_status acpi_os_prepare_sleep(u8
+> >>> sleep_state, u32 pm1a_control,
+> >>>   	return AE_OK;
+> >>>   }
+> >>>
+> >>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> >>> -			       u32 pm1a_ctrl, u32 pm1b_ctrl))
+> >>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
+> >>> +			       u32 val_b, bool extended))
+> >>>   {
+> >>>   	__acpi_os_prepare_sleep = func;
+> >>>   }
+> >>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h index
+> >>> 709a2f2..26f9996 100644
+> >>> --- a/include/linux/acpi.h
+> >>> +++ b/include/linux/acpi.h
+> >>> @@ -477,8 +477,8 @@ static inline bool
+> >>> acpi_driver_match_device(struct device *dev,
+> >>>   #endif	/* !CONFIG_ACPI */
+> >>>
+> >>>   #ifdef CONFIG_ACPI
+> >>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> >>> -			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+> >>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
+> >>> +			       u32 val_b, bool extended));
+> >>>   #ifdef CONFIG_X86
+> >>>   void arch_reserve_mem_area(acpi_physical_address addr, size_t
+> >>> size); #else @@ -488,7 +488,7 @@ static inline void
+> >>> arch_reserve_mem_area(acpi_physical_address addr,  }  #endif /*
+> >>> CONFIG_X86 */  #else -#define acpi_os_set_prepare_sleep(func,
+> >>> pm1a_ctrl, pm1b_ctrl) do { } while
+> >>> (0)
+> >>> +#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { }
+> >>> +while (0)
+> >>>   #endif
+> >>>
+> >>>   #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
+> >>> --
+> >>> 1.7.9.5
+> >>
+> >>
+> >
