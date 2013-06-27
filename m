@@ -1,66 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3F0If3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:35:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47180 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752747Ab3F0IfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:35:25 -0400
-Date: Thu, 27 Jun 2013 10:35:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Robert Richter <rric@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/14] perf, persistent: Kernel updates for perf tool
- integration
-Message-ID: <20130627083522.GA21224@pd.tnic>
-References: <20130624152557.GU28407@twins.programming.kicks-ass.net>
- <20130624194510.GC4065@gmail.com>
- <20130625175729.GI21579@rric.localhost>
- <20130625191654.GH4855@pd.tnic>
- <20130626081223.GB21788@rric.localhost>
- <20130626082408.GA20274@pd.tnic>
- <20130626101132.GC21788@rric.localhost>
- <20130626114538.GA4117@gmail.com>
- <20130626124424.GD21788@rric.localhost>
- <8761x014xv.fsf@sejong.aot.lge.com>
+	id S1753320Ab3F0Ig7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:36:59 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:57891 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab3F0Ig4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 04:36:56 -0400
+Date: Thu, 27 Jun 2013 10:36:51 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+Message-ID: <20130627083651.GA3730@gmail.com>
+References: <1371165992.27102.573.camel@schen9-DESK>
+ <20130619131611.GC24957@gmail.com>
+ <1371660831.27102.663.camel@schen9-DESK>
+ <1372205996.22432.119.camel@schen9-DESK>
+ <20130626095108.GB29181@gmail.com>
+ <1372282560.22432.139.camel@schen9-DESK>
+ <1372292701.22432.152.camel@schen9-DESK>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8761x014xv.fsf@sejong.aot.lge.com>
+In-Reply-To: <1372292701.22432.152.camel@schen9-DESK>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 02:46:36PM +0900, Namhyung Kim wrote:
-> How about using 2 bits for perfsistent flag, 1 for connecting to an
-> existing one, 2 for creating new one.
 
-No need since persistent events don't need to be duplicated. Think of a
-tracepoint: the samples you get there are the same, no matter how many
-times you enable it.
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
 
-So, if you open a persistent event which doesn't exist, it gets created.
-If you open an existing one, you get read-only access to its buffers. No
-need for two bits. Actually, with the detach/attach ioctl we don't even
-need a single flag but having it makes the implementation a lot simpler.
-
-> > A problem here is that mmap'ed buffer size (number of pages) must be
-> > be equal to the pre-existing buffer size and thus to be known somehow.
+> On Wed, 2013-06-26 at 14:36 -0700, Tim Chen wrote:
+> > On Wed, 2013-06-26 at 11:51 +0200, Ingo Molnar wrote: 
+> > > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > > 
+> > > > On Wed, 2013-06-19 at 09:53 -0700, Tim Chen wrote: 
+> > > > > On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
+> > > > > 
+> > > > > > > vmstat for mutex implementation: 
+> > > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+> > > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > > > > > > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
+> > > > > > > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
+> > > > > > > 
+> > > > > > > vmstat for rw-sem implementation (3.10-rc4)
+> > > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+> > > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > > > > > > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
+> > > > > > > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
+> > > > > > 
+> > > > > > It appears the main difference is that the rwsem variant context-switches 
+> > > > > > about 36% more than the mutex version, right?
+> > > > > > 
+> > > > > > I'm wondering how that's possible - the lock is mostly write-locked, 
+> > > > > > correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
+> > > > > > ought to have brought roughly the same lock-stealing behavior as mutexes 
+> > > > > > do, right?
+> > > > > > 
+> > > > > > So the next analytical step would be to figure out why rwsem lock-stealing 
+> > > > > > is not behaving in an equivalent fashion on this workload. Do readers come 
+> > > > > > in frequently enough to disrupt write-lock-stealing perhaps?
+> > > > 
+> > > > Ingo, 
+> > > > 
+> > > > I did some instrumentation on the write lock failure path.  I found that
+> > > > for the exim workload, there are no readers blocking for the rwsem when
+> > > > write locking failed.  The lock stealing is successful for 9.1% of the
+> > > > time and the rest of the write lock failure caused the writer to go to
+> > > > sleep.  About 1.4% of the writers sleep more than once. Majority of the
+> > > > writers sleep once.
+> > > > 
+> > > > It is weird that lock stealing is not successful more often.
+> > > 
+> > > For this to be comparable to the mutex scalability numbers you'd have to 
+> > > compare wlock-stealing _and_ adaptive spinning for failed-wlock rwsems.
+> > > 
+> > > Are both techniques applied in the kernel you are running your tests on?
+> > > 
+> > 
+> > Ingo,
+> > 
+> > The previous experiment was done on a kernel without spinning. 
+> > I've redone the testing on two kernel for a 15 sec stretch of the
+> > workload run.  One with the adaptive (or optimistic) 
+> > spinning and the other without.  Both have the patches from Alex to avoid 
+> > cmpxchg induced cache bouncing.
+> > 
+> > With the spinning, I sleep much less for lock acquisition (18.6% vs 91.58%).
+> > However, I've got doubling of write lock acquisition getting
+> > blocked.  So that offset the gain from spinning which may be why
+> > I didn't see gain for this particular workload.
+> > 
+> > 						No Opt Spin	Opt Spin
+> > Writer acquisition blocked count		3448946		7359040
+> > Blocked by reader				0.00%		0.55%
+> > Lock acquired first attempt (lock stealing)	8.42%		16.92%
+> > Lock acquired second attempt (1 sleep)	90.26%		17.60%
+> > Lock acquired after more than 1 sleep	1.32%		1.00%
+> > Lock acquired with optimistic spin		N/A		64.48%
+> > 
 > 
-> What about also exporting the buffer size via sysfs pmu directory?
+> Adding also the mutex statistics for the 3.10-rc4 kernel with mutex
+> implemenation of lock for anon_vma tree.  Wonder if Ingo has any
+> insight on why mutex performs better from these stats.
+> 
+> Mutex acquisition blocked count			14380340
+> Lock acquired in slowpath (no sleep)		0.06%
+> Lock acquired in slowpath (1 sleep)		0.24%
+> Lock acquired in slowpath more than 1 sleep	0.98%
+> Lock acquired with optimistic spin		99.6%
 
-Yes, we've been discussing buffer size. The simplest thing is to
-hardcode the buffer size so that it is implicitly known to all agents.
-However, I don't know whether there is a use case where different buffer
-sizes actually make sense. I'd tend to do the simplest thing initially.
+This is how I interpret the stats:
 
--- 
-Regards/Gruss,
-    Boris.
+It does appear that in the mutex case we manage to acquire via spinning 
+with a very high percentage - i.e. it essentialy behaves as a spinlock.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+That is actually good news in a way, because it makes it rather simple how 
+rwsems should behave in this case: since they have no substantial 
+read-locking aspect in this workload, the down_write()/up_write()s should 
+essentially behave like spinlocks as well, right?
+
+Yet in the rwsem-spinning case the stats show that we only acquire the 
+lock via spinning in 65% of the cases, plus we lock-steal in 16.9% of the 
+cases:
+
+Because lock stealing is essentially a single-spin spinning as well:
+
+> > Lock acquired first attempt (lock stealing)	......		16.92%
+
+So rwsems in this case behave like spinlocks in 65%+16.9% == 81.9% of the 
+time.
+
+What remains is the sleeping component:
+
+> > Lock acquired second attempt (1 sleep)	......		17.60%
+
+Yet the 17.6% sleep percentage is still much higher than the 1% in the 
+mutex case. Why doesn't spinning work - do we time out of spinning 
+differently?
+
+Is there some other aspect that defeats optimistic spinning and forces the 
+slowpath and creates sleeping, scheduling and thus extra overhead?
+
+For example after a failed lock-stealing, do we still try optimistic 
+spinning to write-acquire the rwsem, or go into the slowpath and thus 
+trigger excessive context-switches?
+
+Thanks,
+
+	Ingo
