@@ -1,191 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab3F0E4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 00:56:30 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:35642 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab3F0E42 (ORCPT
+	id S1752082Ab3F0E6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 00:58:19 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49972 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab3F0E6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 00:56:28 -0400
+	Thu, 27 Jun 2013 00:58:18 -0400
+X-AuditID: 9c930179-b7cafae000004567-e9-51cbc6681e09
+From: Namhyung Kim <namhyung@kernel.org>
+To: Greg Price <price@MIT.EDU>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf report: Add option to collapse undesired parts of call graph
+References: <20121207072726.GY22203@biohazard-cafe.mit.edu>
+	<20130111052736.GG3054@ghostprotocols.net>
+	<20130623031720.GW22203@biohazard-cafe.mit.edu>
+	<871u7p3bjb.fsf@sejong.aot.lge.com>
+	<20130626222500.GZ22203@biohazard-cafe.mit.edu>
+Date: Thu, 27 Jun 2013 13:58:16 +0900
+In-Reply-To: <20130626222500.GZ22203@biohazard-cafe.mit.edu> (Greg Price's
+	message of "Wed, 26 Jun 2013 18:25:01 -0400")
+Message-ID: <87obas176f.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <2081161.dnl1xTqcUT@vostro.rjw.lan>
-References: <cover.1371630975.git.viresh.kumar@linaro.org>
-	<2165396.dF1lQyPRVT@vostro.rjw.lan>
-	<CAKohponyMG-uA93ZpH-KD+EOQPmk5tT_QoaQ7+NCEf48vYj5-w@mail.gmail.com>
-	<2081161.dnl1xTqcUT@vostro.rjw.lan>
-Date: Thu, 27 Jun 2013 10:26:27 +0530
-Message-ID: <CAKohpomGNSA4Pyg6Pn2SiawXPe=wMU7hx0Y7phjfNDV8J+JrLw@mail.gmail.com>
-Subject: Re: [PATCH 13/13] cpufreq: make sure frequency transitions are serialized
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        dave.martin@arm.com
-Content-Type: multipart/mixed; boundary=047d7b4728b4b9478104e01b957c
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b4728b4b9478104e01b957c
-Content-Type: text/plain; charset=ISO-8859-1
-
-On 27 June 2013 03:27, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Well, now, seeing that the locking around this seems to be kind of haphazard,
-> I'm wondering what prevents two different threads from doing CPUFREQ_PRECHANGE
-> concurrently in such a way that thread A will check transition_ongoing
-> and thread B will check transition_ongoing and then both will set it if it
-> was 'false' before.  And then one of them will trigger the WARN() in
-> CPUFREQ_POSTCHANGE.
+On Wed, 26 Jun 2013 18:25:01 -0400, Greg Price wrote:
+> Hi Namhyung,
 >
-> Is there any protection in place and if so then how does it work?
+> Thanks for the detailed review!
+>
+>
+> On Wed, Jun 26, 2013 at 10:28:56AM +0900, Namhyung Kim wrote:
+>> On Sat, 22 Jun 2013 23:17:20 -0400, Greg Price wrote:
+>> > For example, in an application with an expensive function
+>> > implemented with deeply nested recursive calls, the default
+>> > call-graph presentation is dominated by the different callchains
+>> > within that function.  By treating the function as a black box,
+>> > we can collect the callchains leading into the function and
+>> > compactly identify what to blame for expensive calls.
+>> >
+>> > For example, in this report the callers of garbage_collect() are
+>> 
+>> s/callers/callees/ ?
+>
+> No, 'callers' is right.  This report is made without -G/--inverted, so
+> the trees are rooted at the inmost callees (the actual values of the
+> IP) and each node's children are its callers, rather than vice versa.
+> Here we want to see who is making these expensive calls to
+> garbage_collect, but the answer to this question is obscured because
+> the relevant callchains are separated according to which internal
+> helper functions to garbage_collect were on the stack.
+>
+>
+>> And it'd be better it shows more lines after garbage_collect so that one
+>> can see its callers also to understand what it does more clearly.
+>
+> If you mean the commit message, the 'after' example that follows shows
+> this.  In the actual output (without the 'grep -m10' I've used here)
+> the patch doesn't affect those lines, and plenty more are in fact shown.
+>
+> I could make the 'before' example longer too, and then we'd see what
+> the callers were in the callchains that look like
+>   gc_mark <- mark_keyvalue <- st_foreach <- gc_mark_children
+>     <- rb_gc_mark <- rb_vm_mark <- gc_mark_children <- gc_marks
+>     <- garbage_collect <- (the rest of a callchain).
+> But the callchains that have something else instead of that particular
+> sequence of eight helper functions (gc_mark called by ... called by
+> gc_marks) inside garbage_collect won't be included -- they're shown
+> in other places in the tree.  So it's actually precisely by using this
+> option that it's possible to see the callers completely, rather than
+> scattered across many places.
 
-cpufreq_notify_transition() is called from driver->target() which is
-called from __cpufreq_driver_target(). __cpufreq_driver_target()
-is called directly by governors and cpufreq_driver_target() otherwise.
+Okay, I can see your point now.  Thanks for the explanation.
 
-cpufreq_driver_target() implements proper locking and so it is fine.
-__cpufreq_driver_target() is called from governors. From governors
-it is is serialized in the sense two threads wouldn't call it at the same
-time.
 
-And so I thought this will work. But I just found a mistake in my code.
-For multi-socket platforms with clock domains for sockets/clusters,
-a single instance of transition_ongoing isn't enough and so this must
-be embedded in struct cpufreq_policy.
+>> [SNIP]
+>> > @@ -1211,8 +1214,13 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+>> >  					   MAP__FUNCTION, ip, &al, NULL);
+>> >  		if (al.sym != NULL) {
+>> >  			if (sort__has_parent && !*parent &&
+>> > -			    symbol__match_parent_regex(al.sym))
+>> > +			    symbol__match_regex(al.sym, &parent_regex))
+>> >  				*parent = al.sym;
+>> > +			else if (have_blackbox && root_al &&
+>> > +			         symbol__match_regex(al.sym, &blackbox_regex)) {
+>> > +				*root_al = al;
+>> > +				callchain_cursor_reset(&callchain_cursor);
+>> 
+>> Okay, this is where the magic happens. :)
+>
+> Indeed! :)
+>
+>> So it overwrites the original 'al' in process_sample_event() to
+>> blackboxed symbol and drop the callchain.  Wouldn't it deserve a
+>> comment? :)
+>
+> I could do that.  Perhaps something like
+>   /* ignore the callchain we had so far, i.e. this symbol's callees */
+> Sound like what you had in mind?
 
-Below patch must get this fixed (Attached).
+More important thing is, I think, it updates the original al (root_al)
+so that the perf will see the new symbol as if it was sampled in the
+first place and it will collect all of its callers in one place.
 
--------------x---------------------x-----------------
+>
+>
+>> > +			}
+>> >  			if (!symbol_conf.use_callchain)
+>> >  				break;
+>> pp
+>> This is unrelated to this patch, but why is this line needed?  I guess
+>> this check should be done before calling this function.
+>
+> Hmm.  We actually can get into this function when
+> !symbol_conf.use_callchain, if we're using say --sort=parent.  But I'm
+> still somewhat puzzled, because in that case it looks like we'll break
+> the loop after the first address with a symbol, even if we didn't find
+> the 'parent' there, which seems like it wouldn't serve the purpose.
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
-Date: Wed, 19 Jun 2013 10:16:55 +0530
-Subject: [PATCH] cpufreq: make sure frequency transitions are serialized
+Right, that's what I want to say.
 
-Whenever we are changing frequency of a cpu, we are calling PRECHANGE and
-POSTCHANGE notifiers. They must be serialized. i.e. PRECHANGE or POSTCHANGE
-shouldn't be called twice contiguously.
+We already have the check before calling this function so breaking the
+loop after checking only first callchain node looks strange.  If we
+don't want to see callchains but only parents, it should either check
+every callchain nodes or fail out as an unsupported operation IMHO.
 
-This can happen due to bugs in users of __cpufreq_driver_target() or actual
-cpufreq drivers who are sending these notifiers.
+Thanks,
+Namhyung
 
-This patch adds some protection against this. Now, we keep track of the last
-transaction and see if something went wrong.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 14 ++++++++++++++
- include/linux/cpufreq.h   |  1 +
- 2 files changed, 15 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2d53f47..75715f1 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -264,6 +264,12 @@ void __cpufreq_notify_transition(struct
-cpufreq_policy *policy,
- 	switch (state) {
-
- 	case CPUFREQ_PRECHANGE:
-+		if (WARN(policy->transition_ongoing,
-+				"In middle of another frequency transition\n"))
-+			return;
-+
-+		policy->transition_ongoing = true;
-+
- 		/* detect if the driver reported a value as "old frequency"
- 		 * which is not equal to what the cpufreq core thinks is
- 		 * "old frequency".
-@@ -283,6 +289,12 @@ void __cpufreq_notify_transition(struct
-cpufreq_policy *policy,
- 		break;
-
- 	case CPUFREQ_POSTCHANGE:
-+		if (WARN(!policy->transition_ongoing,
-+				"No frequency transition in progress\n"))
-+			return;
-+
-+		policy->transition_ongoing = false;
-+
- 		adjust_jiffies(CPUFREQ_POSTCHANGE, freqs);
- 		pr_debug("FREQ: %lu - CPU: %lu", (unsigned long)freqs->new,
- 			(unsigned long)freqs->cpu);
-@@ -1458,6 +1470,8 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
-
- 	if (cpufreq_disabled())
- 		return -ENODEV;
-+	if (policy->transition_ongoing)
-+		return -EBUSY;
-
- 	/* Make sure that target_freq is within supported range */
- 	if (target_freq > policy->max)
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 037d36a..8c13a45 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -115,6 +115,7 @@ struct cpufreq_policy {
-
- 	struct kobject		kobj;
- 	struct completion	kobj_unregister;
-+	bool			transition_ongoing; /* Tracks transition status */
- };
-
- #define CPUFREQ_ADJUST			(0)
-
---047d7b4728b4b9478104e01b957c
-Content-Type: application/octet-stream; 
-	name="0001-cpufreq-make-sure-frequency-transitions-are-serializ.patch"
-Content-Disposition: attachment; 
-	filename="0001-cpufreq-make-sure-frequency-transitions-are-serializ.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hifhb3nx0
-
-RnJvbSBmMDU3MzU3MGM4NWIwZmQxNGRiMTEzMGVlNDg4NWE1MGVkN2JkYjk0IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8ZjA1NzM1NzBjODViMGZkMTRkYjExMzBlZTQ4ODVh
-NTBlZDdiZGI5NC4xMzcyMzA4ODkyLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
-VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogV2VkLCAxOSBKdW4g
-MjAxMyAxMDoxNjo1NSArMDUzMApTdWJqZWN0OiBbUEFUQ0hdIGNwdWZyZXE6IG1ha2Ugc3VyZSBm
-cmVxdWVuY3kgdHJhbnNpdGlvbnMgYXJlIHNlcmlhbGl6ZWQKCldoZW5ldmVyIHdlIGFyZSBjaGFu
-Z2luZyBmcmVxdWVuY3kgb2YgYSBjcHUsIHdlIGFyZSBjYWxsaW5nIFBSRUNIQU5HRSBhbmQKUE9T
-VENIQU5HRSBub3RpZmllcnMuIFRoZXkgbXVzdCBiZSBzZXJpYWxpemVkLiBpLmUuIFBSRUNIQU5H
-RSBvciBQT1NUQ0hBTkdFCnNob3VsZG4ndCBiZSBjYWxsZWQgdHdpY2UgY29udGlndW91c2x5LgoK
-VGhpcyBjYW4gaGFwcGVuIGR1ZSB0byBidWdzIGluIHVzZXJzIG9mIF9fY3B1ZnJlcV9kcml2ZXJf
-dGFyZ2V0KCkgb3IgYWN0dWFsCmNwdWZyZXEgZHJpdmVycyB3aG8gYXJlIHNlbmRpbmcgdGhlc2Ug
-bm90aWZpZXJzLgoKVGhpcyBwYXRjaCBhZGRzIHNvbWUgcHJvdGVjdGlvbiBhZ2FpbnN0IHRoaXMu
-IE5vdywgd2Uga2VlcCB0cmFjayBvZiB0aGUgbGFzdAp0cmFuc2FjdGlvbiBhbmQgc2VlIGlmIHNv
-bWV0aGluZyB3ZW50IHdyb25nLgoKU2lnbmVkLW9mZi1ieTogVmlyZXNoIEt1bWFyIDx2aXJlc2gu
-a3VtYXJAbGluYXJvLm9yZz4KLS0tCiBkcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcS5jIHwgMTQgKysr
-KysrKysrKysrKysKIGluY2x1ZGUvbGludXgvY3B1ZnJlcS5oICAgfCAgMSArCiAyIGZpbGVzIGNo
-YW5nZWQsIDE1IGluc2VydGlvbnMoKykKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2NwdWZyZXEvY3B1
-ZnJlcS5jIGIvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXEuYwppbmRleCAyZDUzZjQ3Li43NTcxNWYx
-IDEwMDY0NAotLS0gYS9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcS5jCisrKyBiL2RyaXZlcnMvY3B1
-ZnJlcS9jcHVmcmVxLmMKQEAgLTI2NCw2ICsyNjQsMTIgQEAgdm9pZCBfX2NwdWZyZXFfbm90aWZ5
-X3RyYW5zaXRpb24oc3RydWN0IGNwdWZyZXFfcG9saWN5ICpwb2xpY3ksCiAJc3dpdGNoIChzdGF0
-ZSkgewogCiAJY2FzZSBDUFVGUkVRX1BSRUNIQU5HRToKKwkJaWYgKFdBUk4ocG9saWN5LT50cmFu
-c2l0aW9uX29uZ29pbmcsCisJCQkJIkluIG1pZGRsZSBvZiBhbm90aGVyIGZyZXF1ZW5jeSB0cmFu
-c2l0aW9uXG4iKSkKKwkJCXJldHVybjsKKworCQlwb2xpY3ktPnRyYW5zaXRpb25fb25nb2luZyA9
-IHRydWU7CisKIAkJLyogZGV0ZWN0IGlmIHRoZSBkcml2ZXIgcmVwb3J0ZWQgYSB2YWx1ZSBhcyAi
-b2xkIGZyZXF1ZW5jeSIKIAkJICogd2hpY2ggaXMgbm90IGVxdWFsIHRvIHdoYXQgdGhlIGNwdWZy
-ZXEgY29yZSB0aGlua3MgaXMKIAkJICogIm9sZCBmcmVxdWVuY3kiLgpAQCAtMjgzLDYgKzI4OSwx
-MiBAQCB2b2lkIF9fY3B1ZnJlcV9ub3RpZnlfdHJhbnNpdGlvbihzdHJ1Y3QgY3B1ZnJlcV9wb2xp
-Y3kgKnBvbGljeSwKIAkJYnJlYWs7CiAKIAljYXNlIENQVUZSRVFfUE9TVENIQU5HRToKKwkJaWYg
-KFdBUk4oIXBvbGljeS0+dHJhbnNpdGlvbl9vbmdvaW5nLAorCQkJCSJObyBmcmVxdWVuY3kgdHJh
-bnNpdGlvbiBpbiBwcm9ncmVzc1xuIikpCisJCQlyZXR1cm47CisKKwkJcG9saWN5LT50cmFuc2l0
-aW9uX29uZ29pbmcgPSBmYWxzZTsKKwogCQlhZGp1c3RfamlmZmllcyhDUFVGUkVRX1BPU1RDSEFO
-R0UsIGZyZXFzKTsKIAkJcHJfZGVidWcoIkZSRVE6ICVsdSAtIENQVTogJWx1IiwgKHVuc2lnbmVk
-IGxvbmcpZnJlcXMtPm5ldywKIAkJCSh1bnNpZ25lZCBsb25nKWZyZXFzLT5jcHUpOwpAQCAtMTQ1
-OCw2ICsxNDcwLDggQEAgaW50IF9fY3B1ZnJlcV9kcml2ZXJfdGFyZ2V0KHN0cnVjdCBjcHVmcmVx
-X3BvbGljeSAqcG9saWN5LAogCiAJaWYgKGNwdWZyZXFfZGlzYWJsZWQoKSkKIAkJcmV0dXJuIC1F
-Tk9ERVY7CisJaWYgKHBvbGljeS0+dHJhbnNpdGlvbl9vbmdvaW5nKQorCQlyZXR1cm4gLUVCVVNZ
-OwogCiAJLyogTWFrZSBzdXJlIHRoYXQgdGFyZ2V0X2ZyZXEgaXMgd2l0aGluIHN1cHBvcnRlZCBy
-YW5nZSAqLwogCWlmICh0YXJnZXRfZnJlcSA+IHBvbGljeS0+bWF4KQpkaWZmIC0tZ2l0IGEvaW5j
-bHVkZS9saW51eC9jcHVmcmVxLmggYi9pbmNsdWRlL2xpbnV4L2NwdWZyZXEuaAppbmRleCAwMzdk
-MzZhLi44YzEzYTQ1IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2NwdWZyZXEuaAorKysgYi9p
-bmNsdWRlL2xpbnV4L2NwdWZyZXEuaApAQCAtMTE1LDYgKzExNSw3IEBAIHN0cnVjdCBjcHVmcmVx
-X3BvbGljeSB7CiAKIAlzdHJ1Y3Qga29iamVjdAkJa29iajsKIAlzdHJ1Y3QgY29tcGxldGlvbglr
-b2JqX3VucmVnaXN0ZXI7CisJYm9vbAkJCXRyYW5zaXRpb25fb25nb2luZzsgLyogVHJhY2tzIHRy
-YW5zaXRpb24gc3RhdHVzICovCiB9OwogCiAjZGVmaW5lIENQVUZSRVFfQURKVVNUCQkJKDApCi0t
-IAoxLjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
---047d7b4728b4b9478104e01b957c--
+> Probably I'm still missing something.
+>
+> FWIW, this logic has worked essentially the same way since v2.6.31-rc4~3^2~63.
+>
+> Cheers,
+> Greg
