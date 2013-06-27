@@ -1,82 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab3F0AQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 20:16:39 -0400
-Received: from mail.lang.hm ([64.81.33.126]:45048 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843Ab3F0AQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 20:16:38 -0400
-Date: Wed, 26 Jun 2013 16:14:07 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Tim Hockin <thockin@hockin.org>
-cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-In-Reply-To: <CAAAKZws1qkSik4G4pRr7z+067Jp9-jHfpx9-euqbvmdHjoN_Zg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1306261609050.22572@nftneq.ynat.uz>
-References: <20130406012159.GA17159@mtj.dyndns.org> <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com> <20130422214159.GG12543@htj.dyndns.org> <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
- <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com> <20130626212047.GB4536@htj.dyndns.org>
- <CAAAKZws1qkSik4G4pRr7z+067Jp9-jHfpx9-euqbvmdHjoN_Zg@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752880Ab3F0ARJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 20:17:09 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:26876 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3F0ARH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 20:17:07 -0400
+Message-ID: <51CB8472.1040502@hp.com>
+Date: Wed, 26 Jun 2013 20:16:50 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
+ update of refcount
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com> <1372268603-46748-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1306262307020.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306262307020.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jun 2013, Tim Hockin wrote:
-
-> On Wed, Jun 26, 2013 at 2:20 PM, Tejun Heo <tj@kernel.org> wrote:
->> Hello, Tim.
->>
->> On Mon, Jun 24, 2013 at 09:07:47PM -0700, Tim Hockin wrote:
->>> I really want to understand why this is SO IMPORTANT that you have to
->>> break userspace compatibility?  I mean, isn't Linux supposed to be the
->>> OS with the stable kernel interface?  I've seen Linus rant time and
->>> time again about this - why is it OK now?
->>
->> What the hell are you talking about?  Nobody is breaking userland
->> interface.  A new version of interface is being phased in and the old
+On 06/26/2013 07:06 PM, Thomas Gleixner wrote:
+> On Wed, 26 Jun 2013, Waiman Long wrote:
 >
-> The first assertion, as I understood, was that (eventually) cgroupfs
-> will not allow split hierarchies - that unified hierarchy would be the
-> only mode.  Is that not the case?
+> It would have been nice if you'd had cc'ed people who spent a massive
+> amount of time working on the spinlock code. Did that now.
+
+I am sorry that I am relatively new to the Linux community and using 
+get_maintainer.pl didn't out your name when I modified spinlock_types.h. 
+Thank for letting me know about the shortcoming of my patch and this is 
+what I am looking for.
+
+>> +#ifndef CONFIG_SMP
+>> +#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
+>> +	unsigned int count;				\
+>> +	spinlock_t   lock
+>> +
+>> +#elif defined(__SPINLOCK_HAS_REFCOUNT)
+>> +#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
+>> +	union u_name {					\
+>> +		u64		__lock_count;		\
+>> +		spinlock_t	lock;			\
+>> +		struct {				\
+>> +			arch_spinlock_t __raw_lock;	\
+>> +			unsigned int	count;		\
+>> +		};					\
+>> +	}
+>> +
+>> +#else /* __SPINLOCK_HAS_REFCOUNT */
+>> +#define __LOCK_WITH_REFCOUNT(lock, count, u_name)	\
+>> +	union u_name {					\
+>> +		u64		__lock_count;		\
+>> +		struct {				\
+>> +			unsigned int	count;		\
+>> +			spinlock_t	lock;		\
+>> +		};					\
+>> +	}
+>> +
+>> +#endif /* __SPINLOCK_HAS_REFCOUNT */
+> This is a complete design disaster. You are violating every single
+> rule of proper layering. The differentiation of spinlock, raw_spinlock
+> and arch_spinlock is there for a reason and you just take the current
+> implementation and map your desired function to it. If we take this,
+> then we fundamentally ruled out a change to the mappings of spinlock,
+> raw_spinlock and arch_spinlock. This layering is on purpose and it
+> took a lot of effort to make it as clean as it is now. Your proposed
+> change undoes that and completely wreckages preempt-rt.
+
+Would you mind enlighten me how this change will break preempt-rt?
+
+> What's even worse is that you go and fiddle with the basic data
+> structures:
 >
-> The second assertion, as I understood, was that (eventually) cgroupfs
-> would not support granting access to some cgroup control files to
-> users (through chown/chmod).  Is that not the case?
+>> diff --git a/include/linux/spinlock_types.h b/include/linux/spinlock_types.h
+>> index 73548eb..cc107ad 100644
+>> --- a/include/linux/spinlock_types.h
+>> +++ b/include/linux/spinlock_types.h
+>> @@ -17,8 +17,27 @@
+>>
+>>   #include<linux/lockdep.h>
+>>
+>> +/*
+>> + * The presence of either one of the CONFIG_DEBUG_SPINLOCK or
+>> + * CONFIG_DEBUG_LOCK_ALLOC configuration parameter will force the
+>> + * spinlock_t structure to be 8-byte aligned.
+>> + *
+>> + * To support the spinlock/reference count combo data type for 64-bit SMP
+>> + * environment with spinlock debugging turned on, the reference count has
+>> + * to be integrated into the spinlock_t data structure in this special case.
+>> + * The spinlock_t data type will be 8 bytes larger if CONFIG_GENERIC_LOCKBREAK
+>> + * is also defined.
+>> + */
+>> +#if defined(CONFIG_64BIT)&&  (defined(CONFIG_DEBUG_SPINLOCK) ||\
+>> +			      defined(CONFIG_DEBUG_LOCK_ALLOC))
+>> +#define	__SPINLOCK_HAS_REFCOUNT	1
+>> +#endif
+>> +
+>>   typedef struct raw_spinlock {
+>>   	arch_spinlock_t raw_lock;
+>> +#ifdef __SPINLOCK_HAS_REFCOUNT
+>> +	unsigned int count;
+>> +#endif
+>>   #ifdef CONFIG_GENERIC_LOCKBREAK
+>>   	unsigned int break_lock;
+>>   #endif
+> You need to do that, because you blindly bolt your spinlock extension
+> into the existing code without taking the time to think about the
+> design implications.
 
-As a bystander, what I understand to be happening is:
+Another alternative is to disable this lockless update optimization for 
+this special case. With that, I don't need to modify the raw_spinlock_t 
+data structure.
 
-1. the Kernel developers are saying that multiple hierarchies is causing lots of 
-problems, and so they are starting the migration to a unified hierarchy. In the 
-near term this will be optional, at a later (unspecified) point, it will no 
-longer be optional.
+> Do not misunderstand me, I'm impressed by the improvement numbers, but
+> we need to find a way how this can be done sanely. You really have to
+> understand that there is a world aside of x86 and big machines.
 
-It is recognized that this is an API break, but the problem is bad enough (too 
-much undefined behavior) that it looks like they are going to do this anyway.
+I am well aware that my knowledge in other architectures is very 
+limited. And this is why we have this kind of public review process.
 
+> Let's have a look at your UP implementation. It's completely broken:
+>
+>> +/*
+>> + * Just add the value as the spinlock is a no-op
+> So what protects that from being preempted? Nothing AFAICT.
 
-2. indpendantly from this, the systemd people have declared that systemd is 
-going to take control of this unified hierarchy and all applications had better 
-use DBUS calls to systemd to make any cgroup changes or else. (i.e. systemd may 
-break whatever you are doing)
+Thank for the pointing this out. I can change it to return 0 to disable 
+the optimization.
 
+> What's even worse is that you break all architectures, which have an
+> arch_spinlock type != sizeof(unsigned int), e.g. SPARC
 
-I don't think the kernel developers are talking about changing ways to control 
-cgroups, just eliminating having multiple hierarchies.
+Actually the code should work as long as arch_spinlock type is not 
+bigger than 4 bytes because of structure field alignment.  It can be 1 
+or 2 bytes. If NR_CPUS is less than 256, x86's arch_spinlock type should 
+only be 2 bytes.
 
+The only architecture that will break, according to data in the 
+respectively arch/*/include/asm/spinlock_types.h files is PA-RISC 1.x 
+(it is OK in PA-RISC 2.0) whose arch_spinlock type has a size of 16 
+bytes. I am not sure if 32-bit PA-RISC 1.x is still supported or not, 
+but we can always disable the optimization for this case.
 
+> So what you really want is a new data structure, e.g. something like
+> struct spinlock_refcount() and a proper set of new accessor functions
+> instead of an adhoc interface which is designed solely for the needs
+> of dcache improvements.
 
-Now, I could be completely misunderstanding this (and I expect to hear about it 
-if I am :-)
+I had thought about that. The only downside is we need more code changes 
+to make existing code to use the new infrastructure. One of the drivers 
+in my design is to minimize change to existing code. Personally, I have 
+no objection of doing that if others think this is the right way to go.
 
-David Lang
+> The first step to achieve your goal is to consolidate all the
+> identical copies of arch_spinlock_t and talk to the maintainers of the
+> architectures which have a different (i.e. !32bit) notion of the arch
+> specific spinlock implementation, whether it's possible to move over
+> to a common data struct. Once you have achieved this, you can build
+> your spinlock + refcount construct upon that.
+
+As I said above, as long as the arch_spinlock type isn't bigger than 4 
+bytes, the code should work.
+
+Regards,
+Longman
