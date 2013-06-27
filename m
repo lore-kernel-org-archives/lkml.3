@@ -1,80 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3F0J3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:29:42 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:46965 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab3F0J3l (ORCPT
+	id S1752837Ab3F0Jb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:31:29 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:54033 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215Ab3F0Jb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:29:41 -0400
-Date: Thu, 27 Jun 2013 11:29:34 +0200
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, patches@linaro.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nico@linaro.org
-Subject: Re: [PATCH 0/2] arm: add early_ioremap() support
-Message-ID: <20130627092934.GD18151@rocoto.smurfnet.nu>
-References: <1372182401-11029-1-git-send-email-leif.lindholm@linaro.org>
- <201306270013.55333.arnd@arndb.de>
- <20130626232504.GB18151@rocoto.smurfnet.nu>
- <3503040.vhYAL5xGgS@wuerfel>
+	Thu, 27 Jun 2013 05:31:27 -0400
+Date: Thu, 27 Jun 2013 11:31:25 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 2/8] clocksource: sun4i: Add clocksource and sched clock
+ drivers
+Message-ID: <20130627093125.GA8437@lukather>
+References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
+ <51CB5CC7.7000308@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
 Content-Disposition: inline
-In-Reply-To: <3503040.vhYAL5xGgS@wuerfel>
+In-Reply-To: <51CB5CC7.7000308@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 10:47:21AM +0200, Arnd Bergmann wrote:
-> > No, the purpose is just like for x86 - do early parsing of things like
-> > the UEFI system and configuration tables, DMI and ACPI, in order to
-> > populate global structs and stuff.
-> 
-> But are those tables actually in MMIO registers? I thought they
-> are just memory, and in that case using any form of ioremap is
-> wrong on ARM. Why do you even have to map them? Can't the boot
-> loader pass those tables in regular addressable memory?
- 
-Don't get too stuck on the name - x86 frequently uses *ioremap() in
-many places when just accessing memory, and that has carried into EFI,
-ACPI and DMI subsystems, which we now want to use on ARM. In fact, they
-have early_memremap(), but don't use it for either EFI or ACPI.
 
-The ia64 implementation actually performs a lookup in the EFI memmap
-to decide whether early_ioremap() returns cacheable memory or not
-(and falls back to noncacheable before memory map is available).
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That said, I had somehow managed to get into my mind that the kernel
-used -fno-unaligned-access, so thought MT_DEV_NONSHARED was safe.
-Clearly it isn't, so that will need to change, making the semantic
-match even worse...
+Hi Daniel,
 
-As for the need of mapping - some of these descriptors are needed very
-early in the boot process. Also, depending on platform, they may reside
-at any offset from start of RAM (<2^32 physical address), rendering
-__va()/__phys_to_virt()/... unusable.
+On Wed, Jun 26, 2013 at 11:27:35PM +0200, Daniel Lezcano wrote:
+> On 06/26/2013 11:16 PM, Maxime Ripard wrote:
+> > The A10 and the A13 has a 64 bits free running counter that we can use
+> > as a clocksource and a sched clock, that were both not used yet on these
+> > platforms.
+> >=20
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > ---
+> >  drivers/clocksource/sun4i_timer.c | 27 +++++++++++++++++++++++++++
+> >  1 file changed, 27 insertions(+)
+> >=20
+> > diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/su=
+n4i_timer.c
+> > index bdf34d9..1d2eaa0 100644
+> > --- a/drivers/clocksource/sun4i_timer.c
+> > +++ b/drivers/clocksource/sun4i_timer.c
+> > @@ -23,6 +23,8 @@
+> >  #include <linux/of_address.h>
+> >  #include <linux/of_irq.h>
+> > =20
+> > +#include <asm/sched_clock.h>
+> > +
+> >  #define TIMER_IRQ_EN_REG	0x00
+> >  #define TIMER_IRQ_EN(val)		BIT(val)
+> >  #define TIMER_IRQ_ST_REG	0x04
+> > @@ -34,6 +36,11 @@
+> >  #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
+> > =20
+> >  #define TIMER_SCAL		16
+> > +#define TIMER_CNT64_CTL_REG	0xa0
+> > +#define TIMER_CNT64_CTL_CLR		BIT(0)
+> > +#define TIMER_CNT64_CTL_RL		BIT(1)
+> > +#define TIMER_CNT64_LOW_REG	0xa4
+> > +#define TIMER_CNT64_HIGH_REG	0xa8
+> > =20
+> >  static void __iomem *timer_base;
+> > =20
+> > @@ -96,6 +103,20 @@ static struct irqaction sun4i_timer_irq =3D {
+> >  	.dev_id =3D &sun4i_clockevent,
+> >  };
+> > =20
+> > +static u32 sun4i_timer_sched_read(void)
+> > +{
+> > +	u32 reg =3D readl(timer_base + TIMER_CNT64_CTL_REG);
+> > +	writel(reg | TIMER_CNT64_CTL_RL, timer_base + TIMER_CNT64_CTL_REG);
+> > +	while (readl(timer_base + TIMER_CNT64_CTL_REG) & TIMER_CNT64_CTL_REG);
+>=20
+> Isn't a cpu_relax missing here ?
 
-> > Well, I did have a crazy idea that much/most of the early_ioremap code
-> > could be made generic and shared between x86 and arm (and any other
-> > 32-bit architecture). Using the fixmap macros would make that possible
-> > with a minimum of ifdefs.
-> > 
-> > If we ever wanted early_ioremap() to work like on x86, beyond kmap_init()
-> > (but not beyond the "booting" system state), using the same macros would
-> > help there too. I had no need for that for my EFI patches.
-> 
-> I guess I need to look at the EFI patches first. It sounds to me
-> like you shouldn't actually be using early_ioremap here or on another
-> architecture.
+Right.
 
-No, but I had been kind of hoping not having to rework the early memory
-initialisation for three subsystems on two other platforms in order to
-be able to merge common code between them. And it would have felt silly
-to invent a new mechanism just for ARM, preventing that option.
+The AND is wrong as well, it should be TIMER_CNT64_CTL_RL, not the reg
+offset.
 
-/
-    Leif
+> > =20
+> > +	writel(TIMER_CNT64_CTL_CLR, timer_base + TIMER_CNT64_CTL_REG);
+> > +	setup_sched_clock(sun4i_timer_sched_read, 32, clk_get_rate(clk));
+> > +	clocksource_mmio_init(timer_base + TIMER_CNT64_LOW_REG, node->name,
+> > +			      clk_get_rate(clk), 300, 32,
+> > +			      sun4i_timer_clksrc_read);
+> > +
+> >  	writel(rate / (TIMER_SCAL * HZ),
+>=20
+> DIV_ROUND_CLOSEST(rate, (TIMER_SCAL * HZ)), ?
+
+It's actually fixed in a later patch, but yes.
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzAZtAAoJEBx+YmzsjxAgCaEP/izskmjm3Bm2oOiby9zfhAZZ
+sfqQoGt9uX+2fPVCgV8iRYBu8N464t7bKQClI2CRiGh+65t7ucBiQBecnr/pFrWP
+WQMzUGe4gVWiJX5s2spIMp5RatOLaXWAihM3XkWwpMqMo7bdmez/Hfumjqz6lQav
+8olS44TebSVTBn61CBHrlHW15YoxmLgH4WiXe1YMpPBpyyyo3S9y0pfETm9et+se
+xzr+eLk4AGc+l6xkknGcNbM21A2v733RWDAMiKiyFcyrbTfItXPgZMW3uVn2f7YZ
+U13uiJZ83qkLFLhpgxLH1olpF+H/BuIf8TsSV+ENI/3hRePcFZ3oLre3KZg5ebpf
+W0r8oMlIsdDYlMKpA18iC5cGn/jmv9a/p65qQ2g/vpRuRnmnLBuNlGU8HfDUQAWl
+zqPfQiVX/CeUXCaXXjybjGIROPdfYmNYFZOUwN/bmEDmn0VqVURfKRH2As6+f3bZ
+MGd5b0LupND5voT6IrR1RUjC/IFYaACA594VaZL9XvS/lsTyShTlB5o/XwNSoqE9
+csFieCKZWUHwx8fQXNGXrtIcd1uoighY8RMYTHdtbYqGQh/5FtNbK04O+uu4y0hw
+AZmumS2SEiVluIk3ZZpwiw7HEXA1pWfvn6UGQfrPBt+k16fnUd8uQzrDKbd2OftL
+ag5wowcWSZX5301Zdk8j
+=b80L
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
