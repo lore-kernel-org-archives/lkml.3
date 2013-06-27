@@ -1,103 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab3F0IWt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:22:49 -0400
-Received: from mail.us.es ([193.147.175.20]:41608 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286Ab3F0IWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:22:46 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.8/17424. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.2/7.5):. 
- Processed in 1.917334 secs); 27 Jun 2013 08:22:42 -0000
-X-Envelope-From: pneira@us.es
-Date: Thu, 27 Jun 2013 10:22:38 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Subject: Re: [netlink] WARNING: at mm/vmalloc.c:1487 __vunmap()
-Message-ID: <20130627082238.GA6346@localhost>
-References: <20130614220119.GA12954@localhost>
- <20130617200938.GA14567@localhost>
- <1372250558.3301.194.camel@edumazet-glaptop>
+	id S1753233Ab3F0IX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:23:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56054 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab3F0IXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 04:23:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Chen Gang <gang.chen@asianux.com>, Hirokazu Takata <takata@linux-m32r.org>,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: m32r: include: asm: add ioread*_rep() and iowrite*_rep()
+Date: Thu, 27 Jun 2013 10:25 +0200
+Message-ID: <3279444.s8HediXDkj@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <CAMuHMdVCv=MOJ8C4U=QHntQKZ=rThoKvXorgcR6jFRCA8hLULQ@mail.gmail.com>
+References: <51CBA43F.9050000@asianux.com> <51CBC186.3080401@asianux.com> <CAMuHMdVCv=MOJ8C4U=QHntQKZ=rThoKvXorgcR6jFRCA8hLULQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372250558.3301.194.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Z9kFo4Mes5MWCtkK22Mdnyt6H7D4iGsWurjiwVQ1pwx
+ ydOVhUzx3Ko0gclRGw65DVuZc2O+lSFoFO1pmmpzLZsR3bJm7n
+ eHRaJYADR7CZPvIJpF+OGWrlCoBY0x5o5j4mD41LNoyw3nLurp
+ cHRPQQC3Nkm9q9Qd61piyW8MJPsz+2p/qP/M3T8RHLKR94IGMS
+ 2mCbmb/kv/Q4/k0CfXSmBQt9XLhhYNE1YBIm5a2NwaLBazMjoY
+ 51CwsboEkddvS6yG2Y+ydLoJTVSGyJpJlnHvbo0upTDOgthlGQ
+ t8eH3gjIOrw/mONvsnpsJ4hx2/Q3fJv6HgpYUXbY2vEcfA5lon
+ rssYAeCBOsaeXYy+exBQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
-
-Thanks for looking into this.
-
-On Wed, Jun 26, 2013 at 05:42:38AM -0700, Eric Dumazet wrote:
-[...]
-> Nope there are several issues :
+On Thursday 27 June 2013 09:07:29 Geert Uytterhoeven wrote:
+> On Thu, Jun 27, 2013 at 6:37 AM, Chen Gang <gang.chen@asianux.com> wrote:
+> > --- a/arch/m32r/include/asm/io.h
+> > +++ b/arch/m32r/include/asm/io.h
+> > @@ -169,6 +169,20 @@ static inline void _writel(unsigned long l, unsigned long addr)
+> >  #define iowrite16 writew
+> >  #define iowrite32 writel
+> >
+> > +#define ioread8_rep(p, dst, count) \
+> > +       insb((unsigned long) (p), (dst), (count))
 > 
-> 1) bug in netlink_alloc_large_skb() because it doesn't account
-> for sizeof(struct skb_shared_info) overhead and initialization.
-
-Indeed, I can send a fix for this.
-
-> 2) Also, skb_clone() on such skb should be forbidden.
+> As ioread8() is mapped to readb() (I/O memory space), not inb() (I/O
+> port space),
+> ioread8_rep() should map to readsb() (which m32r doesn't have yet
+> BTW), not insb().
+> For m32r this does matter, as inb() and readb() use different mechanisms
+> internally.
 > 
->    Example, nl_fib_input() does a nskb = skb_clone(skb)
->
-> If skb is freed before nskb, then nskb wont know skb->head must be freed
-> by vfree()
-> 
-> I don't know...
-> 
-> 3) Do we really need this vmalloc stuff, because it sounds like we are
-> going to add yet another test in fast path (in skb_free_head())
+> It seems include/asm-generic/io.h also has this wrong?
 
-We want to send atomic rule-set updates via netlink in one single
-batch message to kernel space. Without vmalloc, I can send up to
-~20000 rule updates in one single batch.
+Yes, you are right. I thought we had fixed that long ago.
 
-We considered splitting the updates in smaller batches to make netlink
-happy, but then a process has to own the rule-set base until it has
-finished the update to avoid any interference. However, a broken
-user-space program may (ab)use such ownership to prevents others from
-updating the rule-set.
+Does the patch below look ok to you? Note that none of the architectures
+using asm-generic/io.h supports PIO access and it works by chance
+this way, but we should definitely fix it.
 
-> 4) Or we must track all skb_clone() netlink calls to attach a destructor
-> to properly to the vfree()
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Perhaps we can add a new specific function for this, netlink_skb_clone?
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index d5afe96..8af7a64 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -161,108 +161,108 @@ static inline void outl(u32 b, unsigned long addr)
+ #define outw_p(x, addr)	outw((x), (addr))
+ #define outl_p(x, addr)	outl((x), (addr))
+ 
+-#ifndef insb
+-static inline void insb(unsigned long addr, void *buffer, int count)
++#ifndef CONFIG_GENERIC_IOMAP
++#define ioread8(addr)		readb(addr)
++#define ioread16(addr)		readw(addr)
++#define ioread16be(addr)	__be16_to_cpu(__raw_readw(addr))
++#define ioread32(addr)		readl(addr)
++#define ioread32be(addr)	__be32_to_cpu(__raw_readl(addr))
++
++#define iowrite8(v, addr)	writeb((v), (addr))
++#define iowrite16(v, addr)	writew((v), (addr))
++#define iowrite16be(v, addr)	__raw_writew(__cpu_to_be16(v), addr)
++#define iowrite32(v, addr)	writel((v), (addr))
++#define iowrite32be(v, addr)	__raw_writel(__cpu_to_be32(v), addr)
++
++static inline void ioread8_rep(void __iomem *addr, void *buffer, int count)
+ {
+ 	if (count) {
+ 		u8 *buf = buffer;
+ 		do {
+-			u8 x = __raw_readb(addr + PCI_IOBASE);
++			u8 x = __raw_readb(addr);
+ 			*buf++ = x;
+ 		} while (--count);
+ 	}
+ }
+-#endif
+ 
+-#ifndef insw
+-static inline void insw(unsigned long addr, void *buffer, int count)
++static inline void ioread16_rep(void __iomem *addr, void *buffer, int count)
+ {
+ 	if (count) {
+ 		u16 *buf = buffer;
+ 		do {
+-			u16 x = __raw_readw(addr + PCI_IOBASE);
++			u16 x = __raw_readw(addr);
+ 			*buf++ = x;
+ 		} while (--count);
+ 	}
+ }
+-#endif
+ 
+-#ifndef insl
+-static inline void insl(unsigned long addr, void *buffer, int count)
++static inline void ioread32_rep(void __iomem *addr, void *buffer, int count)
+ {
+ 	if (count) {
+ 		u32 *buf = buffer;
+ 		do {
+-			u32 x = __raw_readl(addr + PCI_IOBASE);
++			u32 x = __raw_readl(addr);
+ 			*buf++ = x;
+ 		} while (--count);
+ 	}
+ }
+-#endif
+ 
+-#ifndef outsb
+-static inline void outsb(unsigned long addr, const void *buffer, int count)
++static inline void iowrite8_rep(void __iomem *addr, const void *buffer, int count)
+ {
+ 	if (count) {
+ 		const u8 *buf = buffer;
+ 		do {
+-			__raw_writeb(*buf++, addr + PCI_IOBASE);
++			__raw_writeb(*buf++, addr);
+ 		} while (--count);
+ 	}
+ }
+-#endif
+ 
+-#ifndef outsw
+-static inline void outsw(unsigned long addr, const void *buffer, int count)
++static inline void iowrite16_rep(void __iomem *addr, const void *buffer, int count)
+ {
+ 	if (count) {
+ 		const u16 *buf = buffer;
+ 		do {
+-			__raw_writew(*buf++, addr + PCI_IOBASE);
++			__raw_writew(*buf++, addr);
+ 		} while (--count);
+ 	}
+ }
+-#endif
+ 
+-#ifndef outsl
+-static inline void outsl(unsigned long addr, const void *buffer, int count)
++static inline void iowrite32_rep(void __iomem *addr, const void *buffer, int count)
+ {
+ 	if (count) {
+ 		const u32 *buf = buffer;
+ 		do {
+-			__raw_writel(*buf++, addr + PCI_IOBASE);
++			__raw_writel(*buf++, addr);
+ 		} while (--count);
+ 	}
+ }
+-#endif
+-
+-#ifndef CONFIG_GENERIC_IOMAP
+-#define ioread8(addr)		readb(addr)
+-#define ioread16(addr)		readw(addr)
+-#define ioread16be(addr)	__be16_to_cpu(__raw_readw(addr))
+-#define ioread32(addr)		readl(addr)
+-#define ioread32be(addr)	__be32_to_cpu(__raw_readl(addr))
++#endif /* CONFIG_GENERIC_IOMAP */
+ 
+-#define iowrite8(v, addr)	writeb((v), (addr))
+-#define iowrite16(v, addr)	writew((v), (addr))
+-#define iowrite16be(v, addr)	__raw_writew(__cpu_to_be16(v), addr)
+-#define iowrite32(v, addr)	writel((v), (addr))
+-#define iowrite32be(v, addr)	__raw_writel(__cpu_to_be32(v), addr)
++#ifndef insb
++#define insb(a, dst, count) \
++	ioread8_rep((a) + PCI_IOBASE, (dst), (count))
++#endif
++#ifndef insw
++#define insw(a, dst, count) \
++	ioread16_rep((a) + PCI_IOBASE, (dst), (count))
++#endif
++#ifndef insl
++#define insl(a, dst, count) \
++	ioread32_rep((a) + PCI_IOBASE, (dst), (count))
++#endif
+ 
+-#define ioread8_rep(p, dst, count) \
+-	insb((unsigned long) (p), (dst), (count))
+-#define ioread16_rep(p, dst, count) \
+-	insw((unsigned long) (p), (dst), (count))
+-#define ioread32_rep(p, dst, count) \
+-	insl((unsigned long) (p), (dst), (count))
+-
+-#define iowrite8_rep(p, src, count) \
+-	outsb((unsigned long) (p), (src), (count))
+-#define iowrite16_rep(p, src, count) \
+-	outsw((unsigned long) (p), (src), (count))
+-#define iowrite32_rep(p, src, count) \
+-	outsl((unsigned long) (p), (src), (count))
+-#endif /* CONFIG_GENERIC_IOMAP */
++#ifndef outsb
++#define outsb(a, src, count) \
++	iowrite8_rep((a) + PCI_IOBASE, (src), (count))
++#endif
++#ifndef outsw
++#define outsw(a, src, count) \
++	iowrite16_rep((a) + PCI_IOBASE, (src), (count))
++#endif
++#ifndef outsl
++#define outsl(a, src, count) \
++	iowrite32_rep((a) + PCI_IOBASE, (src), (count))
++#endif
+ 
+ #ifndef IO_SPACE_LIMIT
+ #define IO_SPACE_LIMIT 0xffff
 
-I'll be fine to track skb_clone in existing netlink families and
-replace it by such call in case you don't find this solution too
-hackish.
-
-Let me know. Thanks.
-
-> [1]
->  BUG: unable to handle kernel paging request at ffffc90018a39001
->  IP: [<ffffffff814cdeef>] skb_clone+0x1f/0xb0
->  PGD c7f40f067 PUD 67f81b067 PMD 65de02067 PTE 0
->  Oops: 0000 [#1] [ 1931.190995] scsi_nl_rcv_msg: discarding partial skb
->  gsmi: Log Shutdown Reason 0x03
->  CPU: 1 PID: 4157 Comm: trinity-child1 Tainted: G        W    3.10.0-smp-DEV #148
->  task: ffff880c5fb647f0 ti: ffff880c5ff6c000 task.ti: ffff880c5ff6c000
->  RIP: 0010:[<ffffffff814cdeef>]  [<ffffffff814cdeef>] skb_clone+0x1f/0xb0
->  RSP: 0018:ffff880c5ff6db18  EFLAGS: 00010282
->  RAX: 0000000000002000 RBX: ffff88065fed8ec0 RCX: 0000000060fd8cb3
->  RDX: ffffc90018a37000 RSI: 00000000000000d0 RDI: ffff88065fed8ec0
->  RBP: ffff880c5ff6db28 R08: ffffc90018a39000 R09: 0000000000000001
->  R10: ffffc90018a38fff R11: 0000000000000000 R12: 00000000000000d0
->  R13: ffff880c266a0000 R14: ffff88065fed8ec0 R15: 0000000000000000
->  FS:  000000000264d880(0063) GS:ffff88067fc20000(0000) knlGS:0000000000000000
->  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->  CR2: ffffc90018a39001 CR3: 0000000c5b8af000 CR4: 00000000000007e0
->  Call Trace:
->  [<ffffffff8154b086>] nl_fib_input+0x46/0x140
->  [<ffffffff815057ed>] netlink_unicast+0x13d/0x1f0
->  [<ffffffff81505b95>] netlink_sendmsg+0x2f5/0x3f0
->  [<ffffffff814c366e>] sock_aio_write+0x15e/0x180
->  [<ffffffff81193743>] do_sync_readv_writev+0x73/0xb0
->  [<ffffffff81194e5b>] do_readv_writev+0xdb/0x2c0
