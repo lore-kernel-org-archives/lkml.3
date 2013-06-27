@@ -1,100 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3F0AXP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 20:23:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56440 "EHLO mx1.redhat.com"
+	id S1752707Ab3F0AY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 20:24:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29243 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752849Ab3F0AXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 20:23:12 -0400
-Date: Wed, 26 Jun 2013 20:22:55 -0400
-From: Dave Jones <davej@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130627002255.GA16553@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrey Vagin <avagin@openvz.org>,
-	Steven Rostedt <rostedt@goodmis.org>
-References: <20130622013731.GA22918@redhat.com>
- <20130622173129.GA29375@redhat.com>
- <20130622215905.GA28238@redhat.com>
- <20130623143634.GA2000@redhat.com>
- <20130623150603.GA32313@redhat.com>
- <20130623160452.GA11740@redhat.com>
- <20130624155758.GA5993@redhat.com>
- <20130624173510.GA1321@redhat.com>
- <20130625153520.GA7784@redhat.com>
- <20130626191853.GA29049@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626191853.GA29049@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751581Ab3F0AY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 20:24:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,947,1363158000"; 
+   d="scan'208";a="360196013"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <1372282560.22432.139.camel@schen9-DESK>
+References: <1371165992.27102.573.camel@schen9-DESK>
+	 <20130619131611.GC24957@gmail.com> <1371660831.27102.663.camel@schen9-DESK>
+	 <1372205996.22432.119.camel@schen9-DESK> <20130626095108.GB29181@gmail.com>
+	 <1372282560.22432.139.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Jun 2013 17:25:01 -0700
+Message-ID: <1372292701.22432.152.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 09:18:53PM +0200, Oleg Nesterov wrote:
- > On 06/25, Dave Jones wrote:
- > >
- > > Took a lot longer to trigger this time. (13 hours of runtime).
- > 
- > And _perhaps_ this means that 3.10-rc7 without 8aac6270 needs more
- > time to hit the same bug ;)
+On Wed, 2013-06-26 at 14:36 -0700, Tim Chen wrote:
+> On Wed, 2013-06-26 at 11:51 +0200, Ingo Molnar wrote: 
+> > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > 
+> > > On Wed, 2013-06-19 at 09:53 -0700, Tim Chen wrote: 
+> > > > On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
+> > > > 
+> > > > > > vmstat for mutex implementation: 
+> > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+> > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > > > > > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
+> > > > > > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
+> > > > > > 
+> > > > > > vmstat for rw-sem implementation (3.10-rc4)
+> > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+> > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > > > > > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
+> > > > > > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
+> > > > > 
+> > > > > It appears the main difference is that the rwsem variant context-switches 
+> > > > > about 36% more than the mutex version, right?
+> > > > > 
+> > > > > I'm wondering how that's possible - the lock is mostly write-locked, 
+> > > > > correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
+> > > > > ought to have brought roughly the same lock-stealing behavior as mutexes 
+> > > > > do, right?
+> > > > > 
+> > > > > So the next analytical step would be to figure out why rwsem lock-stealing 
+> > > > > is not behaving in an equivalent fashion on this workload. Do readers come 
+> > > > > in frequently enough to disrupt write-lock-stealing perhaps?
+> > > 
+> > > Ingo, 
+> > > 
+> > > I did some instrumentation on the write lock failure path.  I found that
+> > > for the exim workload, there are no readers blocking for the rwsem when
+> > > write locking failed.  The lock stealing is successful for 9.1% of the
+> > > time and the rest of the write lock failure caused the writer to go to
+> > > sleep.  About 1.4% of the writers sleep more than once. Majority of the
+> > > writers sleep once.
+> > > 
+> > > It is weird that lock stealing is not successful more often.
+> > 
+> > For this to be comparable to the mutex scalability numbers you'd have to 
+> > compare wlock-stealing _and_ adaptive spinning for failed-wlock rwsems.
+> > 
+> > Are both techniques applied in the kernel you are running your tests on?
+> > 
+> 
+> Ingo,
+> 
+> The previous experiment was done on a kernel without spinning. 
+> I've redone the testing on two kernel for a 15 sec stretch of the
+> workload run.  One with the adaptive (or optimistic) 
+> spinning and the other without.  Both have the patches from Alex to avoid 
+> cmpxchg induced cache bouncing.
+> 
+> With the spinning, I sleep much less for lock acquisition (18.6% vs 91.58%).
+> However, I've got doubling of write lock acquisition getting
+> blocked.  So that offset the gain from spinning which may be why
+> I didn't see gain for this particular workload.
+> 
+> 						No Opt Spin	Opt Spin
+> Writer acquisition blocked count		3448946		7359040
+> Blocked by reader				0.00%		0.55%
+> Lock acquired first attempt (lock stealing)	8.42%		16.92%
+> Lock acquired second attempt (1 sleep)		90.26%		17.60%
+> Lock acquired after more than 1 sleep		1.32%		1.00%
+> Lock acquired with optimistic spin		N/A		64.48%
+> 
 
-Ok, that didn't take long. 4 hours in, and I hit it on rc7 with 8aac6270 reverted.
-So that's the 2nd commit I've mistakenly blamed for this bug.
+Adding also the mutex statistics for the 3.10-rc4 kernel with mutex
+implemenation of lock for anon_vma tree.  Wonder if Ingo has any
+insight on why mutex performs better from these stats.
 
-Crap. I'm going to have to redo the bisecting, and give it a whole day
-at each step to be sure. That's going to take a while.
+Mutex acquisition blocked count			14380340
+Lock acquired in slowpath (no sleep)		0.06%
+Lock acquired in slowpath (1 sleep)		0.24%
+Lock acquired in slowpath more than 1 sleep	0.98%
+Lock acquired with optimistic spin		99.6%
 
-Anyone got any ideas better than a week of non-stop bisecting ?
+Thanks.
 
-What I've gathered so far:
-
-- Only affects two machines I have (both Intel Quad core Haswell, one with SSD, one with hybrid SSD)
-- One machine is XFS, the other EXT4.
-- When the lockup occurs, it happens on all cores.
-- It's nearly always a sync() call that triggers it looking like this..
-
-  irq event stamp: 8465043
-  hardirqs last  enabled at (8465042): [<ffffffff816ebc60>] restore_args+0x0/0x30
-  hardirqs last disabled at (8465043): [<ffffffff816f476a>] apic_timer_interrupt+0x6a/0x80
-  softirqs last  enabled at (8464292): [<ffffffff81054204>] __do_softirq+0x194/0x440
-  softirqs last disabled at (8464295): [<ffffffff8105466d>] irq_exit+0xcd/0xe0
-  RIP: 0010:[<ffffffff81054121>]  [<ffffffff81054121>] __do_softirq+0xb1/0x440
-
-  Call Trace:
-   <IRQ> 
-   [<ffffffff8105466d>] irq_exit+0xcd/0xe0
-   [<ffffffff816f560b>] smp_apic_timer_interrupt+0x6b/0x9b
-   [<ffffffff816f476f>] apic_timer_interrupt+0x6f/0x80
-   <EOI> 
-   [<ffffffff816ebc60>] ? retint_restore_args+0xe/0xe
-   [<ffffffff810b9c56>] ? lock_acquire+0xa6/0x1f0
-   [<ffffffff811da892>] ? sync_inodes_sb+0x1c2/0x2a0
-   [<ffffffff816eaba0>] _raw_spin_lock+0x40/0x80
-   [<ffffffff811da892>] ? sync_inodes_sb+0x1c2/0x2a0
-   [<ffffffff811da892>] sync_inodes_sb+0x1c2/0x2a0
-   [<ffffffff816e8206>] ? wait_for_completion+0x36/0x110
-   [<ffffffff811e04f0>] ? generic_write_sync+0x70/0x70
-   [<ffffffff811e0509>] sync_inodes_one_sb+0x19/0x20
-   [<ffffffff811b0e62>] iterate_supers+0xb2/0x110
-   [<ffffffff811e0775>] sys_sync+0x35/0x90
-   [<ffffffff816f3d14>] tracesys+0xdd/0xe2
-
-
-I'll work on trying to narrow down what trinity is doing. That might at least
-make it easier to reproduce it in a shorter timeframe.
-
-	Dave
+Tim
 
