@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383Ab3F0W3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 18:29:02 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:60563 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab3F0W3B (ORCPT
+	id S1754404Ab3F0WaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 18:30:14 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:33940 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab3F0WaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 18:29:01 -0400
-Message-ID: <51CCBCA9.1000200@gmail.com>
-Date: Thu, 27 Jun 2013 16:28:57 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 27 Jun 2013 18:30:12 -0400
+Message-ID: <51CCBCF2.5050007@cogentembedded.com>
+Date: Fri, 28 Jun 2013 02:30:10 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: deadlock in scheduler enabling HRTICK feature
-References: <51CA0622.8010105@gmail.com> <20130625211713.GA18796@laptop.programming.kicks-ass.net> <51CA0980.8010409@gmail.com> <20130626070533.GA3601@dyad.programming.kicks-ass.net> <51CB1AE9.5090709@gmail.com> <20130627104309.GQ28407@twins.programming.kicks-ass.net>
-In-Reply-To: <20130627104309.GQ28407@twins.programming.kicks-ass.net>
+To: Cong Wang <amwang@redhat.com>
+CC: netdev@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>, Jiri Pirko <jiri@resnulli.us>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch net-next 2/5] net: introduce generic inet_pton()
+References: <1372315398-19683-1-git-send-email-amwang@redhat.com> <1372315398-19683-3-git-send-email-amwang@redhat.com> <51CC49C7.9010800@cogentembedded.com>
+In-Reply-To: <51CC49C7.9010800@cogentembedded.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/27/13 4:43 AM, Peter Zijlstra wrote:
-> On Wed, Jun 26, 2013 at 10:46:33AM -0600, David Ahern wrote:
->> On 6/26/13 1:05 AM, Peter Zijlstra wrote:
->>>> What is the expectation that the feature provides? not a whole lot of
->>>> documentation on it. I walked down the path wondering if it solved an odd
->>>> problem we are seeing with the CFS in 2.6.27 kernel.
->>>
->>> Its supposed to use hrtimers for slice expiry instead of the regular tick.
+On 06/27/2013 06:18 PM, Sergei Shtylyov wrote:
+
+>> Signed-off-by: Cong Wang <amwang@redhat.com>
+>> ---
+>>   include/net/inet_addr.h |   20 ++++++++++++++++++++
+>>   net/core/netpoll.c      |   24 ++----------------------
+>>   2 files changed, 22 insertions(+), 22 deletions(-)
+
+>> diff --git a/include/net/inet_addr.h b/include/net/inet_addr.h
+>> index 66a16fe..1379287 100644
+>> --- a/include/net/inet_addr.h
+>> +++ b/include/net/inet_addr.h
+[...]
+>> @@ -59,4 +60,23 @@ static inline bool inet_addr_multicast(const union
+>> inet_addr *ipa)
+>>   }
+>>   #endif
 >>
->> So theoretically CPU bound tasks would get preempted sooner? That was my
->> guess/hope anyways.
->
-> Doth the below worketh?
+>> +static inline int inet_pton(const char *str, union inet_addr *addr)
+>> +{
+>> +    const char *end;
+>> +
+>> +    if (!strchr(str, ':') &&
+>> +        in4_pton(str, -1, (void *)addr, -1, &end) > 0) {
+>> +        if (!*end)
+>> +            return 0;
+>> +    }
+>> +    if (in6_pton(str, -1, addr->sin6.sin6_addr.s6_addr, -1, &end) > 0) {
+>> +#if IS_ENABLED(CONFIG_IPV6)
+>> +        if (!*end)
 
-It doth.
+>     How about:
 
-Usually make -j 8 for a kernel build in a VM would lock it up pretty 
-quickly. With the patch I was able to run full builds multiple times.
+>          if (IS_ENABLED(CONFIG_IPV6) && !*end)
 
-As for the solution you are avoiding the nesting by not waking up the 
-softirq daemon.
+>> +            return 1;
+>> +#else
 
-I'll backport to 2.6.27 and see what happens. Thanks for the patch.
+    Sorry, managed to miss #else... #if could be avoided anyway, tho 
+this could require an extra patch.
 
-David
+>> +        return -1;
+>> +#endif
+>> +    }
+>> +    return -1;
+>> +}
+>>   #endif
+
+WBR, Sergei
 
