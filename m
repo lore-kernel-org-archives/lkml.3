@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3F0JG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:06:26 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:37901 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab3F0JF5 (ORCPT
+	id S1753609Ab3F0JCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:02:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46037 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab3F0JCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:05:57 -0400
-Date: Thu, 27 Jun 2013 11:05:52 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v5 0/9] liblockdep: userspace lockdep
-Message-ID: <20130627090552.GB4398@gmail.com>
-References: <1371163284-6346-1-git-send-email-sasha.levin@oracle.com>
- <20130626122408.GJ28407@twins.programming.kicks-ass.net>
- <20130626155325.GB7399@gmail.com>
- <51CB4328.7010006@oracle.com>
+	Thu, 27 Jun 2013 05:02:42 -0400
+Date: Thu, 27 Jun 2013 02:02:06 -0700
+From: tip-bot for Alex Shi <tipbot@zytor.com>
+Message-ID: <tip-83dfd5235ebd66c284b97befe6eabff7132333e6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, pjt@google.com, alex.shi@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alex.shi@intel.com
+In-Reply-To: <1371694737-29336-6-git-send-email-alex.shi@intel.com>
+References: <1371694737-29336-6-git-send-email-alex.shi@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Update cpu load after task_tick
+Git-Commit-ID: 83dfd5235ebd66c284b97befe6eabff7132333e6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <51CB4328.7010006@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 27 Jun 2013 02:02:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  83dfd5235ebd66c284b97befe6eabff7132333e6
+Gitweb:     http://git.kernel.org/tip/83dfd5235ebd66c284b97befe6eabff7132333e6
+Author:     Alex Shi <alex.shi@intel.com>
+AuthorDate: Thu, 20 Jun 2013 10:18:49 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 27 Jun 2013 10:07:33 +0200
 
-* Sasha Levin <sasha.levin@oracle.com> wrote:
+sched: Update cpu load after task_tick
 
-> On 06/26/2013 11:53 AM, Ingo Molnar wrote:
-> >>Ingo, I don't think I see anything holding this back; however I remember
-> >>>reading some email about people not liking stuff like this living in the
-> >>>tools/ directory or such.
-> >>>
-> >>>Will you pick this up?
-> >So I'd really be interested in how interesting/useful this is to userspace
-> >developers? Does it work for something complex as Firefox, or Apache, to
-> >the extent they make use of these locking APIs?
-> 
-> So far I've tested it on Firefox, Apache, QEMU, LKVM, GCC and random 
-> smallish programs. I haven't really done full testing for each of those, 
-> but just made sure that liblockdep behaves as it supposed to. I'm 
-> guessing that with further work it will dig up actual issues.
+To get the latest runnable info, we need do this cpuload update after
+task_tick.
 
-Would it be possible to collect and print some stats about lock API 
-usages, a'ka /proc/lockdep_stats et al?
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Reviewed-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1371694737-29336-6-git-send-email-alex.shi@intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Also, Xorg might be something that uses rather involved locking. It might 
-not use many pthread mutexes though.
-
-Thanks,
-
-	Ingo
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 729e7fc..08746cc 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2165,8 +2165,8 @@ void scheduler_tick(void)
+ 
+ 	raw_spin_lock(&rq->lock);
+ 	update_rq_clock(rq);
+-	update_cpu_load_active(rq);
+ 	curr->sched_class->task_tick(rq, curr, 0);
++	update_cpu_load_active(rq);
+ 	raw_spin_unlock(&rq->lock);
+ 
+ 	perf_event_task_tick();
