@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3F0G7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 02:59:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55500 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab3F0G7l (ORCPT
+	id S1752624Ab3F0HCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:02:39 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:53108 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3F0HCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 02:59:41 -0400
-Date: Thu, 27 Jun 2013 16:59:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-doc@vger.kernel.org, Alexander Graf <agraf@suse.de>,
-        kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH 3/8] vfio: add external user support
-Message-Id: <20130627165929.3828c261c957845a549ad95b@canb.auug.org.au>
-In-Reply-To: <1372309356-28320-4-git-send-email-aik@ozlabs.ru>
-References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru>
-	<1372309356-28320-4-git-send-email-aik@ozlabs.ru>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Jun_2013_16_59_29_+1000_lhv7FzSatZX_6IAt"
+	Thu, 27 Jun 2013 03:02:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130626175722.GA20226@jshin-Toonie>
+References: <51C87ADC.4070409@canonical.com>
+	<CAKohponCrC93D88Fgg_3LKsLG0KMeCVKsTEoy-N3jsdUQdgWvA@mail.gmail.com>
+	<20130625161935.GA10208@jshin-Toonie>
+	<CAKohpomSa0FRviZHkkJOeUUxubbzueVb3yyP5G8ASwpRB6wANQ@mail.gmail.com>
+	<20130626142852.GA2326@jshin-Toonie>
+	<CAKohpom_jHQeR2FKFS3-RkxpPrJvekw8pDb-qnApnzu-VqreBQ@mail.gmail.com>
+	<20130626175722.GA20226@jshin-Toonie>
+Date: Thu, 27 Jun 2013 12:32:36 +0530
+Message-ID: <CAKohpo=UTmpLmyQs5+xLNnCLMCeZHNQT3USjmK1NTaFJLNQg-Q@mail.gmail.com>
+Subject: Re: od_set_powersave_bias: NULL pointer dereference
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Jun_2013_16_59_29_+1000_lhv7FzSatZX_6IAt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Alexy,
-
-On Thu, 27 Jun 2013 15:02:31 +1000 Alexey Kardashevskiy <aik@ozlabs.ru> wro=
-te:
+On 26 June 2013 23:27, Jacob Shin <jacob.shin@amd.com> wrote:
+> On Wed, Jun 26, 2013 at 08:02:29PM +0530, Viresh Kumar wrote:
+>> On 26 June 2013 19:58, Jacob Shin <jacob.shin@amd.com> wrote:
+>> > On Wed, Jun 26, 2013 at 12:18:27PM +0530, Viresh Kumar wrote:
+>>
+>> >> I am not sure if this is enough. What if we had ondemand as the
+>> >> governor initially, then we changed it to something else. Now also
+>> >> cur_policy contains a address and isn't zero.
 >
-> +/* Allows an external user (for example, KVM) to unlock an IOMMU group */
-> +static void vfio_group_del_external_user(struct file *filep)
-> +{
-> +	struct vfio_group *group =3D filep->private_data;
-> +
-> +	BUG_ON(filep->f_op !=3D &vfio_group_fops);
+> I just tested this case with this patch applied, and did not have any
+> problems.
 
-We usually reserve BUG_ON for situations where there is no way to
-continue running or continuing will corrupt the running kernel.  Maybe
-WARN_ON() and return?
+Try this:
+- you need a system with multiple policy groups to test it
+- Suppose we have two groups of CPUs: 0 and 1
+- Set ondemand as governor for both
+- change governor of group 1 to something else (we still have valid policy
+struct in Ondemand)
+- offline all CPUs from group 1. this will free struct cpufreq_policy
+- Online these CPUs back, this will reallocate policy
+- Now run this function, the earlier policy struct is already freed and
+you are accessing it here.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> >> >                 cpumask_or(&done, &done, policy->cpus);
+>> >> > +
+>> >> > +               if (policy->governor != &cpufreq_gov_ondemand)
+>> >> > +                       continue;
+>> >
+>> > This should catch that case no ?
+>>
+>> Policy might be freed and reallocated by then. And so doing
+>> policy->governor is dangerous.
+>
+> Are you worried that after we have passed the above if check, and
+> before we access ->tuner governor change might occur?
+>
+> Is there something synonymous to get/put_online_cpus() for cpufreq to
+> prevent governor change while we update ->tuner values?
+>
+> Otherwise, should just spinlock?
 
---Signature=_Thu__27_Jun_2013_16_59_29_+1000_lhv7FzSatZX_6IAt
-Content-Type: application/pgp-signature
+No, i wasn't worrying about this but a sequence of events that I told to
+you earlier.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Replying to your other mail:
+> Hm . any hints on how to check for if ondemand is running on this CPU
+> or not ? I'm not sure what the best way to handle this is ..
 
-iQIcBAEBCAAGBQJRy+LZAAoJEECxmPOUX5FEYCIP/21qKXlYUTvY0xw0rl4Ala7J
-eqhHdErKg4yTxIJuIK6QKK6T5EaM4leNYbLmWkzOasbFO1ERQgCRPxlW9DMRfhJX
-SoW/MIEwbvWniRKR+EtWaDnRqV2nfyztrsNHhU1hMiaJYMMbFIOtMD0XOJX+jEw3
-xOkfObdOilbfQDwto0X0OY6tHH5MRnVhMzpBFYLdsTVNdbJmy9WiwztHjLOEMeaV
-UJkF1cI0Css8Hjw5y6JVIpGwERAwRYjTQOGzZGAbGr3+YmzEqHLWa+woICeIj5fp
-/V91/ZO2FiGdTnROZ6PgrSRedOOaGEqiH8dfxvGBemOUOKBWCqAxfGholyhTj2Xp
-CNgQpgKBO0MHX7n8zUJmknwtLKDXqWNFNYf7ctha4Oui1MaAXxgXagUR52WCXf+W
-IqfHWzDsRwJNbmVXQ1tcqkN7ot4BWi9LCJHbwz8X1Ud85MbS5gCAJvQwWcxqjh6A
-vBq9MX3KRXOoyO85AtP/BV4WKnc+i2VbdQB9o3GinhpdnfieafpknofDxg0eIT8S
-iZ2CzXatOt/imGPDOsudmlKldfUgJ6p7EeRKysLSzQIx3Gz/Cz2y/GrOw6+xkoRN
-/d/m7bsMNeNzACB2UcJhbVVemSVXYukC9F1P4yZWExiHXlDQUuSVjUB1rhIG9I9f
-xg1aWdoHMdtCbOt2LqsR
-=mBSd
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_Jun_2013_16_59_29_+1000_lhv7FzSatZX_6IAt--
+Make cur_policy zero in cpufreq_governor_dbs() for
+CPUFREQ_GOV_STOP notification. This will make sure we use correct
+policy pointer.
