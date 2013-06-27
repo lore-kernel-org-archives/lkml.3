@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3F0QcX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:32:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56360 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab3F0QcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:32:23 -0400
-Date: Thu, 27 Jun 2013 18:27:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 v3] tracing/uprobes: Support ftrace_event_file base
-	multibuffer
-Message-ID: <20130627162720.GA18961@redhat.com>
-References: <51C90ECC.9030303@huawei.com> <20130627121231.GB8362@linux.vnet.ibm.com>
+	id S1753479Ab3F0Qhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:37:48 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:59217 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435Ab3F0Qhq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 12:37:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627121231.GB8362@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <1372350404-10359-4-git-send-email-apw@canonical.com>
+References: <1372350404-10359-1-git-send-email-apw@canonical.com>
+	<1372350404-10359-4-git-send-email-apw@canonical.com>
+Date: Thu, 27 Jun 2013 18:37:45 +0200
+Message-ID: <CAJfpegsYPDi2oxt0WKHFrwYBjrk6-SNj_owghtOGxqyVVG45uQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] overlayfs -- follow change to do_splice_direct interface
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27, Srikar Dronamraju wrote:
+Thanks for the patches, Andy.  I already pushed a similar set of fixes
+to overlayfs.current (.v18) and to .v17 for the dentry_open() refcount
+fix.
+
+On Thu, Jun 27, 2013 at 6:26 PM, Andy Whitcroft <apw@canonical.com> wrote:
+> The commit below changed the interface to do_splice_direct, follow that
+> change in copy_up:
 >
-> * zhangwei(Jovi) <jovi.zhangwei@huawei.com> [2013-06-25 11:30:20]:
-> > +	if (!enabled) {
-> > +		tu->consumer.filter = filter;
-> > +		ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> > +		if (ret)
-> > +			tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
+>   commit 7995bd287134f6c8f80d94bebe7396f05a9bc42b
+>   Author: Al Viro <viro@zeniv.linux.org.uk>
+>   Date:   Thu Jun 20 18:58:36 2013 +0400
 >
-> Dont we need to free link here? or where does the link that got
-> allocated freed?
+>     splice: don't pass the address of ->f_pos to methods
+>
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> ---
+>  fs/overlayfs/copy_up.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/overlayfs/copy_up.c b/fs/overlayfs/copy_up.c
+> index eef85e0..8e1b09f 100644
+> --- a/fs/overlayfs/copy_up.c
+> +++ b/fs/overlayfs/copy_up.c
+> @@ -90,9 +90,10 @@ static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
+>
+>         /* FIXME: copy up sparse files efficiently */
+>         while (len) {
+> -               loff_t offset = new_file->f_pos;
+>                 size_t this_len = OVL_COPY_UP_CHUNK_SIZE;
+>                 long bytes;
+> +               loff_t pos = old_file->f_pos;
+> +               loff_t out_pos = new_file->f_pos;
+>
+>                 if (len < this_len)
+>                         this_len = len;
+> @@ -102,7 +103,7 @@ static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
+>                         break;
+>                 }
+>
+> -               bytes = do_splice_direct(old_file, &offset, new_file, this_len,
+> +               bytes = do_splice_direct(old_file, &pos, new_file, &out_pos, this_len,
 
-Agreed...
 
-Masami, it seems that (just in case, with or without "Turn trace_probe->files
-into list_head" I sent) trace_kpobes needs the similar fix too? Plus it should
-clear TP_FLAG_* if enable_k.*probe() fails.
+It is interesting how many people end up fixing this the wrong way ;)
 
-Or enable_trace_probe() assumes that enable_kprobe() must succeed? In this
-case probably WARN_ON(ret) makes sense.
+Hint: how will the file offsets advance?
 
-Oleg.
-
+Thanks,
+Miklos
