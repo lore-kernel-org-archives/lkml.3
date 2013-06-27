@@ -1,64 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab3F0Uep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 16:34:45 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:52813 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754292Ab3F0Uen (ORCPT
+	id S1754582Ab3F0UfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 16:35:09 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:19130 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab3F0UfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 16:34:43 -0400
-Date: Thu, 27 Jun 2013 22:34:36 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Kevin Strasser <kevin.strasser@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Kevin Strasser <strassek@engr.orst.edu>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Michael Brunner <Michael.Brunner@kontron.com>,
-        Michael Brunner <mibru@gmx.de>, Chris Healy <chealy@imsco-us.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dirk Hohndel <Dirk.Hohndel@intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-i2c@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v3 0/4] Kontron PLD drivers
-Message-ID: <20130627203436.GB30950@spo001.leaseweb.com>
-References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com> <1372046406-3127-1-git-send-email-kevin.strasser@linux.intel.com> <20130624120650.GC30838@zurbaran>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624120650.GC30838@zurbaran>
-User-Agent: Mutt/1.4.1i
+	Thu, 27 Jun 2013 16:35:06 -0400
+X-IronPort-AV: E=Sophos;i="4.87,954,1363132800"; 
+   d="scan'208";a="32310307"
+Message-ID: <51CCA1F7.2000409@citrix.com>
+Date: Thu, 27 Jun 2013 16:35:03 -0400
+From: Ben Guthro <Benjamin.Guthro@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Moore, Robert" <robert.moore@intel.com>
+CC: Jan Beulich <JBeulich@suse.com>, "Zheng, Lv" <lv.zheng@intel.com>,
+        "Box, David E" <david.e.box@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3/5] acpi: Adjust linux acpi OS functions to new extended
+ parameter
+References: <1372345323-9266-1-git-send-email-benjamin.guthro@citrix.com> <1372345323-9266-4-git-send-email-benjamin.guthro@citrix.com> <51CC724702000078000E149B@nat28.tlf.novell.com> <94F2FBAB4432B54E8AACC7DFDE6C92E36FE969D3@ORSMSX103.amr.corp.intel.com> <51CC647F.6070302@citrix.com> <94F2FBAB4432B54E8AACC7DFDE6C92E36FE96A69@ORSMSX103.amr.corp.intel.com>
+In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E36FE96A69@ORSMSX103.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
 
-> > Changes since v2:
-> > -Change Michael's "Signed-off-by" to "Originally-From" in all patches
-> > -Add "From: Guenter Roeck <linux@roeck-us.net>" to gpio patch
-> > 
-> > Guenter Roeck (1):
-> >   gpio: Kontron PLD gpio driver
-> > 
-> > Kevin Strasser (3):
-> >   mfd: Kontron PLD mfd driver
-> >   i2c: Kontron PLD i2c bus driver
-> >   watchdog: Kontron PLD watchdog timer driver
-> I just applied (after a warning fix) and pushed the MFD driver, thanks.
-> 
-> I am happy to take the sub devices driver as well, although the
-> respective maintainers can safely carry them as they all have a Kconfig
-> dependency on MFD_KEMPLD. So it's up to them.
-> If I have to take them, I'd need Wolfram's ACK for the i2c one and Wim's
-> for the watchdog one. Linus already ACKed the GPIO one.
 
-Acked-by: Wim Van Sebroeck <wim@iguana.be>
+On 06/27/2013 04:19 PM, Moore, Robert wrote:
+> I'm the ACPICA owner.
+>
 
-I'm OK that itgoes via the MFD tree.
+Apologies, I should have looked that up when Rafael asked for you to be 
+CC'ed
 
-Kind regards,
-Wim.
+> The issue I have is that acpi_os_prepare_sleep causes a divergence between the raw ACPICA source code and the "linux" version of the ACPICA code.
+>
 
+Understood. The v2 version of this patchset was discussed with Jan 
+Beulich here:
+
+http://www.gossamer-threads.com/lists/xen/devel/274507
+
+In this thread, Rafael suggests that these changes be made, and 
+submitted through linux-acpi, with he, and you CC'ed.
+
+This is more of a cleanup effort to existing functionality, that did not 
+get coordinated. That is, as the comment indicates, in linux 3.4, 
+reduced hardware sleep was introduced as part of ACPIv5. In parallel, 
+acpi_os_prepare_sleep() was also introduced, to allow for subsystems 
+such as Xen, and tboot to take advantage of the vast majority of ACPICA, 
+but hook some low level capabilities via function pointer, to do the 
+specific things for those subsystems.
+
+Rafael rightly pointed out that inclusion of linux/acpi.h in ACPICA code 
+is wrong, and we should make efforts to avoid doing so. This patch is to 
+clean this up, and also to extend the functionality to also go down the 
+same path for the reduced hardware sleep path, passing that "extended" 
+flag down to that subsystem, so that it might make use of it at the very 
+low levels.
+
+All efforts are being made to reduce the amount of churn in ACPICA, 
+since it is an upstream project to linux.
+
+> If it is possible to implement the functionality that is needed without changes to ACPICA, then that would be best. If not, we are willing to integrate this interface into ACPICA. However, this has an impact on all operating systems that use ACPICA, so this is always the last resort.
+>
+
+I am unaware of a way to take advantage of the infrastructure that 
+ACPICA provides, and also do that which is necessary to make it work in 
+Xen / tboot without these hooks.
+
+It would be greatly appreciated if you would consider this new interface 
+for inclusion.
+
+Thanks for your time.
+
+Ben
+
+
+
+> Bob
+>
+>
+>> -----Original Message-----
+>> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
+>> Sent: Thursday, June 27, 2013 9:13 AM
+>> To: Moore, Robert
+>> Cc: Jan Beulich; Zheng, Lv; Box, David E; Brown, Len; xen-
+>> devel@lists.xen.org; Konrad Rzeszutek Wilk; Rafaell J . Wysocki; linux-
+>> acpi@vger.kernel.org; linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH v4 3/5] acpi: Adjust linux acpi OS functions to new
+>> extended parameter
+>>
+>>
+>>
+>> On 06/27/2013 11:59 AM, Moore, Robert wrote:
+>>> I have not seen a discussion of the details on this, so can someone
+>> explain to me just why acpi_os_prepare_sleep is needed, what does it do,
+>> and why these changes are being made to ACPICA code?
+>>
+>> Hi Bob,
+>>
+>> I'm not familiar with your background here, so I apologize if I am stating
+>> obvious things below.
+>>
+>> acpi_os_prepare_sleep() has been in the acpica code for some time now,
+>> allowing for OS specific hooks to account for differences between OS
+>> architectures.
+>>
+>> Specifically, it has been in since:
+>>
+>> commit 09f98a825a821f7a3f1b162f9ed023f37213a63b
+>> Author: Tang Liang <liang.tang@oracle.com>
+>> Date:   Fri Dec 9 10:05:54 2011 +0800
+>>
+>>      x86, acpi, tboot: Have a ACPI os prepare sleep instead of calling
+>> tboot_sleep.
+>>
+>>      The ACPI suspend path makes a call to tboot_sleep right before
+>>      it writes the PM1A, PM1B values. We replace the direct call to
+>>      tboot via an registration callback similar to __acpi_register_gsi.
+>>
+>>      CC: Len Brown <len.brown@intel.com>
+>>      Acked-by: Joseph Cihula <joseph.cihula@intel.com>
+>>      Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+>>      [v1: Added __attribute__ ((unused))]
+>>      [v2: Introduced a wrapper instead of changing tboot_sleep return
+>> values]
+>>      [v3: Added return value AE_CTRL_SKIP for acpi_os_sleep_prepare]
+>>      Signed-off-by: Tang Liang <liang.tang@oracle.com>
+>>      [v1: Fix compile issues on IA64 and PPC64]
+>>      [v2: Fix where __acpi_os_prepare_sleep==NULL and did not go in sleep
+>> properly]
+>>      Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>
+>>
+>>
+>> In this case, the Xen hypervisor, and not linux needs to actually put the
+>> system into S3, so this hook gives the architecture to do so.
+>>
+>> This change does not introduce this functionality, but simply moves the
+>> code around into the proper locations, such that the acpica code no longer
+>> need to include linux specific headers.
+>>
+>> I hope this helps.
+>> If you have specific questions, please let me know.
+>>
+>> Regards,
+>> Ben
+>>
+>>>
+>>> Thanks,
+>>> Bob
+>>>
+>>>
+>>>> -----Original Message-----
+>>>> From: Jan Beulich [mailto:JBeulich@suse.com]
+>>>> Sent: Thursday, June 27, 2013 8:12 AM
+>>>> To: Ben Guthro
+>>>> Cc: Moore, Robert; xen-devel@lists.xen.org; Konrad Rzeszutek Wilk;
+>>>> Rafaell J . Wysocki; linux-acpi@vger.kernel.org;
+>>>> linux-kernel@vger.kernel.org
+>>>> Subject: Re: [PATCH v4 3/5] acpi: Adjust linux acpi OS functions to
+>>>> new extended parameter
+>>>>
+>>>>>>> On 27.06.13 at 17:02, Ben Guthro <benjamin.guthro@citrix.com> wrote:
+>>>>> Change the function definitions of acpi_os_prepare_sleep() and
+>>>>> acpi_os_set_prepare_sleep() to pass along the new extended sleep
+>>>>> parameter.
+>>>>>
+>>>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>>>>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+>>>>> Cc: Bob Moore <robert.moore@intel.com>
+>>>>> Cc: Rafaell J. Wysocki <rjw@sisk.pl>
+>>>>> Cc: linux-acpi@vger.kernel.org
+>>>>> ---
+>>>>>    drivers/acpi/osl.c   |   16 ++++++++--------
+>>>>>    include/linux/acpi.h |    6 +++---
+>>>>>    2 files changed, 11 insertions(+), 11 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c index
+>>>>> e721863..0251c9b 100644
+>>>>> --- a/drivers/acpi/osl.c
+>>>>> +++ b/drivers/acpi/osl.c
+>>>>> @@ -77,8 +77,8 @@ EXPORT_SYMBOL(acpi_in_debugger);  extern char
+>>>>> line_buf[80];
+>>>>>    #endif				/*ENABLE_DEBUGGER */
+>>>>>
+>>>>> -static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+>>>>> -				      u32 pm1b_ctrl);
+>>>>> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 val_a,
+>>>>> +u32
+>>>> val_b,
+>>>>> +				      bool extended);
+>>>>
+>>>> So from here till patch 5 the build will be half broken because of
+>>>> the type mismatches? I think at least the types of the consumers need
+>>>> to be changed in this patch; leaving the meat of the Xen change to
+>>>> patch 4 is perhaps fine.
+>>>>
+>>>> Jan
+>>>>
+>>>>>
+>>>>>    static acpi_osd_handler acpi_irq_handler;  static void
+>>>>> *acpi_irq_context; @@ -1757,13 +1757,13 @@ acpi_status
+>>>>> acpi_os_terminate(void)
+>>>>>    	return AE_OK;
+>>>>>    }
+>>>>>
+>>>>> -acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
+>>>>> -				  u32 pm1b_control)
+>>>>> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32
+>> val_b,
+>>>>> +				  u8 extended)
+>>>>>    {
+>>>>>    	int rc = 0;
+>>>>>    	if (__acpi_os_prepare_sleep)
+>>>>> -		rc = __acpi_os_prepare_sleep(sleep_state,
+>>>>> -					     pm1a_control, pm1b_control);
+>>>>> +		rc = __acpi_os_prepare_sleep(sleep_state, val_a, val_b,
+>>>>> +					     extended);
+>>>>>    	if (rc < 0)
+>>>>>    		return AE_ERROR;
+>>>>>    	else if (rc > 0)
+>>>>> @@ -1772,8 +1772,8 @@ acpi_status acpi_os_prepare_sleep(u8
+>>>>> sleep_state, u32 pm1a_control,
+>>>>>    	return AE_OK;
+>>>>>    }
+>>>>>
+>>>>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+>>>>> -			       u32 pm1a_ctrl, u32 pm1b_ctrl))
+>>>>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
+>>>>> +			       u32 val_b, bool extended))
+>>>>>    {
+>>>>>    	__acpi_os_prepare_sleep = func;
+>>>>>    }
+>>>>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h index
+>>>>> 709a2f2..26f9996 100644
+>>>>> --- a/include/linux/acpi.h
+>>>>> +++ b/include/linux/acpi.h
+>>>>> @@ -477,8 +477,8 @@ static inline bool
+>>>>> acpi_driver_match_device(struct device *dev,
+>>>>>    #endif	/* !CONFIG_ACPI */
+>>>>>
+>>>>>    #ifdef CONFIG_ACPI
+>>>>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+>>>>> -			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+>>>>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
+>>>>> +			       u32 val_b, bool extended));
+>>>>>    #ifdef CONFIG_X86
+>>>>>    void arch_reserve_mem_area(acpi_physical_address addr, size_t
+>>>>> size); #else @@ -488,7 +488,7 @@ static inline void
+>>>>> arch_reserve_mem_area(acpi_physical_address addr,  }  #endif /*
+>>>>> CONFIG_X86 */  #else -#define acpi_os_set_prepare_sleep(func,
+>>>>> pm1a_ctrl, pm1b_ctrl) do { } while
+>>>>> (0)
+>>>>> +#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { }
+>>>>> +while (0)
+>>>>>    #endif
+>>>>>
+>>>>>    #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
+>>>>> --
+>>>>> 1.7.9.5
+>>>>
+>>>>
+>>>
