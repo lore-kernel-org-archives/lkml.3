@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab3F0MTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:19:11 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:17993 "EHLO mail.abilis.ch"
+	id S1752737Ab3F0MT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:19:28 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53201 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916Ab3F0MTJ convert rfc822-to-8bit (ORCPT
+	id S1751916Ab3F0MT0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:19:09 -0400
-Date: Thu, 27 Jun 2013 14:18:18 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>, Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2] pinctrl: elaborate a bit on arrangements in doc
-Message-ID: <20130627121817.GB25445@ab42.lan>
-References: <1372326887-6497-1-git-send-email-linus.walleij@stericsson.com>
+	Thu, 27 Jun 2013 08:19:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: naresh.bhat@linaro.org
+Cc: linux-acpi@vger.kernel.org, len.brown@intel.com, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/fan: Initialize acpi_state variable
+Date: Thu, 27 Jun 2013 14:28:56 +0200
+Message-ID: <6743122.cV0P3hQa28@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1372331314-31010-1-git-send-email-naresh.bhat@linaro.org>
+References: <1372331314-31010-1-git-send-email-naresh.bhat@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1372326887-6497-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 11:54:47AM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Thursday, June 27, 2013 04:38:34 PM naresh.bhat@linaro.org wrote:
+> From: Naresh Bhat <naresh.bhat@linaro.org>
 > 
-> This elaborates a bit on the pin control and pin muxing
-> logic vs GPIO arangements in the hardware.
-> 
-> Inspired by some drawings in a mail from Christian Ruppert.
-> Both arrangements are confirmed to exist in practice.
-> 
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Christian Ruppert <christian.ruppert@abilis.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-
-To me this sounds very clear.
-
-Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
-
+>   CC      drivers/acpi/fan.o
+> drivers/acpi/fan.c: In function ‘fan_get_cur_state’:
+> drivers/acpi/fan.c:96:9: warning: ‘acpi_state’ may be used uninitialized in this function [-Wuninitialized]
 > ---
-> ChangeLog v1->v2:
-> - Cut down to two arrangements that I *know* exist in reality.
-> - Reword, rehash, rinse, repeat...
+>  drivers/acpi/fan.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
+> index f815da8..f61f7fd 100644
+> --- a/drivers/acpi/fan.c
+> +++ b/drivers/acpi/fan.c
+> @@ -84,7 +84,7 @@ static int fan_get_cur_state(struct thermal_cooling_device *cdev, unsigned long
+>  {
+>  	struct acpi_device *device = cdev->devdata;
+>  	int result;
+> -	int acpi_state;
+> +	int acpi_state = 0;
+
+Please use an appropriate symbol here.
+
+>  
+>  	if (!device)
+>  		return -EINVAL;
+> 
+
+Thanks,
+Rafael
+
 
 -- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pr�-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
