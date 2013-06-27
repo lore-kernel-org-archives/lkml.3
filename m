@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab3F0Pet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:34:49 -0400
-Received: from void.printf.net ([89.145.121.20]:42368 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab3F0Per (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:34:47 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Will Newton <will.newton@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] mmc: dw_mmc: Handle late vmmc regulators with EPROBE_DEFER
-References: <1370580406-10254-1-git-send-email-dianders@chromium.org>
-	<1370626110-1731-1-git-send-email-dianders@chromium.org>
-Date: Thu, 27 Jun 2013 11:34:39 -0400
-In-Reply-To: <1370626110-1731-1-git-send-email-dianders@chromium.org> (Doug
-	Anderson's message of "Fri, 7 Jun 2013 10:28:29 -0700")
-Message-ID: <87vc4zo9dc.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1753958Ab3F0Pf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:35:29 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:55822 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751796Ab3F0Pf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 11:35:28 -0400
+X-Sasl-enc: Fs3OTrDTYvb/axI9JaONm4XjgqC5hyg+Prh/KZeeQgkB 1372347327
+Date: Thu, 27 Jun 2013 08:36:12 -0700
+From: Greg KH <greg@kroah.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] delayed kobject release: help find buggy code
+Message-ID: <20130627153612.GA25244@kroah.com>
+References: <20130627140613.GB12530@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627140613.GB12530@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On Thu, Jun 27, 2013 at 03:06:14PM +0100, Russell King wrote:
+> Greg,
+> 
+> This is an updated copy of my delayed kobject release debugging patch
+> from 2011, which I notice hasn't hit mainline.  Please consider merging
+> this so that driver authors and subsystem maintainers have a way to test
+> code for kobject refcounting errors.
+> 
+> Moreover, please also consider whether to make the debug option default
+> to 'y' when CONFIG_DEBUG_KERNEL is enabled.
 
-On Fri, Jun 07 2013, Doug Anderson wrote:
-> It is possible to specify a regulator that should be turned on when
-> dw_mmc is probed.  At the moment dw_mmc will fail to use the regulator
-> properly if the regulator probes after dw_mmc.  Fix this problem by
-> honoring EPROBE_DEFER.
->
-> At the same time move the regulator code out of the slot init code.
-> We only specify one regulator for the whole device and other parts of
-> the code (like suspend/resume) assume that the regulator has only been
-> enabled once.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v2:
-> - Avoid hackery to detect regulators that will never show up.
-> - Move regulator out of slot init--it doesn't belong there.
+Nice, I had forgotten about this code.  Have you run it in a while to
+see if things still work well?
 
-Thanks, pushed to mmc-next for 3.11.
+I'll queue this up for 3.12, my 3.11 trees are now closed.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+thanks,
+
+greg k-h
