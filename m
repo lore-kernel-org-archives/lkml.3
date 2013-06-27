@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3F0Itf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:49:35 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:59650 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752902Ab3F0Itd (ORCPT
+	id S1753473Ab3F0IvH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:51:07 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:57118 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab3F0IvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:49:33 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <51CBFC95.9070002@yandex-team.ru>
-Date: Thu, 27 Jun 2013 12:49:25 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 27 Jun 2013 04:51:00 -0400
+Date: Thu, 27 Jun 2013 10:50:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Namhyung Kim <namhyung@kernel.org>, Robert Richter <rric@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/14] perf, persistent: Kernel updates for perf tool
+ integration
+Message-ID: <20130627085056.GB3730@gmail.com>
+References: <20130624194510.GC4065@gmail.com>
+ <20130625175729.GI21579@rric.localhost>
+ <20130625191654.GH4855@pd.tnic>
+ <20130626081223.GB21788@rric.localhost>
+ <20130626082408.GA20274@pd.tnic>
+ <20130626101132.GC21788@rric.localhost>
+ <20130626114538.GA4117@gmail.com>
+ <20130626124424.GD21788@rric.localhost>
+ <8761x014xv.fsf@sejong.aot.lge.com>
+ <20130627083522.GA21224@pd.tnic>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Michal Hocko <mhocko@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        penberg@kernel.org, mpm@selenic.com, akpm@linux-foundation.org,
-        mgorman@suse.de, glommer@parallels.com, hannes@cmpxchg.org,
-        minchan@kernel.org, jiang.liu@huawei.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slub: Avoid direct compaction if possible
-References: <51BB1802.8050108@yandex-team.ru> <0000013f4319cb46-a5a3de58-1207-4037-ae39-574b58135ea2-000000@email.amazonses.com> <alpine.DEB.2.02.1306141322490.17237@chino.kir.corp.google.com> <51BF024F.2080609@yandex-team.ru> <20130617142715.GB8853@dhcp22.suse.cz> <51BF230E.8050904@yandex-team.ru> <alpine.DEB.2.02.1306171441510.20631@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1306171441510.20631@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627083522.GA21224@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.06.2013 01:44, David Rientjes wrote:
-> On Mon, 17 Jun 2013, Roman Gushchin wrote:
 
-> They certainly aren't enough, the kernel you're running suffers from a
-> couple different memory compaction issues that were fixed in 3.7.  I
-> couldn't sympathize with your situation more, I faced the same issue
-> because of thp and not slub (we use slab).
->
->> I'll try to reproduce the issue on raw 3.9.
->>
+* Borislav Petkov <bp@alien8.de> wrote:
 
-I can't reproduce the issue on 3.9.
-It seems that compaction fixes in 3.7 solve the problem.
+> > > A problem here is that mmap'ed buffer size (number of pages) must be 
+> > > be equal to the pre-existing buffer size and thus to be known 
+> > > somehow.
+> > 
+> > What about also exporting the buffer size via sysfs pmu directory?
+> 
+> Yes, we've been discussing buffer size. The simplest thing is to 
+> hardcode the buffer size so that it is implicitly known to all agents. 
+> However, I don't know whether there is a use case where different buffer 
+> sizes actually make sense. I'd tend to do the simplest thing initially.
 
->
-> Thanks.  If you need to go back to 3.4, try using these, they
-> significantly helped our issues:
->
-> bb13ffeb9f6bfeb301443994dfbf29f91117dfb3
-> 627260595ca6abcb16d68a3732bac6b547e112d6
-> c89511ab2f8fe2b47585e60da8af7fd213ec877e
-> 62997027ca5b3d4618198ed8b1aba40b61b1137b
-> a9aacbccf3145355190d87f0df1731fb84fdd8c8
+Btw., in terms of testing and design focus I'd suggest concentrating not 
+on rare and relatively singular events like RAS MCE events, but on a more 
+'everyday tracing' flow of events:
 
-Thank you!
+ - large, per cpu trace buffers
 
-Regards,
-Roman
+ - all events output into a single trace buffer to get a coherent trace
 
+ - [ possibly revive the tracepoint-multiplexing patch from peterz/tglx,
+     to be able to get a rich selection of tracepoints. ]
 
+That is I think the workflow most people will be interested in:
+
+ - they have a workload to analyze and they want to do some 'tracing' to 
+   understand it better or to pinpoint a problem.
+
+ - based on the problem they want to trace a selection of tracepoints, as 
+   easily and quickly as possible.
+
+ - we could possibly provide a few 'groups' of tracepoints for typical
+   uses - for example scheduler tracing, or MM tracing, or IO tracing,
+   etc.), so people wouldn't have to specify a dozen tracepoints but could
+   symbolically refer to any of these pre-cooked groups. [this is probably
+   a tooling detail.]
+
+ - they want to persistently trace into a generously sized trace buffer,
+   without any tool running while the collection period lasts.
+
+ - to refine the result they'd like to stop/start tracing, reset/clear the
+   tracebuffer for failed attempts, and generally see how large the
+   tracebuffer is.
+
+ - and extract/analyze traces - both in a detailed form and in summary
+   fashion.
+
+ - they possibly want to save it to a perf.data and have equivalent
+   facilities of analysis.
+
+If that workflow works well then the RAS angle will work well too.
+
+Thanks,
+
+	Ingo
