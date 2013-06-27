@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab3F0GeZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 02:34:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55886 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3F0GeX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 02:34:23 -0400
-Message-ID: <51CBDCE5.1020301@ti.com>
-Date: Thu, 27 Jun 2013 09:34:13 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1752288Ab3F0GgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 02:36:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56993 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab3F0GgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 02:36:06 -0400
+Date: Thu, 27 Jun 2013 09:35:26 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Michael Grzeschik <mgr@pengutronix.de>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Felipe Balbi <balbi@ti.com>, George Cherian <george.cherian@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] usb: dwc3: core: continue probe even if usb3 phy is not
+ available
+Message-ID: <20130627063526.GG15455@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1372238954-29047-1-git-send-email-george.cherian@ti.com>
+ <20130626101647.GT12640@arwen.pp.htv.fi>
+ <51CAD977.6040309@ti.com>
+ <20130626121210.GA12640@arwen.pp.htv.fi>
+ <874nclghu2.fsf@ashishki-desk.ger.corp.intel.com>
+ <20130627061416.GI3523@pengutronix.de>
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 9/9] radeon: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
-References: <1372209221-16492-1-git-send-email-wangyijing@huawei.com> <51CAE967.7080704@ti.com> <51CB9ABC.20704@huawei.com>
-In-Reply-To: <51CB9ABC.20704@huawei.com>
-X-Enigmail-Version: 1.5.1
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2FJOEFOGFUERHPOSURPDD"
+	protocol="application/pgp-signature"; boundary="eMnpOGXCMazMAbfp"
+Content-Disposition: inline
+In-Reply-To: <20130627061416.GI3523@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2FJOEFOGFUERHPOSURPDD
-Content-Type: text/plain; charset=ISO-8859-1
+--eMnpOGXCMazMAbfp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 27/06/13 04:51, Yijing Wang wrote:
-> On 2013/6/26 21:15, Tomi Valkeinen wrote:
+Hi,
 
->> I couldn't find the rest of this series, and I'm not familiar with PCI=
-=2E
->> So: is this patch and "aty128fb: use pdev->pm_cap instead of
->> pci_find_capability(..,PCI_CAP_ID_PM)" safe to apply for fbdev-3.11
->> without anything else? I.e. has the PCI core changes been merged in 3.=
-10
->> or ealier?
+On Thu, Jun 27, 2013 at 08:14:16AM +0200, Michael Grzeschik wrote:
+> > > right, but in DT you will define both instances and each instance will
+> > > have a seaparate snps,maximum_speed attribute :-)
+> > >
+> > > I'm now considering if we should make maximum_speed a generic attribu=
+te,
+> > > Kishon ? Alex ? Alan ?
+> > >
+> > > anyone else needs such thing ?
+> >=20
+> > We have a force-full-speed attibute for chipidea on the way. This
+> > maximum_speed looks like a more generic alternative. Michael, what say
+> > you?
 >=20
-> Hi Tomi,
->    Thanks for your reply. Yes, it's safe, because PCI core has been use=
- pdev->pm_cap to save
-> the pm capability offset already. And PCI core changes related this pm =
-init code has been merged
-> long long ago(since year 2008). This series changes just to simplifier =
-driver code about pm code.
-> It's not necessary to access pci device register to get pm cap again, d=
-rivers can use pci device pm_cap
-> member. and this series had no changes in PCI core. The rest of this se=
-ries like for bnx2, bnx2x etc has
-> been tested and accepted by other subsystems.
+> The maximum_speed attribute sounds more reasonable. I will change my
+> patch to it.
 
-Ok, thanks. I'll apply the two patches to my fbdev-3.11 branch.
+thanks, perhaps we can add a generic helper in udc-core or usb-common ?
 
- Tomi
+--=20
+balbi
 
-
-
-------enig2FJOEFOGFUERHPOSURPDD
+--eMnpOGXCMazMAbfp
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJRy9zlAAoJEPo9qoy8lh71PQcP/AwOQJ+XYtP0frNRRC9PnXeX
-eeDKwOYv44R2XPMClTDX2IUa3cDmC1WqUKHpOSap8IXUr8Xta7/dFbbomGC93Zan
-HtMrpmlo0QUAOZwzeOIhzn2jxtWxYZZWY3BpJqMokTzsOyuqGftqhaVEwNhpQpif
-VUlOQwF+a9973fHcEXN1F0bHH1esNlV0bTJ7quBAZ1D3xYDz0wrxk8J3xaP1Z8dj
-7DQpGT5vRCfJrC7tfyKcCZdFYvp4PIxKFJRnQEuKPh7QKIM9cHy9YtgcpGt3NmiN
-5IPzl/XdjDx9YN2G25coD3ZmW16tJUJaNq75G3drPfIVloFaMgP0s6lGjhUDuTda
-PWED3BZ54CB9TMv9Epsl2rMaN6QKmJhnvpAtKy30Ruevd28DT9PqCSNhXQV7QlNf
-VDcLOhPpDON0GaCMxiPJaqS63+w/d8SQb4xPeoPbmf1xEM7EkJLpsHPp/qFv7WTm
-CgGcWRwO+o+fYKe7X5aL3JGuI1Hz5fSaTi9FzQwS6BFyFLjBuJkCskAEDvpSSWIJ
-K107ugZADlIZsSAJTJ78WW/ECkCISAxjipi5NwA618Bw7k/Krz8OdEZTsDBj7CPX
-coiPvgw+VtH3SMlBYP5+IBtP1pOxUHPWZwnJGdRFOxdiSSYMB7W9Pr9vbkgaCBQq
-UO4iCTncfQ5oJWbg0yp0
-=fn4F
+iQIcBAEBAgAGBQJRy90uAAoJEIaOsuA1yqREIskP/RgjxLOCV/EhWt2YgTwJjnEx
+RzLemi4mmF+GNWJbjvJKcNLG9sO8hVrryB0LTLJ1p4D9lnQxgefwP4qQe/kL1241
+I8o5zhUg4llmj70+I0GODn8o4HxN5y+6l7/N5vBfcYKhne+G4u2GhshlT/ApY4iJ
+DAHoE5JBbou0dUp4kccHu0YnlJFm46caxgoQBSxA6I5v+xbcsrjpz0fvrGoV13P/
+ZDajk9wAnWPi/+nhgUav/B1PpiDc9vPLi2h+Lgjspc/+NugpEp5tSeS1iZpREqBG
+z+gv19ergh5oWr4mxKcv+S+6uDtJ1mRQpbnZGy4ir01GoRMOlP9xxeyH9Ocx87J3
+u7bSKRnFbcN5WxtvP5WnXGfM6X99HtLsVQ1hq92zYP6EecaRCmiyns4b4+XTQxln
+9BcPz4hxc/q22gSfXKwHfnrxG1CoRgc0VaOT3KxfFv3VZv4aNQZnMnMfFNH+TU7a
+BenP5kkHoG3Ig4rB5yxlLNUD/Z5Y8CtmvVQe44pBsJD9WDx66mP8q5r917NB6NmN
+I6czTyzUgZggDnnmZahV+At9wSrm13q0K4kUEXxUbkUcJIth4L4wLYox1ZkX8dRJ
+duokRhNUllGzobpuJyzSGh9NgHAeiWlYfv7+a46Hvq5T9hPB+pUZSr9FxbpSGU9Z
+rYyaV07DhRCAoeIJm9U5
+=x5ru
 -----END PGP SIGNATURE-----
 
-------enig2FJOEFOGFUERHPOSURPDD--
+--eMnpOGXCMazMAbfp--
