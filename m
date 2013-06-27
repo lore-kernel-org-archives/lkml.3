@@ -1,84 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab3F0DC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 23:02:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59892 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3F0DC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 23:02:26 -0400
-Date: Thu, 27 Jun 2013 13:02:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>
-Subject: linux-next: manual merge of the pm tree with the pci tree
-Message-Id: <20130627130214.40aac4893b8cb75942b83191@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+	id S1751904Ab3F0DRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 23:17:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751568Ab3F0DRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 23:17:50 -0400
+Date: Wed, 26 Jun 2013 23:17:12 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, mhocko@suse.cz, minchan@kernel.org,
+        anton@enomsg.org, akpm@linux-foundation.org, kmpark@infradead.org,
+        hyunhee.kim@samsung.com
+Subject: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130626231712.4a7392a7@redhat.com>
+Organization: Red Hat
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Jun_2013_13_02_14_+1000_IHRZBSNjuknHpuxg"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Jun_2013_13_02_14_+1000_IHRZBSNjuknHpuxg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Currently, an eventfd is notified for the level it's registered for
+_plus_ higher levels.
 
-Hi Rafael,
+This is a problem if an application wants to implement different
+actions for different levels. For example, an application might want
+to release 10% of its cache on level low, 50% on medium and 100% on
+critical. To do this, an application has to register a different
+eventfd for each pressure level. However, fd low is always going to
+be notified and and all fds are going to be notified on level critical.
 
-Today's linux-next merge of the pm tree got a conflict in MAINTAINERS
-between commit 15fd830dd310 ("MAINTAINERS: Add ACPI folks for
-ACPI-related things under drivers/pci") from the pci tree and commit
-994b942fb4eb ("ACPI: Update MAINTAINERS file to include
-Documentation/acpi") from the pm tree.
+Strict mode solves this problem by strictly notifiying an eventfd
+for the pressure level it registered for. This new mode is optional,
+by default we still notify eventfds on higher levels too.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+---
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+o v2
 
-diff --cc MAINTAINERS
-index 6f30491,04a5fef..0000000
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@@ -247,9 -242,8 +247,11 @@@ F:	drivers/acpi
-  F:	drivers/pnp/pnpacpi/
-  F:	include/linux/acpi.h
-  F:	include/acpi/
- +F:	drivers/pci/*acpi*
- +F:	drivers/pci/*/*acpi*
- +F:	drivers/pci/*/*/*acpi*
-+ F:	Documentation/acpi
-+ F:	Documentation/ABI/testing/sysfs-bus-acpi
- =20
-  ACPI FAN DRIVER
-  M:	Zhang Rui <rui.zhang@intel.com>
+ - Improve documentation
+ - Use a bit to store mode instead of a bool
+ - Minor changelog changes
 
---Signature=_Thu__27_Jun_2013_13_02_14_+1000_IHRZBSNjuknHpuxg
-Content-Type: application/pgp-signature
+ Documentation/cgroups/memory.txt | 26 ++++++++++++++++++++++----
+ mm/vmpressure.c                  | 26 ++++++++++++++++++++++++--
+ 2 files changed, 46 insertions(+), 6 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index ddf4f93..412872b 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -791,6 +791,22 @@ way to trigger. Applications should do whatever they can to help the
+ system. It might be too late to consult with vmstat or any other
+ statistics, so it's advisable to take an immediate action.
+ 
++Applications can also choose between two notification modes when
++registering an eventfd for memory pressure events:
++
++When in "non-strict" mode, an eventfd is notified for the specific level
++it's registered for and higher levels. For example, an eventfd registered
++for low level is also going to be notified on medium and critical levels.
++This mode makes sense for applications interested on monitoring reclaim
++activity or implementing simple load-balacing logic. The non-strict mode
++is the default notification mode.
++
++When in "strict" mode, an eventfd is strictly notified for the pressure
++level it's registered for. For example, an eventfd registered for the low
++level event is not going to be notified when memory pressure gets into
++medium or critical levels. This allows for more complex logic based on
++the actual pressure level the system is experiencing.
++
+ The events are propagated upward until the event is handled, i.e. the
+ events are not pass-through. Here is what this means: for example you have
+ three cgroups: A->B->C. Now you set up an event listener on cgroups A, B
+@@ -807,12 +823,14 @@ register a notification, an application must:
+ 
+ - create an eventfd using eventfd(2);
+ - open memory.pressure_level;
+-- write string like "<event_fd> <fd of memory.pressure_level> <level>"
++- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
+   to cgroup.event_control.
+ 
+-Application will be notified through eventfd when memory pressure is at
+-the specific level (or higher). Read/write operations to
+-memory.pressure_level are no implemented.
++Applications will be notified through eventfd when memory pressure is at
++the specific level or higher. If strict is passed, then applications
++will only be notified when memory pressure reaches the specified level.
++
++Read/write operations to memory.pressure_level are no implemented.
+ 
+ Test:
+ 
+diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+index 736a601..ba5c17e 100644
+--- a/mm/vmpressure.c
++++ b/mm/vmpressure.c
+@@ -138,8 +138,16 @@ struct vmpressure_event {
+ 	struct eventfd_ctx *efd;
+ 	enum vmpressure_levels level;
+ 	struct list_head node;
++	unsigned int mode;
+ };
+ 
++#define VMPRESSURE_MODE_STRICT 1
++
++static inline bool vmpressure_mode_is_strict(const struct vmpressure_event *ev)
++{
++	return ev->mode & VMPRESSURE_MODE_STRICT;
++}
++
+ static bool vmpressure_event(struct vmpressure *vmpr,
+ 			     unsigned long scanned, unsigned long reclaimed)
+ {
+@@ -153,6 +161,9 @@ static bool vmpressure_event(struct vmpressure *vmpr,
+ 
+ 	list_for_each_entry(ev, &vmpr->events, node) {
+ 		if (level >= ev->level) {
++			/* strict mode ensures level == ev->level */
++			if (vmpressure_mode_is_strict(ev) && level != ev->level)
++				continue;
+ 			eventfd_signal(ev->efd, 1);
+ 			signalled = true;
+ 		}
+@@ -292,7 +303,7 @@ void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
+  * infrastructure, so that the notifications will be delivered to the
+  * @eventfd. The @args parameter is a string that denotes pressure level
+  * threshold (one of vmpressure_str_levels, i.e. "low", "medium", or
+- * "critical").
++ * "critical") and optionally a different operating mode (i.e. "strict")
+  *
+  * This function should not be used directly, just pass it to (struct
+  * cftype).register_event, and then cgroup core will handle everything by
+@@ -303,22 +314,33 @@ int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
+ {
+ 	struct vmpressure *vmpr = cg_to_vmpressure(cg);
+ 	struct vmpressure_event *ev;
++	unsigned int mode = 0;
++	const char *p;
+ 	int level;
+ 
+ 	for (level = 0; level < VMPRESSURE_NUM_LEVELS; level++) {
+-		if (!strcmp(vmpressure_str_levels[level], args))
++		p = vmpressure_str_levels[level];
++		if (!strncmp(p, args, strlen(p)))
+ 			break;
+ 	}
+ 
+ 	if (level >= VMPRESSURE_NUM_LEVELS)
+ 		return -EINVAL;
+ 
++	p = strchr(args, ' ');
++	if (p) {
++		if (strncmp(++p, "strict", 6))
++			return -EINVAL;
++		mode |= VMPRESSURE_MODE_STRICT;
++	}
++
+ 	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
+ 	if (!ev)
+ 		return -ENOMEM;
+ 
+ 	ev->efd = eventfd;
+ 	ev->level = level;
++	ev->mode = mode;
+ 
+ 	mutex_lock(&vmpr->events_lock);
+ 	list_add(&ev->node, &vmpr->events);
+-- 
+1.8.1.4
 
-iQIcBAEBCAAGBQJRy6s5AAoJEECxmPOUX5FEk6IP/23Y+HbdJq7AqzvW5mt31TKD
-S2z+b1u1vEY0gmbSt3kICKctJW/zU7y7qA4NU1gA6uR259Meys+leAXVXCDtyO60
-Tz5NB/z7YUYeqX2pLvxEWaQsjBS2xiqdkV/6kIHx1kDb8YFjCIgzkzuciwOB88Ec
-GRQbwMOWZCnGzkSoUuHN2c6l1S2ICroEkKtulATag2sCbYOzEF/RqJvF7SPtW52D
-J40B3YhZaPLOQBqNr5nL7VLiu+xN3hDMQZmub0iQ9rDr8auienajJBu+vQs5XhFQ
-4cGRj/k8DroabWxKFXP+33aoVhHNIHFpY2/QP1GCJD7vUi4N2auQniEFnc2XraZd
-8bnS3uAFLpNBkFkR+rbgzHuMMhKCznImV5dR0WZClhzq4VXj5uCnlVpPnDAJiG9d
-eZbfSogsXKT0l+7NL7+vpyEqAF8SUTuGRF0cBIZutvYJzex1am2mwy1YZWy2ARHZ
-DecfZvMISVj3DPVhXM7cX0AQ6DppeAuoyVU5eguFZ7eKNwhZF4OEcjkgJhIPD2ib
-0D3ZnJGxEBEnyooWkAzphLDs8nIpbql57mEXFoGZLnlMwJaibMRhJwkBwiKajWTM
-bl+sYvPsASInQOBg24OadePFf7wRQzgliGeUjg3WJzXUv3xO3bCyxeHnM2y7E5uy
-tcGhVUWx1S6CB19S4NOa
-=NY3K
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_Jun_2013_13_02_14_+1000_IHRZBSNjuknHpuxg--
