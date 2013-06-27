@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab3F0UBV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 16:01:21 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49774 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab3F0UBR (ORCPT
+	id S1755115Ab3F0UBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 16:01:52 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:44149 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089Ab3F0UBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 16:01:17 -0400
+	Thu, 27 Jun 2013 16:01:48 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 31/45] alpha/smp: Use get/put_online_cpus_atomic() to
+Subject: [PATCH v3 33/45] cris/smp: Use get/put_online_cpus_atomic() to
  prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
@@ -21,21 +21,21 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-alpha@vger.kernel.org,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-cris-kernel@axis.com,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 28 Jun 2013 01:27:47 +0530
-Message-ID: <20130627195747.29830.13668.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 28 Jun 2013 01:28:24 +0530
+Message-ID: <20130627195823.29830.57756.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
 References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062719-0260-0000-0000-0000033B2FF9
+x-cbid: 13062719-5564-0000-0000-0000088FC700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -47,106 +47,55 @@ from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
 offline, while invoking from atomic context.
 
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Mikael Starvik <starvik@axis.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-alpha@vger.kernel.org
+Cc: linux-cris-kernel@axis.com
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/alpha/kernel/smp.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ arch/cris/arch-v32/kernel/smp.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
-index 7b60834..e147268 100644
---- a/arch/alpha/kernel/smp.c
-+++ b/arch/alpha/kernel/smp.c
-@@ -497,7 +497,6 @@ smp_cpus_done(unsigned int max_cpus)
- 	       ((bogosum + 2500) / (5000/HZ)) % 100);
- }
+diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
+index cdd1202..b2d4612 100644
+--- a/arch/cris/arch-v32/kernel/smp.c
++++ b/arch/cris/arch-v32/kernel/smp.c
+@@ -13,6 +13,7 @@
+ #include <linux/init.h>
+ #include <linux/timex.h>
+ #include <linux/sched.h>
++#include <linux/cpu.h>
+ #include <linux/kernel.h>
+ #include <linux/cpumask.h>
+ #include <linux/interrupt.h>
+@@ -222,6 +223,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
+ 	unsigned long flags;
+ 	cpumask_t cpu_mask;
  
--
- void
- smp_percpu_timer_interrupt(struct pt_regs *regs)
- {
-@@ -681,7 +680,7 @@ ipi_flush_tlb_mm(void *x)
- void
- flush_tlb_mm(struct mm_struct *mm)
- {
--	preempt_disable();
 +	get_online_cpus_atomic();
- 
- 	if (mm == current->active_mm) {
- 		flush_tlb_current(mm);
-@@ -693,7 +692,7 @@ flush_tlb_mm(struct mm_struct *mm)
- 				if (mm->context[cpu])
- 					mm->context[cpu] = 0;
- 			}
--			preempt_enable();
-+			put_online_cpus_atomic();
- 			return;
- 		}
- 	}
-@@ -702,7 +701,7 @@ flush_tlb_mm(struct mm_struct *mm)
- 		printk(KERN_CRIT "flush_tlb_mm: timed out\n");
- 	}
- 
--	preempt_enable();
+ 	spin_lock_irqsave(&tlbstate_lock, flags);
+ 	cpu_mask = (mm == FLUSH_ALL ? cpu_all_mask : *mm_cpumask(mm));
+ 	cpumask_clear_cpu(smp_processor_id(), &cpu_mask);
+@@ -230,6 +232,7 @@ void flush_tlb_common(struct mm_struct* mm, struct vm_area_struct* vma, unsigned
+ 	flush_addr = addr;
+ 	send_ipi(IPI_FLUSH_TLB, 1, cpu_mask);
+ 	spin_unlock_irqrestore(&tlbstate_lock, flags);
 +	put_online_cpus_atomic();
  }
- EXPORT_SYMBOL(flush_tlb_mm);
  
-@@ -730,7 +729,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
- 	struct flush_tlb_page_struct data;
- 	struct mm_struct *mm = vma->vm_mm;
+ void flush_tlb_all(void)
+@@ -319,10 +322,12 @@ int smp_call_function(void (*func)(void *info), void *info, int wait)
+ 	data.info = info;
+ 	data.wait = wait;
  
--	preempt_disable();
 +	get_online_cpus_atomic();
- 
- 	if (mm == current->active_mm) {
- 		flush_tlb_current_page(mm, vma, addr);
-@@ -742,7 +741,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
- 				if (mm->context[cpu])
- 					mm->context[cpu] = 0;
- 			}
--			preempt_enable();
-+			put_online_cpus_atomic();
- 			return;
- 		}
- 	}
-@@ -755,7 +754,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
- 		printk(KERN_CRIT "flush_tlb_page: timed out\n");
- 	}
- 
--	preempt_enable();
+ 	spin_lock(&call_lock);
+ 	call_data = &data;
+ 	ret = send_ipi(IPI_CALL, wait, cpu_mask);
+ 	spin_unlock(&call_lock);
 +	put_online_cpus_atomic();
- }
- EXPORT_SYMBOL(flush_tlb_page);
  
-@@ -786,7 +785,7 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
- 	if ((vma->vm_flags & VM_EXEC) == 0)
- 		return;
- 
--	preempt_disable();
-+	get_online_cpus_atomic();
- 
- 	if (mm == current->active_mm) {
- 		__load_new_mm_context(mm);
-@@ -798,7 +797,7 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
- 				if (mm->context[cpu])
- 					mm->context[cpu] = 0;
- 			}
--			preempt_enable();
-+			put_online_cpus_atomic();
- 			return;
- 		}
- 	}
-@@ -807,5 +806,5 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
- 		printk(KERN_CRIT "flush_icache_page: timed out\n");
- 	}
- 
--	preempt_enable();
-+	put_online_cpus_atomic();
+ 	return ret;
  }
 
