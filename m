@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3F0G3c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 02:29:32 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:35562 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab3F0G3b convert rfc822-to-8bit (ORCPT
+	id S1752219Ab3F0Gbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 02:31:42 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:42664 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab3F0Gbl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 02:29:31 -0400
+	Thu, 27 Jun 2013 02:31:41 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXJK2ks7TQbH0AiPYAWrFuQC85Uw2sSM6d_YD5yS7unhA@mail.gmail.com>
-References: <CADDKRnBf4i8ZQ4EXC15Sa6z9CZ55w0vBDnXG26sjWgdO9zH45w@mail.gmail.com>
-	<CADDKRnCP_s2hL2wr8TsKeToNRt5nXF3NBYAqkmCCUPX8HbY_yQ@mail.gmail.com>
-	<CA+icZUXJK2ks7TQbH0AiPYAWrFuQC85Uw2sSM6d_YD5yS7unhA@mail.gmail.com>
-Date: Thu, 27 Jun 2013 08:29:29 +0200
-Message-ID: <CA+icZUUvaBhMATa=nRg2BZjLeB5gw1pwkubnzePH=nr5kfqu6g@mail.gmail.com>
-Subject: Re: [v3.10-rc2] iwlwifi regression
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <201306262005.05765.heiko@sntech.de>
+References: <201306262003.13256.heiko@sntech.de>
+	<201306262005.05765.heiko@sntech.de>
+Date: Thu, 27 Jun 2013 12:01:40 +0530
+Message-ID: <CAK9yfHzY5uPLmGVjHYGPbqR3_YKdMXCwkcOgowURRdf+8uPwtg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] watchdog: dw_wdt: add a devicetree binding
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Wim Van Sebroeck <wim@iguana.be>, Jamie Iles <jamie@jamieiles.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 6:37 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Jun 26, 2013 at 6:16 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
->> 2013/5/25 Jörg Otte <jrg.otte@gmail.com>:
->>> If iwlwifi/iwldvm are built into the kernel (no loadable modules)
->>> following error is written to console and syslog since v3.10-rc:
->>>
->>> iwlwifi 0000:08:00.0: failed to load module iwldvm (error -38), is
->>> dynamic loading enabled?
->>>
->>> reverting
->>> commit 1618b2b02a3a0ee7a6863fed4b0d22e697e7e97c
->>> Author: Johannes Berg <johannes.berg@intel.com>
->>> Date:   Thu Apr 4 10:35:23 2013 +0200
->>>     iwlwifi: print warning on request_module failure
->>>
->>> fixes the problem for me.
->>>
->>> Jörg
->>>
->>> I'm not subscribed,please CC me in answeres
->>
->> We have rc-7 now and it's still not fixed. What is the problem?
->>
+On 26 June 2013 23:35, Heiko St�bner <heiko@sntech.de> wrote:
+> The dw_wdt does not use any platform-specific data, so no new properties
+> need to be introduced. The dw-apb-wdt naming follows other designware
+> components in the kernel and is also written like this in documentation
+> describing the component.
 >
-> The patch is pending in wireless.git and is not in mainline, right.
-> AFAICS there was a recent pull request... so should be in rc8.
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+>  .../devicetree/bindings/watchdog/snps-dw-apb-wdt.txt |   18 ++++++++++++++++++
+>  drivers/watchdog/dw_wdt.c                            |   10 ++++++++++
+>  2 files changed, 28 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt
 >
-> commit 8edf3fd6eb0649b0f19363baf23bca39c6fbdba4
-> "iwlwifi: don't print module loading error if not modular"
->
-> - Sedat -
->
-> http://git.kernel.org/cgit/linux/kernel/git/linville/wireless.git/commit/?id=8edf3fd6eb0649b0f19363baf23bca39c6fbdba4
->
+> diff --git a/Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt b/Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt
+> new file mode 100644
+> index 0000000..c20cdd1
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt
+> @@ -0,0 +1,18 @@
+> +* Synosis DesignWare APB Watchdog
 
-Hi Jörg,
+Probably should be Synopsis?
 
-the fix you are waiting for hit mainline several minutes ago.
 
-Regards,
-- Sedat -
-
-[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=98b6ed0f2bf4abfb759206aa70690636372bdee7
-
->> Thanks, Jörg
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+With warm regards,
+Sachin
