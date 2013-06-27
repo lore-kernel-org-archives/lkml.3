@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3F0AmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 20:42:15 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:37739 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab3F0Al4 (ORCPT
+	id S1753147Ab3F0AxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 20:53:17 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48446 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab3F0AxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 20:41:56 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>
-Cc: Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        lllllinux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 3/3] mm/slab: Fix /proc/slabinfo unwriteable for slab
-Date: Thu, 27 Jun 2013 08:41:40 +0800
-Message-Id: <1372293700-15916-3-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1372293700-15916-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1372293700-15916-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062700-8878-0000-0000-000007B4D636
+	Wed, 26 Jun 2013 20:53:15 -0400
+Date: Thu, 27 Jun 2013 10:53:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the arm-mpidr tree with the arm
+ tree
+Message-Id: <20130627105301.c95d471912255190cbee6129@canb.auug.org.au>
+In-Reply-To: <20130626085719.GA22333@e102568-lin.cambridge.arm.com>
+References: <20130626110411.d1fe3913769385fa056010be@canb.auug.org.au>
+	<20130626085719.GA22333@e102568-lin.cambridge.arm.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Jun_2013_10_53_01_+1000_I3bOAGSTU_ysgkKK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Slab have some tunables like limit, batchcount, and sharedfactor can be
-tuned through function slabinfo_write. Commit (b7454ad3: mm/sl[au]b: Move
-slabinfo processing to slab_common.c) uncorrectly change /proc/slabinfo
-unwriteable for slab, this patch fix it by revert to original mode.
+--Signature=_Thu__27_Jun_2013_10_53_01_+1000_I3bOAGSTU_ysgkKK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/slab_common.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+Hi Lorenzo,
 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 4ee4325..d41ff76 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -631,10 +631,20 @@ static const struct file_operations proc_slabinfo_operations = {
- 	.release	= seq_release,
- };
- 
-+#ifdef CONFIG_SLAB
-+static int __init slab_proc_init(void)
-+{
-+	proc_create("slabinfo", S_IWUSR | S_IRUSR, NULL, &proc_slabinfo_operations);
-+	return 0;
-+}
-+#endif
-+#ifdef CONFIG_SLUB
- static int __init slab_proc_init(void)
- {
- 	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
- 	return 0;
- }
-+#endif
-+
- module_init(slab_proc_init);
- #endif /* CONFIG_SLABINFO */
--- 
-1.8.1.2
+On Wed, 26 Jun 2013 09:57:20 +0100 Lorenzo Pieralisi <lorenzo.pieralisi@arm=
+.com> wrote:
+>
+> No, arm-mpidr can be dropped from -next now that those patches, as you
+> correctly mentioned, are queued through the arm tree.
 
+Thanks, done.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__27_Jun_2013_10_53_01_+1000_I3bOAGSTU_ysgkKK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRy4zwAAoJEECxmPOUX5FEOS0P/3ZNQx/chl0IopiJxkLsmfXl
+g2zPBNKB1CpnQQWqwB0kSDKT40FfL4Jb1dCemzXq0VCjmLW7SntJ+JMH/8kqLqdZ
+2QgSfLTTkqCTL3VMyHykVDBPQyJIn3onqe5xl0/qmkbFiBUKCnaHpVQFx/mOvzgp
+mlLyT/ui8hfueHk3QxftHxwaKgHZYDDbeaWDjiEYdCbFaA2hCmu/7QTW79S5rVfR
+uJo+9ysrSjKVGqg4xeZna9uNrE5dGLSg/5+m+7/lB7SJANjwM83UG3IkajoyqBJi
+DhPPMdH4VI5pmtiMJwuZYf0pYTj2trkTmd0EDnUMuhtiORSTbMc6r6JqafvoNfWg
+xjkq0uBG3UF1wSVWxKl2STWP8d6UjxzA0g/4JRhDIIPtNlN/dzKQCzkLl7BZUoo9
+GLW0vgjsvF0jbMRzQqZ3AF30s0xHMPoYl4AuaDUzoRajtZTm2iPZObFagC/3GqLU
++YpPMcj8I52YAF/iJgujZ39ZiwIkMo8Dy+noDNh03MV1M6ulqZeTVG7z1GzDKnGI
+RL5Kh51jmxt5ZGguy2rU/4IONjv79eprmX5X9nEerYDYSKgMNwcqX4MTH52cEJ5P
+u/YYp0cDlVBYFUmMAIWyEo6SlJU9cf7+s0c+Uer7zy5Er/8am+Vii2jGNT7sxGXP
+ddfMA+nlpJ1G1Z9lhiAw
+=XXmz
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__27_Jun_2013_10_53_01_+1000_I3bOAGSTU_ysgkKK--
