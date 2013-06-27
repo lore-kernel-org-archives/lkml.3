@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab3F0Nyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:54:52 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:9674 "EHLO SMTP.CITRIX.COM"
+	id S1753493Ab3F0Nyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:54:47 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:9666 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567Ab3F0Nyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:54:50 -0400
+	id S1753407Ab3F0Nyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 09:54:46 -0400
 X-IronPort-AV: E=Sophos;i="4.87,952,1363132800"; 
-   d="scan'208";a="33808354"
+   d="scan'208";a="33808317"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,11 +15,10 @@ CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <olof@lixom.net>, <linux@arm.linux.org.uk>, <Ian.Campbell@citrix.com>,
         <Stefano.Stabellini@eu.citrix.com>, <will.deacon@arm.com>,
         <marc.zyngier@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <nico@linaro.org>, <cov@codeaurora.org>, <Catalin.Marinas@arm.com>
-Subject: [PATCH v6 4/5] arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-Date: Thu, 27 Jun 2013 14:54:31 +0100
-Message-ID: <1372341272-12512-4-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v6 1/5] xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
+Date: Thu, 27 Jun 2013 14:54:28 +0100
+Message-ID: <1372341272-12512-1-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
@@ -29,138 +28,337 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM64.
-Necessary duplication of paravirt.h and paravirt.c with ARM.
-
-The only paravirt interface supported is pv_time_ops.steal_clock, so no
-runtime pvops patching needed.
-
-This allows us to make use of steal_account_process_tick for stolen
-ticks accounting.
-
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: will.deacon@arm.com
-CC: nico@linaro.org
-CC: marc.zyngier@arm.com
-CC: cov@codeaurora.org
-CC: arnd@arndb.de
-CC: olof@lixom.net
-CC: Catalin.Marinas@arm.com
----
- arch/arm64/Kconfig                |   20 ++++++++++++++++++++
- arch/arm64/include/asm/paravirt.h |   19 +++++++++++++++++++
- arch/arm64/kernel/Makefile        |    1 +
- arch/arm64/kernel/paravirt.c      |   25 +++++++++++++++++++++++++
- 4 files changed, 65 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/paravirt.h
- create mode 100644 arch/arm64/kernel/paravirt.c
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: konrad.wilk@oracle.com
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 1fac4e5..4c4f213 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -190,6 +190,25 @@ config HW_PERF_EVENTS
+Changes in v2:
+- leave do_stolen_accounting in arch/x86/xen/time.c;
+- use the new common functions in arch/ia64/xen/time.c.
+---
+ arch/ia64/xen/time.c  |   48 +++----------------------
+ arch/x86/xen/time.c   |   76 +----------------------------------------
+ drivers/xen/Makefile  |    2 +-
+ drivers/xen/time.c    |   91 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/xen/xen-ops.h |    5 +++
+ 5 files changed, 104 insertions(+), 118 deletions(-)
+ create mode 100644 drivers/xen/time.c
+
+diff --git a/arch/ia64/xen/time.c b/arch/ia64/xen/time.c
+index 1f8244a..79a0b8c 100644
+--- a/arch/ia64/xen/time.c
++++ b/arch/ia64/xen/time.c
+@@ -34,53 +34,17 @@
  
- source "mm/Kconfig"
+ #include "../kernel/fsyscall_gtod_data.h"
  
-+config PARAVIRT
-+	bool "Enable paravirtualization code"
-+	---help---
-+	  This changes the kernel so it can modify itself when it is run
-+	  under a hypervisor, potentially improving performance significantly
-+	  over full virtualization.
-+
-+config PARAVIRT_TIME_ACCOUNTING
-+	bool "Paravirtual steal time accounting"
-+	select PARAVIRT
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task steal time
-+	  accounting. Time spent executing other tasks in parallel with
-+	  the current vCPU is discounted from the vCPU power. To account for
-+	  that, there can be a small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config XEN_DOM0
- 	def_bool y
- 	depends on XEN
-@@ -197,6 +216,7 @@ config XEN_DOM0
- config XEN
- 	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
- 	depends on ARM64 && OF
-+	select PARAVIRT
- 	help
- 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM64.
+-static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+ static DEFINE_PER_CPU(unsigned long, xen_stolen_time);
+ static DEFINE_PER_CPU(unsigned long, xen_blocked_time);
  
-diff --git a/arch/arm64/include/asm/paravirt.h b/arch/arm64/include/asm/paravirt.h
+ /* taken from i386/kernel/time-xen.c */
+ static void xen_init_missing_ticks_accounting(int cpu)
+ {
+-	struct vcpu_register_runstate_memory_area area;
+-	struct vcpu_runstate_info *runstate = &per_cpu(xen_runstate, cpu);
+-	int rc;
++	xen_setup_runstate_info(&runstate);
+ 
+-	memset(runstate, 0, sizeof(*runstate));
+-
+-	area.addr.v = runstate;
+-	rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
+-				&area);
+-	WARN_ON(rc && rc != -ENOSYS);
+-
+-	per_cpu(xen_blocked_time, cpu) = runstate->time[RUNSTATE_blocked];
+-	per_cpu(xen_stolen_time, cpu) = runstate->time[RUNSTATE_runnable]
+-					    + runstate->time[RUNSTATE_offline];
+-}
+-
+-/*
+- * Runstate accounting
+- */
+-/* stolen from arch/x86/xen/time.c */
+-static void get_runstate_snapshot(struct vcpu_runstate_info *res)
+-{
+-	u64 state_time;
+-	struct vcpu_runstate_info *state;
+-
+-	BUG_ON(preemptible());
+-
+-	state = &__get_cpu_var(xen_runstate);
+-
+-	/*
+-	 * The runstate info is always updated by the hypervisor on
+-	 * the current CPU, so there's no need to use anything
+-	 * stronger than a compiler barrier when fetching it.
+-	 */
+-	do {
+-		state_time = state->state_entry_time;
+-		rmb();
+-		*res = *state;
+-		rmb();
+-	} while (state->state_entry_time != state_time);
++	per_cpu(xen_blocked_time, cpu) = runstate.time[RUNSTATE_blocked];
++	per_cpu(xen_stolen_time, cpu) = runstate.time[RUNSTATE_runnable]
++					    + runstate.time[RUNSTATE_offline];
+ }
+ 
+ #define NS_PER_TICK (1000000000LL/HZ)
+@@ -94,7 +58,7 @@ consider_steal_time(unsigned long new_itm)
+ 	struct vcpu_runstate_info runstate;
+ 	struct task_struct *p = current;
+ 
+-	get_runstate_snapshot(&runstate);
++	xen_get_runstate_snapshot(&runstate);
+ 
+ 	/*
+ 	 * Check for vcpu migration effect
+@@ -202,7 +166,7 @@ static unsigned long long xen_sched_clock(void)
+ 	 */
+ 	now = ia64_native_sched_clock();
+ 
+-	get_runstate_snapshot(&runstate);
++	xen_get_runstate_snapshot(&runstate);
+ 
+ 	WARN_ON(runstate.state != RUNSTATE_running);
+ 
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index 3d88bfd..c0ca15e 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -30,9 +30,6 @@
+ #define TIMER_SLOP	100000
+ #define NS_PER_TICK	(1000000000LL / HZ)
+ 
+-/* runstate info updated by Xen */
+-static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+-
+ /* snapshots of runstate info */
+ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+ 
+@@ -40,77 +37,6 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+ static DEFINE_PER_CPU(u64, xen_residual_stolen);
+ static DEFINE_PER_CPU(u64, xen_residual_blocked);
+ 
+-/* return an consistent snapshot of 64-bit time/counter value */
+-static u64 get64(const u64 *p)
+-{
+-	u64 ret;
+-
+-	if (BITS_PER_LONG < 64) {
+-		u32 *p32 = (u32 *)p;
+-		u32 h, l;
+-
+-		/*
+-		 * Read high then low, and then make sure high is
+-		 * still the same; this will only loop if low wraps
+-		 * and carries into high.
+-		 * XXX some clean way to make this endian-proof?
+-		 */
+-		do {
+-			h = p32[1];
+-			barrier();
+-			l = p32[0];
+-			barrier();
+-		} while (p32[1] != h);
+-
+-		ret = (((u64)h) << 32) | l;
+-	} else
+-		ret = *p;
+-
+-	return ret;
+-}
+-
+-/*
+- * Runstate accounting
+- */
+-static void get_runstate_snapshot(struct vcpu_runstate_info *res)
+-{
+-	u64 state_time;
+-	struct vcpu_runstate_info *state;
+-
+-	BUG_ON(preemptible());
+-
+-	state = &__get_cpu_var(xen_runstate);
+-
+-	/*
+-	 * The runstate info is always updated by the hypervisor on
+-	 * the current CPU, so there's no need to use anything
+-	 * stronger than a compiler barrier when fetching it.
+-	 */
+-	do {
+-		state_time = get64(&state->state_entry_time);
+-		barrier();
+-		*res = *state;
+-		barrier();
+-	} while (get64(&state->state_entry_time) != state_time);
+-}
+-
+-/* return true when a vcpu could run but has no real cpu to run on */
+-bool xen_vcpu_stolen(int vcpu)
+-{
+-	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
+-}
+-
+-void xen_setup_runstate_info(int cpu)
+-{
+-	struct vcpu_register_runstate_memory_area area;
+-
+-	area.addr.v = &per_cpu(xen_runstate, cpu);
+-
+-	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
+-			       cpu, &area))
+-		BUG();
+-}
+-
+ static void do_stolen_accounting(void)
+ {
+ 	struct vcpu_runstate_info state;
+@@ -118,7 +44,7 @@ static void do_stolen_accounting(void)
+ 	s64 blocked, runnable, offline, stolen;
+ 	cputime_t ticks;
+ 
+-	get_runstate_snapshot(&state);
++	xen_get_runstate_snapshot(&state);
+ 
+ 	WARN_ON(state.state != RUNSTATE_running);
+ 
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index eabd0ee..2bf461a 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -3,7 +3,7 @@ obj-y	+= manage.o
+ obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+ endif
+ obj-$(CONFIG_X86)			+= fallback.o
+-obj-y	+= grant-table.o features.o events.o balloon.o
++obj-y	+= grant-table.o features.o events.o balloon.o time.o
+ obj-y	+= xenbus/
+ 
+ nostackp := $(call cc-option, -fno-stack-protector)
+diff --git a/drivers/xen/time.c b/drivers/xen/time.c
 new file mode 100644
-index 0000000..54e895b
+index 0000000..c2e39d3
 --- /dev/null
-+++ b/arch/arm64/include/asm/paravirt.h
-@@ -0,0 +1,19 @@
-+#ifndef _ASM_ARM64_PARAVIRT_H
-+#define _ASM_ARM64_PARAVIRT_H
++++ b/drivers/xen/time.c
+@@ -0,0 +1,91 @@
++/*
++ * Xen stolen ticks accounting.
++ */
++#include <linux/kernel.h>
++#include <linux/kernel_stat.h>
++#include <linux/math64.h>
++#include <linux/gfp.h>
 +
-+struct static_key;
-+extern struct static_key paravirt_steal_enabled;
-+extern struct static_key paravirt_steal_rq_enabled;
++#include <asm/xen/hypervisor.h>
++#include <asm/xen/hypercall.h>
 +
-+struct pv_time_ops {
-+	unsigned long long (*steal_clock)(int cpu);
-+};
-+extern struct pv_time_ops pv_time_ops;
++#include <xen/events.h>
++#include <xen/features.h>
++#include <xen/interface/xen.h>
++#include <xen/interface/vcpu.h>
++#include <xen/xen-ops.h>
 +
-+static inline u64 paravirt_steal_clock(int cpu)
++/* runstate info updated by Xen */
++static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
++
++/* return an consistent snapshot of 64-bit time/counter value */
++static u64 get64(const u64 *p)
 +{
-+	return pv_time_ops.steal_clock(cpu);
++	u64 ret;
++
++	if (BITS_PER_LONG < 64) {
++		u32 *p32 = (u32 *)p;
++		u32 h, l;
++
++		/*
++		 * Read high then low, and then make sure high is
++		 * still the same; this will only loop if low wraps
++		 * and carries into high.
++		 * XXX some clean way to make this endian-proof?
++		 */
++		do {
++			h = p32[1];
++			barrier();
++			l = p32[0];
++			barrier();
++		} while (p32[1] != h);
++
++		ret = (((u64)h) << 32) | l;
++	} else
++		ret = *p;
++
++	return ret;
 +}
 +
-+
-+#endif
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 7b4b564..17613ad 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o smp_psci.o
- arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
- arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
- arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-+arm64-obj-$(CONFIG_PARAVIRT)		+= paravirt.o
- 
- obj-y					+= $(arm64-obj-y) vdso/
- obj-m					+= $(arm64-obj-m)
-diff --git a/arch/arm64/kernel/paravirt.c b/arch/arm64/kernel/paravirt.c
-new file mode 100644
-index 0000000..53f371e
---- /dev/null
-+++ b/arch/arm64/kernel/paravirt.c
-@@ -0,0 +1,25 @@
 +/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Copyright (C) 2013 Citrix Systems
-+ *
-+ * Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
++ * Runstate accounting
 + */
++void xen_get_runstate_snapshot(struct vcpu_runstate_info *res)
++{
++	u64 state_time;
++	struct vcpu_runstate_info *state;
 +
-+#include <linux/export.h>
-+#include <linux/jump_label.h>
-+#include <linux/types.h>
-+#include <asm/paravirt.h>
++	BUG_ON(preemptible());
 +
-+struct static_key paravirt_steal_enabled;
-+struct static_key paravirt_steal_rq_enabled;
++	state = &__get_cpu_var(xen_runstate);
 +
-+struct pv_time_ops pv_time_ops;
-+EXPORT_SYMBOL_GPL(pv_time_ops);
++	/*
++	 * The runstate info is always updated by the hypervisor on
++	 * the current CPU, so there's no need to use anything
++	 * stronger than a compiler barrier when fetching it.
++	 */
++	do {
++		state_time = get64(&state->state_entry_time);
++		barrier();
++		*res = *state;
++		barrier();
++	} while (get64(&state->state_entry_time) != state_time);
++}
++
++/* return true when a vcpu could run but has no real cpu to run on */
++bool xen_vcpu_stolen(int vcpu)
++{
++	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
++}
++
++void xen_setup_runstate_info(int cpu)
++{
++	struct vcpu_register_runstate_memory_area area;
++
++	area.addr.v = &per_cpu(xen_runstate, cpu);
++
++	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
++			       cpu, &area))
++		BUG();
++}
++
+diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+index d6fe062..4fd4e47 100644
+--- a/include/xen/xen-ops.h
++++ b/include/xen/xen-ops.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/percpu.h>
+ #include <asm/xen/interface.h>
++#include <xen/interface/vcpu.h>
+ 
+ DECLARE_PER_CPU(struct vcpu_info *, xen_vcpu);
+ 
+@@ -16,6 +17,10 @@ void xen_mm_unpin_all(void);
+ void xen_timer_resume(void);
+ void xen_arch_resume(void);
+ 
++bool xen_vcpu_stolen(int vcpu);
++void xen_setup_runstate_info(int cpu);
++void xen_get_runstate_snapshot(struct vcpu_runstate_info *res);
++
+ int xen_setup_shutdown_event(void);
+ 
+ extern unsigned long *xen_contiguous_bitmap;
 -- 
 1.7.2.5
 
