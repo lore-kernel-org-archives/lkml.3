@@ -1,115 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab3F0Lzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 07:55:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55437 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab3F0Lzl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 07:55:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Subject: Re: [PATCH 0/2] arm: add early_ioremap() support
-Date: Thu, 27 Jun 2013 13:55:08 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        patches@linaro.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nico@linaro.org
-References: <1372182401-11029-1-git-send-email-leif.lindholm@linaro.org> <3503040.vhYAL5xGgS@wuerfel> <20130627092934.GD18151@rocoto.smurfnet.nu>
-In-Reply-To: <20130627092934.GD18151@rocoto.smurfnet.nu>
+	id S1752204Ab3F0MAB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:00:01 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53166 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab3F0L77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 07:59:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>
+Subject: Re: [PATCH 3/4] ACPI / PM: Rework and clean up acpi_dev_pm_get_state()
+Date: Thu, 27 Jun 2013 14:09:26 +0200
+Message-ID: <3200056.Wt99JoHYx7@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51CBF3AA.2030508@intel.com>
+References: <6895318.cKDBc4OdI0@vostro.rjw.lan> <1756031.gcnLRAM3xz@vostro.rjw.lan> <51CBF3AA.2030508@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306271355.08379.arnd@arndb.de>
-X-Provags-ID: V02:K0:buj0ulKfZ15Fy5udB+iG15vnj6Kmj8ymks9uI6oAri1
- nIitm2gekL7w29oTDSbw52GpYAKmdatj7sX0Vk6gpyf3XVT07w
- 8ptgU9oUtcJEOYZ7ng3DP6gRZpqQowwN+hTsHaiRCfrj9b0+xY
- QfKhF6B34PcQZ2spc0f+0LBsvl1TgqLse3kQnraXCt2sX1AzOf
- zafFTkMg4oNL+HHaSdNNaRR72DYR0zv3z0dcNvk/UFo/bEzS6r
- cHj6DUIsmebXE/IL8Hd4lkCNw9Dp/i+3+YVLu5ndtvkYBoGzY6
- zmex0eD0gyTw+rP7q6DCeXrnT+hyzh11XXdtR2PYeWCJFvgrGw
- Hc+c4QKn29BarJ2M/08c=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 June 2013, Leif Lindholm wrote:
-> On Thu, Jun 27, 2013 at 10:47:21AM +0200, Arnd Bergmann wrote:
-> > > No, the purpose is just like for x86 - do early parsing of things like
-> > > the UEFI system and configuration tables, DMI and ACPI, in order to
-> > > populate global structs and stuff.
+On Thursday, June 27, 2013 04:11:22 PM Aaron Lu wrote:
+> On 06/14/2013 08:32 PM, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > > 
-> > But are those tables actually in MMIO registers? I thought they
-> > are just memory, and in that case using any form of ioremap is
-> > wrong on ARM. Why do you even have to map them? Can't the boot
-> > loader pass those tables in regular addressable memory?
->  
-> Don't get too stuck on the name - x86 frequently uses *ioremap() in
-> many places when just accessing memory, and that has carried into EFI,
-> ACPI and DMI subsystems, which we now want to use on ARM. In fact, they
-> have early_memremap(), but don't use it for either EFI or ACPI.
-
-The difference of course is that x86 doesn't use page table flags
-to tell the difference between MMIO and memory. It is not harmful
-on x86 to access memory through ioremap, but it is on most
-other architectures. You get either unspecified behavior due to
-conflicting cache flags or you get a hard checkstop based on how
-the CPU treats this. If you want to make the EFI code architecture
-independent, I think you should change the EFI code.
-
-> The ia64 implementation actually performs a lookup in the EFI memmap
-> to decide whether early_ioremap() returns cacheable memory or not
-> (and falls back to noncacheable before memory map is available).
-> 
-> That said, I had somehow managed to get into my mind that the kernel
-> used -fno-unaligned-access, so thought MT_DEV_NONSHARED was safe.
-> Clearly it isn't, so that will need to change, making the semantic
-> match even worse...
-> 
-> As for the need of mapping - some of these descriptors are needed very
-> early in the boot process. Also, depending on platform, they may reside
-> at any offset from start of RAM (<2^32 physical address), rendering
-> __va()/__phys_to_virt()/... unusable.
-
-Can you explain why they are needed this early?
-
-Also, can't we define the boot protocol to require these tables
-within the first GB of RAM?
-
-> > > Well, I did have a crazy idea that much/most of the early_ioremap code
-> > > could be made generic and shared between x86 and arm (and any other
-> > > 32-bit architecture). Using the fixmap macros would make that possible
-> > > with a minimum of ifdefs.
-> > > 
-> > > If we ever wanted early_ioremap() to work like on x86, beyond kmap_init()
-> > > (but not beyond the "booting" system state), using the same macros would
-> > > help there too. I had no need for that for my EFI patches.
+> > The acpi_dev_pm_get_state() function defined in device_pm.c is quite
+> > convoluted, which isn't really necessary, and it doesn't validate the
+> > values returned by the ACPI methods executed by it appropriately.
 > > 
-> > I guess I need to look at the EFI patches first. It sounds to me
-> > like you shouldn't actually be using early_ioremap here or on another
-> > architecture.
+> > To address these shortcomings modify it in the following way.
+> > 
+> >  (1) Make its return value only mean whether or not it succeeded and
+> >      pass the device power states determined by it through pointers.
+> > 
+> >  (2) Drop the d_max_in argument, used by only one of its callers,
+> >      from it, and move the code related to d_max_in into that caller,
+> >      acpi_pm_device_sleep_state().
+> > 
+> >  (3) Make it always check the return value of acpi_evaluate_integer()
+> >      and handle failures as appropriate.  Moreover, make it check if
+> >      the values returned by the executed ACPI methods are not out of
+> >      range.
+> > 
+> >  (4) Make it check if the values returned by the executed ACPI
+> >      methods represent valid power states of the given device and
+> >      handle situations in which that's not the case gracefully.
+> > 
+> > Also update the kerneldoc comments of acpi_dev_pm_get_state() and
+> > acpi_pm_device_sleep_state() to reflect the code changes.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/acpi/device_pm.c |  158 +++++++++++++++++++++++++++--------------------
+> >  1 file changed, 92 insertions(+), 66 deletions(-)
+> > 
+> > Index: linux-pm/drivers/acpi/device_pm.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/device_pm.c
+> > +++ linux-pm/drivers/acpi/device_pm.c
+> > @@ -403,44 +403,37 @@ EXPORT_SYMBOL(acpi_bus_can_wakeup);
+> >   * @dev: Device whose preferred target power state to return.
+> >   * @adev: ACPI device node corresponding to @dev.
+> >   * @target_state: System state to match the resultant device state.
+> > - * @d_max_in: Deepest low-power state to take into consideration.
+> > - * @d_min_p: Location to store the upper limit of the allowed states range.
+> > - * Return value: Preferred power state of the device on success, -ENODEV
+> > - * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
+> > + * @d_min_p: Location to store the highest power state available to the device.
+> > + * @d_max_p: Location to store the lowest power state available to the device.
+> >   *
+> > - * Find the lowest power (highest number) ACPI device power state that the
+> > - * device can be in while the system is in the state represented by
+> > - * @target_state.  If @d_min_p is set, the highest power (lowest number) device
+> > - * power state that @dev can be in for the given system sleep state is stored
+> > - * at the location pointed to by it.
+> > + * Find the lowest power (highest number) and highest power (lowest number) ACPI
+> > + * device power states that the device can be in while the system is in the
+> > + * state represented by @target_state.  Store the integer numbers representing
+> > + * those stats in the memory locations pointed to by @d_max_p and @d_min_p,
+> > + * respectively.
+> >   *
+> >   * Callers must ensure that @dev and @adev are valid pointers and that @adev
+> >   * actually corresponds to @dev before using this function.
+> > + *
+> > + * Returns 0 on success or -ENODATA when one of the ACPI methods fails or
+> > + * returns a value that doesn't make sense.  The memory locations pointed to by
+> > + * @d_max_p and @d_min_p are only modified on success.
+> >   */
+> >  static int acpi_dev_pm_get_state(struct device *dev, struct acpi_device *adev,
+> > -				 u32 target_state, int d_max_in, int *d_min_p)
+> > +				 u32 target_state, int *d_min_p, int *d_max_p)
+> >  {
+> > -	char acpi_method[] = "_SxD";
+> > -	unsigned long long d_min, d_max;
+> > +	char method[] = { '_', 'S', '0' + target_state, 'D', '\0' };
+> > +	acpi_handle handle = adev->handle;
+> > +	unsigned long long ret;
+> > +	int d_min, d_max;
+> >  	bool wakeup = false;
+> > +	acpi_status status;
+> >  
+> > -	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
+> > -		return -EINVAL;
+> > -
+> > -	if (d_max_in > ACPI_STATE_D3_HOT) {
+> > -		enum pm_qos_flags_status stat;
+> > -
+> > -		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
+> > -		if (stat == PM_QOS_FLAGS_ALL)
+> > -			d_max_in = ACPI_STATE_D3_HOT;
+> > -	}
+> > -
+> > -	acpi_method[2] = '0' + target_state;
+> >  	/*
+> > -	 * If the sleep state is S0, the lowest limit from ACPI is D3,
+> > -	 * but if the device has _S0W, we will use the value from _S0W
+> > -	 * as the lowest limit from ACPI.  Finally, we will constrain
+> > -	 * the lowest limit with the specified one.
+> > +	 * If the system state is S0, the lowest power state the device can be
+> > +	 * in is D3cold, unless the device has _S0W and is supposed to signal
+> > +	 * wakeup, in which case the return value of _S0W has to be used as the
+> > +	 * lowest power state available to the device.
+> >  	 */
+> >  	d_min = ACPI_STATE_D0;
+> >  	d_max = ACPI_STATE_D3_COLD;
+> > @@ -449,12 +442,30 @@ static int acpi_dev_pm_get_state(struct
+> >  	 * If present, _SxD methods return the minimum D-state (highest power
+> >  	 * state) we can use for the corresponding S-states.  Otherwise, the
+> >  	 * minimum D-state is D0 (ACPI 3.x).
+> > -	 *
+> > -	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
+> > -	 * provided -- that's our fault recovery, we ignore retval.
+> >  	 */
+> >  	if (target_state > ACPI_STATE_S0) {
+> > -		acpi_evaluate_integer(adev->handle, acpi_method, NULL, &d_min);
+> > +		/*
+> > +		 * We rely on acpi_evaluate_integer() not clobbering the integer
+> > +		 * provided if AE_NOT_FOUND is returned.
+> > +		 */
+> > +		ret = d_min;
+> > +		status = acpi_evaluate_integer(handle, method, NULL, &ret);
+> > +		if ((ACPI_FAILURE(status) && status != AE_NOT_FOUND)
+> > +		    || ret > ACPI_STATE_D3_COLD)
+> > +			return -ENODATA;
+> > +
+> > +		/*
+> > +		 * We need to handle legacy systems where D3hot and D3cold are
+> > +		 * the same and 3 is returned in both cases, so fall back to
+> > +		 * D3cold if D3hot is not a valid state.
+> > +		 */
+> > +		if (!adev->power.states[ret].flags.valid) {
+> > +			if (ret == ACPI_STATE_D3_HOT)
+> > +				ret = ACPI_STATE_D3_COLD;
+> > +			else
+> > +				return -ENODATA;
+> > +		}
+> > +		d_min = ret;
+> >  		wakeup = device_may_wakeup(dev) && adev->wakeup.flags.valid
+> >  			&& adev->wakeup.sleep_state >= target_state;
+> >  	} else if (dev_pm_qos_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP) !=
+> > @@ -470,36 +481,29 @@ static int acpi_dev_pm_get_state(struct
+> >  	 * can wake the system.  _S0W may be valid, too.
+> >  	 */
+> >  	if (wakeup) {
+> > -		acpi_status status;
+> > -
+> > -		acpi_method[3] = 'W';
+> > -		status = acpi_evaluate_integer(adev->handle, acpi_method, NULL,
+> > -						&d_max);
+> > -		if (ACPI_FAILURE(status)) {
+> > -			if (target_state != ACPI_STATE_S0 ||
+> > -			    status != AE_NOT_FOUND)
+> > +		method[3] = 'W';
+> > +		status = acpi_evaluate_integer(handle, method, NULL, &ret);
+> > +		if (status == AE_NOT_FOUND) {
+> > +			if (target_state > ACPI_STATE_S0)
+> >  				d_max = d_min;
+> > -		} else if (d_max < d_min) {
+> > -			/* Warn the user of the broken DSDT */
+> > -			printk(KERN_WARNING "ACPI: Wrong value from %s\n",
+> > -				acpi_method);
+> > -			/* Sanitize it */
+> > -			d_min = d_max;
+> > +		} else if (ACPI_SUCCESS(status) && ret <= ACPI_STATE_D3_COLD) {
+> > +			/* Fall back to D3cold if ret is not a valid state. */
+> > +			if (!adev->power.states[ret].flags.valid)
+> > +				ret = ACPI_STATE_D3_COLD;
+> > +
+> > +			d_max = ret > d_min ? ret : d_min;
+> > +		} else {
+> > +			return -ENODATA;
+> >  		}
+> >  	}
+> >  
+> > -	if (d_max_in < d_min)
+> > -		return -EINVAL;
+> >  	if (d_min_p)
+> >  		*d_min_p = d_min;
+> > -	/* constrain d_max with specified lowest limit (max number) */
+> > -	if (d_max > d_max_in) {
+> > -		for (d_max = d_max_in; d_max > d_min; d_max--) {
+> > -			if (adev->power.states[d_max].flags.valid)
+> > -				break;
+> > -		}
+> > -	}
+> > -	return d_max;
+> > +
+> > +	if (d_max_p)
+> > +		*d_max_p = d_max;
+> > +
+> > +	return 0;
+> >  }
+> >  
+> >  /**
+> > @@ -508,7 +512,8 @@ static int acpi_dev_pm_get_state(struct
+> >   * @d_min_p: Location to store the upper limit of the allowed states range.
+> >   * @d_max_in: Deepest low-power state to take into consideration.
+> >   * Return value: Preferred power state of the device on success, -ENODEV
+> > - * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
+> > + * if there's no 'struct acpi_device' for @dev, -EINVAL if @d_max_in is
+> > + * incorrect, or -ENODATA on ACPI method failure.
+> >   *
+> >   * The caller must ensure that @dev is valid before using this function.
+> >   */
+> > @@ -516,14 +521,39 @@ int acpi_pm_device_sleep_state(struct de
+> >  {
+> >  	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+> >  	struct acpi_device *adev;
+> > +	int ret, d_max;
+> > +
+> > +	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
+> > +		return -EINVAL;
+> > +
+> > +	if (d_max_in > ACPI_STATE_D3_HOT) {
+> > +		enum pm_qos_flags_status stat;
+> > +
+> > +		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
+> > +		if (stat == PM_QOS_FLAGS_ALL)
+> > +			d_max_in = ACPI_STATE_D3_HOT;
+> > +	}
+> >  
+> >  	if (!handle || acpi_bus_get_device(handle, &adev)) {
+> >  		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
+> >  		return -ENODEV;
+> >  	}
+> >  
+> > -	return acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
+> > -				     d_max_in, d_min_p);
+> > +	ret = acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
+> > +				    d_min_p, &d_max);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	if (d_max_in < *d_min_p)
+> > +		return -EINVAL;
 > 
-> No, but I had been kind of hoping not having to rework the early memory
-> initialisation for three subsystems on two other platforms in order to
-> be able to merge common code between them. And it would have felt silly
-> to invent a new mechanism just for ARM, preventing that option.
+> d_min_p can be NULL here.
+> 
+> Call trace:
+> acpi_pm_device_sleep_state, where d_min_p is passed as NULL
+> acpi_pci_choose_state
+> pci_choose_state
+> atl1e_suspend
+> atl1e_shutdown
+> pci_device_shutdown
+> device_shutdown
 
-Well, if you can get around the "early" requirement, things can become
-much easier, you can basically 
+Right, the patch below should fix that.
 
-#define early_ioremap(addr, size) ioremap(addr, size)
-#define early_memremap(addr, size) ioremap_cached(addr, size)
+Thanks,
+Rafael
 
-and just need to fix the places where the common code mistakenly calls
-early_ioremap instead of early_memremap.
 
-Chances are that even if you can't avoid the requirement for early
-maps entirely that you only really have to worry about a small number
-of callers, for which you can then introduce architecture specific
-functions that do one thing in an appropriate way. On ARM, this may
-end up being __va(), kmap_atomic() or iotable_init() depending on
-the requirements.
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / PM: Fix possible NULL pointer deref in acpi_pm_device_sleep_state()
 
-	Arnd
+After commit fa1675b (ACPI / PM: Rework and clean up
+acpi_dev_pm_get_state()) a NULL pointer dereference will take place
+if NULL is passed to acpi_pm_device_sleep_state() as the second
+argument.
+
+Fix that by avoiding to use the pointer that may be NULL until
+it's necessary to store a return value at the location pointed to
+by it (if not NULL).
+
+Reported-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/device_pm.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+Index: linux-pm/drivers/acpi/device_pm.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -541,7 +541,7 @@ int acpi_pm_device_sleep_state(struct de
+ {
+ 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+ 	struct acpi_device *adev;
+-	int ret, d_max;
++	int ret, d_min, d_max;
+ 
+ 	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
+ 		return -EINVAL;
+@@ -560,19 +560,23 @@ int acpi_pm_device_sleep_state(struct de
+ 	}
+ 
+ 	ret = acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
+-				    d_min_p, &d_max);
++				    &d_min, &d_max);
+ 	if (ret)
+ 		return ret;
+ 
+-	if (d_max_in < *d_min_p)
++	if (d_max_in < d_min)
+ 		return -EINVAL;
+ 
+ 	if (d_max > d_max_in) {
+-		for (d_max = d_max_in; d_max > *d_min_p; d_max--) {
++		for (d_max = d_max_in; d_max > d_min; d_max--) {
+ 			if (adev->power.states[d_max].flags.valid)
+ 				break;
+ 		}
+ 	}
++
++	if (d_min_p)
++		*d_min_p = d_min;
++
+ 	return d_max;
+ }
+ EXPORT_SYMBOL(acpi_pm_device_sleep_state);
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
