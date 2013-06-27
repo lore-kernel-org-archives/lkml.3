@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751040Ab3F0EC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 00:02:58 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:43052 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab3F0EC4 (ORCPT
+	id S1751199Ab3F0EEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 00:04:20 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:30924 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3F0EES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 00:02:56 -0400
+	Thu, 27 Jun 2013 00:04:18 -0400
+X-Spam-Score: -100.8
+Message-ID: <51CBB98D.3040304@asianux.com>
+Date: Thu, 27 Jun 2013 12:03:25 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130626155823.47eb36fb@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1370941408-29304-1-git-send-email-l.majewski@samsung.com>
-	<1370941408-29304-4-git-send-email-l.majewski@samsung.com>
-	<CAKohponJ5FyuKywCGz5j8GYomwqEJ0B-CvJybp+_eLjrsRkXDA@mail.gmail.com>
-	<20130626155823.47eb36fb@amdc308.digital.local>
-Date: Thu, 27 Jun 2013 09:32:56 +0530
-Message-ID: <CAKohpo=G+BJVDVs3ToajkUobQHBeY2GZ3nzyKHc3vechmLTLXQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] cpufreq:exynos:Extend Exynos cpufreq driver to
- support boost framework
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>, Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Hirokazu Takata <takata@linux-m32r.org>
+CC: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-m32r-ja@ml.linux-m32r.org, linux-m32r@ml.linux-m32r.org
+Subject: [PATCH] include/asm-generic/pci.h: include generic "pci-dma-compat.h"
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 June 2013 19:28, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> On Wed, 26 Jun 2013 16:35:32 +0530, Viresh Kumar wrote:
->> This patch is still few generations back :)
->
-> But this is v2 version of boost patches.
+If an architecture need "generic pci.h", it also need generic "pci-dma-
+compat.h",  so recommend to include it in asm-generic directly.
 
-My mistake....
+And now, for arm64 and m32r, may cause compiling error about it.
 
-> Please also review:
-> [PATCH v4 4/7]
-> [PATCH v4 5/7]
-> [PATCH v4 6/7]
-> [PATCH v4 7/7] - disable boost at thermal framework
+The related error (with allmodconfig):
 
-don't worry I will review everything. I went home after reviewing half
-of the patches.
+  drivers/media/usb/b2c2/flexcop-usb.c: In function ‘flexcop_usb_transfer_exit’:
+  drivers/media/usb/b2c2/flexcop-usb.c:393:3: error: implicit declaration of function ‘pci_free_consistent’ [-Werror=implicit-function-declaration]
+  drivers/media/usb/b2c2/flexcop-usb.c: In function ‘flexcop_usb_transfer_init’:
+  drivers/media/usb/b2c2/flexcop-usb.c:410:2: error: implicit declaration of function ‘pci_alloc_consistent’ [-Werror=implicit-function-declaration]
+  drivers/media/usb/b2c2/flexcop-usb.c:410:21: warning: assignment makes pointer from integer without a cast [enabled by default]
+  cc1: some warnings being treated as errors
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ include/asm-generic/pci.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/pci.h b/include/asm-generic/pci.h
+index e80a049..64e2a15 100644
+--- a/include/asm-generic/pci.h
++++ b/include/asm-generic/pci.h
+@@ -6,6 +6,8 @@
+ #ifndef _ASM_GENERIC_PCI_H
+ #define _ASM_GENERIC_PCI_H
+ 
++#include <asm-generic/pci-dma-compat.h>
++
+ static inline struct resource *
+ pcibios_select_root(struct pci_dev *pdev, struct resource *res)
+ {
+-- 
+1.7.7.6
