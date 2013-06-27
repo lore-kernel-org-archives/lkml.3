@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3F0NHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:07:43 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:45526 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab3F0NHg convert rfc822-to-8bit (ORCPT
+	id S1754021Ab3F0NIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:08:09 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:36964 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752773Ab3F0Muf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:07:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <6743122.cV0P3hQa28@vostro.rjw.lan>
-References: <1372331314-31010-1-git-send-email-naresh.bhat@linaro.org>
-	<6743122.cV0P3hQa28@vostro.rjw.lan>
-Date: Thu, 27 Jun 2013 18:37:35 +0530
-Message-ID: <CAFoFrHaUbjHbvDDVO0+1j4WSTdhdrWF64MrNvzKNJXaLKSv_jw@mail.gmail.com>
-Subject: Re: [PATCH] ACPI/fan: Initialize acpi_state variable
-From: Naresh Bhat <naresh.bhat@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, len.brown@intel.com, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Thu, 27 Jun 2013 08:50:35 -0400
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 05/51] Input: atmel_mxt_ts - Select FW_LOADER for firmware code
+Date: Thu, 27 Jun 2013 13:48:40 +0100
+Message-Id: <1372337366-9286-6-git-send-email-nick.dyer@itdev.co.uk>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Acked-by: Benson Leung <bleung@chromium.org>
+---
+ drivers/input/touchscreen/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-You mean I need to initialize using ACPI_STATE_D0 ? and resend the patch ?
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index f9a5fd8..beb5ad1 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -89,6 +89,7 @@ config TOUCHSCREEN_AD7879_SPI
+ config TOUCHSCREEN_ATMEL_MXT
+ 	tristate "Atmel mXT I2C Touchscreen"
+ 	depends on I2C
++	select FW_LOADER
+ 	help
+ 	  Say Y here if you have Atmel mXT series I2C touchscreen,
+ 	  such as AT42QT602240/ATMXT224, connected to your system.
+-- 
+1.7.10.4
 
-Thanks
--Naresh Bhat
-
-On 27 June 2013 17:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, June 27, 2013 04:38:34 PM naresh.bhat@linaro.org wrote:
->> From: Naresh Bhat <naresh.bhat@linaro.org>
->>
->>   CC      drivers/acpi/fan.o
->> drivers/acpi/fan.c: In function ‘fan_get_cur_state’:
->> drivers/acpi/fan.c:96:9: warning: ‘acpi_state’ may be used uninitialized in this function [-Wuninitialized]
->> ---
->>  drivers/acpi/fan.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
->> index f815da8..f61f7fd 100644
->> --- a/drivers/acpi/fan.c
->> +++ b/drivers/acpi/fan.c
->> @@ -84,7 +84,7 @@ static int fan_get_cur_state(struct thermal_cooling_device *cdev, unsigned long
->>  {
->>       struct acpi_device *device = cdev->devdata;
->>       int result;
->> -     int acpi_state;
->> +     int acpi_state = 0;
->
-> Please use an appropriate symbol here.
->
->>
->>       if (!device)
->>               return -EINVAL;
->>
->
-> Thanks,
-> Rafael
->
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
