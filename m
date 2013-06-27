@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab3F0UAK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 16:00:10 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:33737 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab3F0UAG (ORCPT
+	id S1754841Ab3F0UAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 16:00:18 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49392 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778Ab3F0UAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 16:00:06 -0400
+	Thu, 27 Jun 2013 16:00:13 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 23/45] percpu_counter: Use _nocheck version of
- for_each_online_cpu()
+Subject: [PATCH v3 24/45] infiniband: ehca: Use get/put_online_cpus_atomic()
+ to prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
@@ -21,10 +21,13 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>,
+        Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+        Christoph Raisch <raisch@de.ibm.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 28 Jun 2013 01:26:41 +0530
-Message-ID: <20130627195641.29830.18825.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 28 Jun 2013 01:26:48 +0530
+Message-ID: <20130627195648.29830.64721.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
 References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -33,49 +36,72 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062719-8256-0000-0000-0000081CBDD4
+x-cbid: 13062719-4790-0000-0000-00000902E029
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The percpu-counter-sum code does a for_each_online_cpu() protected
-by a spinlock, which makes it look like it needs to use
-get/put_online_cpus_atomic(), going forward. However, the code has
-adequate synchronization with CPU hotplug, via a hotplug callback
-and the fbc->lock.
+Once stop_machine() is gone from the CPU offline path, we won't be able
+to depend on disabling preemption to prevent CPUs from going offline
+from under us.
 
-So use for_each_online_cpu_nocheck() to avoid false-positive warnings
-from the hotplug locking validator. And add a comment justifying the
-same.
+Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
+offline, while invoking from atomic context.
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Tejun Heo <tj@kernel.org>
+Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
+Cc: Christoph Raisch <raisch@de.ibm.com>
+Cc: Roland Dreier <roland@kernel.org>
+Cc: Sean Hefty <sean.hefty@intel.com>
+Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- lib/percpu_counter.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/ehca/ehca_irq.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index ba6085d..2d80e8a 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -98,9 +98,16 @@ s64 __percpu_counter_sum(struct percpu_counter *fbc)
- 	s64 ret;
- 	int cpu;
+diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
+index 8615d7c..ace901e 100644
+--- a/drivers/infiniband/hw/ehca/ehca_irq.c
++++ b/drivers/infiniband/hw/ehca/ehca_irq.c
+@@ -43,6 +43,7 @@
  
-+	/*
-+	 * CPU hotplug synchronization is explicitly handled via the
-+	 * hotplug callback, which synchronizes through fbc->lock.
-+	 * So it is safe to use the _nocheck() version of
-+	 * for_each_online_cpu() here (to avoid false-positive warnings
-+	 * from the CPU hotplug debug code).
-+	 */
- 	raw_spin_lock(&fbc->lock);
- 	ret = fbc->count;
--	for_each_online_cpu(cpu) {
-+	for_each_online_cpu_nocheck(cpu) {
- 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
- 		ret += *pcount;
+ #include <linux/slab.h>
+ #include <linux/smpboot.h>
++#include <linux/cpu.h>
+ 
+ #include "ehca_classes.h"
+ #include "ehca_irq.h"
+@@ -703,6 +704,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
+ 	int cq_jobs;
+ 	unsigned long flags;
+ 
++	get_online_cpus_atomic();
+ 	cpu_id = find_next_online_cpu(pool);
+ 	BUG_ON(!cpu_online(cpu_id));
+ 
+@@ -720,6 +722,7 @@ static void queue_comp_task(struct ehca_cq *__cq)
+ 		BUG_ON(!cct || !thread);
  	}
+ 	__queue_comp_task(__cq, cct, thread);
++	put_online_cpus_atomic();
+ }
+ 
+ static void run_comp_task(struct ehca_cpu_comp_task *cct)
+@@ -759,6 +762,7 @@ static void comp_task_park(unsigned int cpu)
+ 	list_splice_init(&cct->cq_list, &list);
+ 	spin_unlock_irq(&cct->task_lock);
+ 
++	get_online_cpus_atomic();
+ 	cpu = find_next_online_cpu(pool);
+ 	target = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
+ 	thread = *per_cpu_ptr(pool->cpu_comp_threads, cpu);
+@@ -768,6 +772,7 @@ static void comp_task_park(unsigned int cpu)
+ 		__queue_comp_task(cq, target, thread);
+ 	}
+ 	spin_unlock_irq(&target->task_lock);
++	put_online_cpus_atomic();
+ }
+ 
+ static void comp_task_stop(unsigned int cpu, bool online)
 
