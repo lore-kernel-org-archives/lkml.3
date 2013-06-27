@@ -1,61 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab3F0Nyf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:54:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17984 "EHLO mga11.intel.com"
+	id S1753557Ab3F0Nys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:54:48 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:13296 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab3F0Nyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:54:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,952,1363158000"; 
-   d="scan'208";a="356649656"
-Date: Thu, 27 Jun 2013 16:58:19 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
-Message-ID: <20130627135819.GX9294@intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
- <CAErSpo58bCG4=hwC73VY+nXPk9-dZUb5eWERZ_wTtAfrXtBVmg@mail.gmail.com>
- <CAE9FiQW9xuu6WjH59td6Jve10kokoxU4mNqj4DRyg7beqBzHDA@mail.gmail.com>
+	id S1753388Ab3F0Nyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 09:54:45 -0400
+X-IronPort-AV: E=Sophos;i="4.87,952,1363132800"; 
+   d="scan'208";a="33808314"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <catalin.marinas@arm.com>, <arnd@arndb.de>,
+        <olof@lixom.net>, <linux@arm.linux.org.uk>, <Ian.Campbell@citrix.com>,
+        <Stefano.Stabellini@eu.citrix.com>, <will.deacon@arm.com>,
+        <marc.zyngier@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <nico@linaro.org>, <cov@codeaurora.org>
+Subject: [PATCH v6 3/5] arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+Date: Thu, 27 Jun 2013 14:54:30 +0100
+Message-ID: <1372341272-12512-3-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQW9xuu6WjH59td6Jve10kokoxU4mNqj4DRyg7beqBzHDA@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 03:26:59PM -0700, Yinghai Lu wrote:
-> On Wed, Jun 26, 2013 at 3:18 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Tue, Jun 25, 2013 at 10:22 AM, Mika Westerberg
-> > <mika.westerberg@linux.intel.com> wrote:
-> >> Thunderbolt PCI-to-PCI bridges typically use BIOS "assisted" enumeration.
-> >> This means that the BIOS will allocate bridge resources based on some
-> >> assumptions of a maximum Thunderbolt chain. It also disables native PCIe
-> >> hotplug of the root port where the Thunderbolt host router is connected.
-> 
-> We should not need tricks in this patch after
-> 
-> https://patchwork.kernel.org/patch/2766521/
-> 
-> [2/3] PCI / ACPI: Use boot-time resource allocation rules during hotplug
+Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM.
 
-Unfortunately that patch is not enough :-( We still need to make sure that
-we don't add anything to the bridge window sizes like __pci_bus_size_bridges()
-is currently doing (e.g similar to pci=hpmemsize=0,hpiosize=0 for the
-Thunderbolt bridges).
+The only paravirt interface supported is pv_time_ops.steal_clock, so no
+runtime pvops patching needed.
+
+This allows us to make use of steal_account_process_tick for stolen
+ticks accounting.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Christopher Covington <cov@codeaurora.org>
+CC: linux@arm.linux.org.uk
+CC: will.deacon@arm.com
+CC: nico@linaro.org
+CC: marc.zyngier@arm.com
+CC: cov@codeaurora.org
+CC: arnd@arndb.de
+CC: olof@lixom.net
+
+Changes in v3:
+- improve commit description and Kconfig help text;
+- no need to initialize pv_time_ops;
+- add PARAVIRT_TIME_ACCOUNTING.
+---
+ arch/arm/Kconfig                |   20 ++++++++++++++++++++
+ arch/arm/include/asm/paravirt.h |   19 +++++++++++++++++++
+ arch/arm/kernel/Makefile        |    1 +
+ arch/arm/kernel/paravirt.c      |   25 +++++++++++++++++++++++++
+ 4 files changed, 65 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/include/asm/paravirt.h
+ create mode 100644 arch/arm/kernel/paravirt.c
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 49d993c..5621a02 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1786,12 +1786,32 @@ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN
+ 
++config PARAVIRT
++	bool "Enable paravirtualization code"
++	---help---
++	  This changes the kernel so it can modify itself when it is run
++	  under a hypervisor, potentially improving performance significantly
++	  over full virtualization.
++
++config PARAVIRT_TIME_ACCOUNTING
++	bool "Paravirtual steal time accounting"
++	select PARAVIRT
++	default n
++	---help---
++	  Select this option to enable fine granularity task steal time
++	  accounting. Time spent executing other tasks in parallel with
++	  the current vCPU is discounted from the vCPU power. To account for
++	  that, there can be a small performance impact.
++
++	  If in doubt, say N here.
++
+ config XEN
+ 	bool "Xen guest support on ARM (EXPERIMENTAL)"
+ 	depends on ARM && AEABI && OF
+ 	depends on CPU_V7 && !CPU_V6
+ 	depends on !GENERIC_ATOMIC64
+ 	select ARM_PSCI
++	select PARAVIRT
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+ 
+diff --git a/arch/arm/include/asm/paravirt.h b/arch/arm/include/asm/paravirt.h
+new file mode 100644
+index 0000000..3b95bc6
+--- /dev/null
++++ b/arch/arm/include/asm/paravirt.h
+@@ -0,0 +1,19 @@
++#ifndef _ASM_ARM_PARAVIRT_H
++#define _ASM_ARM_PARAVIRT_H
++
++struct static_key;
++extern struct static_key paravirt_steal_enabled;
++extern struct static_key paravirt_steal_rq_enabled;
++
++struct pv_time_ops {
++	unsigned long long (*steal_clock)(int cpu);
++};
++extern struct pv_time_ops pv_time_ops;
++
++static inline u64 paravirt_steal_clock(int cpu)
++{
++	return pv_time_ops.steal_clock(cpu);
++}
++
++
++#endif
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 5f3338e..d911db6 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -76,6 +76,7 @@ obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
+ ifneq ($(CONFIG_ARCH_EBSA110),y)
+   obj-y		+= io.o
+ endif
++obj-$(CONFIG_PARAVIRT)	+= paravirt.o
+ 
+ head-y			:= head$(MMUEXT).o
+ obj-$(CONFIG_DEBUG_LL)	+= debug.o
+diff --git a/arch/arm/kernel/paravirt.c b/arch/arm/kernel/paravirt.c
+new file mode 100644
+index 0000000..53f371e
+--- /dev/null
++++ b/arch/arm/kernel/paravirt.c
+@@ -0,0 +1,25 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Copyright (C) 2013 Citrix Systems
++ *
++ * Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
++ */
++
++#include <linux/export.h>
++#include <linux/jump_label.h>
++#include <linux/types.h>
++#include <asm/paravirt.h>
++
++struct static_key paravirt_steal_enabled;
++struct static_key paravirt_steal_rq_enabled;
++
++struct pv_time_ops pv_time_ops;
++EXPORT_SYMBOL_GPL(pv_time_ops);
+-- 
+1.7.2.5
+
