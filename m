@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3F0ORZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:17:25 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:57653 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3F0ORX (ORCPT
+	id S1753473Ab3F0OSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:18:50 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:61961 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab3F0OSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:17:23 -0400
-Date: Thu, 27 Jun 2013 16:17:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com,
-        catalin.marinas@arm.com, arnd@arndb.de, olof@lixom.net,
-        linux@arm.linux.org.uk, Ian.Campbell@citrix.com, will.deacon@arm.com,
-        marc.zyngier@arm.com, mingo@redhat.com
-Subject: Re: [PATCH v6 2/5] kernel: missing include in cputime.c
-Message-ID: <20130627141718.GA10056@gmail.com>
-References: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
- <1372341272-12512-2-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130627141209.GB29209@dyad.programming.kicks-ass.net>
+	Thu, 27 Jun 2013 10:18:48 -0400
+Message-ID: <51CC49C7.9010800@cogentembedded.com>
+Date: Thu, 27 Jun 2013 18:18:47 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627141209.GB29209@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cong Wang <amwang@redhat.com>
+CC: netdev@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>, Jiri Pirko <jiri@resnulli.us>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch net-next 2/5] net: introduce generic inet_pton()
+References: <1372315398-19683-1-git-send-email-amwang@redhat.com> <1372315398-19683-3-git-send-email-amwang@redhat.com>
+In-Reply-To: <1372315398-19683-3-git-send-email-amwang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+On 27-06-2013 10:43, Cong Wang wrote:
 
-> On Thu, Jun 27, 2013 at 02:54:29PM +0100, Stefano Stabellini wrote:
-> > steal_account_process_tick calls paravirt_steal_clock, but paravirt.h is
-> > currently missing amoung the included header files.
-> > Add include asm/paravirt.h ifdef CONFIG_PARAVIRT.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > CC: mingo@redhat.com
-> > CC: peterz@infradead.org
-> > 
-> > Changes in v5:
-> > - add ifdef CONFIG_PARAVIRT.
-> > ---
-> >  kernel/sched/cputime.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> > index cc2dc3ee..317a578 100644
-> > --- a/kernel/sched/cputime.c
-> > +++ b/kernel/sched/cputime.c
-> > @@ -5,7 +5,9 @@
-> >  #include <linux/static_key.h>
-> >  #include <linux/context_tracking.h>
-> >  #include "sched.h"
-> > -
-> > +#ifdef CONFIG_PARAVIRT
-> > +#include <asm/paravirt.h>
-> > +#endif
-> 
-> Why isn't that CONFIG stuff inside the header instead of around it?
+> Signed-off-by: Cong Wang <amwang@redhat.com>
+> ---
+>   include/net/inet_addr.h |   20 ++++++++++++++++++++
+>   net/core/netpoll.c      |   24 ++----------------------
+>   2 files changed, 22 insertions(+), 22 deletions(-)
 
-Indeed.
+> diff --git a/include/net/inet_addr.h b/include/net/inet_addr.h
+> index 66a16fe..1379287 100644
+> --- a/include/net/inet_addr.h
+> +++ b/include/net/inet_addr.h
+> @@ -4,6 +4,7 @@
+>   #include <linux/in.h>
+>   #include <linux/in6.h>
+>   #include <linux/socket.h>
+> +#include <linux/inet.h>
+>   #include <net/addrconf.h>
+>
+>   union inet_addr {
+> @@ -59,4 +60,23 @@ static inline bool inet_addr_multicast(const union inet_addr *ipa)
+>   }
+>   #endif
+>
+> +static inline int inet_pton(const char *str, union inet_addr *addr)
+> +{
+> +	const char *end;
+> +
+> +	if (!strchr(str, ':') &&
+> +	    in4_pton(str, -1, (void *)addr, -1, &end) > 0) {
+> +		if (!*end)
+> +			return 0;
+> +	}
+> +	if (in6_pton(str, -1, addr->sin6.sin6_addr.s6_addr, -1, &end) > 0) {
+> +#if IS_ENABLED(CONFIG_IPV6)
+> +		if (!*end)
 
-Once that is fixed then the #ifdef around asm/paravirt.h in 
-kernel/sched/core.c could be removed as well.
+    How about:
 
-Thanks,
+		if (IS_ENABLED(CONFIG_IPV6) && !*end)
 
-	Ingo
+> +			return 1;
+> +#else
+> +		return -1;
+> +#endif
+> +	}
+> +	return -1;
+> +}
+>   #endif
+
+WBR, Sergei
+
+
