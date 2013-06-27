@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab3F0NCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:02:04 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:50307 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab3F0NB7 (ORCPT
+	id S1753983Ab3F0NCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:02:36 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:54597 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753939Ab3F0NCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:01:59 -0400
-Message-ID: <51CC37BF.8030309@monstr.eu>
-Date: Thu, 27 Jun 2013 15:01:51 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 27 Jun 2013 09:02:33 -0400
+Date: Thu, 27 Jun 2013 21:02:26 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 3.10
+Message-ID: <20130627130225.GA1612@gondor.apana.org.au>
+References: <20110216053911.GA10999@gondor.apana.org.au>
+ <20110328071322.GA6569@gondor.apana.org.au>
+ <20110629235153.GA16559@gondor.apana.org.au>
+ <20120126024342.GA12492@gondor.apana.org.au>
+ <20120823083242.GA23102@gondor.apana.org.au>
+ <20121109093005.GA25632@gondor.apana.org.au>
+ <20130328082841.GA7425@gondor.apana.org.au>
+ <20130528055229.GA23937@gondor.apana.org.au>
+ <20130610090544.GA13465@gondor.apana.org.au>
+ <20130620132922.GA19014@gondor.apana.org.au>
 MIME-Version: 1.0
-To: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <vincent.stehle@freescale.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Robin Holt <holt@sgi.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, trivial@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, holt@sgi.com
-Subject: Re: [PATCH linux-next] arm: zynq: fix compilation warning
-References: <1372336962-6459-1-git-send-email-vincent.stehle@freescale.com>
-In-Reply-To: <1372336962-6459-1-git-send-email-vincent.stehle@freescale.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2STBNAGOUBSRUVMTIETRM"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130620132922.GA19014@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2STBNAGOUBSRUVMTIETRM
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Linus:
 
-Hi Vincent,
+This push fixes a crash in the crypto layer exposed by an SCTP
+test tool.
 
-Arnd asked in this post
-http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg454947.html
-to fold his small patch to that larger one.
+Please pull from
 
-Not sure why it is not there.
-Arnd, Robin?
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
-Thanks
-Michal
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
 
-On 06/27/2013 02:42 PM, Vincent Stehl=C3=A9 wrote:
-> Fix the following compilation warning:
->=20
->   arch/arm/mach-zynq/common.c:110:2: warning: initialization from incom=
-patible pointer type [enabled by default]
->   arch/arm/mach-zynq/common.c:110:2: warning: (near initialization for =
-=E2=80=98__mach_desc_XILINX_EP107.restart=E2=80=99) [enabled by default]
->=20
-> Signed-off-by: Vincent Stehl=C3=A9 <vincent.stehle@freescale.com>
-> Cc: Robin Holt <holt@sgi.com>
-> Cc: Michal Simek <michal.simek@xilinx.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: trivial@kernel.org
-> ---
->=20
->=20
-> Hi,
->=20
-> This warning was seen on linux-next tag next-20130627, with config ARM
-> multi_v7_defconfig.
->=20
-> Best regards,
->=20
-> V.
->=20
->=20
->  arch/arm/mach-zynq/common.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-> index 4130e65..8ea5f11 100644
-> --- a/arch/arm/mach-zynq/common.c
-> +++ b/arch/arm/mach-zynq/common.c
-> @@ -91,7 +91,7 @@ static void __init zynq_map_io(void)
->  	zynq_scu_map_io();
->  }
-> =20
-> -static void zynq_system_reset(char mode, const char *cmd)
-> +static void zynq_system_reset(enum reboot_mode mode, const char *cmd)
->  {
->  	zynq_slcr_system_reset();
->  }
->=20
+Herbert Xu (1):
+      crypto: algboss - Hold ref count on larval
 
+ crypto/algboss.c  |   15 ++++++++-------
+ crypto/api.c      |    6 ------
+ crypto/internal.h |    6 ++++++
+ 3 files changed, 14 insertions(+), 13 deletions(-)
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
-------enig2STBNAGOUBSRUVMTIETRM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHMN78ACgkQykllyylKDCFOOgCeId/zVK/yXVupdorfCD5eEVxZ
-PrYAn2t5blG6GhNrSwchF8UCoRnQki3W
-=2zqQ
------END PGP SIGNATURE-----
-
-------enig2STBNAGOUBSRUVMTIETRM--
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
