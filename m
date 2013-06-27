@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab3F0Drz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 23:47:55 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:6881 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab3F0Dry (ORCPT
+	id S1752105Ab3F0DtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 23:49:14 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:39599 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab3F0DtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 23:47:54 -0400
-X-Spam-Score: -100.8
-Message-ID: <51CBB5B5.3070206@asianux.com>
-Date: Thu, 27 Jun 2013 11:47:01 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 26 Jun 2013 23:49:13 -0400
+Date: Thu, 27 Jun 2013 05:49:11 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu, acme@redhat.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        mlpesant@us.ibm.com
+Subject: Re: [PATCH 15/15] perf, tools: Add perf stat --transaction v3
+Message-ID: <20130627034911.GO6123@two.firstfloor.org>
+References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
+ <1366485563-16209-16-git-send-email-andi@firstfloor.org>
+ <20130619085159.GA25177@concordia>
+ <20130619144621.GW6123@two.firstfloor.org>
+ <20130627031854.GA9793@concordia>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] arch: arm64: include: asm: add pci.h to pass compiling
-References: <51CA5F71.207@asianux.com> <20130626140730.GB23309@arm.com> <51CB87B0.8030805@asianux.com> <51CB9DD8.6040905@asianux.com>
-In-Reply-To: <51CB9DD8.6040905@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627031854.GA9793@concordia>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 10:05 AM, Chen Gang wrote:
-> On 06/27/2013 08:30 AM, Chen Gang wrote:
->> On 06/26/2013 10:07 PM, Catalin Marinas wrote:
->>> On Wed, Jun 26, 2013 at 04:26:41AM +0100, Chen Gang wrote:
->>>>> Need add pci.h for compiling, the related error (with allmodconfig):
->>>>>
->>>>>   drivers/media/usb/b2c2/flexcop-usb.c: In function ¡®flexcop_usb_transfer_exit¡¯:
->>>>>   drivers/media/usb/b2c2/flexcop-usb.c:393:3: error: implicit declaration of function ¡®pci_free_consistent¡¯ [-Werror=implicit-function-declaration]
->>>>>   drivers/media/usb/b2c2/flexcop-usb.c: In function ¡®flexcop_usb_transfer_init¡¯:
->>>>>   drivers/media/usb/b2c2/flexcop-usb.c:410:2: error: implicit declaration of function ¡®pci_alloc_consistent¡¯ [-Werror=implicit-function-declaration]
->>>>>   drivers/media/usb/b2c2/flexcop-usb.c:410:21: warning: assignment makes pointer from integer without a cast [enabled by default]
->>>>>   cc1: some warnings being treated as errors
->>>>>
->>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>>> ---
->>>>>  arch/arm64/include/asm/pci.h |   11 +++++++++++
->>>>>  1 files changed, 11 insertions(+), 0 deletions(-)
->>>>>  create mode 100644 arch/arm64/include/asm/pci.h
->>>>>
->>>>> diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
->>>>> new file mode 100644
->>>>> index 0000000..2ed467f
->>>>> --- /dev/null
->>>>> +++ b/arch/arm64/include/asm/pci.h
->>>>> @@ -0,0 +1,11 @@
->>>>> +#ifndef ASMARM64_PCI_H
->>>>> +#define ASMARM64_PCI_H
->>>>> +
->>>>> +#ifdef __KERNEL__
->>>>> +
->>>>> +#include <asm-generic/pci-dma-compat.h>
->>>>> +#include <asm-generic/pci.h>
->>>>> +
->>>>> +#endif /* __KERNEL__ */
->>>>> +
->>>>> +#endif
->>> I wonder whether it makes sense to include pci-dma-compat.h in
->>> asm-generic/pci.h, I don't see why one would want the generic pci.h but
->>> not the generic pci-dma-compat.h (cc'ing Arnd).
->>
+> OK. I'm still confused by that one sorry. In the patch you do:
 > 
+> +       else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX_CP)))
+> +               update_stats(&runtime_cycles_in_txcp_stats[0], count[0]);
+> 
+> But then I don't see where you use runtime_cycles_in_txcp_stats ?
 
-For m32r, it also face the same issue. So I need send related patch to
-asm-generic instead of arm64.
+You're right that variable is not needed. I'll remove it. 
+It only needs the in_tx stat.
 
-> For m32r, it needs generic pci.h but not the generic pci-dma-compat.h.
-> 
-> I am just compiling it with allmodconfig to see whether it will can
-> cause issue too, if so I will send the patch for asm-generic. :-)
-> 
-> And, sorry for the original reply below is incorrect.
-> 
->> I think, it will let architecture guys easier to add their own
->> pci-dma-compat.h (although they still need generic pci_dma_compat.h, and
->> generic pci.h, too).
->>
->> e.g. one architecture want include generic pci-dma-compat.h firstly,
->> then define its own features in its own pci-dma-compat.h.
->>
->> Thanks.
->>
-> 
-> 
+intx-cp is still output, but directly by abs_printout,
+without going through a variable.
 
+> 
+> > > But I don't think we have anything equivalent.
+> > 
+> > But you have cycles-t and tx-start?
+> 
+> We have:
+>  - cycles
+>  - cycles in transactional state
+>  - cycles spent in successful transactions
+> 
+> So your cycles-t is "cycles in transactional state".
+> 
+> We would calculate cycles wasted in aborts with:
+> 
+>  "cycles in transactional" - "cycles in successful transactions"
+> 
+> Which I think is what you're describing above with cycles-ct.
+
+Yes, that should be equivalent.
+That should be easy to check for and handle: check for that 
+event and switch the formula around.
+I'll leave that to you as I don't have any way to test it.
+
+> Does "tx-start" just count the number of transactions begun? Does it
+> count nested transactions?
+
+Just begun without nesting (TSX flattens all transactions)
+
+-Andi
 
 -- 
-Chen Gang
+ak@linux.intel.com -- Speaking for myself only.
