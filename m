@@ -1,141 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab3F0OpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:45:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41292 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3F0OpN (ORCPT
+	id S1753382Ab3F0Opk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:45:40 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:46173 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab3F0Opi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:45:13 -0400
-Date: Thu, 27 Jun 2013 16:44:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Waiman Long <waiman.long@hp.com>
-cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
- update of refcount
-In-Reply-To: <51CB8472.1040502@hp.com>
-Message-ID: <alpine.DEB.2.02.1306271501220.4013@ionos.tec.linutronix.de>
-References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com> <1372268603-46748-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1306262307020.4013@ionos.tec.linutronix.de> <51CB8472.1040502@hp.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 27 Jun 2013 10:45:38 -0400
+Message-ID: <51CC500C.9050602@lwfinger.net>
+Date: Thu, 27 Jun 2013 09:45:32 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: chaoming_li@realsil.com.cn, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Brian Lilly <brian@crystalfontz.com>,
+        Brent-Crosby <brent@crystalfontz.com>, Jim Wall <jimwall@q.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>
+Subject: Re: RTL8192CU on ARM not working
+References: <20130627081225.GJ5803@lukather>
+In-Reply-To: <20130627081225.GJ5803@lukather>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jun 2013, Waiman Long wrote:
-> On 06/26/2013 07:06 PM, Thomas Gleixner wrote:
-> > On Wed, 26 Jun 2013, Waiman Long wrote:
-> > This is a complete design disaster. You are violating every single
-> > rule of proper layering. The differentiation of spinlock, raw_spinlock
-> > and arch_spinlock is there for a reason and you just take the current
-> > implementation and map your desired function to it. If we take this,
-> > then we fundamentally ruled out a change to the mappings of spinlock,
-> > raw_spinlock and arch_spinlock. This layering is on purpose and it
-> > took a lot of effort to make it as clean as it is now. Your proposed
-> > change undoes that and completely wreckages preempt-rt.
-> 
-> Would you mind enlighten me how this change will break preempt-rt?
+On 06/27/2013 03:12 AM, Maxime Ripard wrote:
+> Hi everyone,
+>
+> I'm currently trying to use a RTL8192CU on an ARM (Freescale imx28,
+> armv5) platform, using 3.10-rc3.
+>
+> Trouble is, while the chip is correctly detected and you can use iw on it
+> without any problem it seems, once you start an association to an access
+> point, the association goes on, seems to associate, displaying a WARN()
+> message [1] and then, after what looks like a random amount of time (could
+> be right away, could be after a few minutes), deassociate [2].
+>
+> During the time where it's associated, we never seem to transmit any
+> packets, while iw reports packets being sent, I guess we can assume that
+> they are actually never transmitted as well [3].
+>
+> What seems odd to me as well is that the signal power reported for the access
+> point is excessively high when using iw scan (10 dbm), and once connected, the
+> signal strength is -64dbm, which makes quite a huge difference.
 
-The whole spinlock layering was done for RT. In mainline spinlock is
-mapped to raw_spinlock. On RT spinlock is mapped to a PI aware
-rtmutex.
+That warning is under discussion. See the thread entitled "rtl8192cu: slow path 
+warning" in the linux-wireless ML. I will add you to the Cc list on those messages.
 
-So your mixing of the various layers and the assumption of lock plus
-count being adjacent, does not work on RT at all.
+You should switch to kernel 3.10-rc7. There are a lot of changes to rtl8192cu in 
+that version that are not in -rc3. Those updates mostly affect WPA and WEP 
+encryption.
 
-> The only architecture that will break, according to data in the
-> respectively arch/*/include/asm/spinlock_types.h files is PA-RISC
-> 1.x (it is OK in PA-RISC 2.0) whose arch_spinlock type has a size of
-> 16 bytes. I am not sure if 32-bit PA-RISC 1.x is still supported or
-> not, but we can always disable the optimization for this case.
+I never take signal power values seriously. Just observe the comments scattered 
+throughout the code regarding them.
 
-You have to do that right from the beginning with a proper data
-structure and proper accessor functions. Introducing wreckage and then
-retroactivly fixing it, is not a really good idea.
+Larry
 
-> > So what you really want is a new data structure, e.g. something like
-> > struct spinlock_refcount() and a proper set of new accessor functions
-> > instead of an adhoc interface which is designed solely for the needs
-> > of dcache improvements.
-> 
-> I had thought about that. The only downside is we need more code changes to
-> make existing code to use the new infrastructure. One of the drivers in my
-
-That's not a downside. It makes the usage of the infrastructure more
-obvious and not hidden behind macro magic. And the changes are trivial
-to script.
-
-> design is to minimize change to existing code. Personally, I have no
-> objection of doing that if others think this is the right way to go.
-
-Definitely. Something like this would be ok:
-
-struct lock_refcnt {
-       int                 refcnt;
-       struct spinlock     lock;
-};
-
-It does not require a gazillion of ifdefs and works for
-UP,SMP,DEBUG....
-
-extern bool lock_refcnt_mod(struct lock_refcnt *lr, int mod, int cond);
-
-You also want something like:
-
-extern void lock_refcnt_disable(void);
-
-So we can runtime disable it e.g. when lock elision is detected and
-active. So you can force lock_refcnt_mod() to return false.
-
-static inline bool lock_refcnt_inc(struct lock_refcnt *sr)
-{
-#ifdef CONFIG_HAVE_LOCK_REFCNT
-	return lock_refcnt_mod(sr, 1, INTMAX);
-#else
-	return false;
-#endif
-}
-
-That does not break any code as long as CONFIG_HAVE_SPINLOCK_REFCNT=n.
-
-So we can enable it per architecture and make it depend on SMP. For RT
-we simply can force this switch to n.
-
-The other question is the semantic of these refcount functions. From
-your description the usage pattern is:
-
-     if (refcnt_xxx())
-	   return;
-     /* Slow path */
-     spin_lock();
-     ...
-     spin_unlock();
-
-So it might be sensible to make this explicit:
-
-static inline bool refcnt_inc_or_lock(struct lock_refcnt *lr))
-{
-#ifdef CONFIG_HAVE_SPINLOCK_REFCNT
-	if (lock_refcnt_mod(lr, 1, INTMAX))
-	   return true;
-#endif
-	spin_lock(&lr->lock);
-	return false;
-}
-
-Thanks,
-
-	tglx
