@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab3F0Mtp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:49:45 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:10244
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752204Ab3F0Mto convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:49:44 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzc89bhzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h93fhd24he5bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>
-To: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>,
-        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        <trivial@kernel.org>
-Subject: [PATCH linux-next] ARM: keystone: fix compilation warning
-Date: Thu, 27 Jun 2013 14:49:27 +0200
-Message-ID: <1372337367-6708-1-git-send-email-vincent.stehle@freescale.com>
+	id S1753155Ab3F0Mui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:50:38 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:39245 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752703Ab3F0Mue (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 08:50:34 -0400
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 03/51] Input: atmel_mxt_ts - Return IRQ_NONE when interrupt handler fails
+Date: Thu, 27 Jun 2013 13:48:38 +0100
+Message-Id: <1372337366-9286-4-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following compilation warning:
-
-  arch/arm/mach-keystone/keystone.c:74:2: warning: initialization from incompatible pointer type [enabled by default]
-  arch/arm/mach-keystone/keystone.c:74:2: warning: (near initialization for ‘__mach_desc_KEYSTONE.restart’) [enabled by default]
-
-Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: trivial@kernel.org
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Acked-by: Benson Leung <bleung@chromium.org>
 ---
+ drivers/input/touchscreen/atmel_mxt_ts.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-
-Hi,
-
-This warning was seen on linux-next tag next-20130627, with config ARM
-multi_v7_defconfig.
-
-Best regards,
-
-V.
-
-
- arch/arm/mach-keystone/keystone.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
-index fe4d9ff..b661c5c 100644
---- a/arch/arm/mach-keystone/keystone.c
-+++ b/arch/arm/mach-keystone/keystone.c
-@@ -49,7 +49,7 @@ static const char *keystone_match[] __initconst = {
- 	NULL,
- };
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 6702175..2a06657 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -591,7 +591,7 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 	do {
+ 		if (mxt_read_message(data, &message)) {
+ 			dev_err(dev, "Failed to read message\n");
+-			goto end;
++			return IRQ_NONE;
+ 		}
  
--void keystone_restart(char mode, const char *cmd)
-+void keystone_restart(enum reboot_mode mode, const char *cmd)
- {
- 	u32 val;
+ 		reportid = message.reportid;
+@@ -618,7 +618,6 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 		input_sync(data->input_dev);
+ 	}
+ 
+-end:
+ 	return IRQ_HANDLED;
+ }
  
 -- 
 1.7.10.4
-
-
 
