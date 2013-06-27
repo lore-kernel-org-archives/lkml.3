@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab3F0Iy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:54:56 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:53014 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753262Ab3F0Iyw convert rfc822-to-8bit (ORCPT
+	id S1753503Ab3F0Izn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:55:43 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:42489 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab3F0Izk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:54:52 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Thu, 27 Jun 2013 04:55:40 -0400
+Message-ID: <51CBFE03.80603@linux.vnet.ibm.com>
+Date: Thu, 27 Jun 2013 14:25:31 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent CPU offline
-Date: Thu, 27 Jun 2013 09:54:41 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B72AB@saturn3.aculab.com>
-In-Reply-To: <51CB3159.8000509@linux.vnet.ibm.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent CPU offline
-thread-index: Ac5ympKrkc7SHUweQxex3RwLfAPpSAAdzsqg
-References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com> <20130625220026.GG3828@linux.vnet.ibm.com> <51CAF624.6060004@linux.vnet.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com> <20130626143424.GN3828@linux.vnet.ibm.com> <1372258271.18733.256.camel@gandalf.local.home> <20130626152148.GA4405@mtj.dyndns.org> <51CB3159.8000509@linux.vnet.ibm.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Tejun Heo" <tj@kernel.org>
-Cc: "Steven Rostedt" <rostedt@goodmis.org>, <paulmck@linux.vnet.ibm.com>,
-        <peterz@infradead.org>, <fweisbec@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <walken@google.com>,
-        <mingo@kernel.org>, <linux-arch@vger.kernel.org>,
-        <vincent.guittot@linaro.org>, <xiaoguangrong@linux.vnet.ibm.com>,
-        <wangyun@linux.vnet.ibm.com>, <nikunj@linux.vnet.ibm.com>,
-        <linux-pm@vger.kernel.org>, <rusty@rustcorp.com.au>,
-        <namhyung@kernel.org>, <tglx@linutronix.de>, <laijs@cn.fujitsu.com>,
-        <zhong@linux.vnet.ibm.com>, <netdev@vger.kernel.org>,
-        <oleg@redhat.com>, <sbw@mit.edu>, <akpm@linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        Chen Gong <gong.chen@linux.intel.com>
+Subject: Re: [PATCH] x86/mce: Update MCE severity condition check
+References: <0134840@agluck-desk.sc.intel.com>
+In-Reply-To: <0134840@agluck-desk.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062708-7014-0000-0000-0000033CDEAF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>> It would also increase the latency of CPU-hotunplug operations.
-> >>
-> >> Is that a big deal?
-> >
-> > I thought that was the whole deal with this patchset - making cpu
-> > hotunplugs lighter and faster mostly for powersaving.  That said, just
-> > removing stop_machine call would be a pretty good deal and I don't
-> > know how meaningful reducing CPU hotunplug latency is.  Srivatsa?
-> >
-> 
-> Keeping the hotunplug latency is important for suspend/resume, where
-> we take all non-boot CPUs in a loop. That's an interesting use-case
-> where intrusiveness doesn't matter much, but latency does. So yes,
-> making CPU hotplug faster is also one of the goals of this patchset.
+On 06/20/2013 02:46 PM, Luck, Tony wrote:
+> From: Chen Gong <gong.chen@linux.intel.com>
+>
+> Update some SRAR severity conditions check to make it clearer
+> according to latest Intel SDM Vol 3B (June 2013), table 15-20.
+>
+> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> ---
+>
+> Chen Gong wrote:
+>> If this patch is OK, would you please help to update it when merging
+>> it? Thanks very much
+>
+> This is what I plan to apply.
+> 1. Changed "user land" to "in a user process" (2 places) per Boris comment
+> 2. Changed "non-affected" to "unaffected" per Naveen comment
+>
+> Anyone wants to jump on the "Acked-by" bandwagon - speak now.
 
-If you are removing all but one of the cpu, the you only need
-one rcu cycle (remove everything from the list first).
+Yep - looks fine to me.
+Acked-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 
-I'd also guess that you can't suspend a cpu until you can sleep
-the process that is running on it - so if a process has pre-emption
-disabled you aren't going to complete suspend until the process
-sleeps (this wouldn't be true if you suspended the cpu with its
-current stack - but if suspend is removing the non-boot cpus first
-it must be doing so from the scheduler idle loop).
+Thanks,
+Naveen
 
-If you are doing suspend for aggressive power saving, then all the
-processes (and processors) will already be idle. However you
-probably wouldn't want the memory accesses to determine this on
-a large NUMA system with 1024+ processors.
-
-	David
-
-
+>
+> -Tony
+>
+>   arch/x86/kernel/cpu/mcheck/mce-severity.c | 15 +++++----------
+>   1 file changed, 5 insertions(+), 10 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> index beb1f16..e2703520 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> @@ -110,22 +110,17 @@ static struct severity {
+>   	/* known AR MCACODs: */
+>   #ifdef	CONFIG_MEMORY_FAILURE
+>   	MCESEV(
+> -		KEEP, "HT thread notices Action required: data load error",
+> -		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
+> -		MCGMASK(MCG_STATUS_EIPV, 0)
+> +		KEEP, "Action required but unaffected thread is continuable",
+> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR),
+> +		MCGMASK(MCG_STATUS_RIPV, MCG_STATUS_RIPV)
+>   		),
+>   	MCESEV(
+> -		AR, "Action required: data load error",
+> +		AR, "Action required: data load error in a user process",
+>   		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
+>   		USER
+>   		),
+>   	MCESEV(
+> -		KEEP, "HT thread notices Action required: instruction fetch error",
+> -		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_INSTR),
+> -		MCGMASK(MCG_STATUS_EIPV, 0)
+> -		),
+> -	MCESEV(
+> -		AR, "Action required: instruction fetch error",
+> +		AR, "Action required: instruction fetch error in a user process",
+>   		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_INSTR),
+>   		USER
+>   		),
+>
 
