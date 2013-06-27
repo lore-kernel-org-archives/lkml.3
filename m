@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab3F0M4L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:56:11 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:62414 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753609Ab3F0Mut (ORCPT
+	id S1753906Ab3F0M41 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:56:27 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:4359 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab3F0M4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:50:49 -0400
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 36/51] Input: atmel_mxt_ts - Output status from T42 Touch Suppression
-Date: Thu, 27 Jun 2013 13:49:11 +0100
-Message-Id: <1372337366-9286-37-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+	Thu, 27 Jun 2013 08:56:24 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Jiri Kosina <trivial@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Bill Pemberton <wfp5p@virginia.edu>, <alsa-devel@alsa-project.org>
+Subject: [PATCH 3/6] sound/pci:trivial: replace numeric with standard PM state macros
+Date: Thu, 27 Jun 2013 20:55:11 +0800
+Message-ID: <1372337711-26220-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+Use standard PM state macros PCI_Dx instead of numeric 0/1/2..
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index d7ce38d..1c5e640 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -187,6 +187,9 @@ struct t9_range {
- #define MXT_RESET_VALUE		0x01
- #define MXT_BACKUP_VALUE	0x55
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Jiri Kosina <trivial@kernel.org>
+Cc: Bill Pemberton <wfp5p@virginia.edu>
+Cc: alsa-devel@alsa-project.org
+Cc: linux-kernel@vger.kernel.org
+---
+ sound/pci/cs4281.c             |    2 +-
+ sound/pci/ens1370.c            |    2 +-
+ sound/pci/ymfpci/ymfpci_main.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/sound/pci/cs4281.c b/sound/pci/cs4281.c
+index 6a86950..2f6a4b6 100644
+--- a/sound/pci/cs4281.c
++++ b/sound/pci/cs4281.c
+@@ -1312,7 +1312,7 @@ static int snd_cs4281_free(struct cs4281 *chip)
+ 	/* Sound System Power Management - Turn Everything OFF */
+ 	snd_cs4281_pokeBA0(chip, BA0_SSPM, 0);
+ 	/* PCI interface - D3 state */
+-	pci_set_power_state(chip->pci, 3);
++	pci_set_power_state(chip->pci, PCI_D3hot);
  
-+/* Define for MXT_PROCI_TOUCHSUPPRESSION_T42 */
-+#define MXT_T42_MSG_TCHSUP	(1 << 0)
-+
- /* Delay times */
- #define MXT_BACKUP_TIME		50	/* msec */
- #define MXT_RESET_TIME		200	/* msec */
-@@ -266,6 +269,8 @@ struct mxt_data {
- 	u8 T9_reportid_min;
- 	u8 T9_reportid_max;
- 	u8 T19_reportid;
-+	u8 T42_reportid_min;
-+	u8 T42_reportid_max;
- 	u16 T44_address;
- 	u8 T48_reportid;
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, chip);
+diff --git a/sound/pci/ens1370.c b/sound/pci/ens1370.c
+index db2dc83..b30afd1 100644
+--- a/sound/pci/ens1370.c
++++ b/sound/pci/ens1370.c
+@@ -1939,7 +1939,7 @@ static int snd_ensoniq_free(struct ensoniq *ensoniq)
+ #endif
+ 	if (ensoniq->irq >= 0)
+ 		synchronize_irq(ensoniq->irq);
+-	pci_set_power_state(ensoniq->pci, 3);
++	pci_set_power_state(ensoniq->pci, PCI_D3hot);
+       __hw_end:
+ #ifdef CHIP1370
+ 	if (ensoniq->dma_bug.area)
+diff --git a/sound/pci/ymfpci/ymfpci_main.c b/sound/pci/ymfpci/ymfpci_main.c
+index 22056c5..d591c15 100644
+--- a/sound/pci/ymfpci/ymfpci_main.c
++++ b/sound/pci/ymfpci/ymfpci_main.c
+@@ -2258,7 +2258,7 @@ static int snd_ymfpci_free(struct snd_ymfpci *chip)
+ 	/* FIXME: temporarily disabled, otherwise we cannot fire up
+ 	 * the chip again unless reboot.  ACPI bug?
+ 	 */
+-	pci_set_power_state(chip->pci, 3);
++	pci_set_power_state(chip->pci, PCI_D3hot);
+ #endif
  
-@@ -769,6 +774,17 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 	data->update_input = true;
- }
- 
-+static void mxt_proc_t42_messages(struct mxt_data *data, u8 *msg)
-+{
-+	struct device *dev = &data->client->dev;
-+	u8 status = msg[1];
-+
-+	if (status & MXT_T42_MSG_TCHSUP)
-+		dev_info(dev, "T42 suppress\n");
-+	else
-+		dev_info(dev, "T42 normal\n");
-+}
-+
- static int mxt_proc_t48_messages(struct mxt_data *data, u8 *msg)
- {
- 	struct device *dev = &data->client->dev;
-@@ -804,6 +820,9 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
- 	} else if (report_id == data->T19_reportid) {
- 		mxt_input_button(data, message);
- 		data->update_input = true;
-+	} else if (report_id >= data->T42_reportid_min
-+		   && report_id <= data->T42_reportid_max) {
-+		mxt_proc_t42_messages(data, message);
- 	} else if (report_id == data->T48_reportid) {
- 		mxt_proc_t48_messages(data, message);
- 	} else {
-@@ -1442,6 +1461,8 @@ static void mxt_free_object_table(struct mxt_data *data)
- 	data->T9_reportid_min = 0;
- 	data->T9_reportid_max = 0;
- 	data->T19_reportid = 0;
-+	data->T42_reportid_min = 0;
-+	data->T42_reportid_max = 0;
- 	data->T44_address = 0;
- 	data->T48_reportid = 0;
- 	data->max_reportid = 0;
-@@ -1511,6 +1532,10 @@ static int mxt_get_object_table(struct mxt_data *data)
- 			data->num_touchids = object->num_report_ids
- 						* mxt_obj_instances(object);
- 			break;
-+		case MXT_PROCI_TOUCHSUPPRESSION_T42:
-+			data->T42_reportid_min = min_id;
-+			data->T42_reportid_max = max_id;
-+			break;
- 		case MXT_SPT_MESSAGECOUNT_T44:
- 			data->T44_address = object->start_address;
- 			break;
+ #ifdef CONFIG_PM_SLEEP
 -- 
-1.7.10.4
+1.7.1
+
 
