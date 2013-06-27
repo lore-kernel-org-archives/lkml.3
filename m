@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab3F0OW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:22:59 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:44877 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3F0OW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:22:58 -0400
-Subject: Re: [PATCH 05/19] perf tools: Introduce new 'ftrace' tool
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-In-Reply-To: <51CC4373.8000204@gmail.com>
-References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
-	 <1372230862-15861-6-git-send-email-namhyung@kernel.org>
-	 <51CB208A.6080403@gmail.com> <87ip1016w1.fsf@sejong.aot.lge.com>
-	 <51CC4373.8000204@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Jun 2013 23:22:50 +0900
-Message-ID: <1372342970.1734.16.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	id S1753744Ab3F0OXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:23:15 -0400
+Received: from ozlabs.org ([203.10.76.45]:51444 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753712Ab3F0OXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 10:23:12 -0400
+Date: Fri, 28 Jun 2013 00:23:09 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, acme@redhat.com, sukadev@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for perf
+Message-ID: <20130627142309.GB13867@concordia>
+References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com>
+ <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-06-27 (목), 07:51 -0600, David Ahern:
-> On 6/26/13 11:04 PM, Namhyung Kim wrote:
-> > Hi David,
-> >
-> > On Wed, 26 Jun 2013 11:10:34 -0600, David Ahern wrote:
-> >> On 6/26/13 1:14 AM, Namhyung Kim wrote:
-> >>> +	const char * const ftrace_usage[] = {
-> >>> +		"perf ftrace [<options>] [<command>]",
-> >>> +		"perf ftrace [<options>] -- <command> [<options>]",
-> >>> +		NULL
-> >>> +	};
-> >>> +	const struct option ftrace_options[] = {
-> >>> +	OPT_STRING('t', "tracer", &ftrace.tracer, "tracer",
-> >>> +		   "tracer to use"),
-> >>
-> >> How does a user know what is a valid tracer string?
-> >
-> > The helpline should look like (at least):
-> >
-> >    "tracer to use: function_graph or function"
-> 
-> exactly. I would suggest making that OPT_CALLBACK as well to validate 
-> the string content when options are parsed.
+On Tue, Jun 25, 2013 at 10:35:33PM +0800, Runzhen Wang wrote:
+> Power7 supports over 530 different perf events but only a small
+> subset of these can be specified by name, for the remaining
+> events, we must specify them by their raw code:
 
-Did you mean it by checking /sys/kernel/debug/tracing/available_tracers?
+Hi Runzhen,
 
-Yes, I can do that.  But current code does not support other tracers and
-it'd anyway emit warning on an invalid tracer argument.
+This is looking good. Sorry one last request below ...
 
-Thanks,
-Namhyung
 
+> diff --git a/arch/powerpc/perf/power7-events-list.h b/arch/powerpc/perf/power7-events-list.h
+> new file mode 100644
+> index 0000000..a67e8a9
+> --- /dev/null
+> +++ b/arch/powerpc/perf/power7-events-list.h
+> @@ -0,0 +1,548 @@
+..
+> +
+> +EVENT(PM_IC_DEMAND_L2_BR_ALL,                 0x4898)
+> +EVENT(PM_GCT_UTIL_7_TO_10_SLOTS,              0x20a0)
+> +EVENT(PM_PMC2_SAVED,                          0x10022)
+> +EVENT(PM_CMPLU_STALL_DFU,                     0x2003c)
+> +EVENT(PM_VSU0_16FLOP,                         0xa0a4)
+
+
+Can you add a leading zero to all the events that don't have a PMC, so
+that they all line up vertically. It makes it a lot easier to scan the
+list visually.
+
+eg:
+
+EVENT(PM_IC_DEMAND_L2_BR_ALL,                 0x04898)
+EVENT(PM_GCT_UTIL_7_TO_10_SLOTS,              0x020a0)
+EVENT(PM_PMC2_SAVED,                          0x10022)
+EVENT(PM_CMPLU_STALL_DFU,                     0x2003c)
+EVENT(PM_VSU0_16FLOP,                         0x0a0a4)
+
+
+cheers
