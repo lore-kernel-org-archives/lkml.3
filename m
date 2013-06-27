@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab3F0PCr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:02:47 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:44115 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893Ab3F0PCg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:02:36 -0400
+	id S1753995Ab3F0PCe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:02:34 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:64660 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751893Ab3F0PCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 11:02:33 -0400
 X-IronPort-AV: E=Sophos;i="4.87,952,1363132800"; 
-   d="scan'208";a="32217280"
+   d="scan'208";a="33832845"
 From: Ben Guthro <benjamin.guthro@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Jan Beulich <jbeulich@suse.com>, "Rafaell J . Wysocki" <rjw@sisk.pl>,
         <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
         <xen-devel@lists.xen.org>
-CC: Ben Guthro <benjamin.guthro@citrix.com>
-Subject: [PATCH v4 5/5] xen/acpi: notify xen when reduced hardware sleep is available
-Date: Thu, 27 Jun 2013 11:02:03 -0400
-Message-ID: <1372345323-9266-6-git-send-email-benjamin.guthro@citrix.com>
+CC: Ben Guthro <benjamin.guthro@citrix.com>,
+        Bob Moore <robert.moore@intel.com>
+Subject: [PATCH v4 2/5] acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
+Date: Thu, 27 Jun 2013 11:02:00 -0400
+Message-ID: <1372345323-9266-3-git-send-email-benjamin.guthro@citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1372345323-9266-1-git-send-email-benjamin.guthro@citrix.com>
 References: <1372345323-9266-1-git-send-email-benjamin.guthro@citrix.com>
@@ -28,101 +28,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of acpi_os_prepare_sleep extended parameter to notify xen
-to make use of the reduced hardware sleep functionality
-
-The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
-v5 (reduced HW) sleep interface") on the master branch of
-git://xenbits.xen.org/xen.git.
+In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+reduced hardware sleep support, and the two changes didn't get
+synchronized: The new code doesn't call the hook function (if so
+requested). Fix this, requiring a parameter to be added to the
+hook function to distinguish "extended" from "legacy" sleep.
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
 Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-Cc: Konrad Wilk <konrad.wilk@oracle.com>
+Cc: Bob Moore <robert.moore@intel.com>
+Cc: Rafaell J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
 ---
- drivers/xen/acpi.c               |   26 +++++++++++++-------------
- include/xen/acpi.h               |    4 ++--
- include/xen/interface/platform.h |    7 ++++---
- 3 files changed, 19 insertions(+), 18 deletions(-)
+ drivers/acpi/acpica/hwesleep.c |    7 +++++++
+ drivers/acpi/acpica/hwsleep.c  |    2 +-
+ include/acpi/acpiosxf.h        |    4 ++--
+ 3 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/xen/acpi.c b/drivers/xen/acpi.c
-index 119d42a..371dade 100644
---- a/drivers/xen/acpi.c
-+++ b/drivers/xen/acpi.c
-@@ -35,27 +35,27 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/hypervisor.h>
+diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
+index 5e5f762..69b3e15 100644
+--- a/drivers/acpi/acpica/hwesleep.c
++++ b/drivers/acpi/acpica/hwesleep.c
+@@ -128,6 +128,13 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
  
--int xen_acpi_notify_hypervisor_state(u8 sleep_state,
--				     u32 pm1a_cnt, u32 pm1b_cnt)
-+int xen_acpi_notify_hypervisor_state(u8 sleep_state, u32 val_a, u32 val_b,
-+				     bool extended)
- {
-+	unsigned int bits = extended ? 8 : 16;
+ 	ACPI_FLUSH_CPU_CACHE();
+ 
++	status = acpi_os_prepare_sleep(sleep_state, acpi_gbl_sleep_type_a,
++				       acpi_gbl_sleep_type_b, TRUE);
++	if (ACPI_SKIP(status))
++		return_ACPI_STATUS(AE_OK);
++	if (ACPI_FAILURE(status))
++		return_ACPI_STATUS(status);
 +
- 	struct xen_platform_op op = {
- 		.cmd = XENPF_enter_acpi_sleep,
- 		.interface_version = XENPF_INTERFACE_VERSION,
--		.u = {
--			.enter_acpi_sleep = {
--				.pm1a_cnt_val = (u16)pm1a_cnt,
--				.pm1b_cnt_val = (u16)pm1b_cnt,
--				.sleep_state = sleep_state,
--			},
-+		.u.enter_acpi_sleep = {
-+			.val_a = (u16)val_a,
-+			.val_b = (u16)val_b,
-+			.sleep_state = sleep_state,
-+			.flags = extended ? XENPF_ACPI_SLEEP_EXTENDED : 0,
- 		},
- 	};
+ 	/*
+ 	 * Set the SLP_TYP and SLP_EN bits.
+ 	 *
+diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+index 867b947..cf78157 100644
+--- a/drivers/acpi/acpica/hwsleep.c
++++ b/drivers/acpi/acpica/hwsleep.c
+@@ -152,7 +152,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
+ 	ACPI_FLUSH_CPU_CACHE();
  
--	if ((pm1a_cnt & 0xffff0000) || (pm1b_cnt & 0xffff0000)) {
--		WARN(1, "Using more than 16bits of PM1A/B 0x%x/0x%x!"
--		     "Email xen-devel@lists.xensource.com  Thank you.\n", \
--		     pm1a_cnt, pm1b_cnt);
-+	if (WARN((val_a & (~0 << bits)) || (val_b & (~0 << bits)),
-+		 "Using more than %u bits of sleep control values %#x/%#x!"
-+		 "Email xen-devel@lists.xen.org - Thank you.\n", \
-+		 bits, val_a, val_b))
- 		return -1;
--	}
+ 	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+-				       pm1b_control);
++				       pm1b_control, FALSE);
+ 	if (ACPI_SKIP(status))
+ 		return_ACPI_STATUS(AE_OK);
+ 	if (ACPI_FAILURE(status))
+diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
+index c68b779..51d0f78 100644
+--- a/include/acpi/acpiosxf.h
++++ b/include/acpi/acpiosxf.h
+@@ -279,7 +279,7 @@ void acpi_os_close_directory(void *dir_handle);
+ /*
+  * ACPI sleep preparation
+  */
+-acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+-				  u32 pm1a_control, u32 pm1b_control);
++acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
++				  u8 extended);
  
- 	HYPERVISOR_dom0_op(&op);
- 	return 1;
-diff --git a/include/xen/acpi.h b/include/xen/acpi.h
-index 68d73d0..a2d5667 100644
---- a/include/xen/acpi.h
-+++ b/include/xen/acpi.h
-@@ -75,8 +75,8 @@ static inline int xen_acpi_get_pxm(acpi_handle h)
- 	return -ENXIO;
- }
- 
--int xen_acpi_notify_hypervisor_state(u8 sleep_state,
--				     u32 pm1a_cnt, u32 pm1b_cnd);
-+int xen_acpi_notify_hypervisor_state(u8 sleep_state, u32 val_a, u32 val_b,
-+				     bool extended);
- 
- static inline void xen_acpi_sleep_register(void)
- {
-diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
-index c57d5f6..f1331e3 100644
---- a/include/xen/interface/platform.h
-+++ b/include/xen/interface/platform.h
-@@ -152,10 +152,11 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_firmware_info_t);
- #define XENPF_enter_acpi_sleep    51
- struct xenpf_enter_acpi_sleep {
- 	/* IN variables */
--	uint16_t pm1a_cnt_val;      /* PM1a control value. */
--	uint16_t pm1b_cnt_val;      /* PM1b control value. */
-+	uint16_t val_a;             /* PM1a control / sleep type A. */
-+	uint16_t val_b;             /* PM1b control / sleep type B. */
- 	uint32_t sleep_state;       /* Which state to enter (Sn). */
--	uint32_t flags;             /* Must be zero. */
-+#define XENPF_ACPI_SLEEP_EXTENDED 0x00000001
-+	uint32_t flags;             /* XENPF_ACPI_SLEEP_*. */
- };
- DEFINE_GUEST_HANDLE_STRUCT(xenpf_enter_acpi_sleep_t);
- 
+ #endif				/* __ACPIOSXF_H__ */
 -- 
 1.7.9.5
 
