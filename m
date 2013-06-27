@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab3F0IlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:41:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51398 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab3F0IlE (ORCPT
+	id S1753346Ab3F0Ilo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:41:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51624 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3F0Ilm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:41:04 -0400
-Message-ID: <51CBFC3C.2090500@oracle.com>
-Date: Thu, 27 Jun 2013 12:47:56 +0400
-From: Maxim Uvarov <maxim.uvarov@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 27 Jun 2013 04:41:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: arm64: include: asm: add pci.h to pass compiling
+Date: Thu, 27 Jun 2013 10:43:01 +0200
+Message-ID: <9028702.KGsxCx1772@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <51CB87B0.8030805@asianux.com>
+References: <51CA5F71.207@asianux.com> <20130626140730.GB23309@arm.com> <51CB87B0.8030805@asianux.com>
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com
-Subject: Re: [PATCH] scsi_prep_fn() check for empty queue
-References: <1372237363-5156-1-git-send-email-maxim.uvarov@oracle.com> <51CAB27A.3080805@acm.org>
-In-Reply-To: <51CAB27A.3080805@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:03xGBo8IpoipFjunusAhViLK9L4dECiefFBqOaGFBaE
+ JvH1L7ANkmvUJAnVKGI3F3L3C5OnfQEncm3PRT8x4ReuFSQNu/
+ y6ihEZpGQJQbAbQzn+pcQI0xF0iuQlDw4LopPzKC2A/er0H5QJ
+ 4SL2RBg/vo4KEPRfCXhRYk2rQKVrS70zTd9HJxQU/AkY8y+ZDO
+ Ca4ax5Vxot/YtapXX1V0fEpvZtmQdIKVv5r+Er5hw/RfNR8C+q
+ MuqS5DYIhz78ffPNLosgawMJdNNTks+t5AB+6ffxKb5LTcG60I
+ rQAOEcYohBBzF6EM1e+cwhbOqh9ylyMQmfLEGsGjtEoldCRIVx
+ wRp09fFTm7aH6pSTb4ZQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 01:20 PM, Bart Van Assche wrote:
-> On 06/26/13 11:02, Maxim Uvarov wrote:
->> This fix:
->> end_request: I/O error, dev sdc, sector 976576
->>   rport-0:0-3: blocked FC remote port time out: removing target and 
->> saving
->> binding
->> BUG: unable to handle kernel NULL pointer dereference at 
->> 0000000000000400
->> IP: [<ffffffff812f0cc2>] scsi_prep_state_check+0xe/0x99
->>   [<ffffffff812f1f9d>] scsi_setup_blk_pc_cmnd+0x1b/0x115
->>   [<ffffffff812f20c0>] scsi_prep_fn+0x29/0x3b
->>   [<ffffffff8121cfb9>] blk_peek_request+0xe1/0x1b3
->>   [<ffffffff812f1400>] scsi_request_fn+0x3a/0x4d2
->>   [<ffffffff8121d916>] __generic_unplug_device+0x32/0x36
->>   [<ffffffff81220f4b>] blk_execute_rq_nowait+0x77/0x9e
->>   [<ffffffff81221018>] blk_execute_rq+0xa6/0xde
->>   [<ffffffff8144f24b>] ? printk+0x41/0x46
->>   [<ffffffffa00a21c5>] ? get_rdac_req+0x81/0xe8 [scsi_dh_rdac]
->>   [<ffffffffa00a273a>] send_mode_select+0x29f/0x489 [scsi_dh_rdac]
->>   [<ffffffff810c5d9b>] ? probe_workqueue_execution+0xb1/0xce
->>   [<ffffffff81071e38>] worker_thread+0x1a9/0x237
->>   [<ffffffffa00a249b>] ? send_mode_select+0x0/0x489 [scsi_dh_rdac]
->>   [<ffffffff8107651b>] ? autoremove_wake_function+0x0/0x39
->>   [<ffffffff81071c8f>] ? worker_thread+0x0/0x237
->>   [<ffffffff81076222>] kthread+0x7f/0x87
->>   [<ffffffff81012d2a>] child_rip+0xa/0x20
->>   [<ffffffff810761a3>] ? kthread+0x0/0x87
->>   [<ffffffff81012d20>] ? child_rip+0x0/0x20
->> Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
->> ---
->>   drivers/scsi/scsi_lib.c |    3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
->> index 86d5220..8e89ed9 100644
->> --- a/drivers/scsi/scsi_lib.c
->> +++ b/drivers/scsi/scsi_lib.c
->> @@ -1295,6 +1295,9 @@ int scsi_prep_fn(struct request_queue *q, 
->> struct request *req)
->>       struct scsi_device *sdev = q->queuedata;
->>       int ret = BLKPREP_KILL;
->>
->> +    if (!sdev)
->> +        return ret;
->> +
->>       if (req->cmd_type == REQ_TYPE_BLOCK_PC)
->>           ret = scsi_setup_blk_pc_cmnd(sdev, req);
->>       return scsi_prep_return(q, req, ret);
->
-> Sorry but this patch does not look like a proper fix to me. What you 
-> probably need is a scsi_device_get() call in scsi_dh_rdac.c somewhere 
-> before the queue_work(kmpath_rdacd, &ctlr->ms_work) call and a 
-> scsi_device_put() call once send_mode_select() has finished using the 
-> sdev.
->
-> Bart.
-Thanks Bart. It looks reasonable. I will do some testing for your solution.
+On Thursday 27 June 2013 08:30:40 Chen Gang wrote:
+> On 06/26/2013 10:07 PM, Catalin Marinas wrote:
+> > On Wed, Jun 26, 2013 at 04:26:41AM +0100, Chen Gang wrote:
+> > I wonder whether it makes sense to include pci-dma-compat.h in
+> > asm-generic/pci.h, I don't see why one would want the generic pci.h but
+> > not the generic pci-dma-compat.h (cc'ing Arnd).
+> 
+> I think, it will let architecture guys easier to add their own
+> pci-dma-compat.h (although they still need generic pci_dma_compat.h, and
+> generic pci.h, too).
+> 
+> e.g. one architecture want include generic pci-dma-compat.h firstly,
+> then define its own features in its own pci-dma-compat.h.
 
-Maxim.
+I think there is no excuse for still keeping the asm-generic/pci-dma-compat.h
+header around any more.
+
+All architectures use the same implementation and have done so for years.
+We should just convert the remaining users to use the dma_mapping.h
+interfaces directly.
+
+	Arnd
