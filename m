@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3F0KIm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 06:08:42 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:48569 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab3F0KIl (ORCPT
+	id S1752932Ab3F0KJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 06:09:42 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:49268 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab3F0KJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 06:08:41 -0400
+	Thu, 27 Jun 2013 06:09:40 -0400
+Message-ID: <51CC0E93.1080608@linux.vnet.ibm.com>
+Date: Thu, 27 Jun 2013 15:36:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <51CA08A2.4030204@wwwdotorg.org>
-References: <1372169952-22439-1-git-send-email-linus.walleij@stericsson.com>
-	<51CA08A2.4030204@wwwdotorg.org>
-Date: Thu, 27 Jun 2013 12:08:40 +0200
-Message-ID: <CACRpkdZJ3oP9ARDhwZ1h8CkFXpDTznPChLiSgivTYKGDkWbOZA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: elaborate a bit on arrangements in doc
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Landley <rob@landley.net>,
-        Christian Ruppert <christian.ruppert@abilis.com>
+To: David Laight <David.Laight@ACULAB.COM>
+CC: Tejun Heo <tj@kernel.org>, peterz@infradead.org, fweisbec@gmail.com,
+        oleg@redhat.com, walken@google.com, mingo@kernel.org,
+        linux-arch@vger.kernel.org, vincent.guittot@linaro.org,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au,
+        Steven Rostedt <rostedt@goodmis.org>, namhyung@kernel.org,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, zhong@linux.vnet.ibm.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, sbw@mit.edu,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com> <20130625220026.GG3828@linux.vnet.ibm.com> <51CAF624.6060004@linux.vnet.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com> <20130626143424.GN3828@linux.vnet.ibm.com> <1372258271.18733.256.camel@gandalf.local.home> <20130626152148.GA4405@mtj.dyndns.org> <51CB3159.8000509@linux.vnet.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B72AB@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B72AB@saturn3.aculab.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062710-6102-0000-0000-000003C4724C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 11:16 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/25/2013 08:19 AM, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
+On 06/27/2013 02:24 PM, David Laight wrote:
+>>>>> It would also increase the latency of CPU-hotunplug operations.
+>>>>
+>>>> Is that a big deal?
+>>>
+>>> I thought that was the whole deal with this patchset - making cpu
+>>> hotunplugs lighter and faster mostly for powersaving.  That said, just
+>>> removing stop_machine call would be a pretty good deal and I don't
+>>> know how meaningful reducing CPU hotunplug latency is.  Srivatsa?
+>>>
 >>
->> This elaborates a bit on the pinctrl vs GPIO arangements
->> in the hardware.
->>
->> Inspired by some drawings in a mail from Christian
->> Ruppert.
-(...)
-> I'm not really sure quite what these diagrams are attempting to convey
-> within the context of this document.
+>> Keeping the hotunplug latency is important for suspend/resume, where
+>> we take all non-boot CPUs in a loop. That's an interesting use-case
+>> where intrusiveness doesn't matter much, but latency does. So yes,
+>> making CPU hotplug faster is also one of the goals of this patchset.
+> 
+> If you are removing all but one of the cpu, the you only need
+> one rcu cycle (remove everything from the list first).
+> 
 
-I am trying to help pinctrl kernel developers understand hardware
-terminology.
+Hmm, yeah, but IIRC, back when we discussed this last time[1], we felt that
+would make the code a little bit hard to understand. But I think we can
+give it a shot to see how that goes and decide based on that. So thanks
+for bringing that up again!
 
->> +In (A) the GPIO-like functionality of the pin is *always* available.
->
-> Well, that can't really be true.
->
-> It may be possible that you can always read the physical pin's value via
-> a GPIO input register.
->
-> However, you obviously can't always write to a GPIO output register to
-> set the pin's value. If you could, the pin would simply be a GPIO, and
-> never serve any other function.
+BTW, one thing I'd like to emphasize again here is that we will not use
+the RCU-like concept to have 2 different masks - a stable online mask
+and an actual online mask (this is one of the approaches that we had
+discussed earlier[2]). The reason why we don't wanna go down that path is,
+its hard to determine who can survive by just looking at the stable online
+mask, and who needs to be aware of the actual online mask. That will
+surely lead to more bugs and headache.
 
-This is possible on the U300. What happens in practice is
-that what you send out on the output from e.g. the I2C block is
-OR:ed with the GPIO output, so if that is not zero, you jam it to 1.
+So the use of an RCU-like concept here would only be to ensure that all
+preempt-disabled sections complete, and we can switch the synchronization
+scheme to global rwlocks, like what we had proposed earlier[3]. So, that
+still requires call-sites to be converted from preempt_disable() to
+get/put_online_cpus_atomic().
 
-> If you're saying that it's always possible to put the pin into a mode
-> where you can use the GPIO output register to driver the pin value, well
-> then that's just regular pin-muxing, so I'm not sure why it's worth
-> mentioning.
+I just wanted to clarify where exactly the RCU concept would fit in,
+in the stop-machine() replacement scheme...
 
-That's not really the case. It can drive the pin at the same time.
 
-> In (a) there are really two levels of pinmux configuration, one in the
-> GPIO HW block (GPIO-vs-whatever-pinctrl-selects).
->
-> In (b) there is another level of pinmux configuration; some block has to
-> exist between the physical pins and both GPIO/pinctrl HW modules; it
-> simply isn't drawn in the diagram
+> I'd also guess that you can't suspend a cpu until you can sleep
+> the process that is running on it - so if a process has pre-emption
+> disabled you aren't going to complete suspend until the process
+> sleeps (this wouldn't be true if you suspended the cpu with its
+> current stack - but if suspend is removing the non-boot cpus first
+> it must be doing so from the scheduler idle loop).
+> 
+> If you are doing suspend for aggressive power saving, then all the
+> processes (and processors) will already be idle. However you
+> probably wouldn't want the memory accesses to determine this on
+> a large NUMA system with 1024+ processors.
+> 
 
-I've redrawn these a bit to reflect the cases I know exist.
-Check the v2 patch.
+References:
 
-> In all cases though, this is just attempting to enumerate different HW
-> designs for pin-muxing I think. Isn't it better to just let each SoC's
-> datasheet specify exactly how things are hooked up?
+[1]. http://lkml.indiana.edu/hypermail/linux/kernel/1212.2/01979.html
+[2]. http://thread.gmane.org/gmane.linux.kernel/1405145/focus=29336
+[3]. http://thread.gmane.org/gmane.linux.documentation/9520/focus=1443258
+     http://thread.gmane.org/gmane.linux.power-management.general/29464/focus=1407948
 
-The intention of this is to understand the datasheet from a kernel
-point of view.
+Regards,
+Srivatsa S. Bhat
 
-Yours,
-Linus Walleij
