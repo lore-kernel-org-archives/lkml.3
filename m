@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3F0UAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 16:00:05 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:32844 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab3F0T76 (ORCPT
+	id S1754654Ab3F0UKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 16:10:44 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28439 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560Ab3F0UKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:59:58 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 22/45] block: Use get/put_online_cpus_atomic() to prevent
- CPU offline
-To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com,
-        David.Laight@aculab.com
-Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
-        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 28 Jun 2013 01:26:35 +0530
-Message-ID: <20130627195634.29830.41449.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
-References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Thu, 27 Jun 2013 16:10:42 -0400
+Message-ID: <51CC9C35.6090901@oracle.com>
+Date: Thu, 27 Jun 2013 16:10:29 -0400
+From: konrad wilk <konrad.wilk@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062719-3864-0000-0000-000008D5E65C
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: linux-kernel@vger.kernel.org, stefano.stabellini@citrix.com,
+        xen-devel@lists.xen.org
+Subject: Re: [PATCH] xen: ifdef CONFIG_HIBERNATE_CALLBACKS xen_*_suspend
+References: <1372339718-12102-1-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1372339718-12102-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able
-to depend on disabling preemption to prevent CPUs from going offline
-from under us.
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
-offline, while invoking from atomic context.
-
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- block/blk-softirq.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-index 467c8de..bbab3d3 100644
---- a/block/blk-softirq.c
-+++ b/block/blk-softirq.c
-@@ -58,6 +58,7 @@ static void trigger_softirq(void *data)
-  */
- static int raise_blk_irq(int cpu, struct request *rq)
- {
-+	get_online_cpus_atomic();
- 	if (cpu_online(cpu)) {
- 		struct call_single_data *data = &rq->csd;
- 
-@@ -66,8 +67,10 @@ static int raise_blk_irq(int cpu, struct request *rq)
- 		data->flags = 0;
- 
- 		__smp_call_function_single(cpu, data, 0);
-+		put_online_cpus_atomic();
- 		return 0;
- 	}
-+	put_online_cpus_atomic();
- 
- 	return 1;
- }
+On 6/27/2013 9:28 AM, Stefano Stabellini wrote:
+> xen_hvm_post_suspend, xen_pre_suspend, xen_post_suspend are only used if
+> CONFIG_HIBERNATE_CALLBACKS is defined, resulting in:
+>
+> drivers/xen/manage.c:46:13: warning: ‘xen_hvm_post_suspend’ defined but not used [-Wunused-function]
+> drivers/xen/manage.c:52:13: warning: ‘xen_pre_suspend’ defined but not used [-Wunused-function]
+> drivers/xen/manage.c:59:13: warning: ‘xen_post_suspend’ defined but not used [-Wunused-function]
+>
+> If the kernel config is missing CONFIG_HIBERNATE_CALLBACKS.
+>
+> Simply ifdef CONFIG_HIBERNATE_CALLBACKS the three functions.
+>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>   drivers/xen/manage.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+> index 412b96c..b1005d4 100644
+> --- a/drivers/xen/manage.c
+> +++ b/drivers/xen/manage.c
+> @@ -43,6 +43,7 @@ struct suspend_info {
+>   	void (*post)(int cancelled);
+>   };
+>   
+> +#ifdef CONFIG_HIBERNATE_CALLBACKS
+>   static void xen_hvm_post_suspend(int cancelled)
+>   {
+>   	xen_arch_hvm_post_suspend(cancelled);
+> @@ -63,7 +64,6 @@ static void xen_post_suspend(int cancelled)
+>   	xen_mm_unpin_all();
+>   }
+>   
+> -#ifdef CONFIG_HIBERNATE_CALLBACKS
+>   static int xen_suspend(void *data)
+>   {
+>   	struct suspend_info *si = data;
+Looks ok. Will queue it up for 3.11
 
