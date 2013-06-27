@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab3F0I3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:29:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57518 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab3F0I3a convert rfc822-to-8bit (ORCPT
+	id S1752975Ab3F0IaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:30:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42884 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752569Ab3F0IaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:29:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
+	Thu, 27 Jun 2013 04:30:22 -0400
+Date: Thu, 27 Jun 2013 09:29:20 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
 To: Chen Gang <gang.chen@asianux.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-m32r@ml.linux-m32r.org,
-        linux-m32r-ja@ml.linux-m32r.org,
+Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch: m32r: include: asm: add "dma-mapping-common.h"
-Date: Thu, 27 Jun 2013 10:30:51 +0200
-Message-ID: <2831217.RWPZkclVnp@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <51CBC4B3.807@asianux.com>
-References: <51CBC4B3.807@asianux.com>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-m32r-ja@ml.linux-m32r.org" <linux-m32r-ja@ml.linux-m32r.org>,
+        "linux-m32r@ml.linux-m32r.org" <linux-m32r@ml.linux-m32r.org>
+Subject: Re: [PATCH] include/asm-generic/pci.h: include generic
+ "pci-dma-compat.h"
+Message-ID: <20130627082920.GA14335@darko.cambridge.arm.com>
+References: <51CBB98D.3040304@asianux.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:ZwqNtL3YoB8/4I02Zdm05CCxPHeFC4mrk/S7opSC6wr
- V4pUbcjUQgm35crahZiBfGzu7zEznML64wElarH5w8JySeH+A6
- uxmTyPB6Td+OnnQlTWRSgeQWzVVZjQyf0E6wfUs58TbqQswgkp
- cPi5e1HpDhPe6+C15m+PAX3bFysvydoxqGi1ZGAc/zHvjd5NGL
- /aOO04W6SoxGYjaAqqwGSScTvvbeTnU8qfwxKCmTXK5FP34KY/
- uFgW5Rbg4ivHJei2gmNM0TuUwAIhufmOyImou1VOJq/sob9HyQ
- rO3i0Pqvh1lvy33uQ/iVwPFUHsKyYf3pukAX4VRc3gYvTjXmg6
- zlmXpwzgXVjDgqusrNFk=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51CBB98D.3040304@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 June 2013 12:50:59 Chen Gang wrote:
-> Need add generic "dma-mapping-common.h", or compiling may fail.
+On Thu, Jun 27, 2013 at 05:03:25AM +0100, Chen Gang wrote:
+> If an architecture need "generic pci.h", it also need generic "pci-dma-
+> compat.h",  so recommend to include it in asm-generic directly.
+> 
+> And now, for arm64 and m32r, may cause compiling error about it.
 > 
 > The related error (with allmodconfig):
 > 
->     CC [M]  net/irda/irlan/irlan_eth.o
->   drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
->   drivers/media/v4l2-core/videobuf2-dma-contig.c:202:2: error: implicit declaration of function ‘dma_mmap_coherent’ [-Werror=implicit-function-declaration]
->   drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
->   drivers/media/v4l2-core/videobuf2-dma-contig.c:385:2: error: implicit declaration of function ‘dma_get_sgtable’ [-Werror=implicit-function-declaration]
+>   drivers/media/usb/b2c2/flexcop-usb.c: In function ‘flexcop_usb_transfer_exit’:
+>   drivers/media/usb/b2c2/flexcop-usb.c:393:3: error: implicit declaration of function ‘pci_free_consistent’ [-Werror=implicit-function-declaration]
+>   drivers/media/usb/b2c2/flexcop-usb.c: In function ‘flexcop_usb_transfer_init’:
+>   drivers/media/usb/b2c2/flexcop-usb.c:410:2: error: implicit declaration of function ‘pci_alloc_consistent’ [-Werror=implicit-function-declaration]
+>   drivers/media/usb/b2c2/flexcop-usb.c:410:21: warning: assignment makes pointer from integer without a cast [enabled by default]
+>   cc1: some warnings being treated as errors
 > 
 > 
 > Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-m32r does not provide the "common" version of the dma mapping API, so this
-is certainly wrong.
+>From the arm64 perspective:
 
-	Arnd
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+
+(but make sure it doesn't break other archs)
