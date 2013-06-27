@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab3F0M4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:56:42 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:40495 "EHLO
+	id S1753944Ab3F0M46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:56:58 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:62414 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753607Ab3F0Mut (ORCPT
+	with ESMTP id S1753580Ab3F0Mur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:50:49 -0400
+	Thu, 27 Jun 2013 08:50:47 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
@@ -15,9 +15,9 @@ Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
         linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
         Benson Leung <bleung@chromium.org>,
         Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 35/51] Input: atmel_mxt_ts - Output status from T48 Noise Supression
-Date: Thu, 27 Jun 2013 13:49:10 +0100
-Message-Id: <1372337366-9286-36-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 32/51] Input: atmel_mxt_ts - Decode T6 status messages
+Date: Thu, 27 Jun 2013 13:49:07 +0100
+Message-Id: <1372337366-9286-33-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,78 +25,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+By storing the previous T6 status byte we can detect reset completion more
+correctly, and multiple debug output of the same status can be suppressed (for
+example CFGERR).
+
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   60 ++++++++++++++++++++----------
+ 1 file changed, 40 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 5d51133..d7ce38d 100644
+index 688eab3..3890ed5 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -267,6 +267,7 @@ struct mxt_data {
- 	u8 T9_reportid_max;
- 	u8 T19_reportid;
- 	u16 T44_address;
-+	u8 T48_reportid;
+@@ -91,6 +91,11 @@
  
- 	/* for fw update in bootloader */
- 	struct completion bl_completion;
-@@ -768,6 +769,26 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 	data->update_input = true;
+ /* Define for T6 status byte */
+ #define MXT_T6_STATUS_RESET	(1 << 7)
++#define MXT_T6_STATUS_OFL	(1 << 6)
++#define MXT_T6_STATUS_SIGERR	(1 << 5)
++#define MXT_T6_STATUS_CAL	(1 << 4)
++#define MXT_T6_STATUS_CFGERR	(1 << 3)
++#define MXT_T6_STATUS_COMSERR	(1 << 2)
+ 
+ /* MXT_GEN_POWER_T7 field */
+ struct t7_config {
+@@ -246,6 +251,7 @@ struct mxt_data {
+ 	u8 bootloader_addr;
+ 	struct t7_config t7_cfg;
+ 	u8 *msg_buf;
++	u8 t6_status;
+ 
+ 	/* Cached parameters from object table */
+ 	u8 T5_msg_size;
+@@ -629,6 +635,39 @@ mxt_get_object(struct mxt_data *data, u8 type)
+ 	return NULL;
  }
  
-+static int mxt_proc_t48_messages(struct mxt_data *data, u8 *msg)
++static void mxt_proc_t6_messages(struct mxt_data *data, u8 *msg)
 +{
 +	struct device *dev = &data->client->dev;
-+	u8 status, state;
++	u8 status = msg[1];
++	u32 crc = msg[2] | (msg[3] << 8) | (msg[4] << 16);
 +
-+	status = msg[1];
-+	state  = msg[4];
++	if (crc != data->config_crc) {
++		data->config_crc = crc;
++		dev_dbg(dev, "T6 Config Checksum: 0x%06X\n", crc);
++		complete(&data->crc_completion);
++	}
 +
-+	dev_dbg(dev, "T48 state %d status %02X %s%s%s%s%s\n",
-+			state,
++	/* Detect transition out of reset */
++	if ((data->t6_status & MXT_T6_STATUS_RESET) &&
++	    !(status & MXT_T6_STATUS_RESET))
++		complete(&data->reset_completion);
++
++	/* Output debug if status has changed */
++	if (status != data->t6_status)
++		dev_dbg(dev, "T6 Status 0x%02X%s%s%s%s%s%s%s\n",
 +			status,
-+			(status & 0x01) ? "FREQCHG " : "",
-+			(status & 0x02) ? "APXCHG " : "",
-+			(status & 0x04) ? "ALGOERR " : "",
-+			(status & 0x10) ? "STATCHG " : "",
-+			(status & 0x20) ? "NLVLCHG " : "");
++			(status == 0) ? " OK" : "",
++			(status & MXT_T6_STATUS_RESET) ? " RESET" : "",
++			(status & MXT_T6_STATUS_OFL) ? " OFL" : "",
++			(status & MXT_T6_STATUS_SIGERR) ? " SIGERR" : "",
++			(status & MXT_T6_STATUS_CAL) ? " CAL" : "",
++			(status & MXT_T6_STATUS_CFGERR) ? " CFGERR" : "",
++			(status & MXT_T6_STATUS_COMSERR) ? " COMSERR" : "");
 +
-+	return 0;
++	/* Save current status */
++	data->t6_status = status;
 +}
 +
- static int mxt_proc_message(struct mxt_data *data, u8 *message)
+ static int mxt_read_message(struct mxt_data *data, u8 *message)
  {
- 	u8 report_id = message[0];
-@@ -783,6 +804,8 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
- 	} else if (report_id == data->T19_reportid) {
- 		mxt_input_button(data, message);
- 		data->update_input = true;
-+	} else if (report_id == data->T48_reportid) {
-+		mxt_proc_t48_messages(data, message);
- 	} else {
- 		mxt_dump_message(data, message);
+ 	struct mxt_object *object;
+@@ -735,11 +774,6 @@ static void mxt_input_touchevent(struct mxt_data *data, u8 *message)
  	}
-@@ -1420,6 +1443,7 @@ static void mxt_free_object_table(struct mxt_data *data)
- 	data->T9_reportid_max = 0;
- 	data->T19_reportid = 0;
- 	data->T44_address = 0;
-+	data->T48_reportid = 0;
- 	data->max_reportid = 0;
  }
  
-@@ -1493,6 +1517,9 @@ static int mxt_get_object_table(struct mxt_data *data)
- 		case MXT_SPT_GPIOPWM_T19:
- 			data->T19_reportid = min_id;
- 			break;
-+		case MXT_PROCG_NOISESUPPRESSION_T48:
-+			data->T48_reportid = min_id;
-+			break;
- 		}
+-static u16 mxt_extract_T6_csum(const u8 *csum)
+-{
+-	return csum[0] | (csum[1] << 8) | (csum[2] << 16);
+-}
+-
+ static bool mxt_is_T9_message(struct mxt_data *data, u8 *msg)
+ {
+ 	u8 id = msg[0];
+@@ -749,11 +783,9 @@ static bool mxt_is_T9_message(struct mxt_data *data, u8 *msg)
+ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
+ {
+ 	u8 *message = &data->msg_buf[0];
+-	const u8 *payload = &data->msg_buf[1];
+ 	struct device *dev = &data->client->dev;
+ 	u8 reportid;
+ 	bool update_input = false;
+-	u32 crc;
  
- 		end_address = object->start_address
+ 	do {
+ 		if (mxt_read_message(data, message)) {
+@@ -764,19 +796,7 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
+ 		reportid = message[0];
+ 
+ 		if (reportid == data->T6_reportid) {
+-			u8 status = payload[0];
+-
+-			crc = mxt_extract_T6_csum(&payload[1]);
+-			if (crc != data->config_crc) {
+-				data->config_crc = crc;
+-				complete(&data->crc_completion);
+-			}
+-
+-			dev_dbg(dev, "Status: %02x Config Checksum: %06x\n",
+-				status, data->config_crc);
+-
+-			if (status & MXT_T6_STATUS_RESET)
+-				complete(&data->reset_completion);
++			mxt_proc_t6_messages(data, message);
+ 		} else if (mxt_is_T9_message(data, message)) {
+ 			mxt_input_touchevent(data, message);
+ 			update_input = true;
 -- 
 1.7.10.4
 
