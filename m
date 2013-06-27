@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab3F0JBC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:01:02 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:61546 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab3F0JA6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:00:58 -0400
-Date: Thu, 27 Jun 2013 11:00:50 +0200
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-efi@vger.kernel.org,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
-Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
-Message-ID: <20130627090050.GC18151@rocoto.smurfnet.nu>
-References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
- <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
- <51CA2B03.4080106@wwwdotorg.org>
- <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com>
- <20130626135311.GA9078@rocoto.smurfnet.nu>
- <20130626135933.GQ22026@console-pimps.org>
- <1372257499.2168.5.camel@dabdike>
- <20130627013219.GA346@srcf.ucam.org>
+	id S1753475Ab3F0JBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:01:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63736 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752069Ab3F0JBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 05:01:16 -0400
+Date: Thu, 27 Jun 2013 12:01:10 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] KVM: MMU: fast invalidate all mmio sptes
+Message-ID: <20130627090110.GE18508@redhat.com>
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1370595088-3315-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130627082900.GD18508@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130627013219.GA346@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130627082900.GD18508@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 02:32:19AM +0100, Matthew Garrett wrote:
-> On Wed, Jun 26, 2013 at 07:38:19AM -0700, James Bottomley wrote:
-> > The fixed virtual address scheme currently being looked at for x86_64 to
-> > make SetVirtualAddressMap() kexec invariant doesn't work on 32 bit
-> > because the address space isn't big enough.  For ARM, given that we've
-> > much more opportunity to work with the vendors, can we just avoid
-> > transitioning to a virtual address map and always just install a
-> > physical mapping before doing efi calls?
+On Thu, Jun 27, 2013 at 11:29:00AM +0300, Gleb Natapov wrote:
+> On Fri, Jun 07, 2013 at 04:51:26PM +0800, Xiao Guangrong wrote:
+> > This patch tries to introduce a very simple and scale way to invalidate
+> > all mmio sptes - it need not walk any shadow pages and hold mmu-lock
+> > 
+> > KVM maintains a global mmio valid generation-number which is stored in
+> > kvm->memslots.generation and every mmio spte stores the current global
+> > generation-number into his available bits when it is created
+> > 
+> > When KVM need zap all mmio sptes, it just simply increase the global
+> > generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+> > then it walks the shadow page table and get the mmio spte. If the
+> > generation-number on the spte does not equal the global generation-number,
+> > it will go to the normal #PF handler to update the mmio spte
+> > 
+> > Since 19 bits are used to store generation-number on mmio spte, we zap all
+> > mmio sptes when the number is round
+> > 
+> So this commit makes Fedora 9 32 bit reboot during boot, Fedora 9 64
+> fails too, but I haven't checked what happens exactly.
 > 
-> We can probably get away with that now, but it does risk us ending up 
-> with some firmware that expects to run in physical mode (boards designed 
-> for Linux) and some firmware that expects to run in virtual mode (boards 
-> designed for Windows). The degree of lockdown in the Windows ecosystem 
-> at present means it's not a real problem at the moment, but if that ever 
-> changes we're going to risk incompatibility.
+Something wrong with gfn calculation during mmio:
 
-Is there anything preventing calling SetVirtualAddressMap() with a
-1:1 map?
+qemu-system-x86-17003 [000]  3962.625103: handle_mmio_page_fault: addr:c00ba6c0 gfn 100000000ba access a92
+qemu-system-x86-17003 [000]  3962.774862: handle_mmio_page_fault: addr:ffffb170 gfn 100000fee00 access a92
 
-Or do you simply mean that some platforms might cruise along with
-undetected bugs in their relocation hooks?
-
-/
-    Leif
+--
+			Gleb.
