@@ -1,154 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab3F0Pkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:40:31 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:33593 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752654Ab3F0Pk3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:40:29 -0400
-Date: Thu, 27 Jun 2013 11:40:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: balbi@ti.com, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-In-Reply-To: <51CAEEC4.4030304@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1306271032210.1167-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753975Ab3F0PoY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:44:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752648Ab3F0PoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 11:44:22 -0400
+Message-ID: <1372347850.30572.659.camel@ul30vt.home>
+Subject: Re: [PATCH v2] vfio: add external user support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 27 Jun 2013 09:44:10 -0600
+In-Reply-To: <1372317260-6438-1-git-send-email-aik@ozlabs.ru>
+References: <20130627164752.657c165ec4492e5248945a51@canb.auug.org.au>
+	 <1372317260-6438-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jun 2013, Roger Quadros wrote:
-
-> > Could the mapping be changed so that a different interrupt vector was 
-> > used for wakeups and normal I/O?  That would make this a little easier, 
-> > although it wouldn't solve the general problem.
+On Thu, 2013-06-27 at 17:14 +1000, Alexey Kardashevskiy wrote:
+> VFIO is designed to be used via ioctls on file descriptors
+> returned by VFIO.
 > 
-> I'm not sure which IRQ we can map it to, but it could be mapped to some
-> free IRQ number. Since it doesn't make things easier, I think we can leave
-> it as it is for now.
-
-All right.
-
-> > There's still a race problem.  Suppose a normal wakeup interrupt occurs
-> > just before or as the controller gets suspended.  By the time the code
-> > here runs, HCD_HW_ACCESSIBLE may have been cleared by the suspend
-> > routine.  The interrupt would be lost.  Depending on the design of the
-> > controller, the entire wakeup signal could end up getting lost as well.
+> However in some situations support for an external user is required.
+> The first user is KVM on PPC64 (SPAPR TCE protocol) which is going to
+> use the existing VFIO groups for exclusive access in real/virtual mode
+> in the host kernel to avoid passing map/unmap requests to the user
+> space which would made things pretty slow.
 > 
-> But if I call ehci_suspend() in the runtime_suspend handler, this race
-> won't happen right?
-
-That race doesn't apply to your system anyway; it matters only on 
-systems where hcd->has_wakeup_irq isn't set.  The only way to fix it 
-involves changing ehci_suspend() somewhat (and making the equivalent 
-change for other HCDs too).  Those musings above were just me thinking 
-out loud about the problems involved in implementing reliable wakeups.
-
-> > Do you know how the OMAP EHCI controller behaves?  Under what 
-> > conditions does it send the wakeup IRQ?  How do you tell it to turn off 
-> > the wakeup IRQ?
+> The proposed protocol includes:
 > 
-> Once the controller is suspended, the wakeup IRQ comes out-of-band. i.e. through
-> pad wakeup and pinctrl subsystem.
-> The only way to turn that wakeup off is to disable the wakeup enable bit on the pad.
-> This could be done by not putting the pins in the IDLE_WAKEUP state during
-> suspend.
-
-That's not what I meant.  Never mind the pinctrl; I was asking about
-the EHCI controller itself.  Under what circumstances does the
-controller assert its wakeup signal?  And how do you tell it to stop
-asserting that signal?
-
-> Thanks for the review.
+> 1. do normal VFIO init stuff such as opening a new container, attaching
+> group(s) to it, setting an IOMMU driver for a container. When IOMMU is
+> set for a container, all groups in it are considered ready to use by
+> an external user.
 > 
-> I updated the ehci-omap.c driver to call ehci_suspend/resume during runtime_suspend/resume.
-> After that, it stopped detecting the port status change event when a device was plugged
-> to an external HUB. The wakeup irq was coming and the root hub/controller were being resumed,
-> but after that, no hub_irq.
-
-Wait a minute.  I'm not clear on what happened.  You're starting out
-with the controller, the root hub, and the external hub all suspended, 
-right?  Then you plugged a new device into the external hub.  This 
-caused the controller and the root hub to wake up, but not the external 
-hub?
-
-> Adding some delay (or printk) somewhere in the resume path fixes the issue. I'm not sure what
-> is going on and why the delay is needed. Below is the ehci-omap patch. I've put the delay
-> in the runtime_resume handler.
+> 2. pass a fd of the group we want to accelerate to KVM. KVM calls
+> vfio_group_iommu_id_from_file() to verify if the group is initialized
+> and IOMMU is set for it. The current TCE IOMMU driver marks the whole
+> IOMMU table as busy when IOMMU is set for a container what this prevents
+> other DMA users from allocating from it so it is safe to pass the group
+> to the user space.
 > 
-> e.g. log
+> 3. KVM increases the container users counter via
+> vfio_group_add_external_user(). This prevents the VFIO group from
+> being disposed prior to exiting KVM.
 > 
-> [    8.674377] usb usb1: usb wakeup-resume
-> [    8.678833] ehci-omap 48064800.ehci: omap_ehci_runtime_resume
-> [    8.695190] usb usb1: usb auto-resume
-> [    8.699066] ehci-omap 48064800.ehci: resume root hub
-> [    8.704437] hub 1-0:1.0: hub_resume
-> [    8.708312] hub 1-0:1.0: port 2: status 0507 change 0000
-> [    8.714630] hub 1-0:1.0: state 7 ports 3 chg 0000 evt 0000
+> 4. When KVM is finished and doing cleanup, it releases the group file
+> and decrements the container users counter. Everything gets released.
 > 
-> <---- gets stuck here in the failing case---->
-> 
-> [    8.723541] hub 1-0:1.0: state 7 ports 3 chg 0000 evt 0004
-> [    8.729400] ehci-omap 48064800.ehci: GetStatus port:2 status 001005 0  ACK POWER sig=se0 PE CONNECT
-> [    8.753204] usb 1-2: usb wakeup-resume
-> [    8.757293] usb 1-2: finish resume
-> [    8.761627] hub 1-2:1.0: hub_resume
+> 5. KVM also keeps the group file as otherwise its fd might have been
+> closed at the moment of KVM finish so vfio_group_del_external_user()
+> call will not be possible.
 
-Yeah, we need more debugging info.  In ehci_irq(), right after the
-"pstatus = ehci_readl(..." line, what is the value of pstatus?  And in
-the GetPortStatus case of ehci_hub_control(), right after the "temp =
-ehci_readl(..." line, what is the value of temp?
+This is the wrong order in my mind.  An external user has no business
+checking or maintaining any state of a group until it calls
+add_external_user().  Only after that call is successful can the user
+assume the filep to group relationship is static and get the iommu_id.
+Any use of the "external user" API should start with "add" and end with
+"del".
 
-> @@ -286,15 +293,70 @@ static const struct of_device_id omap_ehci_dt_ids[] = {
+> The "vfio: Limit group opens" patch is also required for the consistency.
+> 
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+> 
+> v1->v2: added definitions to vfio.h :)
+> Should not compile but compiled. Hm.
+> 
+> ---
+>  drivers/vfio/vfio.c  |   54 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/vfio.h |    7 +++++++
+>  2 files changed, 61 insertions(+)
+> 
+> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+> index c488da5..40875d2 100644
+> --- a/drivers/vfio/vfio.c
+> +++ b/drivers/vfio/vfio.c
+> @@ -1370,6 +1370,60 @@ static const struct file_operations vfio_device_fops = {
+>  };
 >  
->  MODULE_DEVICE_TABLE(of, omap_ehci_dt_ids);
+>  /**
+> + * External user API, exported by symbols to be linked dynamically.
+> + */
+> +
+> +/* Allows an external user (for example, KVM) to lock an IOMMU group */
+> +int vfio_group_add_external_user(struct file *filep)
+> +{
+> +	struct vfio_group *group = filep->private_data;
+> +
+> +	if (filep->f_op != &vfio_group_fops)
+> +		return -EINVAL;
+> +
+> +	if (!atomic_inc_not_zero(&group->container_users))
+> +		return -EINVAL;
+
+This is the place where I was suggesting we need tests to match
+get_device_fd.  It's not clear what the external user is holding if the
+group has no iommu or is not viable here.
+
+
+if (!group->container->iommu_driver || !vfio_group_viable(group)) {
+	vfio_group_try_dissolve_container(group);
+	return -EINVAL;
+}
+
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(vfio_group_add_external_user);
+> +
+> +/* Allows an external user (for example, KVM) to unlock an IOMMU group */
+> +void vfio_group_del_external_user(struct file *filep)
+> +{
+> +	struct vfio_group *group = filep->private_data;
+> +
+> +	if (WARN_ON(filep->f_op != &vfio_group_fops))
+> +		return;
+
+How about we make this return int so we can return 0/-EINVAL and the
+caller can decide the severity of the response?
+
+> +
+> +	vfio_group_try_dissolve_container(group);
+> +}
+> +EXPORT_SYMBOL_GPL(vfio_group_del_external_user);
+> +
+> +/*
+> + * Checks if a group for the specified file can be used by
+> + * an external user and returns the IOMMU ID if external use is possible.
+> + */
+> +int vfio_group_iommu_id_from_file(struct file *filep)
+
+Let's name this in a way that makes it clear that it's part of the
+external_user API.  vfio_group_external_user_iommu_id?
+
+> +{
+> +	int ret;
+> +	struct vfio_group *group = filep->private_data;
+> +
+> +	if (WARN_ON(filep->f_op != &vfio_group_fops))
+> +		return -EINVAL;
+
+This one probably doesn't deserve a WARN_ON either, let the caller
+blowup if it wants.
+
+> +
+> +	if (0 == atomic_read(&group->container_users) ||
+> +			!group->container->iommu_driver ||
+> +			!vfio_group_viable(group))
+> +		return -EINVAL;
+
+The above test just becomes a weak test that the caller is  correctly
+using the API since we should be enforcing these tests when the external
+user is added.  It doesn't hurt to leave them, but it's not very
+convincing that the caller is the one holding anything.
+
+> +	ret = iommu_group_id(group->iommu_group);
+
+The 'ret' variable isn't needed.
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(vfio_group_iommu_id_from_file);
+> +
+> +/**
+>   * Module/class support
+>   */
+>  static char *vfio_devnode(struct device *dev, umode_t *mode)
+> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+> index ac8d488..7ee6575 100644
+> --- a/include/linux/vfio.h
+> +++ b/include/linux/vfio.h
+> @@ -90,4 +90,11 @@ extern void vfio_unregister_iommu_driver(
+>  	TYPE tmp;						\
+>  	offsetof(TYPE, MEMBER) + sizeof(tmp.MEMBER); })		\
 >  
-> +static int omap_ehci_suspend(struct device *dev)
-> +{
-> +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-> +	bool do_wakeup = device_may_wakeup(dev);
+> +/*
+> + * External user API
+> + */
+> +int vfio_group_add_external_user(struct file *filep);
+> +void vfio_group_del_external_user(struct file *filep);
+> +int vfio_group_iommu_id_from_file(struct file *filep);
 > +
-> +	dev_dbg(dev, "%s: do_wakeup: %d\n", __func__, do_wakeup);
-> +
-> +	return ehci_suspend(hcd, do_wakeup);
-> +}
-> +
-> +static int omap_ehci_resume(struct device *dev)
-> +{
-> +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-> +
-> +	dev_dbg(dev, "%s\n", __func__);
-> +
-> +	return ehci_resume(hcd, false);
-> +}
 
-Those two routines look okay.
+As Stephen noted, let's use extern here.  Also, please add some
+additional text about the general purpose of this API and how to use it.
+A generalized version of your commit log after fixes would be great.
+Thanks,
 
-> +static int omap_ehci_runtime_suspend(struct device *dev)
-> +{
-> +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-> +	struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
-> +	bool do_wakeup = device_may_wakeup(dev);
-> +
-> +	dev_dbg(dev, "%s\n", __func__);
-> +
-> +	if (omap->initialized)
-> +		ehci_suspend(hcd, do_wakeup);
-
-Here you should not use do_wakeup.  The second argument should always
-be "true", because wakeup is always enabled during runtime suspend.
-
-Also, why do you need omap->initialized?  Do you think you might get a 
-wakeup interrupt before the controller has been fully set up?  I don't 
-see how you could, given the pm_runtime_get_sync() call in the probe 
-routine.
-
-Alan Stern
+Alex
 
