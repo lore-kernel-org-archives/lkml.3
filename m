@@ -1,119 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab3F0BH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 21:07:29 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:58791 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127Ab3F0BHZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 21:07:25 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Dave Jones <davej@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
-References: <20130622013731.GA22918@redhat.com>
-	<20130622173129.GA29375@redhat.com>
-	<20130622215905.GA28238@redhat.com> <20130623143634.GA2000@redhat.com>
-	<20130623150603.GA32313@redhat.com>
-	<20130623160452.GA11740@redhat.com> <20130624155758.GA5993@redhat.com>
-	<20130624173510.GA1321@redhat.com> <20130625153520.GA7784@redhat.com>
-	<20130626191853.GA29049@redhat.com>
-	<20130627002255.GA16553@redhat.com>
-Date: Wed, 26 Jun 2013 18:06:45 -0700
-In-Reply-To: <20130627002255.GA16553@redhat.com> (Dave Jones's message of
-	"Wed, 26 Jun 2013 20:22:55 -0400")
-Message-ID: <87ppv82wgq.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753287Ab3F0BHg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 21:07:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1499 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753045Ab3F0BHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 21:07:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,948,1363158000"; 
+   d="scan'208";a="336108422"
+Message-ID: <51CB904D.7040402@intel.com>
+Date: Thu, 27 Jun 2013 09:07:25 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/VdPVzIE8/0mRRqwWovS2dSaCgHENCayo=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3199]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_04 obfuscated drug references
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Dave Jones <davej@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: frequent softlockups with 3.10rc6.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Ingo Molnar <mingo@kernel.org>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [Resend patch v8 01/13] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
+ dependency for load-tracking"
+References: <1371694737-29336-1-git-send-email-alex.shi@intel.com> <1371694737-29336-2-git-send-email-alex.shi@intel.com> <51CA76A3.3050207@intel.com> <20130626203027.GA23254@gmail.com>
+In-Reply-To: <20130626203027.GA23254@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones <davej@redhat.com> writes:
+On 06/27/2013 04:30 AM, Ingo Molnar wrote:
 
-> On Wed, Jun 26, 2013 at 09:18:53PM +0200, Oleg Nesterov wrote:
->  > On 06/25, Dave Jones wrote:
->  > >
->  > > Took a lot longer to trigger this time. (13 hours of runtime).
->  > 
->  > And _perhaps_ this means that 3.10-rc7 without 8aac6270 needs more
->  > time to hit the same bug ;)
->
-> Ok, that didn't take long. 4 hours in, and I hit it on rc7 with 8aac6270 reverted.
-> So that's the 2nd commit I've mistakenly blamed for this bug.
->
-> Crap. I'm going to have to redo the bisecting, and give it a whole day
-> at each step to be sure. That's going to take a while.
->
-> Anyone got any ideas better than a week of non-stop bisecting ?
+> kernel/sched/fair.c:1620:6: error: redefinition of ‘idle_enter_fair’
+> In file included from kernel/sched/fair.c:35:0:
+> kernel/sched/sched.h:1034:20: note: previous definition of ‘idle_enter_fair’ was here
+> kernel/sched/fair.c:1630:6: error: redefinition of ‘idle_exit_fair’
+> In file included from kernel/sched/fair.c:35:0:
+> kernel/sched/sched.h:1035:20: note: previous definition of ‘idle_exit_fair’ was here
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
 
-Just based on the last trace and your observation that it seems to be
-vfs/block layer related I am going to mildly suggest that Jens and Tejun
-might have a clue.  Tejun made a transformation of the threads used for
-writeback from a custom thread pool to the generic mechanism.  So it
-seems worth asking the question could it have been in Jens block merge
-of 4de13d7aa8f4d02f4dc99d4609575659f92b3c5a.
+my fault! that also need to be reverted in kerel/sched/sched.h
 
-Eric
+@@ -1028,17 +1022,8 @@ extern void update_group_power(struct sched_domain *sd, int cpu);
+ extern void trigger_load_balance(struct rq *rq, int cpu);
+ extern void idle_balance(int this_cpu, struct rq *this_rq);
 
-> What I've gathered so far:
->
-> - Only affects two machines I have (both Intel Quad core Haswell, one with SSD, one with hybrid SSD)
-> - One machine is XFS, the other EXT4.
-> - When the lockup occurs, it happens on all cores.
-> - It's nearly always a sync() call that triggers it looking like this..
->
->   irq event stamp: 8465043
->   hardirqs last  enabled at (8465042): [<ffffffff816ebc60>] restore_args+0x0/0x30
->   hardirqs last disabled at (8465043): [<ffffffff816f476a>] apic_timer_interrupt+0x6a/0x80
->   softirqs last  enabled at (8464292): [<ffffffff81054204>] __do_softirq+0x194/0x440
->   softirqs last disabled at (8464295): [<ffffffff8105466d>] irq_exit+0xcd/0xe0
->   RIP: 0010:[<ffffffff81054121>]  [<ffffffff81054121>] __do_softirq+0xb1/0x440
->
->   Call Trace:
->    <IRQ> 
->    [<ffffffff8105466d>] irq_exit+0xcd/0xe0
->    [<ffffffff816f560b>] smp_apic_timer_interrupt+0x6b/0x9b
->    [<ffffffff816f476f>] apic_timer_interrupt+0x6f/0x80
->    <EOI> 
->    [<ffffffff816ebc60>] ? retint_restore_args+0xe/0xe
->    [<ffffffff810b9c56>] ? lock_acquire+0xa6/0x1f0
->    [<ffffffff811da892>] ? sync_inodes_sb+0x1c2/0x2a0
->    [<ffffffff816eaba0>] _raw_spin_lock+0x40/0x80
->    [<ffffffff811da892>] ? sync_inodes_sb+0x1c2/0x2a0
->    [<ffffffff811da892>] sync_inodes_sb+0x1c2/0x2a0
->    [<ffffffff816e8206>] ? wait_for_completion+0x36/0x110
->    [<ffffffff811e04f0>] ? generic_write_sync+0x70/0x70
->    [<ffffffff811e0509>] sync_inodes_one_sb+0x19/0x20
->    [<ffffffff811b0e62>] iterate_supers+0xb2/0x110
->    [<ffffffff811e0775>] sys_sync+0x35/0x90
->    [<ffffffff816f3d14>] tracesys+0xdd/0xe2
->
->
-> I'll work on trying to narrow down what trinity is doing. That might at least
-> make it easier to reproduce it in a shorter timeframe.
+-/*
+- * Only depends on SMP, FAIR_GROUP_SCHED may be removed when runnable_avg
+- * becomes useful in lb
+- */
+-#if defined(CONFIG_FAIR_GROUP_SCHED)
+ extern void idle_enter_fair(struct rq *this_rq);
+ extern void idle_exit_fair(struct rq *this_rq);
+-#else
+-static inline void idle_enter_fair(struct rq *this_rq) {}
+-static inline void idle_exit_fair(struct rq *this_rq) {}
+-#endif
 
+now, the patch is here:
+
+---
+
+>From caac05dd984ba52af1d7bde47402ef795f8bc060 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Sun, 3 Mar 2013 16:04:36 +0800
+Subject: [PATCH 01/14] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
+ dependency for load-tracking"
+
+Remove CONFIG_FAIR_GROUP_SCHED that covers the runnable info, then
+we can use runnable load variables.
+
+Also removed 3 extra CONFIG_FAIR_GROUP_SCHED setting in commit 9ee474f
+and commit 642dbc39a.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/linux/sched.h |    7 +------
+ kernel/sched/core.c   |    7 +------
+ kernel/sched/fair.c   |   17 ++++-------------
+ kernel/sched/sched.h  |   19 ++-----------------
+ 4 files changed, 8 insertions(+), 42 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 178a8d9..0019bef 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -994,12 +994,7 @@ struct sched_entity {
+ 	struct cfs_rq		*my_q;
+ #endif
+ 
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ 	/* Per-entity load-tracking */
+ 	struct sched_avg	avg;
+ #endif
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 36f85be..b9e7036 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1598,12 +1598,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->se.vruntime			= 0;
+ 	INIT_LIST_HEAD(&p->se.group_node);
+ 
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ 	p->se.avg.runnable_avg_period = 0;
+ 	p->se.avg.runnable_avg_sum = 0;
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 3ee1c2e..1a14209 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1128,8 +1128,7 @@ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
+ }
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+-/* Only depends on SMP, FAIR_GROUP_SCHED may be removed when useful in lb */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ /*
+  * We choose a half-life close to 1 scheduling period.
+  * Note: The tables below are dependent on this value.
+@@ -3436,12 +3435,6 @@ unlock:
+ }
+ 
+ /*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+-/*
+  * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
+  * cfs_rq_of(p) references at time of call are still valid and identify the
+  * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
+@@ -3464,7 +3457,6 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+ 		atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
+ 	}
+ }
+-#endif
+ #endif /* CONFIG_SMP */
+ 
+ static unsigned long
+@@ -5866,7 +5858,7 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+ 		se->vruntime -= cfs_rq->min_vruntime;
+ 	}
+ 
+-#if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
++#ifdef CONFIG_SMP
+ 	/*
+ 	* Remove our load from contribution when we leave sched_fair
+ 	* and ensure we don't carry in an old decay_count if we
+@@ -5925,7 +5917,7 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
+ #ifndef CONFIG_64BIT
+ 	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
+ #endif
+-#if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
++#ifdef CONFIG_SMP
+ 	atomic64_set(&cfs_rq->decay_counter, 1);
+ 	atomic64_set(&cfs_rq->removed_load, 0);
+ #endif
+@@ -6167,9 +6159,8 @@ const struct sched_class fair_sched_class = {
+ 
+ #ifdef CONFIG_SMP
+ 	.select_task_rq		= select_task_rq_fair,
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	.migrate_task_rq	= migrate_task_rq_fair,
+-#endif
++
+ 	.rq_online		= rq_online_fair,
+ 	.rq_offline		= rq_offline_fair,
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 74ff659..9bc3994 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -269,12 +269,6 @@ struct cfs_rq {
+ #endif
+ 
+ #ifdef CONFIG_SMP
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/*
+ 	 * CFS Load tracking
+ 	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
+@@ -284,9 +278,9 @@ struct cfs_rq {
+ 	u64 runnable_load_avg, blocked_load_avg;
+ 	atomic64_t decay_counter, removed_load;
+ 	u64 last_decay;
+-#endif /* CONFIG_FAIR_GROUP_SCHED */
+-/* These always depend on CONFIG_FAIR_GROUP_SCHED */
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
++	/* Required to track per-cpu representation of a task_group */
+ 	u32 tg_runnable_contrib;
+ 	u64 tg_load_contrib;
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+@@ -1028,17 +1022,8 @@ extern void update_group_power(struct sched_domain *sd, int cpu);
+ extern void trigger_load_balance(struct rq *rq, int cpu);
+ extern void idle_balance(int this_cpu, struct rq *this_rq);
+ 
+-/*
+- * Only depends on SMP, FAIR_GROUP_SCHED may be removed when runnable_avg
+- * becomes useful in lb
+- */
+-#if defined(CONFIG_FAIR_GROUP_SCHED)
+ extern void idle_enter_fair(struct rq *this_rq);
+ extern void idle_exit_fair(struct rq *this_rq);
+-#else
+-static inline void idle_enter_fair(struct rq *this_rq) {}
+-static inline void idle_exit_fair(struct rq *this_rq) {}
+-#endif
+ 
+ #else	/* CONFIG_SMP */
+ 
+-- 
+1.7.5.4
 
