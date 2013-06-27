@@ -1,96 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab3F0RBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 13:01:05 -0400
-Received: from dkim1.fusionio.com ([66.114.96.53]:42752 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab3F0RBB (ORCPT
+	id S1753591Ab3F0RCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 13:02:31 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:56075 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab3F0RCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 13:01:01 -0400
-X-ASG-Debug-ID: 1372352460-0421b5021f95c50001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Thu, 27 Jun 2013 13:00:58 -0400
-From: Josef Bacik <jbacik@fusionio.com>
-To: Dave Jones <davej@redhat.com>, Chris Mason <chris.mason@fusionio.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        <linux-btrfs@vger.kernel.org>
-Subject: Re: btrfs triggered lockdep WARN.
-Message-ID: <20130627170058.GS4288@localhost.localdomain>
-X-ASG-Orig-Subj: Re: btrfs triggered lockdep WARN.
-References: <20130627145824.GA21540@redhat.com>
+	Thu, 27 Jun 2013 13:02:30 -0400
+Date: Thu, 27 Jun 2013 19:02:28 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Siarhei Siamashka <siarhei.siamashka@gmail.com>
+Cc: linux-sunxi@googlegroups.com, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com
+Subject: Re: [linux-sunxi] [PATCH 2/8] clocksource: sun4i: Add clocksource
+ and sched clock drivers
+Message-ID: <20130627170228.GC4319@lukather>
+References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
+ <20130627131729.5fff8468@i7>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="S1BNGpv0yoYahz37"
 Content-Disposition: inline
-In-Reply-To: <20130627145824.GA21540@redhat.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1372352460
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.135132
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20130627131729.5fff8468@i7>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 10:58:24AM -0400, Dave Jones wrote:
-> Another bug caused by this script. https://github.com/kernelslacker/io-tests/blob/master/setup.sh
-> 
-> WARNING: at kernel/lockdep.c:708 __lock_acquire+0x183b/0x1b70()
-> Modules linked in: sctp lec bridge 8021q garp stp mrp fuse dlci tun bnep hidp rfcomm l2tp_ppp l2tp_netlink l2tp_core vmw_vsock_vmci_transport vmw_vmci vsock cmtp kernelcapi nfnetlink ipt_ULOG scsi_transport_iscsi rose phonet rds irda nfc ipx p8023 p8022 netrom af_key can_raw ax25 llc2 af_802154 x25 pppoe caif_socket pppox can_bcm caif ppp_generic slhc crc_ccitt atm appletalk af_rxrpc psnap llc can btrfs kvm_amd kvm snd_hda_codec_realtek snd_hda_intel btusb snd_hda_codec xor bluetooth raid6_pq serio_raw snd_pcm microcode pcspkr libcrc32c zlib_deflate snd_page_alloc snd_timer snd rfkill edac_core soundcore r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
-> CPU: 3 PID: 2340684 Comm: rm Not tainted 3.10.0-rc7+ #8 
-> Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
->  ffffffff819fb83b ffff88010a751aa0 ffffffff816aed7b ffff88010a751ad8
->  ffffffff810432b0 0000000000000002 ffffffff8253e3d0 ffff88002e1a9810
->  00017ee5aac67d60 0000000000000000 ffff88010a751ae8 ffffffff8104339a
-> Call Trace:
->  [<ffffffff816aed7b>] dump_stack+0x19/0x1b
->  [<ffffffff810432b0>] warn_slowpath_common+0x70/0xa0
->  [<ffffffff8104339a>] warn_slowpath_null+0x1a/0x20
->  [<ffffffff810ba40b>] __lock_acquire+0x183b/0x1b70
->  [<ffffffff81333bd0>] ? delay_tsc+0x90/0xe0
->  [<ffffffff810baee3>] lock_acquire+0x93/0x1e0
->  [<ffffffffa040f937>] ? btrfs_try_tree_write_lock+0x47/0xc0 [btrfs]
->  [<ffffffff816b6c11>] _raw_write_lock+0x41/0x80
->  [<ffffffffa040f937>] ? btrfs_try_tree_write_lock+0x47/0xc0 [btrfs]
->  [<ffffffffa040f937>] btrfs_try_tree_write_lock+0x47/0xc0 [btrfs]
->  [<ffffffffa03b4bad>] btrfs_search_slot+0x80d/0x950 [btrfs]
->  [<ffffffffa03cd3a6>] btrfs_del_inode_ref+0x76/0x3b0 [btrfs]
->  [<ffffffffa03f3469>] ? release_extent_buffer+0xb9/0xe0 [btrfs]
->  [<ffffffffa03f9aaf>] ? free_extent_buffer+0x4f/0xa0 [btrfs]
->  [<ffffffffa03e0091>] __btrfs_unlink_inode+0x181/0x390 [btrfs]
->  [<ffffffffa03e2e17>] btrfs_unlink_inode+0x27/0x50 [btrfs]
->  [<ffffffffa03e2ead>] btrfs_unlink+0x6d/0xc0 [btrfs]
->  [<ffffffff811bfb60>] vfs_unlink+0xa0/0x110
->  [<ffffffff811bfd47>] do_unlinkat+0x177/0x230
->  [<ffffffff810b8815>] ? trace_hardirqs_on_caller+0x115/0x1e0
->  [<ffffffff810b88ed>] ? trace_hardirqs_on+0xd/0x10
->  [<ffffffff8100f525>] ? syscall_trace_enter+0x25/0x290
->  [<ffffffff811c274b>] SyS_unlinkat+0x1b/0x40
->  [<ffffffff816bf394>] tracesys+0xdd/0xe2
-> ---[ end trace 9d90045eda25c268 ]---
-> 
-> That WARN is..
-> 
->  704                         /*
->  705                          * Huh! same key, different name? Did someone trample
->  706                          * on some memory? We're most confused.
->  707                          */
->  708                         WARN_ON_ONCE(class->name != lock->name);
-> 
-> 
-> Most confusing indeed.
 
-There is a bugzilla opened for this, could you try the patch that's in the bz
-and see if you still hit it?
+--S1BNGpv0yoYahz37
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-https://bugzilla.kernel.org/show_bug.cgi?id=59061
+Hi Siarhei,
 
-Thanks,
+On Thu, Jun 27, 2013 at 01:17:29PM +0300, Siarhei Siamashka wrote:
+> On Wed, 26 Jun 2013 23:16:55 +0200
+> Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
+>=20
+> > The A10 and the A13 has a 64 bits free running counter that we can use
+> > as a clocksource and a sched clock, that were both not used yet on these
+> > platforms.
+> >=20
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > ---
+> >  drivers/clocksource/sun4i_timer.c | 27 +++++++++++++++++++++++++++
+> >  1 file changed, 27 insertions(+)
+> >=20
+> > diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/su=
+n4i_timer.c
+> > index bdf34d9..1d2eaa0 100644
+> > --- a/drivers/clocksource/sun4i_timer.c
+> > +++ b/drivers/clocksource/sun4i_timer.c
+> > @@ -23,6 +23,8 @@
+> >  #include <linux/of_address.h>
+> >  #include <linux/of_irq.h>
+> > =20
+> > +#include <asm/sched_clock.h>
+> > +
+> >  #define TIMER_IRQ_EN_REG	0x00
+> >  #define TIMER_IRQ_EN(val)		BIT(val)
+> >  #define TIMER_IRQ_ST_REG	0x04
+> > @@ -34,6 +36,11 @@
+> >  #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
+> > =20
+> >  #define TIMER_SCAL		16
+> > +#define TIMER_CNT64_CTL_REG	0xa0
+> > +#define TIMER_CNT64_CTL_CLR		BIT(0)
+> > +#define TIMER_CNT64_CTL_RL		BIT(1)
+> > +#define TIMER_CNT64_LOW_REG	0xa4
+> > +#define TIMER_CNT64_HIGH_REG	0xa8
+> > =20
+> >  static void __iomem *timer_base;
+> > =20
+> > @@ -96,6 +103,20 @@ static struct irqaction sun4i_timer_irq =3D {
+> >  	.dev_id =3D &sun4i_clockevent,
+> >  };
+> > =20
+> > +static u32 sun4i_timer_sched_read(void)
+> > +{
+> > +	u32 reg =3D readl(timer_base + TIMER_CNT64_CTL_REG);
+>=20
+> If we can be absolutely sure that nothing else may ever change
+> the TIMER_CNT64_CTL_REG, then its default value can be probably
+> cached instead of doing expensive read from the hardware register
+> each time?
 
-Josef
+Since it's a free-running counter, its value will always change, so the
+caching will bring no additions at all, right?
+
+> The gettimeofday() abusers will feel a bit less pain. ARM does not
+> currently enjoy the VDSO optimized gettimeofday, so the software
+> which has been only tested on x86 may get a nasty surprise (an order
+> of magnitude higher gettimeofday overhead).
+>=20
+> > +	writel(reg | TIMER_CNT64_CTL_RL, timer_base + TIMER_CNT64_CTL_REG);
+> > +	while (readl(timer_base + TIMER_CNT64_CTL_REG) & TIMER_CNT64_CTL_REG);
+>=20
+> Some may think that this particular loop looks like a performance
+> bottleneck, but it is very rarely run for more than one iteration.
+> In fact, most of the time it just happens to be a single HW register
+> read.
+
+Thanks for your insight on this.
+
+It does make me more eager to merge the simpler approach first, and then
+try to take some shortcuts if needed and safe enough.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--S1BNGpv0yoYahz37
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzHAkAAoJEBx+YmzsjxAgF6sP/2djeS2A8DKV+TenVPsgQaRV
+3mZQtP6HMwL51E9CM08+0tXty5mOI156idzpCnqZe/df1Gq8pEbVE2vkmQJ+lPxq
+KovaeALxl1fViVKK3y90qdrNdUPVkjoEMyg6XC2uAaj4i/t9RNIgUsEcL5Dku0l1
+K+9SiG3E1+gGJEKYdc2YCi7P8UH1BoV74ZCgA/88svCkNVuRmDisEulA97pTZ5mO
+oDDLt0zEoI4LGY7ASV0yK/xyENNuGbN7n0GVvRfzw22sI/Q4sI2ZuWfVa9FDCIaN
+LqPzRZu6Q7Hm20DhfAG6j24AxMkBqdxHfKFxnO/yfjbcllR2WN+k8jSylYWcO42K
+m8C2qXG+GMmyLf3eAF1uvfsAUmj+/UEZOP4TuCRpo0v5/SXigpWxQXbBi4wt+jyr
+w3C0MADGj5K5yaFm1WkipcXNNIUdd/UrP6e1WlsBIlSk+NJNad59C6pEvXmI2cEO
++6YZXvPNunPoDGIkB+lIm45L8I7c3vpi/OiaSS14EimIe4xwfR7yeZG2XjpuubK6
+vrMv0+x2KE9HbgvsBOuEwEM3vpeqzDe/Z0kEdUb11Sroq/PAiiDaL/TTV2M5VLjS
+STqN8pNcoiFJFGJr6PbAxyi9O2oqV1YGVBepD0ULTccGBtvHyiBgMl0xRNtAl8mD
+hZuyxDtwZnzUoU10kW7i
+=dK05
+-----END PGP SIGNATURE-----
+
+--S1BNGpv0yoYahz37--
