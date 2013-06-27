@@ -1,175 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab3F0DRv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 23:17:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23691 "EHLO mx1.redhat.com"
+	id S1751975Ab3F0DS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 23:18:59 -0400
+Received: from ozlabs.org ([203.10.76.45]:34579 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568Ab3F0DRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 23:17:50 -0400
-Date: Wed, 26 Jun 2013 23:17:12 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, mhocko@suse.cz, minchan@kernel.org,
-        anton@enomsg.org, akpm@linux-foundation.org, kmpark@infradead.org,
-        hyunhee.kim@samsung.com
-Subject: [PATCH v2] vmpressure: implement strict mode
-Message-ID: <20130626231712.4a7392a7@redhat.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751673Ab3F0DS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 23:18:57 -0400
+Date: Thu, 27 Jun 2013 13:18:54 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, acme@redhat.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, mlpesant@us.ibm.com
+Subject: Re: [PATCH 15/15] perf, tools: Add perf stat --transaction v3
+Message-ID: <20130627031854.GA9793@concordia>
+References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
+ <1366485563-16209-16-git-send-email-andi@firstfloor.org>
+ <20130619085159.GA25177@concordia>
+ <20130619144621.GW6123@two.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619144621.GW6123@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, an eventfd is notified for the level it's registered for
-_plus_ higher levels.
+On Wed, Jun 19, 2013 at 04:46:21PM +0200, Andi Kleen wrote:
+> > This hard coded list isn't going to work for us on powerpc.
+> > 
+> > We don't have HLE, so we won't ever have an event for el-start.
+> > 
+> > I don't quite grok what the cycles-ct is about, checkpointed cycles?
+> 
+> The counter is check pointed on a transaction start, and set back to
+> the checkpoint when an abort happens. This allows to count the cycles
+> wasted in aborts, when you subtract from cycles-t.
 
-This is a problem if an application wants to implement different
-actions for different levels. For example, an application might want
-to release 10% of its cache on level low, 50% on medium and 100% on
-critical. To do this, an application has to register a different
-eventfd for each pressure level. However, fd low is always going to
-be notified and and all fds are going to be notified on level critical.
+OK. I'm still confused by that one sorry. In the patch you do:
 
-Strict mode solves this problem by strictly notifiying an eventfd
-for the pressure level it registered for. This new mode is optional,
-by default we still notify eventfds on higher levels too.
++       else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX_CP)))
++               update_stats(&runtime_cycles_in_txcp_stats[0], count[0]);
 
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
----
+But then I don't see where you use runtime_cycles_in_txcp_stats ?
 
-o v2
+> > But I don't think we have anything equivalent.
+> 
+> But you have cycles-t and tx-start?
 
- - Improve documentation
- - Use a bit to store mode instead of a bool
- - Minor changelog changes
+We have:
+ - cycles
+ - cycles in transactional state
+ - cycles spent in successful transactions
 
- Documentation/cgroups/memory.txt | 26 ++++++++++++++++++++++----
- mm/vmpressure.c                  | 26 ++++++++++++++++++++++++--
- 2 files changed, 46 insertions(+), 6 deletions(-)
+So your cycles-t is "cycles in transactional state".
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index ddf4f93..412872b 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -791,6 +791,22 @@ way to trigger. Applications should do whatever they can to help the
- system. It might be too late to consult with vmstat or any other
- statistics, so it's advisable to take an immediate action.
- 
-+Applications can also choose between two notification modes when
-+registering an eventfd for memory pressure events:
-+
-+When in "non-strict" mode, an eventfd is notified for the specific level
-+it's registered for and higher levels. For example, an eventfd registered
-+for low level is also going to be notified on medium and critical levels.
-+This mode makes sense for applications interested on monitoring reclaim
-+activity or implementing simple load-balacing logic. The non-strict mode
-+is the default notification mode.
-+
-+When in "strict" mode, an eventfd is strictly notified for the pressure
-+level it's registered for. For example, an eventfd registered for the low
-+level event is not going to be notified when memory pressure gets into
-+medium or critical levels. This allows for more complex logic based on
-+the actual pressure level the system is experiencing.
-+
- The events are propagated upward until the event is handled, i.e. the
- events are not pass-through. Here is what this means: for example you have
- three cgroups: A->B->C. Now you set up an event listener on cgroups A, B
-@@ -807,12 +823,14 @@ register a notification, an application must:
- 
- - create an eventfd using eventfd(2);
- - open memory.pressure_level;
--- write string like "<event_fd> <fd of memory.pressure_level> <level>"
-+- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
-   to cgroup.event_control.
- 
--Application will be notified through eventfd when memory pressure is at
--the specific level (or higher). Read/write operations to
--memory.pressure_level are no implemented.
-+Applications will be notified through eventfd when memory pressure is at
-+the specific level or higher. If strict is passed, then applications
-+will only be notified when memory pressure reaches the specified level.
-+
-+Read/write operations to memory.pressure_level are no implemented.
- 
- Test:
- 
-diff --git a/mm/vmpressure.c b/mm/vmpressure.c
-index 736a601..ba5c17e 100644
---- a/mm/vmpressure.c
-+++ b/mm/vmpressure.c
-@@ -138,8 +138,16 @@ struct vmpressure_event {
- 	struct eventfd_ctx *efd;
- 	enum vmpressure_levels level;
- 	struct list_head node;
-+	unsigned int mode;
- };
- 
-+#define VMPRESSURE_MODE_STRICT 1
-+
-+static inline bool vmpressure_mode_is_strict(const struct vmpressure_event *ev)
-+{
-+	return ev->mode & VMPRESSURE_MODE_STRICT;
-+}
-+
- static bool vmpressure_event(struct vmpressure *vmpr,
- 			     unsigned long scanned, unsigned long reclaimed)
- {
-@@ -153,6 +161,9 @@ static bool vmpressure_event(struct vmpressure *vmpr,
- 
- 	list_for_each_entry(ev, &vmpr->events, node) {
- 		if (level >= ev->level) {
-+			/* strict mode ensures level == ev->level */
-+			if (vmpressure_mode_is_strict(ev) && level != ev->level)
-+				continue;
- 			eventfd_signal(ev->efd, 1);
- 			signalled = true;
- 		}
-@@ -292,7 +303,7 @@ void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
-  * infrastructure, so that the notifications will be delivered to the
-  * @eventfd. The @args parameter is a string that denotes pressure level
-  * threshold (one of vmpressure_str_levels, i.e. "low", "medium", or
-- * "critical").
-+ * "critical") and optionally a different operating mode (i.e. "strict")
-  *
-  * This function should not be used directly, just pass it to (struct
-  * cftype).register_event, and then cgroup core will handle everything by
-@@ -303,22 +314,33 @@ int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
- {
- 	struct vmpressure *vmpr = cg_to_vmpressure(cg);
- 	struct vmpressure_event *ev;
-+	unsigned int mode = 0;
-+	const char *p;
- 	int level;
- 
- 	for (level = 0; level < VMPRESSURE_NUM_LEVELS; level++) {
--		if (!strcmp(vmpressure_str_levels[level], args))
-+		p = vmpressure_str_levels[level];
-+		if (!strncmp(p, args, strlen(p)))
- 			break;
- 	}
- 
- 	if (level >= VMPRESSURE_NUM_LEVELS)
- 		return -EINVAL;
- 
-+	p = strchr(args, ' ');
-+	if (p) {
-+		if (strncmp(++p, "strict", 6))
-+			return -EINVAL;
-+		mode |= VMPRESSURE_MODE_STRICT;
-+	}
-+
- 	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
- 	if (!ev)
- 		return -ENOMEM;
- 
- 	ev->efd = eventfd;
- 	ev->level = level;
-+	ev->mode = mode;
- 
- 	mutex_lock(&vmpr->events_lock);
- 	list_add(&ev->node, &vmpr->events);
--- 
-1.8.1.4
+We would calculate cycles wasted in aborts with:
 
+ "cycles in transactional" - "cycles in successful transactions"
+
+Which I think is what you're describing above with cycles-ct.
+
+
+Does "tx-start" just count the number of transactions begun? Does it
+count nested transactions?
+
+We have one counter for non-nested transactions and one for nested, but
+I think we could just count the non-nested as "tx-start", that's
+probably of most interest.
+
+> > I guess the simplest option is to make it a per-arch list inside the
+> > perf tool?
+> 
+> I'm not sure that would be acceptable to the perf maintainers.
+> Although I'm just guessing, I haven't heard any comments on
+> this patch recently.
+
+Yeah sure. Although I agree with the desire to make the perf tool work
+similarly across architectures, I think as we add more of these detailed
+analysis tools we are eventually going to come across something that
+can't be handled generically. But I guess we'll see.
+
+cheers
