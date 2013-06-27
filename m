@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab3F0Fqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 01:46:39 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57570 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab3F0Fqi (ORCPT
+	id S1751916Ab3F0Fu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 01:50:57 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:63531 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab3F0Fuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 01:46:38 -0400
-X-AuditID: 9c930179-b7cafae000004567-08-51cbd1bcf10d
-From: Namhyung Kim <namhyung@kernel.org>
-To: Robert Richter <rric@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/14] perf, persistent: Kernel updates for perf tool integration
-References: <1370968960-22527-1-git-send-email-rric@kernel.org>
-	<20130624152557.GU28407@twins.programming.kicks-ass.net>
-	<20130624194510.GC4065@gmail.com>
-	<20130625175729.GI21579@rric.localhost>
-	<20130625191654.GH4855@pd.tnic>
-	<20130626081223.GB21788@rric.localhost>
-	<20130626082408.GA20274@pd.tnic>
-	<20130626101132.GC21788@rric.localhost>
-	<20130626114538.GA4117@gmail.com>
-	<20130626124424.GD21788@rric.localhost>
-Date: Thu, 27 Jun 2013 14:46:36 +0900
-In-Reply-To: <20130626124424.GD21788@rric.localhost> (Robert Richter's message
-	of "Wed, 26 Jun 2013 14:44:24 +0200")
-Message-ID: <8761x014xv.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 27 Jun 2013 01:50:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20130627044705.GB29790@dastard>
+References: <87ehbpntuk.fsf@devron.myhome.or.jp>
+	<20130626231143.GC28426@dastard>
+	<87wqpg76ls.fsf@devron.myhome.or.jp>
+	<20130627044705.GB29790@dastard>
+Date: Wed, 26 Jun 2013 22:50:51 -0700
+Message-ID: <CAEsagEjP6jGhcZObr4QhNxsa=9ZxR5QTfxU+9YHg7GxFx+QuJQ@mail.gmail.com>
+Subject: Re: [PATCH] Optimize wait_sb_inodes()
+From: Daniel Phillips <daniel.raymond.phillips@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "tux3@tux3.org" <tux3@tux3.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
+Hi Dave,
 
-On Wed, 26 Jun 2013 14:44:24 +0200, Robert Richter wrote:
-> On 26.06.13 13:45:38, Ingo Molnar wrote:
->> [ How about to additional logic: attr.persistent=1 && attr.config==0 means 
->>   a new persistent event is created straight away - no ioctl is needed to 
->>   detach it explicitly. ]
->
-> That's correct. We could also do the following:
->
-> To connect to an existing event:
->
->  attr.type=<persistent-pmu> && attr.config==<event-id>
->
-> (This might be harder to implement except the persistent event pmu
-> type will be fix, PERF_TYPE_PERSISTENT=6.)
->
-> To create a new persistent event:
->
->  attr.persistent=1 && attr=<some event setup: pmu, config, flags, etc>
+On Wed, Jun 26, 2013 at 9:47 PM, Dave Chinner <david@fromorbit.com> wrote:
+> You have your own wait code, that doesn't make what the VFS does
+> unnecesary. Quite frankly, I don't trust individual filesystems to
+> get it right - there's a long history of filesystem specific data
+> sync problems (including in XFS), and the best way to avoid that is
+> to ensure the VFS gets it right for you.
 
-How about using 2 bits for perfsistent flag, 1 for connecting to an
-existing one, 2 for creating new one.
+I agree that some of the methods Tux3 uses to implement data integrity, sync
+and friends may be worth lifting up to core, or better, to a library,
+but we will
+all be better served if such methods are given time to mature first. After all,
+that basically describes the entire evolution of the VFS: new concepts start
+in a filesystem, prove themselves useful, then may be lifted up to be shared.
 
+It is important to get the order right: prove first, then lift.
 
->> >  * The persistent event is opened with the syscall, the process gets a
->> >    new fd of the event.
->> >  * The process attaches to the event buffer with mmap.
->> 
->> Yes. And gets the pre-existing event and mmap buffer.
->
-> That's what I mean.
->
-> A problem here is that mmap'ed buffer size (number of pages) must be
-> be equal to the pre-existing buffer size and thus to be known somehow.
+Regards,
 
-What about also exporting the buffer size via sysfs pmu directory?
-
-Thanks,
-Namhyung
+Daniel
