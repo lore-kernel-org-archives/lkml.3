@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3F0Q07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:26:59 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:34359 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab3F0Q04 (ORCPT
+	id S1753436Ab3F0Q0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:26:54 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:56754 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897Ab3F0Q0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:26:56 -0400
+	Thu, 27 Jun 2013 12:26:51 -0400
 From: Andy Whitcroft <apw@canonical.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, mszeredi@suse.cz,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 2/2] overlayfs -- follow change to do_splice_direct interface
-Date: Thu, 27 Jun 2013 17:26:44 +0100
-Message-Id: <1372350404-10359-4-git-send-email-apw@canonical.com>
+Subject: [PATCH 1/1] overlayfs -- ovl_path_open should not take path reference
+Date: Thu, 27 Jun 2013 17:26:42 +0100
+Message-Id: <1372350404-10359-2-git-send-email-apw@canonical.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1372350404-10359-1-git-send-email-apw@canonical.com>
 References: <1372350404-10359-1-git-send-email-apw@canonical.com>
@@ -22,45 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit below changed the interface to do_splice_direct, follow that
-change in copy_up:
+Since the commit below dentry_open now takes its own references
+as required.  We therefore should no longer take path references in
+ovl_path_open.  Doing so leaves stray mount references to the underlying
+devices preventing them being released:
 
-  commit 7995bd287134f6c8f80d94bebe7396f05a9bc42b
-  Author: Al Viro <viro@zeniv.linux.org.uk>
-  Date:   Thu Jun 20 18:58:36 2013 +0400
+    commit 765927b2d508712d320c8934db963bbe14c3fcec
+    Author: Al Viro <viro@zeniv.linux.org.uk>
+    Date:   Tue Jun 26 21:58:53 2012 +0400
 
-    splice: don't pass the address of ->f_pos to methods
+        switch dentry_open() to struct path, make it grab references itself
 
+BugLink: http://bugs.launchpad.net/bugs/1098378
 Signed-off-by: Andy Whitcroft <apw@canonical.com>
 ---
- fs/overlayfs/copy_up.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/overlayfs/super.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/fs/overlayfs/copy_up.c b/fs/overlayfs/copy_up.c
-index eef85e0..8e1b09f 100644
---- a/fs/overlayfs/copy_up.c
-+++ b/fs/overlayfs/copy_up.c
-@@ -90,9 +90,10 @@ static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
+
+    Found this in testing on Ubuntu raring, testing against loopback
+    mounted files.  Without this change we were unable to release the
+    loopback device for reuse.  Looking at it actually we were also leaking
+    references on the root filesystem, but these are not as obvious.
+    Applies against overlayfs.v17 as rebased to 3.8 and later.
+
+    -apw
+
+
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index 482c26f..9473e79 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -385,7 +385,6 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
  
- 	/* FIXME: copy up sparse files efficiently */
- 	while (len) {
--		loff_t offset = new_file->f_pos;
- 		size_t this_len = OVL_COPY_UP_CHUNK_SIZE;
- 		long bytes;
-+		loff_t pos = old_file->f_pos;
-+		loff_t out_pos = new_file->f_pos;
+ struct file *ovl_path_open(struct path *path, int flags)
+ {
+-	path_get(path);
+ 	return dentry_open(path, flags, current_cred());
+ }
  
- 		if (len < this_len)
- 			this_len = len;
-@@ -102,7 +103,7 @@ static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
- 			break;
- 		}
- 
--		bytes = do_splice_direct(old_file, &offset, new_file, this_len,
-+		bytes = do_splice_direct(old_file, &pos, new_file, &out_pos, this_len,
- 				 SPLICE_F_MOVE);
- 		if (bytes <= 0) {
- 			error = bytes;
 -- 
 1.8.3.1
 
