@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3F0RjK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 13:39:10 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:59961 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab3F0RjI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 13:39:08 -0400
-Message-ID: <51CC78B8.3050709@linaro.org>
-Date: Thu, 27 Jun 2013 10:39:04 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753836Ab3F0RjR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 13:39:17 -0400
+Received: from rrcs-24-173-105-85.sw.biz.rr.com ([24.173.105.85]:44258 "EHLO
+	mx1.mthode.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728Ab3F0RjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 13:39:13 -0400
+Message-ID: <51CC78C2.2020406@gentoo.org>
+Date: Thu, 27 Jun 2013 12:39:14 -0500
+From: Matthew Thode <prometheanfire@gentoo.org>
+Reply-To: prometheanfire@gentoo.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130520 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/5] time: pass flags instead of multiple bools to timekeeping_update()
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <1372329348-20841-3-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1372329348-20841-3-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        kernel@gentoo.org, hardened-kernel@gentoo.org, corsac@debian.org
+Subject: Re: 3.9.7, 3.10-rc7 - UEFI stalls at boot (nothing displayed), when
+ booting with mem=300M
+References: <51CC6CAE.6070401@gentoo.org> <20130627172705.GA16316@srcf.ucam.org>
+In-Reply-To: <20130627172705.GA16316@srcf.ucam.org>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2JWPGSDDRJICHWNKWUHDP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 03:35 AM, David Vrabel wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
->
-> Instead of passing multiple bools to timekeeping_updated(), define
-> flags and use a single 'action' parameter.  It is then more obvious
-> what each timekeeping_update() call does.
->
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->   kernel/time/timekeeping.c |   21 ++++++++++++---------
->   1 files changed, 12 insertions(+), 9 deletions(-)
->
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index baeeb5c..7aed2b0 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -26,6 +26,9 @@
->   #include "tick-internal.h"
->   #include "ntp_internal.h"
->   
-> +#define TK_CLEAR_NTP (1 << 0)
-> +#define TK_MIRROR (1 << 1)
-> +
->   static struct timekeeper timekeeper;
->   static DEFINE_RAW_SPINLOCK(timekeeper_lock);
->   static seqcount_t timekeeper_seq;
-> @@ -241,16 +244,16 @@ int pvclock_gtod_unregister_notifier(struct notifier_block *nb)
->   EXPORT_SYMBOL_GPL(pvclock_gtod_unregister_notifier);
->   
->   /* must hold timekeeper_lock */
-> -static void timekeeping_update(struct timekeeper *tk, bool clearntp, bool mirror)
-> +static void timekeeping_update(struct timekeeper *tk, unsigned action)
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2JWPGSDDRJICHWNKWUHDP
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Nit: Mind making this "unsigned int" just for consistency sake with the 
-rest of the code?
+On 06/27/2013 12:27 PM, Matthew Garrett wrote:
+> On Thu, Jun 27, 2013 at 11:47:42AM -0500, Matthew Thode wrote:
+>> There is an early boot failure with linux-3.[9,10].??? when booting
+>> using uefi on low memory systems.
+>=20
+> Does it happen on systems that genuinely have small amounts of memory, =
 
-thanks
--john
+> or only on systems where you're passing mem=3D?
+>=20
+I don't have a system (or even memory to place in this one) that has
+that small amount of memory.  Do they even make ddr3 sodimms that small?
 
+--=20
+-- Matthew Thode (prometheanfire)
+
+
+------enig2JWPGSDDRJICHWNKWUHDP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzHjZAAoJECRx6z5ArFrDXtkQAInHEykCC2pM6nITTLUxaJbA
+nYg7x3g8hHEecZappYZtA4Aa+G3kR+900LLMe2tKpuhZm/yShd2zzdHCwbg5+7p7
+5LzlJuGVJLTfrhnEgPmLPxONjAYdkHMHFA9/vJ3VjLcbNgtr3Nfh5VkmIe9LEkVP
+RiGIMl66/IvAbBwkfX9cEb8m1iX5hMjZYaN7uWRmUiwHQPnmScoECri74ohKZY3A
+LCaz7QY88CVTUUegMzWbn+Mo2+lwOjSBvnsu7RDNEtOjzVfZb4c1O/rjPYmS7jtj
+smB3a4DAR3NrlFi81N9N07/+Zz3Gx3Uty6koQBRrMQBd8necVVu+pXXtHYS99a2L
+sjl2OGok+xzofs/DYd3rwrg8lYE4XT/7SKCdkmBsfBqLbnyqSG0i4g/G7Hqz7Vrf
+0Ac1sjL0xokYsG8QerOb5xzyNFHmi60QJLR3cLtkiaPBiDtWlLNvF8pkbxKZbpk1
+ZM10ZKGYpzTqrHfG8iMNgoZrsV/bO21aMbkK++vW/AHWxykiqO2f2oxNXZeh8Hnm
+vHKH1ClmF+LKaDpQP8mkMSkOHHViuS/Zv4RkDts3sQg2Dy+pa0E9AnRivagugegd
+dh63stNdBJbKMHMlTt7K+c3T9VoQ5Q37AwSHgjsjn98PJ/jcDM9i48K0kYM9qaFE
+awM/2WEG2Snocdf42ceZ
+=s65X
+-----END PGP SIGNATURE-----
+
+------enig2JWPGSDDRJICHWNKWUHDP--
