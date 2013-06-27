@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab3F0SJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 14:09:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40025 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753849Ab3F0SJl convert rfc822-to-8bit (ORCPT
+	id S1753975Ab3F0SKS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 14:10:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52429 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab3F0SKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 14:09:41 -0400
-From: "Fernandes, Joel" <joelf@ti.com>
-To: "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>
-CC: "lars@metafoo.de" <lars@metafoo.de>, Tony Lindgren <tony@atomide.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>, Matt Porter <matt@ohporter.com>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
-        "Russell King" <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        "Koen Kooi" <koen@beagleboard.org>, Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, "lars@metafoo.de" <lars@metafoo.de>
-Subject: RE: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD data
-Thread-Topic: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD data
-Thread-Index: AQHOc0JBa2Q1+uiBuUi8y9XUd9fX75lKE40A///GQbA=
-Date: Thu, 27 Jun 2013 18:08:55 +0000
-Message-ID: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4F0F95@DLEE08.ent.ti.com>
-References: <1372209808-6532-1-git-send-email-joelagnel@ti.com>
- <CAD=GYpbdVVrh-tiqOcbHi3mkWRJUBdx0EsEZEFVVbgFgcCWgsw@mail.gmail.com>
- <51CC2A1E.2040003@ti.com>
- <CAD=GYpa9LQ1fV6=O9B65sJURVAigsgXCPLWav8cHXTuGQXPc9A@mail.gmail.com>
- <51CC67CA.2070805@ti.com>
-In-Reply-To: <51CC67CA.2070805@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 27 Jun 2013 14:10:14 -0400
+Message-ID: <51CC7EA1.1040509@wwwdotorg.org>
+Date: Thu, 27 Jun 2013 12:04:17 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Leif Lindholm <leif.lindholm@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
+Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
+References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org> <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org> <51CA2B03.4080106@wwwdotorg.org> <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com> <51CB33BE.2020601@wwwdotorg.org> <20130626193158.GF9078@rocoto.smurfnet.nu>
+In-Reply-To: <20130626193158.GF9078@rocoto.smurfnet.nu>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balaji,
-
-> -----Original Message-----
-> From: Krishnamoorthy, Balaji T
-> Sent: Thursday, June 27, 2013 11:27 AM
-> To: Cousson, Benoit; Fernandes, Joel
-> Cc: lars@metafoo.de; Tony Lindgren; Nori, Sekhar; Matt Porter; Grant Likely;
-> Rob Herring; Vinod Koul; Mark Brown; Russell King; Rob Landley; Andrew
-> Morton; Jason Kridner; Koen Kooi; Chris Ball; Devicetree Discuss; Linux OMAP
-> List; Linux ARM Kernel List; Linux DaVinci Kernel List; Linux Kernel Mailing List;
-> Linux MMC List; Arnd Bergmann
-> Subject: Re: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD
-> data
+On 06/26/2013 01:31 PM, Leif Lindholm wrote:
+> On Wed, Jun 26, 2013 at 12:32:30PM -0600, Stephen Warren wrote:
+>>>> What about ARMv8? Is the intention to have a separate definition for the
+>>>> UEFI bindings on ARMv8, so that compatibility isn't an issue? What if a
+>>>> future version of UEFI allows LPAE usage?
+>>>
+>>> It is unlikely that will happen on v7 since newer versions of UEFI are
+>>> expected to remain backwards compatible with the current spec.
+>>
+>> The expectation of backwards-compatibility sounds nice, but it seems a
+>> little dangerous to outright rely on it.
+>>
+>> Even if not a regular compatible property, can we define a property that
+>> indicates the UEFI revision or revision of this DT binding, so that if
+>> we ever have to change it, there is some way of explicitly indicating
+>> which exact schema the DT corresponds to, rather than having to
+>> reverse-engineer it from the set of properties that "just happen" to be
+>> present in DT?
+>>
+>> This is rather like the firmware node discussion that happened recently,
+>> where we were expecting to represent a firmware (secure mode) interface
+>> by a DT node, which would have a compatible value, which in turn would
+>> convey information about which "OS" the secure firmware was running, and
+>> well as any potential SoC-/OEM-/board-specific interface provided by it.
+>>
+>> And who knows, what if UEFI gets replaced someday; presumably we'd want
+>> some way of explicitly stating "running under UEFI" vs. "running under
+>> something else"?
 > 
-> On Thursday 27 June 2013 07:56 PM, Joel A Fernandes wrote:
-> > Hi Benoit,
-> >
-> > On Thu, Jun 27, 2013 at 7:03 AM, Benoit Cousson <b-cousson@ti.com> wrote:
-> >> Hi Joel,
-> >>
-> >> On 06/26/2013 05:28 AM, Joel A Fernandes wrote:
-> >>> On Tue, Jun 25, 2013 at 8:23 PM, Joel A Fernandes <joelagnel@ti.com>
-> wrote:
-> >>>> From: Joel A Fernandes <agnel.joel@gmail.com>
-> >>>>
-> >>>> This series is fixes to get MMC working on AM33XX without HWMOD
-> data.
-> >>>> On removal of HWMOD data, interrupt and register properties need to
-> >>>> be provided for the driver to function correctly.
-> >>>
-> >>> Please don't pull patches authored by me in this series. I have
-> >>> posted them with my wrong email address by mistake. I will correct
-> >>> my email during the next repost, after a round of review. Matt's
-> >>> patches in the series are still good though.
-> >>
-> >> In that case, please repost these in two series to avoid pulling the
-> >> DTS files in the MMC tree.
-> >
-> > The series has been replaced with the single patch:
-> > "[PATCH v2] ARM: dts: add AM33XX MMC support"
-> > http://marc.info/?l=linux-omap&m=137230403815943&w=2
-> >
-> > Some patches were squashed and others dropped in the series resulting
-> > in the single patch above. This patch should be good to apply
-> Hi Joel,
-> 
-> Before pushing mmc dts support for am335x, Can you please let me
-> know if below 2 patches [1] are merged/accepted,
-> IIRC these patches are needed for MMC to work properly.
-> 
-> I suggest to hold the dts patch until slave_sg_limit gets merged
-> otherwise it will cause regression in am335x mmc.
-> 
-> [PATCH v4 1/3] dmaengine: add dma_get_slave_sg_limits()
-> [PATCH v4 2/3] dma: edma: add device_slave_sg_limits() support
+> To me, these concerns are all covered by the existence of the
+> efi-system-table node, and the version number that you can extract
+> from the table (mandatory in any UEFI implementation) located at that
+> address. There is no reverse-engineering involved.
 
-Actually this is an independent regression and is currently worked on by Lars-Peter Clausen [1].
+So, what you're saying is that the existence (or lack thereof) of the
+efi-system-table property is the indicator whether EFI is present? I
+guess if we assume that EFI will always evolve at least compatibly
+enough that the system table will always exist and be formatted
+identically at least to the extent of allowing the EFI version number to
+be parsed then that's workable. If that guarantee is broken, then we can
+always define a different property that points at the new format of the
+table.
 
-Currently not having the MMC DTS merged is also a regression, so I suggest lets take it one
-step at a time and get the DTS merged in first. Also there will be overhead of reposting this
-DTS patch later again which will not change. What do you say?
+This still seems a little implicit to me; having an explicit node with
+an explicit compatible value is much more in line with what's been
+discussed for other firmware interfaces.
 
-Thanks,
-
--Joel
-
-[1] https://patchwork.kernel.org/patch/2228041/
+However, I suppose it will work fine.
