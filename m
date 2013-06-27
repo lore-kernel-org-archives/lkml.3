@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab3F0WCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 18:02:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39124 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab3F0WCc (ORCPT
+	id S1754188Ab3F0WDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 18:03:42 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:50576 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727Ab3F0WDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 18:02:32 -0400
-Date: Thu, 27 Jun 2013 15:02:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
-        minchan@kernel.org, anton@enomsg.org, kmpark@infradead.org,
-        hyunhee.kim@samsung.com
-Subject: Re: [PATCH v2] vmpressure: implement strict mode
-Message-Id: <20130627150231.2bc00e3efcd426c4beef894c@linux-foundation.org>
-In-Reply-To: <20130626231712.4a7392a7@redhat.com>
-References: <20130626231712.4a7392a7@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jun 2013 18:03:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANeycqrP6n5GU-Ty17B2_6de_vruAxYNsOQ3WGSEAVDD=NBx2A@mail.gmail.com>
+References: <1372123520-18287-1-git-send-email-wedsonaf@gmail.com>
+	<20130625.162054.890870423042371628.davem@davemloft.net>
+	<CANeycqrP6n5GU-Ty17B2_6de_vruAxYNsOQ3WGSEAVDD=NBx2A@mail.gmail.com>
+Date: Thu, 27 Jun 2013 15:03:40 -0700
+Message-ID: <CANeycqoqOPwEQqvvhQy3HJ8t7ViLORqvP3bpnP7zPeuLu1qMRA@mail.gmail.com>
+Subject: Re: [PATCH v3] net: Unmap fragment page once iterator is done
+From: Wedson Almeida Filho <wedsonaf@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Thomas Graf <tgraf@suug.ch>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jun 2013 23:17:12 -0400 Luiz Capitulino <lcapitulino@redhat.com> wrote:
+>> This patch doesn't even come close to applying to the net-next tree,
+>> please respin this patch properly and resubmit.
+>
+> Where can I pull the net-next tree from?
+> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git?
 
-> Currently, an eventfd is notified for the level it's registered for
-> _plus_ higher levels.
-> 
-> This is a problem if an application wants to implement different
-> actions for different levels. For example, an application might want
-> to release 10% of its cache on level low, 50% on medium and 100% on
-> critical. To do this, an application has to register a different
-> eventfd for each pressure level. However, fd low is always going to
-> be notified and and all fds are going to be notified on level critical.
-> 
-> Strict mode solves this problem by strictly notifiying an eventfd
-> for the pressure level it registered for. This new mode is optional,
-> by default we still notify eventfds on higher levels too.
-> 
+David, would you mind clarifying where I can find net-next? The only
+one I could find was the one I mention above and it already has my
+patch in it (though with the previous comment).
 
-It didn't take long for this simple interface to start getting ugly :(
-And having the fd operate in different modes is ugly.
-
-Can we instead pass the level in the event payload?
-
+Thanks
