@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab3F0IvH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:51:07 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:57118 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab3F0IvA (ORCPT
+	id S1753487Ab3F0Iy4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:54:56 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:53014 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753262Ab3F0Iyw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:51:00 -0400
-Date: Thu, 27 Jun 2013 10:50:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Namhyung Kim <namhyung@kernel.org>, Robert Richter <rric@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/14] perf, persistent: Kernel updates for perf tool
- integration
-Message-ID: <20130627085056.GB3730@gmail.com>
-References: <20130624194510.GC4065@gmail.com>
- <20130625175729.GI21579@rric.localhost>
- <20130625191654.GH4855@pd.tnic>
- <20130626081223.GB21788@rric.localhost>
- <20130626082408.GA20274@pd.tnic>
- <20130626101132.GC21788@rric.localhost>
- <20130626114538.GA4117@gmail.com>
- <20130626124424.GD21788@rric.localhost>
- <8761x014xv.fsf@sejong.aot.lge.com>
- <20130627083522.GA21224@pd.tnic>
+	Thu, 27 Jun 2013 04:54:52 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627083522.GA21224@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent CPU offline
+Date: Thu, 27 Jun 2013 09:54:41 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B72AB@saturn3.aculab.com>
+In-Reply-To: <51CB3159.8000509@linux.vnet.ibm.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH v2 15/45] rcu: Use get/put_online_cpus_atomic() to prevent CPU offline
+thread-index: Ac5ympKrkc7SHUweQxex3RwLfAPpSAAdzsqg
+References: <20130625202452.16593.22810.stgit@srivatsabhat.in.ibm.com> <20130625202755.16593.67819.stgit@srivatsabhat.in.ibm.com> <20130625220026.GG3828@linux.vnet.ibm.com> <51CAF624.6060004@linux.vnet.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B72AA@saturn3.aculab.com> <20130626143424.GN3828@linux.vnet.ibm.com> <1372258271.18733.256.camel@gandalf.local.home> <20130626152148.GA4405@mtj.dyndns.org> <51CB3159.8000509@linux.vnet.ibm.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Tejun Heo" <tj@kernel.org>
+Cc: "Steven Rostedt" <rostedt@goodmis.org>, <paulmck@linux.vnet.ibm.com>,
+        <peterz@infradead.org>, <fweisbec@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <walken@google.com>,
+        <mingo@kernel.org>, <linux-arch@vger.kernel.org>,
+        <vincent.guittot@linaro.org>, <xiaoguangrong@linux.vnet.ibm.com>,
+        <wangyun@linux.vnet.ibm.com>, <nikunj@linux.vnet.ibm.com>,
+        <linux-pm@vger.kernel.org>, <rusty@rustcorp.com.au>,
+        <namhyung@kernel.org>, <tglx@linutronix.de>, <laijs@cn.fujitsu.com>,
+        <zhong@linux.vnet.ibm.com>, <netdev@vger.kernel.org>,
+        <oleg@redhat.com>, <sbw@mit.edu>, <akpm@linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Borislav Petkov <bp@alien8.de> wrote:
-
-> > > A problem here is that mmap'ed buffer size (number of pages) must be 
-> > > be equal to the pre-existing buffer size and thus to be known 
-> > > somehow.
-> > 
-> > What about also exporting the buffer size via sysfs pmu directory?
+> >>> It would also increase the latency of CPU-hotunplug operations.
+> >>
+> >> Is that a big deal?
+> >
+> > I thought that was the whole deal with this patchset - making cpu
+> > hotunplugs lighter and faster mostly for powersaving.  That said, just
+> > removing stop_machine call would be a pretty good deal and I don't
+> > know how meaningful reducing CPU hotunplug latency is.  Srivatsa?
+> >
 > 
-> Yes, we've been discussing buffer size. The simplest thing is to 
-> hardcode the buffer size so that it is implicitly known to all agents. 
-> However, I don't know whether there is a use case where different buffer 
-> sizes actually make sense. I'd tend to do the simplest thing initially.
+> Keeping the hotunplug latency is important for suspend/resume, where
+> we take all non-boot CPUs in a loop. That's an interesting use-case
+> where intrusiveness doesn't matter much, but latency does. So yes,
+> making CPU hotplug faster is also one of the goals of this patchset.
 
-Btw., in terms of testing and design focus I'd suggest concentrating not 
-on rare and relatively singular events like RAS MCE events, but on a more 
-'everyday tracing' flow of events:
+If you are removing all but one of the cpu, the you only need
+one rcu cycle (remove everything from the list first).
 
- - large, per cpu trace buffers
+I'd also guess that you can't suspend a cpu until you can sleep
+the process that is running on it - so if a process has pre-emption
+disabled you aren't going to complete suspend until the process
+sleeps (this wouldn't be true if you suspended the cpu with its
+current stack - but if suspend is removing the non-boot cpus first
+it must be doing so from the scheduler idle loop).
 
- - all events output into a single trace buffer to get a coherent trace
+If you are doing suspend for aggressive power saving, then all the
+processes (and processors) will already be idle. However you
+probably wouldn't want the memory accesses to determine this on
+a large NUMA system with 1024+ processors.
 
- - [ possibly revive the tracepoint-multiplexing patch from peterz/tglx,
-     to be able to get a rich selection of tracepoints. ]
+	David
 
-That is I think the workflow most people will be interested in:
 
- - they have a workload to analyze and they want to do some 'tracing' to 
-   understand it better or to pinpoint a problem.
 
- - based on the problem they want to trace a selection of tracepoints, as 
-   easily and quickly as possible.
-
- - we could possibly provide a few 'groups' of tracepoints for typical
-   uses - for example scheduler tracing, or MM tracing, or IO tracing,
-   etc.), so people wouldn't have to specify a dozen tracepoints but could
-   symbolically refer to any of these pre-cooked groups. [this is probably
-   a tooling detail.]
-
- - they want to persistently trace into a generously sized trace buffer,
-   without any tool running while the collection period lasts.
-
- - to refine the result they'd like to stop/start tracing, reset/clear the
-   tracebuffer for failed attempts, and generally see how large the
-   tracebuffer is.
-
- - and extract/analyze traces - both in a detailed form and in summary
-   fashion.
-
- - they possibly want to save it to a perf.data and have equivalent
-   facilities of analysis.
-
-If that workflow works well then the RAS angle will work well too.
-
-Thanks,
-
-	Ingo
