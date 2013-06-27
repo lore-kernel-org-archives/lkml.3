@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab3F0JDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:03:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46098 "EHLO
+	id S1753722Ab3F0JDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:03:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46109 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab3F0JDg (ORCPT
+	with ESMTP id S1752959Ab3F0JDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:03:36 -0400
-Date: Thu, 27 Jun 2013 02:02:59 -0700
-From: tip-bot for Alex Shi <tipbot@zytor.com>
-Message-ID: <tip-a9cef46a10cc1b84bf2cdf4060766d858c0439d8@git.kernel.org>
+	Thu, 27 Jun 2013 05:03:47 -0400
+Date: Thu, 27 Jun 2013 02:03:34 -0700
+From: tip-bot for Kamalesh Babulal <tipbot@zytor.com>
+Message-ID: <tip-239003ea2e30374d1cdfee788867e497cca2366c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, pjt@google.com, alex.shi@intel.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
+        kamalesh@linux.vnet.ibm.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, peterz@infradead.org, alex.shi@intel.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
-In-Reply-To: <1371694737-29336-13-git-send-email-alex.shi@intel.com>
-References: <1371694737-29336-13-git-send-email-alex.shi@intel.com>
+        kamalesh@linux.vnet.ibm.com, tglx@linutronix.de
+In-Reply-To: <20130627060409.GB18582@linux.vnet.ibm.com>
+References: <20130627060409.GB18582@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/tg: Remove tg.load_weight
-Git-Commit-ID: a9cef46a10cc1b84bf2cdf4060766d858c0439d8
+Subject: [tip:sched/core] sched:
+  Fix typo in struct sched_avg member description
+Git-Commit-ID: 239003ea2e30374d1cdfee788867e497cca2366c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,41 +28,42 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 27 Jun 2013 02:03:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 27 Jun 2013 02:03:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a9cef46a10cc1b84bf2cdf4060766d858c0439d8
-Gitweb:     http://git.kernel.org/tip/a9cef46a10cc1b84bf2cdf4060766d858c0439d8
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Thu, 20 Jun 2013 10:18:56 +0800
+Commit-ID:  239003ea2e30374d1cdfee788867e497cca2366c
+Gitweb:     http://git.kernel.org/tip/239003ea2e30374d1cdfee788867e497cca2366c
+Author:     Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+AuthorDate: Thu, 27 Jun 2013 11:34:09 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 27 Jun 2013 10:07:43 +0200
+CommitDate: Thu, 27 Jun 2013 10:18:26 +0200
 
-sched/tg: Remove tg.load_weight
+sched: Fix typo in struct sched_avg member description
 
-Since no one use it.
+Remove extra 'for' from the description about member of
+struct sched_avg.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Tested-by: Vincent Guittot <vincent.guittot@linaro.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1371694737-29336-13-git-send-email-alex.shi@intel.com
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Cc: pjt@google.com
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/20130627060409.GB18582@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/sched.h | 1 -
- 1 file changed, 1 deletion(-)
+ include/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 7059919..ef0a7b2 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -148,7 +148,6 @@ struct task_group {
- 	struct cfs_rq **cfs_rq;
- 	unsigned long shares;
- 
--	atomic_t load_weight;
- #ifdef	CONFIG_SMP
- 	atomic_long_t load_avg;
- 	atomic_t runnable_avg;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0019bef..ec80684 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -924,7 +924,7 @@ struct load_weight {
+ struct sched_avg {
+ 	/*
+ 	 * These sums represent an infinite geometric series and so are bound
+-	 * above by 1024/(1-y).  Thus we only need a u32 to store them for for all
++	 * above by 1024/(1-y).  Thus we only need a u32 to store them for all
+ 	 * choices of y < 1-2^(-32)*1024.
+ 	 */
+ 	u32 runnable_avg_sum, runnable_avg_period;
