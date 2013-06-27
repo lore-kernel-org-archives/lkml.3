@@ -1,110 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568Ab3F0ER5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 00:17:57 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:10837 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab3F0ERc (ORCPT
+	id S1751181Ab3F0EXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 00:23:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48037 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab3F0EX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 00:17:32 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-df-51cbbcd9c71c
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 2/2] f2fs: fix to recover i_size from roll-forward
-Date: Thu, 27 Jun 2013 13:17:28 +0900
-Message-id: <1372306648-26438-2-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.3.1.437.g0dbd812
-In-reply-to: <1372306648-26438-1-git-send-email-jaegeuk.kim@samsung.com>
-References: <1372306648-26438-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t8zfd2be04HGrxcyG5xfddfJotLi9wt
-	9uw9yWJxedccNgcWj90LPjN59G1ZxejxeZNcAHMUl01Kak5mWWqRvl0CV8bxGe+ZCjbyVaxe
-	9oS9gfENdxcjJ4eEgInE1hO3mCBsMYkL99azdTFycQgJLGOUWNm/jQmm6EbzHBaIxCJGifUN
-	ZxghnDYmiVk/O4GqODjYBLQlNu83AGkQEWCWWDD1PFgNs8AERon/i96zgCSEBZwkDrSfYgex
-	WQRUJSa8/AYW5xVwl9jb/5kNYpuuxKITB1lBbE4BD4mTXw+B1QgB1dzvhYhLCHxnk7jzgAdi
-	joDEt8kgNRxAcVmJTQeYIUokJQ6uuMEygVF4ASPDKkbR1ILkguKk9CJjveLE3OLSvHS95Pzc
-	TYyQkO3fwXj3gPUhxmSgcROZpUST84Ehn1cSb2hsZmRhamJqbGRuaUaasJI4r1qLdaCQQHpi
-	SWp2ampBalF8UWlOavEhRiYOTqkGRlHWBzM29F9dEyd/YdHN6StPLjXS2stkzjlTK1ar7evd
-	49J6b6UfC+u4Tr5sEl7T5q7mqjGRqbY5lGur1vwwDv8nU2Xajv9TOLRk+afFN6d/qZsoV+x3
-	eJfgMxfJk/nKP5TjsrvNSnWNzp+c5FyoOu+hUuICfi93jW+ydfNb7rtq2sxqu/h1vhJLcUai
-	oRZzUXEiAGm9q/VvAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd2be04HGnx+ymxxfddfJotLi9wt
-	9uw9yWJxedccNgcWj90LPjN59G1ZxejxeZNcAHNUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxz
-	vKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtA2JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+
-	IUFwPUYGaCBhHWPG8RnvmQo28lWsXvaEvYHxDXcXIyeHhICJxI3mOSwQtpjEhXvr2boYuTiE
-	BBYxSqxvOMMI4bQxScz62cnUxcjBwSagLbF5vwFIg4gAs8SCqefBapgFJjBK/F/0HmySsICT
-	xIH2U+wgNouAqsSEl9/A4rwC7hJ7+z+zQWzTlVh04iAriM0p4CFx8ushsBohoJr7vQdZJzDy
-	LmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHBPPpHYwrmywOMQowMGoxMPrwXI6UIg1
-	say4MvcQowQHs5IIb2gOUIg3JbGyKrUoP76oNCe1+BBjMtBVE5mlRJPzgfGaVxJvaGxiZmRp
-	ZGZhZGJuTpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MyTrXvwRuanlRseexxfragoWv
-	r0769fVFzIt1bxjUNQXD7/r4qPlWr9764eP/rhXxO6Jy6nkfNymbG1letWo4/2fy0usvN9tW
-	vunYdVZKU2rR8/WtHU9vNdzf0OHJcPljDqPFtNjdgfn6zneOlfV1q20/xvHoV1x7XW+rdK8f
-	T5ju28WXbUsvKLEUZyQaajEXFScCAB7lSZzNAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 27 Jun 2013 00:23:29 -0400
+Date: Thu, 27 Jun 2013 14:23:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: linux-next: manual merge of the wireless-next tree with the
+ net-next tree
+Message-Id: <20130627142318.78f78fdbb49c927a7cb7bc50@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Jun_2013_14_23_18_+1000_=EhFNpj+hBjn1IEi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If user requests many data writes and fsync together, the last updated i_size
-should be stored to the inode block consistently.
+--Signature=_Thu__27_Jun_2013_14_23_18_+1000_=EhFNpj+hBjn1IEi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But, previous write_end just marks the inode as dirty and doesn't update its
-metadata into its inode block.
-After that, fsync just writes the inode block with newly updated data index
-excluding inode metadata updates.
+Hi John,
 
-So, this patch introduces write_end in which updates inode block too when the
-i_size is changed.
+Today's linux-next merge of the wireless-next tree got a conflict in
+net/wireless/nl80211.c between merge commits from the net-next tree and
+commit 86e8cf98de3e ("nl80211: use small state buffer for wiphy_dump")
+from the wireless-next tree.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/data.c | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+I think I fixed it up (see below, please check) and can carry the fix as
+necessary (no action is required).  I think that my fix means that that
+commit 86e8cf98de3e is missing the extra "rtnl_unlock();", right?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 6d4a743..e88f46f 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -701,6 +701,27 @@ err:
- 	return err;
- }
- 
-+static int f2fs_write_end(struct file *file,
-+			struct address_space *mapping,
-+			loff_t pos, unsigned len, unsigned copied,
-+			struct page *page, void *fsdata)
-+{
-+	struct inode *inode = page->mapping->host;
-+
-+	SetPageUptodate(page);
-+	set_page_dirty(page);
-+
-+	if (pos + copied > i_size_read(inode)) {
-+		i_size_write(inode, pos + copied);
-+		mark_inode_dirty(inode);
-+		update_inode_page(inode);
-+	}
-+
-+	unlock_page(page);
-+	page_cache_release(page);
-+	return copied;
-+}
-+
- static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
- 		const struct iovec *iov, loff_t offset, unsigned long nr_segs)
- {
-@@ -757,7 +778,7 @@ const struct address_space_operations f2fs_dblock_aops = {
- 	.writepage	= f2fs_write_data_page,
- 	.writepages	= f2fs_write_data_pages,
- 	.write_begin	= f2fs_write_begin,
--	.write_end	= nobh_write_end,
-+	.write_end	= f2fs_write_end,
- 	.set_page_dirty	= f2fs_set_data_page_dirty,
- 	.invalidatepage	= f2fs_invalidate_data_page,
- 	.releasepage	= f2fs_release_data_page,
--- 
-1.8.3.1.437.g0dbd812
+diff --cc net/wireless/nl80211.c
+index e545023,7dc3343..0000000
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@@ -1520,47 -1562,23 +1562,25 @@@ static int nl80211_dump_wiphy_parse(str
+  static int nl80211_dump_wiphy(struct sk_buff *skb, struct netlink_callbac=
+k *cb)
+  {
+  	int idx =3D 0, ret;
+- 	int start =3D cb->args[0];
++ 	struct nl80211_dump_wiphy_state *state =3D (void *)cb->args[0];
+  	struct cfg80211_registered_device *dev;
+- 	s64 filter_wiphy =3D -1;
+- 	bool split =3D false;
+- 	struct nlattr **tb;
+- 	int res;
+-=20
+- 	/* will be zeroed in nlmsg_parse() */
+- 	tb =3D kmalloc(sizeof(*tb) * (NL80211_ATTR_MAX + 1), GFP_KERNEL);
+- 	if (!tb)
+- 		return -ENOMEM;
+ =20
+  	rtnl_lock();
+-=20
+- 	res =3D nlmsg_parse(cb->nlh, GENL_HDRLEN + nl80211_fam.hdrsize,
+- 			  tb, NL80211_ATTR_MAX, nl80211_policy);
+- 	if (res =3D=3D 0) {
+- 		split =3D tb[NL80211_ATTR_SPLIT_WIPHY_DUMP];
+- 		if (tb[NL80211_ATTR_WIPHY])
+- 			filter_wiphy =3D nla_get_u32(tb[NL80211_ATTR_WIPHY]);
+- 		if (tb[NL80211_ATTR_WDEV])
+- 			filter_wiphy =3D nla_get_u64(tb[NL80211_ATTR_WDEV]) >> 32;
+- 		if (tb[NL80211_ATTR_IFINDEX]) {
+- 			struct net_device *netdev;
+- 			int ifidx =3D nla_get_u32(tb[NL80211_ATTR_IFINDEX]);
+-=20
+- 			netdev =3D dev_get_by_index(sock_net(skb->sk), ifidx);
+- 			if (!netdev) {
+- 				rtnl_unlock();
+- 				kfree(tb);
+- 				return -ENODEV;
+- 			}
+- 			if (netdev->ieee80211_ptr) {
+- 				dev =3D wiphy_to_dev(
+- 					netdev->ieee80211_ptr->wiphy);
+- 				filter_wiphy =3D dev->wiphy_idx;
+- 			}
+- 			dev_put(netdev);
++ 	if (!state) {
++ 		state =3D kzalloc(sizeof(*state), GFP_KERNEL);
+ -		if (!state)
+++		if (!state) {
+++			rtnl_unlock();
++ 			return -ENOMEM;
+ +		}
++ 		state->filter_wiphy =3D -1;
++ 		ret =3D nl80211_dump_wiphy_parse(skb, cb, state);
++ 		if (ret) {
++ 			kfree(state);
++ 			rtnl_unlock();
++ 			return ret;
++ 		}
++ 		cb->args[0] =3D (long)state;
+  	}
+- 	kfree(tb);
+ =20
+  	list_for_each_entry(dev, &cfg80211_rdev_list, list) {
+  		if (!net_eq(wiphy_net(&dev->wiphy), sock_net(skb->sk)))
 
+--Signature=_Thu__27_Jun_2013_14_23_18_+1000_=EhFNpj+hBjn1IEi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRy746AAoJEECxmPOUX5FEBcsP/i5W3WsuWTGCFZbLWbrIwfbW
+GiUPzKTleWXMOLiOkNyRh/4YhSOrCuuOyeRdZe5c6VUSvpKDY78By7IpnVTX1U4y
+/dZP2s+qTMnMa3DLMSpWBGQ2sojMKWUXpFdUmkp1ucxWc03edzn75yIEiZ0pM25G
+bhNTlLWd/S9VAJUsh+daaMDXgoQMz0+8yIVT9iRhbu6thhWcKIenlgqQgi2X52qM
+ox0AHciiaM6Mn6fcdn0oLlXbYWN4GiBxEenQv9Q0CQ769RwyGxLnbVsiRNnURbuL
+XxcumrRNOYeQG9Ty/RjyD1OE+AzwK+WWkjlLE9emg1IzhjCuWSPmAmaAAAs/AIAe
+4+Ks3AK9jvM8LU7HbF+ygIxzx+GCCFs9I4eKZ4trPZyiQScCCgg4HZBmDFT576YA
+ZE/HRw5BbHzWv2EUYqG6nXp8VWSAzVqPSz107zpAwW96NvlBq/GS1mLzVFC1z2AJ
+X6oSppbgXKWS0N4hqWDJKcB4+Quil5A3VxvOf2ATrN+YuD+CBepm+FwaBheFHEk8
+6rmeHLF04wiacnJY5TqfPtcC3E+zh3YZ87gpvwHU6t49sWldz9uxlgd9qz0iyPTL
+6oYODfItaxmukZNSoKGCkn3/9Yvidwc9Fn7O6TsrYLyIzzcSZzCtkIlCvahmKrlg
+MQJEJHT0cZiHsBiH1xUp
+=SamX
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__27_Jun_2013_14_23_18_+1000_=EhFNpj+hBjn1IEi--
