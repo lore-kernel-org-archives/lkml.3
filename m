@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab3F0JBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:01:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069Ab3F0JBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:01:16 -0400
-Date: Thu, 27 Jun 2013 12:01:10 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] KVM: MMU: fast invalidate all mmio sptes
-Message-ID: <20130627090110.GE18508@redhat.com>
-References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1370595088-3315-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130627082900.GD18508@redhat.com>
+	id S1752519Ab3F0JCH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:02:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45993 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab3F0JCE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 05:02:04 -0400
+Date: Thu, 27 Jun 2013 02:01:21 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-983433b5812c5cf33a9008fa38c6f9b407fedb76@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1371824448-7306-2-git-send-email-eranian@google.com>
+References: <1371824448-7306-2-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86:
+  Disable PEBS-LL in intel_pmu_pebs_disable()
+Git-Commit-ID: 983433b5812c5cf33a9008fa38c6f9b407fedb76
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130627082900.GD18508@redhat.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 27 Jun 2013 02:01:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 11:29:00AM +0300, Gleb Natapov wrote:
-> On Fri, Jun 07, 2013 at 04:51:26PM +0800, Xiao Guangrong wrote:
-> > This patch tries to introduce a very simple and scale way to invalidate
-> > all mmio sptes - it need not walk any shadow pages and hold mmu-lock
-> > 
-> > KVM maintains a global mmio valid generation-number which is stored in
-> > kvm->memslots.generation and every mmio spte stores the current global
-> > generation-number into his available bits when it is created
-> > 
-> > When KVM need zap all mmio sptes, it just simply increase the global
-> > generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
-> > then it walks the shadow page table and get the mmio spte. If the
-> > generation-number on the spte does not equal the global generation-number,
-> > it will go to the normal #PF handler to update the mmio spte
-> > 
-> > Since 19 bits are used to store generation-number on mmio spte, we zap all
-> > mmio sptes when the number is round
-> > 
-> So this commit makes Fedora 9 32 bit reboot during boot, Fedora 9 64
-> fails too, but I haven't checked what happens exactly.
-> 
-Something wrong with gfn calculation during mmio:
+Commit-ID:  983433b5812c5cf33a9008fa38c6f9b407fedb76
+Gitweb:     http://git.kernel.org/tip/983433b5812c5cf33a9008fa38c6f9b407fedb76
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Fri, 21 Jun 2013 16:20:41 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 26 Jun 2013 21:58:51 +0200
 
-qemu-system-x86-17003 [000]  3962.625103: handle_mmio_page_fault: addr:c00ba6c0 gfn 100000000ba access a92
-qemu-system-x86-17003 [000]  3962.774862: handle_mmio_page_fault: addr:ffffb170 gfn 100000fee00 access a92
+perf/x86: Disable PEBS-LL in intel_pmu_pebs_disable()
 
---
-			Gleb.
+Make sure intel_pmu_pebs_disable() and intel_pmu_pebs_enable()
+are symmetrical w.r.t. PEBS-LL and precise store.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1371824448-7306-2-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index ed3e553..3065c57 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -653,6 +653,12 @@ void intel_pmu_pebs_disable(struct perf_event *event)
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+ 	cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
++
++	if (event->hw.constraint->flags & PERF_X86_EVENT_PEBS_LDLAT)
++		cpuc->pebs_enabled &= ~(1ULL << (hwc->idx + 32));
++	else if (event->hw.constraint->flags & PERF_X86_EVENT_PEBS_ST)
++		cpuc->pebs_enabled &= ~(1ULL << 63);
++
+ 	if (cpuc->enabled)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
+ 
