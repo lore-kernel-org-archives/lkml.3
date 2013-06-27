@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab3F0T6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 15:58:19 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:46816 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356Ab3F0T6Q (ORCPT
+	id S1754615Ab3F0T6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 15:58:37 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36822 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab3F0T6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 15:58:16 -0400
+	Thu, 27 Jun 2013 15:58:34 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 14/45] timer: Use get/put_online_cpus_atomic() to prevent
- CPU offline
+Subject: [PATCH v3 15/45] sched/rt: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
@@ -21,10 +21,10 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 28 Jun 2013 01:24:46 +0530
-Message-ID: <20130627195446.29830.13065.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 28 Jun 2013 01:24:59 +0530
+Message-ID: <20130627195458.29830.25978.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
 References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -32,7 +32,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062719-1396-0000-0000-0000032F2A80
+x-cbid: 13062719-1618-0000-0000-0000042B37AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -44,47 +44,94 @@ from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going
 offline, while invoking from atomic context.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/timer.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/sched/rt.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 15ffdb3..5db594c 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -729,6 +729,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
- 	timer_stats_timer_set_start_info(timer);
- 	BUG_ON(!timer->function);
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 01970c8..03d9f38 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -6,6 +6,7 @@
+ #include "sched.h"
+ 
+ #include <linux/slab.h>
++#include <linux/cpu.h>
+ 
+ int sched_rr_timeslice = RR_TIMESLICE;
+ 
+@@ -28,7 +29,9 @@ static enum hrtimer_restart sched_rt_period_timer(struct hrtimer *timer)
+ 		if (!overrun)
+ 			break;
+ 
++		get_online_cpus_atomic();
+ 		idle = do_sched_rt_period_timer(rt_b, overrun);
++		put_online_cpus_atomic();
+ 	}
+ 
+ 	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
+@@ -547,6 +550,7 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
+ 	int i, weight, more = 0;
+ 	u64 rt_period;
  
 +	get_online_cpus_atomic();
- 	base = lock_timer_base(timer, &flags);
+ 	weight = cpumask_weight(rd->span);
  
- 	ret = detach_if_pending(timer, base, false);
-@@ -768,6 +769,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
- 
- out_unlock:
- 	spin_unlock_irqrestore(&base->lock, flags);
+ 	raw_spin_lock(&rt_b->rt_runtime_lock);
+@@ -588,6 +592,7 @@ next:
+ 		raw_spin_unlock(&iter->rt_runtime_lock);
+ 	}
+ 	raw_spin_unlock(&rt_b->rt_runtime_lock);
 +	put_online_cpus_atomic();
  
+ 	return more;
+ }
+@@ -1168,6 +1173,10 @@ static void yield_task_rt(struct rq *rq)
+ #ifdef CONFIG_SMP
+ static int find_lowest_rq(struct task_struct *task);
+ 
++/*
++ * Must be called within get/put_online_cpus_atomic(), to prevent CPUs
++ * from going offline from under us.
++ */
+ static int
+ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
+ {
+@@ -1561,6 +1570,8 @@ retry:
+ 		return 0;
+ 	}
+ 
++	get_online_cpus_atomic();
++
+ 	/* We might release rq lock */
+ 	get_task_struct(next_task);
+ 
+@@ -1611,6 +1622,7 @@ retry:
+ out:
+ 	put_task_struct(next_task);
+ 
++	put_online_cpus_atomic();
  	return ret;
  }
-@@ -926,6 +928,7 @@ void add_timer_on(struct timer_list *timer, int cpu)
  
- 	timer_stats_timer_set_start_info(timer);
- 	BUG_ON(timer_pending(timer) || !timer->function);
+@@ -1630,6 +1642,7 @@ static int pull_rt_task(struct rq *this_rq)
+ 	if (likely(!rt_overloaded(this_rq)))
+ 		return 0;
+ 
 +	get_online_cpus_atomic();
- 	spin_lock_irqsave(&base->lock, flags);
- 	timer_set_base(timer, base);
- 	debug_activate(timer, timer->expires);
-@@ -940,6 +943,7 @@ void add_timer_on(struct timer_list *timer, int cpu)
- 	 */
- 	wake_up_nohz_cpu(cpu);
- 	spin_unlock_irqrestore(&base->lock, flags);
+ 	for_each_cpu(cpu, this_rq->rd->rto_mask) {
+ 		if (this_cpu == cpu)
+ 			continue;
+@@ -1695,6 +1708,7 @@ skip:
+ 		double_unlock_balance(this_rq, src_rq);
+ 	}
+ 
 +	put_online_cpus_atomic();
+ 	return ret;
  }
- EXPORT_SYMBOL_GPL(add_timer_on);
  
 
