@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab3F0Htm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:49:42 -0400
+	id S1753250Ab3F0Htr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:49:47 -0400
 Received: from mga11.intel.com ([192.55.52.93]:58424 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093Ab3F0Hti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:49:38 -0400
+	id S1752860Ab3F0Hto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 03:49:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,950,1363158000"; 
-   d="scan'208";a="361296193"
+   d="scan'208";a="361296227"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V2 07/15] perf tools: add const specifier to perf_pmu__find name parameter
-Date: Thu, 27 Jun 2013 10:54:59 +0300
-Message-Id: <1372319707-13892-8-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V2 09/15] perf tools: validate perf event header size
+Date: Thu, 27 Jun 2013 10:55:01 +0300
+Message-Id: <1372319707-13892-10-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
 References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
@@ -29,94 +29,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The name parameter is constant, declare it so.
+'size' includes the header so must be at least
+'sizeof(struct perf_event_header)'.  Error out
+immediately if that is not the case.  Also
+don't byte-swap the header until it is actually
+"fetched" from the mmap region.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/pmu.c | 14 +++++++-------
- tools/perf/util/pmu.h |  2 +-
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ tools/perf/util/session.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 5dd9e37..7360f9b 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -73,7 +73,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head)
-  * located at:
-  * /sys/bus/event_source/devices/<dev>/format as sysfs group attributes.
-  */
--static int pmu_format(char *name, struct list_head *format)
-+static int pmu_format(const char *name, struct list_head *format)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
-@@ -162,7 +162,7 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
-  * Reading the pmu event aliases definition, which should be located at:
-  * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
-  */
--static int pmu_aliases(char *name, struct list_head *head)
-+static int pmu_aliases(const char *name, struct list_head *head)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
-@@ -208,7 +208,7 @@ static int pmu_alias_terms(struct perf_pmu_alias *alias,
-  * located at:
-  * /sys/bus/event_source/devices/<dev>/type as sysfs attribute.
-  */
--static int pmu_type(char *name, __u32 *type)
-+static int pmu_type(const char *name, __u32 *type)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
-@@ -266,7 +266,7 @@ static void pmu_read_sysfs(void)
- 	closedir(dir);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 19ea888..7a12886 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1094,8 +1094,10 @@ more:
+ 		perf_event_header__bswap(&event->header);
+ 
+ 	size = event->header.size;
+-	if (size == 0)
+-		size = 8;
++	if (size < sizeof(struct perf_event_header)) {
++		pr_err("bad event header size\n");
++		goto out_err;
++	}
+ 
+ 	if (size > cur_size) {
+ 		void *new = realloc(buf, size);
+@@ -1164,8 +1166,12 @@ fetch_mmaped_event(struct perf_session *session,
+ 	if (session->header.needs_swap)
+ 		perf_event_header__bswap(&event->header);
+ 
+-	if (head + event->header.size > mmap_size)
++	if (head + event->header.size > mmap_size) {
++		/* We're not fetching the event so swap back again */
++		if (session->header.needs_swap)
++			perf_event_header__bswap(&event->header);
+ 		return NULL;
++	}
+ 
+ 	return event;
  }
+@@ -1245,7 +1251,7 @@ more:
  
--static struct cpu_map *pmu_cpumask(char *name)
-+static struct cpu_map *pmu_cpumask(const char *name)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
-@@ -293,7 +293,7 @@ static struct cpu_map *pmu_cpumask(char *name)
- 	return cpus;
- }
+ 	size = event->header.size;
  
--static struct perf_pmu *pmu_lookup(char *name)
-+static struct perf_pmu *pmu_lookup(const char *name)
- {
- 	struct perf_pmu *pmu;
- 	LIST_HEAD(format);
-@@ -330,7 +330,7 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	return pmu;
- }
- 
--static struct perf_pmu *pmu_find(char *name)
-+static struct perf_pmu *pmu_find(const char *name)
- {
- 	struct perf_pmu *pmu;
- 
-@@ -356,7 +356,7 @@ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu)
- 	return NULL;
- }
- 
--struct perf_pmu *perf_pmu__find(char *name)
-+struct perf_pmu *perf_pmu__find(const char *name)
- {
- 	struct perf_pmu *pmu;
- 
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 32fe55b..d17b565 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -21,7 +21,7 @@ struct perf_pmu {
- 	struct list_head list;
- };
- 
--struct perf_pmu *perf_pmu__find(char *name);
-+struct perf_pmu *perf_pmu__find(const char *name);
- int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms);
- int perf_pmu__config_terms(struct list_head *formats,
+-	if (size == 0 ||
++	if (size < sizeof(struct perf_event_header) ||
+ 	    perf_session__process_event(session, event, tool, file_pos) < 0) {
+ 		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
+ 		       file_offset + head, event->header.size,
 -- 
 1.7.11.7
 
