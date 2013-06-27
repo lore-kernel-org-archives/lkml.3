@@ -1,91 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3F0Q2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:28:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30198 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152Ab3F0Q2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:28:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,953,1363158000"; 
-   d="scan'208";a="361529021"
-Date: Thu, 27 Jun 2013 19:32:46 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH 2/6] PCI: acpiphp: enable_device(): rescan even if no new
- devices on slot
-Message-ID: <20130627163246.GZ9294@intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-3-git-send-email-mika.westerberg@linux.intel.com>
- <CAErSpo4hvH08bNrObYODFVcwhhiGOj4cKntyJD6Aw6CjecgCow@mail.gmail.com>
- <20130627130229.GT9294@intel.com>
+	id S1753336Ab3F0Qax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:30:53 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:40515 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab3F0Qaw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 12:30:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627130229.GT9294@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130627160232.GA1748@hal>
+References: <20130626114324.GA3538@hal>
+	<CAAHN_R1LyhSJE5bAisx39sOyFfRTXQGpCx=CrwQYHWZHSTnOcw@mail.gmail.com>
+	<20130627160232.GA1748@hal>
+Date: Thu, 27 Jun 2013 22:00:51 +0530
+Message-ID: <CAAHN_R1Y0q7MCbe+uhQVwME491BK_aRt=E_H1sDDTfi_V+OHcg@mail.gmail.com>
+Subject: Re: Ambigiuous thread stack annotation in /proc/pid/[s]maps
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: Jan Glauber <jan.glauber@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 04:02:29PM +0300, Mika Westerberg wrote:
-> On Wed, Jun 26, 2013 at 05:37:58PM -0600, Bjorn Helgaas wrote:
-> > > @@ -707,8 +702,11 @@ static int __ref enable_device(struct acpiphp_slot *slot)
-> > >                             dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
-> > >                                 max = pci_scan_bridge(bus, dev, max, pass);
-> > >                                 if (pass && dev->subordinate) {
-> > > -                                       check_hotplug_bridge(slot, dev);
-> > > -                                       pcibios_resource_survey_bus(dev->subordinate);
-> > > +                                       if (!dev->subordinate->is_added) {
-> > > +                                               check_hotplug_bridge(slot, dev);
-> > > +                                               pcibios_resource_survey_bus(
-> > > +                                                       dev->subordinate);
-> > 
-> > It's a shame that pcibios_resource_survey_bus() can't be called twice.
-> >  It would be nice if it were smart enough to notice on the second call
-> > that "oh, resources have already been assigned, so there's nothing
-> > more to be done."  Did you look to see whether that's feasible?
-> 
-> I didn't but now that you mentioned I went and checked. I'm pretty sure we
-> can handle it there in the next revision and drop this change.
+On 27 June 2013 21:32, Jan Glauber <jan.glauber@gmail.com> wrote:
+> But isn't that confusing to the user? At least it is to me. Imagine someone
+> who uses the maps or smaps output to determine the size of code, data and
+> stack of a process. Maybe it would be better to not print the stack:tid data
+> at all if the kernel cannot distinguish the vma's?
+> Is that behaviour documented anywhere?
 
-With following patch that fixes pcibios_resource_survey_bus() Thunderbolt
-seems to be working just fine (and the quirk is gone).
+I'm afraid the documentation update I made to proc.txt did not mention
+this.  In fact I went through the discussion thread and I don't think
+I or anyone mentioned this in the thread either.  I think I assumed
+back then that this was accepted since there was a point made that
+vmas used by makecontext/swapcontext should also get marked correctly
+with [stack].
 
-If it looks okay, I'll include it into the next iteration of the patches.
+However, I agree that you have a point about it being misleading.
+Avoiding a vma merge is a possible solution, but we don't have flags
+available any more to do that.  I'll try to think of another way.  In
+the mean time I could add a note to the proc.txt documentation and
+even adjust the language.  Would that be good enough or do you think
+the patch should be reverted until I or someone else comes up with a
+better solution?
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 94919e3..db6b1ab 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -210,6 +210,8 @@ static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
- 		r = &dev->resource[idx];
- 		if (!r->flags)
- 			continue;
-+		if (r->parent)	/* Already allocated */
-+			continue;
- 		if (!r->start || pci_claim_resource(dev, idx) < 0) {
- 			/*
- 			 * Something is wrong with the region.
-@@ -318,6 +320,8 @@ static void pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
- 	r = &dev->resource[PCI_ROM_RESOURCE];
- 	if (!r->flags || !r->start)
- 		return;
-+	if (r->parent) /* Already allocated */
-+		return;
- 
- 	if (pci_claim_resource(dev, PCI_ROM_RESOURCE) < 0) {
- 		r->end -= r->start;
+> Never seen that makecontext stuff before. Do you have an example output how
+> the maps would look like if that is used?
+
+This is a sample program I cribbed from the makecontext man page and
+modified slightly.  The stack is in the data area in this example.
+There could be a case of a stack being with the main program stack or
+even in the heap.
+
+#include <ucontext.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+static ucontext_t uctx_main, uctx_func1, uctx_func2;
+
+#define handle_error(msg) \
+           do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+static char func1_stack[16384];
+static char func2_stack[16384];
+
+static void func1(void)
+{
+        printf("func1: started\n");
+        printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
+        if (swapcontext(&uctx_func1, &uctx_func2) == -1)
+                handle_error("swapcontext");
+
+        sleep (1);
+        printf("func1: returning\n");
+}
+
+static void func2(void)
+{
+        printf("func2: started\n");
+        printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
+        if (swapcontext(&uctx_func2, &uctx_func1) == -1)
+                handle_error("swapcontext");
+        sleep (1);
+        printf("func2: returning\n");
+}
+
+int main(int argc, char *argv[])
+{
+        if (getcontext(&uctx_func1) == -1)
+                handle_error("getcontext");
+        uctx_func1.uc_stack.ss_sp = func1_stack;
+        uctx_func1.uc_stack.ss_size = sizeof(func1_stack);
+        uctx_func1.uc_link = &uctx_main;
+        makecontext(&uctx_func1, func1, 0);
+
+        if (getcontext(&uctx_func2) == -1)
+                handle_error("getcontext");
+        uctx_func2.uc_stack.ss_sp = func2_stack;
+        uctx_func2.uc_stack.ss_size = sizeof(func2_stack);
+        /* Successor context is f1(), unless argc > 1 */
+        uctx_func2.uc_link = (argc > 1) ? NULL : &uctx_func1;
+        makecontext(&uctx_func2, func2, 0);
+
+        printf("main: swapcontext(&uctx_main, &uctx_func2)\n");
+        if (swapcontext(&uctx_main, &uctx_func2) == -1)
+                handle_error("swapcontext");
+
+        printf("main: exiting\n");
+        exit(EXIT_SUCCESS);
+}
+
+
+$./a.out
+$ cat /proc/$(pgrep a.out)/maps
+
+00400000-00401000 r-xp 00000000 fd:00 1704114
+  /tmp/a.out
+00601000-00602000 rw-p 00001000 fd:00 1704114
+  /tmp/a.out
+00602000-0060a000 rw-p 00000000 00:00 0
+  [stack:7352]
+7fac662d2000-7fac6647e000 r-xp 00000000 fd:00 524922
+  /usr/lib64/libc-2.15.so
+7fac6647e000-7fac6667e000 ---p 001ac000 fd:00 524922
+  /usr/lib64/libc-2.15.so
+7fac6667e000-7fac66682000 r--p 001ac000 fd:00 524922
+  /usr/lib64/libc-2.15.so
+7fac66682000-7fac66684000 rw-p 001b0000 fd:00 524922
+  /usr/lib64/libc-2.15.so
+7fac66684000-7fac66689000 rw-p 00000000 00:00 0
+7fac66689000-7fac666a9000 r-xp 00000000 fd:00 524913
+  /usr/lib64/ld-2.15.so
+7fac6688f000-7fac66892000 rw-p 00000000 00:00 0
+7fac668a6000-7fac668a8000 rw-p 00000000 00:00 0
+7fac668a8000-7fac668a9000 r--p 0001f000 fd:00 524913
+  /usr/lib64/ld-2.15.so
+7fac668a9000-7fac668aa000 rw-p 00020000 fd:00 524913
+  /usr/lib64/ld-2.15.so
+7fac668aa000-7fac668ab000 rw-p 00000000 00:00 0
+7fff5b8a8000-7fff5b8ca000 rw-p 00000000 00:00 0
+7fff5b9fe000-7fff5ba00000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0
+  [vsyscall]
+
+
+--
+http://siddhesh.in
