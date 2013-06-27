@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3F0NIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:08:46 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:4426 "EHLO
+	id S1753689Ab3F0NIo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:08:44 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:48951 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752647Ab3F0Mue (ORCPT
+	with ESMTP id S1752708Ab3F0Mue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Jun 2013 08:50:34 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
         linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
         Benson Leung <bleung@chromium.org>,
         Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 01/51] Input: atmel_mxt_ts - Remove unnecessary platform data
-Date: Thu, 27 Jun 2013 13:48:36 +0100
-Message-Id: <1372337366-9286-2-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 04/51] Input: atmel_mxt_ts - define helper functions for size and instances
+Date: Thu, 27 Jun 2013 13:48:39 +0100
+Message-Id: <1372337366-9286-5-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,204 +25,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not necessary to download these values to the maXTouch chip on every
-probe, since they are stored in NVRAM. It makes life difficult when tuning the
-device to keep them in sync with the config array/file, and requires a new
-kernel build for minor tweaks.
+From: Daniel Kurtz <djkurtz@chromium.org>
 
-These parameters only represent a tiny subset of the available configuration
-options, tracking all of these options in platform data would be a endless
-task. In addition, different versions of maXTouch chips may have these values
-in different places or may not even have them at all.
+These two object table entry fields are reported 1 less than their value.
+When used, however, we always want the actual size and instances.
 
-Having these values also makes life more complex for device tree and other
-platforms where having to define a static configuration isn't helpful.
+To keep the object size and instances 1-byte fields, and thus preserve
+the object-table struct's 6-byte packed alignment, add some convenient
+accessor functions that do the +1 every time these fields are accessed.
 
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 ---
- arch/arm/mach-exynos/mach-nuri.c           |    5 ---
- arch/arm/mach-exynos/mach-universal_c210.c |    5 ---
- arch/arm/mach-s5pv210/mach-goni.c          |    5 ---
- drivers/input/touchscreen/atmel_mxt_ts.c   |   50 ----------------------------
- drivers/platform/x86/chromeos_laptop.c     |   10 ------
- include/linux/i2c/atmel_mxt_ts.h           |    6 +---
- 6 files changed, 1 insertion(+), 80 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   35 ++++++++++++++++++++----------
+ 1 file changed, 24 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
-index 1ea7973..4516d26 100644
---- a/arch/arm/mach-exynos/mach-nuri.c
-+++ b/arch/arm/mach-exynos/mach-nuri.c
-@@ -333,13 +333,8 @@ static struct i2c_board_info i2c1_devs[] __initdata = {
- 
- /* TSP */
- static struct mxt_platform_data mxt_platform_data = {
--	.x_line			= 18,
--	.y_line			= 11,
- 	.x_size			= 1024,
- 	.y_size			= 600,
--	.blen			= 0x1,
--	.threshold		= 0x28,
--	.voltage		= 2800000,		/* 2.8V */
- 	.orient			= MXT_DIAGONAL_COUNTER,
- 	.irqflags		= IRQF_TRIGGER_FALLING,
- };
-diff --git a/arch/arm/mach-exynos/mach-universal_c210.c b/arch/arm/mach-exynos/mach-universal_c210.c
-index 497fcb7..2461e60 100644
---- a/arch/arm/mach-exynos/mach-universal_c210.c
-+++ b/arch/arm/mach-exynos/mach-universal_c210.c
-@@ -604,13 +604,8 @@ static struct i2c_board_info i2c5_devs[] __initdata = {
- 
- /* I2C3 (TSP) */
- static struct mxt_platform_data qt602240_platform_data = {
--	.x_line		= 19,
--	.y_line		= 11,
- 	.x_size		= 800,
- 	.y_size		= 480,
--	.blen		= 0x11,
--	.threshold	= 0x28,
--	.voltage	= 2800000,		/* 2.8V */
- 	.orient		= MXT_DIAGONAL,
- 	.irqflags	= IRQF_TRIGGER_FALLING,
- };
-diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
-index 3a38f7b..eca73af 100644
---- a/arch/arm/mach-s5pv210/mach-goni.c
-+++ b/arch/arm/mach-s5pv210/mach-goni.c
-@@ -239,13 +239,8 @@ static void __init goni_radio_init(void)
- 
- /* TSP */
- static struct mxt_platform_data qt602240_platform_data = {
--	.x_line		= 17,
--	.y_line		= 11,
- 	.x_size		= 800,
- 	.y_size		= 480,
--	.blen		= 0x21,
--	.threshold	= 0x28,
--	.voltage	= 2800000,              /* 2.8V */
- 	.orient		= MXT_DIAGONAL,
- 	.irqflags	= IRQF_TRIGGER_FALLING,
- };
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 59aa240..e01a9ed 100644
+index 2a06657..7de3b47 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -686,54 +686,6 @@ static int mxt_make_highchg(struct mxt_data *data)
- 	return 0;
- }
+@@ -2,6 +2,8 @@
+  * Atmel maXTouch Touchscreen driver
+  *
+  * Copyright (C) 2010 Samsung Electronics Co.Ltd
++ * Copyright (C) 2012 Google, Inc.
++ *
+  * Author: Joonyoung Shim <jy0922.shim@samsung.com>
+  *
+  * This program is free software; you can redistribute  it and/or modify it
+@@ -227,8 +229,8 @@ struct mxt_info {
+ struct mxt_object {
+ 	u8 type;
+ 	u16 start_address;
+-	u8 size;		/* Size of each instance - 1 */
+-	u8 instances;		/* Number of instances - 1 */
++	u8 size_minus_one;
++	u8 instances_minus_one;
+ 	u8 num_report_ids;
+ } __packed;
  
--static void mxt_handle_pdata(struct mxt_data *data)
--{
--	const struct mxt_platform_data *pdata = data->pdata;
--	u8 voltage;
--
--	/* Set touchscreen lines */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_XSIZE,
--			pdata->x_line);
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_YSIZE,
--			pdata->y_line);
--
--	/* Set touchscreen orient */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_ORIENT,
--			pdata->orient);
--
--	/* Set touchscreen burst length */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_BLEN, pdata->blen);
--
--	/* Set touchscreen threshold */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_TCHTHR, pdata->threshold);
--
--	/* Set touchscreen resolution */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_XRANGE_LSB, (pdata->x_size - 1) & 0xff);
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_XRANGE_MSB, (pdata->x_size - 1) >> 8);
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_YRANGE_LSB, (pdata->y_size - 1) & 0xff);
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_YRANGE_MSB, (pdata->y_size - 1) >> 8);
--
--	/* Set touchscreen voltage */
--	if (pdata->voltage) {
--		if (pdata->voltage < MXT_VOLTAGE_DEFAULT) {
--			voltage = (MXT_VOLTAGE_DEFAULT - pdata->voltage) /
--				MXT_VOLTAGE_STEP;
--			voltage = 0xff - voltage + 1;
--		} else
--			voltage = (pdata->voltage - MXT_VOLTAGE_DEFAULT) /
--				MXT_VOLTAGE_STEP;
--
--		mxt_write_object(data, MXT_SPT_CTECONFIG_T28,
--				MXT_CTE_VOLTAGE, voltage);
--	}
--}
--
- static int mxt_get_info(struct mxt_data *data)
- {
- 	struct i2c_client *client = data->client;
-@@ -841,8 +793,6 @@ static int mxt_initialize(struct mxt_data *data)
- 	if (error)
- 		goto err_free_object_table;
- 
--	mxt_handle_pdata(data);
--
- 	/* Backup to memory */
- 	mxt_write_object(data, MXT_GEN_COMMAND_T6,
- 			MXT_COMMAND_BACKUPNV,
-diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
-index 3e5b4497..78ed277 100644
---- a/drivers/platform/x86/chromeos_laptop.c
-+++ b/drivers/platform/x86/chromeos_laptop.c
-@@ -71,13 +71,8 @@ static struct i2c_board_info __initdata tsl2563_als_device = {
+@@ -257,6 +259,16 @@ struct mxt_data {
+ 	u8 T19_reportid;
  };
  
- static struct mxt_platform_data atmel_224s_tp_platform_data = {
--	.x_line			= 18,
--	.y_line			= 12,
- 	.x_size			= 102*20,
- 	.y_size			= 68*20,
--	.blen			= 0x80,	/* Gain setting is in upper 4 bits */
--	.threshold		= 0x32,
--	.voltage		= 0,	/* 3.3V */
- 	.orient			= MXT_VERTICAL_FLIP,
- 	.irqflags		= IRQF_TRIGGER_FALLING,
- 	.is_tp			= true,
-@@ -96,13 +91,8 @@ static struct i2c_board_info __initdata atmel_224s_tp_device = {
- };
- 
- static struct mxt_platform_data atmel_1664s_platform_data = {
--	.x_line			= 32,
--	.y_line			= 50,
- 	.x_size			= 1700,
- 	.y_size			= 2560,
--	.blen			= 0x89,	/* Gain setting is in upper 4 bits */
--	.threshold		= 0x28,
--	.voltage		= 0,	/* 3.3V */
- 	.orient			= MXT_ROTATED_90_COUNTER,
- 	.irqflags		= IRQF_TRIGGER_FALLING,
- 	.is_tp			= false,
-diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
-index 99e379b..eff0cdc 100644
---- a/include/linux/i2c/atmel_mxt_ts.h
-+++ b/include/linux/i2c/atmel_mxt_ts.h
-@@ -33,14 +33,10 @@ struct mxt_platform_data {
- 	const u8 *config;
- 	size_t config_length;
- 
--	unsigned int x_line;
--	unsigned int y_line;
- 	unsigned int x_size;
- 	unsigned int y_size;
--	unsigned int blen;
--	unsigned int threshold;
--	unsigned int voltage;
- 	unsigned char orient;
++static inline size_t mxt_obj_size(const struct mxt_object *obj)
++{
++	return obj->size_minus_one + 1;
++}
 +
- 	unsigned long irqflags;
- 	bool is_tp;
- 	const unsigned int key_map[MXT_NUM_GPIO];
++static inline size_t mxt_obj_instances(const struct mxt_object *obj)
++{
++	return obj->instances_minus_one + 1;
++}
++
+ static bool mxt_object_readable(unsigned int type)
+ {
+ 	switch (type) {
+@@ -499,7 +511,7 @@ static int mxt_write_object(struct mxt_data *data,
+ 	u16 reg;
+ 
+ 	object = mxt_get_object(data, type);
+-	if (!object || offset >= object->size + 1)
++	if (!object || offset >= mxt_obj_size(object))
+ 		return -EINVAL;
+ 
+ 	reg = object->start_address;
+@@ -641,7 +653,7 @@ static int mxt_check_reg_init(struct mxt_data *data)
+ 		if (!mxt_object_writable(object->type))
+ 			continue;
+ 
+-		size = (object->size + 1) * (object->instances + 1);
++		size = mxt_obj_size(object) * mxt_obj_instances(object);
+ 		if (index + size > pdata->config_length) {
+ 			dev_err(dev, "Not enough config data!\n");
+ 			return -EINVAL;
+@@ -718,7 +730,7 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 		if (object->num_report_ids) {
+ 			min_id = reportid;
+ 			reportid += object->num_report_ids *
+-					(object->instances + 1);
++					mxt_obj_instances(object);
+ 			max_id = reportid - 1;
+ 		} else {
+ 			min_id = 0;
+@@ -727,8 +739,9 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 
+ 		dev_dbg(&data->client->dev,
+ 			"Type %2d Start %3d Size %3d Instances %2d ReportIDs %3u : %3u\n",
+-			object->type, object->start_address, object->size + 1,
+-			object->instances + 1, min_id, max_id);
++			object->type, object->start_address,
++			mxt_obj_size(object), mxt_obj_instances(object),
++			min_id, max_id);
+ 
+ 		switch (object->type) {
+ 		case MXT_GEN_COMMAND_T6:
+@@ -865,11 +878,11 @@ static ssize_t mxt_show_instance(char *buf, int count,
+ {
+ 	int i;
+ 
+-	if (object->instances > 0)
++	if (mxt_obj_instances(object) > 1)
+ 		count += scnprintf(buf + count, PAGE_SIZE - count,
+ 				   "Instance %u\n", instance);
+ 
+-	for (i = 0; i < object->size + 1; i++)
++	for (i = 0; i < mxt_obj_size(object); i++)
+ 		count += scnprintf(buf + count, PAGE_SIZE - count,
+ 				"\t[%2u]: %02x (%d)\n", i, val[i], val[i]);
+ 	count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
+@@ -902,8 +915,8 @@ static ssize_t mxt_object_show(struct device *dev,
+ 		count += scnprintf(buf + count, PAGE_SIZE - count,
+ 				"T%u:\n", object->type);
+ 
+-		for (j = 0; j < object->instances + 1; j++) {
+-			u16 size = object->size + 1;
++		for (j = 0; j < mxt_obj_instances(object); j++) {
++			u16 size = mxt_obj_size(object);
+ 			u16 addr = object->start_address + j * size;
+ 
+ 			error = __mxt_read_reg(data->client, addr, size, obuf);
 -- 
 1.7.10.4
 
