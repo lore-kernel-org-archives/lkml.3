@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab3F0JDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:03:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46101 "EHLO
+	id S1753705Ab3F0JGB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:06:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46140 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672Ab3F0JDh (ORCPT
+	with ESMTP id S1753340Ab3F0JFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:03:37 -0400
-Date: Thu, 27 Jun 2013 02:03:08 -0700
-From: tip-bot for Alex Shi <tipbot@zytor.com>
-Message-ID: <tip-a9dc5d0e33c677619e4b97a38c23db1a42857905@git.kernel.org>
+	Thu, 27 Jun 2013 05:05:52 -0400
+Date: Thu, 27 Jun 2013 02:03:17 -0700
+From: tip-bot for Kamalesh Babulal <tipbot@zytor.com>
+Message-ID: <tip-939fd731eb88a0cdd9058d0b0143563172a217d7@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, alex.shi@intel.com, vincent.guittot@linaro.org,
-        tglx@linutronix.de, fengguang.wu@intel.com
+        kamalesh@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, alex.shi@intel.com, vincent.guittot@linaro.org,
-        tglx@linutronix.de, fengguang.wu@intel.com
-In-Reply-To: <1371694737-29336-14-git-send-email-alex.shi@intel.com>
-References: <1371694737-29336-14-git-send-email-alex.shi@intel.com>
+        kamalesh@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20130625080336.GA20175@linux.vnet.ibm.com>
+References: <20130625080336.GA20175@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Change get_rq_runnable_load()
-  to static and inline
-Git-Commit-ID: a9dc5d0e33c677619e4b97a38c23db1a42857905
+Subject: [tip:sched/core] sched/debug:
+  Add load-tracking statistics to task
+Git-Commit-ID: 939fd731eb88a0cdd9058d0b0143563172a217d7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,46 +28,49 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 27 Jun 2013 02:03:14 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 27 Jun 2013 02:03:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a9dc5d0e33c677619e4b97a38c23db1a42857905
-Gitweb:     http://git.kernel.org/tip/a9dc5d0e33c677619e4b97a38c23db1a42857905
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Thu, 20 Jun 2013 10:18:57 +0800
+Commit-ID:  939fd731eb88a0cdd9058d0b0143563172a217d7
+Gitweb:     http://git.kernel.org/tip/939fd731eb88a0cdd9058d0b0143563172a217d7
+Author:     Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+AuthorDate: Tue, 25 Jun 2013 13:33:36 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 27 Jun 2013 10:07:44 +0200
+CommitDate: Thu, 27 Jun 2013 10:07:46 +0200
 
-sched: Change get_rq_runnable_load() to static and inline
+sched/debug: Add load-tracking statistics to task
 
-Based-on-patch-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Tested-by: Vincent Guittot <vincent.guittot@linaro.org>
+At present we print per-entity load-tracking statistics for
+cfs_rq of cgroups/runqueues. Given that per task statistics
+is maintained, it can be used to know the contribution made
+by the task to its parenting cfs_rq level.
+
+This patch adds per-task load-tracking statistics to /proc/<PID>/sched.
+
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1371694737-29336-14-git-send-email-alex.shi@intel.com
+Link: http://lkml.kernel.org/r/20130625080336.GA20175@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/proc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/debug.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index ce5cd48..16f5a30 100644
---- a/kernel/sched/proc.c
-+++ b/kernel/sched/proc.c
-@@ -502,12 +502,12 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
- }
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index d803989..62632098 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -566,6 +566,12 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+ 		   "nr_involuntary_switches", (long long)p->nivcsw);
  
- #ifdef CONFIG_SMP
--unsigned long get_rq_runnable_load(struct rq *rq)
-+static inline unsigned long get_rq_runnable_load(struct rq *rq)
- {
- 	return rq->cfs.runnable_load_avg;
- }
- #else
--unsigned long get_rq_runnable_load(struct rq *rq)
-+static inline unsigned long get_rq_runnable_load(struct rq *rq)
- {
- 	return rq->load.weight;
- }
+ 	P(se.load.weight);
++#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++	P(se.avg.runnable_avg_sum);
++	P(se.avg.runnable_avg_period);
++	P(se.avg.load_avg_contrib);
++	P(se.avg.decay_count);
++#endif
+ 	P(policy);
+ 	P(prio);
+ #undef PN
