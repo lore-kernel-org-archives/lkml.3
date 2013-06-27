@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab3F0OM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 10:12:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58336 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab3F0OM6 (ORCPT
+	id S1753578Ab3F0ONF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 10:13:05 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:49296 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab3F0ONA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 10:12:58 -0400
-Date: Thu, 27 Jun 2013 16:12:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com,
-        catalin.marinas@arm.com, arnd@arndb.de, olof@lixom.net,
-        linux@arm.linux.org.uk, Ian.Campbell@citrix.com, will.deacon@arm.com,
-        marc.zyngier@arm.com, mingo@redhat.com
-Subject: Re: [PATCH v6 2/5] kernel: missing include in cputime.c
-Message-ID: <20130627141209.GB29209@dyad.programming.kicks-ass.net>
-References: <alpine.DEB.2.02.1306271446570.4782@kaball.uk.xensource.com>
- <1372341272-12512-2-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372341272-12512-2-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 27 Jun 2013 10:13:00 -0400
+Subject: Re: [PATCH 06/19] perf ftrace: Add support for --pid option
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <51CC44A9.60809@gmail.com>
+References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
+	 <1372230862-15861-7-git-send-email-namhyung@kernel.org>
+	 <51CB20F3.8000805@gmail.com> <87ehbo15zx.fsf@sejong.aot.lge.com>
+	 <51CC44A9.60809@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Jun 2013 23:12:52 +0900
+Message-ID: <1372342372.1734.6.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 02:54:29PM +0100, Stefano Stabellini wrote:
-> steal_account_process_tick calls paravirt_steal_clock, but paravirt.h is
-> currently missing amoung the included header files.
-> Add include asm/paravirt.h ifdef CONFIG_PARAVIRT.
+2013-06-27 (목), 07:56 -0600, David Ahern:
+> On 6/26/13 11:23 PM, Namhyung Kim wrote:
+> > The pid filtering in ftrace is done via set_ftrace_pid file under the
+> > tracing debugfs directory.  IIRC It only supports process filtering not
+> > thread filtering by iterating all threads in the kernel code.  So --tid
+> > option cannot be implemented as other perf commands.
+> >
+> > So I chose not to and assigned -t option to --tracer.
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: mingo@redhat.com
-> CC: peterz@infradead.org
-> 
-> Changes in v5:
-> - add ifdef CONFIG_PARAVIRT.
-> ---
->  kernel/sched/cputime.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> index cc2dc3ee..317a578 100644
-> --- a/kernel/sched/cputime.c
-> +++ b/kernel/sched/cputime.c
-> @@ -5,7 +5,9 @@
->  #include <linux/static_key.h>
->  #include <linux/context_tracking.h>
->  #include "sched.h"
-> -
-> +#ifdef CONFIG_PARAVIRT
-> +#include <asm/paravirt.h>
-> +#endif
+> Could that ever change? With the current code why call it pid in the 
+> option but assign it to target.tid? Seems a like a source for confusion 
 
-Why isn't that CONFIG stuff inside the header instead of around it?
+Hmm.. right.  I did it in order not to do same iteration of the thread
+group in user space.  But now I think that it's just an unnecessary
+optimization and can confuse readers.
+
+
+> later. Would be better to just assign to target.pid and let the 
+> machinery do the right thing.
+
+Will do.
+
+Thanks,
+Namhyung
+
+
