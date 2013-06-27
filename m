@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab3F0ROw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 13:14:52 -0400
-Received: from vegas.theobroma-systems.com ([88.198.52.168]:36386 "EHLO
-	mail.theobroma-systems.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752472Ab3F0ROv (ORCPT
+	id S1752817Ab3F0RSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 13:18:22 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:52648 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab3F0RSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 13:14:51 -0400
-Content-Type: multipart/mixed; boundary="Apple-Mail=_1F50839C-3ED3-4E5B-A49C-50187A01BA7D"
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [PATCH] net: fec: Fix multicast list setup in fec_restart().
-From: =?iso-8859-1?Q?Christoph_M=FCllner?= 
-	<christoph.muellner@theobroma-systems.com>
-In-Reply-To: <CAOMZO5CyK9S-Wmm+ihBeMCaDBJyxBb-vSQjzZiKrmz74mb=vDw@mail.gmail.com>
-Date: Thu, 27 Jun 2013 19:14:37 +0200
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>, netdev@vger.kernel.org
-Message-Id: <C2B6127F-2C6D-49ED-9E45-5FEE9CC1BCE4@theobroma-systems.com>
-References: <61455.62.178.124.14.1371832855.squirrel@mail.theobroma-systems.com> <CAOMZO5CyK9S-Wmm+ihBeMCaDBJyxBb-vSQjzZiKrmz74mb=vDw@mail.gmail.com>
-To: Fabio Estevam <festevam@gmail.com>
-X-Mailer: Apple Mail (2.1499)
+	Thu, 27 Jun 2013 13:18:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130627162739.GY9294@intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1372177330-28013-7-git-send-email-mika.westerberg@linux.intel.com>
+	<CAErSpo58bCG4=hwC73VY+nXPk9-dZUb5eWERZ_wTtAfrXtBVmg@mail.gmail.com>
+	<20130627135405.GW9294@intel.com>
+	<20130627162739.GY9294@intel.com>
+Date: Thu, 27 Jun 2013 10:18:19 -0700
+X-Google-Sender-Auth: 4xqlpW0BZmJ7E8ZlGRTbfXLUtrc
+Message-ID: <CAE9FiQW9iK1wRO6GFuH4KG_uchdmR_PzMT7C2-wS19+cO-mCVA@mail.gmail.com>
+Subject: Re: [PATCH 6/6] x86/PCI: quirk Thunderbolt PCI-to-PCI bridges
+From: Yinghai Lu <yinghai@kernel.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 27, 2013 at 9:27 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Thu, Jun 27, 2013 at 04:54:05PM +0300, Mika Westerberg wrote:
+>> I think that we can get this working so that we add a new flag to struct
+>> pci_dev, something like 'no_additional_hotplug_bus_space' and in this quirk
+>> set that.
+>>
+>> Then in __pci_bus_size_bridges() we do:
+>>
+>>       pci_bridge_check_ranges(bus);
+>>       if (bus->self->is_hotplug_bridge &&
+>>           !bus->self->no_additional_hotplug_bus_space) {
+>>               additional_io_size  = pci_hotplug_io_size;
+>>               additional_mem_size = pci_hotplug_mem_size;
+>>       }
+>>
+>> This should prevent the problem this patch was trying to solve. Does that
+>> work for you?
+>
+> Forget about that -- It looks like these messages are harmless:
+>
+>     pcieport 0000:0a:05.0: BAR 8: can't assign mem (size 0x200000)
+>     pcieport 0000:0a:05.0: BAR 9: can't assign mem pref (size 0x200000)
+>
+> It just means that we tried to allocate the resource but failed because the
+> bridge has that window closed, if I got it right. If user doesn't want to
+> see those, he/she can always pass 'pci=hpmensize=0,hpiosize=0' in the
+> kernel command line.
 
---Apple-Mail=_1F50839C-3ED3-4E5B-A49C-50187A01BA7D
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=iso-8859-1
+Yes, that extra range for hotplug is optional, so if must+optional
+fails, second try
+will be must only.
 
-On Jun 21, 2013, at 7:15 PM, Fabio Estevam <festevam@gmail.com> wrote:
+>
+> With pcibios_resource_survey_bus() fix, looks like this quirk is not needed
+> at all.
 
-> On Fri, Jun 21, 2013 at 1:40 PM, Christoph M=FCllner
-> <christoph.muellner@theobroma-systems.com> wrote:
->=20
->> @@ -472,8 +474,7 @@ fec_restart(struct net_device *ndev, int duplex)
->>        writel(0xffc00000, fep->hwp + FEC_IEVENT);
->>=20
->>        /* Reset all multicast. */
->=20
-> Should this comment be removed/updated now?
-
-Is updated in the attached patch.
-Thank you for the feedback!
-
->=20
->> -       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_HIGH);
->> -       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_LOW);
->> +       set_multicast_list(ndev);
-
-
---Apple-Mail=_1F50839C-3ED3-4E5B-A49C-50187A01BA7D
-Content-Disposition: attachment;
-	filename=0001-net-fec-Fix-multicast-list-setup-in-fec_restart.patch
-Content-Type: application/octet-stream;
-	x-unix-mode=0644;
-	name="0001-net-fec-Fix-multicast-list-setup-in-fec_restart.patch"
-Content-Transfer-Encoding: quoted-printable
-
-=46rom=20efc0a82aa810cf3c37505cf3c753ad6f1cf33572=20Mon=20Sep=2017=20=
-00:00:00=202001=0AFrom:=20Christoph=20Muellner=20=
-<christoph.muellner@theobroma-systems.com>=0ADate:=20Fri,=2021=20Jun=20=
-2013=2017:59:52=20+0200=0ASubject:=20[PATCH]=20net:=20fec:=20Fix=20=
-multicast=20list=20setup=20in=20fec_restart().=0A=0ASetup=20the=20=
-multicast=20list=20of=20the=20net_device=20instead=20of=0Aclearing=20it=20=
-blindly.=20This=20restores=20the=20multicast=20groups=0Ain=20case=20of=20=
-a=20link=20down/up=20event=20or=20when=20resuming=20from=0Asuspend.=0A=0A=
-Signed-off-by:=20Christoph=20Muellner=20=
-<christoph.muellner@theobroma-systems.com>=0A---=0A=20=
-drivers/net/ethernet/freescale/fec_main.c=20|=20=20=20=207=20++++---=0A=20=
-1=20files=20changed,=204=20insertions(+),=203=20deletions(-)=0A=0Adiff=20=
---git=20a/drivers/net/ethernet/freescale/fec_main.c=20=
-b/drivers/net/ethernet/freescale/fec_main.c=0Aindex=20d48099f..4c32709=20=
-100644=0A---=20a/drivers/net/ethernet/freescale/fec_main.c=0A+++=20=
-b/drivers/net/ethernet/freescale/fec_main.c=0A@@=20-60,6=20+60,8=20@@=0A=20=
-=0A=20#include=20"fec.h"=0A=20=0A+static=20void=20=
-set_multicast_list(struct=20net_device=20*ndev);=0A+=0A=20#if=20=
-defined(CONFIG_ARM)=0A=20#define=20FEC_ALIGNMENT=090xf=0A=20#else=0A@@=20=
--471,9=20+473,8=20@@=20fec_restart(struct=20net_device=20*ndev,=20int=20=
-duplex)=0A=20=09/*=20Clear=20any=20outstanding=20interrupt.=20*/=0A=20=09=
-writel(0xffc00000,=20fep->hwp=20+=20FEC_IEVENT);=0A=20=0A-=09/*=20Reset=20=
-all=20multicast.=09*/=0A-=09writel(0,=20fep->hwp=20+=20=
-FEC_GRP_HASH_TABLE_HIGH);=0A-=09writel(0,=20fep->hwp=20+=20=
-FEC_GRP_HASH_TABLE_LOW);=0A+=09/*=20Setup=20multicast=20filter.=20*/=0A+=09=
-set_multicast_list(ndev);=0A=20#ifndef=20CONFIG_M5272=0A=20=09writel(0,=20=
-fep->hwp=20+=20FEC_HASH_TABLE_HIGH);=0A=20=09writel(0,=20fep->hwp=20+=20=
-FEC_HASH_TABLE_LOW);=0A--=20=0A1.7.4.1=0A=0A=
-
---Apple-Mail=_1F50839C-3ED3-4E5B-A49C-50187A01BA7D--
+Good.
