@@ -1,85 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab3F0Nc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:32:56 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:39465 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746Ab3F0Ncz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:32:55 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: rusty@rustcorp.com.au, dhowells@redhat.com, herbert@gondor.hengli.com.au,
-        davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH] asymmetric keys: explicitly add the leading zero byte to encoded message
-Date: Thu, 27 Jun 2013 21:32:40 +0800
-Message-Id: <1372339960-7400-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	id S1753340Ab3F0Nes (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:34:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165Ab3F0Neq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 09:34:46 -0400
+Date: Thu, 27 Jun 2013 09:34:07 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, minchan@kernel.org,
+        anton@enomsg.org, akpm@linux-foundation.org, kmpark@infradead.org,
+        hyunhee.kim@samsung.com
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130627093407.0466ced2@redhat.com>
+In-Reply-To: <20130627092616.GB17647@dhcp22.suse.cz>
+References: <20130626231712.4a7392a7@redhat.com>
+	<20130627092616.GB17647@dhcp22.suse.cz>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chun-Yi Lee <jlee@suse.com>
+On Thu, 27 Jun 2013 11:26:16 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Per PKCS1 spec, the EMSA-PKCS1-v1_5 encoded message is leading by 0x00 0x01 in
-its first 2 bytes. The leading zero byte is suppressed by MPI so we pass a
-pointer to the _preceding_ byte to RSA_verify() in original code, but it has
-risk for the byte is not zero because it's not in EM buffer's scope, neither
-RSA_verify() nor mpi_get_buffer() didn't take care the leading byte.
+> On Wed 26-06-13 23:17:12, Luiz Capitulino wrote:
+> > Currently, an eventfd is notified for the level it's registered for
+> > _plus_ higher levels.
+> > 
+> > This is a problem if an application wants to implement different
+> > actions for different levels. For example, an application might want
+> > to release 10% of its cache on level low, 50% on medium and 100% on
+> > critical. To do this, an application has to register a different
+> > eventfd for each pressure level. However, fd low is always going to
+> > be notified and and all fds are going to be notified on level critical.
+> > 
+> > Strict mode solves this problem by strictly notifiying an eventfd
+> > for the pressure level it registered for. This new mode is optional,
+> > by default we still notify eventfds on higher levels too.
+> > 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> 
+> Two nits bellow but it looks good in general to me. You can add my
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-To avoid the risk, that's better we explicitly add the leading zero byte to EM
-for pass to RSA_verify(). This patch allocate a _EM buffer to capture the
-result from RSA_I2OSP(), then set the first byte to zero in EM and copy the
-remaining bytes from _EM.
+Thanks.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Chun-Yi Lee <jlee@suse.com>
----
- crypto/asymmetric_keys/rsa.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+> I still think that edge triggering makes some sense but that one might
+> be rebased on top of this patch. We should still figure out whether the
+> edge triggering is the right approach for the use case Hyunhee Kim wants
+> it for so the strict mode should go first IMO.
 
-diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-index ca1a4f3..7bc99d2 100644
---- a/crypto/asymmetric_keys/rsa.c
-+++ b/crypto/asymmetric_keys/rsa.c
-@@ -303,6 +303,7 @@ static int RSA_verify_signature(const struct public_key *key,
- 	/* Variables as per RFC3447 sec 8.2.2 */
- 	const u8 *H = sig->digest;
- 	u8 *EM = NULL;
-+	u8 *_EM = NULL;
- 	MPI m = NULL;
- 	size_t k;
- 
-@@ -337,14 +338,19 @@ static int RSA_verify_signature(const struct public_key *key,
- 	/* (2c) Convert the message representative (m) to an encoded message
- 	 *      (EM) of length k octets.
- 	 *
--	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
--	 *      pointer to the _preceding_ byte to RSA_verify()!
-+	 *      NOTE!  The leading zero byte is suppressed by MPI, so we add it
-+	 *      back to EM before input to RSA_verify()!
- 	 */
--	ret = RSA_I2OSP(m, k, &EM);
-+	ret = RSA_I2OSP(m, k, &_EM);
- 	if (ret < 0)
- 		goto error;
- 
--	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
-+	EM = kmalloc(k, GFP_KERNEL);
-+	memset(EM, 0, 1);
-+	memcpy(EM + 1, _EM, k-1);
-+	kfree(_EM);
-+
-+	ret = RSA_verify(H, EM, k, sig->digest_size,
- 			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
- 			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
- 
--- 
-1.6.4.2
+I also think that edge triggering makes sense.
 
+> > ---
+> > 
+> > o v2
+> > 
+> >  - Improve documentation
+> >  - Use a bit to store mode instead of a bool
+> >  - Minor changelog changes
+> > 
+> >  Documentation/cgroups/memory.txt | 26 ++++++++++++++++++++++----
+> >  mm/vmpressure.c                  | 26 ++++++++++++++++++++++++--
+> >  2 files changed, 46 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> > index ddf4f93..412872b 100644
+> > --- a/Documentation/cgroups/memory.txt
+> > +++ b/Documentation/cgroups/memory.txt
+> > @@ -791,6 +791,22 @@ way to trigger. Applications should do whatever they can to help the
+> >  system. It might be too late to consult with vmstat or any other
+> >  statistics, so it's advisable to take an immediate action.
+> >  
+> > +Applications can also choose between two notification modes when
+> > +registering an eventfd for memory pressure events:
+> > +
+> > +When in "non-strict" mode, an eventfd is notified for the specific level
+> > +it's registered for and higher levels. For example, an eventfd registered
+> > +for low level is also going to be notified on medium and critical levels.
+> > +This mode makes sense for applications interested on monitoring reclaim
+> > +activity or implementing simple load-balacing logic. The non-strict mode
+> > +is the default notification mode.
+> > +
+> > +When in "strict" mode, an eventfd is strictly notified for the pressure
+> > +level it's registered for. For example, an eventfd registered for the low
+> > +level event is not going to be notified when memory pressure gets into
+> > +medium or critical levels. This allows for more complex logic based on
+> > +the actual pressure level the system is experiencing.
+> 
+> It would be also fair to mention that there is no guarantee that lower
+> levels are signaled before higher so nobody should rely on seeing LOW
+> before MEDIUM or CRITICAL.
+
+I think this is implied. Actually, as an user of this interface I didn't
+expect this to happen until I read the code.
+
+> 
+> > +
+> >  The events are propagated upward until the event is handled, i.e. the
+> >  events are not pass-through. Here is what this means: for example you have
+> >  three cgroups: A->B->C. Now you set up an event listener on cgroups A, B
+> > @@ -807,12 +823,14 @@ register a notification, an application must:
+> >  
+> >  - create an eventfd using eventfd(2);
+> >  - open memory.pressure_level;
+> > -- write string like "<event_fd> <fd of memory.pressure_level> <level>"
+> > +- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
+> >    to cgroup.event_control.
+> >  
+> > -Application will be notified through eventfd when memory pressure is at
+> > -the specific level (or higher). Read/write operations to
+> > -memory.pressure_level are no implemented.
+> > +Applications will be notified through eventfd when memory pressure is at
+> > +the specific level or higher. If strict is passed, then applications
+> > +will only be notified when memory pressure reaches the specified level.
+> > +
+> > +Read/write operations to memory.pressure_level are no implemented.
+> >  
+> >  Test:
+> >  
+> > diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+> > index 736a601..ba5c17e 100644
+> > --- a/mm/vmpressure.c
+> > +++ b/mm/vmpressure.c
+> > @@ -138,8 +138,16 @@ struct vmpressure_event {
+> >  	struct eventfd_ctx *efd;
+> >  	enum vmpressure_levels level;
+> >  	struct list_head node;
+> > +	unsigned int mode;
+> 
+> You would fill up a hole between level and node if you move it up on
+> 64b. Doesn't matter much but why not do it...
+
+You want me to respin?
