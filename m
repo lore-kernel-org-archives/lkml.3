@@ -1,228 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3F0QwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 12:52:09 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:65480 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab3F0QwH (ORCPT
+	id S1752897Ab3F0QyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 12:54:14 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:39794 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab3F0QyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 12:52:07 -0400
-Message-ID: <51CC6DB3.2020501@gmail.com>
-Date: Thu, 27 Jun 2013 10:52:03 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 27 Jun 2013 12:54:13 -0400
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 14/15] perf tools: add pid to struct thread
-References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com> <1372319707-13892-15-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1372319707-13892-15-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Tim Hockin <thockin@hockin.org>
+Date: Thu, 27 Jun 2013 09:53:52 -0700
+X-Google-Sender-Auth: IiKu4gQ2wx3LWez_kuzrP3jHr60
+Message-ID: <CAAAKZwuKxxYoVRn6Ye72Vs7vSd_T4cbvEwiU6Q3j4D-Z+VAPrw@mail.gmail.com>
+Subject: cgroup access daemon
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        jpoimboe <jpoimboe@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/27/13 1:55 AM, Adrian Hunter wrote:
-> Record pid on struct thread.  The member is named 'pid_'
-> to avoid confusion with the 'tid' member which was previously
-> named 'pid'.
->
-> Note that while "machine" functions update 'pid_', most tools
-> do not.
+Changing the subject, so as not to mix two discussions
 
-You are doing multiple things in this patch. Please make the 
-introduction and use of machine__findnew_thread_ex a standalone patch.
+On Thu, Jun 27, 2013 at 9:18 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+>
+>> > FWIW, the code is too embarassing yet to see daylight, but I'm playing
+>> > with a very lowlevel cgroup manager which supports nesting itself.
+>> > Access in this POC is low-level ("set freezer.state to THAWED for cgroup
+>> > /c1/c2", "Create /c3"), but the key feature is that it can run in two
+>> > modes - native mode in which it uses cgroupfs, and child mode where it
+>> > talks to a parent manager to make the changes.
+>>
+>> In this world, are users able to read cgroup files, or do they have to
+>> go through a central agent, too?
+>
+> The agent won't itself do anything to stop access through cgroupfs, but
+> the idea would be that cgroupfs would only be mounted in the agent's
+> mntns.  My hope would be that the libcgroup commands (like cgexec,
+> cgcreate, etc) would know to talk to the agent when possible, and users
+> would use those.
 
-David
+For our use case this is a huge problem.  We have people who access
+cgroup files in a fairly tight loops, polling for information.  We
+have literally hundeds of jobs running on sub-second frequencies -
+plumbing all of that through a daemon is going to be a disaster.
+Either your daemon becomes a bottleneck, or we have to build something
+far more scalable than you really want to.  Not to mention the
+inefficiency of inserting a layer.
 
+We also need the ability to set up eventfds for users or to let them
+poll() on the socket from this daemon.
+
+>> > So then the idea would be that userspace (like libvirt and lxc) would
+>> > talk over /dev/cgroup to its manager.  Userspace inside a container
+>> > (which can't actually mount cgroups itself) would talk to its own
+>> > manager which is talking over a passed-in socket to the host manager,
+>> > which in turn runs natively (uses cgroupfs, and nests "create /c1" under
+>> > the requestor's cgroup).
+>>
+>> How do you handle updates of this agent?  Suppose I have hundreds of
+>> running containers, and I want to release a new version of the cgroupd
+>> ?
+>
+> This may change (which is part of what I want to investigate with some
+> POC), but right now I'm building any controller-aware smarts into it.  I
+> think that's what you're asking about?  The agent doesn't do "slices"
+> etc.  This may turn out to be insufficient, we'll see.
+
+No, what I am asking is a release-engineering problem.  Suppose we
+need to roll out a new version of this daemon (some new feature or a
+bug or something).  We have hundreds of these "child" agents running
+in the job containers.
+
+How do I bring down all these children, and then bring them back up on
+a new version in a way that does not disrupt user jobs (much)?
+
+Similarly, what happens when one of these child agents crashes?  Does
+someone restart it?  Do user jobs just stop working?
 
 >
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->   tools/perf/util/machine.c | 47 ++++++++++++++++++++++++++++++++++++++---------
->   tools/perf/util/machine.h |  4 ++++
->   tools/perf/util/thread.c  |  3 ++-
->   tools/perf/util/thread.h  |  3 ++-
->   4 files changed, 46 insertions(+), 11 deletions(-)
+> So the only state which the agent stores is a list of cgroup mounts (if
+> in native mode) or an open socket to the parent (if in child mode), and a
+> list of connected children sockets.
 >
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index ef0be97..d11ca3b 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -233,7 +233,8 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
->   	return;
->   }
+> HUPping the agent will cause it to reload the cgroupfs mounts (in case
+> you've mounted a new controller, living in "the old world" :).  If you
+> just kill it and start a new one, it shouldn't matter.
 >
-> -static struct thread *__machine__findnew_thread(struct machine *machine, pid_t tid,
-> +static struct thread *__machine__findnew_thread(struct machine *machine,
-> +						pid_t pid, pid_t tid,
->   						bool create)
->   {
->   	struct rb_node **p = &machine->threads.rb_node;
-> @@ -245,8 +246,11 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
->   	 * so most of the time we dont have to look up
->   	 * the full rbtree:
->   	 */
-> -	if (machine->last_match && machine->last_match->tid == tid)
-> +	if (machine->last_match && machine->last_match->tid == tid) {
-> +		if (pid && !machine->last_match->pid_)
-> +			machine->last_match->pid_ = pid;
->   		return machine->last_match;
-> +	}
+>> (note: inquiries about the implementation do not denote acceptance of
+>> the model :)
 >
->   	while (*p != NULL) {
->   		parent = *p;
-> @@ -254,6 +258,8 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+> To put it another way, the problem I'm solving (for now) is not the "I
+> want a daemon to ensure that requested guarantees are correctly
+> implemented." In that sense I'm maintaining the status quo, i.e. the
+> admin needs to architect the layout correctly.
 >
->   		if (th->tid == tid) {
->   			machine->last_match = th;
-> +			if (pid && !th->pid_)
-> +				th->pid_ = pid;
->   			return th;
->   		}
+> The problem I'm solving is really that I want containers to be able to
+> handle cgroups even if they can't mount cgroupfs, and I want all
+> userspace to be able to behave the same whether they are in a container
+> or not.
 >
-> @@ -266,7 +272,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
->   	if (!create)
->   		return NULL;
+> This isn't meant as a poke in the eye of anyone who wants to address the
+> other problem.  If it turns out that we (meaning "the community of
+> cgroup users") really want such an agent, then we can add that.  I'm not
+> convinced.
 >
-> -	th = thread__new(tid);
-> +	th = thread__new(pid, tid);
->   	if (th != NULL) {
->   		rb_link_node(&th->rb_node, parent, p);
->   		rb_insert_color(&th->rb_node, &machine->threads);
-> @@ -278,17 +284,25 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+> What would probably be a better design, then, would be that the agent
+> I'm working on can plug into a resource allocation agent.  Or, I
+> suppose, the other way around.
 >
->   struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
->   {
-> -	return __machine__findnew_thread(machine, tid, true);
-> +	return __machine__findnew_thread(machine, 0, tid, true);
-> +}
-> +
-> +struct thread *machine__findnew_thread_ex(struct machine *machine, pid_t pid,
-> +					  pid_t tid)
-> +{
-> +	return __machine__findnew_thread(machine, pid, tid, true);
->   }
->
->   struct thread *machine__find_thread(struct machine *machine, pid_t tid)
->   {
-> -	return __machine__findnew_thread(machine, tid, false);
-> +	return __machine__findnew_thread(machine, 0, tid, false);
->   }
->
->   int machine__process_comm_event(struct machine *machine, union perf_event *event)
->   {
-> -	struct thread *thread = machine__findnew_thread(machine, event->comm.tid);
-> +	struct thread *thread = machine__findnew_thread_ex(machine,
-> +							   event->comm.pid,
-> +							   event->comm.tid);
->
->   	if (dump_trace)
->   		perf_event__fprintf_comm(event, stdout);
-> @@ -969,7 +983,8 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
->   		return 0;
->   	}
->
-> -	thread = machine__findnew_thread(machine, event->mmap.pid);
-> +	thread = machine__findnew_thread_ex(machine, event->mmap.pid,
-> +					    event->mmap.pid);
->   	if (thread == NULL)
->   		goto out_problem;
->
-> @@ -996,8 +1011,12 @@ out_problem:
->
->   int machine__process_fork_event(struct machine *machine, union perf_event *event)
->   {
-> -	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
-> -	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
-> +	struct thread *thread = machine__findnew_thread_ex(machine,
-> +							   event->fork.pid,
-> +							   event->fork.tid);
-> +	struct thread *parent = machine__findnew_thread_ex(machine,
-> +							   event->fork.ppid,
-> +							   event->fork.ptid);
->
->   	if (dump_trace)
->   		perf_event__fprintf_task(event, stdout);
-> @@ -1264,3 +1283,13 @@ int machine__resolve_callchain(struct machine *machine,
->   				   sample);
->
->   }
-> +
-> +pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
-> +{
-> +	struct thread *thread = machine__find_thread(machine, tid);
-> +
-> +	if (!thread)
-> +		return 0;
-> +
-> +	return thread->pid_;
-> +}
-> diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-> index e49ba01..11a53d5 100644
-> --- a/tools/perf/util/machine.h
-> +++ b/tools/perf/util/machine.h
-> @@ -100,6 +100,8 @@ static inline bool machine__is_host(struct machine *machine)
->   }
->
->   struct thread *machine__findnew_thread(struct machine *machine, pid_t tid);
-> +struct thread *machine__findnew_thread_ex(struct machine *machine, pid_t pid,
-> +					  pid_t tid);
->
->   size_t machine__fprintf(struct machine *machine, FILE *fp);
->
-> @@ -156,4 +158,6 @@ void machines__destroy_kernel_maps(struct machines *machines);
->
->   size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
->
-> +pid_t machine__get_thread_pid(struct machine *machine, pid_t tid);
-> +
->   #endif /* __PERF_MACHINE_H */
-> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-> index 6feeb88..e3d4a55 100644
-> --- a/tools/perf/util/thread.c
-> +++ b/tools/perf/util/thread.c
-> @@ -7,12 +7,13 @@
->   #include "util.h"
->   #include "debug.h"
->
-> -struct thread *thread__new(pid_t tid)
-> +struct thread *thread__new(pid_t pid, pid_t tid)
->   {
->   	struct thread *self = zalloc(sizeof(*self));
->
->   	if (self != NULL) {
->   		map_groups__init(&self->mg);
-> +		self->pid_ = pid;
->   		self->tid = tid;
->   		self->ppid = -1;
->   		self->comm = malloc(32);
-> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-> index 37a86a3..bfa68e7 100644
-> --- a/tools/perf/util/thread.h
-> +++ b/tools/perf/util/thread.h
-> @@ -12,6 +12,7 @@ struct thread {
->   		struct list_head node;
->   	};
->   	struct map_groups	mg;
-> +	pid_t			pid_; /* Not all tools update this */
->   	pid_t			tid;
->   	pid_t			ppid;
->   	char			shortname[3];
-> @@ -24,7 +25,7 @@ struct thread {
->
->   struct machine;
->
-> -struct thread *thread__new(pid_t tid);
-> +struct thread *thread__new(pid_t pid, pid_t tid);
->   void thread__delete(struct thread *self);
->
->   int thread__set_comm(struct thread *self, const char *comm);
->
-
+>> > At some point (probably soon) we might want to talk about a standard API
+>> > for these things.  However I think it will have to come in the form of
+>> > a standard library, which knows to either send requests over dbus to
+>> > systemd, or over /dev/cgroup sock to the manager.
+>> >
+>> > -serge
