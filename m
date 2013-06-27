@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab3F0JrD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:47:03 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:48186 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab3F0JrB (ORCPT
+	id S1752523Ab3F0Jrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:47:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46691 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab3F0Jrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:47:01 -0400
-Date: Thu, 27 Jun 2013 12:46:49 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, kevin@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/8] clocksource: sun4i: Add clocksource and sched clock
- drivers
-Message-ID: <20130627094649.GM4824@tarshish>
-References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
- <1372281421-2099-3-git-send-email-maxime.ripard@free-electrons.com>
- <20130627060234.GD4824@tarshish>
- <20130627093558.GB8437@lukather>
+	Thu, 27 Jun 2013 05:47:40 -0400
+Date: Thu, 27 Jun 2013 10:46:51 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Mark Brown <broonie@kernel.org>, Jonathan Austin <jonathan.austin@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steve Capper <Steve.Capper@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, linus.walleij@linaro.org,
+        Will Deacon <will.deacon@arm.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: amba-pl08x and 'get_signal' namespace collision/build error
+Message-ID: <20130627094650.GC4283@n2100.arm.linux.org.uk>
+References: <51C97F40.5030101@arm.com> <20130625184539.GB2718@n2100.arm.linux.org.uk> <20130626044842.GR23141@intel.com> <20130626081909.GD2718@n2100.arm.linux.org.uk> <20130626103930.GS23141@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130627093558.GB8437@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130626103930.GS23141@intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
-
-On Thu, Jun 27, 2013 at 11:35:58AM +0200, Maxime Ripard wrote:
-> On Thu, Jun 27, 2013 at 09:02:34AM +0300, Baruch Siach wrote:
-> > On Wed, Jun 26, 2013 at 11:16:55PM +0200, Maxime Ripard wrote:
-> > > +static u32 sun4i_timer_sched_read(void)
+On Wed, Jun 26, 2013 at 04:09:30PM +0530, Vinod Koul wrote:
+> On Wed, Jun 26, 2013 at 09:19:09AM +0100, Russell King - ARM Linux wrote:
+> > On Wed, Jun 26, 2013 at 10:18:42AM +0530, Vinod Koul wrote:
+> > > Yup. This is fixed in slave-dma tree by a patch from mark by renaming it.
+> > > 
+> > > This should not show in the -next tree
 > > 
-> > You commit message mentions "64 bits free running counter", but this one only 
-> > returns 32 bit.
+> > Except, that change probably is probably responsible for this new error:
+> > 
+> > drivers/dma/amba-pl08x.c: In function 'pl08x_request_mux':
+> > drivers/dma/amba-pl08x.c:304:13: error: expected identifier before '(' token
+> This was pushed four days ago and havent seen any error report expect this.
 > 
-> Yeah, the callback setup by setup_sched_clock is supposed to be
-> returning a u32, and clocksource_mmio_init only accepts up to 32 bits as
-> well, so I'm only using the lower 32bits of this 64 bits counter.
+> Anyway I rebuild my -next and looks fine for me
 > 
-> I'll amend the commit log to state this.
+>   CC      drivers/dma/dmaengine.o
+>   CC      drivers/dma/virt-dma.o
+>   CC      drivers/dma/iovlock.o
+>   CC [M]  drivers/dma/dmatest.o
+>   CC      drivers/dma/amba-pl08x.o
+>   LD      drivers/dma/built-in.o
+> 
+> Can you share your config which failed for you?
+> 
+> Mark, I believe you are testing for this, have you seen above error?
 
-But using 64 bit counter for sched_clock is much easier that using 32 bit one. 
-You can either wait for the rest of Stephen's patch set 
-(http://thread.gmane.org/gmane.linux.ports.arm.msm/4092) before adding 64 bit, 
-or you can just make the trivial change to the now generic sched_clock code.
+Right, what's going on is that I have a commit in my tree which adds an
+include to asm/pgtable.h which introduces a #define for get_signal.
+This becomes visible to amba-pl08x.c.
 
-baruch
+However, my build test tree fails *every* time because what I'm building
+is Linus' tree, my tree plus arm-soc, and it doesn't include your tree.
+This makes my build testing for the next merge window impossible.
 
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+So, I need the fix to pl08x.c merged into my tree.
