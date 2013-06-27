@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab3F0Xx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 19:53:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:15274 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948Ab3F0Xx4 (ORCPT
+	id S1754336Ab3F0X51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 19:57:27 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54647 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab3F0X5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 19:53:56 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-df-51ccd090e0ed
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Johannes Berg'" <johannes.berg@intel.com>,
-        "'Moshe Benji'" <Moshe.Benji@intel.com>, cpgs@samsung.com
-References: 
-In-reply-to: 
-Subject: [PATCH 3.9-stable] iwlwifi: fix rate control regression
-Date: Fri, 28 Jun 2013 08:53:52 +0900
-Message-id: <002601ce7391$93c61ed0$bb525c70$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMAAA5gYwAMf3LxAFffBYYAAAYQ2g
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zfd0JF84EGlx9amLx8pCmxZJmbotH
-	K2axW1zeNYfN4vii30wWCzY+YnRg81i85yWTR9+WVYwenzfJBTBHcdmkpOZklqUW6dslcGVs
-	/s1SsJa/Yk/rK7YGxh7eLkZODgkBE4mz95+zQ9hiEhfurWfrYuTiEBJYxiixYvZyVpiifytn
-	MUEkFjFKzN69ggXC+cso8Wn6PDaQKjYBXYlj67eAdYgIeEucmvKLGaSIWaCBUeLp2ctADgdQ
-	B7fE6uYgkBpOAR6JdX86mUFsYQEHiXttr8B6WQRUJT7ffcQEYvMK2Em8uPcDyhaU+DH5HguI
-	zSygJbF+53EmCFteYvOat2DjJQTUJR791QVZKyIwg1Hi/ZfT7BA1IhL7XrxjBElICFxjlzh6
-	YRkjxDIBiW+TD7FANMtKbDrADPGxpMTBFTdYJjBKzEKyehaS1bOQrJ6FZMUCRpZVjKKpBckF
-	xUnpRYZ6xYm5xaV56XrJ+bmbGCHR2buD8fYB60OMyUDrJzJLiSbnA6M7ryTe0NjMyMLUxNTY
-	yNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2McyZrCmlHcck1V8xXYX7z
-	0voZT2+K0uML1TXiB8tC9frYjrBfzs0RTMgr3MohfsT7XMmiJUJp3TaKz4LT8wutdiTrrtid
-	c2Xd0YtdDTxpvYszf3d+Sf2lslGgsCLnUq3ZlUrJiWrJ/mduL2IuWHzm0XHJtdVbnq0wU5Y5
-	IZbaobCLYdvlV4pKLMUZiYZazEXFiQA/Wby25AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jAd0JF84EGhxfZWDx8pCmxZJmbotH
-	K2axW1zeNYfN4vii30wWCzY+YnRg81i85yWTR9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeen
-	ZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtVVIoS8wpBQoFJBYXK+nbYZoQ
-	GuKmawHTGKHrGxIE12NkgAYS1jFmbP7NUrCWv2JP6yu2BsYe3i5GTg4JAROJfytnMUHYYhIX
-	7q1n62Lk4hASWMQoMXv3ChYI5y+jxKfp89hAqtgEdCWOrd/CCmKLCHhLnJryixmkiFmggVHi
-	6dnLQA4HUAe3xOrmIJAaTgEeiXV/OplBbGEBB4l7ba/AelkEVCU+330EtplXwE7ixb0fULag
-	xI/J91hAbGYBLYn1O48zQdjyEpvXvAUbLyGgLvHory7IWhGBGYwS77+cZoeoEZHY9+Id4wRG
-	oVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc+8+kdzCuarA4
-	xCjAwajEw9uQeCZQiDWxrLgy9xCjBAezkgjvnQVAId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYS
-	Tc4HpqW8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamDkfz/7
-	9t7ZmZ/exTxIfbRMW0RP96pix+uF/psyb0y7Hh3kqinaYJjyQfny7qiLhg8sr3Gc1nX7MUHg
-	y/+fzXdllNVe3c2bmv+qjOFs0pmnJz4ftj+6486nMAmz/Vujq7fuLfq4ZPnTHzu32ucrL5ld
-	MkNd6ajwrv883feXeDLNOzTJbsIFc6vWfUosxRmJhlrMRcWJAEBUDmFBAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 27 Jun 2013 19:57:25 -0400
+Date: Fri, 28 Jun 2013 09:57:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: mmotm 2013-06-27-16-36 uploaded
+Message-Id: <20130628095712.120bec7036284584fd467ee2@canb.auug.org.au>
+In-Reply-To: <20130627233733.BAEB131C3BE@corp2gmr1-1.hot.corp.google.com>
+References: <20130627233733.BAEB131C3BE@corp2gmr1-1.hot.corp.google.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__28_Jun_2013_09_57_12_+1000_2K.=.RcrtCBGukkj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch looks like it should be in the 3.9-stable tree, should we apply
-it?
+--Signature=_Fri__28_Jun_2013_09_57_12_+1000_2K.=.RcrtCBGukkj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Andrew,
 
-From: "Moshe Benji <Moshe.Benji@intel.com>"
+On Thu, 27 Jun 2013 16:37:33 -0700 akpm@linux-foundation.org wrote:
+>
+> The mm-of-the-moment snapshot 2013-06-27-16-36 has been uploaded to
+>=20
+>    http://www.ozlabs.org/~akpm/mmotm/
+>=20
+>   include-linux-smph-on_each_cpu-switch-back-to-a-macro.patch
+>   arch-c6x-mm-include-asm-uaccessh-to-pass-compiling.patch
+>   drivers-dma-pl330c-fix-locking-in-pl330_free_chan_resources.patch
 
-commit 622ebe994f6866b8d46ee5d3bcc329ed65d3722d upstream
+Did you mean to drop these three patches from linux-next?
 
-Since driver does not use control.rates[0].count, we have never set that
-variable. But currently, after rate control API rewrite, this is required
-by mac80211. Otherwise legacy rates control does not work and we transmit
-always at 1Mbit/s on pre 11n networks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-[same fix as for iwlegacy, thanks Stanislaw!]
+--Signature=_Fri__28_Jun_2013_09_57_12_+1000_2K.=.RcrtCBGukkj
+Content-Type: application/pgp-signature
 
-Signed-off-by: Moshe Benji <Moshe.Benji@intel.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- drivers/net/wireless/iwlwifi/dvm/rs.c |    2 +-
- drivers/net/wireless/iwlwifi/mvm/rs.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-diff --git a/drivers/net/wireless/iwlwifi/dvm/rs.c
-b/drivers/net/wireless/iwlwifi/dvm/rs.c
-index abe3042..5de2dbf 100644
---- a/drivers/net/wireless/iwlwifi/dvm/rs.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/rs.c
-@@ -2799,7 +2799,7 @@ static void rs_get_rate(void *priv_r, struct
-ieee80211_sta *sta, void *priv_sta,
- 		info->control.rates[0].flags = 0;
- 	}
- 	info->control.rates[0].idx = rate_idx;
--
-+	info->control.rates[0].count = 1;
- }
- 
- static void *rs_alloc_sta(void *priv_rate, struct ieee80211_sta *sta,
-diff --git a/drivers/net/wireless/iwlwifi/mvm/rs.c
-b/drivers/net/wireless/iwlwifi/mvm/rs.c
-index 56b636d..fefcbc5 100644
---- a/drivers/net/wireless/iwlwifi/mvm/rs.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/rs.c
-@@ -2544,6 +2544,7 @@ static void rs_get_rate(void *mvm_r, struct
-ieee80211_sta *sta, void *mvm_sta,
- 		info->control.rates[0].flags = 0;
- 	}
- 	info->control.rates[0].idx = rate_idx;
-+	info->control.rates[0].count = 1;
- }
- 
- static void *rs_alloc_sta(void *mvm_rate, struct ieee80211_sta *sta,
--- 
-1.7.9.5
+iQIcBAEBCAAGBQJRzNFgAAoJEECxmPOUX5FEBBQP/1hZnBOg95lcex5YwznOZFui
+T0kjzJ2afJGH2LvdBbUGMOljUrAcDQBK+XCkslrEZG53bSlC6H0klQnQJSzLlChO
+mQ6OnfX0NQdVKtX4aYEmIB2YNL+oyeJgtIoxa4dKy2b/a/Zk87V85kEyJ0Og3tuJ
+TAiqKypCuXjEkC1JokUmY9xgxhLk+jRyb8R0+Prd7ahddsgI27iJUUDw3T38DK8K
+LH2/r/1H19l8mqYCsCo9ctG49NJxrPAZIFc+vh4nZ0ivRPqkB41FF1V9IzDB4RxM
+/XjQcNoyThL19oHCbp8oordfJeT804RFMgdHRbqcZiwve93FPUfUrCWFbtoT1EO9
+stJosQF/oi+doQCoHjnuBcs8SqbXsmDdLoleBagf9GsrX8BW2TB+E+49F/MWyIzI
+ArZE69VWbXo19Wy4Bi/zEgeNZB6bJoNQuT9EeMg+x150V3v7DKjrOtAASGP/cZ/P
+Y8tPrTmR/Mpr2km2F6WUdhcPLqxg0NAiUPIJ975ft62+aps43JQepuducPkP2tli
+smITrYNFzS9UDPKKUQZTeuiuEeWQp/COsESNFnjUwmEWiDKUu3Cw7n/lgoTNA+76
+a6zR58cAw56ParpxVwlQTe7z87VwOTV2dLQNc+ltbR+7nrbnAdc8xTdCS4cmA/Ug
+1RslZOtVYmG7DF4eAOdw
+=XgAV
+-----END PGP SIGNATURE-----
 
+--Signature=_Fri__28_Jun_2013_09_57_12_+1000_2K.=.RcrtCBGukkj--
