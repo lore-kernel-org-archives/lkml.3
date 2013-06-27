@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504Ab3F0Ee5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 00:34:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34946 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab3F0Eez convert rfc822-to-8bit (ORCPT
+	id S1751582Ab3F0Efo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 00:35:44 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:38236 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab3F0Efm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 00:34:55 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH 3/4] regulators: Add TPS659038 documentation under Palmas
-Thread-Topic: [PATCH 3/4] regulators: Add TPS659038 documentation under
- Palmas
-Thread-Index: AQHObaZOnplXeq3e6k651zZU6Eld4JlJA7vQ
-Date: Thu, 27 Jun 2013 04:34:35 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229F020C@DBDE04.ent.ti.com>
-References: <1371726344-10115-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1371726344-10115-1-git-send-email-j-keerthy@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 27 Jun 2013 00:35:42 -0400
+From: navin patidar <navinp@cdac.in>
+To: gregkh@linuxfoundation.org, mfm@muteddisk.com,
+        sergei.shtylyov@cogentembedded.com
+Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navinp@cdac.in>
+Subject: [PATCH v3] staging: usbip: replace pr_warning() with dev_warn().
+Date: Thu, 27 Jun 2013 10:05:06 +0530
+Message-Id: <1372307706-6711-1-git-send-email-navinp@cdac.in>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Grant,
+dev_warn() is preferred over pr_warning().
 
-> -----Original Message-----
-> From: J, KEERTHY
-> Sent: Thursday, June 20, 2013 4:36 PM
-> To: linux-omap@vger.kernel.org; grant.likely@secretlab.ca
-> Cc: broonie@kernel.org; J, KEERTHY; ldewangan@nvidia.com;
-> sameo@linux.intel.com; swarren@nvidia.com; linux-
-> kernel@vger.kernel.org; linux-doc@vger.kernel.org; devicetree-
-> discuss@lists.ozlabs.org; gg@slimlogic.co.uk
-> Subject: [PATCH 3/4] regulators: Add TPS659038 documentation under
-> Palmas
-> 
-> Add TPS659038 documentation under Palmas.
-> 
+container_of() is used to get usb_driver pointer from usbip_device container
+(stub_device or vhci_device), to get device structure required for dev_warn().
 
-Could you please pull this one?
+Signed-off-by: navin patidar <navinp@cdac.in>
+---
+ drivers/staging/usbip/usbip_event.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> Acked-by: Mark Brown <broonie@linaro.org>
-> ---
->  .../devicetree/bindings/regulator/palmas-pmic.txt  |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/regulator/palmas-
-> pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-> index d5a3086..5115cd7 100644
-> --- a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-> +++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-> @@ -7,6 +7,7 @@ Required properties:
->    ti,twl6037-pmic
->    ti,tps65913-pmic
->    ti,tps65914-pmic
-> +  ti,tps659038-pmic
->  and also the generic series names
->    ti,palmas-pmic
->  - interrupt-parent : The parent interrupt controller which is palmas.
-> --
-> 1.7.5.4
+diff --git a/drivers/staging/usbip/usbip_event.c b/drivers/staging/usbip/usbip_event.c
+index 82123be..eca14b7 100644
+--- a/drivers/staging/usbip/usbip_event.c
++++ b/drivers/staging/usbip/usbip_event.c
+@@ -21,6 +21,8 @@
+ #include <linux/export.h>
 
-Regards,
-Keerthy
+ #include "usbip_common.h"
++#include "stub.h"
++#include "vhci.h"
+
+ static int event_handler(struct usbip_device *ud)
+ {
+@@ -85,7 +87,20 @@ int usbip_start_eh(struct usbip_device *ud)
+
+ 	ud->eh = kthread_run(event_handler_loop, ud, "usbip_eh");
+ 	if (IS_ERR(ud->eh)) {
+-		pr_warning("Unable to start control thread\n");
++		struct device dev;
++
++		if (ud->side == USBIP_STUB) {
++			struct stub_device *sdev;
++
++			sdev = container_of(ud, struct stub_device, ud);
++			dev = sdev->udev->dev;
++		} else {
++			struct vhci_device *vdev;
++
++			vdev = container_of(ud, struct vhci_device, ud);
++			dev = vdev->udev->dev;
++		}
++		dev_warn(&dev, "Unable to start control thread\n");
+ 		return PTR_ERR(ud->eh);
+ 	}
+
+--
+1.7.10.4
+
