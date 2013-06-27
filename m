@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab3F0JVh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 05:21:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45291 "EHLO mx1.redhat.com"
+	id S1752728Ab3F0JV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 05:21:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35569 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037Ab3F0JVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 05:21:36 -0400
-Date: Thu, 27 Jun 2013 11:21:29 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: perf tools: Introduce new -P/--parent-deep report option
-Message-ID: <20130627092129.GB3225@krava.brq.redhat.com>
-References: <20130626145853.GA2309@ghostprotocols.net>
- <87a9mc15qm.fsf@sejong.aot.lge.com>
+	id S1752053Ab3F0JV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 05:21:56 -0400
+Date: Thu, 27 Jun 2013 12:21:52 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] KVM: MMU: fast invalidate all mmio sptes
+Message-ID: <20130627092152.GB10758@redhat.com>
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1370595088-3315-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130627082900.GD18508@redhat.com>
+ <20130627090110.GE18508@redhat.com>
+ <20130627091424.GA10758@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87a9mc15qm.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130627091424.GA10758@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 02:29:21PM +0900, Namhyung Kim wrote:
-> Hi Arnaldo,
+On Thu, Jun 27, 2013 at 12:14:24PM +0300, Gleb Natapov wrote:
+> On Thu, Jun 27, 2013 at 12:01:10PM +0300, Gleb Natapov wrote:
+> > On Thu, Jun 27, 2013 at 11:29:00AM +0300, Gleb Natapov wrote:
+> > > On Fri, Jun 07, 2013 at 04:51:26PM +0800, Xiao Guangrong wrote:
+> > > > This patch tries to introduce a very simple and scale way to invalidate
+> > > > all mmio sptes - it need not walk any shadow pages and hold mmu-lock
+> > > > 
+> > > > KVM maintains a global mmio valid generation-number which is stored in
+> > > > kvm->memslots.generation and every mmio spte stores the current global
+> > > > generation-number into his available bits when it is created
+> > > > 
+> > > > When KVM need zap all mmio sptes, it just simply increase the global
+> > > > generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+> > > > then it walks the shadow page table and get the mmio spte. If the
+> > > > generation-number on the spte does not equal the global generation-number,
+> > > > it will go to the normal #PF handler to update the mmio spte
+> > > > 
+> > > > Since 19 bits are used to store generation-number on mmio spte, we zap all
+> > > > mmio sptes when the number is round
+> > > > 
+> > > So this commit makes Fedora 9 32 bit reboot during boot, Fedora 9 64
+> > > fails too, but I haven't checked what happens exactly.
+> > > 
+> > Something wrong with gfn calculation during mmio:
+> > 
+> > qemu-system-x86-17003 [000]  3962.625103: handle_mmio_page_fault: addr:c00ba6c0 gfn 100000000ba access a92
+> > qemu-system-x86-17003 [000]  3962.774862: handle_mmio_page_fault: addr:ffffb170 gfn 100000fee00 access a92
+> > 
+> Hmm, so I wounder why get_mmio_spte_gfn() does not clear gen bits.
 > 
-> On Wed, 26 Jun 2013 11:58:53 -0300, Arnaldo Carvalho de Melo wrote:
-> > Hi Jiri,
-> >
-> > 	About the patch below, can't this be solved by using a regex
-> > instead of a simple substring search instead of adding a new command
-> > line option?
-> 
-> ???
-> 
-> IIUC he reused parent_regex for this.
-> 
-> And I think we can have the same effect by using -G and -p option
-> together without this new option.
+Hmm, something like patch below fixes it. Will test more.
 
-I think you're right.. I haven't realized I could reverse
-the backtrace and search the same way via -p
 
-thanks,
-jirka
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 1fd2c05..aec9c05 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -260,7 +260,8 @@ static bool is_mmio_spte(u64 spte)
+ 
+ static gfn_t get_mmio_spte_gfn(u64 spte)
+ {
+-	return (spte & ~shadow_mmio_mask) >> PAGE_SHIFT;
++	u64 mask = generation_mmio_spte_mask(MMIO_MAX_GEN) | shadow_mmio_mask;
++	return (spte & ~mask) >> PAGE_SHIFT;
+ }
+ 
+ static unsigned get_mmio_spte_access(u64 spte)
+--
+			Gleb.
