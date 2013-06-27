@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab3F0Phi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 11:37:38 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:44942 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab3F0Phg (ORCPT
+	id S1754019Ab3F0PiF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 11:38:05 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:43869 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab3F0PiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 11:37:36 -0400
+	Thu, 27 Jun 2013 11:38:02 -0400
+Message-ID: <1372347477.2436.7.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [RFC Patch net-next 4/5] sunrpc: use generic union inet_addr
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Cong Wang <amwang@redhat.com>
+CC: <netdev@vger.kernel.org>, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Jun 2013 16:37:57 +0100
+In-Reply-To: <1372315398-19683-5-git-send-email-amwang@redhat.com>
+References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
+	 <1372315398-19683-5-git-send-email-amwang@redhat.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-In-Reply-To: <1372345790.2522.26.camel@dabdike>
-References: <1372183863-11333-1-git-send-email-leif.lindholm@linaro.org>
- <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
- <51CA2B03.4080106@wwwdotorg.org> <CACxGe6vsBKnbipR-Zd1T9Ox1J2ugFmShrGXGUzPa_=D9TJvFQw@mail.gmail.com>
- <20130626135311.GA9078@rocoto.smurfnet.nu> <20130626135933.GQ22026@console-pimps.org>
- <1372257499.2168.5.camel@dabdike> <20130627013219.GA346@srcf.ucam.org>
- <CACxGe6uFkbuJ3BxM=A0Lu=jZQ79Ba8SmNsdBdTOO13szTfTZ=Q@mail.gmail.com>
- <1372314821.557.33.camel@dabdike> <20130627143714.GA12900@srcf.ucam.org> <1372345790.2522.26.camel@dabdike>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 27 Jun 2013 16:37:16 +0100
-X-Google-Sender-Auth: wzrRLE9gb3Dh8id5lVaPKp9-19I
-Message-ID: <CACxGe6u2xU=+MzYLUbDLFB-9kA23TT2=otzM59zrbGWYt8x7Uw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-efi@vger.kernel.org,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, matt.fleming@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19978.002
+X-TM-AS-Result: No--5.363100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 4:09 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Thu, 2013-06-27 at 15:37 +0100, Matthew Garrett wrote:
->> On Wed, Jun 26, 2013 at 11:33:41PM -0700, James Bottomley wrote:
->> > On Thu, 2013-06-27 at 07:23 +0100, Grant Likely wrote:
->> > > What is the problem trying to be avoided by not using the virtual map?
->> > > Is it passing the virtual mapping data from one kernel to the next
->> > > when kexecing? Or something else?
->> >
->> > Where to begin ... SetVirtualAddressMap() is one massive hack job ...
->> > just look at the tiano core implementation.   Basically it has a fixed
->> > idea of where all the pointers are and it tries to convert them all to
->> > the new address space.  The problem we see in x86 is that this
->> > conversion process isn't exhaustive due to implementation cockups, so
->> > the post virtual address map image occasionally tries to access
->> > unconverted pointers via the old physical address and oopses the kernel.
->>
->> And yet it's the only mode in which the firmrware is actually tested
->> against an OS, so we don't have any real choice in the matter.
->
-> Agree for x86 ... we just have to cope with the implementations we see
-> in the field.  However, ARM has much more scope to have the UEFI
-> implementation developed collaboratively with Linux as the reference
-> platform.  If we can convince the ARM implementors that
-> SetVirtualAddressMap is an accident waiting to happen, they might be
-> more flexible.
+On Thu, 2013-06-27 at 14:43 +0800, Cong Wang wrote:
+[...]
+> --- a/include/net/inet_addr.h
+> +++ b/include/net/inet_addr.h
+> @@ -60,6 +60,62 @@ static inline bool inet_addr_multicast(const union inet_addr *ipa)
+>  }
+>  #endif
+>  
+> +/**
+> + * inet_addr_copy - copy the address portion of one sockaddr to another
+> + * @dst: destination sockaddr
+> + * @src: source sockaddr
+> + *
+> + * Just copies the address portion and family. Ignores port, scope, etc.
+> + * Caller is responsible for making certain that dst is large enough to hold
+> + * the address in src. Returns true if address family is supported. Returns
+> + * false otherwise.
+> + */
+> +static inline bool inet_addr_copy(union inet_addr *dst,
+> +				  const union inet_addr *src)
+> +{
+> +	dst->sa.sa_family = src->sa.sa_family;
+> +
+> +	switch (src->sa.sa_family) {
+> +	case AF_INET:
+> +		dst->sin.sin_addr.s_addr = src->sin.sin_addr.s_addr;
+> +		return true;
+> +#if IS_ENABLED(CONFIG_IPV6)
+> +	case AF_INET6:
+> +		dst->sin6.sin6_addr = src->sin6.sin6_addr;
+> +		dst->sin6.sin6_scope_id = src->sin6.sin6_scope_id;
+> +		return true;
+> +#endif
 
-We may not have any success convincing them of that; but given the
-larger scope for Linux on ARM UEFI implementations, it will actually
-get tested. If Linux chooses to use a 1:1 mapping, then the hardware
-vendors will make sure a 1:1 mapping will actually work.
+Most of the other functions work on IPv6 addresses without CONFIG_IPV6;
+why should this be different?
 
-I must say that I'm a whole lot more comfortable with this approach.
-I've never been comfortable with calling out to UEFI functions while
-leaving the entirety of kernel space accessable. Sure UEFI can still
-do nasty things if it really wants to and important devices get
-mapped, but at least it will protect against accidental accesses.
+Ben.
 
-g.
+> +	}
+> +
+> +	return false;
+> +}
+[...]
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
