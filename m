@@ -1,94 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab3F0LKZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 07:10:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663Ab3F0LKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 07:10:24 -0400
-Date: Thu, 27 Jun 2013 14:10:19 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] KVM: MMU: fast invalidate all mmio sptes
-Message-ID: <20130627111019.GI18508@redhat.com>
-References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1370595088-3315-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130627082900.GD18508@redhat.com>
- <20130627090110.GE18508@redhat.com>
- <20130627091424.GA10758@redhat.com>
- <20130627092152.GB10758@redhat.com>
- <51CC0AD0.3080003@linux.vnet.ibm.com>
- <20130627101931.GF18508@redhat.com>
- <51CC1C70.1030105@linux.vnet.ibm.com>
+	id S1752240Ab3F0LO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 07:14:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54273 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab3F0LO5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 07:14:57 -0400
+Date: Thu, 27 Jun 2013 13:14:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 2/8] perf,x86: drop event->flags and use
+ hw.constraint->flags
+Message-ID: <20130627111445.GR28407@twins.programming.kicks-ass.net>
+References: <1371824448-7306-1-git-send-email-eranian@google.com>
+ <1371824448-7306-3-git-send-email-eranian@google.com>
+ <20130624084510.GK28407@twins.programming.kicks-ass.net>
+ <CABPqkBQRchnjhnEC05w-noizoeSRnNio7NDQ6_+vXym_7rkGaw@mail.gmail.com>
+ <20130626103653.GC28407@twins.programming.kicks-ass.net>
+ <CABPqkBQuYy3TeE81tTXVruMG4D84TQ2U5g69T2ResGgjPjK4Cg@mail.gmail.com>
+ <20130627104833.GC27378@dyad.programming.kicks-ass.net>
+ <CABPqkBSwrz_GSobSuXn+AvU1zp14nAccCer4o7DHmG2c90cxRA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51CC1C70.1030105@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBSwrz_GSobSuXn+AvU1zp14nAccCer4o7DHmG2c90cxRA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 07:05:20PM +0800, Xiao Guangrong wrote:
-> On 06/27/2013 06:19 PM, Gleb Natapov wrote:
-> > On Thu, Jun 27, 2013 at 05:50:08PM +0800, Xiao Guangrong wrote:
-> >> On 06/27/2013 05:21 PM, Gleb Natapov wrote:
-> >>> On Thu, Jun 27, 2013 at 12:14:24PM +0300, Gleb Natapov wrote:
-> >>>> On Thu, Jun 27, 2013 at 12:01:10PM +0300, Gleb Natapov wrote:
-> >>>>> On Thu, Jun 27, 2013 at 11:29:00AM +0300, Gleb Natapov wrote:
-> >>>>>> On Fri, Jun 07, 2013 at 04:51:26PM +0800, Xiao Guangrong wrote:
-> >>>>>>> This patch tries to introduce a very simple and scale way to invalidate
-> >>>>>>> all mmio sptes - it need not walk any shadow pages and hold mmu-lock
-> >>>>>>>
-> >>>>>>> KVM maintains a global mmio valid generation-number which is stored in
-> >>>>>>> kvm->memslots.generation and every mmio spte stores the current global
-> >>>>>>> generation-number into his available bits when it is created
-> >>>>>>>
-> >>>>>>> When KVM need zap all mmio sptes, it just simply increase the global
-> >>>>>>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
-> >>>>>>> then it walks the shadow page table and get the mmio spte. If the
-> >>>>>>> generation-number on the spte does not equal the global generation-number,
-> >>>>>>> it will go to the normal #PF handler to update the mmio spte
-> >>>>>>>
-> >>>>>>> Since 19 bits are used to store generation-number on mmio spte, we zap all
-> >>>>>>> mmio sptes when the number is round
-> >>>>>>>
-> >>>>>> So this commit makes Fedora 9 32 bit reboot during boot, Fedora 9 64
-> >>>>>> fails too, but I haven't checked what happens exactly.
-> >>>>>>
-> >>>>> Something wrong with gfn calculation during mmio:
-> >>>>>
-> >>>>> qemu-system-x86-17003 [000]  3962.625103: handle_mmio_page_fault: addr:c00ba6c0 gfn 100000000ba access a92
-> >>>>> qemu-system-x86-17003 [000]  3962.774862: handle_mmio_page_fault: addr:ffffb170 gfn 100000fee00 access a92
-> >>>>>
-> >>>> Hmm, so I wounder why get_mmio_spte_gfn() does not clear gen bits.
-> >>>>
-> >>> Hmm, something like patch below fixes it. Will test more.
-> >>>
-> >>>
-> >>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> >>> index 1fd2c05..aec9c05 100644
-> >>> --- a/arch/x86/kvm/mmu.c
-> >>> +++ b/arch/x86/kvm/mmu.c
-> >>> @@ -260,7 +260,8 @@ static bool is_mmio_spte(u64 spte)
-> >>>
-> >>>  static gfn_t get_mmio_spte_gfn(u64 spte)
-> >>>  {
-> >>> -	return (spte & ~shadow_mmio_mask) >> PAGE_SHIFT;
-> >>> +	u64 mask = generation_mmio_spte_mask(MMIO_MAX_GEN) | shadow_mmio_mask;
-> >>> +	return (spte & ~mask) >> PAGE_SHIFT;
-> >>>  }
-> >>
-> >> Looks nice.
-> >>
-> > The question is if get_mmio_spte_access() need the  same treatment?
-> 
-> It works okay since the Access only uses bit1 and bit2 (and in the direct mmu
-> case, only use gfn). But i am happy to do the same change in get_mmio_spte_access()
-> to make the code more clear.
-> 
-It will fix output of handle_mmio_page_fault at least. Currently we have "access a92" there.
+On Thu, Jun 27, 2013 at 01:01:02PM +0200, Stephane Eranian wrote:
+> Ok, the chunks that do not apply can be ignored for perf_event_intel.c.
 
---
-			Gleb.
+Just to verify; I did a force apply ignoring the 2 hunks in perf_event_intel.c.
+The result is the below patch; which gives:
+
+# nice make O=defconfig-build/ -j16 -s
+/usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c: In function ‘x86_schedule_events’:
+/usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:780:9: error: ‘struct hw_perf_event’ has no member named ‘flags’
+/usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:794:14: error: ‘struct hw_perf_event’ has no member named ‘flags’
+/usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c: In function ‘x86_pmu_del’:
+/usr/src/linux-2.6/arch/x86/kernel/cpu/perf_event.c:1180:11: error: ‘struct hw_perf_event’ has no member named ‘flags’
+make[4]: *** [arch/x86/kernel/cpu/perf_event.o] Error 1
+
+
+Please resend one that builds.
+
+---
+Subject: perf,x86: Drop event->flags and use hw.constraint->flags
+From: Stephane Eranian <eranian@google.com>
+Date: Fri, 21 Jun 2013 16:20:42 +0200
+
+Now that we use the constraints directly from the event, we
+do not need the event->flags field so drop it.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1371824448-7306-3-git-send-email-eranian@google.com
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   19 ++++++++++---------
+ include/linux/perf_event.h                |    1 -
+ 2 files changed, 10 insertions(+), 10 deletions(-)
+
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -623,7 +623,6 @@ struct event_constraint *intel_pebs_cons
+ 	if (x86_pmu.pebs_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.pebs_constraints) {
+ 			if ((event->hw.config & c->cmask) == c->code) {
+-				event->hw.flags |= c->flags;
+ 				return c;
+ 			}
+ 		}
+@@ -636,14 +635,15 @@ void intel_pmu_pebs_enable(struct perf_e
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
++	int flags = event->hw.constraint->flags;
+ 
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+ 
+ 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
+ 
+-	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
++	if (flags & PERF_X86_EVENT_PEBS_LDLAT)
+ 		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
+-	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
++	else if (flags & PERF_X86_EVENT_PEBS_ST)
+ 		cpuc->pebs_enabled |= 1ULL << 63;
+ }
+ 
+@@ -651,12 +651,13 @@ void intel_pmu_pebs_disable(struct perf_
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
++	int flags = event->hw.constraint->flags;
+ 
+ 	cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
+ 
+-	if (event->hw.constraint->flags & PERF_X86_EVENT_PEBS_LDLAT)
++	if (flags & PERF_X86_EVENT_PEBS_LDLAT)
+ 		cpuc->pebs_enabled &= ~(1ULL << (hwc->idx + 32));
+-	else if (event->hw.constraint->flags & PERF_X86_EVENT_PEBS_ST)
++	else if (flags & PERF_X86_EVENT_PEBS_ST)
+ 		cpuc->pebs_enabled &= ~(1ULL << 63);
+ 
+ 	if (cpuc->enabled)
+@@ -772,14 +773,14 @@ static void __intel_pmu_pebs_event(struc
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+ 	u64 sample_type;
++	int flags = event->hw.constraint->flags;
+ 	int fll, fst;
+ 
+ 	if (!intel_pmu_save_and_restart(event))
+ 		return;
+ 
+-	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
+-	fst = event->hw.flags & (PERF_X86_EVENT_PEBS_ST |
+-				 PERF_X86_EVENT_PEBS_ST_HSW);
++	fll = flags & PERF_X86_EVENT_PEBS_LDLAT;
++	fst = flags & (PERF_X86_EVENT_PEBS_ST | PERF_X86_EVENT_PEBS_ST_HSW);
+ 
+ 	perf_sample_data_init(&data, 0, event->hw.last_period);
+ 
+@@ -802,7 +803,7 @@ static void __intel_pmu_pebs_event(struc
+ 		if (sample_type & PERF_SAMPLE_DATA_SRC) {
+ 			if (fll)
+ 				data.data_src.val = load_latency_data(pebs->dse);
+-			else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
++			else if (flags & PERF_X86_EVENT_PEBS_ST_HSW)
+ 				data.data_src.val =
+ 					precise_store_data_hsw(pebs->dse);
+ 			else
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -134,7 +134,6 @@ struct hw_perf_event {
+ 			int		event_base_rdpmc;
+ 			int		idx;
+ 			int		last_cpu;
+-			int		flags;
+ 
+ 			struct hw_perf_event_extra extra_reg;
+ 			struct hw_perf_event_extra branch_reg;
+
