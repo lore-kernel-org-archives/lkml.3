@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab3F0Kf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 06:35:59 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:22463 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab3F0Kf5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 06:35:57 -0400
+	id S1752899Ab3F0Kf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 06:35:58 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:13420 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751784Ab3F0Kfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 06:35:55 -0400
 X-IronPort-AV: E=Sophos;i="4.87,951,1363132800"; 
-   d="scan'208";a="32154651"
+   d="scan'208";a="33766442"
 From: David Vrabel <david.vrabel@citrix.com>
 To: <xen-devel@lists.xen.org>
 CC: David Vrabel <david.vrabel@citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 5/5] x86/xen: sync the CMOS RTC as well as the Xen wallclock
-Date: Thu, 27 Jun 2013 11:35:48 +0100
-Message-ID: <1372329348-20841-6-git-send-email-david.vrabel@citrix.com>
+Subject: [PATCH 4/5] x86/xen: sync the wallclock when the system time is set
+Date: Thu, 27 Jun 2013 11:35:47 +0100
+Message-ID: <1372329348-20841-5-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com>
 References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com>
@@ -29,86 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Vrabel <david.vrabel@citrix.com>
 
-Adjustments to Xen's persistent clock via update_persistent_clock()
-don't actually persist, as the Xen wallclock is a software only clock
-and modifications to it do not modify the underlying CMOS RTC.
+Currently the Xen wallclock is only updated every 11 minutes if NTP is
+synchronized to its clock source (using the sync_cmos_clock() work).
+If a guest is started before NTP is synchronized it may see an
+incorrect wallclock time.
 
-The x86_platform.set_wallclock hook can be used to keep the hardware
-RTC synchronized (as on bare metal).  Because the Xen wallclock is now
-kept synchronized by pvclock_gtod notifier, xen_set_wallclock() need
-not do this and dom0 can simply use the native implementation.
+Use the pvclock_gtod notifier chain to receive a notification when the
+system time has changed and update the wallclock to match.
+
+This chain is called on every timer tick and we want to avoid an extra
+(expensive) hypercall on every tick.  Because dom0 has historically
+never provided a very accurate wallclock and guests do not expect one,
+we can do this simply: the wallclock is only updated if the clock was
+set.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 ---
- arch/x86/xen/time.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+ arch/x86/xen/time.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 3364850..20e395a 100644
+index a1947ac..3364850 100644
 --- a/arch/x86/xen/time.c
 +++ b/arch/x86/xen/time.c
-@@ -199,37 +199,35 @@ static void xen_get_wallclock(struct timespec *now)
+@@ -14,6 +14,7 @@
+ #include <linux/kernel_stat.h>
+ #include <linux/math64.h>
+ #include <linux/gfp.h>
++#include <linux/pvclock_gtod.h>
  
- static int xen_set_wallclock(const struct timespec *now)
- {
--	struct xen_platform_op op;
--
--	/* do nothing for domU */
--	if (!xen_initial_domain())
--		return -1;
--
--	op.cmd = XENPF_settime;
--	op.u.settime.secs = now->tv_sec;
--	op.u.settime.nsecs = now->tv_nsec;
--	op.u.settime.system_time = xen_clocksource_read();
--
--	return HYPERVISOR_dom0_op(&op);
-+	return -1;
+ #include <asm/pvclock.h>
+ #include <asm/xen/hypervisor.h>
+@@ -212,6 +213,30 @@ static int xen_set_wallclock(const struct timespec *now)
+ 	return HYPERVISOR_dom0_op(&op);
  }
  
- static int xen_pvclock_gtod_notify(struct notifier_block *nb, unsigned long was_set,
- 				   void *priv)
- {
-+	static struct timespec next;
- 	struct timespec now;
- 	struct xen_platform_op op;
- 
--	if (!was_set)
--		return NOTIFY_OK;
--
- 	now = __current_kernel_time();
- 
-+	if (!was_set && timespec_compare(&now, &next) < 0)
++static int xen_pvclock_gtod_notify(struct notifier_block *nb, unsigned long was_set,
++				   void *priv)
++{
++	struct timespec now;
++	struct xen_platform_op op;
++
++	if (!was_set)
 +		return NOTIFY_OK;
 +
- 	op.cmd = XENPF_settime;
- 	op.u.settime.secs = now.tv_sec;
- 	op.u.settime.nsecs = now.tv_nsec;
- 	op.u.settime.system_time = xen_clocksource_read();
- 
- 	(void)HYPERVISOR_dom0_op(&op);
++	now = __current_kernel_time();
 +
-+	/*
-+	 * Don't update the wallclock for another 11 minutes. This is
-+	 * the same period as the sync_cmos_clock() work.
-+	 */
-+	next = now;
-+	next.tv_sec += 11*60;
++	op.cmd = XENPF_settime;
++	op.u.settime.secs = now.tv_sec;
++	op.u.settime.nsecs = now.tv_nsec;
++	op.u.settime.system_time = xen_clocksource_read();
 +
- 	return NOTIFY_OK;
++	(void)HYPERVISOR_dom0_op(&op);
++	return NOTIFY_OK;
++}
++
++static struct notifier_block xen_pvclock_gtod_notifier = {
++	.notifier_call = xen_pvclock_gtod_notify,
++};
++
+ static struct clocksource xen_clocksource __read_mostly = {
+ 	.name = "xen",
+ 	.rating = 400,
+@@ -473,6 +498,9 @@ static void __init xen_time_init(void)
+ 	xen_setup_runstate_info(cpu);
+ 	xen_setup_timer(cpu);
+ 	xen_setup_cpu_clockevents();
++
++	if (xen_initial_domain())
++		pvclock_gtod_register_notifier(&xen_pvclock_gtod_notifier);
  }
  
-@@ -513,7 +511,9 @@ void __init xen_init_time_ops(void)
- 
- 	x86_platform.calibrate_tsc = xen_tsc_khz;
- 	x86_platform.get_wallclock = xen_get_wallclock;
--	x86_platform.set_wallclock = xen_set_wallclock;
-+	/* Dom0 uses the native method to set the hardware RTC. */
-+	if (!xen_initial_domain())
-+		x86_platform.set_wallclock = xen_set_wallclock;
- }
- 
- #ifdef CONFIG_XEN_PVHVM
+ void __init xen_init_time_ops(void)
 -- 
 1.7.2.5
 
