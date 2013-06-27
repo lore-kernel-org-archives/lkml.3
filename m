@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab3F0HCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:02:39 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:53108 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab3F0HCh (ORCPT
+	id S1752593Ab3F0HDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:03:55 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:23373 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3F0HDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:02:37 -0400
+	Thu, 27 Jun 2013 03:03:54 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: <linux-kernel@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
+        <xjtuwjp@gmail.com>, <lindar_liu@usish.com>,
+        <linux-scsi@vger.kernel.org>
+Subject: [Resend with Ack][PATCH 8/9] scsi/pm8001: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
+Date: Thu, 27 Jun 2013 15:02:49 +0800
+Message-ID: <1372316569-28376-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-In-Reply-To: <20130626175722.GA20226@jshin-Toonie>
-References: <51C87ADC.4070409@canonical.com>
-	<CAKohponCrC93D88Fgg_3LKsLG0KMeCVKsTEoy-N3jsdUQdgWvA@mail.gmail.com>
-	<20130625161935.GA10208@jshin-Toonie>
-	<CAKohpomSa0FRviZHkkJOeUUxubbzueVb3yyP5G8ASwpRB6wANQ@mail.gmail.com>
-	<20130626142852.GA2326@jshin-Toonie>
-	<CAKohpom_jHQeR2FKFS3-RkxpPrJvekw8pDb-qnApnzu-VqreBQ@mail.gmail.com>
-	<20130626175722.GA20226@jshin-Toonie>
-Date: Thu, 27 Jun 2013 12:32:36 +0530
-Message-ID: <CAKohpo=UTmpLmyQs5+xLNnCLMCeZHNQT3USjmK1NTaFJLNQg-Q@mail.gmail.com>
-Subject: Re: od_set_powersave_bias: NULL pointer dereference
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 June 2013 23:27, Jacob Shin <jacob.shin@amd.com> wrote:
-> On Wed, Jun 26, 2013 at 08:02:29PM +0530, Viresh Kumar wrote:
->> On 26 June 2013 19:58, Jacob Shin <jacob.shin@amd.com> wrote:
->> > On Wed, Jun 26, 2013 at 12:18:27PM +0530, Viresh Kumar wrote:
->>
->> >> I am not sure if this is enough. What if we had ondemand as the
->> >> governor initially, then we changed it to something else. Now also
->> >> cur_policy contains a address and isn't zero.
->
-> I just tested this case with this patch applied, and did not have any
-> problems.
+Pci core has been saved pm cap register offset by pdev->pm_cap in pci_pm_init()
+in init path. So we can use pdev->pm_cap instead of using
+pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and simplified code.
 
-Try this:
-- you need a system with multiple policy groups to test it
-- Suppose we have two groups of CPUs: 0 and 1
-- Set ondemand as governor for both
-- change governor of group 1 to something else (we still have valid policy
-struct in Ondemand)
-- offline all CPUs from group 1. this will free struct cpufreq_policy
-- Online these CPUs back, this will reallocate policy
-- Now run this function, the earlier policy struct is already freed and
-you are accessing it here.
+Acked-by: Lindar Liu <lindar_liu@usish.com>
+Tested-by: Lindar Liu <lindar_liu@usish.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: xjtuwjp@gmail.com
+Cc: lindar_liu@usish.com
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/scsi/pm8001/pm8001_init.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
->> >> >                 cpumask_or(&done, &done, policy->cpus);
->> >> > +
->> >> > +               if (policy->governor != &cpufreq_gov_ondemand)
->> >> > +                       continue;
->> >
->> > This should catch that case no ?
->>
->> Policy might be freed and reallocated by then. And so doing
->> policy->governor is dangerous.
->
-> Are you worried that after we have passed the above if check, and
-> before we access ->tuner governor change might occur?
->
-> Is there something synonymous to get/put_online_cpus() for cpufreq to
-> prevent governor change while we update ->tuner values?
->
-> Otherwise, should just spinlock?
+diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
+index e4b9bc7..3861aa1 100644
+--- a/drivers/scsi/pm8001/pm8001_init.c
++++ b/drivers/scsi/pm8001/pm8001_init.c
+@@ -912,14 +912,13 @@ static int pm8001_pci_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+ 	struct sas_ha_struct *sha = pci_get_drvdata(pdev);
+ 	struct pm8001_hba_info *pm8001_ha;
+-	int i , pos;
++	int i;
+ 	u32 device_state;
+ 	pm8001_ha = sha->lldd_ha;
+ 	flush_workqueue(pm8001_wq);
+ 	scsi_block_requests(pm8001_ha->shost);
+-	pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
+-	if (pos == 0) {
+-		printk(KERN_ERR " PCI PM not supported\n");
++	if (!pdev->pm_cap) {
++		dev_err(&pdev->dev, " PCI PM not supported\n");
+ 		return -ENODEV;
+ 	}
+ 	PM8001_CHIP_DISP->interrupt_disable(pm8001_ha, 0xFF);
+-- 
+1.7.1
 
-No, i wasn't worrying about this but a sequence of events that I told to
-you earlier.
 
-Replying to your other mail:
-> Hm . any hints on how to check for if ondemand is running on this CPU
-> or not ? I'm not sure what the best way to handle this is ..
-
-Make cur_policy zero in cpufreq_governor_dbs() for
-CPUFREQ_GOV_STOP notification. This will make sure we use correct
-policy pointer.
