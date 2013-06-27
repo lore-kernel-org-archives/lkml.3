@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab3F0NGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 09:06:18 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:54278 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab3F0NGO (ORCPT
+	id S1754002Ab3F0NG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 09:06:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52317 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab3F0NGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 09:06:14 -0400
-Date: Thu, 27 Jun 2013 15:06:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        tglx@linutronix.de
-Subject: Re: deadlock in scheduler enabling HRTICK feature
-Message-ID: <20130627130609.GA6655@gmail.com>
-References: <51CA0622.8010105@gmail.com>
- <20130625211713.GA18796@laptop.programming.kicks-ass.net>
- <51CA0980.8010409@gmail.com>
- <20130626070533.GA3601@dyad.programming.kicks-ass.net>
- <51CB1AE9.5090709@gmail.com>
- <20130627104309.GQ28407@twins.programming.kicks-ass.net>
- <20130627105303.GD27378@dyad.programming.kicks-ass.net>
+	Thu, 27 Jun 2013 09:06:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: non critical fixes (for early 3.11) #2
+Date: Thu, 27 Jun 2013 15:03:43 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, daniel.lezcano@linaro.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+References: <1372254307-2063-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1372254307-2063-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627105303.GD27378@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306271503.43864.arnd@arndb.de>
+X-Provags-ID: V02:K0:YqRIG161nptMEVIfKmk2BFXQ5GT7XzLYvNWMpybtdp6
+ BJ4JNwNAazTBf7w2Kd8YGpGdk/xqlm64RaWg8lmIQZhFfTZ6ng
+ Tit0IS/lfwnsS0ej/hZ6JWZIJU9nbkJRoyLV2JiOTLqGVxVcDE
+ isQEzhNcbCcApHBn83qf+lc5rNBcRYdc8JhszHhSkxFvUHWC8u
+ HwEcN5aze3anWPeyhKdGq14mrJtUfLDb/9tQBLM+XRnqzNo3LI
+ +XFjxbAfR0if68K1Nto2MTEP1hFP8qY6/9WoTmw1axOCoWW/z7
+ PxzJa5O3MsHfQQdFvwsw+DacGrGwWYDrvXZEHLfwshvTS5JvTk
+ VjPtkMqJ8hLk3ne0pqVU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, Jun 27, 2013 at 12:43:09PM +0200, Peter Zijlstra wrote:
-> > On Wed, Jun 26, 2013 at 10:46:33AM -0600, David Ahern wrote:
-> > > On 6/26/13 1:05 AM, Peter Zijlstra wrote:
-> > > >>What is the expectation that the feature provides? not a whole lot of
-> > > >>documentation on it. I walked down the path wondering if it solved an odd
-> > > >>problem we are seeing with the CFS in 2.6.27 kernel.
-> > > >
-> > > >Its supposed to use hrtimers for slice expiry instead of the regular tick.
-> > > 
-> > > So theoretically CPU bound tasks would get preempted sooner? That was my
-> > > guess/hope anyways.
-> > 
-> > Doth the below worketh?
-> > 
+On Wednesday 26 June 2013, Nicolas Ferre wrote:
+> Another fixes-non-critical pull-request for early 3.11. It is of course based
+> on the patches that you already have in arm-soc/at91/fixes.
 > 
-> Related to all this; the reason its not enabled by default is that 
-> mucking about with hrtimers all the while is god awful expensive.
+> Thanks, best regards,
 > 
-> I've had ideas about making this a special purpose 'hard-coded' timer in 
-> the hrtimer guts that's only ever re-programmed when the new value is 
-> sooner.
+> The following changes since commit 133e00116b5bc76110bcc41ded369489209b641f:
 > 
-> By making it a 'special' timer we can avoid the whole rb-tree song and 
-> dance; and by taking 'spurious' short interrupts we can avoid prodding 
-> the hardware too often.
+>   ARM: at91: Change the internal SRAM memory type MT_MEMORY_NONCACHED (2013-06-18 10:20:30 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-fixes
+> 
+> for you to fetch changes up to bd2da9ca138e446824a7542b381aed442fef4caa:
+> 
+>   ARM: at91/PMC: use at91_usb_rate() for UTMI PLL (2013-06-26 15:24:11 +0200)
 
-Sounds neat ...
-
-> Then again; Thomas will likely throw frozen seafood my way for even 
-> proposing stuff like this and I'm not even sure that's going to be 
-> enough to make the cost acceptable.
-
-(Could be worse: rotten seafood?)
+All of these look simple enough, so I've pulled them into next/fixes-non-critical.
 
 Thanks,
 
-	Ingo
+	Arnd
