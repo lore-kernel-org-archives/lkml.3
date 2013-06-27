@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab3F0KnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 06:43:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53704 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893Ab3F0KnP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 06:43:15 -0400
-Date: Thu, 27 Jun 2013 12:43:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: deadlock in scheduler enabling HRTICK feature
-Message-ID: <20130627104309.GQ28407@twins.programming.kicks-ass.net>
-References: <51CA0622.8010105@gmail.com>
- <20130625211713.GA18796@laptop.programming.kicks-ass.net>
- <51CA0980.8010409@gmail.com>
- <20130626070533.GA3601@dyad.programming.kicks-ass.net>
- <51CB1AE9.5090709@gmail.com>
+	id S1752975Ab3F0Kn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 06:43:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59488 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685Ab3F0Kn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 06:43:56 -0400
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+To: <rob@landley.net>, <sameo@linux.intel.com>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <balajitk@ti.com>, <gg@slimlogic.co.uk>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH v1 0/2] TWL6030, TWL6032 GPADC driver
+Date: Thu, 27 Jun 2013 13:43:36 +0300
+Message-ID: <1372329818-12384-1-git-send-email-oleksandr.kozaruk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CB1AE9.5090709@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 10:46:33AM -0600, David Ahern wrote:
-> On 6/26/13 1:05 AM, Peter Zijlstra wrote:
-> >>What is the expectation that the feature provides? not a whole lot of
-> >>documentation on it. I walked down the path wondering if it solved an odd
-> >>problem we are seeing with the CFS in 2.6.27 kernel.
-> >
-> >Its supposed to use hrtimers for slice expiry instead of the regular tick.
-> 
-> So theoretically CPU bound tasks would get preempted sooner? That was my
-> guess/hope anyways.
+Hello
 
-Doth the below worketh?
+TWL603[02] GPADC is used to measure battery voltage,
+battery temperature, battery presence ID, and could
+be used to measure twl603[02] die temperature.
+This is used on TI blaze, blaze tablet platforms.
 
----
- kernel/sched/core.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+The TWL6030 and TWL6032 have GPADC with 17 and 19
+channels respectively. Some channels have current
+source and are used for measuring voltage drop
+on resistive load for detecting battery ID resistance,
+or measuring voltage drop on NTC resistors for external
+temperature measurements. Some channels measure voltage,
+(i.e. battery voltage), and have inbuilt voltage dividers,
+thus, capable to scale voltage. Some channels are dedicated
+for measuring die temperature.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9b1f2e5..0d8eb45 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -370,13 +370,6 @@ static struct rq *this_rq_lock(void)
- #ifdef CONFIG_SCHED_HRTICK
- /*
-  * Use HR-timers to deliver accurate preemption points.
-- *
-- * Its all a bit involved since we cannot program an hrt while holding the
-- * rq->lock. So what we do is store a state in in rq->hrtick_* and ask for a
-- * reschedule event.
-- *
-- * When we get rescheduled we reprogram the hrtick_timer outside of the
-- * rq->lock.
-  */
- 
- static void hrtick_clear(struct rq *rq)
-@@ -404,6 +397,15 @@ static enum hrtimer_restart hrtick(struct hrtimer *timer)
- }
- 
- #ifdef CONFIG_SMP
-+
-+static int __hrtick_restart(struct rq *rq)
-+{
-+	struct hrtimer *timer = &rq->hrtick_timer;
-+	ktime_t time = hrtimer_get_softexpires(timer);
-+
-+	return __hrtimer_start_range_ns(timer, time, 0, HRTIMER_MODE_ABS_PINNED, 0);
-+}
-+
- /*
-  * called from hardirq (IPI) context
-  */
-@@ -412,7 +414,7 @@ static void __hrtick_start(void *arg)
- 	struct rq *rq = arg;
- 
- 	raw_spin_lock(&rq->lock);
--	hrtimer_restart(&rq->hrtick_timer);
-+	__hrtick_restart(rq);
- 	rq->hrtick_csd_pending = 0;
- 	raw_spin_unlock(&rq->lock);
- }
-@@ -430,7 +432,7 @@ void hrtick_start(struct rq *rq, u64 delay)
- 	hrtimer_set_expires(timer, time);
- 
- 	if (rq == this_rq()) {
--		hrtimer_restart(timer);
-+		__hrtick_restart(rq);
- 	} else if (!rq->hrtick_csd_pending) {
- 		__smp_call_function_single(cpu_of(rq), &rq->hrtick_csd, 0);
- 		rq->hrtick_csd_pending = 1;
+Some channels could be calibrated in 2 points, having
+offsets from ideal values in trim registers.
+
+The difference between GPADC in TWL6030 and TWL6032:
+- 10 bit vs 12 bit ADC;
+- 17 vs 19 channels;
+- channels have different purpose(i. e. battery voltage
+  channel 8 vs channel 18);
+- trim values are interpreted differently.
+
+The driver exports function returning converted value for
+requested channels: raw code, corrected code, and converted
+to mV result.
+
+Sysfs entries are added to start and read conversion result
+in millivolts for channel if it has calibration data, or
+ADC code(for temperature and test network channels).
+
+The driver is derived from git://git.omapzoom.org/kernel/omap.git
+The original driver's authors and contributors are Balaji T K,
+Graeme Gregory, Ambresh K, Girish S Ghongdemath.
+
+The changes to the original driver:
+- device tree adaptation;
+- drop ioctl support - never been used;
+- unified measurement method for both devices;
+- get rid of "if (device == X)" code style to data driven;
+- drop polling end of conversion and use interrupt instead;
+- simplified (hopefully) exported external function interface to the driver.
+
+Tested with on blaze tablet 2 with OMAP4430(twl6030), and
+OMAP4470(twl6032) SOMs.
+
+The patches were tested against 3.10-rc7
+
+Oleksandr Kozaruk (2):
+  ARM: dts: twl: Add GPADC data to device tree
+  mfd: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
+
+ .../testing/sysfs-devices-platform-twl6030_gpadc   |    5 +
+ arch/arm/boot/dts/twl6030.dtsi                     |    5 +
+ drivers/mfd/Kconfig                                |    8 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/twl6030-gpadc.c                        | 1053 ++++++++++++++++++++
+ include/linux/i2c/twl6030-gpadc.h                  |   51 +
+ 6 files changed, 1123 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-platform-twl6030_gpadc
+ create mode 100644 drivers/mfd/twl6030-gpadc.c
+ create mode 100644 include/linux/i2c/twl6030-gpadc.h
+
+-- 
+1.7.9.5
 
