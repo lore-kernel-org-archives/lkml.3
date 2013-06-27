@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab3F0SDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 14:03:47 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:56925 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753712Ab3F0SDq (ORCPT
+	id S1753942Ab3F0SJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 14:09:29 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33690 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753849Ab3F0SJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 14:03:46 -0400
-Date: Thu, 27 Jun 2013 14:03:44 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "David 'Digit' Turner" <digit@android.com>,
-        Xiaohui Xin <xiaohui.xin@intel.com>,
-        Yunhong Jiang <yunhong.jiang@intel.com>,
-        Jun Nakajima <jun.nakajima@intel.com>,
-        Tom Keel <thomas.keel@intel.com>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: goldfish driver: Missing get_user_pages in
-	goldfish_pipe_read_write()
-Message-ID: <20130627180344.GA29919@Krystal>
-References: <20130627173532.GA29405@Krystal> <20130627174651.GA19874@kroah.com>
+	Thu, 27 Jun 2013 14:09:28 -0400
+Date: Thu, 27 Jun 2013 14:09:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Manjunath Goudar <manjunath.goudar@linaro.org>
+cc: linux-usb@vger.kernel.org, <linux-arm-kernel@lists.infradead.org>,
+        <patches@linaro.org>, <arnd@linaro.org>,
+        <linaro-kernel@lists.linaro.org>, Greg KH <greg@kroah.com>,
+        Wan ZongShun <mcuos.com@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: EHCI: make ehci-w90X900 a separate driver
+In-Reply-To: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
+Message-ID: <Pine.LNX.4.44L0.1306271405030.1167-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627174651.GA19874@kroah.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg Kroah-Hartman (gregkh@linuxfoundation.org) wrote:
-> On Thu, Jun 27, 2013 at 01:35:32PM -0400, Mathieu Desnoyers wrote:
-> > The following code snippet:
-> > 
-> > drivers/platform/goldfish/goldfish_pipe.c:
-> > goldfish_pipe_read_write()
-> > 
-> >                 /* Ensure that the corresponding page is properly mapped */
-> >                 /* FIXME: this isn't safe or sufficient - use get_user_pages */
-> >                 if (is_write) {
-> >                         char c;
-> >                         /* Ensure that the page is mapped and readable */
-> >                         if (__get_user(c, (char __user *)address)) {
-> >                                 if (!ret)
-> >                                         ret = -EFAULT;
-> >                                 break;
-> >                         }
-> >                 } else {
-> >                         /* Ensure that the page is mapped and writable */
-> >                         if (__put_user(0, (char __user *)address)) {
-> >                                 if (!ret)
-> >                                         ret = -EFAULT;
-> >                                 break;
-> >                         }
-> >                 }
-> > 
-> > Seems to lack the kind of validation required to make it fail properly
-> > if the memory range is not fully populated.
+On Thu, 27 Jun 2013, Manjunath Goudar wrote:
+
+> Separate the W90X900(W90P910) on-chip host controller driver from
+> ehci-hcd host code so that it can be built as a separate driver module.
+> This work is part of enabling multi-platform kernels on ARM;
+> however, note that other changes are still needed before W90X900(W90P910)
+> can be booted with a multi-platform kernel
 > 
-> This is an emulated platform only, so it's probably not a big deal,
-> right?
-
-You're probably right. As long as it is not configured and somehow still
-accessible on a production device.
-
+> and an ehci driver that only works on one of them.
 > 
-> > I see that this feature has been merged in Linux kernel 3.9, but the
-> > FIXME is still there in 3.10-rc7. Any plans on fixing this ?
-> 
-> It would be good to get fixed, but probably way down on the priority
-> list.
+> With the infrastructure added by Alan Stern in patch 3e0232039
+> "USB: EHCI: prepare to make ehci-hcd a library module", we can
+> avoid this problem by turning a bus glue into a separate
+> module, as we do here for the w90X900 bus glue.
 
-Agreed,
 
-Thanks,
+> diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
+> index 59e0e24..d9ecd79 100644
+> --- a/drivers/usb/host/ehci-w90x900.c
+> +++ b/drivers/usb/host/ehci-w90x900.c
+> @@ -11,13 +11,28 @@
+>   *
+>   */
+>  
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/usb.h>
+> +#include <linux/usb/hcd.h>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/of.h>
 
-Mathieu
+Alphabetical order, please.
 
-> 
-> thanks,
-> 
-> greg k-h
+>  #include <linux/platform_device.h>
+>  
+> +#include "ehci.h"
+> +
+>  /* enable phy0 and phy1 for w90p910 */
+>  #define	ENPHY		(0x01<<8)
+>  #define PHY0_CTR	(0xA4)
+>  #define PHY1_CTR	(0xA8)
+>  
+> +#define DRIVER_DESC "w90p910 usb ehci driver!"
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+I know this is what it said originally, but let's make it look more 
+like the other drivers.  It doesn't need to say "usb", and it doesn't 
+need the '!' character at the end.  Also, 'ehci' should be in capital 
+letters.
+
+Finally, shouldn't it say "w90x900" instead of "w90p910"?
+
+The rest of the patch is okay.
+
+Alan Stern
+
