@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab3F0RKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 13:10:32 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:36870 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab3F0RK3 (ORCPT
+	id S1753288Ab3F0ROw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 13:14:52 -0400
+Received: from vegas.theobroma-systems.com ([88.198.52.168]:36386 "EHLO
+	mail.theobroma-systems.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752472Ab3F0ROv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 13:10:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <87vc4zlczt.fsf@octavius.laptop.org>
-References: <1370580406-10254-1-git-send-email-dianders@chromium.org>
-	<1370626110-1731-1-git-send-email-dianders@chromium.org>
-	<87vc4zlczt.fsf@octavius.laptop.org>
-Date: Thu, 27 Jun 2013 10:10:26 -0700
-X-Google-Sender-Auth: UxcfJcbwMdCC2eRDEHTtlsZ78dU
-Message-ID: <CAD=FV=X8qVAeD_F-kQLHcgusY65pw4WCs5mMsO0wTapqBUAiQw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] mmc: dw_mmc: Handle late vmmc regulators with EPROBE_DEFER
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Will Newton <will.newton@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Jun 2013 13:14:51 -0400
+Content-Type: multipart/mixed; boundary="Apple-Mail=_1F50839C-3ED3-4E5B-A49C-50187A01BA7D"
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH] net: fec: Fix multicast list setup in fec_restart().
+From: =?iso-8859-1?Q?Christoph_M=FCllner?= 
+	<christoph.muellner@theobroma-systems.com>
+In-Reply-To: <CAOMZO5CyK9S-Wmm+ihBeMCaDBJyxBb-vSQjzZiKrmz74mb=vDw@mail.gmail.com>
+Date: Thu, 27 Jun 2013 19:14:37 +0200
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>, netdev@vger.kernel.org
+Message-Id: <C2B6127F-2C6D-49ED-9E45-5FEE9CC1BCE4@theobroma-systems.com>
+References: <61455.62.178.124.14.1371832855.squirrel@mail.theobroma-systems.com> <CAOMZO5CyK9S-Wmm+ihBeMCaDBJyxBb-vSQjzZiKrmz74mb=vDw@mail.gmail.com>
+To: Fabio Estevam <festevam@gmail.com>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
 
-On Thu, Jun 27, 2013 at 9:44 AM, Chris Ball <cjb@laptop.org> wrote:
-> This hunk breaks the build for me, because err_setup_bus and ret are
-> used in the error path of the call to mmc_add_host() in this function.
->
-> I'll push a version that leaves those in.  Let me know if you think
-> something strange is happening that made this work okay for you, like
-> a mismerge.
+--Apple-Mail=_1F50839C-3ED3-4E5B-A49C-50187A01BA7D
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=iso-8859-1
 
-WTF.  OK, this is clearly my fault.  I went back to the exact patch
-and it didn't compile for me, either.  :(  My typical workflow is to
-develop something in our local tree and then cherry-pick (and test!)
-on ToT linux.  Probably what happened in this case was that there was
-a compile error and I didn't notice and somehow ended up testing my
-local tree (which doesn't error-check mmc_add_host).
+On Jun 21, 2013, at 7:15 PM, Fabio Estevam <festevam@gmail.com> wrote:
 
-Sorry for the hassle.  Leaving the err_setup_bus in is correct (and
-leaving the "ret" variable declared).
+> On Fri, Jun 21, 2013 at 1:40 PM, Christoph M=FCllner
+> <christoph.muellner@theobroma-systems.com> wrote:
+>=20
+>> @@ -472,8 +474,7 @@ fec_restart(struct net_device *ndev, int duplex)
+>>        writel(0xffc00000, fep->hwp + FEC_IEVENT);
+>>=20
+>>        /* Reset all multicast. */
+>=20
+> Should this comment be removed/updated now?
 
-I did those fixups and it now compiles and things boot.  I haven't
-tested the deferral case in ToT yet, though.  I'll try that now and
-post if something weird comes up.
+Is updated in the attached patch.
+Thank you for the feedback!
 
--Doug
+>=20
+>> -       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_HIGH);
+>> -       writel(0, fep->hwp + FEC_GRP_HASH_TABLE_LOW);
+>> +       set_multicast_list(ndev);
+
+
+--Apple-Mail=_1F50839C-3ED3-4E5B-A49C-50187A01BA7D
+Content-Disposition: attachment;
+	filename=0001-net-fec-Fix-multicast-list-setup-in-fec_restart.patch
+Content-Type: application/octet-stream;
+	x-unix-mode=0644;
+	name="0001-net-fec-Fix-multicast-list-setup-in-fec_restart.patch"
+Content-Transfer-Encoding: quoted-printable
+
+=46rom=20efc0a82aa810cf3c37505cf3c753ad6f1cf33572=20Mon=20Sep=2017=20=
+00:00:00=202001=0AFrom:=20Christoph=20Muellner=20=
+<christoph.muellner@theobroma-systems.com>=0ADate:=20Fri,=2021=20Jun=20=
+2013=2017:59:52=20+0200=0ASubject:=20[PATCH]=20net:=20fec:=20Fix=20=
+multicast=20list=20setup=20in=20fec_restart().=0A=0ASetup=20the=20=
+multicast=20list=20of=20the=20net_device=20instead=20of=0Aclearing=20it=20=
+blindly.=20This=20restores=20the=20multicast=20groups=0Ain=20case=20of=20=
+a=20link=20down/up=20event=20or=20when=20resuming=20from=0Asuspend.=0A=0A=
+Signed-off-by:=20Christoph=20Muellner=20=
+<christoph.muellner@theobroma-systems.com>=0A---=0A=20=
+drivers/net/ethernet/freescale/fec_main.c=20|=20=20=20=207=20++++---=0A=20=
+1=20files=20changed,=204=20insertions(+),=203=20deletions(-)=0A=0Adiff=20=
+--git=20a/drivers/net/ethernet/freescale/fec_main.c=20=
+b/drivers/net/ethernet/freescale/fec_main.c=0Aindex=20d48099f..4c32709=20=
+100644=0A---=20a/drivers/net/ethernet/freescale/fec_main.c=0A+++=20=
+b/drivers/net/ethernet/freescale/fec_main.c=0A@@=20-60,6=20+60,8=20@@=0A=20=
+=0A=20#include=20"fec.h"=0A=20=0A+static=20void=20=
+set_multicast_list(struct=20net_device=20*ndev);=0A+=0A=20#if=20=
+defined(CONFIG_ARM)=0A=20#define=20FEC_ALIGNMENT=090xf=0A=20#else=0A@@=20=
+-471,9=20+473,8=20@@=20fec_restart(struct=20net_device=20*ndev,=20int=20=
+duplex)=0A=20=09/*=20Clear=20any=20outstanding=20interrupt.=20*/=0A=20=09=
+writel(0xffc00000,=20fep->hwp=20+=20FEC_IEVENT);=0A=20=0A-=09/*=20Reset=20=
+all=20multicast.=09*/=0A-=09writel(0,=20fep->hwp=20+=20=
+FEC_GRP_HASH_TABLE_HIGH);=0A-=09writel(0,=20fep->hwp=20+=20=
+FEC_GRP_HASH_TABLE_LOW);=0A+=09/*=20Setup=20multicast=20filter.=20*/=0A+=09=
+set_multicast_list(ndev);=0A=20#ifndef=20CONFIG_M5272=0A=20=09writel(0,=20=
+fep->hwp=20+=20FEC_HASH_TABLE_HIGH);=0A=20=09writel(0,=20fep->hwp=20+=20=
+FEC_HASH_TABLE_LOW);=0A--=20=0A1.7.4.1=0A=0A=
+
+--Apple-Mail=_1F50839C-3ED3-4E5B-A49C-50187A01BA7D--
