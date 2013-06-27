@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab3F0SnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 14:43:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6870 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751535Ab3F0SnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 14:43:02 -0400
-Message-ID: <51CC8799.9070909@redhat.com>
-Date: Thu, 27 Jun 2013 14:42:33 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754153Ab3F0SoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 14:44:23 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:56970 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751535Ab3F0SoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 14:44:22 -0400
+Date: Thu, 27 Jun 2013 14:44:17 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "David 'Digit' Turner" <digit@android.com>,
+        Xiaohui Xin <xiaohui.xin@intel.com>,
+        Yunhong Jiang <yunhong.jiang@intel.com>,
+        Jun Nakajima <jun.nakajima@intel.com>,
+        Tom Keel <thomas.keel@intel.com>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: goldfish driver: Missing get_user_pages in
+	goldfish_pipe_read_write()
+Message-ID: <20130627184417.GA31031@Krystal>
+References: <20130627173532.GA29405@Krystal> <20130627174651.GA19874@kroah.com> <20130627180344.GA29919@Krystal> <20130627181449.GA25159@kroah.com>
 MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>
-CC: Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org, linux-scsi@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
-References: <20130620201713.GV8211@linux.intel.com>
-In-Reply-To: <20130620201713.GV8211@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627181449.GA25159@kroah.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 04:17 PM, Matthew Wilcox wrote:
+* Greg Kroah-Hartman (gregkh@linuxfoundation.org) wrote:
+> On Thu, Jun 27, 2013 at 02:03:44PM -0400, Mathieu Desnoyers wrote:
+> > * Greg Kroah-Hartman (gregkh@linuxfoundation.org) wrote:
+> > > On Thu, Jun 27, 2013 at 01:35:32PM -0400, Mathieu Desnoyers wrote:
+> > > > The following code snippet:
+> > > > 
+> > > > drivers/platform/goldfish/goldfish_pipe.c:
+> > > > goldfish_pipe_read_write()
+> > > > 
+> > > >                 /* Ensure that the corresponding page is properly mapped */
+> > > >                 /* FIXME: this isn't safe or sufficient - use get_user_pages */
+> > > >                 if (is_write) {
+> > > >                         char c;
+> > > >                         /* Ensure that the page is mapped and readable */
+> > > >                         if (__get_user(c, (char __user *)address)) {
+> > > >                                 if (!ret)
+> > > >                                         ret = -EFAULT;
+> > > >                                 break;
+> > > >                         }
+> > > >                 } else {
+> > > >                         /* Ensure that the page is mapped and writable */
+> > > >                         if (__put_user(0, (char __user *)address)) {
+> > > >                                 if (!ret)
+> > > >                                         ret = -EFAULT;
+> > > >                                 break;
+> > > >                         }
+> > > >                 }
+> > > > 
+> > > > Seems to lack the kind of validation required to make it fail properly
+> > > > if the memory range is not fully populated.
+> > > 
+> > > This is an emulated platform only, so it's probably not a big deal,
+> > > right?
+> > 
+> > You're probably right. As long as it is not configured and somehow still
+> > accessible on a production device.
+> 
+> There is no device that could ever be "production" for this emulated
+> hardware platform, unless a desktop system wants to "emulate" the
+> android userspace system somehow.  Then it could be "real", but even
+> then, how would a user application get access to this codepath?
 
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4527,6 +4527,36 @@ long __sched io_schedule_timeout(long timeout)
->   	return ret;
->   }
->
-> +/*
-> + * Wait for an I/O to complete against this backing_dev_info.  If the
-> + * task exhausts its timeslice polling for completions, call io_schedule()
-> + * anyway.  If a signal comes pending, return so the task can handle it.
-> + * If the io_poll returns an error, give up and call io_schedule(), but
-> + * swallow the error.  We may miss an I/O completion (eg if the interrupt
-> + * handler gets to it first).  Guard against this possibility by returning
-> + * if we've been set back to TASK_RUNNING.
-> + */
-> +void io_wait(struct backing_dev_info *bdi)
-> +{
+I think it would depend on the user access rights given to
+/dev/qemu_pipe. Assuming it would be only accessible by root, this would
+minimize the risks even more.
 
-I would like something a little more generic in the
-scheduler code, that could also be used by other
-things in the kernel (say, KVM with message passing
-workloads).
+Thanks,
 
-Maybe something looking a little like this?
+Mathieu
 
-void idle_poll(struct idle_poll_info *ipi)
 
-struct idle_poll_info {
-	int (*idle_poll_func)(void *data);
-	int (*idle_poll_preempt)(void *data);
-	void *data;
-}
-
-That way the kernel can:
-
-1) mark the current thread as having idle priority,
-    allowing the scheduler to preempt it if something
-    else wants to run
-
-2) switch to asynchronous mode if something else wants
-    to run, or if the average wait for the process is
-    so long that it is better to go asynchronous and
-    avoid polling
-
-3) poll for completion if nothing else wants to run
-
-Does that make sense?
-
-Did I forget something you need?
-
-Did I forget something KVM could need?
-
-Is this insane? If so, is it too insane? :)
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
