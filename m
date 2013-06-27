@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab3F0DjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jun 2013 23:39:13 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:56087 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3F0DjM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jun 2013 23:39:12 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: KY Srinivasan <kys@microsoft.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH V3 0/5] Drivers: scsi: storvsc
-Thread-Topic: [PATCH V3 0/5] Drivers: scsi: storvsc
-Thread-Index: AQHOcufi6uLFv1BYKE6XGYXJHbOqig==
-Date: Thu, 27 Jun 2013 03:39:09 +0000
-Message-ID: <1372304349.557.15.camel@dabdike>
-References: <1370372674-10046-1-git-send-email-kys@microsoft.com>
-	 <ba5d1c4a36a441f09e6a1c5aa4e6d6a3@SN2PR03MB061.namprd03.prod.outlook.com>
-	  <868094fd01274f3c89ef2a27e9e42a3d@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <868094fd01274f3c89ef2a27e9e42a3d@SN2PR03MB061.namprd03.prod.outlook.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.18.112.117]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <5C48FB36522734478AD316E072A013D7@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	id S1752152Ab3F0Dmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jun 2013 23:42:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38588 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751588Ab3F0Dmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jun 2013 23:42:42 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: [PATCH v2 0/2] DMA: EDMA: Config and comments
+Date: Wed, 26 Jun 2013 22:41:45 -0500
+Message-ID: <1372304505-30707-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 12:58 +0000, KY Srinivasan wrote:
-> 
-> > -----Original Message-----
-> > From: KY Srinivasan
-> > Sent: Monday, June 17, 2013 9:32 AM
-> > To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; ohering@suse.com; jbottomley@parallels.com;
-> > hch@infradead.org; linux-scsi@vger.kernel.org
-> > Subject: RE: [PATCH V3 0/5] Drivers: scsi: storvsc
-> > 
-> > 
-> > 
-> > > -----Original Message-----
-> > > From: KY Srinivasan
-> > > Sent: Tuesday, June 11, 2013 9:02 AM
-> > > To: KY Srinivasan; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; ohering@suse.com; jbottomley@parallels.com;
-> > > hch@infradead.org; linux-scsi@vger.kernel.org
-> > > Subject: RE: [PATCH V3 0/5] Drivers: scsi: storvsc
-> > >
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: K. Y. Srinivasan [mailto:kys@microsoft.com]
-> > > > Sent: Tuesday, June 04, 2013 3:05 PM
-> > > > To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > > devel@linuxdriverproject.org; ohering@suse.com;
-> > jbottomley@parallels.com;
-> > > > hch@infradead.org; linux-scsi@vger.kernel.org
-> > > > Cc: KY Srinivasan
-> > > > Subject: [PATCH V3 0/5] Drivers: scsi: storvsc
-> > > >
-> > > > This set adds multi-channel support as well synthetic Fibre Channel support
-> > > > to storvsc. The multi-channel support depends on infrastructure in the
-> > VMBUS
-> > > > driver. Greg has already checked in the relevant patches to VMBUS.
-> > > >
-> > > > I had posted an earlier version of this patch-set that included the VMBUS
-> > > > related changes. I have since separated the VMBUS chages and these have
-> > > > already been
-> > > > checked in.
-> > > >
-> > > > In this version, based on comments from James, the timeout is no longer a
-> > > > module
-> > > > parameter.
-> > >
-> > > James,
-> > >
-> > > I think I have addressed all the comments that you had; if not, please let me
-> > > know.
-> > 
-> > Ping.
-> 
-> James,
-> 
-> Let me know if I should re-send the patches.
+Minor patches remaining after EDMA series was posted.
 
-Just FYI, my workflow involves using imap flags to tag stuff for actions
-and then using a set of date sorted evolution search folders to
-translate the flags into work queues.  The search folders are by flag
-and thread, so a side effect of the way evolution does date ordering is
-that it's ordered by the most recent last, so the date it takes for
-thread ordering is the most recent email in the thread.  Originally, I
-thought of this as an annyoing evolution bug because I wanted the folder
-ordered by date of the patch submission.  However, later I came to
-appreciate that it meant currently actively discussed patches moved down
-in my workqueue automatically, so now I quite like it as a feature. It
-does mean, however, that the net effect of sending very frequent pings
-about a patch set is to cause that patch set to move down in my work
-queue and, unfortunately, even coming from a domain that habitually
-breaks threading doesn't save you because evolution helpfully has a set
-of heuristic rules to rethread outlook breakage.
+First patch adds the TI_EDMA option which people can forget to add and
+can result in failure without any informative errors of why DMA is not
+working. There was a discussion on avoiding Kconfig and putting this in
+the defconfig instead.
 
-James
+Second patch adds comments to the EDMA code for the calculations in the
+A-sync case. From my experience, this code is not-so-obvious. Hopefully
+this makes the life of readers of the code a little better.
+
+Joel Fernandes (2):
+  ARM: configs: Enable TI_EDMA in omap2plus_defconfig
+  DMA: EDMA: Add comments for A-sync case calculations
+
+ arch/arm/configs/omap2plus_defconfig |    1 +
+ drivers/dma/edma.c                   |   22 ++++++++++++++++++++++
+ 2 files changed, 23 insertions(+)
+
+-- 
+1.7.9.5
 
