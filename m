@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab3F0Hv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 03:51:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6235 "EHLO mga01.intel.com"
+	id S1753348Ab3F0HwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 03:52:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57314 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753180Ab3F0HuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 03:50:15 -0400
+	id S1753187Ab3F0HwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 03:52:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,950,1363158000"; 
-   d="scan'208";a="361296446"
+   d="scan'208";a="336252488"
+Message-ID: <51CBF083.3060705@intel.com>
+Date: Thu, 27 Jun 2013 10:57:55 +0300
 From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V2 11/15] perf tools: fix symbol_conf.nr_events
-Date: Thu, 27 Jun 2013 10:55:03 +0300
-Message-Id: <1372319707-13892-12-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
-References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 12/15] perf tools: allow non-matching sample types
+References: <1372079772-20803-1-git-send-email-adrian.hunter@intel.com> <1372079772-20803-13-git-send-email-adrian.hunter@intel.com> <20130625123247.GA23329@krava.brq.redhat.com>
+In-Reply-To: <20130625123247.GA23329@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-symbol_conf.nr_events must be updated when processing
-attribute events.
+On 25/06/13 15:32, Jiri Olsa wrote:
+> On Mon, Jun 24, 2013 at 04:16:09PM +0300, Adrian Hunter wrote:
+>> Sample types need not be identical to determine
+>> the sample id from the event.  Only the position
+>> of the sample id needs to be the same.
+>>
+>> Compatible sample types are ones in which the bits
+>> defined by PERF_COMPAT_MASK are the same.
+>> 'perf_evlist__config()' forces sample types to be
+>> compatible on that basis.
+> 
+> hi,
+> one of the patches is breaking test 4:
+> 
+> [jolsa@krava perf]$ sudo ./perf test
+>  1: vmlinux symtab matches kallsyms                        : Ok
+>  2: detect open syscall event                              : Ok
+>  3: detect open syscall event on all cpus                  : Ok
+>  4: read samples using the mmap interface                  :Can't parse sample, err = -14
+>  FAILED!
+> 
+> haven't checked deeply, but my guess is this one ;-)
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/header.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 4037b0a..81a3a0d 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2968,6 +2968,8 @@ int perf_event__process_attr(struct perf_tool *tool __maybe_unused,
- 		perf_evlist__id_add(evlist, evsel, 0, i, event->attr.id[i]);
- 	}
- 
-+	symbol_conf.nr_events = evlist->nr_entries;
-+
- 	return 0;
- }
- 
--- 
-1.7.11.7
+Thanks for testing.  Fixed in V2.
 
