@@ -1,148 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab3F0Myk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 08:54:40 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:36964 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753652Ab3F0Muw (ORCPT
+	id S1753879Ab3F0Myv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 08:54:51 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:3776 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab3F0Mys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 08:50:52 -0400
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 41/51] Input: atmel_mxt_ts - Remove unused defines
-Date: Thu, 27 Jun 2013 13:49:16 +0100
-Message-Id: <1372337366-9286-42-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+	Thu, 27 Jun 2013 08:54:48 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: "David S. Miller" <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, <netdev@vger.kernel.org>
+Subject: [PATCH 2/6] net/trivial: replace numeric with standard PM state macros
+Date: Thu, 27 Jun 2013 20:53:42 +0800
+Message-ID: <1372337622-26076-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many of these values are out of date and they aren't used in the driver - all
-they do is increase the size of the kernel source.
+Use standard PM state macros PCI_Dx instead of numeric 0/1/2..
 
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   66 +-----------------------------
- 1 file changed, 1 insertion(+), 65 deletions(-)
+ drivers/net/ethernet/8390/ne2k-pci.c             |    2 +-
+ drivers/net/ethernet/emulex/benet/be_main.c      |    4 ++--
+ drivers/net/ethernet/intel/e100.c                |    4 ++--
+ drivers/net/ethernet/myricom/myri10ge/myri10ge.c |    2 +-
+ drivers/net/ethernet/realtek/8139cp.c            |    2 +-
+ drivers/net/ethernet/ti/tlan.c                   |    2 +-
+ drivers/net/ethernet/via/via-velocity.c          |    2 +-
+ drivers/net/wireless/orinoco/orinoco_pci.h       |    2 +-
+ 8 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 2eaa9d3..c01a457 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -25,27 +25,13 @@
- #include <linux/interrupt.h>
- #include <linux/slab.h>
+diff --git a/drivers/net/ethernet/8390/ne2k-pci.c b/drivers/net/ethernet/8390/ne2k-pci.c
+index 587a885..9220108 100644
+--- a/drivers/net/ethernet/8390/ne2k-pci.c
++++ b/drivers/net/ethernet/8390/ne2k-pci.c
+@@ -676,7 +676,7 @@ static int ne2k_pci_resume (struct pci_dev *pdev)
+ 	struct net_device *dev = pci_get_drvdata (pdev);
+ 	int rc;
  
--/* Version */
--#define MXT_VER_20		20
--#define MXT_VER_21		21
--#define MXT_VER_22		22
--
- /* Firmware files */
- #define MXT_FW_NAME		"maxtouch.fw"
- #define MXT_CFG_NAME		"maxtouch.cfg"
- #define MXT_CFG_MAGIC		"OBP_RAW V1"
+-	pci_set_power_state(pdev, 0);
++	pci_set_power_state(pdev, PCI_D0);
+ 	pci_restore_state(pdev);
  
- /* Registers */
--#define MXT_INFO		0x00
--#define MXT_FAMILY_ID		0x00
--#define MXT_VARIANT_ID		0x01
--#define MXT_VERSION		0x02
--#define MXT_BUILD		0x03
--#define MXT_MATRIX_X_SIZE	0x04
--#define MXT_MATRIX_Y_SIZE	0x05
--#define MXT_OBJECT_NUM		0x06
- #define MXT_OBJECT_START	0x07
--
- #define MXT_OBJECT_SIZE		6
- #define MXT_INFO_CHECKSUM_SIZE	3
- #define MXT_MAX_BLOCK_WRITE	256
-@@ -107,15 +93,6 @@ struct t7_config {
- #define MXT_POWER_CFG_RUN		0
- #define MXT_POWER_CFG_DEEPSLEEP		1
+ 	rc = pci_enable_device(pdev);
+diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
+index a0b4be5..f4994ae 100644
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@ -4390,7 +4390,7 @@ static int be_resume(struct pci_dev *pdev)
+ 	if (status)
+ 		return status;
  
--/* MXT_GEN_ACQUIRE_T8 field */
--#define MXT_ACQUIRE_CHRGTIME	0
--#define MXT_ACQUIRE_TCHDRIFT	2
--#define MXT_ACQUIRE_DRIFTST	3
--#define MXT_ACQUIRE_TCHAUTOCAL	4
--#define MXT_ACQUIRE_SYNC	5
--#define MXT_ACQUIRE_ATCHCALST	6
--#define MXT_ACQUIRE_ATCHCALSTHR	7
--
- /* MXT_TOUCH_MULTI_T9 field */
- #define MXT_T9_ORIENT		9
- #define MXT_T9_RANGE		18
-@@ -138,51 +115,10 @@ struct t9_range {
- /* MXT_TOUCH_MULTI_T9 orient */
- #define MXT_T9_ORIENT_SWITCH	(1 << 0)
+-	pci_set_power_state(pdev, 0);
++	pci_set_power_state(pdev, PCI_D0);
+ 	pci_restore_state(pdev);
  
--/* MXT_PROCI_GRIPFACE_T20 field */
--#define MXT_GRIPFACE_CTRL	0
--#define MXT_GRIPFACE_XLOGRIP	1
--#define MXT_GRIPFACE_XHIGRIP	2
--#define MXT_GRIPFACE_YLOGRIP	3
--#define MXT_GRIPFACE_YHIGRIP	4
--#define MXT_GRIPFACE_MAXTCHS	5
--#define MXT_GRIPFACE_SZTHR1	7
--#define MXT_GRIPFACE_SZTHR2	8
--#define MXT_GRIPFACE_SHPTHR1	9
--#define MXT_GRIPFACE_SHPTHR2	10
--#define MXT_GRIPFACE_SUPEXTTO	11
--
--/* MXT_PROCI_NOISE field */
--#define MXT_NOISE_CTRL		0
--#define MXT_NOISE_OUTFLEN	1
--#define MXT_NOISE_GCAFUL_LSB	3
--#define MXT_NOISE_GCAFUL_MSB	4
--#define MXT_NOISE_GCAFLL_LSB	5
--#define MXT_NOISE_GCAFLL_MSB	6
--#define MXT_NOISE_ACTVGCAFVALID	7
--#define MXT_NOISE_NOISETHR	8
--#define MXT_NOISE_FREQHOPSCALE	10
--#define MXT_NOISE_FREQ0		11
--#define MXT_NOISE_FREQ1		12
--#define MXT_NOISE_FREQ2		13
--#define MXT_NOISE_FREQ3		14
--#define MXT_NOISE_FREQ4		15
--#define MXT_NOISE_IDLEGCAFVALID	16
--
- /* MXT_SPT_COMMSCONFIG_T18 */
- #define MXT_COMMS_CTRL		0
- #define MXT_COMMS_CMD		1
+ 	/* tell fw we're ready to fire cmds */
+@@ -4486,7 +4486,7 @@ static pci_ers_result_t be_eeh_reset(struct pci_dev *pdev)
+ 		return PCI_ERS_RESULT_DISCONNECT;
  
--/* MXT_SPT_CTECONFIG_T28 field */
--#define MXT_CTE_CTRL		0
--#define MXT_CTE_CMD		1
--#define MXT_CTE_MODE		2
--#define MXT_CTE_IDLEGCAFDEPTH	3
--#define MXT_CTE_ACTVGCAFDEPTH	4
--#define MXT_CTE_VOLTAGE		5
--
--#define MXT_VOLTAGE_DEFAULT	2700000
--#define MXT_VOLTAGE_STEP	10000
--
- /* Define for MXT_GEN_COMMAND_T6 */
- #define MXT_BOOT_VALUE		0xa5
- #define MXT_RESET_VALUE		0x01
-@@ -1577,7 +1513,7 @@ static int mxt_get_info(struct mxt_data *data)
- 	int error;
+ 	pci_set_master(pdev);
+-	pci_set_power_state(pdev, 0);
++	pci_set_power_state(pdev, PCI_D0);
+ 	pci_restore_state(pdev);
  
- 	/* Read 7-byte info block starting at address 0 */
--	error = __mxt_read_reg(client, MXT_INFO, sizeof(*info), info);
-+	error = __mxt_read_reg(client, 0, sizeof(*info), info);
- 	if (error)
- 		return error;
+ 	/* Check if card is ok and fw is ready */
+diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
+index d2bea3f..5115ae7 100644
+--- a/drivers/net/ethernet/intel/e100.c
++++ b/drivers/net/ethernet/intel/e100.c
+@@ -3069,7 +3069,7 @@ static int e100_resume(struct pci_dev *pdev)
+ 	pci_set_power_state(pdev, PCI_D0);
+ 	pci_restore_state(pdev);
+ 	/* ack any pending wake events, disable PME */
+-	pci_enable_wake(pdev, 0, 0);
++	pci_enable_wake(pdev, PCI_D0, 0);
  
+ 	/* disable reverse auto-negotiation */
+ 	if (nic->phy == phy_82552_v) {
+@@ -3160,7 +3160,7 @@ static void e100_io_resume(struct pci_dev *pdev)
+ 	struct nic *nic = netdev_priv(netdev);
+ 
+ 	/* ack any pending wake events, disable PME */
+-	pci_enable_wake(pdev, 0, 0);
++	pci_enable_wake(pdev, PCI_D0, 0);
+ 
+ 	netif_device_attach(netdev);
+ 	if (netif_running(netdev)) {
+diff --git a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+index 7be9788..967bae8 100644
+--- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
++++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+@@ -3299,7 +3299,7 @@ static int myri10ge_resume(struct pci_dev *pdev)
+ 	if (mgp == NULL)
+ 		return -EINVAL;
+ 	netdev = mgp->dev;
+-	pci_set_power_state(pdev, 0);	/* zeros conf space as a side effect */
++	pci_set_power_state(pdev, PCI_D0);	/* zeros conf space as a side effect */
+ 	msleep(5);		/* give card time to respond */
+ 	pci_read_config_word(mgp->pdev, PCI_VENDOR_ID, &vendor);
+ 	if (vendor == 0xffff) {
+diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
+index 0352345..e6acb9f 100644
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -1817,7 +1817,7 @@ static int cp_set_eeprom(struct net_device *dev,
+ /* Put the board into D3cold state and wait for WakeUp signal */
+ static void cp_set_d3_state (struct cp_private *cp)
+ {
+-	pci_enable_wake (cp->pdev, 0, 1); /* Enable PME# generation */
++	pci_enable_wake(cp->pdev, PCI_D0, 1); /* Enable PME# generation */
+ 	pci_set_power_state (cp->pdev, PCI_D3hot);
+ }
+ 
+diff --git a/drivers/net/ethernet/ti/tlan.c b/drivers/net/ethernet/ti/tlan.c
+index 60c400f..c80b1d5 100644
+--- a/drivers/net/ethernet/ti/tlan.c
++++ b/drivers/net/ethernet/ti/tlan.c
+@@ -372,7 +372,7 @@ static int tlan_resume(struct pci_dev *pdev)
+ 
+ 	pci_set_power_state(pdev, PCI_D0);
+ 	pci_restore_state(pdev);
+-	pci_enable_wake(pdev, 0, 0);
++	pci_enable_wake(pdev, PCI_D0, 0);
+ 	netif_device_attach(dev);
+ 
+ 	if (netif_running(dev))
+diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
+index fb62489..f5d7c3f 100644
+--- a/drivers/net/ethernet/via/via-velocity.c
++++ b/drivers/net/ethernet/via/via-velocity.c
+@@ -3082,7 +3082,7 @@ static int velocity_resume(struct pci_dev *pdev)
+ 		return 0;
+ 
+ 	pci_set_power_state(pdev, PCI_D0);
+-	pci_enable_wake(pdev, 0, 0);
++	pci_enable_wake(pdev, PCI_D0, 0);
+ 	pci_restore_state(pdev);
+ 
+ 	mac_wol_reset(vptr->mac_regs);
+diff --git a/drivers/net/wireless/orinoco/orinoco_pci.h b/drivers/net/wireless/orinoco/orinoco_pci.h
+index ea7231a..43f5b9f 100644
+--- a/drivers/net/wireless/orinoco/orinoco_pci.h
++++ b/drivers/net/wireless/orinoco/orinoco_pci.h
+@@ -38,7 +38,7 @@ static int orinoco_pci_resume(struct pci_dev *pdev)
+ 	struct net_device *dev = priv->ndev;
+ 	int err;
+ 
+-	pci_set_power_state(pdev, 0);
++	pci_set_power_state(pdev, PCI_D0);
+ 	err = pci_enable_device(pdev);
+ 	if (err) {
+ 		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
 -- 
-1.7.10.4
+1.7.1
+
 
