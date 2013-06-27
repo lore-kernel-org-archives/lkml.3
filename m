@@ -1,164 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab3F0Ig7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 04:36:59 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:57891 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab3F0Ig4 (ORCPT
+	id S1753181Ab3F0IlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 04:41:07 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51398 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3F0IlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 04:36:56 -0400
-Date: Thu, 27 Jun 2013 10:36:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-Message-ID: <20130627083651.GA3730@gmail.com>
-References: <1371165992.27102.573.camel@schen9-DESK>
- <20130619131611.GC24957@gmail.com>
- <1371660831.27102.663.camel@schen9-DESK>
- <1372205996.22432.119.camel@schen9-DESK>
- <20130626095108.GB29181@gmail.com>
- <1372282560.22432.139.camel@schen9-DESK>
- <1372292701.22432.152.camel@schen9-DESK>
+	Thu, 27 Jun 2013 04:41:04 -0400
+Message-ID: <51CBFC3C.2090500@oracle.com>
+Date: Thu, 27 Jun 2013 12:47:56 +0400
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372292701.22432.152.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bart Van Assche <bvanassche@acm.org>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com
+Subject: Re: [PATCH] scsi_prep_fn() check for empty queue
+References: <1372237363-5156-1-git-send-email-maxim.uvarov@oracle.com> <51CAB27A.3080805@acm.org>
+In-Reply-To: <51CAB27A.3080805@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/26/2013 01:20 PM, Bart Van Assche wrote:
+> On 06/26/13 11:02, Maxim Uvarov wrote:
+>> This fix:
+>> end_request: I/O error, dev sdc, sector 976576
+>>   rport-0:0-3: blocked FC remote port time out: removing target and 
+>> saving
+>> binding
+>> BUG: unable to handle kernel NULL pointer dereference at 
+>> 0000000000000400
+>> IP: [<ffffffff812f0cc2>] scsi_prep_state_check+0xe/0x99
+>>   [<ffffffff812f1f9d>] scsi_setup_blk_pc_cmnd+0x1b/0x115
+>>   [<ffffffff812f20c0>] scsi_prep_fn+0x29/0x3b
+>>   [<ffffffff8121cfb9>] blk_peek_request+0xe1/0x1b3
+>>   [<ffffffff812f1400>] scsi_request_fn+0x3a/0x4d2
+>>   [<ffffffff8121d916>] __generic_unplug_device+0x32/0x36
+>>   [<ffffffff81220f4b>] blk_execute_rq_nowait+0x77/0x9e
+>>   [<ffffffff81221018>] blk_execute_rq+0xa6/0xde
+>>   [<ffffffff8144f24b>] ? printk+0x41/0x46
+>>   [<ffffffffa00a21c5>] ? get_rdac_req+0x81/0xe8 [scsi_dh_rdac]
+>>   [<ffffffffa00a273a>] send_mode_select+0x29f/0x489 [scsi_dh_rdac]
+>>   [<ffffffff810c5d9b>] ? probe_workqueue_execution+0xb1/0xce
+>>   [<ffffffff81071e38>] worker_thread+0x1a9/0x237
+>>   [<ffffffffa00a249b>] ? send_mode_select+0x0/0x489 [scsi_dh_rdac]
+>>   [<ffffffff8107651b>] ? autoremove_wake_function+0x0/0x39
+>>   [<ffffffff81071c8f>] ? worker_thread+0x0/0x237
+>>   [<ffffffff81076222>] kthread+0x7f/0x87
+>>   [<ffffffff81012d2a>] child_rip+0xa/0x20
+>>   [<ffffffff810761a3>] ? kthread+0x0/0x87
+>>   [<ffffffff81012d20>] ? child_rip+0x0/0x20
+>> Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+>> ---
+>>   drivers/scsi/scsi_lib.c |    3 +++
+>>   1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>> index 86d5220..8e89ed9 100644
+>> --- a/drivers/scsi/scsi_lib.c
+>> +++ b/drivers/scsi/scsi_lib.c
+>> @@ -1295,6 +1295,9 @@ int scsi_prep_fn(struct request_queue *q, 
+>> struct request *req)
+>>       struct scsi_device *sdev = q->queuedata;
+>>       int ret = BLKPREP_KILL;
+>>
+>> +    if (!sdev)
+>> +        return ret;
+>> +
+>>       if (req->cmd_type == REQ_TYPE_BLOCK_PC)
+>>           ret = scsi_setup_blk_pc_cmnd(sdev, req);
+>>       return scsi_prep_return(q, req, ret);
+>
+> Sorry but this patch does not look like a proper fix to me. What you 
+> probably need is a scsi_device_get() call in scsi_dh_rdac.c somewhere 
+> before the queue_work(kmpath_rdacd, &ctlr->ms_work) call and a 
+> scsi_device_put() call once send_mode_select() has finished using the 
+> sdev.
+>
+> Bart.
+Thanks Bart. It looks reasonable. I will do some testing for your solution.
 
-* Tim Chen <tim.c.chen@linux.intel.com> wrote:
-
-> On Wed, 2013-06-26 at 14:36 -0700, Tim Chen wrote:
-> > On Wed, 2013-06-26 at 11:51 +0200, Ingo Molnar wrote: 
-> > > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> > > 
-> > > > On Wed, 2013-06-19 at 09:53 -0700, Tim Chen wrote: 
-> > > > > On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
-> > > > > 
-> > > > > > > vmstat for mutex implementation: 
-> > > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> > > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > > > > > > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
-> > > > > > > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
-> > > > > > > 
-> > > > > > > vmstat for rw-sem implementation (3.10-rc4)
-> > > > > > > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> > > > > > >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > > > > > > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
-> > > > > > > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
-> > > > > > 
-> > > > > > It appears the main difference is that the rwsem variant context-switches 
-> > > > > > about 36% more than the mutex version, right?
-> > > > > > 
-> > > > > > I'm wondering how that's possible - the lock is mostly write-locked, 
-> > > > > > correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
-> > > > > > ought to have brought roughly the same lock-stealing behavior as mutexes 
-> > > > > > do, right?
-> > > > > > 
-> > > > > > So the next analytical step would be to figure out why rwsem lock-stealing 
-> > > > > > is not behaving in an equivalent fashion on this workload. Do readers come 
-> > > > > > in frequently enough to disrupt write-lock-stealing perhaps?
-> > > > 
-> > > > Ingo, 
-> > > > 
-> > > > I did some instrumentation on the write lock failure path.  I found that
-> > > > for the exim workload, there are no readers blocking for the rwsem when
-> > > > write locking failed.  The lock stealing is successful for 9.1% of the
-> > > > time and the rest of the write lock failure caused the writer to go to
-> > > > sleep.  About 1.4% of the writers sleep more than once. Majority of the
-> > > > writers sleep once.
-> > > > 
-> > > > It is weird that lock stealing is not successful more often.
-> > > 
-> > > For this to be comparable to the mutex scalability numbers you'd have to 
-> > > compare wlock-stealing _and_ adaptive spinning for failed-wlock rwsems.
-> > > 
-> > > Are both techniques applied in the kernel you are running your tests on?
-> > > 
-> > 
-> > Ingo,
-> > 
-> > The previous experiment was done on a kernel without spinning. 
-> > I've redone the testing on two kernel for a 15 sec stretch of the
-> > workload run.  One with the adaptive (or optimistic) 
-> > spinning and the other without.  Both have the patches from Alex to avoid 
-> > cmpxchg induced cache bouncing.
-> > 
-> > With the spinning, I sleep much less for lock acquisition (18.6% vs 91.58%).
-> > However, I've got doubling of write lock acquisition getting
-> > blocked.  So that offset the gain from spinning which may be why
-> > I didn't see gain for this particular workload.
-> > 
-> > 						No Opt Spin	Opt Spin
-> > Writer acquisition blocked count		3448946		7359040
-> > Blocked by reader				0.00%		0.55%
-> > Lock acquired first attempt (lock stealing)	8.42%		16.92%
-> > Lock acquired second attempt (1 sleep)	90.26%		17.60%
-> > Lock acquired after more than 1 sleep	1.32%		1.00%
-> > Lock acquired with optimistic spin		N/A		64.48%
-> > 
-> 
-> Adding also the mutex statistics for the 3.10-rc4 kernel with mutex
-> implemenation of lock for anon_vma tree.  Wonder if Ingo has any
-> insight on why mutex performs better from these stats.
-> 
-> Mutex acquisition blocked count			14380340
-> Lock acquired in slowpath (no sleep)		0.06%
-> Lock acquired in slowpath (1 sleep)		0.24%
-> Lock acquired in slowpath more than 1 sleep	0.98%
-> Lock acquired with optimistic spin		99.6%
-
-This is how I interpret the stats:
-
-It does appear that in the mutex case we manage to acquire via spinning 
-with a very high percentage - i.e. it essentialy behaves as a spinlock.
-
-That is actually good news in a way, because it makes it rather simple how 
-rwsems should behave in this case: since they have no substantial 
-read-locking aspect in this workload, the down_write()/up_write()s should 
-essentially behave like spinlocks as well, right?
-
-Yet in the rwsem-spinning case the stats show that we only acquire the 
-lock via spinning in 65% of the cases, plus we lock-steal in 16.9% of the 
-cases:
-
-Because lock stealing is essentially a single-spin spinning as well:
-
-> > Lock acquired first attempt (lock stealing)	......		16.92%
-
-So rwsems in this case behave like spinlocks in 65%+16.9% == 81.9% of the 
-time.
-
-What remains is the sleeping component:
-
-> > Lock acquired second attempt (1 sleep)	......		17.60%
-
-Yet the 17.6% sleep percentage is still much higher than the 1% in the 
-mutex case. Why doesn't spinning work - do we time out of spinning 
-differently?
-
-Is there some other aspect that defeats optimistic spinning and forces the 
-slowpath and creates sleeping, scheduling and thus extra overhead?
-
-For example after a failed lock-stealing, do we still try optimistic 
-spinning to write-acquire the rwsem, or go into the slowpath and thus 
-trigger excessive context-switches?
-
-Thanks,
-
-	Ingo
+Maxim.
