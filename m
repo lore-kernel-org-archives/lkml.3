@@ -1,79 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab3F0WaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 18:30:14 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:33940 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab3F0WaM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 18:30:12 -0400
-Message-ID: <51CCBCF2.5050007@cogentembedded.com>
-Date: Fri, 28 Jun 2013 02:30:10 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754399Ab3F0Wev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 18:34:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34749 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249Ab3F0Weu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 18:34:50 -0400
+Message-ID: <51CCBE05.6090603@suse.cz>
+Date: Fri, 28 Jun 2013 00:34:45 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: netdev@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>, Jiri Pirko <jiri@resnulli.us>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch net-next 2/5] net: introduce generic inet_pton()
-References: <1372315398-19683-1-git-send-email-amwang@redhat.com> <1372315398-19683-3-git-send-email-amwang@redhat.com> <51CC49C7.9010800@cogentembedded.com>
-In-Reply-To: <51CC49C7.9010800@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andreas Schwab <schwab@linux-m68k.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/mod: Spelling s/DEVICEVTABLE/DEVICETABLE/
+References: <1368793115-7175-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1368793115-7175-1-git-send-email-geert@linux-m68k.org>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 06:18 PM, Sergei Shtylyov wrote:
+Dne 17.5.2013 14:18, Geert Uytterhoeven napsal(a):
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  scripts/mod/Makefile |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
->> Signed-off-by: Cong Wang <amwang@redhat.com>
->> ---
->>   include/net/inet_addr.h |   20 ++++++++++++++++++++
->>   net/core/netpoll.c      |   24 ++----------------------
->>   2 files changed, 22 insertions(+), 22 deletions(-)
+Added to kbuild.git#kbuild.
 
->> diff --git a/include/net/inet_addr.h b/include/net/inet_addr.h
->> index 66a16fe..1379287 100644
->> --- a/include/net/inet_addr.h
->> +++ b/include/net/inet_addr.h
-[...]
->> @@ -59,4 +60,23 @@ static inline bool inet_addr_multicast(const union
->> inet_addr *ipa)
->>   }
->>   #endif
->>
->> +static inline int inet_pton(const char *str, union inet_addr *addr)
->> +{
->> +    const char *end;
->> +
->> +    if (!strchr(str, ':') &&
->> +        in4_pton(str, -1, (void *)addr, -1, &end) > 0) {
->> +        if (!*end)
->> +            return 0;
->> +    }
->> +    if (in6_pton(str, -1, addr->sin6.sin6_addr.s6_addr, -1, &end) > 0) {
->> +#if IS_ENABLED(CONFIG_IPV6)
->> +        if (!*end)
-
->     How about:
-
->          if (IS_ENABLED(CONFIG_IPV6) && !*end)
-
->> +            return 1;
->> +#else
-
-    Sorry, managed to miss #else... #if could be avoided anyway, tho 
-this could require an extra patch.
-
->> +        return -1;
->> +#endif
->> +    }
->> +    return -1;
->> +}
->>   #endif
-
-WBR, Sergei
+Thanks,
+Michal
 
