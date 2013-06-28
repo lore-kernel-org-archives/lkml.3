@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab3F1S6O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:58:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41956 "EHLO
+	id S1754071Ab3F1S60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:58:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41977 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983Ab3F1S6L (ORCPT
+	with ESMTP id S1752851Ab3F1S6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:58:11 -0400
+	Fri, 28 Jun 2013 14:58:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jason Wang <jasowang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Federico Vaga <federico.vaga@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 082/105] vhost_net: clear msg.control for non-zerocopy case during tx
-Date: Fri, 28 Jun 2013 11:51:44 -0700
-Message-Id: <1372445527-24414-83-git-send-email-kamal@canonical.com>
+Subject: [PATCH 078/105] net/core/sock.c: add missing VSOCK string in af_family_*_key_strings
+Date: Fri, 28 Jun 2013 11:51:40 -0700
+Message-Id: <1372445527-24414-79-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -27,62 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Federico Vaga <federico.vaga@gmail.com>
 
-[ Upstream commit 4364d5f96eed7994a2c625bd9216656e55fba0cb ]
+[ Upstream commit 456db6a4d495f40777da6f1f32f62f13026f52db ]
 
-When we decide not use zero-copy, msg.control should be set to NULL otherwise
-macvtap/tap may set zerocopy callbacks which may decrease the kref of ubufs
-wrongly.
+The three arrays of strings: af_family_key_strings,
+af_family_slock_key_strings and af_family_clock_key_strings have not
+VSOCK's string
 
-Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
-(vhost-net: skip head management if no outstanding).
-
-This solves the following warnings:
-
-WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
-Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
-CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
-Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
-ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
-ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
-ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
-Call Trace:
-[<ffffffff81796b73>] dump_stack+0x19/0x1e
-[<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
-[<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
-[<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
-[<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
-[<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
-[<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
-[<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
-[<ffffffff81061f46>] kthread+0xc6/0xd0
-[<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
-[<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
-[<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
-
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/vhost/net.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/core/sock.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index ec6fb3f..dfff647 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -353,7 +353,8 @@ static void handle_tx(struct vhost_net *net)
- 				kref_get(&ubufs->kref);
- 			}
- 			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
--		}
-+		} else
-+			msg.msg_control = NULL;
- 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
- 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
- 		if (unlikely(err < 0)) {
+diff --git a/net/core/sock.c b/net/core/sock.c
+index b8af814..57b3243 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -208,7 +208,7 @@ static const char *const af_family_key_strings[AF_MAX+1] = {
+   "sk_lock-AF_TIPC"  , "sk_lock-AF_BLUETOOTH", "sk_lock-IUCV"        ,
+   "sk_lock-AF_RXRPC" , "sk_lock-AF_ISDN"     , "sk_lock-AF_PHONET"   ,
+   "sk_lock-AF_IEEE802154", "sk_lock-AF_CAIF" , "sk_lock-AF_ALG"      ,
+-  "sk_lock-AF_NFC"   , "sk_lock-AF_MAX"
++  "sk_lock-AF_NFC"   , "sk_lock-AF_VSOCK"    , "sk_lock-AF_MAX"
+ };
+ static const char *const af_family_slock_key_strings[AF_MAX+1] = {
+   "slock-AF_UNSPEC", "slock-AF_UNIX"     , "slock-AF_INET"     ,
+@@ -224,7 +224,7 @@ static const char *const af_family_slock_key_strings[AF_MAX+1] = {
+   "slock-AF_TIPC"  , "slock-AF_BLUETOOTH", "slock-AF_IUCV"     ,
+   "slock-AF_RXRPC" , "slock-AF_ISDN"     , "slock-AF_PHONET"   ,
+   "slock-AF_IEEE802154", "slock-AF_CAIF" , "slock-AF_ALG"      ,
+-  "slock-AF_NFC"   , "slock-AF_MAX"
++  "slock-AF_NFC"   , "slock-AF_VSOCK"    ,"slock-AF_MAX"
+ };
+ static const char *const af_family_clock_key_strings[AF_MAX+1] = {
+   "clock-AF_UNSPEC", "clock-AF_UNIX"     , "clock-AF_INET"     ,
+@@ -240,7 +240,7 @@ static const char *const af_family_clock_key_strings[AF_MAX+1] = {
+   "clock-AF_TIPC"  , "clock-AF_BLUETOOTH", "clock-AF_IUCV"     ,
+   "clock-AF_RXRPC" , "clock-AF_ISDN"     , "clock-AF_PHONET"   ,
+   "clock-AF_IEEE802154", "clock-AF_CAIF" , "clock-AF_ALG"      ,
+-  "clock-AF_NFC"   , "clock-AF_MAX"
++  "clock-AF_NFC"   , "clock-AF_VSOCK"    , "clock-AF_MAX"
+ };
+ 
+ /*
 -- 
 1.8.1.2
 
