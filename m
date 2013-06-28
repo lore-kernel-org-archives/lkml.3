@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab3F1KnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:43:04 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:48170 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754931Ab3F1KnC (ORCPT
+	id S1755577Ab3F1KnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:43:15 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:52031 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754931Ab3F1KnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:43:02 -0400
+	Fri, 28 Jun 2013 06:43:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <51CD5E99.5010802@iki.fi>
-References: <1363204102.1335.6.camel@x61.thuisdomein>
-	<1371119474.1357.6.camel@x61.thuisdomein>
-	<CAF6AEGs_LS1ZFFj+C67dmRj4G122O1YSqTH_EpgtkLkQOKb2LQ@mail.gmail.com>
-	<51CD5E99.5010802@iki.fi>
-Date: Fri, 28 Jun 2013 20:42:59 +1000
-Message-ID: <CAPM=9ty1CyJ5xOEqvAOSc8pMwPHbtdpaXyAhzLkPDH3Hh0S=fA@mail.gmail.com>
-Subject: Re: [PATCH] drm/omap: change "!CONFIG_FB_OMAP2" to "!FB_OMAP2"
-From: Dave Airlie <airlied@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@iki.fi>
-Cc: Rob Clark <robdclark@gmail.com>, Paul Bolle <pebolle@tiscali.nl>,
-        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
+In-Reply-To: <51CB5D67.3090701@wwwdotorg.org>
+References: <1372112849-670-1-git-send-email-dh.herrmann@gmail.com>
+	<51CB5D67.3090701@wwwdotorg.org>
+Date: Fri, 28 Jun 2013 12:43:05 +0200
+Message-ID: <CANq1E4R66J2JKdF1BrdczpDpvpNDUFz20v6FKJCma1XWHKWMTg@mail.gmail.com>
+Subject: Re: [RFC 0/6] SimpleDRM Driver (was: dvbe driver)
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 7:59 PM, Tomi Valkeinen <tomi.valkeinen@iki.fi> wrote:
-> On 15/06/13 15:20, Rob Clark wrote:
->> On Thu, Jun 13, 2013 at 6:31 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
->>> On Wed, 2013-03-13 at 20:48 +0100, Paul Bolle wrote:
->>>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->>>> ---
->>>> Untested. Perhaps the first test that people with access to the relevant
->>>> hardware might do, is to test _before applying this patch_ with FB_OMAP2
->>>> set. Perhaps this negative dependency isn't needed at all. Or is it
->>>> obvious?
->>>>
->>>>  drivers/gpu/drm/omapdrm/Kconfig | 2 +-
->>>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> This patch was sent exactly three months ago, shortly after v3.9-rc2 was
->>> released. This obvious typo is still present in v3.10-rc5.
->>>
->>> I didn't received any feedback on this patch. Did anyone had a look at
->>> it? Is it perhaps queued somewhere?
+Hi
+
+On Wed, Jun 26, 2013 at 11:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/24/2013 04:27 PM, David Herrmann wrote:
+>> Hi
 >>
->> oh, sorry, at the time I was in the middle of moving, and wasn't
->> watching dri-devel so much.
+>> This is my second revision of the dvbe driver. I renamed it to SimpleDRM to
+>> show the resemblence with the recently introduced simplefb.c fbdev driver. The
+>> driver is supposed to be the most basic DRM driver similar to efifb.c, vesafb.c,
+>> offb.c, simplefb.c, ...
+>> It provides a single virtual CRTC+encoder+connector and allows user-space to
+>> create one dumb-buffer at a time and attach it.
 >>
->> Yeah, this should probably either be merged, or we should just drop
->> the negative dependency.  (I guess in theory you could build both
->> omapfb and omapdrm as modules and just load one.)
+>> The setup changed slightly. It no longer uses shadow buffers but instead maps
+>> the framebuffer directly into userspace. Furthermore, a new infrastructure is
+>> used to unload firmware drivers during real hardware drivers probe cycles. Only
+>> nouveau was changed to use it, yet.
+>>
+>> I still have an odd problem when unloading DRM drivers (not just SimpleDRM) with
+>> an fbdev fallback. If I call printk() directly after unregister_framebufer(), I
+>> get a NULL-deref somewhere in the VT layer (most times hide_cursor()). I haven't
+>> figured out exactly where that happens, but I am also very reluctant to spend
+>> more time debugging the VT layer.
 >
-> Hmm, fixing that creates a problem:
+> I tested this on a Tegra ARM system, and it basically worked.
+
+Thanks a lot for the feedback!
+
+> I have one question: With the simplefb driver, and console=tty1 on the
+> kernel command-line, I see both the penguins logo and Linux's boot
+> messages on the LCD panel that's hooked up through simplefb. However,
+> with simpledrm, I only see the penguins logo, but no boot messages. Is
+> that expected? How would I solve that if so?
+
+No idea what is going wrong there. Somehow the simpledrm-fbdev device
+is not picked up as primary device. I only got a black-cursor on
+black-background (visible if painting something else on the fb0
+device). And I get NULL-derefs in cursor_hide() during unregistration.
+I digged through fbcon.c to find out what's going wrong but without
+any success. I will see what I can do.
+
+However, X-server or other apps work perfectly fine with it.
+
+> Note: I needed to apply the following patch to get it to compile:
 >
-> drivers/video/Kconfig:42:error: recursive dependency detected!
-> drivers/video/Kconfig:42:       symbol FB is selected by DRM_KMS_HELPER
-> drivers/gpu/drm/Kconfig:29:     symbol DRM_KMS_HELPER is selected by DRM_OMAP
-> drivers/gpu/drm/omapdrm/Kconfig:2:      symbol DRM_OMAP depends on FB_OMAP2
-> drivers/video/omap2/omapfb/Kconfig:1:   symbol FB_OMAP2 depends on FB
+> diff --git a/drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
+> b/drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
+> index 40a2696..39885c8 100644
+> --- a/drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
+> +++ b/drivers/gpu/drm/simpledrm/simpledrm_fbdev.c
+> @@ -159,7 +159,7 @@ void sdrm_fbdev_cleanup(struct sdrm_device *sdrm)
+>  {
+>         struct fb_info *info;
 >
-> And it makes selecting omapfb not possible...
+> -       if (!sdrm->info)
+> +       if (!sdrm->fbdev)
+>                 return;
+
+Ugh, embarrassing, sorry. I fixed it up. It was a late fix to a avoid
+fbcon from panicking.
+
+Thanks!
+David
+
 >
-> omapfb already has a !DRM_OMAP dependency. I think it's enough to have
-> that one there, and remove the !FB_OMAP dependency from omapdrm.
-
-I just nuked it upstream in drm-next.
-
-commit 2644ee9614be67abe155f1073bb9e1b737bbca53
-Author: Dave Airlie <airlied@redhat.com>
-Date:   Fri Jun 28 12:08:10 2013 +1000
-
-    drm/omap: drop the !FB_OMAP2 dep
-
-    This ends up causing circularity and really let people shoot themselves
-    in the foot.
-
-    Acked-by: Rob Clark <robdclark@gmail.com>
-    Signed-off-by: Dave Airlie <airlied@redhat.com>
-
-Dave.
+>         dev_info(sdrm->ddev->dev, "fbdev cleanup\n");
 >
->  Tomi
 >
 >
