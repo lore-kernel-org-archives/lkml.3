@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab3F1JhA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:37:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46604 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab3F1Jg6 (ORCPT
+	id S1755230Ab3F1Jhp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:37:45 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:43370 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab3F1Jhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:36:58 -0400
-Date: Fri, 28 Jun 2013 11:36:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] sched: Split accounting of NUMA hinting faults that
- pass two-stage filter
-Message-ID: <20130628093625.GF29209@dyad.programming.kicks-ass.net>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-8-git-send-email-mgorman@suse.de>
- <20130628070027.GD17195@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130628070027.GD17195@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 28 Jun 2013 05:37:42 -0400
+Message-ID: <1372412262.3301.251.camel@edumazet-glaptop>
+Subject: Re: kernel panic in skb_copy_bits
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "zheng.x.li@oracle.com" <zheng.x.li@oracle.com>,
+        Xen Devel <xen-devel@lists.xen.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Date: Fri, 28 Jun 2013 02:37:42 -0700
+In-Reply-To: <1372402340.3301.229.camel@edumazet-glaptop>
+References: <51CBAA48.3080802@oracle.com>
+	 <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
+	 <1372402340.3301.229.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 12:30:27PM +0530, Srikar Dronamraju wrote:
-> * Mel Gorman <mgorman@suse.de> [2013-06-26 15:38:06]:
-> 
-> > Ideally it would be possible to distinguish between NUMA hinting faults
-> > that are private to a task and those that are shared. This would require
-> > that the last task that accessed a page for a hinting fault would be
-> > recorded which would increase the size of struct page. Instead this patch
-> > approximates private pages by assuming that faults that pass the two-stage
-> > filter are private pages and all others are shared. The preferred NUMA
-> > node is then selected based on where the maximum number of approximately
-> > private faults were measured.
-> 
-> Should we consider only private faults for preferred node?
+OK please try the following patch
 
-I don't think so; its optimal for the task to be nearest most of its pages;
-irrespective of whether they be private or shared.
 
-> I would think if tasks have shared pages then moving all tasks that share
-> the same pages to a node where the share pages are around would be
-> preferred. No? 
+[PATCH] neighbour: fix a race in neigh_destroy()
 
-Well no; not if there's only 5 shared pages but 1024 private pages.
+There is a race in neighbour code, because neigh_destroy() uses
+skb_queue_purge(&neigh->arp_queue) without holding neighbour lock,
+while other parts of the code assume neighbour rwlock is what
+protects arp_queue
 
-> If yes, how does the preferred node logic help to achieve
-> the above?
+Convert all skb_queue_purge() calls to the __skb_queue_purge() variant
 
-There's no packing logic yet...
+Use __skb_queue_head_init() instead of skb_queue_head_init()
+to make clear we do not use arp_queue.lock
+
+And hold neigh->lock in neigh_destroy() to close the race.
+
+Reported-by: Joe Jin <joe.jin@oracle.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+---
+ net/core/neighbour.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/net/core/neighbour.c b/net/core/neighbour.c
+index 2569ab2..b7de821 100644
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -231,7 +231,7 @@ static void neigh_flush_dev(struct neigh_table *tbl, struct net_device *dev)
+ 				   we must kill timers etc. and move
+ 				   it to safe state.
+ 				 */
+-				skb_queue_purge(&n->arp_queue);
++				__skb_queue_purge(&n->arp_queue);
+ 				n->arp_queue_len_bytes = 0;
+ 				n->output = neigh_blackhole;
+ 				if (n->nud_state & NUD_VALID)
+@@ -286,7 +286,7 @@ static struct neighbour *neigh_alloc(struct neigh_table *tbl, struct net_device
+ 	if (!n)
+ 		goto out_entries;
+ 
+-	skb_queue_head_init(&n->arp_queue);
++	__skb_queue_head_init(&n->arp_queue);
+ 	rwlock_init(&n->lock);
+ 	seqlock_init(&n->ha_lock);
+ 	n->updated	  = n->used = now;
+@@ -708,7 +708,9 @@ void neigh_destroy(struct neighbour *neigh)
+ 	if (neigh_del_timer(neigh))
+ 		pr_warn("Impossible event\n");
+ 
+-	skb_queue_purge(&neigh->arp_queue);
++	write_lock_bh(&neigh->lock);
++	__skb_queue_purge(&neigh->arp_queue);
++	write_unlock_bh(&neigh->lock);
+ 	neigh->arp_queue_len_bytes = 0;
+ 
+ 	if (dev->netdev_ops->ndo_neigh_destroy)
+@@ -858,7 +860,7 @@ static void neigh_invalidate(struct neighbour *neigh)
+ 		neigh->ops->error_report(neigh, skb);
+ 		write_lock(&neigh->lock);
+ 	}
+-	skb_queue_purge(&neigh->arp_queue);
++	__skb_queue_purge(&neigh->arp_queue);
+ 	neigh->arp_queue_len_bytes = 0;
+ }
+ 
+@@ -1210,7 +1212,7 @@ int neigh_update(struct neighbour *neigh, const u8 *lladdr, u8 new,
+ 
+ 			write_lock_bh(&neigh->lock);
+ 		}
+-		skb_queue_purge(&neigh->arp_queue);
++		__skb_queue_purge(&neigh->arp_queue);
+ 		neigh->arp_queue_len_bytes = 0;
+ 	}
+ out:
+
+
