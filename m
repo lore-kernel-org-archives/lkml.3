@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab3F1SyC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:54:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41604 "EHLO
+	id S1752517Ab3F1SyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:54:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41625 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab3F1Sx7 (ORCPT
+	with ESMTP id S1752725Ab3F1SyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:53:59 -0400
+	Fri, 28 Jun 2013 14:54:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jed Davis <jld@mozilla.com>, Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Paul Moore <pmoore@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 062/105] perf: arm64: Record the user-mode PC in the call chain.
-Date: Fri, 28 Jun 2013 11:51:24 -0700
-Message-Id: <1372445527-24414-63-git-send-email-kamal@canonical.com>
+Subject: [PATCH 069/105] netlabel: improve domain mapping validation
+Date: Fri, 28 Jun 2013 11:51:31 -0700
+Message-Id: <1372445527-24414-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -27,34 +27,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jed Davis <jld@mozilla.com>
+From: Paul Moore <pmoore@redhat.com>
 
-With this change, we no longer lose the innermost entry in the user-mode
-part of the call chain.  See also the x86 port, which includes the ip,
-and the corresponding change in arch/arm.
+[ Upstream commit 6b21e1b77d1a3d58ebfd513264c885695e8a0ba5 ]
 
-Signed-off-by: Jed Davis <jld@mozilla.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-[ kamal: backport to 3.8 (context) ]
+The net/netlabel/netlabel_domainhash.c:netlbl_domhsh_add() function
+does not properly validate new domain hash entries resulting in
+potential problems when an administrator attempts to add an invalid
+entry.  One such problem, as reported by Vlad Halilov, is a kernel
+BUG (found in netlabel_domainhash.c:netlbl_domhsh_audit_add()) when
+adding an IPv6 outbound mapping with a CIPSO configuration.
+
+This patch corrects this problem by adding the necessary validation
+code to netlbl_domhsh_add() via the newly created
+netlbl_domhsh_validate() function.
+
+Ideally this patch should also be pushed to the currently active
+-stable trees.
+
+Reported-by: Vlad Halilov <vlad.halilov@gmail.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/kernel/perf_event.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/netlabel/netlabel_domainhash.c | 69 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 69 insertions(+)
 
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-index f7073c7..0256b68 100644
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -1331,6 +1331,7 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- {
- 	struct frame_tail __user *tail;
+diff --git a/net/netlabel/netlabel_domainhash.c b/net/netlabel/netlabel_domainhash.c
+index d8d4243..6bb1d42 100644
+--- a/net/netlabel/netlabel_domainhash.c
++++ b/net/netlabel/netlabel_domainhash.c
+@@ -245,6 +245,71 @@ static void netlbl_domhsh_audit_add(struct netlbl_dom_map *entry,
+ 	}
+ }
  
-+	perf_callchain_store(entry, regs->pc);
- 	tail = (struct frame_tail __user *)regs->regs[29];
++/**
++ * netlbl_domhsh_validate - Validate a new domain mapping entry
++ * @entry: the entry to validate
++ *
++ * This function validates the new domain mapping entry to ensure that it is
++ * a valid entry.  Returns zero on success, negative values on failure.
++ *
++ */
++static int netlbl_domhsh_validate(const struct netlbl_dom_map *entry)
++{
++	struct netlbl_af4list *iter4;
++	struct netlbl_domaddr4_map *map4;
++#if IS_ENABLED(CONFIG_IPV6)
++	struct netlbl_af6list *iter6;
++	struct netlbl_domaddr6_map *map6;
++#endif /* IPv6 */
++
++	if (entry == NULL)
++		return -EINVAL;
++
++	switch (entry->type) {
++	case NETLBL_NLTYPE_UNLABELED:
++		if (entry->type_def.cipsov4 != NULL ||
++		    entry->type_def.addrsel != NULL)
++			return -EINVAL;
++		break;
++	case NETLBL_NLTYPE_CIPSOV4:
++		if (entry->type_def.cipsov4 == NULL)
++			return -EINVAL;
++		break;
++	case NETLBL_NLTYPE_ADDRSELECT:
++		netlbl_af4list_foreach(iter4, &entry->type_def.addrsel->list4) {
++			map4 = netlbl_domhsh_addr4_entry(iter4);
++			switch (map4->type) {
++			case NETLBL_NLTYPE_UNLABELED:
++				if (map4->type_def.cipsov4 != NULL)
++					return -EINVAL;
++				break;
++			case NETLBL_NLTYPE_CIPSOV4:
++				if (map4->type_def.cipsov4 == NULL)
++					return -EINVAL;
++				break;
++			default:
++				return -EINVAL;
++			}
++		}
++#if IS_ENABLED(CONFIG_IPV6)
++		netlbl_af6list_foreach(iter6, &entry->type_def.addrsel->list6) {
++			map6 = netlbl_domhsh_addr6_entry(iter6);
++			switch (map6->type) {
++			case NETLBL_NLTYPE_UNLABELED:
++				break;
++			default:
++				return -EINVAL;
++			}
++		}
++#endif /* IPv6 */
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ /*
+  * Domain Hash Table Functions
+  */
+@@ -311,6 +376,10 @@ int netlbl_domhsh_add(struct netlbl_dom_map *entry,
+ 	struct netlbl_af6list *tmp6;
+ #endif /* IPv6 */
  
- 	while (entry->nr < PERF_MAX_STACK_DEPTH &&
++	ret_val = netlbl_domhsh_validate(entry);
++	if (ret_val != 0)
++		return ret_val;
++
+ 	/* XXX - we can remove this RCU read lock as the spinlock protects the
+ 	 *       entire function, but before we do we need to fixup the
+ 	 *       netlbl_af[4,6]list RCU functions to do "the right thing" with
 -- 
 1.8.1.2
 
