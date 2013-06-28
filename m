@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3F1T4h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:56:37 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:33716 "EHLO
+	id S1753421Ab3F1T4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:56:36 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:33706 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab3F1T4b (ORCPT
+	with ESMTP id S1752832Ab3F1T4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Jun 2013 15:56:31 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -14,56 +14,55 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv2 4/8] clocksource: sun4i: Fix the next event code
-Date: Fri, 28 Jun 2013 21:56:22 +0200
-Message-Id: <1372449386-1334-5-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 0/8] clocksource: sunxi: Timer fixes and cleanup
+Date: Fri, 28 Jun 2013 21:56:18 +0200
+Message-Id: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next_event logic was setting the next interval to fire in the
-current timer value instead of the interval value register, which is
-obviously wrong. Plus the logic to set the actual value was wrong as
-well, so this code has always been broken.
+Hi everyone,
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/clocksource/sun4i_timer.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+The first timer code we merged when adding support for the A13 some
+time back was mostly a clean up from the source drop we had, without
+any documentation.  This happened to work, but the code merged in
+turned out to be far from perfect, and had several flaws.
 
-diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 84ace76..695c8c8 100644
---- a/drivers/clocksource/sun4i_timer.c
-+++ b/drivers/clocksource/sun4i_timer.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/clk.h>
- #include <linux/clockchips.h>
-+#include <linux/delay.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/irqreturn.h>
-@@ -61,9 +62,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
- static int sun4i_clkevt_next_event(unsigned long evt,
- 				   struct clock_event_device *unused)
- {
--	u32 u = readl(timer_base + TIMER_CTL_REG(0));
--	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
--	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
-+	u32 val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
-+	udelay(1);
-+
-+	writel(evt, timer_base + TIMER_INTVAL_REG(0));
-+
-+	val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
- 	       timer_base + TIMER_CTL_REG(0));
- 
- 	return 0;
+This patchset hopefully fixes these flaws, and cleanup most of the
+driver as well, to end up in an almost complete rewrite of it (even
+though it's not that long).
+
+It also finally adds a clocksource from the free running counter found
+in the A10/A13 SoCs.
+
+These flaws have all been spotted when trying to add the A31 support,
+work that is still ongoing, but will hopefully benefit from this
+patchset as well.
+
+Thanks,
+Maxime
+
+Changes from v1:
+  - Rebased on top of linux-next to benefit from the move to all
+    architectures of the sched_clock functions
+  - Moved the clock source to the second timer instead of the 64 bits
+    free-running counter like suggested by Thomas.
+
+Maxime Ripard (8):
+  clocksource: sun4i: Use the BIT macros where possible
+  clocksource: sun4i: Add clocksource and sched clock drivers
+  clocksource: sun4i: Don't forget to enable the clock we use
+  clocksource: sun4i: Fix the next event code
+  clocksource: sun4i: Factor out some timer code
+  clocksource: sun4i: Remove TIMER_SCAL variable
+  clocksource: sun4i: Cleanup parent clock setup
+  clocksource: sun4i: Fix bug when switching from periodic to oneshot
+    modes
+
+ drivers/clocksource/sun4i_timer.c | 97 ++++++++++++++++++++++++++-------------
+ 1 file changed, 64 insertions(+), 33 deletions(-)
+
 -- 
 1.8.3.1
 
