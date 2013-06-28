@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab3F1Oyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:54:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39169 "EHLO mga09.intel.com"
+	id S1755061Ab3F1O4j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:56:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18443 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754518Ab3F1Oyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:54:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,958,1363158000"; 
-   d="scan'208";a="361140353"
-Message-ID: <51CDA3B3.7010605@linux.intel.com>
-Date: Fri, 28 Jun 2013 17:54:43 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752158Ab3F1O4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 10:56:38 -0400
+Date: Fri, 28 Jun 2013 16:52:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Andrey Vagin <avagin@openvz.org>, Roland McGrath <roland@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pedro Alves <palves@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.10-rc7] Fix: kernel/ptrace.c: ptrace_peek_siginfo()
+	missing __put_user() validation
+Message-ID: <20130628145205.GA22344@redhat.com>
+References: <20130628134946.GA19422@Krystal>
 MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH net-next 2/2] net: avoid calling sched_clock when LLS
- is off
-References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com> <20130628125934.14419.38109.stgit@ladj378.jer.intel.com> <20130628143840.GS6123@two.firstfloor.org>
-In-Reply-To: <20130628143840.GS6123@two.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628134946.GA19422@Krystal>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/2013 17:38, Andi Kleen wrote:
->> diff --git a/fs/select.c b/fs/select.c
->> index 79b876e..3654075 100644
->> --- a/fs/select.c
->> +++ b/fs/select.c
->> @@ -402,7 +402,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
->>   	poll_table *wait;
->>   	int retval, i, timed_out = 0;
->>   	unsigned long slack = 0;
->> -	unsigned int ll_flag = POLL_LL;
->> +	unsigned int ll_flag = ll_get_flag();
+On 06/28, Mathieu Desnoyers wrote:
 >
-> Is that a global flag? That's still the wrong level. It should
-> look at something in the file descriptor (preferably without
-> fetching any new cache lines)
->
+> This __put_user() could be used by unprivileged processes to write into
+> kernel memory. The issue here is that even if copy_siginfo_to_user()
+> fails, the error code is not checked before __put_user() is executed.
+> Luckily, ptrace_peek_siginfo() has been added within the 3.10-rc cycle,
+> so it has not hit a stable release yet.
 
-There is a global flag that decides if we even try to find supported
-files (sockets).
+Agreed, this looks like 3.10 material.
 
-If it is on we look to see if anyone will return POLL_LL.
-at the individual socket level, you need both the socket option to
-be on, and the queue data to be available for it to return POLL_LL.
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 
-I wanted to find a way to control this at the time the user calls poll().
-I was not able to find any simple way of doing it that way.
-I'm open to suggestion.
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: Andrey Vagin <avagin@openvz.org>
+> CC: Roland McGrath <roland@redhat.com>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> CC: David Howells <dhowells@redhat.com>
+> CC: Dave Jones <davej@redhat.com>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Pedro Alves <palves@redhat.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> ---
+>  kernel/ptrace.c |   20 +++++++++++---------
+>  1 file changed, 11 insertions(+), 9 deletions(-)
+> 
+> Index: linux/kernel/ptrace.c
+> ===================================================================
+> --- linux.orig/kernel/ptrace.c
+> +++ linux/kernel/ptrace.c
+> @@ -665,20 +665,22 @@ static int ptrace_peek_siginfo(struct ta
+>  		if (unlikely(is_compat_task())) {
+>  			compat_siginfo_t __user *uinfo = compat_ptr(data);
+>  
+> -			ret = copy_siginfo_to_user32(uinfo, &info);
+> -			ret |= __put_user(info.si_code, &uinfo->si_code);
+> +			if (copy_siginfo_to_user32(uinfo, &info) ||
+> +			    __put_user(info.si_code, &uinfo->si_code)) {
+> +				ret = -EFAULT;
+> +				break;
+> +			}
+> +
+>  		} else
+>  #endif
+>  		{
+>  			siginfo_t __user *uinfo = (siginfo_t __user *) data;
+>  
+> -			ret = copy_siginfo_to_user(uinfo, &info);
+> -			ret |= __put_user(info.si_code, &uinfo->si_code);
+> -		}
+> -
+> -		if (ret) {
+> -			ret = -EFAULT;
+> -			break;
+> +			if (copy_siginfo_to_user(uinfo, &info) ||
+> +			    __put_user(info.si_code, &uinfo->si_code)) {
+> +				ret = -EFAULT;
+> +				break;
+> +			}
+>  		}
+>  
+>  		data += sizeof(siginfo_t);
+> 
+> -- 
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
+
