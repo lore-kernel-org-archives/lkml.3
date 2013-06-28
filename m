@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab3F1Dca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 23:32:30 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:59225 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab3F1Dc2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754556Ab3F1Dc2 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 27 Jun 2013 23:32:28 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:47454 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135Ab3F1Dc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jun 2013 23:32:26 -0400
 From: Fabio Estevam <festevam@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: shawn.guo@linaro.org, kernel@pengutronix.de, linux-kernel@vger.kernel.org,
         Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH 5/5] imx-drm: ipu-dp: Adjust the maximum number of flows
-Date: Fri, 28 Jun 2013 00:32:05 -0300
-Message-Id: <1372390325-7566-5-git-send-email-festevam@gmail.com>
+Subject: [PATCH 4/5] imx-drm: ipu-dp: Introduce IPUV3_NUM_FLOWS
+Date: Fri, 28 Jun 2013 00:32:04 -0300
+Message-Id: <1372390325-7566-4-git-send-email-festevam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372390325-7566-1-git-send-email-festevam@gmail.com>
 References: <1372390325-7566-1-git-send-email-festevam@gmail.com>
@@ -23,29 +23,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Later in ipu_dp_get() the index of the flow array is calculated by:
-flow >> 1
+IPUv3 has a total of 3 flows (one synchronous flow and 2 asynchronous flows).
 
-So adjust its maximum to IPUV3_NUM_FLOWS << 1.
+Let's add a definition for such number in order to let the code easier to
+understand.
 
 Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- drivers/staging/imx-drm/ipu-v3/ipu-dp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/imx-drm/ipu-v3/ipu-dp.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
-index 3bdff6af..ae2c199 100644
+index 6e0e9f1..3bdff6af 100644
 --- a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
 +++ b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
-@@ -282,7 +282,7 @@ struct ipu_dp *ipu_dp_get(struct ipu_soc *ipu, unsigned int flow)
- 	struct ipu_dp_priv *priv = ipu->dp_priv;
- 	struct ipu_dp *dp;
+@@ -46,6 +46,8 @@
+ #define DP_COM_CONF_CSC_DEF_BG		(2 << 8)
+ #define DP_COM_CONF_CSC_DEF_BOTH	(1 << 8)
  
--	if (flow > 5)
-+	if (flow > IPUV3_NUM_FLOWS << 1)
- 		return ERR_PTR(-EINVAL);
++#define IPUV3_NUM_FLOWS		3
++
+ struct ipu_dp_priv;
  
- 	if (flow & 1)
+ struct ipu_dp {
+@@ -67,7 +69,7 @@ struct ipu_dp_priv {
+ 	struct ipu_soc *ipu;
+ 	struct device *dev;
+ 	void __iomem *base;
+-	struct ipu_flow flow[3];
++	struct ipu_flow flow[IPUV3_NUM_FLOWS];
+ 	struct mutex mutex;
+ 	int use_count;
+ };
+@@ -322,7 +324,7 @@ int ipu_dp_init(struct ipu_soc *ipu, struct device *dev, unsigned long base)
+ 
+ 	mutex_init(&priv->mutex);
+ 
+-	for (i = 0; i < 3; i++) {
++	for (i = 0; i < IPUV3_NUM_FLOWS; i++) {
+ 		priv->flow[i].foreground.foreground = 1;
+ 		priv->flow[i].base = priv->base + ipu_dp_flow_base[i];
+ 		priv->flow[i].priv = priv;
 -- 
 1.8.1.2
 
