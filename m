@@ -1,149 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab3F1VEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 17:04:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33220 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab3F1VET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 17:04:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,961,1363158000"; 
-   d="scan'208";a="361318817"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20130628093809.GB29205@gmail.com>
-References: <1371165992.27102.573.camel@schen9-DESK>
-	 <20130619131611.GC24957@gmail.com> <1371660831.27102.663.camel@schen9-DESK>
-	 <1372205996.22432.119.camel@schen9-DESK> <20130626095108.GB29181@gmail.com>
-	 <1372282560.22432.139.camel@schen9-DESK>
-	 <1372292701.22432.152.camel@schen9-DESK> <20130627083651.GA3730@gmail.com>
-	 <1372366385.22432.185.camel@schen9-DESK>
-	 <1372375873.22432.200.camel@schen9-DESK> <20130628093809.GB29205@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Jun 2013 14:04:21 -0700
-Message-ID: <1372453461.22432.216.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752538Ab3F1VI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 17:08:56 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:34076 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3F1VIz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 17:08:55 -0400
+Date: Fri, 28 Jun 2013 23:08:53 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Emilio Lopez <emilio@elopez.com.ar>,
+        kevin@allwinnertech.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCHv2 4/8] clocksource: sun4i: Fix the next event code
+Message-ID: <20130628210853.GB2756@lukather>
+References: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1372449386-1334-5-git-send-email-maxime.ripard@free-electrons.com>
+ <alpine.DEB.2.02.1306282204220.4013@ionos.tec.linutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="R3G7APHDIzY6R/pk"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306282204220.4013@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-28 at 11:38 +0200, Ingo Molnar wrote:
-> * Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> 
-> > I tried some tweaking that checks sem->count for read owned lock. Even 
-> > though it reduces the percentage of acquisitions that need sleeping by 
-> > 8.14% (from 18.6% to 10.46%), it increases the writer acquisition 
-> > blocked count by 11%. This change still doesn't boost throughput and has 
-> > a tiny regression for the workload.
-> > 
-> > 						Opt Spin Opt Spin
-> > 							 (with tweak)	
-> > Writer acquisition blocked count		7359040	8168006
-> > Blocked by reader				 0.55%	 0.52%
-> > Lock acquired first attempt (lock stealing)	16.92%	19.70%
-> > Lock acquired second attempt (1 sleep)	17.60%	 9.32%
-> > Lock acquired after more than 1 sleep		 1.00%	 1.14%
-> > Lock acquired with optimistic spin		64.48%	69.84%
-> > Optimistic spin abort 1 			11.77%	 1.14%
-> > Optimistic spin abort 2			 6.81%	 9.22%
-> > Optimistic spin abort 3			 0.02%	 0.10%
-> 
-> So lock stealing+spinning now acquires the lock successfully ~90% of the 
-> time, the remaining sleeps are:
-> 
-> > Lock acquired second attempt (1 sleep)	......	 9.32%
-> 
-> And the reason these sleeps are mostly due to:
-> 
-> > Optimistic spin abort 2			 .....	 9.22%
-> 
-> Right?
-> 
-> So this particular #2 abort point is:
-> 
-> |       preempt_disable();
-> |       for (;;) {
-> |               owner = ACCESS_ONCE(sem->owner);
-> |               if (owner && !rwsem_spin_on_owner(sem, owner))
-> |                       break;   <--------------------------- abort (2)
-> 
-> Next step would be to investigate why we decide to not spin there, why 
-> does rwsem_spin_on_owner() fail?
-> 
-> If I got all the patches right, rwsem_spin_on_owner() is this:
-> 
-> +static noinline
-> +int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
-> +{
-> +       rcu_read_lock();
-> +       while (owner_running(lock, owner)) {
-> +               if (need_resched())
-> +                       break;
-> +
-> +               arch_mutex_cpu_relax();
-> +       }
-> +       rcu_read_unlock();
-> +
-> +       /*
-> +        * We break out the loop above on need_resched() and when the
-> +        * owner changed, which is a sign for heavy contention. Return
-> +        * success only when lock->owner is NULL.
-> +        */
-> +       return lock->owner == NULL;
-> +}
-> 
-> where owner_running() is similar to the mutex spinning code: it in the end 
-> checks owner->on_cpu - like the mutex code.
-> 
-> If my analysis is correct so far then it might be useful to add two more 
-> stats: did rwsem_spin_on_owner() fail because lock->owner == NULL [owner 
-> released the rwsem], or because owner_running() failed [owner went to 
-> sleep]?
 
-Ingo, 
+--R3G7APHDIzY6R/pk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I tabulated the cases where rwsem_spin_on_owner returns false and causes
-us to stop spinning.
+Hi Thomas,
 
-97.12%  was due to lock's owner switching to another writer
- 0.01% was due to the owner of the lock sleeping
- 2.87%  was due to need_resched() 
+On Fri, Jun 28, 2013 at 10:13:08PM +0200, Thomas Gleixner wrote:
+> On Fri, 28 Jun 2013, Maxime Ripard wrote:
+>=20
+> > The next_event logic was setting the next interval to fire in the
+> > current timer value instead of the interval value register, which is
+> > obviously wrong.
+>=20
+> Ok.
+>=20
+> > Plus the logic to set the actual value was wrong as well, so this
+> > code has always been broken.
+>=20
+> This lacks an explanation why the logic is wrong and what the actual
+> fix is.
 
-I made a change to allow us to continue to spin even when lock's 
-owner switch to another writer.  I did get the lock to be acquired
-now mostly (98%) via optimistic spin and lock stealing, but my
-benchmark's throughput actually got reduced by 30% (too many cycles
-spent on useless spinning?).  The lock statistics are below:
+Right.
 
-Writer acquisition blocked count		7538864
-Blocked by reader				 0.37%
-Lock acquired first attempt (lock stealing)	18.45%
-Lock acquired second attempt (1 sleep)		 1.69%
-Lock acquired after more than 1 sleep		 0.25%
-Lock acquired with optimistic spin		79.62%
-Optimistic spin failure (abort point 1) 	 1.37%
-Optimistic spin failure (abort point 2)		 0.32%
-Optimistic spin failure (abort point 3)		 0.23%
-(Opt spin abort point 2 breakdown) owner sleep	 0.00%
-(Opt spin abort point 2 breakdown) need_resched	 0.32%
+Actually, the interval register can only be modified when the timer is
+disabled. So we first need, to disable it, change the interval, and then
+enable it back.
 
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > ---
+> >  drivers/clocksource/sun4i_timer.c | 12 +++++++++---
+> >  1 file changed, 9 insertions(+), 3 deletions(-)
+> >=20
+> > diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/su=
+n4i_timer.c
+> > index 84ace76..695c8c8 100644
+> > --- a/drivers/clocksource/sun4i_timer.c
+> > +++ b/drivers/clocksource/sun4i_timer.c
+> > @@ -16,6 +16,7 @@
+> > =20
+> >  #include <linux/clk.h>
+> >  #include <linux/clockchips.h>
+> > +#include <linux/delay.h>
+> >  #include <linux/interrupt.h>
+> >  #include <linux/irq.h>
+> >  #include <linux/irqreturn.h>
+> > @@ -61,9 +62,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode =
+mode,
+> >  static int sun4i_clkevt_next_event(unsigned long evt,
+> >  				   struct clock_event_device *unused)
+> >  {
+> > -	u32 u =3D readl(timer_base + TIMER_CTL_REG(0));
+> > -	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
+> > -	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
+> > +	u32 val =3D readl(timer_base + TIMER_CTL_REG(0));
+> > +	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
+> > +	udelay(1);
+>=20
+> That udelay() is more than suspicious. Is there really no other way to
+> deal with that hardware?
+>=20
+> If no, you really need to put a proper explanation for that into the code.
 
-Thanks.
+The datasheet states that you have to wait for two ticks of the timer
+clock source (in that case, 24MHz, which makes it around 80-85ns) before
+you can actually enable it back.
 
-Tim
+I didn't came up with a better solution.
 
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--R3G7APHDIzY6R/pk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzftlAAoJEBx+YmzsjxAgfN0QAIN23/uDswdhW4KdLP+SUu6c
+OWqmu0ipWDCqlVhC/KTZGbXAHrde0oWO1LnVCpnXfXunY+zhmQmaEaUV9+/gdnK+
+NGez4bPesOdw1fjG9jJ+If37M80OxULrdWpXyoB9Iv15KBIV1J+DOnb7B+1J23Bz
+msbFWEgQv6siGg/mlSZaZeGn96grC38fpJu1HWzNo+AYZbRylf5cXPL20yYIvGJ/
+clct4lhiIkKqG1uq9tcD4a5pI+udhdY476vR1mF7T0tjCFyzRWdtX1qfcuaKLSMv
+1Kx32fbdx2CuZYlFqVA7HcMGNNcSq6arm2VcQRxUC/wruQP/Ph686v1fBl4+A7PF
+GH+FUK3WbielzRwwOSPCkt6KOwBlRKUnzX46YyaPh4d2C7l8SR6rhKj4UnvRTJ7o
+pOS2kibF6vEkOvuho7q4o8pXCrNnpdJbuGf+pUQ9LlbylfsKSekvL2zgHdvmVnY2
+W7jzEmcDNJUw30x+Kb8WEa8qYK1fJx4hluXMHeQg5YcTKU8+bL//WyKuqNM/yEK+
+ATZJZTQEns8Go8x/8qF25k77aHltZUZqLUXwsnaCLzDGlFWDHv4AJL50gzPvnKqV
+otndJF1cn3BaDO3zF6CkCIak76GqVOAAY4krlGUYtwmrgdIfqGfty+2roAzTlEXv
+R4r1JWKD7nCFTNt6l8Eg
+=8VJ/
+-----END PGP SIGNATURE-----
+
+--R3G7APHDIzY6R/pk--
