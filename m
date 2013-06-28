@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab3F1SzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:55:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41696 "EHLO
+	id S1752912Ab3F1TMy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:12:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41701 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab3F1SzN (ORCPT
+	with ESMTP id S1752990Ab3F1SzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:55:13 -0400
+	Fri, 28 Jun 2013 14:55:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sage Weil <sage@inktank.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 034/105] libceph: clear messenger auth_retry flag when we authenticate
-Date: Fri, 28 Jun 2013 11:50:56 -0700
-Message-Id: <1372445527-24414-35-git-send-email-kamal@canonical.com>
+Cc: "wang, biao" <biao.wang@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 032/105] klist: del waiter from klist_remove_waiters before wakeup waitting process
+Date: Fri, 28 Jun 2013 11:50:54 -0700
+Message-Id: <1372445527-24414-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -26,47 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: "wang, biao" <biao.wang@intel.com>
 
-commit 20e55c4cc758e4dccdfd92ae8e9588dd624b2cd7 upstream.
+commit ac5a2962b02f57dea76d314ef2521a2170b28ab6 upstream.
 
-We maintain a counter of failed auth attempts to allow us to retry once
-before failing.  However, if the second attempt succeeds, the flag isn't
-cleared, which makes us think auth failed again later when the connection
-resets for other reasons (like a socket error).
+There is a race between klist_remove and klist_release. klist_remove
+uses a local var waiter saved on stack. When klist_release calls
+wake_up_process(waiter->process) to wake up the waiter, waiter might run
+immediately and reuse the stack. Then, klist_release calls
+list_del(&waiter->list) to change previous
+wait data and cause prior waiter thread corrupt.
 
-This is one part of the sorry sequence of events in bug
+The patch fixes it against kernel 3.9.
 
-	http://tracker.ceph.com/issues/4282
-
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: wang, biao <biao.wang@intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ceph/messenger.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ lib/klist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index 5ccf87e..be626db 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -1546,7 +1546,6 @@ static int process_connect(struct ceph_connection *con)
- 			con->error_msg = "connect authorization failure";
- 			return -1;
- 		}
--		con->auth_retry = 1;
- 		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
-@@ -1631,7 +1630,7 @@ static int process_connect(struct ceph_connection *con)
+diff --git a/lib/klist.c b/lib/klist.c
+index 0874e41..358a368 100644
+--- a/lib/klist.c
++++ b/lib/klist.c
+@@ -193,10 +193,10 @@ static void klist_release(struct kref *kref)
+ 		if (waiter->node != n)
+ 			continue;
  
- 		WARN_ON(con->state != CON_STATE_NEGOTIATING);
- 		con->state = CON_STATE_OPEN;
--
-+		con->auth_retry = 0;    /* we authenticated; clear flag */
- 		con->peer_global_seq = le32_to_cpu(con->in_reply.global_seq);
- 		con->connect_seq++;
- 		con->peer_features = server_feat;
++		list_del(&waiter->list);
+ 		waiter->woken = 1;
+ 		mb();
+ 		wake_up_process(waiter->process);
+-		list_del(&waiter->list);
+ 	}
+ 	spin_unlock(&klist_remove_lock);
+ 	knode_set_klist(n, NULL);
 -- 
 1.8.1.2
 
