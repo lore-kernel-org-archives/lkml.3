@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab3F1Sy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:54:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41660 "EHLO
+	id S1752925Ab3F1TPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:15:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41643 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab3F1Syy (ORCPT
+	with ESMTP id S1752513Ab3F1SyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:54:54 -0400
+	Fri, 28 Jun 2013 14:54:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Francois Romieu <romieu@fr.zoreil.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 074/105] ip_tunnel: fix kernel panic with icmp_dest_unreach
-Date: Fri, 28 Jun 2013 11:51:36 -0700
-Message-Id: <1372445527-24414-75-git-send-email-kamal@canonical.com>
+Subject: [PATCH 070/105] r8169: fix offloaded tx checksum for small packets.
+Date: Fri, 28 Jun 2013 11:51:32 -0700
+Message-Id: <1372445527-24414-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,77 +31,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: =?UTF-8?q?fran=C3=A7ois=20romieu?= <romieu@fr.zoreil.com>
 
-[ Upstream commit a622260254ee481747cceaaa8609985b29a31565 ]
+[ Upstream commit b423e9ae49d78ea3f53b131c8d5a6087aed16fd6 ]
 
-Daniel Petre reported crashes in icmp_dst_unreach() with following call
-graph:
+8168evl offloaded checksums are wrong since commit
+e5195c1f31f399289347e043d6abf3ffa80f0005 ("r8169: fix 8168evl frame padding.")
+pads small packets to 60 bytes (without ethernet checksum). Typical symptoms
+appear as UDP checksums which are wrong by the count of added bytes.
 
-Daniel found a similar problem mentioned in
- http://lkml.indiana.edu/hypermail/linux/kernel/1007.0/00961.html
+It isn't worth compensating. Let the driver checksum.
 
-And indeed this is the root cause : skb->cb[] contains data fooling IP
-stack.
+Due to the skb length changes, TSO code is moved before the Tx descriptor gets
+written.
 
-We must clear IPCB in ip_tunnel_xmit() sooner in case dst_link_failure()
-is called. Or else skb->cb[] might contain garbage from GSO segmentation
-layer.
-
-A similar fix was tested on linux-3.9, but gre code was refactored in
-linux-3.10. I'll send patches for stable kernels as well.
-
-Many thanks to Daniel for providing reports, patches and testing !
-
-Reported-by: Daniel Petre <daniel.petre@rcs-rds.ro>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Tested-by: Holger Hoffstätte <holger.hoffstaette@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/ip_gre.c | 2 +-
- net/ipv4/ipip.c   | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c | 41 ++++++++++++++++++++++++------------
+ 1 file changed, 27 insertions(+), 14 deletions(-)
 
-diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-index a85062b..e0c1929 100644
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -767,6 +767,7 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
- 		tiph = &tunnel->parms.iph;
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index b64315b..4fa28fe 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -5748,7 +5748,20 @@ err_out:
+ 	return -EIO;
+ }
+ 
+-static inline void rtl8169_tso_csum(struct rtl8169_private *tp,
++static bool rtl_skb_pad(struct sk_buff *skb)
++{
++	if (skb_padto(skb, ETH_ZLEN))
++		return false;
++	skb_put(skb, ETH_ZLEN - skb->len);
++	return true;
++}
++
++static bool rtl_test_hw_pad_bug(struct rtl8169_private *tp, struct sk_buff *skb)
++{
++	return skb->len < ETH_ZLEN && tp->mac_version == RTL_GIGA_MAC_VER_34;
++}
++
++static inline bool rtl8169_tso_csum(struct rtl8169_private *tp,
+ 				    struct sk_buff *skb, u32 *opts)
+ {
+ 	const struct rtl_tx_desc_info *info = tx_desc_info + tp->txd_version;
+@@ -5761,13 +5774,20 @@ static inline void rtl8169_tso_csum(struct rtl8169_private *tp,
+ 	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 		const struct iphdr *ip = ip_hdr(skb);
+ 
++		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
++			return skb_checksum_help(skb) == 0 && rtl_skb_pad(skb);
++
+ 		if (ip->protocol == IPPROTO_TCP)
+ 			opts[offset] |= info->checksum.tcp;
+ 		else if (ip->protocol == IPPROTO_UDP)
+ 			opts[offset] |= info->checksum.udp;
+ 		else
+ 			WARN_ON_ONCE(1);
++	} else {
++		if (unlikely(rtl_test_hw_pad_bug(tp, skb)))
++			return rtl_skb_pad(skb);
+ 	}
++	return true;
+ }
+ 
+ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
+@@ -5788,17 +5808,15 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
+ 		goto err_stop_0;
  	}
  
-+	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	if ((dst = tiph->daddr) == 0) {
- 		/* NBMA tunnel */
+-	/* 8168evl does not automatically pad to minimum length. */
+-	if (unlikely(tp->mac_version == RTL_GIGA_MAC_VER_34 &&
+-		     skb->len < ETH_ZLEN)) {
+-		if (skb_padto(skb, ETH_ZLEN))
+-			goto err_update_stats;
+-		skb_put(skb, ETH_ZLEN - skb->len);
+-	}
+-
+ 	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
+ 		goto err_stop_0;
  
-@@ -912,7 +913,6 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
- 	skb_push(skb, gre_hlen);
- 	skb_reset_network_header(skb);
- 	skb_set_transport_header(skb, sizeof(*iph));
--	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
- 			      IPSKB_REROUTED);
- 	skb_dst_drop(skb);
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index 191fc24..b3fc09d 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -489,6 +489,7 @@ static netdev_tx_t ipip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
- 	if (tos & 1)
- 		tos = old_iph->tos;
++	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(skb));
++	opts[0] = DescOwn;
++
++	if (!rtl8169_tso_csum(tp, skb, opts))
++		goto err_update_stats;
++
+ 	len = skb_headlen(skb);
+ 	mapping = dma_map_single(d, skb->data, len, DMA_TO_DEVICE);
+ 	if (unlikely(dma_mapping_error(d, mapping))) {
+@@ -5810,11 +5828,6 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
+ 	tp->tx_skb[entry].len = len;
+ 	txd->addr = cpu_to_le64(mapping);
  
-+	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	if (!dst) {
- 		/* NBMA tunnel */
- 		if ((rt = skb_rtable(skb)) == NULL) {
-@@ -571,7 +572,6 @@ static netdev_tx_t ipip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
- 	skb->transport_header = skb->network_header;
- 	skb_push(skb, sizeof(struct iphdr));
- 	skb_reset_network_header(skb);
--	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
- 			      IPSKB_REROUTED);
- 	skb_dst_drop(skb);
+-	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(skb));
+-	opts[0] = DescOwn;
+-
+-	rtl8169_tso_csum(tp, skb, opts);
+-
+ 	frags = rtl8169_xmit_frags(tp, skb, opts);
+ 	if (frags < 0)
+ 		goto err_dma_1;
 -- 
 1.8.1.2
 
