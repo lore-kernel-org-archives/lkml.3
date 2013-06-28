@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab3F0X51 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 19:57:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54647 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab3F0X5Z (ORCPT
+	id S1754388Ab3F1ABt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 20:01:49 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46367 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab3F1ABs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 19:57:25 -0400
-Date: Fri, 28 Jun 2013 09:57:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2013-06-27-16-36 uploaded
-Message-Id: <20130628095712.120bec7036284584fd467ee2@canb.auug.org.au>
-In-Reply-To: <20130627233733.BAEB131C3BE@corp2gmr1-1.hot.corp.google.com>
-References: <20130627233733.BAEB131C3BE@corp2gmr1-1.hot.corp.google.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__28_Jun_2013_09_57_12_+1000_2K.=.RcrtCBGukkj"
+	Thu, 27 Jun 2013 20:01:48 -0400
+X-AuditID: 9c930179-b7cafae000004567-41-51ccd26a24a5
+Date: Fri, 28 Jun 2013 09:02:01 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, anton@enomsg.org,
+        kmpark@infradead.org, hyunhee.kim@samsung.com
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130628000201.GB15637@bbox>
+References: <20130626231712.4a7392a7@redhat.com>
+ <20130627150231.2bc00e3efcd426c4beef894c@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627150231.2bc00e3efcd426c4beef894c@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__28_Jun_2013_09_57_12_+1000_2K.=.RcrtCBGukkj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi Andrew,
 
-On Thu, 27 Jun 2013 16:37:33 -0700 akpm@linux-foundation.org wrote:
->
-> The mm-of-the-moment snapshot 2013-06-27-16-36 has been uploaded to
->=20
->    http://www.ozlabs.org/~akpm/mmotm/
->=20
->   include-linux-smph-on_each_cpu-switch-back-to-a-macro.patch
->   arch-c6x-mm-include-asm-uaccessh-to-pass-compiling.patch
->   drivers-dma-pl330c-fix-locking-in-pl330_free_chan_resources.patch
+On Thu, Jun 27, 2013 at 03:02:31PM -0700, Andrew Morton wrote:
+> On Wed, 26 Jun 2013 23:17:12 -0400 Luiz Capitulino <lcapitulino@redhat.com> wrote:
+> 
+> > Currently, an eventfd is notified for the level it's registered for
+> > _plus_ higher levels.
+> > 
+> > This is a problem if an application wants to implement different
+> > actions for different levels. For example, an application might want
+> > to release 10% of its cache on level low, 50% on medium and 100% on
+> > critical. To do this, an application has to register a different
+> > eventfd for each pressure level. However, fd low is always going to
+> > be notified and and all fds are going to be notified on level critical.
+> > 
+> > Strict mode solves this problem by strictly notifiying an eventfd
+> > for the pressure level it registered for. This new mode is optional,
+> > by default we still notify eventfds on higher levels too.
+> > 
+> 
+> It didn't take long for this simple interface to start getting ugly :(
+> And having the fd operate in different modes is ugly.
+> 
+> Can we instead pass the level in the event payload?
 
-Did you mean to drop these three patches from linux-next?
+You mean userland have to look the result of read(2) to confirm what
+current level is and if it's no interest for us, we don't do any reaction.
+If so, userland daemon would receive lots of events which are no interest.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
---Signature=_Fri__28_Jun_2013_09_57_12_+1000_2K.=.RcrtCBGukkj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRzNFgAAoJEECxmPOUX5FEBBQP/1hZnBOg95lcex5YwznOZFui
-T0kjzJ2afJGH2LvdBbUGMOljUrAcDQBK+XCkslrEZG53bSlC6H0klQnQJSzLlChO
-mQ6OnfX0NQdVKtX4aYEmIB2YNL+oyeJgtIoxa4dKy2b/a/Zk87V85kEyJ0Og3tuJ
-TAiqKypCuXjEkC1JokUmY9xgxhLk+jRyb8R0+Prd7ahddsgI27iJUUDw3T38DK8K
-LH2/r/1H19l8mqYCsCo9ctG49NJxrPAZIFc+vh4nZ0ivRPqkB41FF1V9IzDB4RxM
-/XjQcNoyThL19oHCbp8oordfJeT804RFMgdHRbqcZiwve93FPUfUrCWFbtoT1EO9
-stJosQF/oi+doQCoHjnuBcs8SqbXsmDdLoleBagf9GsrX8BW2TB+E+49F/MWyIzI
-ArZE69VWbXo19Wy4Bi/zEgeNZB6bJoNQuT9EeMg+x150V3v7DKjrOtAASGP/cZ/P
-Y8tPrTmR/Mpr2km2F6WUdhcPLqxg0NAiUPIJ975ft62+aps43JQepuducPkP2tli
-smITrYNFzS9UDPKKUQZTeuiuEeWQp/COsESNFnjUwmEWiDKUu3Cw7n/lgoTNA+76
-a6zR58cAw56ParpxVwlQTe7z87VwOTV2dLQNc+ltbR+7nrbnAdc8xTdCS4cmA/Ug
-1RslZOtVYmG7DF4eAOdw
-=XgAV
------END PGP SIGNATURE-----
-
---Signature=_Fri__28_Jun_2013_09_57_12_+1000_2K.=.RcrtCBGukkj--
+-- 
+Kind regards,
+Minchan Kim
