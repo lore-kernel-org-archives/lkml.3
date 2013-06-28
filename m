@@ -1,70 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab3F1JeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:34:12 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33080 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab3F1JeI (ORCPT
+	id S1755377Ab3F1JfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:35:16 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55282 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab3F1JfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:34:08 -0400
-Date: Fri, 28 Jun 2013 10:33:59 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Ankur Raina <Ankur.Raina@kpitcummins.com>
-Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "david.chen@diasemi.com" <david.chen@diasemi.com>
-Message-ID: <20130628093359.GA27646@sirena.org.uk>
-References: <4B6D9C89CD8BA349A71B74CA32C47E5850DA85DF@KCHJEXMB02.kpit.com>
+	Fri, 28 Jun 2013 05:35:13 -0400
+Message-ID: <51CD57F6.9050906@linux.vnet.ibm.com>
+Date: Fri, 28 Jun 2013 15:01:34 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZU25/NGocqLNwEGF"
-Content-Disposition: inline
-In-Reply-To: <4B6D9C89CD8BA349A71B74CA32C47E5850DA85DF@KCHJEXMB02.kpit.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [patch v1 1/1]regulator: fix for DA9055 regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [RFC PATCH] cpu hotplug: rework cpu_hotplug locking (was [LOCKDEP]
+ cpufreq: possible circular locking dependency detected)
+References: <20130625211544.GA2270@swordfish> <CAKohpo=ij+LTB80FtVFQZa_4uh-fceG80GBhGnhbxKio7N-Zuw@mail.gmail.com> <20130628074403.GA2201@swordfish>
+In-Reply-To: <20130628074403.GA2201@swordfish>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062809-1396-0000-0000-00000330154F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/28/2013 01:14 PM, Sergey Senozhatsky wrote:
+> On (06/28/13 10:13), Viresh Kumar wrote:
+>> On 26 June 2013 02:45, Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+>>>
+>>> [   60.277396] ======================================================
+>>> [   60.277400] [ INFO: possible circular locking dependency detected ]
+>>> [   60.277407] 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744 Not tainted
+>>> [   60.277411] -------------------------------------------------------
+>>> [   60.277417] bash/2225 is trying to acquire lock:
+>>> [   60.277422]  ((&(&j_cdbs->work)->work)){+.+...}, at: [<ffffffff810621b5>] flush_work+0x5/0x280
+>>> [   60.277444]
+>>> but task is already holding lock:
+>>> [   60.277449]  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
+>>> [   60.277465]
+>>> which lock already depends on the new lock.
+>>
+>> Hi Sergey,
+>>
+>> Can you try reverting this patch?
+>>
+>> commit 2f7021a815f20f3481c10884fe9735ce2a56db35
+>> Author: Michael Wang <wangyun@linux.vnet.ibm.com>
+>> Date:   Wed Jun 5 08:49:37 2013 +0000
+>>
+>>     cpufreq: protect 'policy->cpus' from offlining during __gov_queue_work()
+>>
+> 
+> Hello,
+> Yes, this helps, of course, but at the same time it returns the previous
+> problem -- preventing cpu_hotplug in some places.
+> 
+> 
+> I have a bit different (perhaps naive) RFC patch and would like to hear
+> comments.
+> 
+> 
+> 
+> The idead is to brake existing lock dependency chain by not holding
+> cpu_hotplug lock mutex across the calls. In order to detect active
+> refcount readers or active writer, refcount now may have the following
+> values:
+> 
+> -1: active writer -- only one writer may be active, readers are blocked
+>  0: no readers/writer
+>> 0: active readers -- many readers may be active, writer is blocked
+> 
+> "blocked" reader or writer goes to wait_queue. as soon as writer finishes
+> (refcount becomes 0), it wakeups all existing processes in a wait_queue.
+> reader perform wakeup call only when it sees that pending writer is present
+> (active_writer is not NULL).
+> 
+> cpu_hotplug lock now only required to protect refcount cmp, inc, dec
+> operations so it can be changed to spinlock.
+> 
 
---ZU25/NGocqLNwEGF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Its best to avoid changing the core infrastructure in order to fix some
+call-site, unless that scenario is really impossible to handle with the
+current infrastructure.
 
-On Fri, Jun 28, 2013 at 07:05:03AM +0000, Ankur Raina wrote:
-> This patch adds support for usage of GPIO's by multiple bucks and regulators
-> of DA9055 for enable-disable and voltage set selection.Without this patch regulator
-> control through GPIO would fail for more than one regulator/buck.
+I have a couple of suggestions below, to solve this issue, without touching
+the core hotplug code:
 
-This needs a much better patch description.  What specifically is the
-bug that you are trying to fix here?
+You can perhaps try cancelling the work item in two steps:
+  a. using cancel_delayed_work() under CPU_DOWN_PREPARE
+  b. using cancel_delayed_work_sync() under CPU_POST_DEAD
 
---ZU25/NGocqLNwEGF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And of course, destroy the resources associated with that work (like
+the timer_mutex) only after the full tear-down.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Or perhaps you might find a way to perform the tear-down in just one step
+at the CPU_POST_DEAD stage. Whatever works correctly.
 
-iQIcBAEBAgAGBQJRzViEAAoJELSic+t+oim91P4P/RvyE+7n03hzw/KEDEhCg5xp
-ZGY073NqagbKYUtLbRDpcYTJQjxvMGUyak49xbaxtakMFiWvA5MYt8eoJTtb8eut
-pWhTqO1eMq2+IjOB0SLlHPE62Qi2VnYexqakkIICDDkxVsF3s67Tud2W9yE13+83
-Fw/QzVZvrXPCu6XFy8qZh5ALjwltiG7yLHyrUM+WTFpTWMaBHhFQArVwLd5W/spC
-q+puOPU0VwYsEYd0bGt/Fd38vrVwMfTS6rYpvy4qIwN5i9V5msXgYmBo+a+b/YfF
-S9WL0xd1CB08mEV1rdeAV4yqdrEmOKx9VnsrcsLUqsaquhR09jh0OSUVmpt9hJl/
-R/hpFybvXMxRSgqAsWhZtA6kSKepU+nDX8+oD+pWSZMB7cUMGO9odv06HFD+Mw+n
-DJi/uW41q/T9gFWEi7hz/zDLSx5o+Ai5FoAus3E26gYplJNf9o/lSazloVPnnAhF
-57NrdO8jmv6z9A0e5HChXNgihJw7ubVfIuB01nV/jivkHgpHNmG0cZWZhkzg4EQa
-qdaeHJBX83pXk0z4vbdr9sRRDCevlskdjurk7cLoBX/zhYd8VQGc9f82EyaiCPIH
-pX6/3j2Yy971pkrLMs1YB2uy3aloqEf8JKEIiRhxgAC2842RVcDBLIKEkjwLhPyx
-8S/VD0hK0fIsbfgekHGh
-=pY2S
------END PGP SIGNATURE-----
+The key point here is that the core CPU hotplug code provides us with the
+CPU_POST_DEAD stage, where the hotplug lock is _not_ held. Which is exactly
+what you want in solving the issue with cpufreq.
 
---ZU25/NGocqLNwEGF--
+Regards,
+Srivatsa S. Bhat
+
