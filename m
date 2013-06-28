@@ -1,89 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab3F1SCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:02:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab3F1SCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:02:10 -0400
-Date: Fri, 28 Jun 2013 14:01:55 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Tim Hockin <thockin@hockin.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>
-Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
-Message-ID: <20130628180155.GD16483@redhat.com>
-References: <20130625000118.GT1918@mtj.dyndns.org>
- <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
- <20130626212047.GB4536@htj.dyndns.org>
- <1372311907.5871.78.camel@marge.simpson.net>
- <20130627180143.GD5599@mtj.dyndns.org>
- <1372391198.5989.110.camel@marge.simpson.net>
- <20130628040930.GC2500@htj.dyndns.org>
- <1372394950.5989.128.camel@marge.simpson.net>
- <20130628050138.GD2500@htj.dyndns.org>
- <20130628150513.GD5125@dhcp22.suse.cz>
+	id S1752112Ab3F1SCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:02:35 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:54635 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab3F1SCe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 14:02:34 -0400
+Message-ID: <51CDCFA3.9080101@hds.com>
+Date: Fri, 28 Jun 2013 14:02:11 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130628150513.GD5125@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, x86@kernel.org, rostedt@goodmis.org,
+        hpa@zytor.com
+CC: mingo@elte.hu, tglx@linutronix.de
+Subject: [PATCH -tip] x86,trace: Add irq_enter/exit() in smp_trace_reschedule_interrupt()
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-28_08:2013-06-28,2013-06-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1306280141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 05:05:13PM +0200, Michal Hocko wrote:
-> On Thu 27-06-13 22:01:38, Tejun Heo wrote:
-> > Hello, Mike.
-> > 
-> > On Fri, Jun 28, 2013 at 06:49:10AM +0200, Mike Galbraith wrote:
-> > > I always thought that was a very cool feature, mkdir+echo, poof done.
-> > > Now maybe that interface is suboptimal for serious usage, but it makes
-> > > the things usable via dirt simple scripts, very flexible, nice.
-> > 
-> > Oh, that in itself is not bad.  I mean, if you're root, it's pretty
-> > easy to play with and that part is fine.  But combined with the
-> > hierarchical nature of cgroup and file permissions, it encourages
-> > people to "deligate" subdirectories to less previledged domains,
-> 
-> OK, this really depends on what you expose to non-root users. I have
-> seen use cases where admin prepares top-level which is root-only but
-> it allows creating sub-groups which are under _full_ control of the
-> subdomain. This worked nicely for memcg for example because hard limit,
-> oom handling and other knobs are hierarchical so the subdomain cannot
-> overwrite what admin has said.
-> 
-> > which
-> > in turn leads to normal binaries to manipulate them directly, which is
-> > where the horror begins.  We end up exposing control knobs which are
-> > tightly coupled to kernel implementation details right into lay
-> > binaries and scripts directly used by end users.
-> >
-> > I think this is the first time this happened, which is probably why
-> > nobody really noticed the mess earlier.
-> > 
-> > Anyways, if you're root, you can keep doing whatever you want.
-> 
-> OK, so libcgroup's rules daemon will still work and place my tasks in
-> appropriate cgroups?
+Reschedule vector tracepoints may be called in cpu idle state.
+This causes lockdep check warning below.
 
-Do you use that daemon in practice? For user session logins, I think
-systemd has plans to put user sessions in a cgroup (kind of making
-pam_cgroup redundant). 
+The tracepoint requires rcu but for accuracy it also
+requires irq_enter() (tracepoints record the irq context), thus, the
+tracepoint interrupt handler should be calling irq_enter() and not
+rcu_irq_enter() (irq_enter() calls rcu_irq_enter()).
 
-Other functionality rulesengined was providing moving tasks automatically
-in a cgroup based on executable name. I think that was racy and not
-many people had liked it.
+So, add irq_enter/exit() to smp_trace_reschedule_interrupt()
+with common pre/post processing functions, smp_entering_irq()
+and exiting_irq() (exiting_irq() calls just irq_exit()
+ in arch/x86/include/asm/apic.h),
+because these can be shared among reschedule, call_function,
+and call_function_single vectors.
 
-IIUC, systemd can't disable access to cgroupfs from other utilities.
-So most likely rulesengined should contine to work. But having both
-systemd and libcgroup might not make much sense though.
+[   50.720557] Testing event reschedule_exit:
+[   50.721349]
+[   50.721502] ===============================
+[   50.721835] [ INFO: suspicious RCU usage. ]
+[   50.722169] 3.10.0-rc6-00004-gcf910e8 #190 Not tainted
+[   50.722582] -------------------------------
+[   50.722915] /c/kernel-tests/src/linux/arch/x86/include/asm/trace/irq_vectors.h:50 suspicious rcu_dereference_check() usage!
+[   50.723770]
+[   50.723770] other info that might help us debug this:
+[   50.723770]
+[   50.724385]
+[   50.724385] RCU used illegally from idle CPU!
+[   50.724385] rcu_scheduler_active = 1, debug_locks = 0
+[   50.725232] RCU used illegally from extended quiescent state!
+[   50.725690] no locks held by swapper/0/0.
+[   50.726010]
+[   50.726010] stack backtrace:
+[   50.726359] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-rc6-00004-gcf910e8 #190
+[   50.726965] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
 
-Thanks
-Vivek
+[   50.727417]  00000001 00000001 79c53f04 798bd9f9 79c53f2c 79077a70 79b412c6 79b41fd1
+[   50.728159]  00000001 00000000 79c5ef8c 87147c58 00000000 79c55800 79c53f38 79010b65
+[   50.728849]  79c52000 79c53f7c 798c720e 79c52000 79c5ef8c 00000004 00000000 79c55800
+[   50.729532] Call Trace:
+[   50.729730]  [<798bd9f9>] dump_stack+0x16/0x18
+[   50.730072]  [<79077a70>] lockdep_rcu_suspicious+0xf2/0xfa
+[   50.730498]  [<79010b65>] smp_trace_reschedule_interrupt+0x1c8/0x1d0
+[   50.730979]  [<798c720e>] trace_reschedule_interrupt+0x36/0x3c
+[   50.731214]  [<7901875f>] ? native_safe_halt+0x5/0x7
+[   50.731214]  [<790085cc>] default_idle+0xb1/0x1e2
+[   50.731214]  [<79008d05>] arch_cpu_idle+0xe/0x10
+[   50.731214]  [<79069ddf>] cpu_startup_entry+0x1e4/0x2c3
+[   50.731214]  [<798adb34>] rest_init+0x12c/0x132
+[   50.731214]  [<798ada08>] ? __read_lock_failed+0x14/0x14
+[   50.731214]  [<79d309e4>] start_kernel+0x38d/0x393
+[   50.731214]  [<79d30489>] ? repair_env_string+0x51/0x51
+[   50.731214]  [<79d302c3>] i386_start_kernel+0x79/0x7d
+[   50.771947] OK
+[   50.772099] Testing event reschedule_entry: OK
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/kernel/smp.c |   29 ++++++++++++++++++-----------
+ 1 files changed, 18 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index f4fe0b8..cdaa347 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -265,23 +265,30 @@ void smp_reschedule_interrupt(struct pt_regs *regs)
+ 	 */
+ }
+ 
+-void smp_trace_reschedule_interrupt(struct pt_regs *regs)
++static inline void smp_entering_irq(void)
+ {
+ 	ack_APIC_irq();
++	irq_enter();
++}
++
++void smp_trace_reschedule_interrupt(struct pt_regs *regs)
++{
++	/*
++	 * Need to call irq_enter() before calling the trace point.
++	 * __smp_reschedule_interrupt() calls irq_enter/exit() too (in
++	 * scheduler_ipi(). This is OK, since those functions are allowed
++	 * to nest.
++	 */
++	smp_entering_irq();
+ 	trace_reschedule_entry(RESCHEDULE_VECTOR);
+ 	__smp_reschedule_interrupt();
+ 	trace_reschedule_exit(RESCHEDULE_VECTOR);
++	exiting_irq();
+ 	/*
+ 	 * KVM uses this interrupt to force a cpu out of guest mode
+ 	 */
+ }
+ 
+-static inline void call_function_entering_irq(void)
+-{
+-	ack_APIC_irq();
+-	irq_enter();
+-}
+-
+ static inline void __smp_call_function_interrupt(void)
+ {
+ 	generic_smp_call_function_interrupt();
+@@ -290,14 +297,14 @@ static inline void __smp_call_function_interrupt(void)
+ 
+ void smp_call_function_interrupt(struct pt_regs *regs)
+ {
+-	call_function_entering_irq();
++	smp_entering_irq();
+ 	__smp_call_function_interrupt();
+ 	exiting_irq();
+ }
+ 
+ void smp_trace_call_function_interrupt(struct pt_regs *regs)
+ {
+-	call_function_entering_irq();
++	smp_entering_irq();
+ 	trace_call_function_entry(CALL_FUNCTION_VECTOR);
+ 	__smp_call_function_interrupt();
+ 	trace_call_function_exit(CALL_FUNCTION_VECTOR);
+@@ -312,14 +319,14 @@ static inline void __smp_call_function_single_interrupt(void)
+ 
+ void smp_call_function_single_interrupt(struct pt_regs *regs)
+ {
+-	call_function_entering_irq();
++	smp_entering_irq();
+ 	__smp_call_function_single_interrupt();
+ 	exiting_irq();
+ }
+ 
+ void smp_trace_call_function_single_interrupt(struct pt_regs *regs)
+ {
+-	call_function_entering_irq();
++	smp_entering_irq();
+ 	trace_call_function_single_entry(CALL_FUNCTION_SINGLE_VECTOR);
+ 	__smp_call_function_single_interrupt();
+ 	trace_call_function_single_exit(CALL_FUNCTION_SINGLE_VECTOR);
+-- 
+1.7.1
+
