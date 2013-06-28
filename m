@@ -1,141 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab3F1IeQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 04:34:16 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:43132 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab3F1IeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 04:34:13 -0400
-Message-ID: <51CD4A7B.7060907@redhat.com>
-Date: Fri, 28 Jun 2013 10:34:03 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: kvm-devel <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Karen Noel <knoel@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: watchdog: print stolen time increment at softlockup detection
-References: <20130628025723.GA12719@amt.cnet>
-In-Reply-To: <20130628025723.GA12719@amt.cnet>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755026Ab3F1Ihe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 04:37:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5632 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754825Ab3F1Ihb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 04:37:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,957,1363158000"; 
+   d="scan'208";a="323821146"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH V3 00/15] perf tools: some fixes and tweaks
+Date: Fri, 28 Jun 2013 11:43:11 +0300
+Message-Id: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 28/06/2013 04:57, Marcelo Tosatti ha scritto:
-> 
-> One possibility for a softlockup report in a Linux VM, is that the host
-> system is overcommitted to the point where the watchdog task is unable
-> to make progress (unable to touch the watchdog).
-> 
-> Maintain the increment in stolen time for the period of 
-> softlockup threshold detection (20 seconds by the default), 
-> and report this increment in the softlockup message.
-> 
-> Overcommitment is then indicated by a large stolen time increment,
-> accounting for more than, or for a significant percentage of the
-> softlockup threshold.
-> 
-> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 05039e3..ed09d58 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -34,6 +34,8 @@ int __read_mostly watchdog_thresh = 10;
->  static int __read_mostly watchdog_disabled;
->  static u64 __read_mostly sample_period;
->  
-> +#define SOFT_INTRS_PER_PERIOD 5
-> +
->  static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
->  static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
->  static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
-> @@ -127,9 +129,51 @@ static void set_sample_period(void)
->  	 * and hard thresholds) to increment before the
->  	 * hardlockup detector generates a warning
->  	 */
-> -	sample_period = get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
-> +	sample_period = get_softlockup_thresh() *
-> +			((u64)NSEC_PER_SEC / SOFT_INTRS_PER_PERIOD);
->  }
->  
-> +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
-> +struct steal_clock_record {
-> +	u64 prev_stolen_time;
-> +	u64 stolen_time[SOFT_INTRS_PER_PERIOD];
-> +	int idx;
-> +};
-> +
-> +static DEFINE_PER_CPU(struct steal_clock_record, steal_record);
-> +static void record_steal_time(void)
-> +{
-> +	struct steal_clock_record *r;
-> +	int cpu = smp_processor_id();
-> +	u64 steal_time;
-> +	r = &per_cpu(steal_record, cpu);
-> +
-> +	steal_time = paravirt_steal_clock(cpu);
-> +	r->stolen_time[r->idx] = steal_time - r->prev_stolen_time;
-> +	r->idx++;
-> +	if (r->idx == SOFT_INTRS_PER_PERIOD)
-> +		r->idx = 0;
-> +	r->prev_stolen_time = steal_time;
-> +}
-> +
-> +static unsigned int get_accumulated_steal(int cpu)
-> +{
-> +	int idx;
-> +	u64 t = 0;
-> +	struct steal_clock_record *r = &per_cpu(steal_record, cpu);
-> +
-> +	for (idx = 0; idx < SOFT_INTRS_PER_PERIOD; idx++)
-> +		t += r->stolen_time[idx];
-> +
-> +	do_div(t, 1000000);
-> +
-> +	return t;
-> +}
-> +
-> +#else
-> +static void record_steal_time(void) { return; }
-> +#endif
-> +
->  /* Commands for resetting the watchdog */
->  static void __touch_watchdog(void)
->  {
-> @@ -271,6 +315,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  	/* kick the hardlockup detector */
->  	watchdog_interrupt_count();
->  
-> +	/* record steal time */
-> +	record_steal_time();
-> +
->  	/* kick the softlockup detector */
->  	wake_up_process(__this_cpu_read(softlockup_watchdog));
->  
-> @@ -316,6 +363,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  		printk(KERN_EMERG "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
->  			smp_processor_id(), duration,
->  			current->comm, task_pid_nr(current));
-> +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
-> +		printk(KERN_EMERG "soft lockup stolen time = %ums\n",
-> +			get_accumulated_steal(smp_processor_id()));
+Hi
 
-Perhaps print this only if nonzero (so that it doesn't print it on bare
-metal)?  Then you can remove the #ifdef too, it will be optimized away
-by the compiler for !CONFIG_PARAVIRT_TIME_ACCOUNTING.
+Here are some fixes and tweaks to perf tools (version 3).
 
-Paolo
+Changes in V3:
+	perf tools: add pid to struct thread
+		Split into 2 patches
+	perf tools: fix ppid in thread__fork()
+		Dropped for now
 
-> +#endif
->  		print_modules();
->  		print_irqtrace_events(current);
->  		if (regs)
-> 
+Changes in V2:
+	perf tools: fix missing tool parameter
+		Fixed one extra occurrence
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Made "freeing" code into a new function
+	perf tools: validate perf event header size
+		Corrected byte-swapping
+	perf tools: allow non-matching sample types
+		Added comments
+		Fixed id_pos calculation
+		id_pos/is_pos updated whenever sample_type changes
+		Removed perf_evlist__sample_type()
+		Added __perf_evlist__combined_sample_type()
+		Added perf_evlist__combined_sample_type()
+		Added perf_evlist__make_sample_types_compatible()
+	Added ack's to patches acked by Jiri Olsa
 
+
+Adrian Hunter (15):
+      perf tools: remove unused parameter
+      perf tools: fix missing tool parameter
+      perf tools: fix missing 'finished_round'
+      perf tools: fix parse_events_terms() segfault on error path
+      perf tools: fix new_term() missing free on error path
+      perf tools: fix parse_events_terms() freeing local variable on error path
+      perf tools: add const specifier to perf_pmu__find name parameter
+      perf tools: tidy duplicated munmap code
+      perf tools: validate perf event header size
+      perf tools: add debug prints
+      perf tools: fix symbol_conf.nr_events
+      perf tools: allow non-matching sample types
+      perf tools: struct thread has a tid not a pid
+      perf tools: add pid to struct thread
+      perf tools: change "machine" functions to set thread pid
+
+ tools/perf/builtin-inject.c    |  40 +++++-----
+ tools/perf/builtin-kmem.c      |   2 +-
+ tools/perf/builtin-report.c    |   2 +-
+ tools/perf/builtin-sched.c     |  12 +--
+ tools/perf/builtin-trace.c     |   4 +-
+ tools/perf/ui/browsers/hists.c |   6 +-
+ tools/perf/util/event.c        |   2 +-
+ tools/perf/util/event.h        |  14 ++++
+ tools/perf/util/evlist.c       | 170 +++++++++++++++++++++++++++++++++++------
+ tools/perf/util/evlist.h       |   8 +-
+ tools/perf/util/evsel.c        | 116 +++++++++++++++++++++++++++-
+ tools/perf/util/evsel.h        |  10 +++
+ tools/perf/util/header.c       |   8 +-
+ tools/perf/util/header.h       |   6 +-
+ tools/perf/util/machine.c      |  57 ++++++++++----
+ tools/perf/util/machine.h      |   8 +-
+ tools/perf/util/parse-events.c |  11 ++-
+ tools/perf/util/parse-events.h |   1 +
+ tools/perf/util/pmu.c          |  16 ++--
+ tools/perf/util/pmu.h          |   2 +-
+ tools/perf/util/session.c      |  33 +++++---
+ tools/perf/util/sort.c         |   6 +-
+ tools/perf/util/thread.c       |  11 +--
+ tools/perf/util/thread.h       |   5 +-
+ tools/perf/util/tool.h         |   9 +--
+ 25 files changed, 441 insertions(+), 118 deletions(-)
+
+
+Regards
+Adrian
