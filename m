@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab3F1PCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:02:17 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:28277 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab3F1PCQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:02:16 -0400
-Date: Fri, 28 Jun 2013 11:01:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCHv6 0/5] xen: maintain an accurate persistent clock in more
- cases
-Message-ID: <20130628150158.GA5035@phenom.dumpdata.com>
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com>
- <alpine.DEB.2.02.1306281510180.4013@ionos.tec.linutronix.de>
+	id S1755261Ab3F1PFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:05:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42292 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750961Ab3F1PFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 11:05:23 -0400
+Date: Fri, 28 Jun 2013 17:05:13 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mike Galbraith <bitbucket@online.de>, Tim Hockin <thockin@hockin.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130628150513.GD5125@dhcp22.suse.cz>
+References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+ <20130625000118.GT1918@mtj.dyndns.org>
+ <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+ <20130626212047.GB4536@htj.dyndns.org>
+ <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627180143.GD5599@mtj.dyndns.org>
+ <1372391198.5989.110.camel@marge.simpson.net>
+ <20130628040930.GC2500@htj.dyndns.org>
+ <1372394950.5989.128.camel@marge.simpson.net>
+ <20130628050138.GD2500@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306281510180.4013@ionos.tec.linutronix.de>
+In-Reply-To: <20130628050138.GD2500@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 03:14:42PM +0200, Thomas Gleixner wrote:
-> On Thu, 27 Jun 2013, David Vrabel wrote:
-> > These series fixes the above limitations and depends on "x86: increase
-> > precision of x86_platform.get/set_wallclock()" which was previously
-> > posted.
+On Thu 27-06-13 22:01:38, Tejun Heo wrote:
+> Hello, Mike.
 > 
-> So I'd like to merge that in the following way:
+> On Fri, Jun 28, 2013 at 06:49:10AM +0200, Mike Galbraith wrote:
+> > I always thought that was a very cool feature, mkdir+echo, poof done.
+> > Now maybe that interface is suboptimal for serious usage, but it makes
+> > the things usable via dirt simple scripts, very flexible, nice.
 > 
-> I pick up patches 1-3 and stick them into tip timers/for-xen and merge
-> that branch into timers/core. When picking up 1/6, I'll drop the xen
-> part of that, so timers/core will not hold any xen specific bits.
-> 
-> Then the xen folks can pull timers/for-xen and apply the xen specific
-> stuff on top.
+> Oh, that in itself is not bad.  I mean, if you're root, it's pretty
+> easy to play with and that part is fine.  But combined with the
+> hierarchical nature of cgroup and file permissions, it encourages
+> people to "deligate" subdirectories to less previledged domains,
 
-Wouldn't it be easier for you to pick the "xen part of that" as well?
-I am OK with you doing that and it all going through your tree.
+OK, this really depends on what you expose to non-root users. I have
+seen use cases where admin prepares top-level which is root-only but
+it allows creating sub-groups which are under _full_ control of the
+subdomain. This worked nicely for memcg for example because hard limit,
+oom handling and other knobs are hierarchical so the subdomain cannot
+overwrite what admin has said.
 
-But if it is easier for you to do the way you said - I can do that too.
-Just tell me when to pull timers/for-xen
+> which
+> in turn leads to normal binaries to manipulate them directly, which is
+> where the horror begins.  We end up exposing control knobs which are
+> tightly coupled to kernel implementation details right into lay
+> binaries and scripts directly used by end users.
+>
+> I think this is the first time this happened, which is probably why
+> nobody really noticed the mess earlier.
 > 
-> Thanks,
-> 
-> 	tglx
-> 
->  
+> Anyways, if you're root, you can keep doing whatever you want.
+
+OK, so libcgroup's rules daemon will still work and place my tasks in
+appropriate cgroups?
+
+This is not quite in par with "libcgroup is dead and others have to
+migrate to systemd as well" statements from the link posted earlier.
+I really do not think that _any_ central agent will understand my
+requirements and needs so I need a way to talk to cgroupfs somehow - I
+have used libcgroups so far but touching cgroupfs is quite convinient
+as well.
+
+And the systemd, with its history of eating projects and not caring much
+about their previous users who are not willing to jump in to the systemd
+car, doesn't sound like a good place where to place the new interface to
+me.
+
+[...]
+-- 
+Michal Hocko
+SUSE Labs
