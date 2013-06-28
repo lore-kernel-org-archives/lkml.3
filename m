@@ -1,65 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3F1KDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:03:15 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:42922 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755130Ab3F1KDN (ORCPT
+	id S1755376Ab3F1KEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:04:44 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:51573 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab3F1KEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:03:13 -0400
+	Fri, 28 Jun 2013 06:04:42 -0400
+Date: Fri, 28 Jun 2013 13:04:26 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [RFC PATCH] cpu hotplug: rework cpu_hotplug locking (was
+ [LOCKDEP] cpufreq: possible circular locking dependency detected)
+Message-ID: <20130628100426.GA2228@swordfish.minsk.epam.com>
+References: <20130625211544.GA2270@swordfish>
+ <CAKohpo=ij+LTB80FtVFQZa_4uh-fceG80GBhGnhbxKio7N-Zuw@mail.gmail.com>
+ <20130628074403.GA2201@swordfish>
+ <51CD57F6.9050906@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <51CB5176.5000404@wwwdotorg.org>
-References: <1372112849-670-1-git-send-email-dh.herrmann@gmail.com>
-	<1372112849-670-2-git-send-email-dh.herrmann@gmail.com>
-	<51CB5176.5000404@wwwdotorg.org>
-Date: Fri, 28 Jun 2013 12:03:11 +0200
-Message-ID: <CANq1E4TScD2EvGS-nah=QACV+JmxYhYQRNVdRe8TSZzJD6UJ7w@mail.gmail.com>
-Subject: Re: [RFC 1/6] fbdev: simplefb: add init through platform_data
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CD57F6.9050906@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On (06/28/13 15:01), Srivatsa S. Bhat wrote:
+> On 06/28/2013 01:14 PM, Sergey Senozhatsky wrote:
+> > On (06/28/13 10:13), Viresh Kumar wrote:
+> >> On 26 June 2013 02:45, Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+> >>>
+> >>> [   60.277396] ======================================================
+> >>> [   60.277400] [ INFO: possible circular locking dependency detected ]
+> >>> [   60.277407] 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744 Not tainted
+> >>> [   60.277411] -------------------------------------------------------
+> >>> [   60.277417] bash/2225 is trying to acquire lock:
+> >>> [   60.277422]  ((&(&j_cdbs->work)->work)){+.+...}, at: [<ffffffff810621b5>] flush_work+0x5/0x280
+> >>> [   60.277444]
+> >>> but task is already holding lock:
+> >>> [   60.277449]  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
+> >>> [   60.277465]
+> >>> which lock already depends on the new lock.
+> >>
+> >> Hi Sergey,
+> >>
+> >> Can you try reverting this patch?
+> >>
+> >> commit 2f7021a815f20f3481c10884fe9735ce2a56db35
+> >> Author: Michael Wang <wangyun@linux.vnet.ibm.com>
+> >> Date:   Wed Jun 5 08:49:37 2013 +0000
+> >>
+> >>     cpufreq: protect 'policy->cpus' from offlining during __gov_queue_work()
+> >>
+> > 
+> > Hello,
+> > Yes, this helps, of course, but at the same time it returns the previous
+> > problem -- preventing cpu_hotplug in some places.
+> > 
+> > 
+> > I have a bit different (perhaps naive) RFC patch and would like to hear
+> > comments.
+> > 
+> > 
+> > 
+> > The idead is to brake existing lock dependency chain by not holding
+> > cpu_hotplug lock mutex across the calls. In order to detect active
+> > refcount readers or active writer, refcount now may have the following
+> > values:
+> > 
+> > -1: active writer -- only one writer may be active, readers are blocked
+> >  0: no readers/writer
+> >> 0: active readers -- many readers may be active, writer is blocked
+> > 
+> > "blocked" reader or writer goes to wait_queue. as soon as writer finishes
+> > (refcount becomes 0), it wakeups all existing processes in a wait_queue.
+> > reader perform wakeup call only when it sees that pending writer is present
+> > (active_writer is not NULL).
+> > 
+> > cpu_hotplug lock now only required to protect refcount cmp, inc, dec
+> > operations so it can be changed to spinlock.
+> > 
+> 
+> Its best to avoid changing the core infrastructure in order to fix some
+> call-site, unless that scenario is really impossible to handle with the
+> current infrastructure.
+> 
+> I have a couple of suggestions below, to solve this issue, without touching
+> the core hotplug code:
+> 
+> You can perhaps try cancelling the work item in two steps:
+>   a. using cancel_delayed_work() under CPU_DOWN_PREPARE
+>   b. using cancel_delayed_work_sync() under CPU_POST_DEAD
+> 
+> And of course, destroy the resources associated with that work (like
+> the timer_mutex) only after the full tear-down.
+> 
+> Or perhaps you might find a way to perform the tear-down in just one step
+> at the CPU_POST_DEAD stage. Whatever works correctly.
+> 
+> The key point here is that the core CPU hotplug code provides us with the
+> CPU_POST_DEAD stage, where the hotplug lock is _not_ held. Which is exactly
+> what you want in solving the issue with cpufreq.
+> 
 
-On Wed, Jun 26, 2013 at 10:39 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/24/2013 04:27 PM, David Herrmann wrote:
->> If we create proper platform-devices in x86 boot-code, we can use simplefb
->> for VBE or EFI framebuffers, too. However, there is normally no OF support
->> so we introduce a platform_data object so x86 boot-code can pass the
->> paramaters via plain old platform-data.
->>
->> This also removes the OF dependency as it is not needed. The headers
->> provide proper dummies for the case OF is disabled.
->>
->> Furthermore, we move the FORMAT-definitions to the common platform header
->> so initialization code can use it to transform "struct screen_info" to
->> the right format-name.
->
->> diff --git a/include/linux/platform_data/simplefb.h b/include/linux/platform_data/simplefb.h
->
->> +/* the framebuffer size and location is available as IORESOURCE_MEM */
->> +struct simplefb_platform_data {
->> +     u32 width;
->> +     u32 height;
->> +     u32 stride;
->> +     char format[64];
->> +};
->
-> Any reason not to make format:
->
-> const char *format;
->
-> You should be able to initialize that just as easily in platform code,
-> either as static data or at runtime, I think.
+Thanks for your ideas, I'll take a look.
 
-That makes sense. I fixed it up.
+cpu_hotplug mutex seems to be a troubling part in several places, not only
+cpufreq. for example:
+	https://lkml.org/lkml/2012/12/20/357
 
-Thanks
-David
+
+	-ss
+
+> Regards,
+> Srivatsa S. Bhat
+> 
