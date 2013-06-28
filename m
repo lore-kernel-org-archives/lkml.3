@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab3F1HQZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 03:16:25 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:33358 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713Ab3F1HQX (ORCPT
+	id S1754797Ab3F1HVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 03:21:46 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:6305 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752072Ab3F1HVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 03:16:23 -0400
-Date: Fri, 28 Jun 2013 09:16:14 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [GIT PULL] s390 patches for the 3.9-rc6
-Message-ID: <20130628091614.1fb04baa@mschwide>
-In-Reply-To: <CACxGe6ujRoZkB9V6L_Zi1pVoaRganMDfZ70RKJJP1pF-NGNv=A@mail.gmail.com>
-References: <20130403172534.528d04c5@mschwide>
-	<CACxGe6sYM8QPB-ZZkgB0+f81CZHULPi5zPAsWb5dzHiRgU+w6Q@mail.gmail.com>
-	<20130625141508.6c391fd8@mschwide>
-	<CACxGe6s3RqOkf=M4zwpJGEEVa9XjJvP2q5xeLKewGo6np5C-3g@mail.gmail.com>
-	<20130625151151.73aaba28@mschwide>
-	<CACxGe6uOf+TONiCu27w9TsXmo2VVYXKS1+RZckAtxAdshtPDgQ@mail.gmail.com>
-	<20130625161202.4d0a0075@mschwide>
-	<CACxGe6ujRoZkB9V6L_Zi1pVoaRganMDfZ70RKJJP1pF-NGNv=A@mail.gmail.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062807-8372-0000-0000-00000670D388
+	Fri, 28 Jun 2013 03:21:45 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtENAL04zVF5LB/8/2dsb2JhbABbgwm6XYUhBAGBAxd0giMBAQQBJxMcIwULCAMYCSUPBSUDIRMbh20Fu10WjiKBHQeDAmMDl0SRRoMjKoEuJA
+Date: Fri, 28 Jun 2013 17:21:41 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130628072141.GB9047@dastard>
+References: <20130624173510.GA1321@redhat.com>
+ <20130625153520.GA7784@redhat.com>
+ <20130626191853.GA29049@redhat.com>
+ <20130627002255.GA16553@redhat.com>
+ <20130627075543.GA32195@dastard>
+ <20130627143055.GA1000@redhat.com>
+ <20130628011843.GD32195@dastard>
+ <CA+55aFze-=6e_P1syCs=3b6-xj-itVyZKvpejqBR83gA5tV+4w@mail.gmail.com>
+ <20130628035437.GB29338@dastard>
+ <CA+55aFyZYsbMpP+6dkdkhdDn9gpTx0dkv25MUtcnswer_a2x9w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyZYsbMpP+6dkdkhdDn9gpTx0dkv25MUtcnswer_a2x9w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Tue, 25 Jun 2013 15:18:21 +0100
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> On Tue, Jun 25, 2013 at 3:12 PM, Martin Schwidefsky
-> <schwidefsky@de.ibm.com> wrote:
-> > On Tue, 25 Jun 2013 14:30:20 +0100
-> > Grant Likely <grant.likely@secretlab.ca> wrote:
+On Thu, Jun 27, 2013 at 07:59:50PM -1000, Linus Torvalds wrote:
+> On Thu, Jun 27, 2013 at 5:54 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > On Thu, Jun 27, 2013 at 04:54:53PM -1000, Linus Torvalds wrote:
+> >>
+> >> So what made it all start happening now? I don't recall us having had
+> >> these kinds of issues before..
 > >
-> >> Have you looked at irq_domain? It was created to solve that exact
-> >> problem. irq_descs can get allocated dynamically as irqs are
-> >> requested.
+> > Not sure - it's a sudden surprise for me, too. Then again, I haven't
+> > been looking at sync from a performance or lock contention point of
+> > view any time recently.  The algorithm that wait_sb_inodes() is
+> > effectively unchanged since at least 2009, so it's probably a case
+> > of it having been protected from contention by some external factor
+> > we've fixed/removed recently.  Perhaps the bdi-flusher thread
+> > replacement in -rc1 has changed the timing sufficiently that it no
+> > longer serialises concurrent sync calls as much....
 > >
-> > That is one option I am considering. The PCI support for System z can have multiple
-> > PCI function groups, each with up to 2048 MSI interrupts. It is quite a good match.
+> > However, the inode_sb_list_lock is known to be a badly contended
+> > lock from a create/unlink fastpath for XFS, so it's not like this sort
+> > of thing is completely unexpected.
 > 
-> :-) It was designed to support exactly that use-case on PowerPC.
+> That whole inode_sb_list_lock seems moronic. Why isn't it a per-sb
+> one? No, that won't fix all problems, but it might at least help a
+> *bit*.
 
-I decided against irq_domains after all. The reason is that on s390 the same
-MSI interrupt numbers are used for multiple devices but without actually
-sharing them. The PCI root complex uses the adapter id and the MSI interrupt
-number to set two indicators for the target device (adapter interrupt summary
-bit and the MSI interrupt bit in the adapter interrupt vector). That would
-give me two options for irq_domains: 1) allocate an irq_domain for each
-device, or 2) encode the adapter id in the hwirq number and create a sparsely
-populated irq_domain. It is simpler to just use the irq_alloc_desc and
-irq_free_desc calls directly.
+Historic. That's how we initially split up the old global inode_lock
+in 2.6.38 in preparation for the RCU dentry walk code. It was never
+intended as a long term solution.....
 
-The preliminary result of this can be gawked at 
-git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git genirq
+Besides, making the inode_sb_list_lock per sb won't help solve this
+problem, anyway. The case that I'm testing involves a filesystem
+that contains 99.97% of all inodes cached by the system. This is a
+pretty common situation....
 
-Test and performance analysis is to-be-done and will take some time.
+> Also, looking some more now at that wait_sb_inodes logic, I have to
+> say that if the problem is primarily the inode->i_lock, then that's
+> just crazy. We normally shouldn't even *need* that lock, since we
+> could do a totally unlocked iget() as long as the count is non-zero.
 
+The problem is not the inode->i_lock. lockstat is pretty clear on
+that...
+
+> And no, I don't think really need the i_lock for checking
+> "mapping->nrpages == 0" or the magical "inode is being freed" bits
+> either. Or at least we could easily do some of this optimistically for
+> the common cases.
+
+Right, we could check some of it optimisitcally, but we'd still be
+walking millions of inodes under the inode_sb_list_lock on each
+sync() call just to find the one inode that is dirty. It's like
+polishing a turd - no matter how shiny you make it, it's still just
+a pile of shit.
+
+> I'm attaching a pretty trivial patch, which may obviously be trivially
+> totally flawed. I have not tested this in any way, but half the new
+> lines are comments about why it's doing what it is doing.  And I
+> really think that it should make the "actually take the inode lock" be
+> something quite rare.
+
+It looks ok, but I still think it is solving the wrong problem.
+FWIW, your optimisation has much wider application that just this
+one place. I'll have a look to see how we can apply this approach
+across all the inode lookup+validate code we currently have that
+unconditionally takes the inode->i_lock....
+
+Cheers,
+
+Dave.
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Dave Chinner
+david@fromorbit.com
