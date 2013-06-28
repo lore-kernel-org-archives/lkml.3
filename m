@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab3F1UIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 16:08:39 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:60347 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab3F1UIi convert rfc822-to-8bit (ORCPT
+	id S1753461Ab3F1UJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 16:09:30 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:37049 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab3F1UJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 16:08:38 -0400
-X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTz+HSISzrOA==
-X-RZG-CLASS-ID: mo05
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-Subject: Re: udevd cannot modprobe snd-hda-intel with 3.9.8
-Date: Fri, 28 Jun 2013 22:08:20 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-rc7-aptosid-686; KDE/4.8.4; i686; ; )
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Kay Sievers <kay@redhat.com>
-References: <51CDD1B0.70607@gmail.com>
-In-Reply-To: <51CDD1B0.70607@gmail.com>
+	Fri, 28 Jun 2013 16:09:27 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
+Date: Fri, 28 Jun 2013 22:09:21 +0200
+User-Agent: KMail/1.8.2
+Cc: Oleg Nesterov <oleg@redhat.com>, James Hogan <james.hogan@imgtec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <ddaney@caviumnetworks.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>,
+        David Daney <david.daney@cavium.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mips@linux-mips.org, stable@vger.kernel.org
+References: <1371821962-9151-1-git-send-email-james.hogan@imgtec.com> <20130626161452.GA2888@redhat.com> <20130626165900.GF7171@linux-mips.org>
+In-Reply-To: <20130626165900.GF7171@linux-mips.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201306282208.23429.s.L-H@gmx.de>
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201306282209.21839.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Friday 28 June 2013, Riccardo Magliocchetti wrote:
-> Hello,
+On Wednesday 26 June 2013 18:59, Ralf Baechle wrote:
+> On Wed, Jun 26, 2013 at 06:14:52PM +0200, Oleg Nesterov wrote:
 > 
-> at boot udev (175-7.2 from debian unstable) blocks for maybe 30 seconds 
-> and then gives (handcopied)
+> > Or simply remove the BUG_ON(), this can equally confuse wait(status).
+> > 128 & 0x7f == 0.
+> > 
+> > Still I think it would be better to change _NSIG on mips.
 > 
->   timeout: killing '/sbin/modprobe -b 
-> pci:v00008086d0000293Esv0000144Dsd0000C045bc04sc03i00'
+> If it was that easy.  That's going to outright break binary compatibility,
+> see kernel/signal.c:
 > 
-> when booting 3.9.8. 3.8.13 has the same issue, 3.6.0 is fine.
-[…]
+> SYSCALL_DEFINE4(rt_sigprocmask, int, how, sigset_t __user *, nset,
+>                 sigset_t __user *, oset, size_t, sigsetsize)
+> {
+>         sigset_t old_set, new_set;
+>         int error;
+> 
+>         /* XXX: Don't preclude handling different sized sigset_t's.  */
+>         if (sigsetsize != sizeof(sigset_t))
+>                 return -EINVAL;
+> 
+> There are several more more syscalls performing tests like the above.
 
-I think oss-compat might interfere here. Given that it was recently 
-(2013-06-18) updated, this would explain why only new'ish kernels are 
-affected (initramfs not updated for the older ones). Therefore I'd 
-suggest to purge oss-compat (simple removal is not sufficient, as the 
-modprobe.d/ snippets are dpkg conffiles) for testing - and to file a 
-bug[1] against the new version of oss-compat, if you can confirm it 
-to be responsible.
-
-Regards
-	Stefan Lippers-Hollmann
-
-[1]	http://www.debian.org/Bugs/Reporting
+Reducing _NSIG to 127 (or 126) doesn't change sigset_t, so should be fine wrt above.
