@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab3F1OqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:46:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751531Ab3F1OqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:46:15 -0400
-Date: Fri, 28 Jun 2013 10:00:27 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org,
-        hyunhee.kim@samsung.com
-Subject: Re: [PATCH v2] vmpressure: implement strict mode
-Message-ID: <20130628100027.31504abe@redhat.com>
-In-Reply-To: <20130628050712.GA10097@teo>
-References: <20130626231712.4a7392a7@redhat.com>
-	<20130627150231.2bc00e3efcd426c4beef894c@linux-foundation.org>
-	<20130628000201.GB15637@bbox>
-	<20130627173433.d0fc6ecd.akpm@linux-foundation.org>
-	<20130628005852.GA8093@teo>
-	<20130627181353.3d552e64.akpm@linux-foundation.org>
-	<20130628043411.GA9100@teo>
-	<20130628050712.GA10097@teo>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755049Ab3F1Ouo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:50:44 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:60603 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab3F1Oum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 10:50:42 -0400
+Message-ID: <51CDA2BF.5050501@free-electrons.com>
+Date: Fri, 28 Jun 2013 16:50:39 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Guenter Roeck <linux@roeck-us.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Jean Delvare <khali@linux-fr.org>,
+        jimwall@q.com, brian@crystalfontz.com,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org
+Subject: Re: [PATCH 3/4] hwmon: Add a simple driver to read the MXS SoC temperature
+References: <1372236673-20725-1-git-send-email-alexandre.belloni@free-electrons.com> <1372236673-20725-4-git-send-email-alexandre.belloni@free-electrons.com> <20130626143927.GB31998@roeck-us.net> <20130627091732.GP5803@lukather> <20130627142758.GA5812@roeck-us.net> <51CC91E8.50605@free-electrons.com> <51CD9B19.90407@metafoo.de>
+In-Reply-To: <51CD9B19.90407@metafoo.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013 22:07:12 -0700
-Anton Vorontsov <anton@enomsg.org> wrote:
+On 28/06/2013 16:18, Lars-Peter Clausen wrote:
+> On 06/27/2013 09:26 PM, Alexandre Belloni wrote:
+>>
+>> They are already registered as IIO_TEMP but only implement read_raw. Also,
+>>
+>> iio_hwmon_read_val() is using iio_read_channel_processed() and that will
+>> basically only read one of the 2 channels. As I documented, you actually
+>> need to read both channel 8 and channel 9 and then compute the value in
+>> Kelvins. I'm not sure how you want me to do that in the current framework.
+> What are these two channels actually measuring? Is the value of a single
+> channel meaningful on it's own? If not it might make sense to update the IIO
+> driver to just have one temperature channel.
 
-> On Thu, Jun 27, 2013 at 09:34:11PM -0700, Anton Vorontsov wrote:
-> > ... we can add the strict mode and deprecate the
-> > "filtering" -- basically we'll implement the idea of requiring that
-> > userspace registers a separate fd for each level.
-> 
-> Btw, assuming that more levels can be added, there will be a problem:
-> imagine that an app hooked up onto low, med, crit levels in "strict"
-> mode... then once we add a new level, the app will start missing the new
-> level events.
+It's not actually meaningful on its own. So, what you would do is expose
+one iio channel for two ADC channels and do the computation in read_raw
+? or read_processed ? Then using iio-hwon to export it. ?
 
-That's how it's expected to work, because on strict mode you're notified
-for the level you registered for. So apps registering for critical, will
-still be notified on critical just like before.
+Regards,
 
-> In the old scheme it is not a problem because of the >= condition.
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-I think the problem actually lies with the current interface, because
-if an app registers for critical and we add a new level after critical
-then this app will now be notified on critical *and* the new level. The
-app's algorithm might not be prepared to deal with that.
-
-> With a proper versioning this won't be a problem for a new scheme too.
-
-I don't think there's a problem to be solved here. Strict mode does
-allow forward compatibility. For good backward compatibility we can make
-memory.pressure_level return supported levels on read. This way
-applications can check if the level they are interested in exist and
-then fallback or exit with a good error message if they don't.
