@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab3F1Ihn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 04:37:43 -0400
+	id S1755485Ab3F1Inm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 04:43:42 -0400
 Received: from mga14.intel.com ([143.182.124.37]:5632 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755134Ab3F1Ihk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 04:37:40 -0400
+	id S1754905Ab3F1Ihd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 04:37:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,957,1363158000"; 
-   d="scan'208";a="323821206"
+   d="scan'208";a="323821179"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V3 03/15] perf tools: fix missing 'finished_round'
-Date: Fri, 28 Jun 2013 11:43:14 +0300
-Message-Id: <1372409006-8431-4-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 01/15] perf tools: remove unused parameter
+Date: Fri, 28 Jun 2013 11:43:12 +0300
+Message-Id: <1372409006-8431-2-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com>
 References: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com>
@@ -29,27 +29,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By default, perf inject should "repipe" all events
-including 'finished_round'.
+'machine' is unused in 'perf_event__repipe_synth()' and some
+callers pass NULL anyway.  So remove it.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-inject.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/builtin-inject.c | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
 diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index c943513..ad1296c 100644
+index 84ad6ab..f299ddf 100644
 --- a/tools/perf/builtin-inject.c
 +++ b/tools/perf/builtin-inject.c
-@@ -404,6 +404,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.attr		= perf_event__repipe_attr,
- 			.event_type	= perf_event__repipe_event_type_synth,
- 			.tracing_data	= perf_event__repipe_op2_synth,
-+			.finished_round	= perf_event__repipe_op2_synth,
- 			.build_id	= perf_event__repipe_op2_synth,
- 		},
- 		.input_name  = "-",
+@@ -38,8 +38,7 @@ struct event_entry {
+ };
+ 
+ static int perf_event__repipe_synth(struct perf_tool *tool,
+-				    union perf_event *event,
+-				    struct machine *machine __maybe_unused)
++				    union perf_event *event)
+ {
+ 	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
+ 	uint32_t size;
+@@ -65,20 +64,20 @@ static int perf_event__repipe_op2_synth(struct perf_tool *tool,
+ 					struct perf_session *session
+ 					__maybe_unused)
+ {
+-	return perf_event__repipe_synth(tool, event, NULL);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ static int perf_event__repipe_event_type_synth(struct perf_tool *tool,
+ 					       union perf_event *event)
+ {
+-	return perf_event__repipe_synth(tool, event, NULL);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ static int perf_event__repipe_tracing_data_synth(union perf_event *event,
+ 						 struct perf_session *session
+ 						 __maybe_unused)
+ {
+-	return perf_event__repipe_synth(NULL, event, NULL);
++	return perf_event__repipe_synth(NULL, event);
+ }
+ 
+ static int perf_event__repipe_attr(union perf_event *event,
+@@ -89,15 +88,15 @@ static int perf_event__repipe_attr(union perf_event *event,
+ 	if (ret)
+ 		return ret;
+ 
+-	return perf_event__repipe_synth(NULL, event, NULL);
++	return perf_event__repipe_synth(NULL, event);
+ }
+ 
+ static int perf_event__repipe(struct perf_tool *tool,
+ 			      union perf_event *event,
+ 			      struct perf_sample *sample __maybe_unused,
+-			      struct machine *machine)
++			      struct machine *machine __maybe_unused)
+ {
+-	return perf_event__repipe_synth(tool, event, machine);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ typedef int (*inject_handler)(struct perf_tool *tool,
+@@ -119,7 +118,7 @@ static int perf_event__repipe_sample(struct perf_tool *tool,
+ 
+ 	build_id__mark_dso_hit(tool, event, sample, evsel, machine);
+ 
+-	return perf_event__repipe_synth(tool, event, machine);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ static int perf_event__repipe_mmap(struct perf_tool *tool,
+@@ -153,7 +152,7 @@ static int perf_event__repipe_tracing_data(union perf_event *event,
+ {
+ 	int err;
+ 
+-	perf_event__repipe_synth(NULL, event, NULL);
++	perf_event__repipe_synth(NULL, event);
+ 	err = perf_event__process_tracing_data(event, session);
+ 
+ 	return err;
 -- 
 1.7.11.7
 
