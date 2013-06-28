@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab3F1S5c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:57:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41874 "EHLO
+	id S1753814Ab3F1TGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:06:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41861 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3F1S53 (ORCPT
+	with ESMTP id S1753589Ab3F1S5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:57:29 -0400
+	Fri, 28 Jun 2013 14:57:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 094/105] s390/ipl: Fix FCP WWPN and LUN format strings for read
-Date: Fri, 28 Jun 2013 11:51:56 -0700
-Message-Id: <1372445527-24414-95-git-send-email-kamal@canonical.com>
+Subject: [PATCH 086/105] team: move add to port list before port enablement
+Date: Fri, 28 Jun 2013 11:51:48 -0700
+Message-Id: <1372445527-24414-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,69 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit eda4ddf7e3a2245888e8c45c566fd514cdd5abbb upstream.
+[ Upstream commit 72df935d985c1575ed44ad2c8c653b28147993fa ]
 
-The following git commit changed the behavior of sscanf:
+team_port_enable() adds port to port_hashlist. Reader sees port
+in team_get_port_by_index_rcu() and returns it, but
+team_get_first_port_txable_rcu() tries to go through port_list, where the
+port is not inserted yet -> NULL pointer dereference.
+Fix this by reordering port_list and port_hashlist insertion.
+Panic is easily triggeable when txing packets and adding/removing port
+in a loop.
 
-commit 53809751ac230a3611b5cdd375f3389f3207d471
-Author: Jan Beulich <JBeulich@suse.com>
-Date:   Mon Dec 17 16:01:31 2012 -0800
-    sscanf: don't ignore field widths for numeric conversions
+Introduced by commit 3d249d4c "net: introduce ethernet teaming device"
 
-This broke the WWPN and LUN sysfs attributes for s390 reipl and dump
-on panic.
-
-Example:
-
-$ echo 0x0123456701234567 > /sys/firmware/reipl/fcp/wwpn
-$ cat /sys/firmware/reipl/fcp/wwpn
-0x0001234567012345
-
-So fix this and use format strings that work also with the
-new sscanf implementation:
-
-$ echo 0x012345670123456789 > /sys/firmware/reipl/fcp/wwpn
-$ cat /sys/firmware/reipl/fcp/wwpn
-0x0123456701234567
-
-Reviewed-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/kernel/ipl.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/team/team.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/s390/kernel/ipl.c b/arch/s390/kernel/ipl.c
-index 6ffcd32..28c748c 100644
---- a/arch/s390/kernel/ipl.c
-+++ b/arch/s390/kernel/ipl.c
-@@ -754,9 +754,9 @@ static struct bin_attribute sys_reipl_fcp_scp_data_attr = {
- 	.write = reipl_fcp_scpdata_write,
- };
+diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
+index 8efe47a..3c181ca 100644
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -1076,8 +1076,8 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
+ 	}
  
--DEFINE_IPL_ATTR_RW(reipl_fcp, wwpn, "0x%016llx\n", "%016llx\n",
-+DEFINE_IPL_ATTR_RW(reipl_fcp, wwpn, "0x%016llx\n", "%llx\n",
- 		   reipl_block_fcp->ipl_info.fcp.wwpn);
--DEFINE_IPL_ATTR_RW(reipl_fcp, lun, "0x%016llx\n", "%016llx\n",
-+DEFINE_IPL_ATTR_RW(reipl_fcp, lun, "0x%016llx\n", "%llx\n",
- 		   reipl_block_fcp->ipl_info.fcp.lun);
- DEFINE_IPL_ATTR_RW(reipl_fcp, bootprog, "%lld\n", "%lld\n",
- 		   reipl_block_fcp->ipl_info.fcp.bootprog);
-@@ -1323,9 +1323,9 @@ static struct shutdown_action __refdata reipl_action = {
- 
- /* FCP dump device attributes */
- 
--DEFINE_IPL_ATTR_RW(dump_fcp, wwpn, "0x%016llx\n", "%016llx\n",
-+DEFINE_IPL_ATTR_RW(dump_fcp, wwpn, "0x%016llx\n", "%llx\n",
- 		   dump_block_fcp->ipl_info.fcp.wwpn);
--DEFINE_IPL_ATTR_RW(dump_fcp, lun, "0x%016llx\n", "%016llx\n",
-+DEFINE_IPL_ATTR_RW(dump_fcp, lun, "0x%016llx\n", "%llx\n",
- 		   dump_block_fcp->ipl_info.fcp.lun);
- DEFINE_IPL_ATTR_RW(dump_fcp, bootprog, "%lld\n", "%lld\n",
- 		   dump_block_fcp->ipl_info.fcp.bootprog);
+ 	port->index = -1;
+-	team_port_enable(team, port);
+ 	list_add_tail_rcu(&port->list, &team->port_list);
++	team_port_enable(team, port);
+ 	__team_compute_features(team);
+ 	__team_port_change_port_added(port, !!netif_carrier_ok(port_dev));
+ 	__team_options_change_check(team);
 -- 
 1.8.1.2
 
