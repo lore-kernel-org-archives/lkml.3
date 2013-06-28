@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755785Ab3F1QHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:07:07 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:38940 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab3F1QHE (ORCPT
+	id S1755805Ab3F1QHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:07:20 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:50155 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755748Ab3F1QHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:07:04 -0400
-Date: Fri, 28 Jun 2013 21:36:50 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        pjt@google.com
-Subject: Re: [patch based tip/sched/core] sched/debug: remove
- CONFIG_FAIR_GROUP_SCHED mask
-Message-ID: <20130628160650.GA24565@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <1372417835-4698-1-git-send-email-alex.shi@intel.com>
+	Fri, 28 Jun 2013 12:07:15 -0400
+Date: Fri, 28 Jun 2013 18:07:11 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf tools: Fixup for removing -f option in perf record
+Message-ID: <20130628160711.GA4389@gmail.com>
+References: <1372307120-737-1-git-send-email-namhyung@kernel.org>
+ <20130627093609.GO28407@twins.programming.kicks-ass.net>
+ <20130627103931.GA5534@gmail.com>
+ <20130627104750.GB27378@dyad.programming.kicks-ass.net>
+ <20130628094738.GA28751@krava.brq.redhat.com>
+ <51CD9AE4.6060307@gmail.com>
+ <20130628153736.GA462@gmail.com>
+ <51CDB3CB.8040304@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372417835-4698-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <51CDB3CB.8040304@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062815-0260-0000-0000-0000033C69D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alex Shi <alex.shi@intel.com> [2013-06-28 19:10:35]:
 
-> Now we are using runnable load avg in sched balance. So don't need
-> keep marking them under CONFIG_FAIR_GROUP_SCHED. Also align the code
-> style to #ifdef instead of #if defined() and reorder the tg output info.
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+* David Ahern <dsahern@gmail.com> wrote:
 
-Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+> On 6/28/13 9:37 AM, Ingo Molnar wrote:
+> >
+> >* David Ahern <dsahern@gmail.com> wrote:
+> >
+> >>On 6/28/13 3:47 AM, Jiri Olsa wrote:
+> >>>>>I thought -f was the implied default for ages?
+> >>>>
+> >>>>OK.. I've been dutifully typing it all this while :-)
+> >>>
+> >>>The '-f' option in record command had no affect.. myabe it got
+> >>>depreceated when we started to backup perf.data to perf.data.old..?
+> >>
+> >>Way back in 2010, 2.6.34 kernel - 7865e817 commit. I've been typing
+> >>the -f for while too. Now about the need for the pesky -f on the
+> >>analysis side....
+> >
+> >That's only needed when perf.data is owned by a different user, right?
+> >
+> 
+> Yes, why not let file permissions dictate of uid x can read uid y files? 
+> Why does perf need to have that restriction? For example, QA collects 
+> the data files, developers analyze them.
 
+So, the thinking behind that is that user should not be able to
+generate a malicious perf.data file and let root (or another user)
+run it accidentally.
+
+( That presumes some sort of exploitable parsing bug or other buffer 
+  overflow in perf. )
+
+I don't feel terribly strongly about it though.
+
+Thanks,
+
+	Ingo
