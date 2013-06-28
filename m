@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab3F1JLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:11:04 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:62411 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984Ab3F1JLB (ORCPT
+	id S1754891Ab3F1JTX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:19:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46138 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab3F1JTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:11:01 -0400
-Date: Fri, 28 Jun 2013 11:10:57 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>
-Subject: Re: [GIT PULL] Another mce cleanup for the 3.11 queue
-Message-ID: <20130628091057.GA27872@gmail.com>
-References: <51ccb0a019950f07cd@agluck-desk.sc.intel.com>
+	Fri, 28 Jun 2013 05:19:21 -0400
+Date: Fri, 28 Jun 2013 11:18:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: deadlock in scheduler enabling HRTICK feature
+Message-ID: <20130628091853.GE29209@dyad.programming.kicks-ass.net>
+References: <51CA0622.8010105@gmail.com>
+ <20130625211713.GA18796@laptop.programming.kicks-ass.net>
+ <51CA0980.8010409@gmail.com>
+ <20130626070533.GA3601@dyad.programming.kicks-ass.net>
+ <51CB1AE9.5090709@gmail.com>
+ <20130627104309.GQ28407@twins.programming.kicks-ass.net>
+ <51CCBCA9.1000200@gmail.com>
+ <20130628090021.GA25431@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51ccb0a019950f07cd@agluck-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130628090021.GA25431@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 28, 2013 at 11:00:21AM +0200, Ingo Molnar wrote:
+> I guess we could merge this fix?
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+---
+Subject: sched: Fix HRTICK
 
-> The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
-> 
->   Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-mce
-> 
-> for you to fetch changes up to 33d7885b594e169256daef652e8d3527b2298e75:
-> 
->   x86/mce: Update MCE severity condition check (2013-06-27 13:45:52 -0700)
-> 
-> ----------------------------------------------------------------
-> Changes to simplify the SDM mean that we can also simplify
-> the code for SRAR (software recoverable action required) errors.
-> 
-> ----------------------------------------------------------------
-> Chen Gong (1):
->       x86/mce: Update MCE severity condition check
-> 
->  arch/x86/kernel/cpu/mcheck/mce-severity.c | 15 +++++----------
->  1 file changed, 5 insertions(+), 10 deletions(-)
+David reported that the HRTICK sched feature was borken; which was enough
+motivation for me to finally fix it ;-)
 
-Pulled, thanks Tony!
+We should not allow hrtimer code to do softirq wakeups while holding scheduler
+locks. The hrtimer code only needs this when we accidentally try to program an
+expired time. We don't much care about those anyway since we have the regular
+tick to fall back to.
 
-	Ingo
+Reported-by: David Ahern <dsahern@gmail.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/core.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9b1f2e5..0d8eb45 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -370,13 +370,6 @@ static struct rq *this_rq_lock(void)
+ #ifdef CONFIG_SCHED_HRTICK
+ /*
+  * Use HR-timers to deliver accurate preemption points.
+- *
+- * Its all a bit involved since we cannot program an hrt while holding the
+- * rq->lock. So what we do is store a state in in rq->hrtick_* and ask for a
+- * reschedule event.
+- *
+- * When we get rescheduled we reprogram the hrtick_timer outside of the
+- * rq->lock.
+  */
+ 
+ static void hrtick_clear(struct rq *rq)
+@@ -404,6 +397,15 @@ static enum hrtimer_restart hrtick(struct hrtimer *timer)
+ }
+ 
+ #ifdef CONFIG_SMP
++
++static int __hrtick_restart(struct rq *rq)
++{
++	struct hrtimer *timer = &rq->hrtick_timer;
++	ktime_t time = hrtimer_get_softexpires(timer);
++
++	return __hrtimer_start_range_ns(timer, time, 0, HRTIMER_MODE_ABS_PINNED, 0);
++}
++
+ /*
+  * called from hardirq (IPI) context
+  */
+@@ -412,7 +414,7 @@ static void __hrtick_start(void *arg)
+ 	struct rq *rq = arg;
+ 
+ 	raw_spin_lock(&rq->lock);
+-	hrtimer_restart(&rq->hrtick_timer);
++	__hrtick_restart(rq);
+ 	rq->hrtick_csd_pending = 0;
+ 	raw_spin_unlock(&rq->lock);
+ }
+@@ -430,7 +432,7 @@ void hrtick_start(struct rq *rq, u64 delay)
+ 	hrtimer_set_expires(timer, time);
+ 
+ 	if (rq == this_rq()) {
+-		hrtimer_restart(timer);
++		__hrtick_restart(rq);
+ 	} else if (!rq->hrtick_csd_pending) {
+ 		__smp_call_function_single(cpu_of(rq), &rq->hrtick_csd, 0);
+ 		rq->hrtick_csd_pending = 1;
+
