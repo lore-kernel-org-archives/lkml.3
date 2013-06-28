@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3F1OWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:22:35 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56964 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755181Ab3F1OWe (ORCPT
+	id S1755215Ab3F1OY0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:24:26 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:36544 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab3F1OYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:22:34 -0400
-Date: Fri, 28 Jun 2013 10:22:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Li, Zhen-Hua (USL-China)" <zhen-hual@hp.com>
-cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] usb,uhci: add a new tag for virtual uhci devices
-In-Reply-To: <51CCE13F.6070009@hp.com>
-Message-ID: <Pine.LNX.4.44L0.1306281018001.1047-100000@iolanthe.rowland.org>
+	Fri, 28 Jun 2013 10:24:25 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [111.255.123.51]
+In-Reply-To: <51CD95FE.6070205@st.com>
+References: <1372415628.1860.1.camel@phoenix>
+	<51CD6743.3050603@st.com>
+	<CAFRkauBbajREymRRZ8rbB6nzw4KgPWSd684Qz75MekcLzpoR=g@mail.gmail.com>
+	<51CD95FE.6070205@st.com>
+Date: Fri, 28 Jun 2013 22:24:24 +0800
+Message-ID: <CAFRkauAW4kvhYhmRipuX6Me6oYV4mEkjGiPGX_Dup+hj6CicmA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: st: Fix checking return value of syscon_regmap_lookup_by_phandle()
+From: Axel Lin <axel.lin@ingics.com>
+To: srinivas.kandagatla@st.com
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jun 2013, Li, Zhen-Hua (USL-China) wrote:
+2013/6/28 Srinivas KANDAGATLA <srinivas.kandagatla@st.com>:
+> On 28/06/13 13:16, Axel Lin wrote:
+>> 2013/6/28 Srinivas KANDAGATLA <srinivas.kandagatla@st.com>:
+>>> Thankyou Axel for looking at this.
+>>>
+>>> There is already a patch is submitted for this.
+>>> https://lkml.org/lkml/2013/6/26/494 which I have Acked.
+>>
+>> That is strange.
+>> I don't think the patch you mentioned can be applied to current pinctrl tree.
+>> Current code does check pinctrl_register by IS_ERR.
+> The patch removes the IS_ERR, because, pinctrl_register returns NULL or
+> a valid pointer, using IS_ERR is this case is incorrect.
+You are right.
 
-> There was a problem, the warning "Controller not stopped yet".
-> And your last patch for this problem does a wrong thing:
-> It prevents all HP uhci devices from auto-stop, which make HP uhci 
-> devices waste more
-> power.
-
-Do they really waste more power?  Have you measured this?
-
-Is CONFIG_PM enabled in the kernel configuration?
-
-> This is another new problem.
-> 
-> I think this should be corrected, so I want to apply it.
-
-In the last email, you said that your patch did not make the machine
-act different.  Now you say that your patch makes the machine use less
-power.  Which statement is correct?
-
-Alan Stern
-
+Thanks,
+Axel
