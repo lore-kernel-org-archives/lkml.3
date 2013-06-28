@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab3F1S4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:56:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41780 "EHLO
+	id S1753347Ab3F1S4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:56:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41776 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274Ab3F1S4E (ORCPT
+	with ESMTP id S1751732Ab3F1S4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:56:04 -0400
+	Fri, 28 Jun 2013 14:56:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aaron Lu <aaron.lu@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 097/105] libata-acpi: add back ACPI based hotplug functionality
-Date: Fri, 28 Jun 2013 11:51:59 -0700
-Message-Id: <1372445527-24414-98-git-send-email-kamal@canonical.com>
+Subject: [PATCH 103/105] dlci: acquire rtnl_lock before calling __dev_get_by_name()
+Date: Fri, 28 Jun 2013 11:52:05 -0700
+Message-Id: <1372445527-24414-104-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,137 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Zefan Li <lizefan@huawei.com>
 
-commit 44521527be36172864e6e7a6fba4b66e9aa48e40 upstream.
+commit 11eb2645cbf38a08ae491bf6c602eea900ec0bb5 upstream.
 
-Commit 30dcf76acc69 "libata: migrate ACPI code over to new bindings"
-mistakenly dropped the code to register hotplug notificaion handler
-for ATA port/devices, causing regression for people using ATA bay,
-as kernel bug #59871 shows.
+Otherwise the net device returned can be freed at anytime.
 
-Fix this by adding back the hotplug notification handler registration
-code.  Since this code has to be run once and notification needs to
-be installed on every ATA port/devices handle no matter if there is
-actual device attached, we can't do this in binding time for ATA
-device ACPI handle, as the binding only occurs when a SCSI device is
-created, i.e. there is device attached.  So introduce the
-ata_acpi_hotplug_init() function to loop scan all ATA ACPI handles
-and if it is available, install the notificaion handler for it during
-ATA init time.
-
-With the ATA ACPI handle binding to SCSI device tree, it is possible
-now that when the SCSI hotplug work removes the SCSI device, the ACPI
-unbind function will find that the corresponding ACPI device has
-already been deleted by dock driver, causing a scaring message like:
-[  128.263966] scsi 4:0:0:0: Oops, 'acpi_handle' corrupt
-Fix this by waiting for SCSI hotplug task finish in our notificaion
-handler, so that the removal of ACPI device done in ACPI unbind
-function triggered by the removal of SCSI device is run earlier when
-ACPI device is still available.
-
-[rjw: Rebased]
-References: https://bugzilla.kernel.org/show_bug.cgi?id=59871
-Reported-bisected-and-tested-by: Dirk Griesbach <spamthis@freenet.de>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ kamal: backport to 3.8 ]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-acpi.c | 36 +++++++++++++++++++++++++++++++++++-
- drivers/ata/libata-core.c |  2 ++
- drivers/ata/libata.h      |  2 ++
- 3 files changed, 39 insertions(+), 1 deletion(-)
+ drivers/net/wan/dlci.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index cc8aa9e..4cdeee4 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -156,8 +156,10 @@ static void ata_acpi_handle_hotplug(struct ata_port *ap, struct ata_device *dev,
+diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
+index 147614e..1f6e053 100644
+--- a/drivers/net/wan/dlci.c
++++ b/drivers/net/wan/dlci.c
+@@ -385,20 +385,24 @@ static int dlci_del(struct dlci_add *dlci)
+ 	struct net_device	*master, *slave;
+ 	int			err;
  
- 	spin_unlock_irqrestore(ap->lock, flags);
- 
--	if (wait)
-+	if (wait) {
- 		ata_port_wait_eh(ap);
-+		flush_work(&ap->hotplug_task.work);
++	rtnl_lock();
++
+ 	/* validate slave device */
+ 	master = __dev_get_by_name(&init_net, dlci->devname);
+-	if (!master)
+-		return -ENODEV;
++	if (!master) {
++		err = -ENODEV;
++		goto out;
 +	}
+ 
+ 	if (netif_running(master)) {
+-		return -EBUSY;
++		err = -EBUSY;
++		goto out;
+ 	}
+ 
+ 	dlp = netdev_priv(master);
+ 	slave = dlp->slave;
+ 	flp = netdev_priv(slave);
+ 
+-	rtnl_lock();
+ 	err = (*flp->deassoc)(slave, master);
+ 	if (!err) {
+ 		list_del(&dlp->list);
+@@ -407,8 +411,8 @@ static int dlci_del(struct dlci_add *dlci)
+ 
+ 		dev_put(slave);
+ 	}
++out:
+ 	rtnl_unlock();
+-
+ 	return err;
  }
  
- static void ata_acpi_dev_notify_dock(acpi_handle handle, u32 event, void *data)
-@@ -214,6 +216,38 @@ static const struct acpi_dock_ops ata_acpi_ap_dock_ops = {
- 	.uevent = ata_acpi_ap_uevent,
- };
- 
-+void ata_acpi_hotplug_init(struct ata_host *host)
-+{
-+	int i;
-+
-+	for (i = 0; i < host->n_ports; i++) {
-+		struct ata_port *ap = host->ports[i];
-+		acpi_handle handle;
-+		struct ata_device *dev;
-+
-+		if (!ap)
-+			continue;
-+
-+		handle = ata_ap_acpi_handle(ap);
-+		if (handle) {
-+			/* we might be on a docking station */
-+			register_hotplug_dock_device(handle,
-+						     &ata_acpi_ap_dock_ops, ap);
-+		}
-+
-+		ata_for_each_dev(dev, &ap->link, ALL) {
-+			handle = ata_dev_acpi_handle(dev);
-+			if (!handle)
-+				continue;
-+
-+			/* we might be on a docking station */
-+			register_hotplug_dock_device(handle,
-+						     &ata_acpi_dev_dock_ops,
-+						     dev);
-+		}
-+	}
-+}
-+
- /**
-  * ata_acpi_dissociate - dissociate ATA host from ACPI objects
-  * @host: target ATA host
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 3b3afa8..5866bf5 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6124,6 +6124,8 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
- 	if (rc)
- 		goto err_tadd;
- 
-+	ata_acpi_hotplug_init(host);
-+
- 	/* set cable, sata_spd_limit and report */
- 	for (i = 0; i < host->n_ports; i++) {
- 		struct ata_port *ap = host->ports[i];
-diff --git a/drivers/ata/libata.h b/drivers/ata/libata.h
-index 7148a58..15ac13f 100644
---- a/drivers/ata/libata.h
-+++ b/drivers/ata/libata.h
-@@ -122,6 +122,7 @@ extern int ata_acpi_register(void);
- extern void ata_acpi_unregister(void);
- extern void ata_acpi_bind(struct ata_device *dev);
- extern void ata_acpi_unbind(struct ata_device *dev);
-+extern void ata_acpi_hotplug_init(struct ata_host *host);
- #else
- static inline void ata_acpi_dissociate(struct ata_host *host) { }
- static inline int ata_acpi_on_suspend(struct ata_port *ap) { return 0; }
-@@ -134,6 +135,7 @@ static inline int ata_acpi_register(void) { return 0; }
- static inline void ata_acpi_unregister(void) { }
- static inline void ata_acpi_bind(struct ata_device *dev) { }
- static inline void ata_acpi_unbind(struct ata_device *dev) { }
-+static inline void ata_acpi_hotplug_init(struct ata_host *host) {}
- #endif
- 
- /* libata-scsi.c */
 -- 
 1.8.1.2
 
