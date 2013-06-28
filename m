@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab3F1QIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:08:51 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19872 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229Ab3F1QIt (ORCPT
+	id S1755850Ab3F1QJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:09:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46972 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521Ab3F1QJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:08:49 -0400
-Date: Fri, 28 Jun 2013 12:06:37 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ben Guthro <benjamin.guthro@citrix.com>
-Cc: Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        xen-devel@lists.xen.org, Bob Moore <robert.moore@intel.com>
-Subject: Re: [PATCH v5 2/5] acpi: Call acpi_os_prepare_sleep hook in reduced
- hardware sleep path
-Message-ID: <20130628160637.GE13468@phenom.dumpdata.com>
-References: <1372427184-6197-1-git-send-email-benjamin.guthro@citrix.com>
- <1372427184-6197-3-git-send-email-benjamin.guthro@citrix.com>
+	Fri, 28 Jun 2013 12:09:17 -0400
+Date: Fri, 28 Jun 2013 18:09:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Vrabel <david.vrabel@citrix.com>
+cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH 5/5] x86/xen: sync the CMOS RTC as well as the Xen
+ wallclock
+In-Reply-To: <51CDB0A1.6080409@citrix.com>
+Message-ID: <alpine.DEB.2.02.1306281805430.4013@ionos.tec.linutronix.de>
+References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <1372329348-20841-6-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306281727240.4013@ionos.tec.linutronix.de> <51CDB0A1.6080409@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372427184-6197-3-git-send-email-benjamin.guthro@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 09:46:21AM -0400, Ben Guthro wrote:
-> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
-> reduced hardware sleep support, and the two changes didn't get
-> synchronized: The new code doesn't call the hook function (if so
-> requested). Fix this, requiring a parameter to be added to the
-> hook function to distinguish "extended" from "legacy" sleep.
+On Fri, 28 Jun 2013, David Vrabel wrote:
 > 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-> Cc: Bob Moore <robert.moore@intel.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: linux-acpi@vger.kernel.org
+> Before:
+> 
+> Xen wallclock set when time is stepped.
+> Xen wallclock set every 11 minutes (by sync_cmos_clock()).
+> Hardware RTC never set.
+> 
+> After:
+> 
+> Xen wallclock set when time is stepped.
+> Xen wallclock set every 11 minutes (in pvclock gtod notifier).
 
-You can also add
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Ah, you are emulating the sync_cmos_clock() behaviour for the xen
+wallclock via the periodic pvclock_gtod notifier call.
 
-> ---
->  drivers/acpi/acpica/hwesleep.c |    7 +++++++
->  drivers/acpi/acpica/hwsleep.c  |    2 +-
->  include/acpi/acpiosxf.h        |    4 ++--
->  3 files changed, 10 insertions(+), 3 deletions(-)
+> Hardware RTC set every 11 minutes (by sync_cmos_clock()).
 > 
-> diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
-> index 5e5f762..69b3e15 100644
-> --- a/drivers/acpi/acpica/hwesleep.c
-> +++ b/drivers/acpi/acpica/hwesleep.c
-> @@ -128,6 +128,13 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
->  
->  	ACPI_FLUSH_CPU_CACHE();
->  
-> +	status = acpi_os_prepare_sleep(sleep_state, acpi_gbl_sleep_type_a,
-> +				       acpi_gbl_sleep_type_b, TRUE);
-> +	if (ACPI_SKIP(status))
-> +		return_ACPI_STATUS(AE_OK);
-> +	if (ACPI_FAILURE(status))
-> +		return_ACPI_STATUS(status);
-> +
->  	/*
->  	 * Set the SLP_TYP and SLP_EN bits.
->  	 *
-> diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
-> index 867b947..cf78157 100644
-> --- a/drivers/acpi/acpica/hwsleep.c
-> +++ b/drivers/acpi/acpica/hwsleep.c
-> @@ -152,7 +152,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
->  	ACPI_FLUSH_CPU_CACHE();
->  
->  	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
-> -				       pm1b_control);
-> +				       pm1b_control, FALSE);
->  	if (ACPI_SKIP(status))
->  		return_ACPI_STATUS(AE_OK);
->  	if (ACPI_FAILURE(status))
-> diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
-> index c68b779..51d0f78 100644
-> --- a/include/acpi/acpiosxf.h
-> +++ b/include/acpi/acpiosxf.h
-> @@ -279,7 +279,7 @@ void acpi_os_close_directory(void *dir_handle);
->  /*
->   * ACPI sleep preparation
->   */
-> -acpi_status acpi_os_prepare_sleep(u8 sleep_state,
-> -				  u32 pm1a_control, u32 pm1b_control);
-> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
-> +				  u8 extended);
->  
->  #endif				/* __ACPIOSXF_H__ */
-> -- 
-> 1.7.9.5
+> I'll update the changelog to be more descriptive:
 > 
+>   Adjustments to Xen's persistent clock via update_persistent_clock()
+>   don't actually persist, as the Xen wallclock is a software only clock
+>   and modifications to it do not modify the underlying CMOS RTC.
+> 
+>   The x86_platform.set_wallclock hook can be used to keep the hardware
+>   RTC synchronized (as on bare metal).  If (in dom0) we make the Xen
+>   wallclock periodically synchronized by the pvclock_gtod notifier, the
+>   set_wallclock hook need not update the Xen wallclock and the native
+>   implementation can be used.
+
+Yep. I'll pick that up.
+
+Thanks,
+
+	tglx
