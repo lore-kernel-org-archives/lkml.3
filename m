@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab3F1T5B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:57:01 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:59974 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab3F1T47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:56:59 -0400
-Date: Fri, 28 Jun 2013 12:56:51 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org
-Subject: [PATCH] kconfig: allow "hex" and "range" to support longs
-Message-ID: <20130628195651.GA8198@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S1753458Ab3F1T4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:56:37 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:33716 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887Ab3F1T4b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:56:31 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 4/8] clocksource: sun4i: Fix the next event code
+Date: Fri, 28 Jun 2013 21:56:22 +0200
+Message-Id: <1372449386-1334-5-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The parsing routines for Kconfig files use strtol(), but store and
-render values as int. Switch types and formating to long to support a
-wider range of values. For example, 0x80000000 wasn't representable.
+The next_event logic was setting the next interval to fire in the
+current timer value instead of the interval value register, which is
+obviously wrong. Plus the logic to set the actual value was wrong as
+well, so this code has always been broken.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- scripts/kconfig/symbol.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/clocksource/sun4i_timer.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index ecc5aa5..8ee1ff58 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -136,7 +136,7 @@ static struct property *sym_get_range_prop(struct symbol *sym)
- 	return NULL;
- }
+diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+index 84ace76..695c8c8 100644
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -16,6 +16,7 @@
  
--static int sym_get_range_val(struct symbol *sym, int base)
-+static long sym_get_range_val(struct symbol *sym, int base)
+ #include <linux/clk.h>
+ #include <linux/clockchips.h>
++#include <linux/delay.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/irqreturn.h>
+@@ -61,9 +62,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
+ static int sun4i_clkevt_next_event(unsigned long evt,
+ 				   struct clock_event_device *unused)
  {
- 	sym_calc_value(sym);
- 	switch (sym->type) {
-@@ -155,7 +155,7 @@ static int sym_get_range_val(struct symbol *sym, int base)
- static void sym_validate_range(struct symbol *sym)
- {
- 	struct property *prop;
--	int base, val, val2;
-+	long base, val, val2;
- 	char str[64];
+-	u32 u = readl(timer_base + TIMER_CTL_REG(0));
+-	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
+-	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
++	u32 val = readl(timer_base + TIMER_CTL_REG(0));
++	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
++	udelay(1);
++
++	writel(evt, timer_base + TIMER_INTVAL_REG(0));
++
++	val = readl(timer_base + TIMER_CTL_REG(0));
++	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
+ 	       timer_base + TIMER_CTL_REG(0));
  
- 	switch (sym->type) {
-@@ -179,9 +179,9 @@ static void sym_validate_range(struct symbol *sym)
- 			return;
- 	}
- 	if (sym->type == S_INT)
--		sprintf(str, "%d", val2);
-+		sprintf(str, "%ld", val2);
- 	else
--		sprintf(str, "0x%x", val2);
-+		sprintf(str, "0x%lx", val2);
- 	sym->curr.val = strdup(str);
- }
- 
-@@ -583,7 +583,7 @@ bool sym_string_valid(struct symbol *sym, const char *str)
- bool sym_string_within_range(struct symbol *sym, const char *str)
- {
- 	struct property *prop;
--	int val;
-+	long val;
- 
- 	switch (sym->type) {
- 	case S_STRING:
+ 	return 0;
 -- 
-1.7.9.5
+1.8.3.1
 
-
--- 
-Kees Cook
-Chrome OS Security
