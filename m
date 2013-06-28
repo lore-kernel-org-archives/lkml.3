@@ -1,109 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3F1NvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:51:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39205 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751743Ab3F1NvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 09:51:18 -0400
-Date: Fri, 28 Jun 2013 14:51:14 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
-Message-ID: <20130628135114.GY1875@suse.de>
-References: <20130628090447.GD28407@twins.programming.kicks-ass.net>
- <20130628100723.GC8362@linux.vnet.ibm.com>
+	id S1754759Ab3F1NxT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:53:19 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:60348 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab3F1NxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 09:53:17 -0400
+Date: Fri, 28 Jun 2013 15:53:14 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Richard Genoud <richard.genoud@gmail.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: rtl8192cu: slow path warning
+Message-ID: <20130628135314.GJ4319@lukather>
+References: <20130611123814.GA9854@lnx-rg>
+ <20130626142241.GA13107@lnx-rg>
+ <51CB0E9C.50408@lwfinger.net>
+ <CACQ1gAh+WjQZHo+_afZpzcwt1=KPM8VMBOe=YCHN_LEZu+jPNQ@mail.gmail.com>
+ <51CC8284.9070301@lwfinger.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LQAwcd5tHl0Qlnzi"
 Content-Disposition: inline
-In-Reply-To: <20130628100723.GC8362@linux.vnet.ibm.com>
+In-Reply-To: <51CC8284.9070301@lwfinger.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 03:37:23PM +0530, Srikar Dronamraju wrote:
-> > > > +
-> > > > +
-> > > >  /*
-> > > >   * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
-> > > >   */
-> > > > @@ -3945,10 +3977,14 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
-> > > >  
-> > > >  	/*
-> > > >  	 * Aggressive migration if:
-> > > > -	 * 1) task is cache cold, or
-> > > > -	 * 2) too many balance attempts have failed.
-> > > > +	 * 1) destination numa is preferred
-> > > > +	 * 2) task is cache cold, or
-> > > > +	 * 3) too many balance attempts have failed.
-> > > >  	 */
-> > > >  
-> > > > +	if (migrate_improves_locality(p, env))
-> > > > +		return 1;
-> > > 
-> > > Shouldnt this be under tsk_cache_hot check?
-> > > 
-> > > If the task is cache hot, then we would have to update the corresponding  schedstat
-> > > metrics.
-> > 
-> > No; you want migrate_degrades_locality() to be like task_hot(). You want
-> > to _always_ migrate tasks towards better locality irrespective of local
-> > cache hotness.
-> > 
-> 
-> Yes, I understand that numa should have more priority over cache.
-> But the schedstats will not be updated about whether the task was hot or
-> cold.
-> 
-> So lets say the task was cache hot but numa wants it to move, then we
-> should certainly move it but we should update the schedstats to mention that we
-> moved a cache hot task.
-> 
-> Something akin to this.
-> 
-> 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
-> 	if (tsk_cache_hot) {
-> 		if (migrate_improves_locality(p, env) || 
-> 		 	(env->sd->nr_balance_failed > env->sd->cache_nice_tries)) {
-> #ifdef CONFIG_SCHEDSTATS
-> 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-> 			schedstat_inc(p, se.statistics.nr_forced_migrations);
-> #endif
-> 			return 1;
-> 		}
-> 		schedstat_inc(p, se.statistics.nr_failed_migrations_hot);
-> 		return 0;
-> 	}
-> 	return 1;
-> 
 
-Thanks. Is this acceptable?
+--LQAwcd5tHl0Qlnzi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b3848e0..c3a153e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4088,8 +4088,13 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	 * 3) too many balance attempts have failed.
- 	 */
- 
--	if (migrate_improves_locality(p, env))
-+	if (migrate_improves_locality(p, env)) {
-+#ifdef CONFIG_SCHEDSTATS
-+		schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-+		schedstat_inc(p, se.statistics.nr_forced_migrations);
-+#endif
- 		return 1;
-+	}
- 
- 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
- 	if (!tsk_cache_hot)
+Hi Larry,
 
--- 
-Mel Gorman
-SUSE Labs
+On Thu, Jun 27, 2013 at 01:20:52PM -0500, Larry Finger wrote:
+> A revised patch for the warning is attached. The fix relatively
+> simple and the only difference between this one and the earlier
+> version is that routine rtl_lps_change_work_callback() was moved
+> from pci.c to ps.c. As a result, it will be available for ARM and
+> other architectures without a PCI bus.
+
+I just tested it on top of 3.10-rc7 with an imx28, and it works fine.
+
+You can add my
+Tested-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--LQAwcd5tHl0Qlnzi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzZVJAAoJEBx+YmzsjxAg9fQQALhkCRClt1Y54AATGzKuQd4+
+9mHROC5pxaMSOvVKVBK84+tSaXw79FfDrjiFFKn/tTi3lcPTtO7d4N/l0Q/FQnso
+KT0P3KAcgStPb4OxeQ7IFpRXkJf/0MjVIpkFoBUEx20GoWxuxCR6qPngwlI8YU+m
+fQNW+zSNbzFPSzsxTJzVtewdNux7Gcdcy2+vCq020XqQvnOHEIuYd84ZHBs/pQoX
+DaefkrO2RS+TnXuGEGm/SeLDtsHFo+WJdDEziumcATIVHGoqe4QJGg5iXdSBg6Be
+Cw/NuhEtZy5pYpzGc15jIhldZAVO0UXUA7vCItI/TfugydcQHyb06kV28DeCO8bP
+U4C3UeDdJvPXd9dfoJoEGrJLLuCeGrjxV9G8stncCNg8OWEl/SeG63ib4B7TvVoL
+3pzQiJIydecbvxqrG03P/puleU5giy9DOnZ5w9CULdgD3XnQwrPBhBcL6h9RYLad
+bpKM2hb+XeZ7FtZ1NJC8E3nBvtf72Jcp7groxHl0miLQd2Xegf8KbdTBWjX6JUVU
+wMzkLTb0lDHqAk1pqakodVKwKEChBSE+eLrXvzrizjj3lz1CS88im8lzw7EmQOoB
+vl69Izck0ymvOb533iYJwPSHIeitAzzLJpA2E+Rnw86/EacLisaSucD3JoucuZHm
+lG0i70QgiDhQDB7dXkqq
+=1gK/
+-----END PGP SIGNATURE-----
+
+--LQAwcd5tHl0Qlnzi--
