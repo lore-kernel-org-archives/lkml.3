@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3F1PNJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:13:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53531 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755272Ab3F1PNH (ORCPT
+	id S1755387Ab3F1PNa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:13:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44171 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab3F1PN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:13:07 -0400
-Date: Fri, 28 Jun 2013 17:12:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] sched: Split accounting of NUMA hinting faults that
- pass two-stage filter
-Message-ID: <20130628151256.GC6626@twins.programming.kicks-ass.net>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-8-git-send-email-mgorman@suse.de>
- <20130628070027.GD17195@linux.vnet.ibm.com>
- <20130628093625.GF29209@dyad.programming.kicks-ass.net>
- <20130628101245.GD8362@linux.vnet.ibm.com>
- <20130628103304.GF28407@twins.programming.kicks-ass.net>
- <20130628142925.GB1875@suse.de>
+	Fri, 28 Jun 2013 11:13:28 -0400
+Date: Fri, 28 Jun 2013 08:12:35 -0700
+From: tip-bot for Bart Van Assche <tipbot@zytor.com>
+Message-ID: <tip-9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        arjan@infradead.org, bvanassche@acm.org, tglx@linutronix.de,
+        sfr@canb.auug.org.au, bart.vanassche@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        arjan@infradead.org, bvanassche@acm.org, tglx@linutronix.de,
+        sfr@canb.auug.org.au, bart.vanassche@gmail.com
+In-Reply-To: <519BC066.5080600@acm.org>
+References: <519BC066.5080600@acm.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] timer:
+  Fix jiffies wrap behavior of round_jiffies_common()
+Git-Commit-ID: 9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130628142925.GB1875@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 28 Jun 2013 08:12:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 03:29:25PM +0100, Mel Gorman wrote:
-> > Oh duh indeed. I totally missed it did that. Changelog also isn't giving
-> > rationale for this. Mel?
-> > 
-> 
-> There were a few reasons
-> 
-> First, if there are many tasks sharing the page then they'll all move towards
-> the same node. The node will be compute overloaded and then scheduled away
-> later only to bounce back again. Alternatively the shared tasks would
-> just bounce around nodes because the fault information is effectively
-> noise. Either way I felt that accounting for shared faults with private
-> faults would be slower overall.
-> 
-> The second reason was based on a hypothetical workload that had a small
-> number of very important, heavily accessed private pages but a large shared
-> array. The shared array would dominate the number of faults and be selected
-> as a preferred node even though it's the wrong decision.
-> 
-> The third reason was because multiple threads in a process will race
-> each other to fault the shared page making the information unreliable.
-> 
-> It is important that *something* be done with shared faults but I haven't
-> thought of what exactly yet. One possibility would be to give them a
-> different weight, maybe based on the number of active NUMA nodes, but I had
-> not tested anything yet. Peter suggested privately that if shared faults
-> dominate the workload that the shared pages would be migrated based on an
-> interleave policy which has some potential.
-> 
+Commit-ID:  9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1
+Gitweb:     http://git.kernel.org/tip/9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1
+Author:     Bart Van Assche <bart.vanassche@gmail.com>
+AuthorDate: Tue, 21 May 2013 20:43:50 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 28 Jun 2013 17:10:11 +0200
 
-It would be good to put something like this in the Changelog, or even as
-a comment near how we select the preferred node.
+timer: Fix jiffies wrap behavior of round_jiffies_common()
+
+Direct compare of jiffies related values does not work in the wrap
+around case. Replace it with time_is_after_jiffies().
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Link: http://lkml.kernel.org/r/519BC066.5080600@acm.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/timer.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 15ffdb3..15bc1b4 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -149,9 +149,11 @@ static unsigned long round_jiffies_common(unsigned long j, int cpu,
+ 	/* now that we have rounded, subtract the extra skew again */
+ 	j -= cpu * 3;
+ 
+-	if (j <= jiffies) /* rounding ate our timeout entirely; */
+-		return original;
+-	return j;
++	/*
++	 * Make sure j is still in the future. Otherwise return the
++	 * unmodified value.
++	 */
++	return time_is_after_jiffies(j) ? j : original;
+ }
+ 
+ /**
