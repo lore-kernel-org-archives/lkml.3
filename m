@@ -1,161 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3F1Nrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:47:43 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:14174 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735Ab3F1Nql (ORCPT
+	id S1754162Ab3F1Ntw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:49:52 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:57609 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751257Ab3F1Ntu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 09:46:41 -0400
-X-IronPort-AV: E=Sophos;i="4.87,958,1363132800"; 
-   d="scan'208";a="32455844"
-From: Ben Guthro <benjamin.guthro@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <xen-devel@lists.xen.org>
-CC: Ben Guthro <benjamin.guthro@citrix.com>,
-        Bob Moore <robert.moore@intel.com>
-Subject: [PATCH v5 3/5] acpi: Adjust linux acpi OS functions to new extended parameter
-Date: Fri, 28 Jun 2013 09:46:22 -0400
-Message-ID: <1372427184-6197-4-git-send-email-benjamin.guthro@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372427184-6197-1-git-send-email-benjamin.guthro@citrix.com>
-References: <1372427184-6197-1-git-send-email-benjamin.guthro@citrix.com>
+	Fri, 28 Jun 2013 09:49:50 -0400
+Date: Fri, 28 Jun 2013 09:49:46 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pedro Alves <palves@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3.10-rc7] Fix: kernel/ptrace.c: ptrace_peek_siginfo()
+	missing __put_user() validation
+Message-ID: <20130628134946.GA19422@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.204.241.11]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the function definitions of acpi_os_prepare_sleep() and
-acpi_os_set_prepare_sleep() to pass along the new extended sleep
-parameter.
+This __put_user() could be used by unprivileged processes to write into
+kernel memory. The issue here is that even if copy_siginfo_to_user()
+fails, the error code is not checked before __put_user() is executed.
+Luckily, ptrace_peek_siginfo() has been added within the 3.10-rc cycle,
+so it has not hit a stable release yet.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-Cc: Bob Moore <robert.moore@intel.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Andrey Vagin <avagin@openvz.org>
+CC: Roland McGrath <roland@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: David Howells <dhowells@redhat.com>
+CC: Dave Jones <davej@redhat.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Pedro Alves <palves@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- arch/x86/kernel/tboot.c |    3 ++-
- drivers/acpi/osl.c      |   16 ++++++++--------
- drivers/xen/acpi.c      |    3 ++-
- include/linux/acpi.h    |    6 +++---
- include/xen/acpi.h      |    3 ++-
- 5 files changed, 17 insertions(+), 14 deletions(-)
+ kernel/ptrace.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index f84fe00..d578c9c 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -273,7 +273,8 @@ static void tboot_copy_fadt(const struct acpi_table_fadt *fadt)
- 		offsetof(struct acpi_table_facs, firmware_waking_vector);
- }
+Index: linux/kernel/ptrace.c
+===================================================================
+--- linux.orig/kernel/ptrace.c
++++ linux/kernel/ptrace.c
+@@ -665,20 +665,22 @@ static int ptrace_peek_siginfo(struct ta
+ 		if (unlikely(is_compat_task())) {
+ 			compat_siginfo_t __user *uinfo = compat_ptr(data);
  
--static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
-+static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control,
-+		       bool extended)
- {
- 	static u32 acpi_shutdown_map[ACPI_S_STATE_COUNT] = {
- 		/* S0,1,2: */ -1, -1, -1,
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index e721863..0251c9b 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -77,8 +77,8 @@ EXPORT_SYMBOL(acpi_in_debugger);
- extern char line_buf[80];
- #endif				/*ENABLE_DEBUGGER */
- 
--static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
--				      u32 pm1b_ctrl);
-+static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 val_a, u32 val_b,
-+				      bool extended);
- 
- static acpi_osd_handler acpi_irq_handler;
- static void *acpi_irq_context;
-@@ -1757,13 +1757,13 @@ acpi_status acpi_os_terminate(void)
- 	return AE_OK;
- }
- 
--acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
--				  u32 pm1b_control)
-+acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
-+				  u8 extended)
- {
- 	int rc = 0;
- 	if (__acpi_os_prepare_sleep)
--		rc = __acpi_os_prepare_sleep(sleep_state,
--					     pm1a_control, pm1b_control);
-+		rc = __acpi_os_prepare_sleep(sleep_state, val_a, val_b,
-+					     extended);
- 	if (rc < 0)
- 		return AE_ERROR;
- 	else if (rc > 0)
-@@ -1772,8 +1772,8 @@ acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
- 	return AE_OK;
- }
- 
--void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
--			       u32 pm1a_ctrl, u32 pm1b_ctrl))
-+void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
-+			       u32 val_b, bool extended))
- {
- 	__acpi_os_prepare_sleep = func;
- }
-diff --git a/drivers/xen/acpi.c b/drivers/xen/acpi.c
-index 119d42a..36d2be1 100644
---- a/drivers/xen/acpi.c
-+++ b/drivers/xen/acpi.c
-@@ -36,7 +36,8 @@
- #include <asm/xen/hypervisor.h>
- 
- int xen_acpi_notify_hypervisor_state(u8 sleep_state,
--				     u32 pm1a_cnt, u32 pm1b_cnt)
-+				     u32 pm1a_cnt, u32 pm1b_cnt,
-+				     bool extended)
- {
- 	struct xen_platform_op op = {
- 		.cmd = XENPF_enter_acpi_sleep,
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 709a2f2..26f9996 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -477,8 +477,8 @@ static inline bool acpi_driver_match_device(struct device *dev,
- #endif	/* !CONFIG_ACPI */
- 
- #ifdef CONFIG_ACPI
--void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
--			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
-+void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
-+			       u32 val_b, bool extended));
- #ifdef CONFIG_X86
- void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
- #else
-@@ -488,7 +488,7 @@ static inline void arch_reserve_mem_area(acpi_physical_address addr,
- }
- #endif /* CONFIG_X86 */
- #else
--#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
-+#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { } while (0)
+-			ret = copy_siginfo_to_user32(uinfo, &info);
+-			ret |= __put_user(info.si_code, &uinfo->si_code);
++			if (copy_siginfo_to_user32(uinfo, &info) ||
++			    __put_user(info.si_code, &uinfo->si_code)) {
++				ret = -EFAULT;
++				break;
++			}
++
+ 		} else
  #endif
+ 		{
+ 			siginfo_t __user *uinfo = (siginfo_t __user *) data;
  
- #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
-diff --git a/include/xen/acpi.h b/include/xen/acpi.h
-index 68d73d0..9f7e2e6 100644
---- a/include/xen/acpi.h
-+++ b/include/xen/acpi.h
-@@ -76,7 +76,8 @@ static inline int xen_acpi_get_pxm(acpi_handle h)
- }
+-			ret = copy_siginfo_to_user(uinfo, &info);
+-			ret |= __put_user(info.si_code, &uinfo->si_code);
+-		}
+-
+-		if (ret) {
+-			ret = -EFAULT;
+-			break;
++			if (copy_siginfo_to_user(uinfo, &info) ||
++			    __put_user(info.si_code, &uinfo->si_code)) {
++				ret = -EFAULT;
++				break;
++			}
+ 		}
  
- int xen_acpi_notify_hypervisor_state(u8 sleep_state,
--				     u32 pm1a_cnt, u32 pm1b_cnd);
-+				     u32 pm1a_cnt, u32 pm1b_cnd,
-+				     bool extended);
- 
- static inline void xen_acpi_sleep_register(void)
- {
--- 
-1.7.9.5
+ 		data += sizeof(siginfo_t);
 
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
