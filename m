@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab3F1Psk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:48:40 -0400
-Received: from www.sr71.net ([198.145.64.142]:41148 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230Ab3F1Psk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:48:40 -0400
-Message-ID: <51CDB056.5090308@sr71.net>
-Date: Fri, 28 Jun 2013 08:48:38 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755449Ab3F1Ps6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:48:58 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:48127 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215Ab3F1Ps5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 11:48:57 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: RE: [PATCH -tip] x86,trace: Add rcu_irq_enter/exit() in
+ smp_trace_reschedule_interrupt()
+Thread-Topic: [PATCH -tip] x86,trace: Add rcu_irq_enter/exit() in
+ smp_trace_reschedule_interrupt()
+Thread-Index: AQHOcRh6tLsjeasi80i72tgopT7X3plLdn2A///IhNCAAEx9AP//v98g
+Date: Fri, 28 Jun 2013 15:48:02 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443E0FEEB@USINDEM103.corp.hds.com>
+References: <51C8AA31.3070208@hds.com>
+	 <1372429303.18733.325.camel@gandalf.local.home>
+	 <A5ED84D3BB3A384992CBB9C77DEDA4D443E0FE25@USINDEM103.corp.hds.com>
+ <1372433814.18733.335.camel@gandalf.local.home>
+In-Reply-To: <1372433814.18733.335.camel@gandalf.local.home>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] mm: madvise: MADV_POPULATE for quick pre-faulting
-References: <20130627231605.8F9F12E6@viggo.jf.intel.com> <20130628054757.GA10429@gmail.com>
-In-Reply-To: <20130628054757.GA10429@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-28_07:2013-06-28,2013-06-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1306280106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5SFn853021858
 
-On 06/27/2013 10:47 PM, Zheng Liu wrote:
->> I've been doing some testing involving large amounts of
->> page cache.  It's quite painful to get hundreds of GB
->> of page cache mapped in, especially when I am trying to
->> do it in parallel threads.  This is true even when the
->> page cache is already allocated and I only need to map
->> it in.  The test:
->>
->> 1. take 160 16MB files
->> 2. clone 160 threads, mmap the 16MB files, and either
->>   a. walk through the file touching each page
+> > +void smp_trace_reschedule_interrupt(struct pt_regs *regs)
+> > +{
 > 
-> Why not change MAP_POPULATE flag in mmap(2)?  Now it is only for private
-> mappings.  But maybe we could let it support shared mapping.
+> Sure, but we should probably add a comment here to why
+> smp_trace_reschedule_interrupt() is different than
+> smp_reschedule_interrupt().
+> 
+> 	/*
+> 	 * Need to call irq_enter() before calling the trace point.
+> 	 * __smp_reschedule_interrupt() calls irq_enter/exit() too (in
+> 	 * scheduler_ipi(). This is OK, since those functions are allowed
+> 	 * to nest.
+> 	 */
+> 
+> -- Steve
 
-Adding that support to mmap() will certainly _help_ some folks.  But,
-anything that mmap()s something is taking mmap_sem for write.  That
-means that threaded apps doing mmap()/munmap() frequently are _not_
-scalable.
+I will add the comment.
 
-IOW, a process needing to do a bunch of MAP_POPULATEs isn't
-parallelizable, but one using this mechanism would be.
+Thanks.
+
+Seiji
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
