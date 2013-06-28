@@ -1,592 +1,3193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab3F1Hsg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 03:48:36 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:65145 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab3F1Hsd (ORCPT
+	id S1753113Ab3F1HuZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 03:50:25 -0400
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:48899
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751231Ab3F1HuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 03:48:33 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-f2-51cd3fc76a70
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: viresh.kumar@linaro.org, rjw@sisk.pl, linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH v4] cpufreq: stats: Add 'load_table' debugfs file to show
- accumulated data of CPUs
-Date: Fri, 28 Jun 2013 16:48:17 +0900
-Message-id: <1372405697-13556-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsWyRsSkUPe4/dlAg3Vv1CyeNv1gt7j+5Tmr
-	xdmmN+wWl3fNYbP43HuE0eJ24wo2i/6FvUwWG796OHB43Lm2h82jb8sqRo9Hi1sYPT5vkgtg
-	ieKySUnNySxLLdK3S+DK+L13B0vBq07GitML7rM0MF7L6GLk5JAQMJE48W4DI4QtJnHh3nq2
-	LkYuDiGBpYwS7yf8ZocpWnX1FTOILSQwnVHixItEiKL/jBKHZ+1kBUmwCWhJ7H9xgw3EFhFw
-	k1h77RMjSBGzwBRGieZjm8ASwgIpEou6H4JNYhFQlZi28xlYnFfAVeLIwm4miG1yEh/2PGIH
-	aZYQ+M8m8bH3IgtEg4DEt8mHgGwOoISsxKYDzBD1khIHV9xgmcAouICRYRWjaGpBckFxUnqR
-	qV5xYm5xaV66XnJ+7iZGYOCe/vds4g7G+wesDzEmA42byCwlmpwPDPy8knhDYzMjC1MTU2Mj
-	c0sz0oSVxHnVW6wDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTC61JRIJm4qN5/Ykm3wMD5T
-	acWZekbtu+rpeoxCO1e7MS5tdg359PLJhI+afL5tW49WX8h6/Jnt5a4+mSvLt6+270iqcnio
-	IZbyvIR/yddfK5+G5NxVOMvLFKB6+OO0M9PLbfQ6su/kBe5RSe37rPwhQGDppm0zlhyq3VHi
-	fVFM//f3Ir/uZWeUWIozEg21mIuKEwF/ShYwcgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t9jQd3j9mcDDVo7pC2eNv1gt7j+5Tmr
-	xdmmN+wWl3fNYbP43HuE0eJ24wo2i/6FvUwWG796OHB43Lm2h82jb8sqRo9Hi1sYPT5vkgtg
-	iWpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOkNJ
-	oSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmPF77w6WgledjBWnF9xnaWC8
-	ltHFyMkhIWAiserqK2YIW0ziwr31bCC2kMB0RokTLxK7GLmA7P+MEodn7WQFSbAJaEnsf3ED
-	rEhEwE1i7bVPjCBFzAJTGCWaj20CSwgLpEgs6n4INpVFQFVi2s5nYHFeAVeJIwu7mSC2yUl8
-	2POIfQIj9wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwXHxTGoH48oGi0OMAhyMSjy8
-	jYlnAoVYE8uKK3MPMUpwMCuJ8N5ZABTiTUmsrEotyo8vKs1JLT7EmAy0fSKzlGhyPjBm80ri
-	DY1NzIwsjcwNLYyMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBscwxqnd3/NPp18rU
-	tGx4rR67TQller/U4Nu6KcnHJ9nO/Vy5b60IB2/ufKf61RJrHiz1/1Q+3UdUWU4tWC1+odM3
-	y+Mn/b3e1/XcTlhrqbfklm6Cbs3eymsv4k6UdN15+VnE2u2D8NvJdtuPH2/W9fQtdelbp9a0
-	+HTj9Bopt6o8FZG6HdeuKbEUZyQaajEXFScCALqPL1fPAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 28 Jun 2013 03:50:22 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzd799hc8kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <benh@kernel.crashing.org>, <galak@kernel.crashing.org>,
+        <stuart.yoder@freescale.com>, <scottwood@freescale.com>,
+        <alex.williamson@redhat.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>, Timur Tabi <timur@tabi.org>
+Subject: [PATCH 3/3 v17] iommu/fsl: Freescale PAMU driver and iommu implementation.
+Date: Fri, 28 Jun 2013 13:08:52 +0530
+Message-ID: <1372405132-14170-1-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add new 'load_table' debugfs file to show previous accumulated data
-of CPUs load as following path and add CPUFREQ_LOADCHECK notification to
-CPUFREQ_TRANSITION_NOTIFIER notifier chain.
-- /sys/kernel/debug/cpufreq/cpuX/load_table
+Following is a brief description of the PAMU hardware:
+PAMU determines what action to take and whether to authorize the action on
+the basis of the memory address, a Logical IO Device Number (LIODN), and
+PAACT table (logically) indexed by LIODN and address. Hardware devices which
+need to access memory must provide an LIODN in addition to the memory address.
 
-When governor calculates CPUs load on dbs_check_cpu(), governor send
-CPUFREQ_LOADCHECK notification with CPUs load, so that cpufreq_stats
-accumulates calculated CPUs load on 'load_table' storage.
+Peripheral Access Authorization and Control Tables (PAACTs) are the primary
+data structures used by PAMU. A PAACT is a table of peripheral access
+authorization and control entries (PAACE).Each PAACE defines the range of
+I/O bus address space that is accessible by the LIOD and the associated access
+capabilities.
 
-This debugfs file is used to judge the correct system state or determine
-suitable system resource according to current CPUs load on user-space.
+There are two types of PAACTs: primary PAACT (PPAACT) and secondary PAACT
+(SPAACT).A given physical I/O device may be able to act as one or more
+independent logical I/O devices (LIODs). Each such logical I/O device is
+assigned an identifier called logical I/O device number (LIODN). A LIODN is
+allocated a contiguous portion of the I/O bus address space called the DSA window
+for performing DSA operations. The DSA window may optionally be divided into
+multiple sub-windows, each of which may be used to map to a region in system
+storage space. The first sub-window is referred to as the primary sub-window
+and the remaining are called secondary sub-windows.
 
-This debugfs file include following data:
-- Measurement point of time
-- CPU frequency
-- Per-CPU load
+This patch provides the PAMU driver (fsl_pamu.c) and the corresponding IOMMU
+API implementation (fsl_pamu_domain.c). The PAMU hardware driver (fsl_pamu.c)
+has been derived from the work done by Ashish Kalra and Timur Tabi.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Timur Tabi <timur@tabi.org>
+Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 ---
-Changes since v3:
-- Extend a range of accumulated data (10 ~ 1000)
-- Add unit information of time/freq and align 'Time' field as left for readability
-- Use CONFIG_CPU_FREQ_STAT depdendency instead of CONFIG_CPU_FREQ_STAT_DETATILS
-- Initialize load of Offline CPUx as zero(0)
-- Create/remove debugfs root directory on cpufreq_stats_init/exit() because
-  debugfs root is used on all CPUs.
+changes in v17
+- Fixed iommu group check for peer/parent bus devices.
+- Check for ACS till root node while allocating device
+groups.
+- Fix the reference to pdev instead of dma_dev.
+changes in v16
+- rebased to kernel 3.10-rc6
+changes in v15:
+- Updated path for fsl_pamu_stash.h.
+changes in v14:
+- Use updated PAMU specific attributes.
+changes in v13:
+- Use the new header drivers/iommu/pci.h
+- fix geometry configured check.
+changes in v12:
+- Use is_power_of_2 for checking alignement.
+- Check for multifucntion PCI device ACS flags for determining device groups.
+- Fix get_stash_id function.
+- Don't crash in case of access violations, disable the LIODN.
+- Don't use list_empty while traversing list using list for each entry.
+- Move stash structure and ids to PAMU header files.
+- Fix geometry size calculation.
+changes in v11:
+- changed iova to dma_addr_t in iova_to_phys API.
+changes in v10:
+- Support for new guts compatibe string for T4 & B4 devices.
+- Modified comment about port ID and mentioned the errata number.
+- Fixed the issue where data pointer was not freed in case of a an error.
+- Pass data pointer while freeing irq.
+- Whle initializing the SPAACE entry clear the valid bit.
+changes in v9:
+- Merged and createad a single function to delete
+a device from domain list.
+- Refactored the add_device API code.
+- Renamed the paace and spaace init fucntions.
+- Renamed functions for mapping windows and subwindows.
+- Changed the MAX LIODN value to MAX value u-boot can
+program.
+- Hard coded maximum number of subwindows.
+changes in v8:
+- implemented the new API for window based IOMMUs.
+changes in v7:
+- Set max_subwidows in the geometry attribute.
+- Add checking for maximum supported LIODN value.
+- Use upper_32_bits and lower_32_bits macros while
+  intializing PAMU data structures.
+changes in v6:
+- Simplified complex conditional statements.
+- Fixed indentation issues.
+- Added comments for IOMMU API implementation.
+changes in v5:
+- Addressed comments from Timur.
+changes in v4:
+- Addressed comments from Timur and Scott.
+changes in v3:
+- Addressed comments by Kumar Gala
+- dynamic fspi allocation
+- fixed alignment check in map and unmap
+ arch/powerpc/sysdev/fsl_pci.h   |    5 +
+ drivers/iommu/Kconfig           |   10 +
+ drivers/iommu/Makefile          |    1 +
+ drivers/iommu/fsl_pamu.c        | 1309 +++++++++++++++++++++++++++++++++++++++
+ drivers/iommu/fsl_pamu.h        |  410 ++++++++++++
+ drivers/iommu/fsl_pamu_domain.c | 1184 +++++++++++++++++++++++++++++++++++
+ drivers/iommu/fsl_pamu_domain.h |   85 +++
+ 7 files changed, 3004 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/iommu/fsl_pamu.c
+ create mode 100644 drivers/iommu/fsl_pamu.h
+ create mode 100644 drivers/iommu/fsl_pamu_domain.c
+ create mode 100644 drivers/iommu/fsl_pamu_domain.h
 
-Changes since v2:
-- Code clean according to Viresh Kumar's comment
-- Show both old frequency and new frequency on 'load_table' debugfs file
-- Change debufs file patch as below
-  old: /sys/kernel/debugfs/cpufreq/load_table
-  new: /sys/kernel/debugfs/cpufreq/cpuX/load_table
-
-Changes since v1:
-- Set maximum storage size to save CPUs load on Kconfig
-- Use spinlock to synchronize read/write operation for CPUs load
-- Use local variable instead of global variable(struct cpufreq_freqs *freqs)
-- Use pointer of data structure to get correct size of data structure
-  in sizeof() macro instead of structure name
-  : sizeof(struct cpufreq_freqs) -> sizeof(*stat->load_table)
-- Change time unit from nanosecond to microsecond
-- Remove unnecessary memory copy
-
-Following Test result :
-- Cpufreq governor : ondemand governor
-- Test application : MP3 play + Picture Audo-slide application
-- NR_CPU_LOAD_STORAGE : 50
-- command : cat /sys/kernel/debug/cpufreq/cpu0/load_table
-
-Time(ms)   Old Freq(Hz) New Freq(Hz) CPU0 CPU1 CPU2 CPU3
-175320          1400000      1400000   41   47    0   79
-175420          1400000      1200000   44   26    0   59
-175520          1200000      1600000   82   74    0   74
-175620          1600000      1600000   79   35    0   52
-175720          1600000       400000   15   17    0   10
-175820           400000       400000   65    7    0   10
-175920           400000      1600000    2  100    0    0
-176020          1600000      1100000   51   39    0   21
-176120          1100000       600000   38   11    0   19
-176220           600000       500000   55   13    0   24
-176320           500000       200000   13    1    0    0
-176420           200000       200000   16    1    0   63
-176520           200000       200000    7    5    0    4
-176620           200000       200000   73   49    0   49
-176720           200000      1600000   37   99    0   20
-176820          1600000      1000000   46    8    0    8
-176920          1000000       600000   45   16    0    5
-177020           600000       500000   54   17    0    0
-177120           500000       500000   73   39    0   72
-177220           500000       500000   67    5    0   29
-177320           500000       500000   69    3    0   13
-177420           500000       400000   55   14    0   39
-177520           400000       200000   22   11    0    1
-177620           200000       200000   70    8    0   61
-177720           200000      1600000   96   30    0   16
-177820          1600000       300000   12    5    0   13
-177920           300000       200000   12   11    0   25
-178020           200000       200000    8    0    0   21
-178120           200000       200000   27   57    0   47
-178220           200000       200000   41   27    0   29
-178320           200000      1600000   89    2    0   18
-178420          1600000       600000   26    2    0    5
-178520           600000       200000    4    3    0    8
-178620           200000      1600000   50    0    0  100
-178720          1600000      1300000   57   11    0   15
-178820          1300000       300000   12    0    0    7
-178920           300000       200000   11    0    0   10
-179022           200000       200000   65    0    0    5
-179120           200000       200000   37    4    0   18
-179220           200000       200000   75   41    0   20
-179320           200000       200000   48    9    0   11
-179420           200000       200000   45    9    0    1
-179520           200000       200000   74   17    0   14
-179620           200000       200000   44   10    0    9
-179720           200000       200000   46   23    0    6
-179820           200000      1600000   47   82    0   31
-179920          1600000       200000    2    3    0    3
-180020           200000       200000   11    7    0   53
-180120           200000       200000   17   32    0    9
-180220           200000       200000    9   35    0   14
-
- drivers/cpufreq/Kconfig            |   6 +
- drivers/cpufreq/cpufreq.c          |   4 +
- drivers/cpufreq/cpufreq_governor.c |  15 +++
- drivers/cpufreq/cpufreq_stats.c    | 241 +++++++++++++++++++++++++++++++++----
- include/linux/cpufreq.h            |   6 +
- 5 files changed, 246 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 534fcb8..5c3f406 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -36,6 +36,12 @@ config CPU_FREQ_STAT
+diff --git a/arch/powerpc/sysdev/fsl_pci.h b/arch/powerpc/sysdev/fsl_pci.h
+index 72b5625..1e01291 100644
+--- a/arch/powerpc/sysdev/fsl_pci.h
++++ b/arch/powerpc/sysdev/fsl_pci.h
+@@ -16,6 +16,11 @@
  
- 	  If in doubt, say N.
+ struct platform_device;
  
-+config NR_CPU_LOAD_STORAGE
-+	int "Maximum storage size to save CPU load (10-1000)"
-+	range 10 1000
-+	depends on CPU_FREQ_STAT
-+	default "10"
 +
- config CPU_FREQ_STAT_DETAILS
- 	bool "CPU frequency translation statistics details"
- 	depends on CPU_FREQ_STAT
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2d53f47..19596e2 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -292,6 +292,10 @@ void __cpufreq_notify_transition(struct cpufreq_policy *policy,
- 		if (likely(policy) && likely(policy->cpu == freqs->cpu))
- 			policy->cur = freqs->new;
- 		break;
-+	case CPUFREQ_LOADCHECK:
-+		srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
-+					 CPUFREQ_LOADCHECK, freqs);
-+		break;
- 	}
- }
- /**
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index dc9b72e..a13bdf9 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -87,6 +87,9 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
- 	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
- 	struct cpufreq_policy *policy;
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	struct cpufreq_freqs freq;
-+#endif
- 	unsigned int max_load = 0;
- 	unsigned int ignore_nice;
- 	unsigned int j;
-@@ -148,6 +151,9 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 			continue;
- 
- 		load = 100 * (wall_time - idle_time) / wall_time;
-+#ifdef CONFIG_CPU_FREQ_STAT
-+		freq.load[j] = load;
-+#endif
- 
- 		if (dbs_data->cdata->governor == GOV_ONDEMAND) {
- 			int freq_avg = __cpufreq_driver_getavg(policy, j);
-@@ -161,6 +167,15 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 			max_load = load;
- 	}
- 
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	for_each_cpu_not(j, policy->cpus)
-+		freq.load[j] = 0;
-+	freq.time = ktime_to_ms(ktime_get());
-+	freq.old = policy->cur;
++/* FSL PCI controller BRR1 register */
++#define PCI_FSL_BRR1      0xbf8
++#define PCI_FSL_BRR1_VER 0xffff
 +
-+	cpufreq_notify_transition(policy, &freq, CPUFREQ_LOADCHECK);
-+#endif
+ #define PCIE_LTSSM	0x0404		/* PCIE Link Training and Status */
+ #define PCIE_LTSSM_L0	0x16		/* L0 state */
+ #define PCIE_IP_REV_2_2		0x02080202 /* PCIE IP block version Rev2.2 */
+diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+index c332fb9..f97db88 100644
+--- a/drivers/iommu/Kconfig
++++ b/drivers/iommu/Kconfig
+@@ -17,6 +17,16 @@ config OF_IOMMU
+        def_bool y
+        depends on OF
+ 
++config FSL_PAMU
++	bool "Freescale IOMMU support"
++	depends on PPC_E500MC
++	select IOMMU_API
++	select GENERIC_ALLOCATOR
++	help
++	  Freescale PAMU support. PAMU is the IOMMU present on Freescale QorIQ platforms.
++	  PAMU can authorize memory access, remap the memory address, and remap I/O
++	  transaction types.
 +
- 	dbs_data->cdata->gov_check_cpu(cpu, max_load);
- }
- EXPORT_SYMBOL_GPL(dbs_check_cpu);
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index fb65dec..545bce1 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -12,6 +12,7 @@
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/cpu.h>
-+#include <linux/debugfs.h>
- #include <linux/sysfs.h>
- #include <linux/cpufreq.h>
- #include <linux/module.h>
-@@ -23,6 +24,7 @@
- #include <asm/cputime.h>
- 
- static spinlock_t cpufreq_stats_lock;
-+static struct dentry *debugfs_cpufreq;
- 
- struct cpufreq_stats {
- 	unsigned int cpu;
-@@ -36,6 +38,12 @@ struct cpufreq_stats {
- #ifdef CONFIG_CPU_FREQ_STAT_DETAILS
- 	unsigned int *trans_table;
- #endif
+ # MSM IOMMU support
+ config MSM_IOMMU
+ 	bool "MSM IOMMU Support"
+diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
+index ef0e520..027d1af 100644
+--- a/drivers/iommu/Makefile
++++ b/drivers/iommu/Makefile
+@@ -15,3 +15,4 @@ obj-$(CONFIG_TEGRA_IOMMU_SMMU) += tegra-smmu.o
+ obj-$(CONFIG_EXYNOS_IOMMU) += exynos-iommu.o
+ obj-$(CONFIG_SHMOBILE_IOMMU) += shmobile-iommu.o
+ obj-$(CONFIG_SHMOBILE_IPMMU) += shmobile-ipmmu.o
++obj-$(CONFIG_FSL_PAMU) += fsl_pamu.o fsl_pamu_domain.o
+diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c
+new file mode 100644
+index 0000000..d9a27c5
+--- /dev/null
++++ b/drivers/iommu/fsl_pamu.c
+@@ -0,0 +1,1309 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ *
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ */
 +
-+	/* Debugfs file for load_table */
-+	struct dentry *debugfs_cpu;
-+	struct cpufreq_freqs *load_table;
-+	unsigned int load_last_index;
-+	unsigned int load_max_index;
- };
- 
- static DEFINE_PER_CPU(struct cpufreq_stats *, cpufreq_stats_table);
-@@ -149,6 +157,154 @@ static struct attribute_group stats_attr_group = {
- 	.name = "stats"
- };
- 
-+#define MAX_LINE_SIZE		255
-+static ssize_t load_table_read(struct file *file, char __user *user_buf,
-+					size_t count, loff_t *ppos)
++#define pr_fmt(fmt)    "fsl-pamu: %s: " fmt, __func__
++
++#include <linux/init.h>
++#include <linux/iommu.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/mm.h>
++#include <linux/interrupt.h>
++#include <linux/device.h>
++#include <linux/of_platform.h>
++#include <linux/bootmem.h>
++#include <linux/genalloc.h>
++#include <asm/io.h>
++#include <asm/bitops.h>
++#include <asm/fsl_guts.h>
++
++#include "fsl_pamu.h"
++
++/* define indexes for each operation mapping scenario */
++#define OMI_QMAN        0x00
++#define OMI_FMAN        0x01
++#define OMI_QMAN_PRIV   0x02
++#define OMI_CAAM        0x03
++
++#define make64(high, low) (((u64)(high) << 32) | (low))
++
++struct pamu_isr_data {
++	void __iomem *pamu_reg_base;	/* Base address of PAMU regs*/
++	unsigned int count;		/* The number of PAMUs */
++};
++
++static struct paace *ppaact;
++static struct paace *spaact;
++static struct ome *omt;
++
++/*
++ * Table for matching compatible strings, for device tree
++ * guts node, for QorIQ SOCs.
++ * "fsl,qoriq-device-config-2.0" corresponds to T4 & B4
++ * SOCs. For the older SOCs "fsl,qoriq-device-config-1.0"
++ * string would be used.
++*/
++static const struct of_device_id guts_device_ids[] = {
++	{ .compatible = "fsl,qoriq-device-config-1.0", },
++	{ .compatible = "fsl,qoriq-device-config-2.0", },
++	{}
++};
++
++
++/*
++ * Table for matching compatible strings, for device tree
++ * L3 cache controller node.
++ * "fsl,t4240-l3-cache-controller" corresponds to T4,
++ * "fsl,b4860-l3-cache-controller" corresponds to B4 &
++ * "fsl,p4080-l3-cache-controller" corresponds to other,
++ * SOCs.
++*/
++static const struct of_device_id l3_device_ids[] = {
++	{ .compatible = "fsl,t4240-l3-cache-controller", },
++	{ .compatible = "fsl,b4860-l3-cache-controller", },
++	{ .compatible = "fsl,p4080-l3-cache-controller", },
++	{}
++};
++
++/* maximum subwindows permitted per liodn */
++static u32 max_subwindow_count;
++
++/* Pool for fspi allocation */
++struct gen_pool *spaace_pool;
++
++/**
++ * pamu_get_max_subwin_cnt() - Return the maximum supported
++ * subwindow count per liodn.
++ *
++ */
++u32 pamu_get_max_subwin_cnt()
 +{
-+	struct cpufreq_policy *policy = file->private_data;
-+	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
-+	struct cpufreq_freqs *load_table = stat->load_table;
-+	ssize_t len = 0;
-+	char *buf;
-+	int i, cpu, ret;
++	return max_subwindow_count;
++}
 +
-+	buf = kzalloc(MAX_LINE_SIZE * stat->load_max_index, GFP_KERNEL);
-+	if (!buf)
-+		return 0;
++/**
++ * pamu_get_ppaace() - Return the primary PACCE
++ * @liodn: liodn PAACT index for desired PAACE
++ *
++ * Returns the ppace pointer upon success else return
++ * null.
++ */
++static struct paace *pamu_get_ppaace(int liodn)
++{
++	if (!ppaact || liodn >= PAACE_NUMBER_ENTRIES) {
++		pr_err("PPAACT doesn't exist\n");
++		return NULL;
++	}
 +
-+	spin_lock(&cpufreq_stats_lock);
-+	len += sprintf(buf + len, "%-10s %12s %12s ", "Time(ms)",
-+						    "Old Freq(Hz)",
-+						    "New Freq(Hz)");
-+	for_each_present_cpu(cpu)
-+		len += sprintf(buf + len, "%3s%d ", "CPU", cpu);
-+	len += sprintf(buf + len, "\n");
++	return &ppaact[liodn];
++}
 +
-+	i = stat->load_last_index;
-+	do {
-+		len += sprintf(buf + len, "%-10lld %12d %12d ",
-+				load_table[i].time,
-+				load_table[i].old,
-+				load_table[i].new);
++/**
++ * pamu_enable_liodn() - Set valid bit of PACCE
++ * @liodn: liodn PAACT index for desired PAACE
++ *
++ * Returns 0 upon success else error code < 0 returned
++ */
++int pamu_enable_liodn(int liodn)
++{
++	struct paace *ppaace;
 +
-+		for_each_present_cpu(cpu)
-+			len += sprintf(buf + len, "%4d ",
-+					load_table[i].load[cpu]);
-+		len += sprintf(buf + len, "\n");
++	ppaace = pamu_get_ppaace(liodn);
++	if (!ppaace) {
++		pr_err("Invalid primary paace entry\n");
++		return -ENOENT;
++	}
 +
-+		if (++i == stat->load_max_index)
-+			i = 0;
-+	} while (i != stat->load_last_index);
-+	spin_unlock(&cpufreq_stats_lock);
++	if (!get_bf(ppaace->addr_bitfields, PPAACE_AF_WSE)) {
++		pr_err("liodn %d not configured\n", liodn);
++		return -EINVAL;
++	}
 +
-+	ret = simple_read_from_buffer(user_buf, count, ppos, buf, len);
-+	kfree(buf);
++	/* Ensure that all other stores to the ppaace complete first */
++	mb();
++
++	set_bf(ppaace->addr_bitfields, PAACE_AF_V, PAACE_V_VALID);
++	mb();
++
++	return 0;
++}
++
++/**
++ * pamu_disable_liodn() - Clears valid bit of PACCE
++ * @liodn: liodn PAACT index for desired PAACE
++ *
++ * Returns 0 upon success else error code < 0 returned
++ */
++int pamu_disable_liodn(int liodn)
++{
++	struct paace *ppaace;
++
++	ppaace = pamu_get_ppaace(liodn);
++	if (!ppaace) {
++		pr_err("Invalid primary paace entry\n");
++		return -ENOENT;
++	}
++
++	set_bf(ppaace->addr_bitfields, PAACE_AF_V, PAACE_V_INVALID);
++	mb();
++
++	return 0;
++}
++
++/* Derive the window size encoding for a particular PAACE entry */
++static unsigned int map_addrspace_size_to_wse(phys_addr_t addrspace_size)
++{
++	/* Bug if not a power of 2 */
++	BUG_ON(!is_power_of_2(addrspace_size));
++
++	/* window size is 2^(WSE+1) bytes */
++	return __ffs(addrspace_size) - 1;
++}
++
++/* Derive the PAACE window count encoding for the subwindow count */
++static unsigned int map_subwindow_cnt_to_wce(u32 subwindow_cnt)
++{
++       /* window count is 2^(WCE+1) bytes */
++       return __ffs(subwindow_cnt) - 1;
++}
++
++/*
++ * Set the PAACE type as primary and set the coherency required domain
++ * attribute
++ */
++static void pamu_init_ppaace(struct paace *ppaace)
++{
++	set_bf(ppaace->addr_bitfields, PAACE_AF_PT, PAACE_PT_PRIMARY);
++
++	set_bf(ppaace->domain_attr.to_host.coherency_required, PAACE_DA_HOST_CR,
++	       PAACE_M_COHERENCE_REQ);
++}
++
++/*
++ * Set the PAACE type as secondary and set the coherency required domain
++ * attribute.
++ */
++static void pamu_init_spaace(struct paace *spaace)
++{
++	set_bf(spaace->addr_bitfields, PAACE_AF_PT, PAACE_PT_SECONDARY);
++	set_bf(spaace->domain_attr.to_host.coherency_required, PAACE_DA_HOST_CR,
++	       PAACE_M_COHERENCE_REQ);
++}
++
++/*
++ * Return the spaace (corresponding to the secondary window index)
++ * for a particular ppaace.
++ */
++static struct paace *pamu_get_spaace(struct paace *paace, u32 wnum)
++{
++	u32 subwin_cnt;
++	struct paace *spaace = NULL;
++
++	subwin_cnt = 1UL << (get_bf(paace->impl_attr, PAACE_IA_WCE) + 1);
++
++	if (wnum < subwin_cnt)
++		spaace = &spaact[paace->fspi + wnum];
++	else
++		pr_err("secondary paace out of bounds\n");
++
++	return spaace;
++}
++
++/**
++ * pamu_get_fspi_and_allocate() - Allocates fspi index and reserves subwindows
++ *                                required for primary PAACE in the secondary
++ *                                PAACE table.
++ * @subwin_cnt: Number of subwindows to be reserved.
++ *
++ * A PPAACE entry may have a number of associated subwindows. A subwindow
++ * corresponds to a SPAACE entry in the SPAACT table. Each PAACE entry stores
++ * the index (fspi) of the first SPAACE entry in the SPAACT table. This
++ * function returns the index of the first SPAACE entry. The remaining
++ * SPAACE entries are reserved contiguously from that index.
++ *
++ * Returns a valid fspi index in the range of 0 - SPAACE_NUMBER_ENTRIES on success.
++ * If no SPAACE entry is available or the allocator can not reserve the required
++ * number of contiguous entries function returns ULONG_MAX indicating a failure.
++ *
++*/
++static unsigned long pamu_get_fspi_and_allocate(u32 subwin_cnt)
++{
++	unsigned long spaace_addr;
++
++	spaace_addr = gen_pool_alloc(spaace_pool, subwin_cnt * sizeof(struct paace));
++	if (!spaace_addr)
++		return ULONG_MAX;
++
++	return (spaace_addr - (unsigned long)spaact) / (sizeof(struct paace));
++}
++
++/* Release the subwindows reserved for a particular LIODN */
++void pamu_free_subwins(int liodn)
++{
++	struct paace *ppaace;
++	u32 subwin_cnt, size;
++
++	ppaace = pamu_get_ppaace(liodn);
++	if (!ppaace) {
++		pr_err("Invalid liodn entry\n");
++		return;
++	}
++
++	if (get_bf(ppaace->addr_bitfields, PPAACE_AF_MW)) {
++		subwin_cnt = 1UL << (get_bf(ppaace->impl_attr, PAACE_IA_WCE) + 1);
++		size = (subwin_cnt - 1) * sizeof(struct paace);
++		gen_pool_free(spaace_pool, (unsigned long)&spaact[ppaace->fspi], size);
++		set_bf(ppaace->addr_bitfields, PPAACE_AF_MW, 0);
++	}
++}
++
++/*
++ * Function used for updating stash destination for the coressponding
++ * LIODN.
++ */
++int  pamu_update_paace_stash(int liodn, u32 subwin, u32 value)
++{
++	struct paace *paace;
++
++	paace = pamu_get_ppaace(liodn);
++	if (!paace) {
++		pr_err("Invalid liodn entry\n");
++		return -ENOENT;
++	}
++	if (subwin) {
++		paace = pamu_get_spaace(paace, subwin - 1);
++		if (!paace) {
++			return -ENOENT;
++		}
++	}
++	set_bf(paace->impl_attr, PAACE_IA_CID, value);
++
++	mb();
++
++	return 0;
++}
++
++/* Disable a subwindow corresponding to the LIODN */
++int pamu_disable_spaace(int liodn, u32 subwin)
++{
++	struct paace *paace;
++
++	paace = pamu_get_ppaace(liodn);
++	if (!paace) {
++		pr_err("Invalid liodn entry\n");
++		return -ENOENT;
++	}
++	if (subwin) {
++		paace = pamu_get_spaace(paace, subwin - 1);
++		if (!paace) {
++			return -ENOENT;
++		}
++		set_bf(paace->addr_bitfields, PAACE_AF_V,
++			 PAACE_V_INVALID);
++	} else {
++		set_bf(paace->addr_bitfields, PAACE_AF_AP,
++			 PAACE_AP_PERMS_DENIED);
++	}
++
++	mb();
++
++	return 0;
++}
++
++
++/**
++ * pamu_config_paace() - Sets up PPAACE entry for specified liodn
++ *
++ * @liodn: Logical IO device number
++ * @win_addr: starting address of DSA window
++ * @win-size: size of DSA window
++ * @omi: Operation mapping index -- if ~omi == 0 then omi not defined
++ * @rpn: real (true physical) page number
++ * @stashid: cache stash id for associated cpu -- if ~stashid == 0 then
++ *	     stashid not defined
++ * @snoopid: snoop id for hardware coherency -- if ~snoopid == 0 then
++ *	     snoopid not defined
++ * @subwin_cnt: number of sub-windows
++ * @prot: window permissions
++ *
++ * Returns 0 upon success else error code < 0 returned
++ */
++int pamu_config_ppaace(int liodn, phys_addr_t win_addr, phys_addr_t win_size,
++		       u32 omi, unsigned long rpn, u32 snoopid, u32 stashid,
++		       u32 subwin_cnt, int prot)
++{
++	struct paace *ppaace;
++	unsigned long fspi;
++
++	if (!is_power_of_2(win_size) || win_size < PAMU_PAGE_SIZE) {
++		pr_err("window size too small or not a power of two %llx\n", win_size);
++		return -EINVAL;
++	}
++
++	if (win_addr & (win_size - 1)) {
++		pr_err("window address is not aligned with window size\n");
++		return -EINVAL;
++	}
++
++	ppaace = pamu_get_ppaace(liodn);
++	if (!ppaace) {
++		return -ENOENT;
++	}
++
++	/* window size is 2^(WSE+1) bytes */
++	set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE,
++		map_addrspace_size_to_wse(win_size));
++
++	pamu_init_ppaace(ppaace);
++
++	ppaace->wbah = win_addr >> (PAMU_PAGE_SHIFT + 20);
++	set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL,
++	       (win_addr >> PAMU_PAGE_SHIFT));
++
++	/* set up operation mapping if it's configured */
++	if (omi < OME_NUMBER_ENTRIES) {
++		set_bf(ppaace->impl_attr, PAACE_IA_OTM, PAACE_OTM_INDEXED);
++		ppaace->op_encode.index_ot.omi = omi;
++	} else if (~omi != 0) {
++		pr_err("bad operation mapping index: %d\n", omi);
++		return -EINVAL;
++	}
++
++	/* configure stash id */
++	if (~stashid != 0)
++		set_bf(ppaace->impl_attr, PAACE_IA_CID, stashid);
++
++	/* configure snoop id */
++	if (~snoopid != 0)
++		ppaace->domain_attr.to_host.snpid = snoopid;
++
++	if (subwin_cnt) {
++		/* The first entry is in the primary PAACE instead */
++		fspi = pamu_get_fspi_and_allocate(subwin_cnt - 1);
++		if (fspi == ULONG_MAX) {
++			pr_err("spaace indexes exhausted\n");
++			return -EINVAL;
++		}
++
++		/* window count is 2^(WCE+1) bytes */
++		set_bf(ppaace->impl_attr, PAACE_IA_WCE,
++		       map_subwindow_cnt_to_wce(subwin_cnt));
++		set_bf(ppaace->addr_bitfields, PPAACE_AF_MW, 0x1);
++		ppaace->fspi = fspi;
++	} else {
++		set_bf(ppaace->impl_attr, PAACE_IA_ATM, PAACE_ATM_WINDOW_XLATE);
++		ppaace->twbah = rpn >> 20;
++		set_bf(ppaace->win_bitfields, PAACE_WIN_TWBAL, rpn);
++		set_bf(ppaace->addr_bitfields, PAACE_AF_AP, prot);
++		set_bf(ppaace->impl_attr, PAACE_IA_WCE, 0);
++		set_bf(ppaace->addr_bitfields, PPAACE_AF_MW, 0);
++	}
++	mb();
++
++	return 0;
++}
++
++/**
++ * pamu_config_spaace() - Sets up SPAACE entry for specified subwindow
++ *
++ * @liodn:  Logical IO device number
++ * @subwin_cnt:  number of sub-windows associated with dma-window
++ * @subwin: subwindow index
++ * @subwin_size: size of subwindow
++ * @omi: Operation mapping index
++ * @rpn: real (true physical) page number
++ * @snoopid: snoop id for hardware coherency -- if ~snoopid == 0 then
++ *			  snoopid not defined
++ * @stashid: cache stash id for associated cpu
++ * @enable: enable/disable subwindow after reconfiguration
++ * @prot: sub window permissions
++ *
++ * Returns 0 upon success else error code < 0 returned
++ */
++int pamu_config_spaace(int liodn, u32 subwin_cnt, u32 subwin,
++		       phys_addr_t subwin_size, u32 omi, unsigned long rpn,
++		       u32 snoopid, u32 stashid, int enable, int prot)
++{
++	struct paace *paace;
++
++
++	/* setup sub-windows */
++	if (!subwin_cnt) {
++		pr_err("Invalid subwindow count\n");
++		return -EINVAL;
++	}
++
++	paace = pamu_get_ppaace(liodn);
++	if (subwin > 0 && subwin < subwin_cnt && paace) {
++		paace = pamu_get_spaace(paace, subwin - 1);
++
++		if (paace && !(paace->addr_bitfields & PAACE_V_VALID)) {
++			pamu_init_spaace(paace);
++			set_bf(paace->addr_bitfields, SPAACE_AF_LIODN, liodn);
++		}
++	}
++
++	if (!paace) {
++		pr_err("Invalid liodn entry\n");
++		return -ENOENT;
++	}
++
++	if (!is_power_of_2(subwin_size) || subwin_size < PAMU_PAGE_SIZE) {
++		pr_err("subwindow size out of range, or not a power of 2\n");
++		return -EINVAL;
++	}
++
++	if (rpn == ULONG_MAX) {
++		pr_err("real page number out of range\n");
++		return -EINVAL;
++	}
++
++	/* window size is 2^(WSE+1) bytes */
++	set_bf(paace->win_bitfields, PAACE_WIN_SWSE,
++	       map_addrspace_size_to_wse(subwin_size));
++
++	set_bf(paace->impl_attr, PAACE_IA_ATM, PAACE_ATM_WINDOW_XLATE);
++	paace->twbah = rpn >> 20;
++	set_bf(paace->win_bitfields, PAACE_WIN_TWBAL, rpn);
++	set_bf(paace->addr_bitfields, PAACE_AF_AP, prot);
++
++	/* configure snoop id */
++	if (~snoopid != 0)
++		paace->domain_attr.to_host.snpid = snoopid;
++
++	/* set up operation mapping if it's configured */
++	if (omi < OME_NUMBER_ENTRIES) {
++		set_bf(paace->impl_attr, PAACE_IA_OTM, PAACE_OTM_INDEXED);
++		paace->op_encode.index_ot.omi = omi;
++	} else if (~omi != 0) {
++		pr_err("bad operation mapping index: %d\n", omi);
++		return -EINVAL;
++	}
++
++	if (~stashid != 0)
++		set_bf(paace->impl_attr, PAACE_IA_CID, stashid);
++
++	smp_wmb();
++
++	if (enable)
++		set_bf(paace->addr_bitfields, PAACE_AF_V, PAACE_V_VALID);
++
++	mb();
++
++	return 0;
++}
++
++/**
++* get_ome_index() - Returns the index in the operation mapping table
++*                   for device.
++* @*omi_index: pointer for storing the index value
++*
++*/
++void get_ome_index(u32 *omi_index, struct device *dev)
++{
++	if (of_device_is_compatible(dev->of_node, "fsl,qman-portal"))
++		*omi_index = OMI_QMAN;
++	if (of_device_is_compatible(dev->of_node, "fsl,qman"))
++		*omi_index = OMI_QMAN_PRIV;
++}
++
++/**
++ * get_stash_id - Returns stash destination id corresponding to a
++ *                cache type and vcpu.
++ * @stash_dest_hint: L1, L2 or L3
++ * @vcpu: vpcu target for a particular cache type.
++ *
++ * Returs stash on success or ~(u32)0 on failure.
++ *
++ */
++u32 get_stash_id(u32 stash_dest_hint, u32 vcpu)
++{
++	const u32 *prop;
++	struct device_node *node;
++	u32 cache_level;
++	int len, found = 0;
++	int i;
++
++	/* Fastpath, exit early if L3/CPC cache is target for stashing */
++	if (stash_dest_hint == PAMU_ATTR_CACHE_L3) {
++		node = of_find_matching_node(NULL, l3_device_ids);
++		if (node) {
++			prop = of_get_property(node, "cache-stash-id", 0);
++			if (!prop) {
++				pr_err("missing cache-stash-id at %s\n", node->full_name);
++				of_node_put(node);
++				return ~(u32)0;
++			}
++			of_node_put(node);
++			return be32_to_cpup(prop);
++		}
++		return ~(u32)0;
++	}
++
++	for_each_node_by_type(node, "cpu") {
++		prop = of_get_property(node, "reg", &len);
++		for (i = 0; i < len / sizeof(u32); i++) {
++			if (be32_to_cpup(&prop[i]) == vcpu) {
++				found = 1;
++				goto found_cpu_node;
++			}
++		}
++	}
++found_cpu_node:
++
++	/* find the hwnode that represents the cache */
++	for (cache_level = PAMU_ATTR_CACHE_L1; (cache_level < PAMU_ATTR_CACHE_L3) && found; cache_level++) {
++		if (stash_dest_hint == cache_level) {
++			prop = of_get_property(node, "cache-stash-id", 0);
++			if (!prop) {
++				pr_err("missing cache-stash-id at %s\n", node->full_name);
++				of_node_put(node);
++				return ~(u32)0;
++			}
++			of_node_put(node);
++			return be32_to_cpup(prop);
++		}
++
++		prop = of_get_property(node, "next-level-cache", 0);
++		if (!prop) {
++			pr_err("can't find next-level-cache at %s\n",
++				node->full_name);
++			of_node_put(node);
++			return ~(u32)0;  /* can't traverse any further */
++		}
++		of_node_put(node);
++
++		/* advance to next node in cache hierarchy */
++		node = of_find_node_by_phandle(*prop);
++		if (!node) {
++			pr_err("Invalid node for cache hierarchy %s\n",
++				node->full_name);
++			return ~(u32)0;
++		}
++	}
++
++	pr_err("stash dest not found for %d on vcpu %d\n",
++	          stash_dest_hint, vcpu);
++	return ~(u32)0;
++}
++
++/* Identify if the PAACT table entry belongs to QMAN, BMAN or QMAN Portal */
++#define QMAN_PAACE 1
++#define QMAN_PORTAL_PAACE 2
++#define BMAN_PAACE 3
++
++/**
++ * Setup operation mapping and stash destinations for QMAN and QMAN portal.
++ * Memory accesses to QMAN and BMAN private memory need not be coherent, so
++ * clear the PAACE entry coherency attribute for them.
++ */
++static void setup_qbman_paace(struct paace *ppaace, int  paace_type)
++{
++	switch (paace_type) {
++	case QMAN_PAACE:
++		set_bf(ppaace->impl_attr, PAACE_IA_OTM, PAACE_OTM_INDEXED);
++		ppaace->op_encode.index_ot.omi = OMI_QMAN_PRIV;
++		/* setup QMAN Private data stashing for the L3 cache */
++		set_bf(ppaace->impl_attr, PAACE_IA_CID, get_stash_id(PAMU_ATTR_CACHE_L3, 0));
++		set_bf(ppaace->domain_attr.to_host.coherency_required, PAACE_DA_HOST_CR,
++		       0);
++		break;
++	case QMAN_PORTAL_PAACE:
++		set_bf(ppaace->impl_attr, PAACE_IA_OTM, PAACE_OTM_INDEXED);
++		ppaace->op_encode.index_ot.omi = OMI_QMAN;
++		/*Set DQRR and Frame stashing for the L3 cache */
++		set_bf(ppaace->impl_attr, PAACE_IA_CID, get_stash_id(PAMU_ATTR_CACHE_L3, 0));
++		break;
++	case BMAN_PAACE:
++		set_bf(ppaace->domain_attr.to_host.coherency_required, PAACE_DA_HOST_CR,
++		       0);
++		break;
++	}
++}
++
++/**
++ * Setup the operation mapping table for various devices. This is a static
++ * table where each table index corresponds to a particular device. PAMU uses
++ * this table to translate device transaction to appropriate corenet
++ * transaction.
++ */
++static void __init setup_omt(struct ome *omt)
++{
++	struct ome *ome;
++
++	/* Configure OMI_QMAN */
++	ome = &omt[OMI_QMAN];
++
++	ome->moe[IOE_READ_IDX] = EOE_VALID | EOE_READ;
++	ome->moe[IOE_EREAD0_IDX] = EOE_VALID | EOE_RSA;
++	ome->moe[IOE_WRITE_IDX] = EOE_VALID | EOE_WRITE;
++	ome->moe[IOE_EWRITE0_IDX] = EOE_VALID | EOE_WWSAO;
++
++	ome->moe[IOE_DIRECT0_IDX] = EOE_VALID | EOE_LDEC;
++	ome->moe[IOE_DIRECT1_IDX] = EOE_VALID | EOE_LDECPE;
++
++	/* Configure OMI_FMAN */
++	ome = &omt[OMI_FMAN];
++	ome->moe[IOE_READ_IDX]  = EOE_VALID | EOE_READI;
++	ome->moe[IOE_WRITE_IDX] = EOE_VALID | EOE_WRITE;
++
++	/* Configure OMI_QMAN private */
++	ome = &omt[OMI_QMAN_PRIV];
++	ome->moe[IOE_READ_IDX]  = EOE_VALID | EOE_READ;
++	ome->moe[IOE_WRITE_IDX] = EOE_VALID | EOE_WRITE;
++	ome->moe[IOE_EREAD0_IDX] = EOE_VALID | EOE_RSA;
++	ome->moe[IOE_EWRITE0_IDX] = EOE_VALID | EOE_WWSA;
++
++	/* Configure OMI_CAAM */
++	ome = &omt[OMI_CAAM];
++	ome->moe[IOE_READ_IDX]  = EOE_VALID | EOE_READI;
++	ome->moe[IOE_WRITE_IDX] = EOE_VALID | EOE_WRITE;
++}
++
++/*
++ * Get the maximum number of PAACT table entries
++ * and subwindows supported by PAMU
++ */
++static void get_pamu_cap_values(unsigned long pamu_reg_base)
++{
++	u32 pc_val;
++
++	pc_val = in_be32((u32 *)(pamu_reg_base + PAMU_PC3));
++	/* Maximum number of subwindows per liodn */
++	max_subwindow_count = 1 << (1 + PAMU_PC3_MWCE(pc_val));
++}
++
++/* Setup PAMU registers pointing to PAACT, SPAACT and OMT */
++int setup_one_pamu(unsigned long pamu_reg_base, unsigned long pamu_reg_size,
++	           phys_addr_t ppaact_phys, phys_addr_t spaact_phys,
++		   phys_addr_t omt_phys)
++{
++	u32 *pc;
++	struct pamu_mmap_regs *pamu_regs;
++
++	pc = (u32 *) (pamu_reg_base + PAMU_PC);
++	pamu_regs = (struct pamu_mmap_regs *)
++		(pamu_reg_base + PAMU_MMAP_REGS_BASE);
++
++	/* set up pointers to corenet control blocks */
++
++	out_be32(&pamu_regs->ppbah, upper_32_bits(ppaact_phys));
++	out_be32(&pamu_regs->ppbal, lower_32_bits(ppaact_phys));
++	ppaact_phys = ppaact_phys + PAACT_SIZE;
++	out_be32(&pamu_regs->pplah, upper_32_bits(ppaact_phys));
++	out_be32(&pamu_regs->pplal, lower_32_bits(ppaact_phys));
++
++	out_be32(&pamu_regs->spbah, upper_32_bits(spaact_phys));
++	out_be32(&pamu_regs->spbal, lower_32_bits(spaact_phys));
++	spaact_phys = spaact_phys + SPAACT_SIZE;
++	out_be32(&pamu_regs->splah, upper_32_bits(spaact_phys));
++	out_be32(&pamu_regs->splal, lower_32_bits(spaact_phys));
++
++	out_be32(&pamu_regs->obah, upper_32_bits(omt_phys));
++	out_be32(&pamu_regs->obal, lower_32_bits(omt_phys));
++	omt_phys = omt_phys + OMT_SIZE;
++	out_be32(&pamu_regs->olah, upper_32_bits(omt_phys));
++	out_be32(&pamu_regs->olal, lower_32_bits(omt_phys));
++
++	/*
++	 * set PAMU enable bit,
++	 * allow ppaact & omt to be cached
++	 * & enable PAMU access violation interrupts.
++	 */
++
++	out_be32((u32 *)(pamu_reg_base + PAMU_PICS),
++			PAMU_ACCESS_VIOLATION_ENABLE);
++	out_be32(pc, PAMU_PC_PE | PAMU_PC_OCE | PAMU_PC_SPCC | PAMU_PC_PPCC);
++	return 0;
++}
++
++/* Enable all device LIODNS */
++static void __init setup_liodns(void)
++{
++	int i, len;
++	struct paace *ppaace;
++	struct device_node *node = NULL;
++	const u32 *prop;
++
++	for_each_node_with_property(node, "fsl,liodn") {
++		prop = of_get_property(node, "fsl,liodn", &len);
++		for (i = 0; i < len / sizeof(u32); i++) {
++			int liodn;
++
++			liodn = be32_to_cpup(&prop[i]);
++			if (liodn >= PAACE_NUMBER_ENTRIES) {
++				pr_err("Invalid LIODN value %d\n", liodn);
++				continue;
++			}
++			ppaace = pamu_get_ppaace(liodn);
++			pamu_init_ppaace(ppaace);
++			/* window size is 2^(WSE+1) bytes */
++			set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
++			ppaace->wbah = 0;
++			set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
++			set_bf(ppaace->impl_attr, PAACE_IA_ATM,
++				PAACE_ATM_NO_XLATE);
++			set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
++				PAACE_AP_PERMS_ALL);
++			if (of_device_is_compatible(node, "fsl,qman-portal"))
++				setup_qbman_paace(ppaace, QMAN_PORTAL_PAACE);
++			if (of_device_is_compatible(node, "fsl,qman"))
++				setup_qbman_paace(ppaace, QMAN_PAACE);
++			if (of_device_is_compatible(node, "fsl,bman"))
++				setup_qbman_paace(ppaace, BMAN_PAACE);
++			mb();
++			pamu_enable_liodn(liodn);
++		}
++	}
++}
++
++irqreturn_t pamu_av_isr(int irq, void *arg)
++{
++	struct pamu_isr_data *data = arg;
++	phys_addr_t phys;
++	unsigned int i, j, ret;
++
++	pr_emerg("fsl-pamu: access violation interrupt\n");
++
++	for (i = 0; i < data->count; i++) {
++		void __iomem *p = data->pamu_reg_base + i * PAMU_OFFSET;
++		u32 pics = in_be32(p + PAMU_PICS);
++
++		if (pics & PAMU_ACCESS_VIOLATION_STAT) {
++			u32 avs1 = in_be32(p + PAMU_AVS1);
++			struct paace *paace;
++
++			pr_emerg("POES1=%08x\n", in_be32(p + PAMU_POES1));
++			pr_emerg("POES2=%08x\n", in_be32(p + PAMU_POES2));
++			pr_emerg("AVS1=%08x\n", avs1);
++			pr_emerg("AVS2=%08x\n", in_be32(p + PAMU_AVS2));
++			pr_emerg("AVA=%016llx\n", make64(in_be32(p + PAMU_AVAH),
++				in_be32(p + PAMU_AVAL)));
++			pr_emerg("UDAD=%08x\n", in_be32(p + PAMU_UDAD));
++			pr_emerg("POEA=%016llx\n", make64(in_be32(p + PAMU_POEAH),
++				in_be32(p + PAMU_POEAL)));
++
++			phys = make64(in_be32(p + PAMU_POEAH),
++				in_be32(p + PAMU_POEAL));
++
++			/* Assume that POEA points to a PAACE */
++			if (phys) {
++				u32 *paace = phys_to_virt(phys);
++
++				/* Only the first four words are relevant */
++				for (j = 0; j < 4; j++)
++					pr_emerg("PAACE[%u]=%08x\n", j, in_be32(paace + j));
++			}
++
++			/* clear access violation condition */
++			out_be32((p + PAMU_AVS1), avs1 & PAMU_AV_MASK);
++			paace = pamu_get_ppaace(avs1 >> PAMU_AVS1_LIODN_SHIFT);
++			BUG_ON(!paace);
++			/* check if we got a violation for a disabled LIODN */
++			if (!get_bf(paace->addr_bitfields, PAACE_AF_V)) {
++				/*
++				 * As per hardware erratum A-003638, access
++				 * violation can be reported for a disabled
++				 * LIODN. If we hit that condition, disable
++				 * access violation reporting.
++				 */
++				pics &= ~PAMU_ACCESS_VIOLATION_ENABLE;
++			} else {
++				/* Disable the LIODN */
++				ret = pamu_disable_liodn(avs1 >> PAMU_AVS1_LIODN_SHIFT);
++				BUG_ON(ret);
++				pr_emerg("Disabling liodn %x\n", avs1 >> PAMU_AVS1_LIODN_SHIFT);
++			}
++			out_be32((p + PAMU_PICS), pics);
++		}
++	}
++
++
++	return IRQ_HANDLED;
++}
++
++#define LAWAR_EN		0x80000000
++#define LAWAR_TARGET_MASK	0x0FF00000
++#define LAWAR_TARGET_SHIFT	20
++#define LAWAR_SIZE_MASK		0x0000003F
++#define LAWAR_CSDID_MASK	0x000FF000
++#define LAWAR_CSDID_SHIFT	12
++
++#define LAW_SIZE_4K		0xb
++
++struct ccsr_law {
++	u32	lawbarh;	/* LAWn base address high */
++	u32	lawbarl;	/* LAWn base address low */
++	u32	lawar;		/* LAWn attributes */
++	u32	reserved;
++};
++
++/*
++ * Create a coherence subdomain for a given memory block.
++ */
++static int __init create_csd(phys_addr_t phys, size_t size, u32 csd_port_id)
++{
++	struct device_node *np;
++	const __be32 *iprop;
++	void __iomem *lac = NULL;	/* Local Access Control registers */
++	struct ccsr_law __iomem *law;
++	void __iomem *ccm = NULL;
++	u32 __iomem *csdids;
++	unsigned int i, num_laws, num_csds;
++	u32 law_target = 0;
++	u32 csd_id = 0;
++	int ret = 0;
++
++	np = of_find_compatible_node(NULL, NULL, "fsl,corenet-law");
++	if (!np)
++		return -ENODEV;
++
++	iprop = of_get_property(np, "fsl,num-laws", NULL);
++	if (!iprop) {
++		ret = -ENODEV;
++		goto error;
++	}
++
++	num_laws = be32_to_cpup(iprop);
++	if (!num_laws) {
++		ret = -ENODEV;
++		goto error;
++	}
++
++	lac = of_iomap(np, 0);
++	if (!lac) {
++		ret = -ENODEV;
++		goto error;
++	}
++
++	/* LAW registers are at offset 0xC00 */
++	law = lac + 0xC00;
++
++	of_node_put(np);
++
++	np = of_find_compatible_node(NULL, NULL, "fsl,corenet-cf");
++	if (!np) {
++		ret = -ENODEV;
++		goto error;
++	}
++
++	iprop = of_get_property(np, "fsl,ccf-num-csdids", NULL);
++	if (!iprop) {
++		ret = -ENODEV;
++		goto error;
++	}
++
++	num_csds = be32_to_cpup(iprop);
++	if (!num_csds) {
++		ret = -ENODEV;
++		goto error;
++	}
++
++	ccm = of_iomap(np, 0);
++	if (!ccm) {
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	/* The undocumented CSDID registers are at offset 0x600 */
++	csdids = ccm + 0x600;
++
++	of_node_put(np);
++	np = NULL;
++
++	/* Find an unused coherence subdomain ID */
++	for (csd_id = 0; csd_id < num_csds; csd_id++) {
++		if (!csdids[csd_id])
++			break;
++	}
++
++	/* Store the Port ID in the (undocumented) proper CIDMRxx register */
++	csdids[csd_id] = csd_port_id;
++
++	/* Find the DDR LAW that maps to our buffer. */
++	for (i = 0; i < num_laws; i++) {
++		if (law[i].lawar & LAWAR_EN) {
++			phys_addr_t law_start, law_end;
++
++			law_start = make64(law[i].lawbarh, law[i].lawbarl);
++			law_end = law_start +
++				(2ULL << (law[i].lawar & LAWAR_SIZE_MASK));
++
++			if (law_start <= phys && phys < law_end) {
++				law_target = law[i].lawar & LAWAR_TARGET_MASK;
++				break;
++			}
++		}
++	}
++
++	if (i == 0 || i == num_laws) {
++		/* This should never happen*/
++		ret = -ENOENT;
++		goto error;
++	}
++
++	/* Find a free LAW entry */
++	while (law[--i].lawar & LAWAR_EN) {
++		if (i == 0) {
++			/* No higher priority LAW slots available */
++			ret = -ENOENT;
++			goto error;
++		}
++	}
++
++	law[i].lawbarh = upper_32_bits(phys);
++	law[i].lawbarl = lower_32_bits(phys);
++	wmb();
++	law[i].lawar = LAWAR_EN | law_target | (csd_id << LAWAR_CSDID_SHIFT) |
++		(LAW_SIZE_4K + get_order(size));
++	wmb();
++
++error:
++	if (ccm)
++		iounmap(ccm);
++
++	if (lac)
++		iounmap(lac);
++
++	if (np)
++		of_node_put(np);
 +
 +	return ret;
 +}
 +
-+static const struct file_operations load_table_fops = {
-+	.read		= load_table_read,
-+	.open		= simple_open,
-+	.llseek		= no_llseek,
++/*
++ * Table of SVRs and the corresponding PORT_ID values. Port ID corresponds to a
++ * bit map of snoopers for a given range of memory mapped by a LAW.
++ *
++ * All future CoreNet-enabled SOCs will have this erratum(A-004510) fixed, so this
++ * table should never need to be updated.  SVRs are guaranteed to be unique, so
++ * there is no worry that a future SOC will inadvertently have one of these
++ * values.
++ */
++static const struct {
++	u32 svr;
++	u32 port_id;
++} port_id_map[] = {
++	{0x82100010, 0xFF000000},	/* P2040 1.0 */
++	{0x82100011, 0xFF000000},	/* P2040 1.1 */
++	{0x82100110, 0xFF000000},	/* P2041 1.0 */
++	{0x82100111, 0xFF000000},	/* P2041 1.1 */
++	{0x82110310, 0xFF000000},	/* P3041 1.0 */
++	{0x82110311, 0xFF000000},	/* P3041 1.1 */
++	{0x82010020, 0xFFF80000},	/* P4040 2.0 */
++	{0x82000020, 0xFFF80000},	/* P4080 2.0 */
++	{0x82210010, 0xFC000000},       /* P5010 1.0 */
++	{0x82210020, 0xFC000000},       /* P5010 2.0 */
++	{0x82200010, 0xFC000000},	/* P5020 1.0 */
++	{0x82050010, 0xFF800000},	/* P5021 1.0 */
++	{0x82040010, 0xFF800000},	/* P5040 1.0 */
 +};
 +
-+static void cpufreq_stats_store_load_table(struct cpufreq_freqs *freq,
-+					   unsigned long val)
++#define SVR_SECURITY	0x80000	/* The Security (E) bit */
++
++static int __init fsl_pamu_probe(struct platform_device *pdev)
 +{
-+	struct cpufreq_stats *stat;
-+	int cpu, last_idx;
++	void __iomem *pamu_regs = NULL;
++	struct ccsr_guts __iomem *guts_regs = NULL;
++	u32 pamubypenr, pamu_counter;
++	unsigned long pamu_reg_off;
++	unsigned long pamu_reg_base;
++	struct pamu_isr_data *data = NULL;
++	struct device_node *guts_node;
++	u64 size;
++	struct page *p;
++	int ret = 0;
++	int irq;
++	phys_addr_t ppaact_phys;
++	phys_addr_t spaact_phys;
++	phys_addr_t omt_phys;
++	size_t mem_size = 0;
++	unsigned int order = 0;
++	u32 csd_port_id = 0;
++	unsigned i;
++	/*
++	 * enumerate all PAMUs and allocate and setup PAMU tables
++	 * for each of them,
++	 * NOTE : All PAMUs share the same LIODN tables.
++	 */
 +
-+	stat = per_cpu(cpufreq_stats_table, freq->cpu);
-+	if (!stat)
-+		return;
++	pamu_regs = of_iomap(pdev->dev.of_node, 0);
++	if (!pamu_regs) {
++		dev_err(&pdev->dev, "ioremap of PAMU node failed\n");
++		return -ENOMEM;
++	}
++	of_get_address(pdev->dev.of_node, 0, &size, NULL);
 +
-+	spin_lock(&cpufreq_stats_lock);
-+
-+	switch (val) {
-+	case CPUFREQ_POSTCHANGE:
-+		if (!stat->load_last_index)
-+			last_idx = stat->load_max_index;
-+		else
-+			last_idx = stat->load_last_index - 1;
-+
-+		stat->load_table[last_idx].new = freq->new;
-+		break;
-+	case CPUFREQ_LOADCHECK:
-+		last_idx = stat->load_last_index;
-+
-+		stat->load_table[last_idx].time = freq->time;
-+		stat->load_table[last_idx].old = freq->old;
-+		stat->load_table[last_idx].new = freq->old;
-+		for_each_present_cpu(cpu)
-+			stat->load_table[last_idx].load[cpu] = freq->load[cpu];
-+
-+		if (++stat->load_last_index == stat->load_max_index)
-+			stat->load_last_index = 0;
-+		break;
++	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
++	if (irq == NO_IRQ) {
++		dev_warn(&pdev->dev, "no interrupts listed in PAMU node\n");
++		goto error;
 +	}
 +
-+	spin_unlock(&cpufreq_stats_lock);
++	data = kzalloc(sizeof(struct pamu_isr_data), GFP_KERNEL);
++	if (!data) {
++		dev_err(&pdev->dev, "PAMU isr data memory allocation failed\n");
++		ret = -ENOMEM;
++		goto error;
++	}
++	data->pamu_reg_base = pamu_regs;
++	data->count = size / PAMU_OFFSET;
++
++	/* The ISR needs access to the regs, so we won't iounmap them */
++	ret = request_irq(irq, pamu_av_isr, 0, "pamu", data);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "error %i installing ISR for irq %i\n",
++			ret, irq);
++		goto error;
++	}
++
++	guts_node = of_find_matching_node(NULL, guts_device_ids);
++	if (!guts_node) {
++		dev_err(&pdev->dev, "could not find GUTS node %s\n",
++			pdev->dev.of_node->full_name);
++		ret = -ENODEV;
++		goto error;
++	}
++
++	guts_regs = of_iomap(guts_node, 0);
++	of_node_put(guts_node);
++	if (!guts_regs) {
++		dev_err(&pdev->dev, "ioremap of GUTS node failed\n");
++		ret = -ENODEV;
++		goto error;
++	}
++
++	/* read in the PAMU capability registers */
++	get_pamu_cap_values((unsigned long)pamu_regs);
++	/*
++	 * To simplify the allocation of a coherency domain, we allocate the
++	 * PAACT and the OMT in the same memory buffer.  Unfortunately, this
++	 * wastes more memory compared to allocating the buffers separately.
++	 */
++	/* Determine how much memory we need */
++	mem_size = (PAGE_SIZE << get_order(PAACT_SIZE)) +
++		(PAGE_SIZE << get_order(SPAACT_SIZE)) +
++		(PAGE_SIZE << get_order(OMT_SIZE));
++	order = get_order(mem_size);
++
++	p = alloc_pages(GFP_KERNEL | __GFP_ZERO, order);
++	if (!p) {
++		dev_err(&pdev->dev, "unable to allocate PAACT/SPAACT/OMT block\n");
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	ppaact = page_address(p);
++	ppaact_phys = page_to_phys(p);
++
++	/* Make sure the memory is naturally aligned */
++	if (ppaact_phys & ((PAGE_SIZE << order) - 1)) {
++		dev_err(&pdev->dev, "PAACT/OMT block is unaligned\n");
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	spaact = (void *)ppaact + (PAGE_SIZE << get_order(PAACT_SIZE));
++	omt = (void *)spaact + (PAGE_SIZE << get_order(SPAACT_SIZE));
++
++	dev_dbg(&pdev->dev, "ppaact virt=%p phys=0x%llx\n", ppaact,
++		(unsigned long long) ppaact_phys);
++
++	/* Check to see if we need to implement the work-around on this SOC */
++
++	/* Determine the Port ID for our coherence subdomain */
++	for (i = 0; i < ARRAY_SIZE(port_id_map); i++) {
++		if (port_id_map[i].svr == (mfspr(SPRN_SVR) & ~SVR_SECURITY)) {
++			csd_port_id = port_id_map[i].port_id;
++			dev_dbg(&pdev->dev, "found matching SVR %08x\n",
++				port_id_map[i].svr);
++			break;
++		}
++	}
++
++	if (csd_port_id) {
++		dev_dbg(&pdev->dev, "creating coherency subdomain at address "
++			"0x%llx, size %zu, port id 0x%08x", ppaact_phys,
++			mem_size, csd_port_id);
++
++		ret = create_csd(ppaact_phys, mem_size, csd_port_id);
++		if (ret) {
++			dev_err(&pdev->dev, "could not create coherence "
++				"subdomain\n");
++			return ret;
++		}
++	}
++
++	spaact_phys = virt_to_phys(spaact);
++	omt_phys = virt_to_phys(omt);
++
++	spaace_pool = gen_pool_create(ilog2(sizeof(struct paace)), -1);
++	if (!spaace_pool) {
++		ret = -ENOMEM;
++		dev_err(&pdev->dev, "PAMU : failed to allocate spaace gen pool\n");
++		goto error;
++	}
++
++	ret = gen_pool_add(spaace_pool, (unsigned long)spaact, SPAACT_SIZE, -1);
++	if (ret)
++		goto error_genpool;
++
++	pamubypenr = in_be32(&guts_regs->pamubypenr);
++
++	for (pamu_reg_off = 0, pamu_counter = 0x80000000; pamu_reg_off < size;
++	     pamu_reg_off += PAMU_OFFSET, pamu_counter >>= 1) {
++
++		pamu_reg_base = (unsigned long) pamu_regs + pamu_reg_off;
++		setup_one_pamu(pamu_reg_base, pamu_reg_off, ppaact_phys,
++				 spaact_phys, omt_phys);
++		/* Disable PAMU bypass for this PAMU */
++		pamubypenr &= ~pamu_counter;
++	}
++
++	setup_omt(omt);
++
++	/* Enable all relevant PAMU(s) */
++	out_be32(&guts_regs->pamubypenr, pamubypenr);
++
++	iounmap(guts_regs);
++
++	/* Enable DMA for the LIODNs in the device tree*/
++
++	setup_liodns();
++
++	return 0;
++
++error_genpool:
++	gen_pool_destroy(spaace_pool);
++
++error:
++	if (irq != NO_IRQ)
++		free_irq(irq, data);
++
++	if (data) {
++		memset(data, 0, sizeof(struct pamu_isr_data));
++		kfree(data);
++	}
++
++	if (pamu_regs)
++		iounmap(pamu_regs);
++
++	if (guts_regs)
++		iounmap(guts_regs);
++
++	if (ppaact)
++		free_pages((unsigned long)ppaact, order);
++
++	ppaact = NULL;
++
++	return ret;
 +}
 +
-+static int cpufreq_stats_create_debugfs(struct cpufreq_policy *policy)
++static const struct of_device_id fsl_of_pamu_ids[] = {
++	{
++		.compatible = "fsl,p4080-pamu",
++	},
++	{
++		.compatible = "fsl,pamu",
++	},
++	{},
++};
++
++static struct platform_driver fsl_of_pamu_driver = {
++	.driver = {
++		.name = "fsl-of-pamu",
++		.owner = THIS_MODULE,
++	},
++	.probe = fsl_pamu_probe,
++};
++
++static __init int fsl_pamu_init(void)
 +{
-+	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
-+	char buf[10];
-+	int size, ret = 0;
++	struct platform_device *pdev = NULL;
++	struct device_node *np;
++	int ret;
 +
-+	if (!stat)
-+		return -EINVAL;
++	/*
++	 * The normal OF process calls the probe function at some
++	 * indeterminate later time, after most drivers have loaded.  This is
++	 * too late for us, because PAMU clients (like the Qman driver)
++	 * depend on PAMU being initialized early.
++	 *
++	 * So instead, we "manually" call our probe function by creating the
++	 * platform devices ourselves.
++	 */
 +
-+	if (!debugfs_cpufreq)
-+		return -ENOMEM;
++	/*
++	 * We assume that there is only one PAMU node in the device tree.  A
++	 * single PAMU node represents all of the PAMU devices in the SOC
++	 * already.   Everything else already makes that assumption, and the
++	 * binding for the PAMU nodes doesn't allow for any parent-child
++	 * relationships anyway.  In other words, support for more than one
++	 * PAMU node would require significant changes to a lot of code.
++	 */
 +
-+	stat->load_last_index = 0;
-+	stat->load_max_index = CONFIG_NR_CPU_LOAD_STORAGE;
-+
-+	/* Allocate memory for storage of CPUs load */
-+	size = sizeof(*stat->load_table) * stat->load_max_index;
-+	stat->load_table = kzalloc(size, GFP_KERNEL);
-+	if (!stat->load_table) {
-+		ret = -ENOMEM;
-+		goto err;
++	np = of_find_compatible_node(NULL, NULL, "fsl,pamu");
++	if (!np) {
++		pr_err("fsl-pamu: could not find a PAMU node\n");
++		return -ENODEV;
 +	}
 +
-+	/* Create debugfs directory and file for cpufreq */
-+	sprintf(buf, "cpu%d", policy->cpu);
-+	stat->debugfs_cpu = debugfs_create_dir(buf, debugfs_cpufreq);
-+	if (!stat->debugfs_cpu) {
-+		ret = -ENOMEM;
-+		goto err_alloc;
++	ret = platform_driver_register(&fsl_of_pamu_driver);
++	if (ret) {
++		pr_err("fsl-pamu: could not register driver (err=%i)\n", ret);
++		goto error_driver_register;
 +	}
 +
-+	if (!debugfs_create_file("load_table", S_IWUSR, stat->debugfs_cpu,
-+				policy, &load_table_fops)) {
++	pdev = platform_device_alloc("fsl-of-pamu", 0);
++	if (!pdev) {
++		pr_err("fsl-pamu: could not allocate device %s\n",
++		       np->full_name);
 +		ret = -ENOMEM;
-+		goto err_debugfs;
++		goto error_device_alloc;
++	}
++	pdev->dev.of_node = of_node_get(np);
++
++	ret = pamu_domain_init();
++	if (ret)
++		goto error_device_add;
++
++	ret = platform_device_add(pdev);
++	if (ret) {
++		pr_err("fsl-pamu: could not add device %s (err=%i)\n",
++		       np->full_name, ret);
++		goto error_device_add;
 +	}
 +
 +	return 0;
 +
-+err_debugfs:
-+	debugfs_remove_recursive(stat->debugfs_cpu);
-+err_alloc:
-+	kfree(stat->load_table);
-+err:
++error_device_add:
++	of_node_put(pdev->dev.of_node);
++	pdev->dev.of_node = NULL;
++
++	platform_device_put(pdev);
++
++error_device_alloc:
++	platform_driver_unregister(&fsl_of_pamu_driver);
++
++error_driver_register:
++	of_node_put(np);
++
 +	return ret;
 +}
++arch_initcall(fsl_pamu_init);
+diff --git a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h
+new file mode 100644
+index 0000000..8fc1a12
+--- /dev/null
++++ b/drivers/iommu/fsl_pamu.h
+@@ -0,0 +1,410 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ *
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ */
 +
-+static void cpufreq_stats_free_debugfs(unsigned int cpu)
++#ifndef __FSL_PAMU_H
++#define __FSL_PAMU_H
++
++#include <asm/fsl_pamu_stash.h>
++
++/* Bit Field macros
++ *	v = bit field variable; m = mask, m##_SHIFT = shift, x = value to load
++ */
++#define set_bf(v, m, x)		(v = ((v) & ~(m)) | (((x) << (m##_SHIFT)) & (m)))
++#define get_bf(v, m)		(((v) & (m)) >> (m##_SHIFT))
++
++/* PAMU CCSR space */
++#define PAMU_PGC 0x00000000     /* Allows all peripheral accesses */
++#define PAMU_PE 0x40000000      /* enable PAMU                    */
++
++/* PAMU_OFFSET to the next pamu space in ccsr */
++#define PAMU_OFFSET 0x1000
++
++#define PAMU_MMAP_REGS_BASE 0
++
++struct pamu_mmap_regs {
++	u32 ppbah;
++	u32 ppbal;
++	u32 pplah;
++	u32 pplal;
++	u32 spbah;
++	u32 spbal;
++	u32 splah;
++	u32 splal;
++	u32 obah;
++	u32 obal;
++	u32 olah;
++	u32 olal;
++};
++
++/* PAMU Error Registers */
++#define PAMU_POES1 0x0040
++#define PAMU_POES2 0x0044
++#define PAMU_POEAH 0x0048
++#define PAMU_POEAL 0x004C
++#define PAMU_AVS1  0x0050
++#define PAMU_AVS1_AV    0x1
++#define PAMU_AVS1_OTV   0x6
++#define PAMU_AVS1_APV   0x78
++#define PAMU_AVS1_WAV   0x380
++#define PAMU_AVS1_LAV   0x1c00
++#define PAMU_AVS1_GCV   0x2000
++#define PAMU_AVS1_PDV   0x4000
++#define PAMU_AV_MASK    (PAMU_AVS1_AV | PAMU_AVS1_OTV | PAMU_AVS1_APV | PAMU_AVS1_WAV \
++			| PAMU_AVS1_LAV | PAMU_AVS1_GCV | PAMU_AVS1_PDV)
++#define PAMU_AVS1_LIODN_SHIFT 16
++#define PAMU_LAV_LIODN_NOT_IN_PPAACT 0x400
++
++#define PAMU_AVS2  0x0054
++#define PAMU_AVAH  0x0058
++#define PAMU_AVAL  0x005C
++#define PAMU_EECTL 0x0060
++#define PAMU_EEDIS 0x0064
++#define PAMU_EEINTEN 0x0068
++#define PAMU_EEDET 0x006C
++#define PAMU_EEATTR 0x0070
++#define PAMU_EEAHI 0x0074
++#define PAMU_EEALO 0x0078
++#define PAMU_EEDHI 0X007C
++#define PAMU_EEDLO 0x0080
++#define PAMU_EECC  0x0084
++#define PAMU_UDAD  0x0090
++
++/* PAMU Revision Registers */
++#define PAMU_PR1 0x0BF8
++#define PAMU_PR2 0x0BFC
++
++/* PAMU version mask */
++#define PAMU_PR1_MASK 0xffff
++
++/* PAMU Capabilities Registers */
++#define PAMU_PC1 0x0C00
++#define PAMU_PC2 0x0C04
++#define PAMU_PC3 0x0C08
++#define PAMU_PC4 0x0C0C
++
++/* PAMU Control Register */
++#define PAMU_PC 0x0C10
++
++/* PAMU control defs */
++#define PAMU_CONTROL 0x0C10
++#define PAMU_PC_PGC 0x80000000  /* PAMU gate closed bit */
++#define PAMU_PC_PE   0x40000000 /* PAMU enable bit */
++#define PAMU_PC_SPCC 0x00000010 /* sPAACE cache enable */
++#define PAMU_PC_PPCC 0x00000001 /* pPAACE cache enable */
++#define PAMU_PC_OCE  0x00001000 /* OMT cache enable */
++
++#define PAMU_PFA1 0x0C14
++#define PAMU_PFA2 0x0C18
++
++#define PAMU_PC2_MLIODN(X) ((X) >> 16)
++#define PAMU_PC3_MWCE(X) (((X) >> 21) & 0xf)
++
++/* PAMU Interrupt control and Status Register */
++#define PAMU_PICS 0x0C1C
++#define PAMU_ACCESS_VIOLATION_STAT   0x8
++#define PAMU_ACCESS_VIOLATION_ENABLE 0x4
++
++/* PAMU Debug Registers */
++#define PAMU_PD1 0x0F00
++#define PAMU_PD2 0x0F04
++#define PAMU_PD3 0x0F08
++#define PAMU_PD4 0x0F0C
++
++#define PAACE_AP_PERMS_DENIED  0x0
++#define PAACE_AP_PERMS_QUERY   0x1
++#define PAACE_AP_PERMS_UPDATE  0x2
++#define PAACE_AP_PERMS_ALL     0x3
++
++#define PAACE_DD_TO_HOST       0x0
++#define PAACE_DD_TO_IO         0x1
++#define PAACE_PT_PRIMARY       0x0
++#define PAACE_PT_SECONDARY     0x1
++#define PAACE_V_INVALID        0x0
++#define PAACE_V_VALID          0x1
++#define PAACE_MW_SUBWINDOWS    0x1
++
++#define PAACE_WSE_4K           0xB
++#define PAACE_WSE_8K           0xC
++#define PAACE_WSE_16K          0xD
++#define PAACE_WSE_32K          0xE
++#define PAACE_WSE_64K          0xF
++#define PAACE_WSE_128K         0x10
++#define PAACE_WSE_256K         0x11
++#define PAACE_WSE_512K         0x12
++#define PAACE_WSE_1M           0x13
++#define PAACE_WSE_2M           0x14
++#define PAACE_WSE_4M           0x15
++#define PAACE_WSE_8M           0x16
++#define PAACE_WSE_16M          0x17
++#define PAACE_WSE_32M          0x18
++#define PAACE_WSE_64M          0x19
++#define PAACE_WSE_128M         0x1A
++#define PAACE_WSE_256M         0x1B
++#define PAACE_WSE_512M         0x1C
++#define PAACE_WSE_1G           0x1D
++#define PAACE_WSE_2G           0x1E
++#define PAACE_WSE_4G           0x1F
++
++#define PAACE_DID_PCI_EXPRESS_1 0x00
++#define PAACE_DID_PCI_EXPRESS_2 0x01
++#define PAACE_DID_PCI_EXPRESS_3 0x02
++#define PAACE_DID_PCI_EXPRESS_4 0x03
++#define PAACE_DID_LOCAL_BUS     0x04
++#define PAACE_DID_SRIO          0x0C
++#define PAACE_DID_MEM_1         0x10
++#define PAACE_DID_MEM_2         0x11
++#define PAACE_DID_MEM_3         0x12
++#define PAACE_DID_MEM_4         0x13
++#define PAACE_DID_MEM_1_2       0x14
++#define PAACE_DID_MEM_3_4       0x15
++#define PAACE_DID_MEM_1_4       0x16
++#define PAACE_DID_BM_SW_PORTAL  0x18
++#define PAACE_DID_PAMU          0x1C
++#define PAACE_DID_CAAM          0x21
++#define PAACE_DID_QM_SW_PORTAL  0x3C
++#define PAACE_DID_CORE0_INST    0x80
++#define PAACE_DID_CORE0_DATA    0x81
++#define PAACE_DID_CORE1_INST    0x82
++#define PAACE_DID_CORE1_DATA    0x83
++#define PAACE_DID_CORE2_INST    0x84
++#define PAACE_DID_CORE2_DATA    0x85
++#define PAACE_DID_CORE3_INST    0x86
++#define PAACE_DID_CORE3_DATA    0x87
++#define PAACE_DID_CORE4_INST    0x88
++#define PAACE_DID_CORE4_DATA    0x89
++#define PAACE_DID_CORE5_INST    0x8A
++#define PAACE_DID_CORE5_DATA    0x8B
++#define PAACE_DID_CORE6_INST    0x8C
++#define PAACE_DID_CORE6_DATA    0x8D
++#define PAACE_DID_CORE7_INST    0x8E
++#define PAACE_DID_CORE7_DATA    0x8F
++#define PAACE_DID_BROADCAST     0xFF
++
++#define PAACE_ATM_NO_XLATE      0x00
++#define PAACE_ATM_WINDOW_XLATE  0x01
++#define PAACE_ATM_PAGE_XLATE    0x02
++#define PAACE_ATM_WIN_PG_XLATE  \
++                (PAACE_ATM_WINDOW_XLATE | PAACE_ATM_PAGE_XLATE)
++#define PAACE_OTM_NO_XLATE      0x00
++#define PAACE_OTM_IMMEDIATE     0x01
++#define PAACE_OTM_INDEXED       0x02
++#define PAACE_OTM_RESERVED      0x03
++
++#define PAACE_M_COHERENCE_REQ   0x01
++
++#define PAACE_PID_0             0x0
++#define PAACE_PID_1             0x1
++#define PAACE_PID_2             0x2
++#define PAACE_PID_3             0x3
++#define PAACE_PID_4             0x4
++#define PAACE_PID_5             0x5
++#define PAACE_PID_6             0x6
++#define PAACE_PID_7             0x7
++
++#define PAACE_TCEF_FORMAT0_8B   0x00
++#define PAACE_TCEF_FORMAT1_RSVD 0x01
++/*
++ * Hard coded value for the PAACT size to accomodate
++ * maximum LIODN value generated by u-boot.
++ */
++#define PAACE_NUMBER_ENTRIES    0x500
++/* Hard coded value for the SPAACT size */
++#define SPAACE_NUMBER_ENTRIES	0x800
++
++#define	OME_NUMBER_ENTRIES      16
++
++/* PAACE Bit Field Defines */
++#define PPAACE_AF_WBAL			0xfffff000
++#define PPAACE_AF_WBAL_SHIFT		12
++#define PPAACE_AF_WSE			0x00000fc0
++#define PPAACE_AF_WSE_SHIFT		6
++#define PPAACE_AF_MW			0x00000020
++#define PPAACE_AF_MW_SHIFT		5
++
++#define SPAACE_AF_LIODN			0xffff0000
++#define SPAACE_AF_LIODN_SHIFT		16
++
++#define PAACE_AF_AP			0x00000018
++#define PAACE_AF_AP_SHIFT		3
++#define PAACE_AF_DD			0x00000004
++#define PAACE_AF_DD_SHIFT		2
++#define PAACE_AF_PT			0x00000002
++#define PAACE_AF_PT_SHIFT		1
++#define PAACE_AF_V			0x00000001
++#define PAACE_AF_V_SHIFT		0
++
++#define PAACE_DA_HOST_CR		0x80
++#define PAACE_DA_HOST_CR_SHIFT		7
++
++#define PAACE_IA_CID			0x00FF0000
++#define PAACE_IA_CID_SHIFT		16
++#define PAACE_IA_WCE			0x000000F0
++#define PAACE_IA_WCE_SHIFT		4
++#define PAACE_IA_ATM			0x0000000C
++#define PAACE_IA_ATM_SHIFT		2
++#define PAACE_IA_OTM			0x00000003
++#define PAACE_IA_OTM_SHIFT		0
++
++#define PAACE_WIN_TWBAL			0xfffff000
++#define PAACE_WIN_TWBAL_SHIFT		12
++#define PAACE_WIN_SWSE			0x00000fc0
++#define PAACE_WIN_SWSE_SHIFT		6
++
++/* PAMU Data Structures */
++/* primary / secondary paact structure */
++struct paace {
++	/* PAACE Offset 0x00 */
++	u32 wbah;				/* only valid for Primary PAACE */
++	u32 addr_bitfields;		/* See P/S PAACE_AF_* */
++
++	/* PAACE Offset 0x08 */
++	/* Interpretation of first 32 bits dependent on DD above */
++	union {
++		struct {
++			/* Destination ID, see PAACE_DID_* defines */
++			u8 did;
++			/* Partition ID */
++			u8 pid;
++			/* Snoop ID */
++			u8 snpid;
++			/* coherency_required : 1 reserved : 7 */
++			u8 coherency_required; /* See PAACE_DA_* */
++		} to_host;
++		struct {
++			/* Destination ID, see PAACE_DID_* defines */
++			u8  did;
++			u8  reserved1;
++			u16 reserved2;
++		} to_io;
++	} domain_attr;
++
++	/* Implementation attributes + window count + address & operation translation modes */
++	u32 impl_attr;			/* See PAACE_IA_* */
++
++	/* PAACE Offset 0x10 */
++	/* Translated window base address */
++	u32 twbah;
++	u32 win_bitfields;			/* See PAACE_WIN_* */
++
++	/* PAACE Offset 0x18 */
++	/* first secondary paace entry */
++	u32 fspi;				/* only valid for Primary PAACE */
++	union {
++		struct {
++			u8 ioea;
++			u8 moea;
++			u8 ioeb;
++			u8 moeb;
++		} immed_ot;
++		struct {
++			u16 reserved;
++			u16 omi;
++		} index_ot;
++	} op_encode;
++
++	/* PAACE Offsets 0x20-0x38 */
++	u32 reserved[8];			/* not currently implemented */
++};
++
++/* OME : Operation mapping entry
++ * MOE : Mapped Operation Encodings
++ * The operation mapping table is table containing operation mapping entries (OME).
++ * The index of a particular OME is programmed in the PAACE entry for translation
++ * in bound I/O operations corresponding to an LIODN. The OMT is used for translation
++ * specifically in case of the indexed translation mode. Each OME contains a 128
++ * byte mapped operation encoding (MOE), where each byte represents an MOE.
++ */
++#define NUM_MOE 128
++struct ome {
++	u8 moe[NUM_MOE];
++} __attribute__((packed));
++
++#define PAACT_SIZE              (sizeof(struct paace) * PAACE_NUMBER_ENTRIES)
++#define SPAACT_SIZE              (sizeof(struct paace) * SPAACE_NUMBER_ENTRIES)
++#define OMT_SIZE                (sizeof(struct ome) * OME_NUMBER_ENTRIES)
++
++#define PAMU_PAGE_SHIFT 12
++#define PAMU_PAGE_SIZE  4096ULL
++
++#define IOE_READ        0x00
++#define IOE_READ_IDX    0x00
++#define IOE_WRITE       0x81
++#define IOE_WRITE_IDX   0x01
++#define IOE_EREAD0      0x82    /* Enhanced read type 0 */
++#define IOE_EREAD0_IDX  0x02    /* Enhanced read type 0 */
++#define IOE_EWRITE0     0x83    /* Enhanced write type 0 */
++#define IOE_EWRITE0_IDX 0x03    /* Enhanced write type 0 */
++#define IOE_DIRECT0     0x84    /* Directive type 0 */
++#define IOE_DIRECT0_IDX 0x04    /* Directive type 0 */
++#define IOE_EREAD1      0x85    /* Enhanced read type 1 */
++#define IOE_EREAD1_IDX  0x05    /* Enhanced read type 1 */
++#define IOE_EWRITE1     0x86    /* Enhanced write type 1 */
++#define IOE_EWRITE1_IDX 0x06    /* Enhanced write type 1 */
++#define IOE_DIRECT1     0x87    /* Directive type 1 */
++#define IOE_DIRECT1_IDX 0x07    /* Directive type 1 */
++#define IOE_RAC         0x8c    /* Read with Atomic clear */
++#define IOE_RAC_IDX     0x0c    /* Read with Atomic clear */
++#define IOE_RAS         0x8d    /* Read with Atomic set */
++#define IOE_RAS_IDX     0x0d    /* Read with Atomic set */
++#define IOE_RAD         0x8e    /* Read with Atomic decrement */
++#define IOE_RAD_IDX     0x0e    /* Read with Atomic decrement */
++#define IOE_RAI         0x8f    /* Read with Atomic increment */
++#define IOE_RAI_IDX     0x0f    /* Read with Atomic increment */
++
++#define EOE_READ        0x00
++#define EOE_WRITE       0x01
++#define EOE_RAC         0x0c    /* Read with Atomic clear */
++#define EOE_RAS         0x0d    /* Read with Atomic set */
++#define EOE_RAD         0x0e    /* Read with Atomic decrement */
++#define EOE_RAI         0x0f    /* Read with Atomic increment */
++#define EOE_LDEC        0x10    /* Load external cache */
++#define EOE_LDECL       0x11    /* Load external cache with stash lock */
++#define EOE_LDECPE      0x12    /* Load external cache with preferred exclusive */
++#define EOE_LDECPEL     0x13    /* Load external cache with preferred exclusive and lock */
++#define EOE_LDECFE      0x14    /* Load external cache with forced exclusive */
++#define EOE_LDECFEL     0x15    /* Load external cache with forced exclusive and lock */
++#define EOE_RSA         0x16    /* Read with stash allocate */
++#define EOE_RSAU        0x17    /* Read with stash allocate and unlock */
++#define EOE_READI       0x18    /* Read with invalidate */
++#define EOE_RWNITC      0x19    /* Read with no intention to cache */
++#define EOE_WCI         0x1a    /* Write cache inhibited */
++#define EOE_WWSA        0x1b    /* Write with stash allocate */
++#define EOE_WWSAL       0x1c    /* Write with stash allocate and lock */
++#define EOE_WWSAO       0x1d    /* Write with stash allocate only */
++#define EOE_WWSAOL      0x1e    /* Write with stash allocate only and lock */
++#define EOE_VALID       0x80
++
++/* Function prototypes */
++int pamu_domain_init(void);
++int pamu_enable_liodn(int liodn);
++int pamu_disable_liodn(int liodn);
++void pamu_free_subwins(int liodn);
++int pamu_config_ppaace(int liodn, phys_addr_t win_addr, phys_addr_t win_size,
++		       u32 omi, unsigned long rpn, u32 snoopid, uint32_t stashid,
++		       u32 subwin_cnt, int prot);
++int pamu_config_spaace(int liodn, u32 subwin_cnt, u32 subwin_addr,
++		       phys_addr_t subwin_size, u32 omi, unsigned long rpn,
++		       uint32_t snoopid, u32 stashid, int enable, int prot);
++
++u32 get_stash_id(u32 stash_dest_hint, u32 vcpu);
++void get_ome_index(u32 *omi_index, struct device *dev);
++int  pamu_update_paace_stash(int liodn, u32 subwin, u32 value);
++int pamu_disable_spaace(int liodn, u32 subwin);
++u32 pamu_get_max_subwin_cnt(void);
++
++#endif  /* __FSL_PAMU_H */
+diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+new file mode 100644
+index 0000000..58673e9
+--- /dev/null
++++ b/drivers/iommu/fsl_pamu_domain.c
+@@ -0,0 +1,1184 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ *
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ * Author: Varun Sethi <varun.sethi@freescale.com>
++ *
++ */
++
++#define pr_fmt(fmt)    "fsl-pamu-domain: %s: " fmt, __func__
++
++#include <linux/init.h>
++#include <linux/iommu.h>
++#include <linux/notifier.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/mm.h>
++#include <linux/interrupt.h>
++#include <linux/device.h>
++#include <linux/of_platform.h>
++#include <linux/bootmem.h>
++#include <linux/err.h>
++#include <asm/io.h>
++#include <asm/bitops.h>
++
++#include <asm/pci-bridge.h>
++#include <sysdev/fsl_pci.h>
++
++#include "fsl_pamu_domain.h"
++#include "pci.h"
++
++/*
++ * Global spinlock that needs to be held while
++ * configuring PAMU.
++ */
++static DEFINE_SPINLOCK(iommu_lock);
++
++static struct kmem_cache *fsl_pamu_domain_cache;
++static struct kmem_cache *iommu_devinfo_cache;
++static DEFINE_SPINLOCK(device_domain_lock);
++
++static int __init iommu_init_mempool(void)
 +{
-+	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, cpu);
 +
-+	if (!stat)
-+		return;
++	fsl_pamu_domain_cache = kmem_cache_create("fsl_pamu_domain",
++					 sizeof(struct fsl_dma_domain),
++					 0,
++					 SLAB_HWCACHE_ALIGN,
 +
-+	pr_debug("%s: Free debugfs stat\n", __func__);
-+	debugfs_remove_recursive(stat->debugfs_cpu);
++					 NULL);
++	if (!fsl_pamu_domain_cache) {
++		pr_err("Couldn't create fsl iommu_domain cache\n");
++		return -ENOMEM;
++	}
++
++	iommu_devinfo_cache = kmem_cache_create("iommu_devinfo",
++					 sizeof(struct device_domain_info),
++					 0,
++					 SLAB_HWCACHE_ALIGN,
++					 NULL);
++	if (!iommu_devinfo_cache) {
++		pr_err("Couldn't create devinfo cache\n");
++		kmem_cache_destroy(fsl_pamu_domain_cache);
++		return -ENOMEM;
++	}
++
++	return 0;
 +}
 +
- static int freq_table_get_index(struct cpufreq_stats *stat, unsigned int freq)
- {
- 	int index;
-@@ -167,6 +323,7 @@ static void cpufreq_stats_free_table(unsigned int cpu)
- 
- 	if (stat) {
- 		pr_debug("%s: Free stat table\n", __func__);
-+		kfree(stat->load_table);
- 		kfree(stat->time_in_state);
- 		kfree(stat);
- 		per_cpu(cpufreq_stats_table, cpu) = NULL;
-@@ -257,6 +414,14 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
- 	spin_lock(&cpufreq_stats_lock);
- 	stat->last_time = get_jiffies_64();
- 	stat->last_index = freq_table_get_index(stat, policy->cur);
++static phys_addr_t get_phys_addr(struct fsl_dma_domain *dma_domain, dma_addr_t iova)
++{
++	u32 win_cnt = dma_domain->win_cnt;
++	struct dma_window *win_ptr =
++				&dma_domain->win_arr[0];
++	struct iommu_domain_geometry *geom;
 +
-+	ret = cpufreq_stats_create_debugfs(data);
-+	if (ret < 0) {
-+		spin_unlock(&cpufreq_stats_lock);
-+		ret = -EINVAL;
-+		goto error_out;
++	geom = &dma_domain->iommu_domain->geometry;
++
++	if (!win_cnt || !dma_domain->geom_size) {
++		pr_err("Number of windows/geometry not configured for the domain\n");
++		return 0;
 +	}
 +
- 	spin_unlock(&cpufreq_stats_lock);
- 	cpufreq_cpu_put(data);
- 	return 0;
-@@ -312,32 +477,40 @@ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
- 	struct cpufreq_stats *stat;
- 	int old_index, new_index;
- 
--	if (val != CPUFREQ_POSTCHANGE)
--		return 0;
--
--	stat = per_cpu(cpufreq_stats_table, freq->cpu);
--	if (!stat)
--		return 0;
-+	switch (val) {
-+	case CPUFREQ_POSTCHANGE:
-+		stat = per_cpu(cpufreq_stats_table, freq->cpu);
-+		if (!stat)
-+			return 0;
- 
--	old_index = stat->last_index;
--	new_index = freq_table_get_index(stat, freq->new);
-+		old_index = stat->last_index;
-+		new_index = freq_table_get_index(stat, freq->new);
- 
--	/* We can't do stat->time_in_state[-1]= .. */
--	if (old_index == -1 || new_index == -1)
--		return 0;
-+		/* We can't do stat->time_in_state[-1]= .. */
-+		if (old_index == -1 || new_index == -1)
-+			return 0;
- 
--	cpufreq_stats_update(freq->cpu);
-+		cpufreq_stats_update(freq->cpu);
- 
--	if (old_index == new_index)
--		return 0;
-+		if (old_index == new_index)
-+			return 0;
- 
--	spin_lock(&cpufreq_stats_lock);
--	stat->last_index = new_index;
-+		spin_lock(&cpufreq_stats_lock);
-+		stat->last_index = new_index;
- #ifdef CONFIG_CPU_FREQ_STAT_DETAILS
--	stat->trans_table[old_index * stat->max_state + new_index]++;
-+		stat->trans_table[old_index * stat->max_state + new_index]++;
- #endif
--	stat->total_trans++;
--	spin_unlock(&cpufreq_stats_lock);
-+		stat->total_trans++;
-+		spin_unlock(&cpufreq_stats_lock);
++	if (win_cnt > 1) {
++		u64 subwin_size;
++		dma_addr_t subwin_iova;
++		u32 wnd;
 +
-+		cpufreq_stats_store_load_table(freq, CPUFREQ_POSTCHANGE);
-+
-+		break;
-+	case CPUFREQ_LOADCHECK:
-+		cpufreq_stats_store_load_table(freq, CPUFREQ_LOADCHECK);
-+		break;
++		subwin_size = dma_domain->geom_size >> ilog2(win_cnt);
++		subwin_iova = iova & ~(subwin_size - 1);
++		wnd = (subwin_iova - geom->aperture_start) >> ilog2(subwin_size);
++		win_ptr = &dma_domain->win_arr[wnd];
 +	}
 +
- 	return 0;
- }
- 
-@@ -352,12 +525,14 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-+		cpufreq_stats_free_debugfs(cpu);
- 		cpufreq_stats_free_sysfs(cpu);
- 		break;
- 	case CPU_DEAD:
- 		cpufreq_stats_free_table(cpu);
- 		break;
- 	case CPU_UP_CANCELED_FROZEN:
-+		cpufreq_stats_free_debugfs(cpu);
- 		cpufreq_stats_free_sysfs(cpu);
- 		cpufreq_stats_free_table(cpu);
- 		break;
-@@ -396,16 +571,28 @@ static int __init cpufreq_stats_init(void)
- 
- 	ret = cpufreq_register_notifier(&notifier_trans_block,
- 				CPUFREQ_TRANSITION_NOTIFIER);
--	if (ret) {
--		cpufreq_unregister_notifier(&notifier_policy_block,
--				CPUFREQ_POLICY_NOTIFIER);
--		unregister_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
--		for_each_online_cpu(cpu)
--			cpufreq_stats_free_table(cpu);
--		return ret;
-+	if (ret)
-+		goto err;
++	if (win_ptr->valid)
++		return (win_ptr->paddr + (iova & (win_ptr->size - 1)));
 +
-+	debugfs_cpufreq = debugfs_create_dir("cpufreq", NULL);
-+	if (!debugfs_cpufreq) {
-+		ret = -ENOMEM;
-+		goto err_debugfs;
- 	}
- 
- 	return 0;
++	return 0;
++}
 +
-+err_debugfs:
-+	cpufreq_unregister_notifier(&notifier_trans_block,
-+			CPUFREQ_TRANSITION_NOTIFIER);
-+err:
-+	cpufreq_unregister_notifier(&notifier_policy_block,
-+			CPUFREQ_POLICY_NOTIFIER);
-+	unregister_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
-+	for_each_online_cpu(cpu)
-+		cpufreq_stats_free_table(cpu);
++static int map_subwins(int liodn, struct fsl_dma_domain *dma_domain)
++{
++	struct dma_window *sub_win_ptr =
++				&dma_domain->win_arr[0];
++	int i, ret;
++	unsigned long rpn, flags;
++
++	for (i = 0; i < dma_domain->win_cnt; i++) {
++		if (sub_win_ptr[i].valid) {
++			rpn = sub_win_ptr[i].paddr >>
++				 PAMU_PAGE_SHIFT;
++			spin_lock_irqsave(&iommu_lock, flags);
++			ret = pamu_config_spaace(liodn, dma_domain->win_cnt, i,
++						 sub_win_ptr[i].size,
++						 ~(u32)0,
++						 rpn,
++						 dma_domain->snoop_id,
++						 dma_domain->stash_id,
++						 (i > 0) ? 1 : 0,
++						 sub_win_ptr[i].prot);
++			spin_unlock_irqrestore(&iommu_lock, flags);
++			if (ret) {
++				pr_err("PAMU SPAACE configuration failed for liodn %d\n",
++					 liodn);
++				return ret;
++			}
++		}
++	}
 +
 +	return ret;
- }
- static void __exit cpufreq_stats_exit(void)
- {
-@@ -418,8 +605,10 @@ static void __exit cpufreq_stats_exit(void)
- 	unregister_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
- 	for_each_online_cpu(cpu) {
- 		cpufreq_stats_free_table(cpu);
-+		cpufreq_stats_free_debugfs(cpu);
- 		cpufreq_stats_free_sysfs(cpu);
- 	}
-+	debugfs_remove(debugfs_cpufreq);
- }
- 
- MODULE_AUTHOR("Zou Nan hai <nanhai.zou@intel.com>");
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 037d36a..7cf71d4 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -140,12 +140,18 @@ static inline bool policy_is_shared(struct cpufreq_policy *policy)
- #define CPUFREQ_POSTCHANGE	(1)
- #define CPUFREQ_RESUMECHANGE	(8)
- #define CPUFREQ_SUSPENDCHANGE	(9)
-+#define CPUFREQ_LOADCHECK	(10)
- 
- struct cpufreq_freqs {
- 	unsigned int cpu;	/* cpu nr */
- 	unsigned int old;
- 	unsigned int new;
- 	u8 flags;		/* flags of cpufreq_driver, see below. */
++}
 +
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	int64_t time;
-+	unsigned int load[NR_CPUS];
-+#endif
- };
- 
- 
++static int map_win(int liodn, struct fsl_dma_domain *dma_domain)
++{
++	int ret;
++	struct dma_window *wnd = &dma_domain->win_arr[0];
++	phys_addr_t wnd_addr = dma_domain->iommu_domain->geometry.aperture_start;
++	unsigned long flags;
++
++	spin_lock_irqsave(&iommu_lock, flags);
++	ret = pamu_config_ppaace(liodn, wnd_addr,
++				 wnd->size,
++				 ~(u32)0,
++				 wnd->paddr >> PAMU_PAGE_SHIFT,
++				 dma_domain->snoop_id, dma_domain->stash_id,
++				 0, wnd->prot);
++	spin_unlock_irqrestore(&iommu_lock, flags);
++	if (ret)
++		pr_err("PAMU PAACE configuration failed for liodn %d\n",
++			liodn);
++
++	return ret;
++}
++
++/* Map the DMA window corresponding to the LIODN */
++static int map_liodn(int liodn, struct fsl_dma_domain *dma_domain)
++{
++	if (dma_domain->win_cnt > 1)
++		return map_subwins(liodn, dma_domain);
++	else
++		return map_win(liodn, dma_domain);
++
++}
++
++/* Update window/subwindow mapping for the LIODN */
++static int update_liodn(int liodn, struct fsl_dma_domain *dma_domain, u32 wnd_nr)
++{
++	int ret;
++	struct dma_window *wnd = &dma_domain->win_arr[wnd_nr];
++	unsigned long flags;
++
++	spin_lock_irqsave(&iommu_lock, flags);
++	if (dma_domain->win_cnt > 1) {
++		ret = pamu_config_spaace(liodn, dma_domain->win_cnt, wnd_nr,
++					 wnd->size,
++					 ~(u32)0,
++					 wnd->paddr >> PAMU_PAGE_SHIFT,
++					 dma_domain->snoop_id,
++					 dma_domain->stash_id,
++					 (wnd_nr > 0) ? 1 : 0,
++					 wnd->prot);
++		if (ret)
++			pr_err("Subwindow reconfiguration failed for liodn %d\n", liodn);
++	} else {
++		phys_addr_t wnd_addr;
++
++		wnd_addr = dma_domain->iommu_domain->geometry.aperture_start;
++
++		ret = pamu_config_ppaace(liodn, wnd_addr,
++					 wnd->size,
++					 ~(u32)0,
++					 wnd->paddr >> PAMU_PAGE_SHIFT,
++					dma_domain->snoop_id, dma_domain->stash_id,
++					0, wnd->prot);
++		if (ret)
++			pr_err("Window reconfiguration failed for liodn %d\n", liodn);
++	}
++
++	spin_unlock_irqrestore(&iommu_lock, flags);
++
++	return ret;
++}
++
++static int update_liodn_stash(int liodn, struct fsl_dma_domain *dma_domain,
++				 u32 val)
++{
++	int ret = 0, i;
++	unsigned long flags;
++
++	spin_lock_irqsave(&iommu_lock, flags);
++	if (!dma_domain->win_arr) {
++		pr_err("Windows not configured, stash destination update failed for liodn %d\n", liodn);
++		spin_unlock_irqrestore(&iommu_lock, flags);
++		return -EINVAL;
++	}
++
++	for (i = 0; i < dma_domain->win_cnt; i++) {
++		ret = pamu_update_paace_stash(liodn, i, val);
++		if (ret) {
++			pr_err("Failed to update SPAACE %d field for liodn %d\n ", i, liodn);
++			spin_unlock_irqrestore(&iommu_lock, flags);
++			return ret;
++		}
++	}
++
++	spin_unlock_irqrestore(&iommu_lock, flags);
++
++	return ret;
++}
++
++/* Set the geometry parameters for a LIODN */
++static int pamu_set_liodn(int liodn, struct device *dev,
++			   struct fsl_dma_domain *dma_domain,
++			   struct iommu_domain_geometry *geom_attr,
++			   u32 win_cnt)
++{
++	phys_addr_t window_addr, window_size;
++	phys_addr_t subwin_size;
++	int ret = 0, i;
++	u32 omi_index = ~(u32)0;
++	unsigned long flags;
++
++	/*
++	 * Configure the omi_index at the geometry setup time.
++	 * This is a static value which depends on the type of
++	 * device and would not change thereafter.
++	 */
++	get_ome_index(&omi_index, dev);
++
++	window_addr = geom_attr->aperture_start;
++	window_size = dma_domain->geom_size;
++
++	spin_lock_irqsave(&iommu_lock, flags);
++	ret = pamu_disable_liodn(liodn);
++	if (!ret)
++		ret = pamu_config_ppaace(liodn, window_addr, window_size, omi_index,
++					 0, dma_domain->snoop_id,
++					 dma_domain->stash_id, win_cnt, 0);
++	spin_unlock_irqrestore(&iommu_lock, flags);
++	if (ret) {
++		pr_err("PAMU PAACE configuration failed for liodn %d, win_cnt =%d\n", liodn, win_cnt);
++		return ret;
++	}
++
++	if (win_cnt > 1) {
++		subwin_size = window_size >> ilog2(win_cnt);
++		for (i = 0; i < win_cnt; i++) {
++			spin_lock_irqsave(&iommu_lock, flags);
++			ret = pamu_disable_spaace(liodn, i);
++			if (!ret)
++				ret = pamu_config_spaace(liodn, win_cnt, i,
++							 subwin_size, omi_index,
++							 0, dma_domain->snoop_id,
++							 dma_domain->stash_id,
++							 0, 0);
++			spin_unlock_irqrestore(&iommu_lock, flags);
++			if (ret) {
++				pr_err("PAMU SPAACE configuration failed for liodn %d\n", liodn);
++				return ret;
++			}
++		}
++	}
++
++	return ret;
++}
++
++static int check_size(u64 size, dma_addr_t iova)
++{
++	/*
++	 * Size must be a power of two and at least be equal
++	 * to PAMU page size.
++	 */
++	if (!is_power_of_2(size) || size < PAMU_PAGE_SIZE) {
++		pr_err("%s: size too small or not a power of two\n", __func__);
++		return -EINVAL;
++	}
++
++	/* iova must be page size aligned*/
++	if (iova & (size - 1)) {
++		pr_err("%s: address is not aligned with window size\n", __func__);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static struct fsl_dma_domain *iommu_alloc_dma_domain(void)
++{
++	struct fsl_dma_domain *domain;
++
++	domain = kmem_cache_zalloc(fsl_pamu_domain_cache, GFP_KERNEL);
++	if (!domain)
++		return NULL;
++
++	domain->stash_id = ~(u32)0;
++	domain->snoop_id = ~(u32)0;
++	domain->win_cnt = pamu_get_max_subwin_cnt();
++	domain->geom_size = 0;
++
++	INIT_LIST_HEAD(&domain->devices);
++
++	spin_lock_init(&domain->domain_lock);
++
++	return domain;
++}
++
++static inline struct device_domain_info *find_domain(struct device *dev)
++{
++	return dev->archdata.iommu_domain;
++}
++
++static void remove_device_ref(struct device_domain_info *info, u32 win_cnt)
++{
++	unsigned long flags;
++
++	list_del(&info->link);
++	spin_lock_irqsave(&iommu_lock, flags);
++	if (win_cnt > 1)
++		pamu_free_subwins(info->liodn);
++	pamu_disable_liodn(info->liodn);
++	spin_unlock_irqrestore(&iommu_lock, flags);
++	spin_lock_irqsave(&device_domain_lock, flags);
++	info->dev->archdata.iommu_domain = NULL;
++	kmem_cache_free(iommu_devinfo_cache, info);
++	spin_unlock_irqrestore(&device_domain_lock, flags);
++}
++
++static void detach_device(struct device *dev, struct fsl_dma_domain *dma_domain)
++{
++	struct device_domain_info *info, *tmp;
++	unsigned long flags;
++
++	spin_lock_irqsave(&dma_domain->domain_lock, flags);
++	/* Remove the device from the domain device list */
++	list_for_each_entry_safe(info, tmp, &dma_domain->devices, link) {
++		if (!dev || (info->dev == dev))
++			remove_device_ref(info, dma_domain->win_cnt);
++	}
++	spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++}
++
++static void attach_device(struct fsl_dma_domain *dma_domain, int liodn, struct device *dev)
++{
++	struct device_domain_info *info, *old_domain_info;
++	unsigned long flags;
++
++	spin_lock_irqsave(&device_domain_lock, flags);
++	/*
++	 * Check here if the device is already attached to domain or not.
++	 * If the device is already attached to a domain detach it.
++	 */
++	old_domain_info = find_domain(dev);
++	if (old_domain_info && old_domain_info->domain != dma_domain) {
++		spin_unlock_irqrestore(&device_domain_lock, flags);
++		detach_device(dev, old_domain_info->domain);
++		spin_lock_irqsave(&device_domain_lock, flags);
++	}
++
++	info = kmem_cache_zalloc(iommu_devinfo_cache, GFP_ATOMIC);
++
++	info->dev = dev;
++	info->liodn = liodn;
++	info->domain = dma_domain;
++
++	list_add(&info->link, &dma_domain->devices);
++	/*
++	 * In case of devices with multiple LIODNs just store
++	 * the info for the first LIODN as all
++	 * LIODNs share the same domain
++	 */
++	if (!old_domain_info)
++		dev->archdata.iommu_domain = info;
++	spin_unlock_irqrestore(&device_domain_lock, flags);
++
++}
++
++static phys_addr_t fsl_pamu_iova_to_phys(struct iommu_domain *domain,
++					    dma_addr_t iova)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++
++	if ((iova < domain->geometry.aperture_start) ||
++		iova > (domain->geometry.aperture_end))
++		return 0;
++
++	return get_phys_addr(dma_domain, iova);
++}
++
++static int fsl_pamu_domain_has_cap(struct iommu_domain *domain,
++				      unsigned long cap)
++{
++	return cap == IOMMU_CAP_CACHE_COHERENCY;
++}
++
++static void fsl_pamu_domain_destroy(struct iommu_domain *domain)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++
++	domain->priv = NULL;
++
++	/* remove all the devices from the device list */
++	detach_device(NULL, dma_domain);
++
++	dma_domain->enabled = 0;
++	dma_domain->mapped = 0;
++
++	kmem_cache_free(fsl_pamu_domain_cache, dma_domain);
++}
++
++static int fsl_pamu_domain_init(struct iommu_domain *domain)
++{
++	struct fsl_dma_domain *dma_domain;
++
++	dma_domain = iommu_alloc_dma_domain();
++	if (!dma_domain) {
++		pr_err("dma_domain allocation failed\n");
++		return -ENOMEM;
++	}
++	domain->priv = dma_domain;
++	dma_domain->iommu_domain = domain;
++	/* defaul geometry 64 GB i.e. maximum system address */
++	domain->geometry.aperture_start = 0;
++	domain->geometry.aperture_end = (1ULL << 36) - 1;
++	domain->geometry.force_aperture = true;
++
++	return 0;
++}
++
++/* Configure geometry settings for all LIODNs associated with domain */
++static int pamu_set_domain_geometry(struct fsl_dma_domain *dma_domain,
++				    struct iommu_domain_geometry *geom_attr,
++				    u32 win_cnt)
++{
++	struct device_domain_info *info;
++	int ret = 0;
++
++	list_for_each_entry(info, &dma_domain->devices, link) {
++		ret = pamu_set_liodn(info->liodn, info->dev, dma_domain,
++				      geom_attr, win_cnt);
++		if (ret)
++			break;
++	}
++
++	return ret;
++}
++
++/* Update stash destination for all LIODNs associated with the domain */
++static int update_domain_stash(struct fsl_dma_domain *dma_domain, u32 val)
++{
++	struct device_domain_info *info;
++	int ret = 0;
++
++	list_for_each_entry(info, &dma_domain->devices, link) {
++		ret = update_liodn_stash(info->liodn, dma_domain, val);
++		if (ret)
++			break;
++	}
++
++	return ret;
++}
++
++/* Update domain mappings for all LIODNs associated with the domain */
++static int update_domain_mapping(struct fsl_dma_domain *dma_domain, u32 wnd_nr)
++{
++	struct device_domain_info *info;
++	int ret = 0;
++
++	list_for_each_entry(info, &dma_domain->devices, link) {
++		ret = update_liodn(info->liodn, dma_domain, wnd_nr);
++		if (ret)
++			break;
++	}
++	return ret;
++}
++
++static int disable_domain_win(struct fsl_dma_domain *dma_domain, u32 wnd_nr)
++{
++	struct device_domain_info *info;
++	int ret = 0;
++
++	list_for_each_entry(info, &dma_domain->devices, link) {
++		if (dma_domain->win_cnt == 1 && dma_domain->enabled) {
++			ret = pamu_disable_liodn(info->liodn);
++			if (!ret)
++				dma_domain->enabled = 0;
++		} else {
++			ret = pamu_disable_spaace(info->liodn, wnd_nr);
++		}
++	}
++
++	return ret;
++}
++
++static void fsl_pamu_window_disable(struct iommu_domain *domain, u32 wnd_nr)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&dma_domain->domain_lock, flags);
++	if (!dma_domain->win_arr) {
++		pr_err("Number of windows not configured\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return;
++	}
++
++	if (wnd_nr >= dma_domain->win_cnt) {
++		pr_err("Invalid window index\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return;
++	}
++
++	if (dma_domain->win_arr[wnd_nr].valid) {
++		ret = disable_domain_win(dma_domain, wnd_nr);
++		if (!ret) {
++			dma_domain->win_arr[wnd_nr].valid = 0;
++			dma_domain->mapped--;
++		}
++	}
++
++	spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++
++}
++
++static int fsl_pamu_window_enable(struct iommu_domain *domain, u32 wnd_nr,
++				  phys_addr_t paddr, u64 size, int prot)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++	struct dma_window *wnd;
++	int pamu_prot = 0;
++	int ret;
++	unsigned long flags;
++	u64 win_size;
++
++	if (prot & IOMMU_READ)
++		pamu_prot |= PAACE_AP_PERMS_QUERY;
++	if (prot & IOMMU_WRITE)
++		pamu_prot |= PAACE_AP_PERMS_UPDATE;
++
++	spin_lock_irqsave(&dma_domain->domain_lock, flags);
++	if (!dma_domain->win_arr) {
++		pr_err("Number of windows not configured\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return -ENODEV;
++	}
++
++	if (wnd_nr >= dma_domain->win_cnt) {
++		pr_err("Invalid window index\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return -EINVAL;
++	}
++
++	win_size = dma_domain->geom_size >> ilog2(dma_domain->win_cnt);
++	if (size > win_size) {
++		pr_err("Invalid window size \n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return -EINVAL;
++	}
++
++	if (dma_domain->win_cnt == 1) {
++		if (dma_domain->enabled) {
++			pr_err("Disable the window before updating the mapping\n");
++			spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++			return -EBUSY;
++		}
++
++		ret = check_size(size, domain->geometry.aperture_start);
++		if (ret) {
++			pr_err("Aperture start not aligned to the size\n");
++			spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++			return -EINVAL;
++		}
++	}
++
++	wnd = &dma_domain->win_arr[wnd_nr];
++	if (!wnd->valid) {
++		wnd->paddr = paddr;
++		wnd->size = size;
++		wnd->prot = pamu_prot;
++
++		ret = update_domain_mapping(dma_domain, wnd_nr);
++		if (!ret) {
++			wnd->valid = 1;
++			dma_domain->mapped++;
++		}
++	} else {
++		pr_err("Disable the window before updating the mapping\n");
++		ret = -EBUSY;
++	}
++
++	spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++
++	return ret;
++}
++
++/*
++ * Attach the LIODN to the DMA domain and configure the geometry
++ * and window mappings.
++ */
++static int handle_attach_device(struct fsl_dma_domain *dma_domain,
++				 struct device *dev, const u32 *liodn,
++				 int num)
++{
++	unsigned long flags;
++	struct iommu_domain *domain = dma_domain->iommu_domain;
++	int ret = 0;
++	int i;
++
++	spin_lock_irqsave(&dma_domain->domain_lock, flags);
++	for (i = 0; i < num; i++) {
++
++		/* Ensure that LIODN value is valid */
++		if (liodn[i] >= PAACE_NUMBER_ENTRIES) {
++			pr_err("Invalid liodn %d, attach device failed for %s\n",
++				liodn[i], dev->of_node->full_name);
++			ret = -EINVAL;
++			break;
++		}
++
++		attach_device(dma_domain, liodn[i], dev);
++		/*
++		 * Check if geometry has already been configured
++		 * for the domain. If yes, set the geometry for
++		 * the LIODN.
++		 */
++		if (dma_domain->win_arr) {
++			u32 win_cnt = dma_domain->win_cnt > 1 ? dma_domain->win_cnt : 0;
++			ret = pamu_set_liodn(liodn[i], dev, dma_domain,
++					      &domain->geometry,
++					      win_cnt);
++			if (ret)
++				break;
++			if (dma_domain->mapped) {
++				/*
++				 * Create window/subwindow mapping for
++				 * the LIODN.
++				 */
++				ret = map_liodn(liodn[i], dma_domain);
++				if (ret)
++					break;
++			}
++		}
++	}
++	spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++
++	return ret;
++}
++
++static int fsl_pamu_attach_device(struct iommu_domain *domain,
++				  struct device *dev)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++	const u32 *liodn;
++	u32 liodn_cnt;
++	int len, ret = 0;
++	struct pci_dev *pdev = NULL;
++	struct pci_controller *pci_ctl;
++
++	/*
++	 * Use LIODN of the PCI controller while attaching a
++	 * PCI device.
++	 */
++	if (dev->bus == &pci_bus_type) {
++		pdev = to_pci_dev(dev);
++		pci_ctl = pci_bus_to_host(pdev->bus);
++		/*
++		 * make dev point to pci controller device
++		 * so we can get the LIODN programmed by
++		 * u-boot.
++		 */
++		dev = pci_ctl->parent;
++	}
++
++	liodn = of_get_property(dev->of_node, "fsl,liodn", &len);
++	if (liodn) {
++		liodn_cnt = len / sizeof(u32);
++		ret = handle_attach_device(dma_domain, dev,
++					 liodn, liodn_cnt);
++	} else {
++		pr_err("missing fsl,liodn property at %s\n",
++		          dev->of_node->full_name);
++			ret = -EINVAL;
++	}
++
++	return ret;
++}
++
++static void fsl_pamu_detach_device(struct iommu_domain *domain,
++				      struct device *dev)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++	const u32 *prop;
++	int len;
++	struct pci_dev *pdev = NULL;
++	struct pci_controller *pci_ctl;
++
++	/*
++	 * Use LIODN of the PCI controller while detaching a
++	 * PCI device.
++	 */
++	if (dev->bus == &pci_bus_type) {
++		pdev = to_pci_dev(dev);
++		pci_ctl = pci_bus_to_host(pdev->bus);
++		/*
++		 * make dev point to pci controller device
++		 * so we can get the LIODN programmed by
++		 * u-boot.
++		 */
++		dev = pci_ctl->parent;
++	}
++
++	prop = of_get_property(dev->of_node, "fsl,liodn", &len);
++	if (prop)
++		detach_device(dev, dma_domain);
++	else
++		pr_err("missing fsl,liodn property at %s\n",
++		          dev->of_node->full_name);
++}
++
++static  int configure_domain_geometry(struct iommu_domain *domain, void *data)
++{
++	struct iommu_domain_geometry *geom_attr = data;
++	struct fsl_dma_domain *dma_domain = domain->priv;
++	dma_addr_t geom_size;
++	unsigned long flags;
++
++	geom_size = geom_attr->aperture_end - geom_attr->aperture_start + 1;
++	/*
++	 * Sanity check the geometry size. Also, we do not support
++	 * DMA outside of the geometry.
++	 */
++	if (check_size(geom_size, geom_attr->aperture_start) ||
++		!geom_attr->force_aperture) {
++			pr_err("Invalid PAMU geometry attributes\n");
++			return -EINVAL;
++		}
++
++	spin_lock_irqsave(&dma_domain->domain_lock, flags);
++	if (dma_domain->enabled) {
++		pr_err("Can't set geometry attributes as domain is active\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return  -EBUSY;
++	}
++
++	/* Copy the domain geometry information */
++	memcpy(&domain->geometry, geom_attr,
++	       sizeof(struct iommu_domain_geometry));
++	dma_domain->geom_size = geom_size;
++
++	spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++
++	return 0;
++}
++
++/* Set the domain stash attribute */
++static int configure_domain_stash(struct fsl_dma_domain *dma_domain, void *data)
++{
++	struct pamu_stash_attribute *stash_attr = data;
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&dma_domain->domain_lock, flags);
++
++	memcpy(&dma_domain->dma_stash, stash_attr,
++		 sizeof(struct pamu_stash_attribute));
++
++	dma_domain->stash_id = get_stash_id(stash_attr->cache,
++					    stash_attr->cpu);
++	if (dma_domain->stash_id == ~(u32)0) {
++		pr_err("Invalid stash attributes\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return -EINVAL;
++	}
++
++	ret = update_domain_stash(dma_domain, dma_domain->stash_id);
++
++	spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++
++	return ret;
++}
++
++/* Configure domain dma state i.e. enable/disable DMA*/
++static int configure_domain_dma_state(struct fsl_dma_domain *dma_domain, bool enable)
++{
++	struct device_domain_info *info;
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&dma_domain->domain_lock, flags);
++
++	if (enable && !dma_domain->mapped) {
++		pr_err("Can't enable DMA domain without valid mapping\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return -ENODEV;
++	}
++
++	dma_domain->enabled = enable;
++	list_for_each_entry(info, &dma_domain->devices,
++				 link) {
++		ret = (enable) ? pamu_enable_liodn(info->liodn) :
++			pamu_disable_liodn(info->liodn);
++		if (ret)
++			pr_err("Unable to set dma state for liodn %d",
++				 info->liodn);
++	}
++	spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++
++	return 0;
++}
++
++static int fsl_pamu_set_domain_attr(struct iommu_domain *domain,
++				 enum iommu_attr attr_type, void *data)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++	int ret = 0;
++
++
++	switch (attr_type) {
++	case DOMAIN_ATTR_GEOMETRY:
++		ret = configure_domain_geometry(domain, data);
++		break;
++	case DOMAIN_ATTR_FSL_PAMU_STASH:
++		ret = configure_domain_stash(dma_domain, data);
++		break;
++	case DOMAIN_ATTR_FSL_PAMU_ENABLE:
++		ret = configure_domain_dma_state(dma_domain, *(int *)data);
++		break;
++	default:
++		pr_err("Unsupported attribute type\n");
++		ret = -EINVAL;
++		break;
++	};
++
++	return ret;
++}
++
++static int fsl_pamu_get_domain_attr(struct iommu_domain *domain,
++				 enum iommu_attr attr_type, void *data)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++	int ret = 0;
++
++
++	switch (attr_type) {
++	case DOMAIN_ATTR_FSL_PAMU_STASH:
++		memcpy((struct pamu_stash_attribute *) data, &dma_domain->dma_stash,
++				 sizeof(struct pamu_stash_attribute));
++		break;
++	case DOMAIN_ATTR_FSL_PAMU_ENABLE:
++		*(int *)data = dma_domain->enabled;
++		break;
++	case DOMAIN_ATTR_FSL_PAMUV1:
++		*(int *)data = DOMAIN_ATTR_FSL_PAMUV1;
++		break;
++	default:
++		pr_err("Unsupported attribute type\n");
++		ret = -EINVAL;
++		break;
++	};
++
++	return ret;
++}
++
++#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
++
++static struct iommu_group *get_device_iommu_group(struct device *dev)
++{
++	struct iommu_group *group;
++
++	group = iommu_group_get(dev);
++	if (!group)
++		group = iommu_group_alloc();
++
++	return group;
++}
++
++static  bool check_pci_ctl_endpt_part(struct pci_controller *pci_ctl)
++{
++	u32 version;
++
++	/* Check the PCI controller version number by readding BRR1 register */
++	version = in_be32(pci_ctl->cfg_addr + (PCI_FSL_BRR1 >> 2));
++	version &= PCI_FSL_BRR1_VER;
++	/* If PCI controller version is >= 0x204 we can partition endpoints*/
++	if (version >= 0x204)
++		return 1;
++
++	return 0;
++}
++
++/* Get iommu group information from peer devices or devices on the parent bus */
++static struct iommu_group *get_peer_pci_device_group(struct pci_dev *pdev)
++{
++	struct pci_dev *tmp;
++	struct iommu_group *group = NULL;
++
++	/* check if this is the first device on the bus*/
++	if (list_is_singular(&pdev->bus_list)) {
++		struct pci_bus *bus = pdev->bus->parent;
++		/* Traverese the parent bus list to get
++		 * the iommu group for devices on the
++		 * parent bus.
++		 */
++		while (bus && !group) {
++			list_for_each_entry(tmp, &bus->devices, bus_list) {
++				group = iommu_group_get(&tmp->dev);
++				if (group)
++					break;
++			}
++
++			bus = bus->parent;
++		}
++	} else {
++		/*
++		 * Get the iommu group for the sibling device
++		 */
++		list_for_each_entry(tmp, &pdev->bus_list, bus_list) {
++			if (tmp == pdev)
++				continue;
++			group = iommu_group_get(&tmp->dev);
++			if (group)
++				break;
++		}
++	}
++
++	return group;
++}
++
++static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
++{
++	struct pci_controller *pci_ctl;
++	bool pci_endpt_partioning;
++	struct iommu_group *group = NULL;
++	struct pci_dev *bridge, *dma_pdev = NULL;
++
++	pci_ctl = pci_bus_to_host(pdev->bus);
++	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
++	/* We can partition PCIe devices so assign device group to the device */
++	if (pci_endpt_partioning) {
++		bridge = pci_find_upstream_pcie_bridge(pdev);
++		if (bridge) {
++			if (pci_is_pcie(bridge))
++				dma_pdev = pci_get_domain_bus_and_slot(
++						pci_domain_nr(pdev->bus),
++						bridge->subordinate->number, 0);
++			if (!dma_pdev)
++				dma_pdev = pci_dev_get(bridge);
++		} else
++			dma_pdev = pci_dev_get(pdev);
++
++		/* Account for quirked devices */
++		swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
++
++		/*
++		 * If it's a multifunction device that does not support our
++		 * required ACS flags, add to the same group as lowest numbered
++		 * function that also does not suport the required ACS flags.
++		 */
++		if (dma_pdev->multifunction &&
++		    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
++			u8 i, slot = PCI_SLOT(dma_pdev->devfn);
++
++			for (i = 0; i < 8; i++) {
++				struct pci_dev *tmp;
++
++				tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
++				if (!tmp)
++					continue;
++
++				if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
++					swap_pci_ref(&dma_pdev, tmp);
++					break;
++				}
++				pci_dev_put(tmp);
++			}
++		}
++
++		/*
++		 * Devices on the root bus go through the iommu.  If that's not us,
++	 	 * find the next upstream device and test ACS up to the root bus.
++		 * Finding the next device may require skipping virtual buses.
++		 */
++		while (!pci_is_root_bus(dma_pdev->bus)) {
++			struct pci_bus *bus = dma_pdev->bus;
++
++			while (!bus->self) {
++				if (!pci_is_root_bus(bus))
++					bus = bus->parent;
++				else
++					goto root_bus;
++			}
++
++			if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
++				break;
++
++			swap_pci_ref(&dma_pdev, pci_dev_get(bus->self));
++		}
++
++root_bus:
++		group = get_device_iommu_group(&dma_pdev->dev);
++		pci_dev_put(dma_pdev);
++		/*
++		 * PCIe controller is not a paritionable entity
++		 * free the controller device iommu_group.
++		 */
++		if (pci_ctl->parent->iommu_group)
++			iommu_group_remove_device(pci_ctl->parent);
++	} else {
++		/*
++		 * All devices connected to the controller will share the
++		 * PCI controllers device group. If this is the first
++		 * device to be probed for the pci controller, copy the
++		 * device group information from the PCI controller device
++		 * node and remove the PCI controller iommu group.
++		 * For subsequent devices, the iommu group information can
++		 * be obtained from sibling devices (i.e. from the bus_devices
++		 * link list).
++		 */
++		if (pci_ctl->parent->iommu_group) {
++			group = get_device_iommu_group(pci_ctl->parent);
++			iommu_group_remove_device(pci_ctl->parent);
++		} else
++			group = get_peer_pci_device_group(pdev);
++	}
++
++	return group;
++}
++
++static int fsl_pamu_add_device(struct device *dev)
++{
++	struct iommu_group *group = NULL;
++	struct pci_dev *pdev;
++	const u32 *prop;
++	int ret, len;
++
++	/*
++	 * For platform devices we allocate a separate group for
++	 * each of the devices.
++	 */
++	if (dev->bus == &pci_bus_type) {
++		pdev = to_pci_dev(dev);
++		/* Don't create device groups for virtual PCI bridges */
++		if (pdev->subordinate)
++			return 0;
++
++		group = get_pci_device_group(pdev);
++
++	} else {
++		prop = of_get_property(dev->of_node, "fsl,liodn", &len);
++		if (prop)
++			group = get_device_iommu_group(dev);
++	}
++
++	if (!group || IS_ERR(group))
++		return PTR_ERR(group);
++
++	ret = iommu_group_add_device(group, dev);
++
++	iommu_group_put(group);
++	return ret;
++}
++
++static void fsl_pamu_remove_device(struct device *dev)
++{
++	iommu_group_remove_device(dev);
++}
++
++static int fsl_pamu_set_windows(struct iommu_domain *domain, u32 w_count)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&dma_domain->domain_lock, flags);
++	/* Ensure domain is inactive i.e. DMA should be disabled for the domain */
++	if (dma_domain->enabled) {
++		pr_err("Can't set geometry attributes as domain is active\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return  -EBUSY;
++	}
++
++	/* Ensure that the geometry has been set for the domain */
++	if (!dma_domain->geom_size) {
++		pr_err("Please configure geometry before setting the number of windows\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return -EINVAL;
++	}
++
++	/*
++	 * Ensure we have valid window count i.e. it should be less than
++	 * maximum permissible limit and should be a power of two.
++	 */
++	if (w_count > pamu_get_max_subwin_cnt() || !is_power_of_2(w_count)) {
++		pr_err("Invalid window count\n");
++		spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++		return -EINVAL;
++	}
++
++	ret = pamu_set_domain_geometry(dma_domain, &domain->geometry,
++				((w_count > 1) ? w_count : 0));
++	if (!ret) {
++		if (dma_domain->win_arr)
++			kfree(dma_domain->win_arr);
++		dma_domain->win_arr = kzalloc(sizeof(struct dma_window) *
++							  w_count, GFP_ATOMIC);
++		if (!dma_domain->win_arr) {
++			spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++			return -ENOMEM;
++		}
++		dma_domain->win_cnt = w_count;
++	}
++	spin_unlock_irqrestore(&dma_domain->domain_lock, flags);
++
++	return ret;
++}
++
++static u32 fsl_pamu_get_windows(struct iommu_domain *domain)
++{
++	struct fsl_dma_domain *dma_domain = domain->priv;
++
++	return dma_domain->win_cnt;
++}
++
++static struct iommu_ops fsl_pamu_ops = {
++	.domain_init	= fsl_pamu_domain_init,
++	.domain_destroy = fsl_pamu_domain_destroy,
++	.attach_dev	= fsl_pamu_attach_device,
++	.detach_dev	= fsl_pamu_detach_device,
++	.domain_window_enable = fsl_pamu_window_enable,
++	.domain_window_disable = fsl_pamu_window_disable,
++	.domain_get_windows = fsl_pamu_get_windows,
++	.domain_set_windows = fsl_pamu_set_windows,
++	.iova_to_phys	= fsl_pamu_iova_to_phys,
++	.domain_has_cap = fsl_pamu_domain_has_cap,
++	.domain_set_attr = fsl_pamu_set_domain_attr,
++	.domain_get_attr = fsl_pamu_get_domain_attr,
++	.add_device	= fsl_pamu_add_device,
++	.remove_device	= fsl_pamu_remove_device,
++};
++
++int pamu_domain_init()
++{
++	int ret = 0;
++
++	ret = iommu_init_mempool();
++	if (ret)
++		return ret;
++
++	bus_set_iommu(&platform_bus_type, &fsl_pamu_ops);
++	bus_set_iommu(&pci_bus_type, &fsl_pamu_ops);
++
++	return ret;
++}
+diff --git a/drivers/iommu/fsl_pamu_domain.h b/drivers/iommu/fsl_pamu_domain.h
+new file mode 100644
+index 0000000..c90293f
+--- /dev/null
++++ b/drivers/iommu/fsl_pamu_domain.h
+@@ -0,0 +1,85 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ *
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ */
++
++#ifndef __FSL_PAMU_DOMAIN_H
++#define __FSL_PAMU_DOMAIN_H
++
++#include "fsl_pamu.h"
++
++struct dma_window {
++	phys_addr_t paddr;
++	u64 size;
++	int valid;
++	int prot;
++};
++
++struct fsl_dma_domain {
++	/*
++	 * Indicates the geometry size for the domain.
++	 * This would be set when the geometry is
++	 * configured for the domain.
++	 */
++	dma_addr_t			geom_size;
++	/*
++	 * Number of windows assocaited with this domain.
++	 * During domain initialization, it is set to the
++	 * the maximum number of subwindows allowed for a LIODN.
++	 * Minimum value for this is 1 indicating a single PAMU
++	 * window, without any sub windows. Value can be set/
++	 * queried by set_attr/get_attr API for DOMAIN_ATTR_WINDOWS.
++	 * Value can only be set once the geometry has been configured.
++	 */
++	u32				win_cnt;
++	/*
++	 * win_arr contains information of the configured
++	 * windows for a domain. This is allocated only
++	 * when the number of windows for the domain are
++	 * set.
++	 */
++	struct dma_window		*win_arr;
++	/* list of devices associated with the domain */
++	struct list_head		devices;
++	/* dma_domain states:
++	 * mapped - A particular mapping has been created
++	 * within the configured geometry.
++	 * enabled - DMA has been enabled for the given
++	 * domain. This translates to setting of the
++	 * valid bit for the primary PAACE in the PAMU
++	 * PAACT table. Domain geometry should be set and
++	 * it must have a valid mapping before DMA can be
++	 * enabled for it.
++	 *
++	 */
++	int				mapped;
++	int				enabled;
++	/* stash_id obtained from the stash attribute details */
++	u32				stash_id;
++	struct pamu_stash_attribute	dma_stash;
++	u32				snoop_id;
++	struct iommu_domain		*iommu_domain;
++	spinlock_t			domain_lock;
++};
++
++/* domain-device relationship */
++struct device_domain_info {
++	struct list_head link;	/* link to domain siblings */
++	struct device *dev;
++	u32 liodn;
++	struct fsl_dma_domain *domain; /* pointer to domain */
++};
++#endif  /* __FSL_PAMU_DOMAIN_H */
 -- 
-1.8.0
+1.7.4.1
+
 
