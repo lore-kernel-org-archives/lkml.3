@@ -1,70 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab3F1RTO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 13:19:14 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48387 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755526Ab3F1RTN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 13:19:13 -0400
-Message-ID: <51CDC589.8070306@gmail.com>
-Date: Fri, 28 Jun 2013 11:19:05 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1755973Ab3F1RUr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 13:20:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755914Ab3F1RUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 13:20:45 -0400
+Date: Fri, 28 Jun 2013 19:15:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2013-06-27-16-36 uploaded (wait event common)
+Message-ID: <20130628171545.GA28672@redhat.com>
+References: <20130627233733.BAEB131C3BE@corp2gmr1-1.hot.corp.google.com> <51CD1F81.4040202@infradead.org> <20130627225139.798e7b00.akpm@linux-foundation.org> <51CD27F3.30104@infradead.org> <20130628165641.2193bfcd78c1f27d6f68f9a5@canb.auug.org.au> <20130628153828.GA24371@redhat.com>
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V3 06/15] perf tools: fix parse_events_terms() freeing
- local variable on error path
-References: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com> <1372409006-8431-7-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1372409006-8431-7-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628153828.GA24371@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/28/13 2:43 AM, Adrian Hunter wrote:
-> The list_head is on the stack, so just free the rest of the list.
+On 06/28, Oleg Nesterov wrote:
 >
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->   tools/perf/util/parse-events.c | 7 ++++++-
->   tools/perf/util/parse-events.h | 1 +
->   tools/perf/util/pmu.c          | 2 +-
->   3 files changed, 8 insertions(+), 2 deletions(-)
+> On 06/28, Stephen Rothwell wrote:
+> >
+> > On Thu, 27 Jun 2013 23:06:43 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
+> > >
+> > > >> My builds are littered with hundreds of warnings like this one:
+> > > >>
+> > > >> drivers/tty/tty_ioctl.c:220:6: warning: the omitted middle operand in ?: will always be 'true', suggest explicit middle operand [-Wparentheses]
+> > > >>
+> > > >> I guess due to this line from wait_event_common():
+> > > >>
+> > > >> +		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;
+> > > >>
+> > I added the following to linux-next today:
+> > (sorry Randy, I forgot the Reported-by:, Andrew please add)
+> >
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Fri, 28 Jun 2013 16:52:58 +1000
+> > Subject: [PATCH] fix warnings from ?: operator in wait.h
 >
-> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> index 995fc25..d9cb055 100644
-> --- a/tools/perf/util/parse-events.c
-> +++ b/tools/perf/util/parse-events.c
-> @@ -1231,12 +1231,17 @@ int parse_events_term__clone(struct parse_events_term **new,
->   			term->val.str, term->val.num);
->   }
+> Argh. This patch strikes again.
 >
-> -void parse_events__free_terms(struct list_head *terms)
-> +void parse_events__free_terms_only(struct list_head *terms)
->   {
->   	struct parse_events_term *term, *h;
+> Thanks, and sorry. And please help!
 >
->   	list_for_each_entry_safe(term, h, terms, list)
->   		free(term);
-> +}
-> +
-> +void parse_events__free_terms(struct list_head *terms)
-> +{
-> +	parse_events__free_terms_only(terms);
->
->   	free(terms);
->   }
+> I am not sure I understand. Since when gcc dislikes '?:' ?
+> /bin/grep shows a lot of users of 'X ?: Y' shortcut?
 
-I still don't understand the reasoning for an _only function. There is 
-only 1 place that mallocs the list_head and that 1 user should free its 
-own memory. All of the other users pass a stack variable.
+OK, I have found the machine with the newer gcc.
 
-David
+	#define test_1(tout) (!tout ?: 1)
+
+	int func_1(long timeout)
+	{
+		return test_1(timeout);
+	}
+
+	#define test_2(tout) (tout ?: 1)
+
+	int func_2(long timeout)
+	{
+		return test_2(timeout);
+	}
+
+test_1() triggers the same warning, test_2() doesn't. So it doesn't
+like "computed-boolean ?: long".
+
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > ---
+> >  include/linux/wait.h | 18 ++++++++++++++----
+> >  1 file changed, 14 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/wait.h b/include/linux/wait.h
+> > index 1c08a6c..f3b793d 100644
+> > --- a/include/linux/wait.h
+> > +++ b/include/linux/wait.h
+> > @@ -197,7 +197,12 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+> >  	for (;;) {							\
+> >  		__ret = prepare_to_wait_event(&wq, &__wait, state);	\
+> >  		if (condition) {					\
+> > -			__ret = __wait_no_timeout(tout) ?: __tout ?: 1;	\
+> > +			__ret = __wait_no_timeout(tout);		\
+> > +			if (!__ret) {					\
+> > +				__ret = __tout;				\
+> > +				if (!__ret)				\
+> > +					__ret = 1;			\
+> > +			}						\
+> >  			break;						\
+> >  		}							\
+> >  									\
+> > @@ -218,9 +223,14 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+> >  #define wait_event_common(wq, condition, state, tout)			\
+> >  ({									\
+> >  	long __ret;							\
+> > -	if (condition)							\
+> > -		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;		\
+> > -	else								\
+> > +	if (condition) {						\
+> > +		__ret = __wait_no_timeout(tout);			\
+> > +		if (!__ret) {						\
+> > +			__ret = (tout);					\
+> > +			if (!__ret)					\
+> > +				__ret = 1;				\
+> > +		}							\
+> > +	} else								\
+> >  		__ret = __wait_event_common(wq, condition, state, tout);\
+> >  	__ret;								\
+> >  })
+
+Thanks. This should fix the isssue.
+
+I'll try to send the cleanup patch later, this doesn't look very nice...
+
+Oleg.
+
