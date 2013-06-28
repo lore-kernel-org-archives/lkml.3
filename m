@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab3F1T4j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:56:39 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:33723 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab3F1T4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:56:32 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv2 6/8] clocksource: sun4i: Remove TIMER_SCAL variable
-Date: Fri, 28 Jun 2013 21:56:24 +0200
-Message-Id: <1372449386-1334-7-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1753560Ab3F1T5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:57:01 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:59974 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305Ab3F1T47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:56:59 -0400
+Date: Fri, 28 Jun 2013 12:56:51 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org
+Subject: [PATCH] kconfig: allow "hex" and "range" to support longs
+Message-ID: <20130628195651.GA8198@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prescaler is only used when using the internal low frequency
-oscillator (at 32kHz). Since we're using the higher frequency oscillator
-at 24MHz, we can just remove it.
+The parsing routines for Kconfig files use strtol(), but store and
+render values as int. Switch types and formating to long to support a
+wider range of values. For example, 0x80000000 wasn't representable.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/clocksource/sun4i_timer.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ scripts/kconfig/symbol.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 6ef10d9..d6621c5 100644
---- a/drivers/clocksource/sun4i_timer.c
-+++ b/drivers/clocksource/sun4i_timer.c
-@@ -124,7 +124,6 @@ static u32 sun4i_timer_sched_read(void)
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index ecc5aa5..8ee1ff58 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -136,7 +136,7 @@ static struct property *sym_get_range_prop(struct symbol *sym)
+ 	return NULL;
+ }
  
- static void __init sun4i_timer_init(struct device_node *node)
+-static int sym_get_range_val(struct symbol *sym, int base)
++static long sym_get_range_val(struct symbol *sym, int base)
  {
--	unsigned long rate = 0;
- 	struct clk *clk;
- 	int ret, irq;
- 	u32 val;
-@@ -142,9 +141,7 @@ static void __init sun4i_timer_init(struct device_node *node)
- 		panic("Can't get timer clock");
- 	clk_prepare_enable(clk);
+ 	sym_calc_value(sym);
+ 	switch (sym->type) {
+@@ -155,7 +155,7 @@ static int sym_get_range_val(struct symbol *sym, int base)
+ static void sym_validate_range(struct symbol *sym)
+ {
+ 	struct property *prop;
+-	int base, val, val2;
++	long base, val, val2;
+ 	char str[64];
  
--	rate = clk_get_rate(clk);
--
--	writel(rate / (TIMER_SCAL * HZ),
-+	writel(clk_get_rate(clk) / HZ,
- 	       timer_base + TIMER_INTVAL_REG(0));
+ 	switch (sym->type) {
+@@ -179,9 +179,9 @@ static void sym_validate_range(struct symbol *sym)
+ 			return;
+ 	}
+ 	if (sym->type == S_INT)
+-		sprintf(str, "%d", val2);
++		sprintf(str, "%ld", val2);
+ 	else
+-		sprintf(str, "0x%x", val2);
++		sprintf(str, "0x%lx", val2);
+ 	sym->curr.val = strdup(str);
+ }
  
- 	/* set clock source to HOSC, 16 pre-division */
-@@ -168,8 +165,8 @@ static void __init sun4i_timer_init(struct device_node *node)
+@@ -583,7 +583,7 @@ bool sym_string_valid(struct symbol *sym, const char *str)
+ bool sym_string_within_range(struct symbol *sym, const char *str)
+ {
+ 	struct property *prop;
+-	int val;
++	long val;
  
- 	sun4i_clockevent.cpumask = cpumask_of(0);
- 
--	clockevents_config_and_register(&sun4i_clockevent, rate / TIMER_SCAL,
--					0x1, 0xff);
-+	clockevents_config_and_register(&sun4i_clockevent, clk_get_rate(clk),
-+					0x1, 0xffffffff);
- 
- 	writel(~0, timer_base + TIMER_INTVAL_REG(1));
- 	writel(TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD | TIMER_CTL_CLK_SRC(TIMER_CTL_CLK_SRC_OSC24M),
+ 	switch (sym->type) {
+ 	case S_STRING:
 -- 
-1.8.3.1
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
