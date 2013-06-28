@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3F1Obd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:31:33 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:50127 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab3F1Obb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:31:31 -0400
-Date: Fri, 28 Jun 2013 18:31:26 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130628143124.GA6552@localhost.localdomain>
-References: <20130618024623.GP29338@dastard>
- <20130618063104.GB20528@localhost.localdomain>
- <20130618082414.GC13677@dhcp22.suse.cz>
- <20130618104443.GH13677@dhcp22.suse.cz>
- <20130618135025.GK13677@dhcp22.suse.cz>
- <20130625022754.GP29376@dastard>
- <20130626081509.GF28748@dhcp22.suse.cz>
- <20130626232426.GA29034@dastard>
- <20130627145411.GA24206@dhcp22.suse.cz>
- <20130628083943.GA32747@dhcp22.suse.cz>
+	id S1754606Ab3F1Oco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:32:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab3F1Ocn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 10:32:43 -0400
+Date: Fri, 28 Jun 2013 16:27:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tracing/kprobe: Recover old array if fails to enable
+	kprobe
+Message-ID: <20130628142744.GA19278@redhat.com>
+References: <51CD25A6.2030907@hitachi.com> <20130628130452.1132.85665.stgit@mhiramat-M0-7522>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130628083943.GA32747@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130628130452.1132.85665.stgit@mhiramat-M0-7522>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 10:39:43AM +0200, Michal Hocko wrote:
-> I have just triggered this one.
-> 
-> [37955.364062] RIP: 0010:[<ffffffff81127e5b>]  [<ffffffff81127e5b>] list_lru_walk_node+0xab/0x140
-> [37955.364062] RSP: 0000:ffff8800374af7b8  EFLAGS: 00010286
-> [37955.364062] RAX: 0000000000000106 RBX: ffff88002ead7838 RCX: ffff8800374af830
-Note ebx
+On 06/28, Masami Hiramatsu wrote:
+>
+> @@ -232,19 +246,21 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  		rcu_assign_pointer(tp->files, new);
+>  		tp->flags |= TP_FLAG_TRACE;
+>  
+> +		ret = __enable_trace_probe(tp);
+> +		if (ret < 0) {
+> +			/* Write back the old list */
+> +			rcu_assign_pointer(tp->files, old);
+> +			old = new;	/* "new" must be freed */
+> +		}
+> +
+>  		if (old) {
+>  			/* Make sure the probe is done with old files */
+>  			synchronize_sched();
+>  			kfree(old);
+>  		}
 
-> [37955.364062] RDX: 0000000000000107 RSI: ffff88001d250dc0 RDI: ffff88002ead77d0
-> [37955.364062] RBP: ffff8800374af818 R08: 0000000000000000 R09: ffff88001ffeafc0
-> [37955.364062] R10: 0000000000000002 R11: 0000000000000000 R12: ffff88001d250dc0
-> [37955.364062] R13: 00000000000000a0 R14: 000000572ead7838 R15: ffff88001d250dc8
-Note r14
+Ah, but this conflicts with the other changes I sent. They have
+your acks, and iiuc Steven is going to apply them.
 
+Besides, this fix is not complete afaics, we should also clear
+TP_FLAG_TRACE/PROFILE if __enable_trace_probe() fails.
 
-> [37955.364062] Process as (pid: 3351, threadinfo ffff8800374ae000, task ffff880036d665c0)
-> [37955.364062] Stack:
-> [37955.364062]  ffff88001da3e700 ffff8800374af830 ffff8800374af838 ffffffff811846d0
-> [37955.364062]  0000000000000000 ffff88001ce75c48 01ff8800374af838 ffff8800374af838
-> [37955.364062]  0000000000000000 ffff88001ce75800 ffff8800374afa08 0000000000001014
-> [37955.364062] Call Trace:
-> [37955.364062]  [<ffffffff811846d0>] ? insert_inode_locked+0x160/0x160
-> [37955.364062]  [<ffffffff8118496c>] prune_icache_sb+0x3c/0x60
-> [37955.364062]  [<ffffffff8116dcbe>] super_cache_scan+0x12e/0x1b0
-> [37955.364062]  [<ffffffff8111354a>] shrink_slab_node+0x13a/0x250
-> [37955.364062]  [<ffffffff8111671b>] shrink_slab+0xab/0x120
-> [37955.364062]  [<ffffffff81117944>] do_try_to_free_pages+0x264/0x360
-> [37955.364062]  [<ffffffff81117d90>] try_to_free_pages+0x130/0x180
-> [37955.364062]  [<ffffffff81001974>] ? __switch_to+0x1b4/0x550
-> [37955.364062]  [<ffffffff8110a2fe>] __alloc_pages_slowpath+0x39e/0x790
-> [37955.364062]  [<ffffffff8110a8ea>] __alloc_pages_nodemask+0x1fa/0x210
-> [37955.364062]  [<ffffffff8114d1b0>] alloc_pages_vma+0xa0/0x120
-> [37955.364062]  [<ffffffff81129ebb>] do_anonymous_page+0x16b/0x350
-> [37955.364062]  [<ffffffff8112f9c5>] handle_pte_fault+0x235/0x240
-> [37955.364062]  [<ffffffff8107b8b0>] ? set_next_entity+0xb0/0xd0
-> [37955.364062]  [<ffffffff8112fcbf>] handle_mm_fault+0x2ef/0x400
-> [37955.364062]  [<ffffffff8157e927>] __do_page_fault+0x237/0x4f0
-> [37955.364062]  [<ffffffff8116a8a8>] ? fsnotify_access+0x68/0x80
-> [37955.364062]  [<ffffffff8116b0b8>] ? vfs_read+0xd8/0x130
-> [37955.364062]  [<ffffffff8157ebe9>] do_page_fault+0x9/0x10ffff88002ead7838
-> [37955.364062]  [<ffffffff8157b348>] page_fault+0x28/0x30
-> [37955.364062] Code: 44 24 18 0f 84 87 00 00 00 49 83 7c 24 18 00 78 7b 49 83 c5 01 48 8b 4d a8 48 8b 11 48 8d 42 ff 48 85 d2 48 89 01 74 78 4d 39 f7 <49> 8b 06 4c 89 f3 74 6d 49 89 c6 eb a6 0f 1f 84 00 00 00 00 00 
-> [37955.364062] RIP  [<ffffffff81127e5b>] list_lru_walk_node+0xab/0x140
-> 
-> ffffffff81127e0e:       48 8b 55 b0             mov    -0x50(%rbp),%rdx
-> ffffffff81127e12:       4c 89 e6                mov    %r12,%rsi
-> ffffffff81127e15:       48 89 df                mov    %rbx,%rdi
-> ffffffff81127e18:       ff 55 b8                callq  *-0x48(%rbp)		# isolate(item, &nlru->lock, cb_arg)
-> ffffffff81127e1b:       83 f8 01                cmp    $0x1,%eax
-> ffffffff81127e1e:       74 78                   je     ffffffff81127e98 <list_lru_walk_node+0xe8>
-> ffffffff81127e20:       73 4e                   jae    ffffffff81127e70 <list_lru_walk_node+0xc0>
-> [...]
-One interesting thing I have noted here, is that r14 is basically the lower half of rbx, with
-the upper part borked.
+Perhaps you can do this later, on top of the pending changes?
 
-Because we are talking about a single word, this does not seem the usual update-half-of-double-word
-without locking issue.
+Or. Given that this patch assumes that enable_kprobe() must succed,
+can't we make a minimal change for now?
 
->From your excerpt, it is not totally clear what r14 is. But by looking at rdi which
-is 0xffff88002ead77d0 and very probable nlru->lock due to the calling convention,
-that would indicate that this is nlru->list in case you have spinlock debugging enabled.
+-------------------------------------------------------------------------------
+[PATCH] tracing/kprobe: WARN() if enable_kprobe() fails.
 
-So yes, someone destroyed our next pointer, and amazingly only half of it.
+enable_trace_probe() doesn't recover tp->files/flags if enable_kprobe()
+fails, this looks confusing.
 
-Still, the only time we ever release this lock is when isolate returns LRU_RETRY. Maybe the
-way we restart is wrong? (although I can't see how)
+However, enable_kprobe() must not fail at this time except for unknown
+bug or changing the implementation of enable_kprobe(), because usual
+failure cases (not registered or gone) are already filtered.
 
-An iput() happens outside the lock in that case, but it seems safe : if that ends up manipulating
-the lru it will do so through our accessors.
+So this patch simply adds WARN_ON(ret) to document this fact, even if
+it makes sense to cleanup the logic anyway later.
 
-I will have to think a bit more... Any other strange thing happening before it ?
+Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/trace/trace_kprobe.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 5c070db..bb608b5 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -220,6 +220,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 			ret = enable_kretprobe(&tp->rp);
+ 		else
+ 			ret = enable_kprobe(&tp->rp.kp);
++		WARN_ON(ret);
+ 	}
+  out:
+ 	return ret;
+
