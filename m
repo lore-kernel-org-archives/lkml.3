@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3F1J3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:29:09 -0400
-Received: from qproxy2-pub.unifiedlayer.com ([69.89.16.161]:43721 "HELO
-	qproxy2-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754614Ab3F1J3H convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:29:07 -0400
-X-Sender-Id: {5107:rsj20.rhostjh.com:bbn:bbngospel.org} {sentby:smtp auth 60.173.9.104 authed with info@bbngospel.org}
-Message-ID: <20130628030536.49032cp01ah8y6lc@www.netcomzw.com>
-Date: Fri, 28 Jun 2013 03:05:36 -0600
-From: Gareth & Catherine Bull <garethcatherinebull2013@yahoo.com>
-Reply-to: garethbull44@live.co.uk
-To: undisclosed-recipients:;
-Subject: Charity Project
+	id S1755132Ab3F1Jaf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:30:35 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:51612 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab3F1Jad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 05:30:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUVJmUYFVOLTzkSqzw7+CW0TwK2S+vq=To8Cu2EpcNSxcQ@mail.gmail.com>
+References: <CA+icZUUsDoJHDk0Ug7FRc652CJvmcNdvhT1x44+8LOA2OSU3Hg@mail.gmail.com>
+	<CAPM=9tySnq0SDJEy0qvhhqjTnsSNTMuYzaMgOoi44SBRhuTF2Q@mail.gmail.com>
+	<CA+icZUVDX+rGMHaO3Pi+jRmHVs_QtdBOYcO++ugHPy4CmFurZA@mail.gmail.com>
+	<CA+icZUVJmUYFVOLTzkSqzw7+CW0TwK2S+vq=To8Cu2EpcNSxcQ@mail.gmail.com>
+Date: Fri, 28 Jun 2013 11:30:32 +0200
+Message-ID: <CA+icZUXLMGeHom=8Gye8nBZoRxm7KTxy0ofXQsw4nfCayx5b_w@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jun 28 [ call-trace: workqueue | drm
+ releated? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 28, 2013 at 11:21 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Fri, Jun 28, 2013 at 10:31 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Fri, Jun 28, 2013 at 10:29 AM, Dave Airlie <airlied@gmail.com> wrote:
+>>>>
+>>>> [ CC wq and drm(-intel) folks ]
+>>>>
+>>>
+>>> Already know the commit which caused it, mentioned on dri-devel,
+>>> waiting for danvet to wake up and look, before I revert it later.
+>>>
+>>
+>> Thanks, I like fast responses.
+>>
+>> For followers... See "workqueue warnings in helper code"
+>>
+>> - Sedat -
+>>
+>> http://lists.freedesktop.org/archives/dri-devel/2013-June/040707.html
+>>
+>
+> Just FYI:
+>
+> Daniel decided to revert [2] (see [1]).
+>
+> commit 160954b7bca43da7cd3cfbce310e6df919a8216e
+> "drm: kms_helper: don't lose hotplug event"
+>
 
-My wife and I won the Euro Millions Lottery of £41 Million British Pounds
-and we have decided to donate £1.5 million British Pounds to 10
-individuals worldwide as our own charity project.
+I have tested that with my -2 build and the call-traces are gone.
 
-To verify,please see our interview by visiting the web page below:
-http://www.dailymail.co.uk/news/article-2091124/EuroMillions-winners-Gareth-Catherine-Bull-scoop-41MILLION-lotto-jackpot.html
+Feel free to add my Reported-by/Tested-by.
 
-Your email address was among the emails which were submitted to us by the
-Google, Inc as a web user; if you have received our email please, kindly
-send us the below details so that we can transfer your £1,500,000.00
-pounds in your name or direct our bank to effect the
-transfer of the funds to your operational bank account in your country.
+- Sedat -
 
-Full Name:
-Mobile No:
-Age:
-Country:
-Send your response to (garethbull44@live.co.uk)
-
-Best Regards,
-Gareth & Catherine Bull
-
-
-
-
+> - Sedat -
+>
+> [1] http://lists.freedesktop.org/archives/dri-devel/2013-June/040721.html
+> [2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=160954b7bca43da7cd3cfbce310e6df919a8216e
+>
+>>> Dave.
