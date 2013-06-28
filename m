@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab3F1Kpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:45:30 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:51507 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402Ab3F1Kp3 (ORCPT
+	id S1755617Ab3F1KqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:46:00 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:60877 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755263Ab3F1Kp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:45:29 -0400
+	Fri, 28 Jun 2013 06:45:59 -0400
+Date: Fri, 28 Jun 2013 12:45:49 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Maxim Uvarov <muvarov@gmail.com>
+Cc: David Daney <ddaney.cavm@gmail.com>,
+        Wladislav Wiebe <wladislav.kw@gmail.com>, david.daney@cavium.com,
+        davem@davemloft.net, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] MIPS: Octeon: fix for held reboot_mutex lock at
+ task exit time
+Message-ID: <20130628104548.GL10727@linux-mips.org>
+References: <519DDF8D.70700@gmail.com>
+ <519E4C3C.7010400@gmail.com>
+ <CAJGZr0KRAJty5+hY77e8s50NmK5jLq8zNQ_r6fz9LOVpPo_WCA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1306271147150.3538@pobox.suse.cz>
-References: <1371303165-1802-1-git-send-email-dh.herrmann@gmail.com>
-	<1371303165-1802-2-git-send-email-dh.herrmann@gmail.com>
-	<20130626160727.GA32420@core.coreip.homeip.net>
-	<alpine.LNX.2.00.1306271147150.3538@pobox.suse.cz>
-Date: Fri, 28 Jun 2013 12:45:27 +0200
-Message-ID: <CANq1E4ROdBwtjKOwid=zOTvTDcLaM7wn1a2ck251vEBcFAEDSw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] input: document gamepad API and add extra keycodes
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        Todd Showalter <todd@electronjump.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJGZr0KRAJty5+hY77e8s50NmK5jLq8zNQ_r6fz9LOVpPo_WCA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Sorry for the late reply - this ended up in the moderator queue for the
+mailing list and I rarely look at it - it's tens of thousands of emails!
+  
+On Thu, May 23, 2013 at 11:58:34PM +0400, Maxim Uvarov wrote:
 
-On Thu, Jun 27, 2013 at 11:47 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 26 Jun 2013, Dmitry Torokhov wrote:
->
->> On Sat, Jun 15, 2013 at 03:32:44PM +0200, David Herrmann wrote:
->> > --- a/include/uapi/linux/input.h
->> > +++ b/include/uapi/linux/input.h
->> > @@ -507,10 +507,14 @@ struct input_keymap_entry {
->> >
->> >  #define BTN_GAMEPAD                0x130
->> >  #define BTN_A                      0x130
->> > +#define BTN_SOUTH          0x130
->>
->> Could we do:
->>
->> #define BTN_SOUTH             0x130
->> #define BTN_A                 BTN_SOUTH
->>
->> so that it is clear that BTN_A, BTN_B, etc are legacy definitions and
->> not an accidental typos that need their own key codes.
->
-> Makes sense, will do that modification.
->
->> Otherwise:
->>
->> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->
-> Thanks Dmitry. Will be taking it (with the above modification) through my
-> tree.
+> >> diff --git a/arch/mips/cavium-octeon/**setup.c b/arch/mips/cavium-octeon/
+> >> **setup.c
+> >> index b0baa29..04ce396 100644
+> >> --- a/arch/mips/cavium-octeon/**setup.c
+> >> +++ b/arch/mips/cavium-octeon/**setup.c
+> >> @@ -457,6 +457,10 @@ static void octeon_halt(void)
+> >>         }
+> >>
+> >>         octeon_kill_core(NULL);
+> >> +
+> >> +       /* We stop here */
+> >> +       while (1)
+> >> +               ;
+> >>
+> >
+> > I want to put a WAIT here so we don't burn so much power.
+> >
+> > I will send a patch to do that instead.
+> >
+> >
+> what about adding wait for other mips boards where is while (1) is used?
 
-Thanks to both of you! Looks good.
+Many platforms have their own variants of eternal loops, some using
+just "while (1);", others trying to save power using the WAIT instruction.
+I was planing to work through all of them and come up with a common
+defaut implementation.
 
-Cheers
-David
+  Ralf
