@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab3F1LPh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 07:15:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49680 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185Ab3F1LPg (ORCPT
+	id S1755542Ab3F1LT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 07:19:56 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:34476 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234Ab3F1LTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 07:15:36 -0400
-Date: Fri, 28 Jun 2013 12:15:10 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Ankur Raina <Ankur.Raina@kpitcummins.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        david.chen@diasemi.com
-Message-ID: <20130628111510.GD27646@sirena.org.uk>
-References: <4B6D9C89CD8BA349A71B74CA32C47E5850DA82AF@KCHJEXMB02.kpit.com>
- <20130627174111.GG20292@zurbaran>
- <1372416519.13538.25.camel@ankurr1-desktop>
+	Fri, 28 Jun 2013 07:19:55 -0400
+Date: Fri, 28 Jun 2013 13:19:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Wedson Almeida Filho <wedsonaf@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
+Message-ID: <20130628111948.GA31065@gmail.com>
+References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iwrWpCOd/M6155vD"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372416519.13538.25.camel@ankurr1-desktop>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [patch v1 1/1]mfd: fix for DA9055 driver initialization
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---iwrWpCOd/M6155vD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Wedson Almeida Filho <wedsonaf@gmail.com> wrote:
 
-On Fri, Jun 28, 2013 at 04:18:39PM +0530, Ankur Raina wrote:
+> The new implementation allows the compiler to better optimize the code; the
+> original implementation is still used when the kernel is compiled with older
+> versions of gcc that don't support asm-goto.
+> 
+> Compiling with gcc 4.7.3, the original mutex_lock() is 60 bytes with the fast
+> path taking 16 instructions; the new mutex_lock() is 42 bytes, with the fast
+> path taking 12 instructions.
+> 
+> The original mutex_unlock() is 24 bytes with the fast path taking 7
+> instructions; the new mutex_unlock() is 25 bytes (because the compiler used
+> a 2-byte ret) with the fast path taking 4 instructions.
+> 
+> The two versions of the functions are included below for reference.
+> 
+> Old:
+> ffffffff817742a0 <mutex_lock>:
+> ffffffff817742a0:       55                      push   %rbp
+> ffffffff817742a1:       48 89 e5                mov    %rsp,%rbp
+> ffffffff817742a4:       48 83 ec 10             sub    $0x10,%rsp
+> ffffffff817742a8:       48 89 5d f0             mov    %rbx,-0x10(%rbp)
+> ffffffff817742ac:       48 89 fb                mov    %rdi,%rbx
+> ffffffff817742af:       4c 89 65 f8             mov    %r12,-0x8(%rbp)
+> ffffffff817742b3:       e8 28 15 00 00          callq  ffffffff817757e0 <_cond_resched>
+> ffffffff817742b8:       48 89 df                mov    %rbx,%rdi
+> ffffffff817742bb:       f0 ff 0f                lock decl (%rdi)
+> ffffffff817742be:       79 05                   jns    ffffffff817742c5 <mutex_lock+0x25>
+> ffffffff817742c0:       e8 cb 04 00 00          callq  ffffffff81774790 <__mutex_lock_slowpath>
+> ffffffff817742c5:       65 48 8b 04 25 c0 b7    mov    %gs:0xb7c0,%rax
+> ffffffff817742cc:       00 00
+> ffffffff817742ce:       4c 8b 65 f8             mov    -0x8(%rbp),%r12
+> ffffffff817742d2:       48 89 43 18             mov    %rax,0x18(%rbx)
+> ffffffff817742d6:       48 8b 5d f0             mov    -0x10(%rbp),%rbx
+> ffffffff817742da:       c9                      leaveq
+> ffffffff817742db:       c3                      retq
+> 
+> ffffffff81774250 <mutex_unlock>:
+> ffffffff81774250:       55                      push   %rbp
+> ffffffff81774251:       48 c7 47 18 00 00 00    movq   $0x0,0x18(%rdi)
+> ffffffff81774258:       00
+> ffffffff81774259:       48 89 e5                mov    %rsp,%rbp
+> ffffffff8177425c:       f0 ff 07                lock incl (%rdi)
+> ffffffff8177425f:       7f 05                   jg     ffffffff81774266 <mutex_unlock+0x16>
+> ffffffff81774261:       e8 ea 04 00 00          callq  ffffffff81774750 <__mutex_unlock_slowpath>
+> ffffffff81774266:       5d                      pop    %rbp
+> ffffffff81774267:       c3                      retq
+> 
+> New:
+> ffffffff81774920 <mutex_lock>:
+> ffffffff81774920:       55                      push   %rbp
+> ffffffff81774921:       48 89 e5                mov    %rsp,%rbp
+> ffffffff81774924:       53                      push   %rbx
+> ffffffff81774925:       48 89 fb                mov    %rdi,%rbx
+> ffffffff81774928:       e8 a3 0e 00 00          callq  ffffffff817757d0 <_cond_resched>
+> ffffffff8177492d:       f0 ff 0b                lock decl (%rbx)
+> ffffffff81774930:       79 08                   jns    ffffffff8177493a <mutex_lock+0x1a>
+> ffffffff81774932:       48 89 df                mov    %rbx,%rdi
+> ffffffff81774935:       e8 16 fe ff ff          callq  ffffffff81774750 <__mutex_lock_slowpath>
+> ffffffff8177493a:       65 48 8b 04 25 c0 b7    mov    %gs:0xb7c0,%rax
+> ffffffff81774941:       00 00
+> ffffffff81774943:       48 89 43 18             mov    %rax,0x18(%rbx)
+> ffffffff81774947:       5b                      pop    %rbx
+> ffffffff81774948:       5d                      pop    %rbp
+> ffffffff81774949:       c3                      retq
+> 
+> ffffffff81774730 <mutex_unlock>:
+> ffffffff81774730:       48 c7 47 18 00 00 00    movq   $0x0,0x18(%rdi)
+> ffffffff81774737:       00
+> ffffffff81774738:       f0 ff 07                lock incl (%rdi)
+> ffffffff8177473b:       7f 0a                   jg     ffffffff81774747 <mutex_unlock+0x17>
+> ffffffff8177473d:       55                      push   %rbp
+> ffffffff8177473e:       48 89 e5                mov    %rsp,%rbp
+> ffffffff81774741:       e8 aa ff ff ff          callq  ffffffff817746f0 <__mutex_unlock_slowpath>
+> ffffffff81774746:       5d                      pop    %rbp
+> ffffffff81774747:       f3 c3                   repz retq
 
-> > Could you please explain what that fixes ?
+Very nice!
 
-> While powering up DA9055,events are received of power sequencer.Events are also received on gpio's.
-> These events remain uncleared after boot up, due to which further event handling also fails.
-> This patch clears all the events received, during driver initialization, so that we have a clean state after boot up.
+One detail:
 
-You need to explain this clearly in the patch description in a way that
-can be related to the code.
+> +#if defined(CC_HAVE_ASM_GOTO)
+> +#if defined(CC_HAVE_ASM_GOTO)
 
---iwrWpCOd/M6155vD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Please change these to #ifdef.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJRzXA7AAoJELSic+t+oim9mf8P/3YMh/gO0hM+XVv094lzr6d/
-lb25f8Bg6yQbullK9dObLVkewcqahREStyv/Y3yUT8mf5u1uqmVx0/c066APgaFl
-+9kYSJjh+7b5pCcTX8bZ2+kqQPAPb5CtHuj+3sWRMJxFrYN1U6Jl9cpL0QxFTXIT
-wjU6J8kEmPHoTEbtuo4hOjGt+fn6WDFVKa8EGFDfNCTWF6fXb03CMgylqakMFUz9
-mawN5VsmscqNEv51+9JwHYTMOTPnvql8qK+g6uCDxEG96UmO75BaJ/ZTfogd7Yx/
-fAVGde1p836MXMjGMwq+kRQCheXqS6KRsv+TFRKAK5l0d/kAV4kvYZodlpHMXOP9
-iZhA9eRN5MTaXPVpxX1yrAKDYixenS8ay1WVKl0H0KNFFuWMwkoEPyy/Nw0+gXia
-QI1AERFv8Yh49nXhm8fFiIoyilwudSK9xXwlpSJIxVhS8M4vBROEMDk6J5p/+7k+
-bxpNZFzE+RB9YXzCsWrMngTk3f/OuhNbuO0UfxFCORotEABgMWprc7CKGFpVSfzO
-Pnd8eHagrShokhlfNwJ5zuPZIg4/Vf80rAnb5lw1xPKUyLNjc+D26AYjY1qXC/Dw
-xCNbhJhr+3zW8hXMKXsjudthWQIfWnJU+TdIpB545CuA+6ZDUNLujYzXUrDwL6nB
-UrR9ZS59IUUNBgoDc/0R
-=MuuY
------END PGP SIGNATURE-----
-
---iwrWpCOd/M6155vD--
+	Ingo
