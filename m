@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab3F1Szl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:55:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41742 "EHLO
+	id S1753214Ab3F1Szy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:55:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41761 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab3F1Szg (ORCPT
+	with ESMTP id S1753187Ab3F1Szw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:55:36 -0400
+	Fri, 28 Jun 2013 14:55:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Jaganath Kanakkassery <jaganath.k@samsung.com>,
+        Chan-Yeol Park <chanyeol.park@samsung.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 099/105] rt2800: fix RT5390 & RT3290 TX power settings regression
-Date: Fri, 28 Jun 2013 11:52:01 -0700
-Message-Id: <1372445527-24414-100-git-send-email-kamal@canonical.com>
+Subject: [PATCH 101/105] Bluetooth: Fix invalid length check in l2cap_information_rsp()
+Date: Fri, 28 Jun 2013 11:52:03 -0700
+Message-Id: <1372445527-24414-102-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,76 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Jaganath Kanakkassery <jaganath.k@samsung.com>
 
-commit 8c8d2017ba25c510ddf093419048460db1109bc4 upstream.
+commit 3f6fa3d489e127ca5a5b298eabac3ff5dbe0e112 upstream.
 
-My change:
+The length check is invalid since the length varies with type of
+info response.
 
-commit cee2c7315f60beeff6137ee59e99acc77d636eeb
-Author: Stanislaw Gruszka <sgruszka@redhat.com>
-Date:   Fri Oct 5 13:44:09 2012 +0200
+This was introduced by the commit cb3b3152b2f5939d67005cff841a1ca748b19888
 
-    rt2800: use BBP_R1 for setting tx power
+Because of this, l2cap info rsp is not handled and command reject is sent.
 
-unfortunately does not work well with RT5390 and RT3290 chips as they
-require different temperature compensation TX power settings (TSSI
-tuning). Since that commit make wireless connection very unstable on
-those chips, restore previous behavior to fix regression. Once we
-implement proper TSSI tuning on 5390/3290 we can restore back setting
-TX power by BBP_R1 register for those chips.
+> ACL data: handle 11 flags 0x02 dlen 16
+        L2CAP(s): Info rsp: type 2 result 0
+          Extended feature mask 0x00b8
+            Enhanced Retransmission mode
+            Streaming mode
+            FCS Option
+            Fixed Channels
+< ACL data: handle 11 flags 0x00 dlen 10
+        L2CAP(s): Command rej: reason 0
+          Command not understood
 
-Reported-and-tested-by: Mike Romberg <mike-romberg@comcast.net>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jaganath Kanakkassery <jaganath.k@samsung.com>
+Signed-off-by: Chan-Yeol Park <chanyeol.park@samsung.com>
+Acked-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c | 29 ++++++++++++++++++-----------
- 1 file changed, 18 insertions(+), 11 deletions(-)
+ net/bluetooth/l2cap_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800lib.c b/drivers/net/wireless/rt2x00/rt2800lib.c
-index 0b55706..e9a440f 100644
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -2635,19 +2635,26 @@ static void rt2800_config_txpower(struct rt2x00_dev *rt2x00dev,
- 	 * TODO: we do not use +6 dBm option to do not increase power beyond
- 	 * regulatory limit, however this could be utilized for devices with
- 	 * CAPABILITY_POWER_LIMIT.
-+	 *
-+	 * TODO: add different temperature compensation code for RT3290 & RT5390
-+	 * to allow to use BBP_R1 for those chips.
- 	 */
--	rt2800_bbp_read(rt2x00dev, 1, &r1);
--	if (delta <= -12) {
--		power_ctrl = 2;
--		delta += 12;
--	} else if (delta <= -6) {
--		power_ctrl = 1;
--		delta += 6;
--	} else {
--		power_ctrl = 0;
-+	if (!rt2x00_rt(rt2x00dev, RT3290) &&
-+	    !rt2x00_rt(rt2x00dev, RT5390)) {
-+		rt2800_bbp_read(rt2x00dev, 1, &r1);
-+		if (delta <= -12) {
-+			power_ctrl = 2;
-+			delta += 12;
-+		} else if (delta <= -6) {
-+			power_ctrl = 1;
-+			delta += 6;
-+		} else {
-+			power_ctrl = 0;
-+		}
-+		rt2x00_set_field8(&r1, BBP1_TX_POWER_CTRL, power_ctrl);
-+		rt2800_bbp_write(rt2x00dev, 1, r1);
- 	}
--	rt2x00_set_field8(&r1, BBP1_TX_POWER_CTRL, power_ctrl);
--	rt2800_bbp_write(rt2x00dev, 1, r1);
-+
- 	offset = TX_PWR_CFG_0;
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index 9f03abb..e133d58 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -4229,7 +4229,7 @@ static inline int l2cap_information_rsp(struct l2cap_conn *conn,
+ 	struct l2cap_info_rsp *rsp = (struct l2cap_info_rsp *) data;
+ 	u16 type, result;
  
- 	for (i = 0; i < EEPROM_TXPOWER_BYRATE_SIZE; i += 2) {
+-	if (cmd_len != sizeof(*rsp))
++	if (cmd_len < sizeof(*rsp))
+ 		return -EPROTO;
+ 
+ 	type   = __le16_to_cpu(rsp->type);
 -- 
 1.8.1.2
 
