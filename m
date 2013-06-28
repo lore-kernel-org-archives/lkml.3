@@ -1,118 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3F1Inm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 04:43:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5632 "EHLO mga14.intel.com"
+	id S1755501Ab3F1IpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 04:45:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52249 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754905Ab3F1Ihd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 04:37:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,957,1363158000"; 
-   d="scan'208";a="323821179"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V3 01/15] perf tools: remove unused parameter
-Date: Fri, 28 Jun 2013 11:43:12 +0300
-Message-Id: <1372409006-8431-2-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com>
-References: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754921Ab3F1IpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 04:45:07 -0400
+Date: Fri, 28 Jun 2013 09:45:00 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mm: vmscan: Avoid direct reclaim scanning at maximum
+ priority
+Message-ID: <20130628084500.GQ1875@suse.de>
+References: <1372250364-20640-1-git-send-email-mgorman@suse.de>
+ <1372250364-20640-2-git-send-email-mgorman@suse.de>
+ <20130626123925.6a15ce3874fa4b0cc8390a0a@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130626123925.6a15ce3874fa4b0cc8390a0a@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'machine' is unused in 'perf_event__repipe_synth()' and some
-callers pass NULL anyway.  So remove it.
+On Wed, Jun 26, 2013 at 12:39:25PM -0700, Andrew Morton wrote:
+> On Wed, 26 Jun 2013 13:39:23 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > Page reclaim at priority 0 will scan the entire LRU as priority 0 is
+> > considered to be a near OOM condition. Direct reclaim can reach this
+> > priority while still making reclaim progress. This patch avoids
+> > reclaiming at priority 0 unless no reclaim progress was made and
+> > the page allocator would consider firing the OOM killer. The
+> > user-visible impact is that direct reclaim will not easily reach
+> > priority 0 and start swapping prematurely.
+> 
+> That's a bandaid.
+> 
+> Priority 0 should be a pretty darn rare condition.  How often is it
+> occurring, and do you know why?
+> 
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+There are no flys on you.
+
+The actual rescanning never happens in my experience but priority 0
+is reached quickly. Instrumentation showed that it was due to a bug in
+reclaim/compaction. Please consider replacing the patch with this.
+
+---8<---
+mm: vmscan: Do not continue scanning if reclaim was aborted for compaction
+
+Direct reclaim is not aborting to allow compaction to go ahead properly.
+do_try_to_free_pages is told to abort reclaim which is happily ignores
+and instead increases priority instead until it reaches 0 and starts
+shrinking file/anon equally. This patch corrects the situation by
+aborting reclaim when requested instead of raising priority.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- tools/perf/builtin-inject.c | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ mm/vmscan.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 84ad6ab..f299ddf 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -38,8 +38,7 @@ struct event_entry {
- };
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2a5dee2..2f0193c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2381,8 +2381,10 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		aborted_reclaim = shrink_zones(zonelist, sc);
  
- static int perf_event__repipe_synth(struct perf_tool *tool,
--				    union perf_event *event,
--				    struct machine *machine __maybe_unused)
-+				    union perf_event *event)
- {
- 	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
- 	uint32_t size;
-@@ -65,20 +64,20 @@ static int perf_event__repipe_op2_synth(struct perf_tool *tool,
- 					struct perf_session *session
- 					__maybe_unused)
- {
--	return perf_event__repipe_synth(tool, event, NULL);
-+	return perf_event__repipe_synth(tool, event);
- }
+ 		/*
+-		 * Don't shrink slabs when reclaiming memory from
+-		 * over limit cgroups
++		 * Don't shrink slabs when reclaiming memory from over limit
++		 * cgroups but do shrink slab at least once when aborting
++		 * reclaim for compaction to avoid unevenly scanning file/anon
++		 * LRU pages over slab pages.
+ 		 */
+ 		if (global_reclaim(sc)) {
+ 			unsigned long lru_pages = 0;
+@@ -2428,7 +2430,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 						WB_REASON_TRY_TO_FREE_PAGES);
+ 			sc->may_writepage = 1;
+ 		}
+-	} while (--sc->priority >= 0);
++	} while (--sc->priority >= 0 && !aborted_reclaim);
  
- static int perf_event__repipe_event_type_synth(struct perf_tool *tool,
- 					       union perf_event *event)
- {
--	return perf_event__repipe_synth(tool, event, NULL);
-+	return perf_event__repipe_synth(tool, event);
- }
- 
- static int perf_event__repipe_tracing_data_synth(union perf_event *event,
- 						 struct perf_session *session
- 						 __maybe_unused)
- {
--	return perf_event__repipe_synth(NULL, event, NULL);
-+	return perf_event__repipe_synth(NULL, event);
- }
- 
- static int perf_event__repipe_attr(union perf_event *event,
-@@ -89,15 +88,15 @@ static int perf_event__repipe_attr(union perf_event *event,
- 	if (ret)
- 		return ret;
- 
--	return perf_event__repipe_synth(NULL, event, NULL);
-+	return perf_event__repipe_synth(NULL, event);
- }
- 
- static int perf_event__repipe(struct perf_tool *tool,
- 			      union perf_event *event,
- 			      struct perf_sample *sample __maybe_unused,
--			      struct machine *machine)
-+			      struct machine *machine __maybe_unused)
- {
--	return perf_event__repipe_synth(tool, event, machine);
-+	return perf_event__repipe_synth(tool, event);
- }
- 
- typedef int (*inject_handler)(struct perf_tool *tool,
-@@ -119,7 +118,7 @@ static int perf_event__repipe_sample(struct perf_tool *tool,
- 
- 	build_id__mark_dso_hit(tool, event, sample, evsel, machine);
- 
--	return perf_event__repipe_synth(tool, event, machine);
-+	return perf_event__repipe_synth(tool, event);
- }
- 
- static int perf_event__repipe_mmap(struct perf_tool *tool,
-@@ -153,7 +152,7 @@ static int perf_event__repipe_tracing_data(union perf_event *event,
- {
- 	int err;
- 
--	perf_event__repipe_synth(NULL, event, NULL);
-+	perf_event__repipe_synth(NULL, event);
- 	err = perf_event__process_tracing_data(event, session);
- 
- 	return err;
--- 
-1.7.11.7
+ out:
+ 	delayacct_freepages_end();
 
