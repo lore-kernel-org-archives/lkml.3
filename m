@@ -1,200 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3F1JeD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:34:03 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41882 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755260Ab3F1Jdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:33:45 -0400
-From: Hebbar Gururaja <gururaja.hebbar@ti.com>
-To: <khilman@linaro.org>, <tony@atomide.com>, <b-cousson@ti.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
-        <gururaja.hebbar@ti.com>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sekhar Nori <nsekhar@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        <rtc-linux@googlegroups.com>, <linux-doc@vger.kernel.org>
-Subject: [PATCH 3/4] rtc: omap: add rtc wakeup support to alarm events
-Date: Fri, 28 Jun 2013 15:05:08 +0530
-Message-ID: <1372412109-986-4-git-send-email-gururaja.hebbar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
-References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
+	id S1755336Ab3F1JeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:34:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33080 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754862Ab3F1JeI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 05:34:08 -0400
+Date: Fri, 28 Jun 2013 10:33:59 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ankur Raina <Ankur.Raina@kpitcummins.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "david.chen@diasemi.com" <david.chen@diasemi.com>
+Message-ID: <20130628093359.GA27646@sirena.org.uk>
+References: <4B6D9C89CD8BA349A71B74CA32C47E5850DA85DF@KCHJEXMB02.kpit.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZU25/NGocqLNwEGF"
+Content-Disposition: inline
+In-Reply-To: <4B6D9C89CD8BA349A71B74CA32C47E5850DA85DF@KCHJEXMB02.kpit.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [patch v1 1/1]regulator: fix for DA9055 regulator
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some platforms (like AM33xx), a special register (RTC_IRQWAKEEN)
-is available to enable Alarm Wakeup feature. This register needs to be
-properly handled for the rtcwake to work properly.
 
-Platforms using such IP should set "ti,am3352-rtc" in rtc device dt
-compatibility node.
+--ZU25/NGocqLNwEGF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
----
-:100644 100644 b47aa41... 5a0f02d... M	Documentation/devicetree/bindings/rtc/rtc-omap.txt
-:100644 100644 761919d... 666b0c2... M	drivers/rtc/rtc-omap.c
- Documentation/devicetree/bindings/rtc/rtc-omap.txt |    6 ++-
- drivers/rtc/rtc-omap.c                             |   56 +++++++++++++++++---
- 2 files changed, 54 insertions(+), 8 deletions(-)
+On Fri, Jun 28, 2013 at 07:05:03AM +0000, Ankur Raina wrote:
+> This patch adds support for usage of GPIO's by multiple bucks and regulators
+> of DA9055 for enable-disable and voltage set selection.Without this patch regulator
+> control through GPIO would fail for more than one regulator/buck.
 
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-index b47aa41..5a0f02d 100644
---- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-+++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-@@ -1,7 +1,11 @@
- TI Real Time Clock
- 
- Required properties:
--- compatible: "ti,da830-rtc"
-+- compatible:
-+	- "ti,da830-rtc"  - for RTC IP used similar to that on DA8xx SoC family.
-+	- "ti,am3352-rtc" - for RTC IP used similar to that on AM335x SoC family.
-+			    This RTC IP has special WAKE-EN Register to enable
-+			    Wakeup generation for event Alarm.
- - reg: Address range of rtc register set
- - interrupts: rtc timer, alarm interrupts in order
- - interrupt-parent: phandle for the interrupt controller
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index 761919d..666b0c2 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -72,6 +72,8 @@
- #define OMAP_RTC_KICK0_REG		0x6c
- #define OMAP_RTC_KICK1_REG		0x70
- 
-+#define OMAP_RTC_IRQWAKEEN		0x7C
-+
- /* OMAP_RTC_CTRL_REG bit fields: */
- #define OMAP_RTC_CTRL_SPLIT		(1<<7)
- #define OMAP_RTC_CTRL_DISABLE		(1<<6)
-@@ -96,12 +98,21 @@
- #define OMAP_RTC_INTERRUPTS_IT_ALARM    (1<<3)
- #define OMAP_RTC_INTERRUPTS_IT_TIMER    (1<<2)
- 
-+/* OMAP_RTC_IRQWAKEEN bit fields: */
-+#define OMAP_RTC_IRQWAKEEN_ALARM_WAKEEN    (1<<1)
-+
- /* OMAP_RTC_KICKER values */
- #define	KICK0_VALUE			0x83e70b13
- #define	KICK1_VALUE			0x95a4f1e0
- 
- #define	OMAP_RTC_HAS_KICKER		0x1
- 
-+/*
-+ * Few RTC IP revisions has special WAKE-EN Register to enable Wakeup
-+ * generation for event Alarm.
-+ */
-+#define	OMAP_RTC_HAS_IRQWAKEEN		0x2
-+
- static void __iomem	*rtc_base;
- 
- #define rtc_read(addr)		readb(rtc_base + (addr))
-@@ -301,7 +312,8 @@ static struct rtc_class_ops omap_rtc_ops = {
- static int omap_rtc_alarm;
- static int omap_rtc_timer;
- 
--#define	OMAP_RTC_DATA_DA830_IDX	1
-+#define	OMAP_RTC_DATA_DA830_IDX		1
-+#define	OMAP_RTC_DATA_AM335X_IDX	2
- 
- static struct platform_device_id omap_rtc_devtype[] = {
- 	{
-@@ -309,6 +321,9 @@ static struct platform_device_id omap_rtc_devtype[] = {
- 	}, {
- 		.name	= "da830-rtc",
- 		.driver_data = OMAP_RTC_HAS_KICKER,
-+	}, {
-+		.name	= "am335x-rtc",
-+		.driver_data = OMAP_RTC_HAS_KICKER | OMAP_RTC_HAS_IRQWAKEEN,
- 	},
- 	{},
- };
-@@ -318,6 +333,9 @@ static const struct of_device_id omap_rtc_of_match[] = {
- 	{	.compatible	= "ti,da830-rtc",
- 		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
- 	},
-+	{	.compatible	= "ti,am3352-rtc",
-+		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_AM335X_IDX],
-+	},
- 	{},
- };
- MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
-@@ -466,16 +484,28 @@ static u8 irqstat;
- 
- static int omap_rtc_suspend(struct device *dev)
- {
-+	u8 irqwake_stat;
-+	struct platform_device *pdev = to_platform_device(dev);
-+	const struct platform_device_id *id_entry =
-+					platform_get_device_id(pdev);
-+
- 	irqstat = rtc_read(OMAP_RTC_INTERRUPTS_REG);
- 
- 	/* FIXME the RTC alarm is not currently acting as a wakeup event
--	 * source, and in fact this enable() call is just saving a flag
--	 * that's never used...
-+	 * source on some platforms, and in fact this enable() call is just
-+	 * saving a flag that's never used...
- 	 */
--	if (device_may_wakeup(dev))
-+	if (device_may_wakeup(dev)) {
- 		enable_irq_wake(omap_rtc_alarm);
--	else
-+
-+		if (id_entry->driver_data & OMAP_RTC_HAS_IRQWAKEEN) {
-+			irqwake_stat = rtc_read(OMAP_RTC_IRQWAKEEN);
-+			irqwake_stat |= OMAP_RTC_IRQWAKEEN_ALARM_WAKEEN;
-+			rtc_write(irqwake_stat, OMAP_RTC_IRQWAKEEN);
-+		}
-+	} else {
- 		rtc_write(0, OMAP_RTC_INTERRUPTS_REG);
-+	}
- 
- 	/* Disable the clock/module */
- 	pm_runtime_put_sync(dev);
-@@ -485,13 +515,25 @@ static int omap_rtc_suspend(struct device *dev)
- 
- static int omap_rtc_resume(struct device *dev)
- {
-+	u8 irqwake_stat;
-+	struct platform_device *pdev = to_platform_device(dev);
-+	const struct platform_device_id *id_entry =
-+				platform_get_device_id(pdev);
-+
- 	/* Enable the clock/module so that we can access the registers */
- 	pm_runtime_get_sync(dev);
- 
--	if (device_may_wakeup(dev))
-+	if (device_may_wakeup(dev)) {
- 		disable_irq_wake(omap_rtc_alarm);
--	else
-+
-+		if (id_entry->driver_data & OMAP_RTC_HAS_IRQWAKEEN) {
-+			irqwake_stat = rtc_read(OMAP_RTC_IRQWAKEEN);
-+			irqwake_stat &= ~OMAP_RTC_IRQWAKEEN_ALARM_WAKEEN;
-+			rtc_write(irqwake_stat, OMAP_RTC_IRQWAKEEN);
-+		}
-+	} else {
- 		rtc_write(irqstat, OMAP_RTC_INTERRUPTS_REG);
-+	}
- 	return 0;
- }
- #endif
--- 
-1.7.9.5
+This needs a much better patch description.  What specifically is the
+bug that you are trying to fix here?
 
+--ZU25/NGocqLNwEGF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzViEAAoJELSic+t+oim91P4P/RvyE+7n03hzw/KEDEhCg5xp
+ZGY073NqagbKYUtLbRDpcYTJQjxvMGUyak49xbaxtakMFiWvA5MYt8eoJTtb8eut
+pWhTqO1eMq2+IjOB0SLlHPE62Qi2VnYexqakkIICDDkxVsF3s67Tud2W9yE13+83
+Fw/QzVZvrXPCu6XFy8qZh5ALjwltiG7yLHyrUM+WTFpTWMaBHhFQArVwLd5W/spC
+q+puOPU0VwYsEYd0bGt/Fd38vrVwMfTS6rYpvy4qIwN5i9V5msXgYmBo+a+b/YfF
+S9WL0xd1CB08mEV1rdeAV4yqdrEmOKx9VnsrcsLUqsaquhR09jh0OSUVmpt9hJl/
+R/hpFybvXMxRSgqAsWhZtA6kSKepU+nDX8+oD+pWSZMB7cUMGO9odv06HFD+Mw+n
+DJi/uW41q/T9gFWEi7hz/zDLSx5o+Ai5FoAus3E26gYplJNf9o/lSazloVPnnAhF
+57NrdO8jmv6z9A0e5HChXNgihJw7ubVfIuB01nV/jivkHgpHNmG0cZWZhkzg4EQa
+qdaeHJBX83pXk0z4vbdr9sRRDCevlskdjurk7cLoBX/zhYd8VQGc9f82EyaiCPIH
+pX6/3j2Yy971pkrLMs1YB2uy3aloqEf8JKEIiRhxgAC2842RVcDBLIKEkjwLhPyx
+8S/VD0hK0fIsbfgekHGh
+=pY2S
+-----END PGP SIGNATURE-----
+
+--ZU25/NGocqLNwEGF--
