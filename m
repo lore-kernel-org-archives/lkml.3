@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab3F1Qls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:41:48 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49272 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754695Ab3F1Qlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:41:47 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: X86 ML <x86@kernel.org>, Wedson Almeida Filho <wedsonaf@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86, cpufeature: Use new CC_HAVE_ASM_GOTO
-Date: Fri, 28 Jun 2013 18:41:41 +0200
-Message-Id: <1372437701-13351-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <51CD99C2.9040109@zytor.com>
-References: <51CD99C2.9040109@zytor.com>
+	id S1755823Ab3F1QoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:44:24 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:32890 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3F1QoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 12:44:22 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, lorenzo.pieralisi@arm.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 1/2] ARM: dts: sunxi: cpus/cpu nodes dts updates
+Date: Fri, 28 Jun 2013 18:44:03 +0200
+Message-Id: <1372437844-16325-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 
-... for checking for "asm goto" compiler support. It is more explicit
-this way and we cover the cases where distros have backported that
-support even to gcc versions < 4.5.
+This patch updates the in-kernel dts files according to the latest cpus
+and cpu bindings updates for ARM.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/x86/include/asm/cpufeature.h | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ arch/arm/boot/dts/sun4i-a10.dtsi | 2 ++
+ arch/arm/boot/dts/sun5i-a13.dtsi | 2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 47538a61c91b..d3f5c63078d8 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -366,9 +366,10 @@ extern bool __static_cpu_has_safe(u16 bit);
-  */
- static __always_inline __pure bool __static_cpu_has(u16 bit)
- {
--#if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
-+#ifdef CC_HAVE_ASM_GOTO
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index 9e6fb45..676c704 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -17,7 +17,9 @@
  
- #ifdef CONFIG_X86_DEBUG_STATIC_CPU_HAS
-+
- 		/*
- 		 * Catch too early usage of this before alternatives
- 		 * have run.
-@@ -384,6 +385,7 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 			 ".previous\n"
- 			 /* skipping size check since replacement size = 0 */
- 			 : : "i" (X86_FEATURE_ALWAYS) : : t_warn);
-+
- #endif
+ 	cpus {
+ 		cpu@0 {
++			device_type = "cpu";
+ 			compatible = "arm,cortex-a8";
++			reg = <0x0>;
+ 		};
+ 	};
  
- 		asm goto("1: jmp %l[t_no]\n"
-@@ -406,7 +408,9 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 		warn_pre_alternatives();
- 		return false;
- #endif
--#else /* GCC_VERSION >= 40500 */
-+
-+#else /* CC_HAVE_ASM_GOTO */
-+
- 		u8 flag;
- 		/* Open-coded due to __stringify() in ALTERNATIVE() */
- 		asm volatile("1: movb $0,%0\n"
-@@ -427,7 +431,8 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 			     ".previous\n"
- 			     : "=qm" (flag) : "i" (bit));
- 		return flag;
--#endif
-+
-+#endif /* CC_HAVE_ASM_GOTO */
- }
+diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
+index df96c54..ee1f31f 100644
+--- a/arch/arm/boot/dts/sun5i-a13.dtsi
++++ b/arch/arm/boot/dts/sun5i-a13.dtsi
+@@ -18,7 +18,9 @@
  
- #define static_cpu_has(bit)					\
-@@ -441,7 +446,7 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
+ 	cpus {
+ 		cpu@0 {
++			device_type = "cpu";
+ 			compatible = "arm,cortex-a8";
++			reg = <0x0>;
+ 		};
+ 	};
  
- static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
- {
--#if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
-+#ifdef CC_HAVE_ASM_GOTO
- /*
-  * We need to spell the jumps to the compiler because, depending on the offset,
-  * the replacement jump can be bigger than the original jump, and this we cannot
-@@ -475,7 +480,7 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
- 		return false;
- 	t_dynamic:
- 		return __static_cpu_has_safe(bit);
--#else /* GCC_VERSION >= 40500 */
-+#else
- 		u8 flag;
- 		/* Open-coded due to __stringify() in ALTERNATIVE() */
- 		asm volatile("1: movb $2,%0\n"
-@@ -511,7 +516,7 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
- 			     : "=qm" (flag)
- 			     : "i" (bit), "i" (X86_FEATURE_ALWAYS));
- 		return (flag == 2 ? __static_cpu_has_safe(bit) : flag);
--#endif
-+#endif /* CC_HAVE_ASM_GOTO */
- }
- 
- #define static_cpu_has_safe(bit)				\
 -- 
-1.8.3
+1.8.3.1
 
