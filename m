@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab3F1OoC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:44:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60173 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558Ab3F1On7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:43:59 -0400
-Date: Fri, 28 Jun 2013 16:46:27 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "'John W. Linville'" <linville@tuxdriver.com>, cpgs@samsung.com
-Subject: Re: [PATCH 3.9-stable]  iwlegacy: fix rate control regression
-Message-ID: <20130628144626.GA1580@redhat.com>
-References: <002401ce7390$2aebe2b0$80c3a810$%choi@samsung.com>
+	id S1754949Ab3F1OoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:44:16 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:40142 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab3F1OoA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 10:44:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <002401ce7390$2aebe2b0$80c3a810$%choi@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130628072950.GI27010@pengutronix.de>
+References: <1372390325-7566-1-git-send-email-festevam@gmail.com>
+	<20130628072950.GI27010@pengutronix.de>
+Date: Fri, 28 Jun 2013 11:43:59 -0300
+Message-ID: <CAOMZO5AtbfsrXnNyXKwyfqPn48bsuimk_D6gddXchzGcCfD-RA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] imx-drm: imx-drm-core: Export imx_drm_encoder_get_mux_id
+From: Fabio Estevam <festevam@gmail.com>
+To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: gregkh@linuxfoundation.org, shawn.guo@linaro.org, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 08:43:46AM +0900, Jonghwan Choi wrote:
-> This patch looks like it should be in the 3.9-stable tree, should we apply
-> it?
+Hi Uwe,
 
-No, this regression is caused by
+On Fri, Jun 28, 2013 at 4:29 AM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
+> On Fri, Jun 28, 2013 at 12:32:01AM -0300, Fabio Estevam wrote:
+>> From: Fabio Estevam <fabio.estevam@freescale.com>
+>>
+>> When building imx_v6_v7_defconfig with imx-drm drivers selected as modules, we
+>> get the following build error:
+>>
+>> ERROR: "imx_drm_encoder_get_mux_id" [drivers/staging/imx-drm/imx-ldb.ko] undefined!
+> So imx-ldb.c needs a symbol from imx-drm-core.c right? The alternative
+> to exporting this symbol for a single user(?) is to link these two files
+> into a single module. Does this make sense? If yes, that would IMHO be
+> the better fix.
 
-commit 0d528d85c519b755b6f4e1bafa3a39984370e1c1
-Author: Felix Fietkau <nbd@openwrt.org>
-Date:   Mon Apr 22 16:14:41 2013 +0200
+The Makefile for these files is:
 
-    mac80211: improve the rate control API
+imxdrm-objs := imx-drm-core.o imx-fb.o
 
-which first appear on 3.10-rc2. Sorry for not specifying that information
-in the ChangeLog.
+obj-$(CONFIG_DRM_IMX) += imxdrm.o
 
-Stanislaw
+obj-$(CONFIG_DRM_IMX_PARALLEL_DISPLAY) += parallel-display.o
+obj-$(CONFIG_DRM_IMX_TVE) += imx-tve.o
+obj-$(CONFIG_DRM_IMX_LDB) += imx-ldb.o
+obj-$(CONFIG_DRM_IMX_FB_HELPER) += imx-fbdev.o
+obj-$(CONFIG_DRM_IMX_IPUV3_CORE) += ipu-v3/
+obj-$(CONFIG_DRM_IMX_IPUV3)	+= ipuv3-crtc.o
 
+so imx-drm-core is always built and imx-ldb is only built when
+CONFIG_DRM_IMX_LDB is selected.
+
+In this case, we should keep the two modules separate and fix this
+error using the export.
+
+Regards,
+
+Fabio Estevam
