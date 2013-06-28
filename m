@@ -1,133 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab3F1M7l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 08:59:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32423 "EHLO mga02.intel.com"
+	id S1755188Ab3F1NAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:00:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37019 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755046Ab3F1M7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 08:59:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,958,1363158000"; 
-   d="scan'208";a="361076076"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH net-next 2/2] net: avoid calling sched_clock when LLS is off
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        HPA <hpa@zytor.com>, Cody P Schafer <devel-lists@codyps.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Fri, 28 Jun 2013 15:59:35 +0300
-Message-ID: <20130628125934.14419.38109.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>
-References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1754772Ab3F1NAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 09:00:07 -0400
+Date: Fri, 28 Jun 2013 14:00:03 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
+Message-ID: <20130628130003.GV1875@suse.de>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-6-git-send-email-mgorman@suse.de>
+ <20130627145345.GT28407@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130627145345.GT28407@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change Low Latency Sockets code for select and poll so that
-when LLS is disabled sched_clock() is never called.
+On Thu, Jun 27, 2013 at 04:53:45PM +0200, Peter Zijlstra wrote:
+> On Wed, Jun 26, 2013 at 03:38:04PM +0100, Mel Gorman wrote:
+> > This patch favours moving tasks towards the preferred NUMA node when
+> > it has just been selected. Ideally this is self-reinforcing as the
+> > longer the the task runs on that node, the more faults it should incur
+> > causing task_numa_placement to keep the task running on that node. In
+> > reality a big weakness is that the nodes CPUs can be overloaded and it
+> > would be more effficient to queue tasks on an idle node and migrate to
+> > the new node. This would require additional smarts in the balancer so
+> > for now the balancer will simply prefer to place the task on the
+> > preferred node for a tunable number of PTE scans.
+> 
+> This changelog fails to mention why you're adding the settle stuff in
+> this patch.
 
-Also, avoid sending POLL_LL to sockets if disabled.
+Updated the change.
 
-Reported-by: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+This patch favours moving tasks towards the preferred NUMA node when it
+has just been selected. Ideally this is self-reinforcing as the longer
+the task runs on that node, the more faults it should incur causing
+task_numa_placement to keep the task running on that node. In reality
+a big weakness is that the nodes CPUs can be overloaded and it would be
+more efficient to queue tasks on an idle node and migrate to the new node.
+This would require additional smarts in the balancer so for now the balancer
+will simply prefer to place the task on the preferred node for a PTE scans
+which is controlled by the numa_balancing_settle_count sysctl. Once the
+settle_count number of scans has complete the schedule is free to place
+the task on an alternative node if the load is imbalanced.
 
- fs/select.c           |   11 +++++++----
- include/net/ll_poll.h |   17 +++++++++++++++--
- 2 files changed, 22 insertions(+), 6 deletions(-)
-
-diff --git a/fs/select.c b/fs/select.c
-index 79b876e..3654075 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -402,7 +402,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 	poll_table *wait;
- 	int retval, i, timed_out = 0;
- 	unsigned long slack = 0;
--	unsigned int ll_flag = POLL_LL;
-+	unsigned int ll_flag = ll_get_flag();
- 	u64 ll_time = ll_end_time();
- 
- 	rcu_read_lock();
-@@ -497,7 +497,8 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 			break;
- 		}
- 
--		if (can_ll && can_poll_ll(ll_time))
-+		/* only if on, have sockets with POLL_LL and not out of time */
-+		if (ll_flag && can_ll && can_poll_ll(ll_time))
- 			continue;
- 
- 		/*
-@@ -768,7 +769,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 	ktime_t expire, *to = NULL;
- 	int timed_out = 0, count = 0;
- 	unsigned long slack = 0;
--	unsigned int ll_flag = POLL_LL;
-+	unsigned int ll_flag = ll_get_flag();
- 	u64 ll_time = ll_end_time();
- 
- 	/* Optimise the no-wait case */
-@@ -817,8 +818,10 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 		if (count || timed_out)
- 			break;
- 
--		if (can_ll && can_poll_ll(ll_time))
-+		/* only if on, have sockets with POLL_LL and not out of time */
-+		if (ll_flag && can_ll && can_poll_ll(ll_time))
- 			continue;
-+
- 		/*
- 		 * If this is the first loop and we have a timeout
- 		 * given, then we convert to ktime_t and set the to
-diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
-index 6d45e6f..6c06f7c 100644
---- a/include/net/ll_poll.h
-+++ b/include/net/ll_poll.h
-@@ -37,6 +37,11 @@ extern unsigned int sysctl_net_ll_poll __read_mostly;
- #define LL_FLUSH_FAILED		-1
- #define LL_FLUSH_BUSY		-2
- 
-+static inline unsigned int ll_get_flag(void)
-+{
-+	return sysctl_net_ll_poll ? POLL_LL : 0;
-+}
-+
- /* a wrapper to make debug_smp_processor_id() happy
-  * we can use sched_clock() because we don't care much about precision
-  * we only care that the average is bounded
-@@ -67,10 +72,14 @@ static inline u64 ll_sk_end_time(struct sock *sk)
- 	return ((u64)ACCESS_ONCE(sk->sk_ll_usec) << 10) + ll_sched_clock();
- }
- 
--/* in poll/select we use the global sysctl_net_ll_poll value */
-+/* in poll/select we use the global sysctl_net_ll_poll value
-+ * only call sched_clock() if enabled
-+ */
- static inline u64 ll_end_time(void)
- {
--	return ((u64)ACCESS_ONCE(sysctl_net_ll_poll) << 10) + ll_sched_clock();
-+	u64 end_time = ACCESS_ONCE(sysctl_net_ll_poll);
-+
-+	return end_time ? (end_time << 10) + ll_sched_clock() : 0;
- }
- 
- static inline bool sk_valid_ll(struct sock *sk)
-@@ -141,6 +150,10 @@ static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
- }
- 
- #else /* CONFIG_NET_LL_RX_POLL */
-+static inline unsigned long ll_get_flag(void)
-+{
-+	return 0;
-+}
- 
- static inline u64 sk_ll_end_time(struct sock *sk)
- {
-
+-- 
+Mel Gorman
+SUSE Labs
