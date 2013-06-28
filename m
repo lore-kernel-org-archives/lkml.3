@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab3F1QvU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:51:20 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:8716 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab3F1QvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:51:19 -0400
-X-IronPort-AV: E=Sophos;i="4.87,960,1363132800"; 
-   d="scan'208";a="34133867"
-Message-ID: <51CDBF05.5070502@citrix.com>
-Date: Fri, 28 Jun 2013 17:51:17 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S1755867Ab3F1QwD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:52:03 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:22027 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638Ab3F1QwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 12:52:01 -0400
+Message-ID: <1372438309.1937.9.camel@bwh-desktop.uk.level5networks.com>
+Subject: Using sched_clock() for polling time limit
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+CC: David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        HPA <hpa@zytor.com>, Cody P Schafer <devel-lists@codyps.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Fri, 28 Jun 2013 17:51:49 +0100
+In-Reply-To: <20130628125926.14419.89905.stgit@ladj378.jer.intel.com>
+References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>
+	 <20130628125926.14419.89905.stgit@ladj378.jer.intel.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <xen-devel@lists.xen.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH 5/5] x86/xen: sync the CMOS RTC as well as the Xen wallclock
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <1372329348-20841-6-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306281727240.4013@ionos.tec.linutronix.de> <51CDB0A1.6080409@citrix.com> <alpine.DEB.2.02.1306281805430.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306281805430.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19980.005
+X-TM-AS-Result: No--14.532100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/13 17:09, Thomas Gleixner wrote:
-> On Fri, 28 Jun 2013, David Vrabel wrote:
->>
->> Before:
->>
->> Xen wallclock set when time is stepped.
->> Xen wallclock set every 11 minutes (by sync_cmos_clock()).
->> Hardware RTC never set.
->>
->> After:
->>
->> Xen wallclock set when time is stepped.
->> Xen wallclock set every 11 minutes (in pvclock gtod notifier).
-> 
-> Ah, you are emulating the sync_cmos_clock() behaviour for the xen
-> wallclock via the periodic pvclock_gtod notifier call.
-> 
->> Hardware RTC set every 11 minutes (by sync_cmos_clock()).
->>
->> I'll update the changelog to be more descriptive:
->>
->>   Adjustments to Xen's persistent clock via update_persistent_clock()
->>   don't actually persist, as the Xen wallclock is a software only clock
->>   and modifications to it do not modify the underlying CMOS RTC.
->>
->>   The x86_platform.set_wallclock hook can be used to keep the hardware
->>   RTC synchronized (as on bare metal).  If (in dom0) we make the Xen
->>   wallclock periodically synchronized by the pvclock_gtod notifier, the
->>   set_wallclock hook need not update the Xen wallclock and the native
->>   implementation can be used.
-> 
-> Yep. I'll pick that up.
+On Fri, 2013-06-28 at 15:59 +0300, Eliezer Tamir wrote:
+> Our use of sched_clock is OK because we don't mind the side effects
+> of calling it and occasionally waking up on a different CPU.
 
-If it helps, I've made this change as well as splitting the xen part of
-the hrtimers patch out into a separate commit.
+Sure about that?  Jitter matters too.
 
-The following changes since commit 52efa9eb9ea36b457b23b1b5d3dd9ce64d110715:
+> When CONFIG_DEBUG_PREEMPT is on, disable preempt before calling
+> sched_clock() so we don't trigger a debug_smp_processor_id() warning.
+[...]
 
-  x86: increase precision of x86_platform.get/set_wallclock() (2013-06-26 18:07:16 +0100)
+I think this is papering over a problem.  The warning is there for a
+good reason.
 
-are available in the git repository at:
-  git://xenbits.xen.org/people/dvrabel/linux.git wallclock-v8
+Would functions like these make it possible to use sched_clock() safely
+for polling?  (I didn't spend much time thinking about the names.)
 
-David Vrabel (6):
-      hrtimers: support resuming with two or more CPUs online (but stopped)
-      time: pass flags instead of multiple bools to timekeeping_update()
-      time: indicate that the clock was set in the pvclock gtod notifier chain
-      xen: remove unnecessary call to clock_was_set() during resume
-      x86/xen: sync the wallclock when the system time is set
-      x86/xen: sync the CMOS RTC as well as the Xen wallclock
+struct sched_timestamp {
+	int cpu;
+	unsigned long long clock;
+};
 
- arch/x86/xen/time.c          |   42 +++++++++++++++++++++++++++++++++++-------
- drivers/xen/manage.c         |    3 ---
- include/linux/pvclock_gtod.h |    7 +++++++
- kernel/hrtimer.c             |   15 ++++++++++++---
- kernel/time/timekeeping.c    |   39 ++++++++++++++++++++++++---------------
- 5 files changed, 78 insertions(+), 28 deletions(-)
+static inline struct sched_timestamp sched_get_timestamp(void)
+{
+	struct sched_timestamp ret;
 
-David
+	preempt_disable_notrace();
+	ret.cpu = smp_processor_id();
+	ret.clock = sched_clock();
+	preempt_enable_no_resched_notrace();
+
+	return ret;
+}
+
+static inline bool sched_timeout_or_moved(struct sched_timestamp start,
+					  unsigned long long timeout)
+{
+	bool ret;
+
+	preempt_disable_notrace();
+	ret = start.cpu != smp_processor_id() ||
+		(sched_clock() - start.clock) > timeout;
+	preempt_enable_no_resched_notrace();
+
+	return ret;
+}
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
