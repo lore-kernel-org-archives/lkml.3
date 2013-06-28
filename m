@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab3F1UKk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 16:10:40 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52073 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab3F1UKh (ORCPT
+	id S1753694Ab3F1ULv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 16:11:51 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:44716 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab3F1UKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 16:10:37 -0400
+	Fri, 28 Jun 2013 16:10:39 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,110 +15,70 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC nohz_full v2 5/7] nohz_full: Add full-system-idle arguments to API
-Date: Fri, 28 Jun 2013 13:10:20 -0700
-Message-Id: <1372450222-19420-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC nohz_full v2 1/7] nohz_full: Add Kconfig parameter for scalable detection of all-idle state
+Date: Fri, 28 Jun 2013 13:10:16 -0700
+Message-Id: <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20130628200949.GA17458@linux.vnet.ibm.com>
 References: <20130628200949.GA17458@linux.vnet.ibm.com>
- <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062820-5406-0000-0000-000009F7096E
+x-cbid: 13062820-5518-0000-0000-00000FF3A560
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit adds an isidle and jiffies argument to force_qs_rnp(),
-dyntick_save_progress_counter(), and rcu_implicit_dynticks_qs() to enable
-RCU's force-quiescent-state process to check for full-system idle.
+At least one CPU must keep the scheduling-clock tick running for
+timekeeping purposes whenever there is a non-idle CPU.  However, with
+the new nohz_full adaptive-idle machinery, it is difficult to distinguish
+between all CPUs really being idle as opposed to all non-idle CPUs being
+in adaptive-ticks mode.  This commit therefore adds a Kconfig parameter
+as a first step towards enabling a scalable detection of full-system
+idle state.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/rcutree.c | 23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+ kernel/time/Kconfig | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index ed9a36a..9971f86 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -231,7 +231,9 @@ module_param(jiffies_till_next_fqs, ulong, 0644);
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 70f27e8..a613c2a 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -134,6 +134,29 @@ config NO_HZ_FULL_ALL
+ 	 Note the boot CPU will still be kept outside the range to
+ 	 handle the timekeeping duty.
  
- static void rcu_start_gp_advanced(struct rcu_state *rsp, struct rcu_node *rnp,
- 				  struct rcu_data *rdp);
--static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *));
-+static void force_qs_rnp(struct rcu_state *rsp,
-+			 int (*f)(struct rcu_data *, bool *, unsigned long *),
-+			 bool *isidle, unsigned long *maxj);
- static void force_quiescent_state(struct rcu_state *rsp);
- static int rcu_pending(int cpu);
- 
-@@ -712,7 +714,8 @@ static int rcu_is_cpu_rrupt_from_idle(void)
-  * credit them with an implicit quiescent state.  Return 1 if this CPU
-  * is in dynticks idle mode, which is an extended quiescent state.
-  */
--static int dyntick_save_progress_counter(struct rcu_data *rdp)
-+static int dyntick_save_progress_counter(struct rcu_data *rdp,
-+					 bool *isidle, unsigned long *maxj)
- {
- 	rdp->dynticks_snap = atomic_add_return(0, &rdp->dynticks->dynticks);
- 	return (rdp->dynticks_snap & 0x1) == 0;
-@@ -724,7 +727,8 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp)
-  * idle state since the last call to dyntick_save_progress_counter()
-  * for this same CPU, or by virtue of having been offline.
-  */
--static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
-+static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
-+				    bool *isidle, unsigned long *maxj)
- {
- 	unsigned int curr;
- 	unsigned int snap;
-@@ -1345,16 +1349,19 @@ static int rcu_gp_init(struct rcu_state *rsp)
- int rcu_gp_fqs(struct rcu_state *rsp, int fqs_state_in)
- {
- 	int fqs_state = fqs_state_in;
-+	bool isidle = 0;
-+	unsigned long maxj;
- 	struct rcu_node *rnp = rcu_get_root(rsp);
- 
- 	rsp->n_force_qs++;
- 	if (fqs_state == RCU_SAVE_DYNTICK) {
- 		/* Collect dyntick-idle snapshots. */
--		force_qs_rnp(rsp, dyntick_save_progress_counter);
-+		force_qs_rnp(rsp, dyntick_save_progress_counter,
-+			     &isidle, &maxj);
- 		fqs_state = RCU_FORCE_QS;
- 	} else {
- 		/* Handle dyntick-idle and offline CPUs. */
--		force_qs_rnp(rsp, rcu_implicit_dynticks_qs);
-+		force_qs_rnp(rsp, rcu_implicit_dynticks_qs, &isidle, &maxj);
- 	}
- 	/* Clear flag to prevent immediate re-entry. */
- 	if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
-@@ -2055,7 +2062,9 @@ void rcu_check_callbacks(int cpu, int user)
-  *
-  * The caller must have suppressed start of new grace periods.
-  */
--static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *))
-+static void force_qs_rnp(struct rcu_state *rsp,
-+			 int (*f)(struct rcu_data *, bool *, unsigned long *),
-+			 bool *isidle, unsigned long *maxj)
- {
- 	unsigned long bit;
- 	int cpu;
-@@ -2079,7 +2088,7 @@ static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *))
- 		bit = 1;
- 		for (; cpu <= rnp->grphi; cpu++, bit <<= 1) {
- 			if ((rnp->qsmask & bit) != 0 &&
--			    f(per_cpu_ptr(rsp->rda, cpu)))
-+			    f(per_cpu_ptr(rsp->rda, cpu), isidle, maxj))
- 				mask |= bit;
- 		}
- 		if (mask != 0) {
++config NO_HZ_FULL_SYSIDLE
++	bool "Detect full-system idle state for full dynticks system"
++	depends on NO_HZ_FULL
++	default n
++	help
++	 At least one CPU must keep the scheduling-clock tick running
++	 for timekeeping purposes whenever there is a non-idle CPU,
++	 where "non-idle" includes CPUs with a single runnable task
++	 in adaptive-idle mode.  Because the underlying adaptive-tick
++	 support cannot distinguish between all CPUs being idle and
++	 all CPUs each running a single task in adaptive-idle mode,
++	 the underlying support simply ensures that there is always
++	 a CPU handling the scheduling-clock tick, whether or not all
++	 CPUs are idle.  This Kconfig option enables scalable detection
++	 of the all-CPUs-idle state, thus allowing the scheduling-clock
++	 tick to be disabled when all CPUs are idle.  Note that scalable
++	 detection of the all-CPUs-idle state means that larger systems
++	 will be slower to declare the all-CPUs-idle state.
++
++	 Say Y if you would like to help debug all-CPUs-idle detection.
++
++	 Say N if you are unsure.
++
+ config NO_HZ
+ 	bool "Old Idle dynticks config"
+ 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
 -- 
 1.8.1.5
 
