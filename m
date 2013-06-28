@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab3F1NCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:02:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37108 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab3F1NCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 09:02:16 -0400
-Date: Fri, 28 Jun 2013 14:01:59 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
-Message-ID: <20130628130159.GW1875@suse.de>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-6-git-send-email-mgorman@suse.de>
- <20130627160127.GY28407@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130627160127.GY28407@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755308Ab3F1NDJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:03:09 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:59971 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105Ab3F1NDF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 09:03:05 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
+        brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 5/8] ARM: mxs: dt: cfa10037: make hogpins grabbed by respective drivers
+Date: Fri, 28 Jun 2013 15:02:54 +0200
+Message-Id: <1372424577-8279-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372424577-8279-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1372424577-8279-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 06:01:27PM +0200, Peter Zijlstra wrote:
-> On Wed, Jun 26, 2013 at 03:38:04PM +0100, Mel Gorman wrote:
-> > @@ -3897,6 +3907,28 @@ task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
-> >  	return delta < (s64)sysctl_sched_migration_cost;
-> >  }
-> >  
-> > +/* Returns true if the destination node has incurred more faults */
-> > +static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
-> > +{
-> > +	int src_nid, dst_nid;
-> > +
-> > +	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
-> > +		return false;
-> > +
-> > +	src_nid = cpu_to_node(env->src_cpu);
-> > +	dst_nid = cpu_to_node(env->dst_cpu);
-> > +
-> > +	if (src_nid == dst_nid)
-> > +		return false;
-> > +
-> > +	if (p->numa_migrate_seq < sysctl_numa_balancing_settle_count &&
-> > +	    p->numa_preferred_nid == dst_nid)
-> > +		return true;
-> > +
-> > +	return false;
-> > +}
-> > +
-> 
-> This references ->numa_faults, which is declared under NUMA_BALANCING
-> but lacks any such conditionality here.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/imx28-cfa10037.dts | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-Fixed.
-
+diff --git a/arch/arm/boot/dts/imx28-cfa10037.dts b/arch/arm/boot/dts/imx28-cfa10037.dts
+index c2ef3a3..182b99f 100644
+--- a/arch/arm/boot/dts/imx28-cfa10037.dts
++++ b/arch/arm/boot/dts/imx28-cfa10037.dts
+@@ -22,13 +22,19 @@
+ 	apb@80000000 {
+ 		apbh@80000000 {
+ 			pinctrl@80018000 {
+-				pinctrl-names = "default", "default";
+-				pinctrl-1 = <&hog_pins_cfa10037>;
+-
+-				hog_pins_cfa10037: hog-10037@0 {
++				usb_pins_cfa10037: usb-10037@0 {
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+ 						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++
++				mac0_pins_cfa10037: mac0-10037@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x2153 /* MX28_PAD_SSP2_D5__GPIO_2_21 */
+ 					>;
+ 					fsl,drive-strength = <0>;
+@@ -56,7 +62,8 @@
+ 		mac0: ethernet@800f0000 {
+ 			phy-mode = "rmii";
+ 			pinctrl-names = "default";
+-			pinctrl-0 = <&mac0_pins_a>;
++			pinctrl-0 = <&mac0_pins_a
++				&mac0_pins_cfa10037>;
+ 			phy-reset-gpios = <&gpio2 21 0>;
+ 			phy-reset-duration = <100>;
+ 			status = "okay";
+@@ -68,6 +75,8 @@
+ 
+ 		reg_usb1_vbus: usb1_vbus {
+ 			compatible = "regulator-fixed";
++			pinctrl-names = "default";
++			pinctrl-0 = <&usb_pins_cfa10037>;
+ 			regulator-name = "usb1_vbus";
+ 			regulator-min-microvolt = <5000000>;
+ 			regulator-max-microvolt = <5000000>;
 -- 
-Mel Gorman
-SUSE Labs
+1.8.1.2
+
