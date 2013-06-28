@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab3F1TbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:31:01 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:42267 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab3F1Ta7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:30:59 -0400
-X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jun 2013 15:30:57 EDT
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
-        Andre van Herk <andre.van.herk@Prodrive.nl>,
-        Micha Nelissen <micha.nelissen@Prodrive.nl>,
-        Stef van Os <stef.van.os@Prodrive.nl>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 4/7] rapidio/tsi721: convert to modular mport driver
-Date: Fri, 28 Jun 2013 15:18:53 -0400
-Message-Id: <1372447136-5751-5-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
-References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
+	id S1752277Ab3F1TgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:36:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42207 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3F1TgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:36:17 -0400
+Date: Fri, 28 Jun 2013 14:36:08 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Tejun Heo <tj@kernel.org>, thockin@hockin.org,
+        Mike Galbraith <bitbucket@online.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        jpoimboe <jpoimboe@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>, cgroups@vger.kernel.org
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130628193608.GA10415@sergelap>
+References: <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
+ <20130422214159.GG12543@htj.dyndns.org>
+ <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
+ <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+ <20130625000118.GT1918@mtj.dyndns.org>
+ <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+ <20130626212047.GB4536@htj.dyndns.org>
+ <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627180143.GD5599@mtj.dyndns.org>
+ <51CDE18E.8080009@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CDE18E.8080009@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an option to build device driver for Tsi721 PCIe-to-SRIO bridge
-device as a kernel module.
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On 06/27/2013 11:01 AM, Tejun Heo wrote:
+> > AFAICS, having a userland agent which has overall knowledge of the
+> > hierarchy and enforcesf structure and limiations is a requirement to
+> > make cgroup generally useable and useful.  For systemd based systems,
+> > systemd serving that role isn't too crazy.  It's sure gonna have
+> > teeting issues at the beginning but it has all the necessary
+> > information to manage workloads on the system.
+> > 
+> > A valid issue is interoperability between systemd and non-systemd
+> > systems.  I don't have an immediately good answer for that.  I wrote
+> > in another reply but making cgroup generally available is a pretty new
+> > effort and we're still in the process of figuring out what the right
+> > constructs and abstractions are.  Hopefully, we'll be able to reach a
+> > common set of abstractions to base things on top in itme.
+> > 
+> 
+> The systemd stuff will break my code, too (although the single hierarchy
+> by itself won't, I think).  I think that the kernel should make whatever
+> simple changes are needed so that systemd can function without using
+> cgroups at all.  That way users of a different cgroup scheme can turn
+> off systemd's.
+> 
+> Here was my proposal, which hasn't gotten a clear reply:
+> 
+> http://article.gmane.org/gmane.comp.sysutils.systemd.devel/11424
 
-Currently this module cannot be unloaded because the existing RapidIO subsystem
-code does not support dynamic removal of local RapidIO controllers (TODO).
+Neat.  I like that proposal.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Andre van Herk <andre.van.herk@Prodrive.nl>
-Cc: Micha Nelissen <micha.nelissen@Prodrive.nl>
-Cc: Stef van Os <stef.van.os@Prodrive.nl>
-Cc: Jean Delvare <jdelvare@suse.de>
----
- drivers/rapidio/devices/Kconfig  |    2 +-
- drivers/rapidio/devices/Makefile |    7 +++----
- drivers/rapidio/devices/tsi721.c |    9 ++++-----
- drivers/rapidio/rio.c            |    1 +
- 4 files changed, 9 insertions(+), 10 deletions(-)
+> I've already sent a patch to make /proc/<pid>/task/<tid>/children
+> available regardless of configuration.
 
-diff --git a/drivers/rapidio/devices/Kconfig b/drivers/rapidio/devices/Kconfig
-index 12a9d7f..c4cb087 100644
---- a/drivers/rapidio/devices/Kconfig
-+++ b/drivers/rapidio/devices/Kconfig
-@@ -3,7 +3,7 @@
- #
- 
- config RAPIDIO_TSI721
--	bool "IDT Tsi721 PCI Express SRIO Controller support"
-+	tristate "IDT Tsi721 PCI Express SRIO Controller support"
- 	depends on RAPIDIO && PCIEPORTBUS
- 	default "n"
- 	---help---
-diff --git a/drivers/rapidio/devices/Makefile b/drivers/rapidio/devices/Makefile
-index 7b62860..9432c49 100644
---- a/drivers/rapidio/devices/Makefile
-+++ b/drivers/rapidio/devices/Makefile
-@@ -2,7 +2,6 @@
- # Makefile for RapidIO devices
- #
- 
--obj-$(CONFIG_RAPIDIO_TSI721)	+= tsi721.o
--ifeq ($(CONFIG_RAPIDIO_DMA_ENGINE),y)
--obj-$(CONFIG_RAPIDIO_TSI721)	+= tsi721_dma.o
--endif
-+obj-$(CONFIG_RAPIDIO_TSI721)	+= tsi721_mport.o
-+tsi721_mport-y			:= tsi721.o
-+tsi721_mport-$(CONFIG_RAPIDIO_DMA_ENGINE) += tsi721_dma.o
-diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
-index a8b2c23..ff7cbf2 100644
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -2515,9 +2515,8 @@ static int __init tsi721_init(void)
- 	return pci_register_driver(&tsi721_driver);
- }
- 
--static void __exit tsi721_exit(void)
--{
--	pci_unregister_driver(&tsi721_driver);
--}
--
- device_initcall(tsi721_init);
-+
-+MODULE_DESCRIPTION("IDT Tsi721 PCIExpress-to-SRIO bridge driver");
-+MODULE_AUTHOR("Integrated Device Technology, Inc.");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
-index 5eb727c..2054b62 100644
---- a/drivers/rapidio/rio.c
-+++ b/drivers/rapidio/rio.c
-@@ -1911,6 +1911,7 @@ int rio_register_mport(struct rio_mport *port)
- 	pr_debug("RIO: %s %s id=%d\n", __func__, port->name, port->id);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(rio_register_mport);
- 
- EXPORT_SYMBOL_GPL(rio_local_get_device_id);
- EXPORT_SYMBOL_GPL(rio_get_device);
--- 
-1.7.8.4
-
+-serge
