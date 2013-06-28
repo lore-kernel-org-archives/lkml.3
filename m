@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab3F1QHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:07:20 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:50155 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748Ab3F1QHP (ORCPT
+	id S1755830Ab3F1QHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:07:34 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19073 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab3F1QH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:07:15 -0400
-Date: Fri, 28 Jun 2013 18:07:11 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf tools: Fixup for removing -f option in perf record
-Message-ID: <20130628160711.GA4389@gmail.com>
-References: <1372307120-737-1-git-send-email-namhyung@kernel.org>
- <20130627093609.GO28407@twins.programming.kicks-ass.net>
- <20130627103931.GA5534@gmail.com>
- <20130627104750.GB27378@dyad.programming.kicks-ass.net>
- <20130628094738.GA28751@krava.brq.redhat.com>
- <51CD9AE4.6060307@gmail.com>
- <20130628153736.GA462@gmail.com>
- <51CDB3CB.8040304@gmail.com>
+	Fri, 28 Jun 2013 12:07:28 -0400
+Date: Fri, 28 Jun 2013 12:07:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ben Guthro <benjamin.guthro@citrix.com>
+Cc: Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        xen-devel@lists.xen.org, Bob Moore <robert.moore@intel.com>
+Subject: Re: [PATCH v5 1/5] acpi: Remove need to include linux/acpi.h in
+ common acpica code
+Message-ID: <20130628160710.GF13468@phenom.dumpdata.com>
+References: <1372427184-6197-1-git-send-email-benjamin.guthro@citrix.com>
+ <1372427184-6197-2-git-send-email-benjamin.guthro@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51CDB3CB.8040304@gmail.com>
+In-Reply-To: <1372427184-6197-2-git-send-email-benjamin.guthro@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Ahern <dsahern@gmail.com> wrote:
-
-> On 6/28/13 9:37 AM, Ingo Molnar wrote:
-> >
-> >* David Ahern <dsahern@gmail.com> wrote:
-> >
-> >>On 6/28/13 3:47 AM, Jiri Olsa wrote:
-> >>>>>I thought -f was the implied default for ages?
-> >>>>
-> >>>>OK.. I've been dutifully typing it all this while :-)
-> >>>
-> >>>The '-f' option in record command had no affect.. myabe it got
-> >>>depreceated when we started to backup perf.data to perf.data.old..?
-> >>
-> >>Way back in 2010, 2.6.34 kernel - 7865e817 commit. I've been typing
-> >>the -f for while too. Now about the need for the pesky -f on the
-> >>analysis side....
-> >
-> >That's only needed when perf.data is owned by a different user, right?
-> >
+On Fri, Jun 28, 2013 at 09:46:20AM -0400, Ben Guthro wrote:
+> Move the definition of acpi_os_prepare_sleep into the OS services layer header,
+> and remove the include of linux/acpi.h from common acpica code.
 > 
-> Yes, why not let file permissions dictate of uid x can read uid y files? 
-> Why does perf need to have that restriction? For example, QA collects 
-> the data files, developers analyze them.
 
-So, the thinking behind that is that user should not be able to
-generate a malicious perf.data file and let root (or another user)
-run it accidentally.
+Thank you.
 
-( That presumes some sort of exploitable parsing bug or other buffer 
-  overflow in perf. )
+> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Bob Moore <robert.moore@intel.com>
 
-I don't feel terribly strongly about it though.
-
-Thanks,
-
-	Ingo
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/acpi/acpica/hwsleep.c |    1 -
+>  include/acpi/acpiosxf.h       |    6 ++++++
+>  include/linux/acpi.h          |    3 ---
+>  3 files changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+> index e3828cc..867b947 100644
+> --- a/drivers/acpi/acpica/hwsleep.c
+> +++ b/drivers/acpi/acpica/hwsleep.c
+> @@ -43,7 +43,6 @@
+>   */
+>  
+>  #include <acpi/acpi.h>
+> -#include <linux/acpi.h>
+>  #include "accommon.h"
+>  
+>  #define _COMPONENT          ACPI_HARDWARE
+> diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
+> index 5b3d2bd..c68b779 100644
+> --- a/include/acpi/acpiosxf.h
+> +++ b/include/acpi/acpiosxf.h
+> @@ -276,4 +276,10 @@ char *acpi_os_get_next_filename(void *dir_handle);
+>  
+>  void acpi_os_close_directory(void *dir_handle);
+>  
+> +/*
+> + * ACPI sleep preparation
+> + */
+> +acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> +				  u32 pm1a_control, u32 pm1b_control);
+> +
+>  #endif				/* __ACPIOSXF_H__ */
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index 17b5b59..709a2f2 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -479,9 +479,6 @@ static inline bool acpi_driver_match_device(struct device *dev,
+>  #ifdef CONFIG_ACPI
+>  void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+>  			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+> -
+> -acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> -				  u32 pm1a_control, u32 pm1b_control);
+>  #ifdef CONFIG_X86
+>  void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
+>  #else
+> -- 
+> 1.7.9.5
+> 
