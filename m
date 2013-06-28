@@ -1,192 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3F1Npm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:45:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39006 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262Ab3F1Npl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 09:45:41 -0400
-Date: Fri, 28 Jun 2013 14:45:35 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
-Message-ID: <20130628134535.GX1875@suse.de>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-6-git-send-email-mgorman@suse.de>
- <20130627161127.GZ28407@twins.programming.kicks-ass.net>
+	id S1754665Ab3F1NqY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:46:24 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:34297 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab3F1NqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 09:46:23 -0400
+Message-ID: <51CD93AF.3060908@gmail.com>
+Date: Fri, 28 Jun 2013 07:46:23 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130627161127.GZ28407@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 15/15] perf tools: fix ppid in thread__fork()
+References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com> <1372319707-13892-16-git-send-email-adrian.hunter@intel.com> <51CC6F16.40004@gmail.com> <51CD3187.5050603@intel.com>
+In-Reply-To: <51CD3187.5050603@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 06:11:27PM +0200, Peter Zijlstra wrote:
-> On Wed, Jun 26, 2013 at 03:38:04PM +0100, Mel Gorman wrote:
-> > +/* Returns true if the destination node has incurred more faults */
-> > +static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
-> > +{
-> > +	int src_nid, dst_nid;
-> > +
-> > +	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
-> > +		return false;
-> > +
-> > +	src_nid = cpu_to_node(env->src_cpu);
-> > +	dst_nid = cpu_to_node(env->dst_cpu);
-> > +
-> > +	if (src_nid == dst_nid)
-> > +		return false;
-> > +
-> > +	if (p->numa_migrate_seq < sysctl_numa_balancing_settle_count &&
-> > +	    p->numa_preferred_nid == dst_nid)
-> > +		return true;
-> > +
-> > +	return false;
-> > +}
-> 
-> Also, until I just actually _read_ that function; I assumed it would
-> compare p->numa_faults[src_nid] and p->numa_faults[dst_nid]. Because
-> even when the dst_nid isn't the preferred nid; it might still have more
-> pages than where we currently are.
-> 
+On 6/28/13 12:47 AM, Adrian Hunter wrote:
+>> knowledge of the specific thread within the parent that created the process
+>> can be valuable -- that's what we get now. This change drops that
+>> information. I'd prefer this stays at thread id -- or save the parent thread
+>> id in addition to the pid.
+>
+> That means renaming ppid to ptid.  Do you want to do that?
 
-I tested something like this and also tested it when only taking shared
-accesses into account but it performed badly in some cases.  I've included
-the last patch I tested below for reference but dropped it until I figured
-out why it performed badly. I guessed it was due to increased bouncing
-due to shared faults but didn't prove it.
+Don't lose information, so if you want the process id add ppid and ptid. 
+I like knowing the exact thread.
 
-> Idem with the proposed migrate_degrades_locality().
-> 
-> Something like so I suppose
-> 
-> ---
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3969,6 +3969,7 @@ task_hot(struct task_struct *p, u64 now,
->  	return delta < (s64)sysctl_sched_migration_cost;
->  }
->  
-> +#ifdef CONFIG_NUMA_BALANCING
->  /* Returns true if the destination node has incurred more faults */
->  static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
->  {
-> @@ -3983,13 +3984,50 @@ static bool migrate_improves_locality(st
->  	if (src_nid == dst_nid)
->  		return false;
->  
-> -	if (p->numa_migrate_seq < sysctl_numa_balancing_settle_count &&
-> -	    p->numa_preferred_nid == dst_nid)
-> +	if (p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
-> +		return false;
-> +
-> +	if (p->numa_preferred_nid == dst_nid)
-> +		return true;
-> +
-> +	if (p->numa_faults[src_nid] < p->numa_faults[dst_nid])
-> +		return true;
-> +
-> +	return false;
-> +}
-> +
+>
+> Isn't it possible that the parent could exit and the pid or tid be re-used
+> for another process?  In that case, to reliable identify the parent a
+> pointer to its struct thread would be needed.  i.e.
+>
+> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+> --- a/tools/perf/util/thread.h
+> +++ b/tools/perf/util/thread.h
+> @@ -14,6 +14,7 @@ struct thread {
+>          struct map_groups       mg;
+>          pid_t                   pid_; /* Not all tools update this */
+>          pid_t                   tid;
+> -       pid_t                   ppid;
+> +       struct thread           *parent;
+>          char                    shortname[3];
+>          bool                    comm_set;
+>
+> However that means tracking the lifetime of 'parent' to ensure that it is
+> not left dangling.
+>
+> Do you want to do that?
 
-I tested something like this.
+No, I do not think we want to save pointers to other thread structs. We 
+actually need to be able to clean up the dead_threads list for long 
+running sessions and dangling pointers would add to the problem.
 
-> +static vool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
-> +{
-> +	int src_nid, dst_nid;
-> +
-> +	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
-> +		return false;
-> +
-> +	src_nid = cpu_to_node(env->src_cpu);
-> +	dst_nid = cpu_to_node(env->dst_cpu);
-> +
-> +	if (src_nid == dst_nid)
-> +		return false;
-> +
-> +	if (p->numa_faults[src_nid] > p->numa_faults[dst_nid])
->  		return true;
->  
->  	return false;
->  }
+David
 
-But I had not tried this and it makes sense. I'll test it out and include
-it in the next revision if it looks good. Unless you object I'll add
-your signed-off because the version of the patch I'm about to test looks
-almost identical to this.
-
->  
-> +#else
-> +
-> +static inline bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
-> +{
-> +	return false;
-> +}
-> +
-> +static inline bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
-> +{
-> +	return false;
-> +}
-> +
-> +#endif /* CONFIG_NUMA_BALANCING */
->  
->  /*
->   * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
-> @@ -4055,8 +4093,10 @@ int can_migrate_task(struct task_struct
->  		return 1;
->  
->  	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
-> +	if (!tsk_cache_hot)
-> +		tsk_cache_hot = migrate_degrades_locality(p, env);
->  	if (!tsk_cache_hot ||
-> -		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
-> +	    env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
->  
->  		if (tsk_cache_hot) {
->  			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-> 
-
-This is the last patch similar to this idea I tested.
-
----8<---
-sched: Favour moving tasks towards nodes that incurred more faults
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e9bbb70..3379ca4 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3980,9 +3980,18 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
- 	if (src_nid == dst_nid)
- 		return false;
- 
--	if (p->numa_migrate_seq < sysctl_numa_balancing_settle_count &&
--	    p->numa_preferred_nid == dst_nid)
--		return true;
-+	if (p->numa_migrate_seq < sysctl_numa_balancing_settle_count) {
-+		if (p->numa_preferred_nid == dst_nid)
-+			return true;
-+
-+		/*
-+		 * Move towards node if there were a higher number of shared
-+		 * NUMA hinting faults
-+		 */
-+		if (p->numa_faults[task_faults_idx(dst_nid, 0)] >
-+		    p->numa_faults[task_faults_idx(src_nid, 0)])
-+			return true;
-+	}
- 
- 	return false;
- }
-
-
--- 
-Mel Gorman
-SUSE Labs
