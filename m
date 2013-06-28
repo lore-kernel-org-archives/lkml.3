@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab3F1Pn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:43:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37731 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754295Ab3F1PnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:43:22 -0400
-Date: Fri, 28 Jun 2013 17:38:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2013-06-27-16-36 uploaded (wait event common)
-Message-ID: <20130628153828.GA24371@redhat.com>
-References: <20130627233733.BAEB131C3BE@corp2gmr1-1.hot.corp.google.com> <51CD1F81.4040202@infradead.org> <20130627225139.798e7b00.akpm@linux-foundation.org> <51CD27F3.30104@infradead.org> <20130628165641.2193bfcd78c1f27d6f68f9a5@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130628165641.2193bfcd78c1f27d6f68f9a5@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755394Ab3F1Pow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:44:52 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39709 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753964Ab3F1Pou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 11:44:50 -0400
+Message-ID: <1372434289.29380.6.camel@joe-AO722>
+Subject: Re: [PATCH net-next v3 1/2] lib: vsprintf: add IPv4/v6 generic
+ %p[Ii]S[pfs] format specifier
+From: Joe Perches <joe@perches.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 28 Jun 2013 08:44:49 -0700
+In-Reply-To: <1372421131-1672-2-git-send-email-dborkman@redhat.com>
+References: <1372421131-1672-1-git-send-email-dborkman@redhat.com>
+	 <1372421131-1672-2-git-send-email-dborkman@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28, Stephen Rothwell wrote:
->
-> On Thu, 27 Jun 2013 23:06:43 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
-> >
-> > >> My builds are littered with hundreds of warnings like this one:
-> > >>
-> > >> drivers/tty/tty_ioctl.c:220:6: warning: the omitted middle operand in ?: will always be 'true', suggest explicit middle operand [-Wparentheses]
-> > >>
-> > >> I guess due to this line from wait_event_common():
-> > >>
-> > >> +		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;
-> > >>
-> I added the following to linux-next today:
-> (sorry Randy, I forgot the Reported-by:, Andrew please add)
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 28 Jun 2013 16:52:58 +1000
-> Subject: [PATCH] fix warnings from ?: operator in wait.h
+On Fri, 2013-06-28 at 14:05 +0200, Daniel Borkmann wrote:
+> In order to avoid making code that deals with printing both, IPv4 and
+> IPv6 addresses, unnecessary complicated as for example ...
 
-Argh. This patch strikes again.
+Thanks Daniel, seems sensible.  Just trivial comments...
 
-Thanks, and sorry. And please help!
+[]
 
-I am not sure I understand. Since when gcc dislikes '?:' ?
-/bin/grep shows a lot of users of 'X ?: Y' shortcut?
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+[]
 
+Should any other include other than net/addrconf be needed?
 
+> +char *ip6_addr_string_sa(char *buf, char *end, const struct sockaddr_in6 *sa,
+> +			 struct printf_spec spec, const char *fmt)
+> +{
+[]
+> +	char fmt6[2] = { fmt[0], '6'};
 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  include/linux/wait.h | 18 ++++++++++++++----
->  1 file changed, 14 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/wait.h b/include/linux/wait.h
-> index 1c08a6c..f3b793d 100644
-> --- a/include/linux/wait.h
-> +++ b/include/linux/wait.h
-> @@ -197,7 +197,12 @@ wait_queue_head_t *bit_waitqueue(void *, int);
->  	for (;;) {							\
->  		__ret = prepare_to_wait_event(&wq, &__wait, state);	\
->  		if (condition) {					\
-> -			__ret = __wait_no_timeout(tout) ?: __tout ?: 1;	\
-> +			__ret = __wait_no_timeout(tout);		\
-> +			if (!__ret) {					\
-> +				__ret = __tout;				\
-> +				if (!__ret)				\
-> +					__ret = 1;			\
-> +			}						\
->  			break;						\
->  		}							\
->  									\
-> @@ -218,9 +223,14 @@ wait_queue_head_t *bit_waitqueue(void *, int);
->  #define wait_event_common(wq, condition, state, tout)			\
->  ({									\
->  	long __ret;							\
-> -	if (condition)							\
-> -		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;		\
-> -	else								\
-> +	if (condition) {						\
-> +		__ret = __wait_no_timeout(tout);			\
-> +		if (!__ret) {						\
-> +			__ret = (tout);					\
-> +			if (!__ret)					\
-> +				__ret = 1;				\
-> +		}							\
-> +	} else								\
->  		__ret = __wait_event_common(wq, condition, state, tout);\
->  	__ret;								\
->  })
-> -- 
-> 1.8.3.1
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+This looks odd to me.  why not use a bool compressed
+flag and identify this before the isalpha loop and not
+have fmt6 at all?
 
+> +	u8 off = 0;
+> +
+> +	fmt++;
+> +	while (isalpha(*++fmt)) {
+> +		switch (*fmt) {
+> +		case 'p':
+> +			have_p = true;
+> +			break;
+> +		case 'f':
+> +			have_f = true;
+> +			break;
+> +		case 's':
+> +			have_s = true;
+> +			break;
+> +		case 'c':
+> +			have_c = true;
+> +			break;
+> +		}
+> +	}
 
 
