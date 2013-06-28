@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab3F1HxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 03:53:07 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:41010 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3F1HxF (ORCPT
+	id S1754688Ab3F1HyZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 03:54:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44712 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3F1HyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 03:53:05 -0400
+	Fri, 28 Jun 2013 03:54:24 -0400
+Message-ID: <51CD4125.5060305@linutronix.de>
+Date: Fri, 28 Jun 2013 09:54:13 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1372363940-13023-1-git-send-email-khilman@linaro.org>
-References: <1372363940-13023-1-git-send-email-khilman@linaro.org>
-Date: Fri, 28 Jun 2013 09:53:04 +0200
-X-Google-Sender-Auth: Qs8f_kOKJ0xJfUtlTC6lRYnfRuE
-Message-ID: <CAMuHMdVoqKTwgYLCu2ktcWEOYHy+jGo4YZ7ithAgQ6EN0Nhnqw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: zImage: fix path to fonts which moved to lib/fonts
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+To: Rob Herring <robherring2@gmail.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, x86@kernel.org, arm@kernel.org,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-xtensa@linux-xtensa.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] of: Specify initrd location using 64-bit
+References: <1371775956-16453-1-git-send-email-santosh.shilimkar@ti.com> <51C4171C.9050908@linutronix.de> <51C48B5A.2040404@ti.com> <51CCA67C.2010803@gmail.com>
+In-Reply-To: <51CCA67C.2010803@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 10:12 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> commit 1affee67 (lib: Move fonts from drivers/video/console/ to lib/fonts/)
-> moved fonts from drivers/video/console/ to lib/fonts, but the ARM zImage
-> build still references the old location.
->
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> ---
-> Found due to build failures on ARM in next-20130627.
->
-> Rather than go through the ARM tree, this should probably be included
-> with the original series from Geert.
+On 06/27/2013 10:54 PM, Rob Herring wrote:
 
-Thanks! Sorry for missing this.
+>> Rob,
+>> Are you ok with phys_addr_t since your concern was about rest
+>> of the memory specific bits of the device-tree code use u64 ?
+> 
+> No. I still think it should be u64 for same reasons I said originally.
 
-There's a similar one in the unicore32 boot code, and a few stale references
-in comments and documentation. I'll fold all of these in the original commit.
+The physical address space is represented by phys_addr_t and not u64
+within the kernel. If you go for u64 you may waste 32bit and you need
+to check if the running kernel can deal with this.
+Why was u64 such a good thing?
 
-Gr{oetje,eeting}s,
+> Rob
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Sebastian
