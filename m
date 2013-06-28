@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3F1NqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:46:24 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:34297 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab3F1NqX (ORCPT
+	id S1754725Ab3F1Nqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:46:39 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:14174 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab3F1Nqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 09:46:23 -0400
-Message-ID: <51CD93AF.3060908@gmail.com>
-Date: Fri, 28 Jun 2013 07:46:23 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 28 Jun 2013 09:46:37 -0400
+X-IronPort-AV: E=Sophos;i="4.87,958,1363132800"; 
+   d="scan'208";a="32455791"
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <xen-devel@lists.xen.org>
+CC: Ben Guthro <benjamin.guthro@citrix.com>,
+        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Gang Wei <gang.wei@intel.com>, Shane Wang <shane.wang@intel.com>,
+        Bob Moore <robert.moore@intel.com>,
+        <tboot-devel@lists.sourceforge.net>
+Subject: [PATCH v5 0/5] Xen/ACPI: support sleep state entering on hardware reduced systems
+Date: Fri, 28 Jun 2013 09:46:19 -0400
+Message-ID: <1372427184-6197-1-git-send-email-benjamin.guthro@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 15/15] perf tools: fix ppid in thread__fork()
-References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com> <1372319707-13892-16-git-send-email-adrian.hunter@intel.com> <51CC6F16.40004@gmail.com> <51CD3187.5050603@intel.com>
-In-Reply-To: <51CD3187.5050603@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/28/13 12:47 AM, Adrian Hunter wrote:
->> knowledge of the specific thread within the parent that created the process
->> can be valuable -- that's what we get now. This change drops that
->> information. I'd prefer this stays at thread id -- or save the parent thread
->> id in addition to the pid.
->
-> That means renaming ppid to ptid.  Do you want to do that?
+In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+reduced hardware sleep support, and the two changes didn't get
+synchronized: The new code doesn't call the hook function (if so
+requested). Fix this, requiring a boolean parameter to be added to the
+hook function to distinguish "extended" from "legacy" sleep.
 
-Don't lose information, so if you want the process id add ppid and ptid. 
-I like knowing the exact thread.
+This requires adjusting TXT, but the adjustments only go as far as
+failing the extended mode call (since, looking at the TXT interface,
+there doesn't even appear to be precautions to deal with that
+alternative interface).
 
->
-> Isn't it possible that the parent could exit and the pid or tid be re-used
-> for another process?  In that case, to reliable identify the parent a
-> pointer to its struct thread would be needed.  i.e.
->
-> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-> --- a/tools/perf/util/thread.h
-> +++ b/tools/perf/util/thread.h
-> @@ -14,6 +14,7 @@ struct thread {
->          struct map_groups       mg;
->          pid_t                   pid_; /* Not all tools update this */
->          pid_t                   tid;
-> -       pid_t                   ppid;
-> +       struct thread           *parent;
->          char                    shortname[3];
->          bool                    comm_set;
->
-> However that means tracking the lifetime of 'parent' to ensure that it is
-> not left dangling.
->
-> Do you want to do that?
+The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
+v5 (reduced HW) sleep interface") on the master branch of
+git://xenbits.xen.org/xen.git.
 
-No, I do not think we want to save pointers to other thread structs. We 
-actually need to be able to clean up the dead_threads list for long 
-running sessions and dangling pointers would add to the problem.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
+Cc: Gang Wei <gang.wei@intel.com>
+Cc: Shane Wang <shane.wang@intel.com>
+Cc: Bob Moore <robert.moore@intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Cc: tboot-devel@lists.sourceforge.net 
 
-David
+v2: Extend description to include reference to hypervisor side change
+v3: Split into multiple patches, separating subsystems
+    Remove bool parameters, in favor of u8
+v4: Remove linux/acpi.h dependencies
+    Further patch split to break out acpica from OSL
+    More bool vs u8 fixes
+v5: Fix build of consumers of acpi_os_prepare_sleep() interface change,
+    so intermediate builds of partial patch series will not fail.
+
+Ben Guthro (5):
+  acpi: Remove need to include linux/acpi.h in common acpica code
+  acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
+  acpi: Adjust linux acpi OS functions to new extended parameter
+  x86/tboot: Fail extended mode reduced hardware sleep
+  xen/acpi: notify xen when reduced hardware sleep is available
+
+ arch/x86/kernel/tboot.c          |    6 +++++-
+ drivers/acpi/acpica/hwesleep.c   |    7 +++++++
+ drivers/acpi/acpica/hwsleep.c    |    3 +--
+ drivers/acpi/osl.c               |   16 ++++++++--------
+ drivers/xen/acpi.c               |   26 +++++++++++++-------------
+ include/acpi/acpiosxf.h          |    6 ++++++
+ include/linux/acpi.h             |    9 +++------
+ include/xen/acpi.h               |    4 ++--
+ include/xen/interface/platform.h |    7 ++++---
+ 9 files changed, 49 insertions(+), 35 deletions(-)
+
+-- 
+1.7.9.5
 
