@@ -1,263 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3F1HBf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 03:01:35 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44919 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab3F1HBe (ORCPT
+	id S1754754Ab3F1HFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 03:05:17 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:55393
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750813Ab3F1HFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 03:01:34 -0400
-Date: Fri, 28 Jun 2013 12:30:27 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] sched: Split accounting of NUMA hinting faults that
- pass two-stage filter
-Message-ID: <20130628070027.GD17195@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-8-git-send-email-mgorman@suse.de>
+	Fri, 28 Jun 2013 03:05:15 -0400
+X-Forefront-Antispam-Report: CIP:59.163.77.177;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC02.kpit.com;RD:59.163.77.177.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz1861Ic857hde40hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd25hf0ah1288h12a5h12bdh137ah1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1b0ah1bceh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh34h1155h)
+Content-Type: multipart/mixed;
+	boundary="_000_4B6D9C89CD8BA349A71B74CA32C47E5850DA85DFKCHJEXMB02kpitc_"
+From: Ankur Raina <Ankur.Raina@kpitcummins.com>
+To: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "david.chen@diasemi.com" <david.chen@diasemi.com>
+Subject: [patch v1 1/1]regulator: fix for DA9055 regulator
+Thread-Topic: [patch v1 1/1]regulator: fix for DA9055 regulator
+Thread-Index: Ac5zzdAEn1YGOhktSc+mDPDAm/Ta6A==
+Date: Fri, 28 Jun 2013 07:05:03 +0000
+Message-ID: <4B6D9C89CD8BA349A71B74CA32C47E5850DA85DF@KCHJEXMB02.kpit.com>
+Accept-Language: en-IN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: <4B6D9C89CD8BA349A71B74CA32C47E5850DA85DF@KCHJEXMB02.kpit.com>
+x-originating-ip: [10.10.50.126]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1372257487-9749-8-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-x-cbid: 13062807-3620-0000-0000-00000354108A
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mel Gorman <mgorman@suse.de> [2013-06-26 15:38:06]:
+--_000_4B6D9C89CD8BA349A71B74CA32C47E5850DA85DFKCHJEXMB02kpitc_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 
-> Ideally it would be possible to distinguish between NUMA hinting faults
-> that are private to a task and those that are shared. This would require
-> that the last task that accessed a page for a hinting fault would be
-> recorded which would increase the size of struct page. Instead this patch
-> approximates private pages by assuming that faults that pass the two-stage
-> filter are private pages and all others are shared. The preferred NUMA
-> node is then selected based on where the maximum number of approximately
-> private faults were measured.
+VGhpcyBwYXRjaCBhZGRzIHN1cHBvcnQgZm9yIHVzYWdlIG9mIEdQSU8ncyBieSBtdWx0aXBsZSBi
+dWNrcyBhbmQgcmVndWxhdG9ycwpvZiBEQTkwNTUgZm9yIGVuYWJsZS1kaXNhYmxlIGFuZCB2b2x0
+YWdlIHNldCBzZWxlY3Rpb24uV2l0aG91dCB0aGlzIHBhdGNoIHJlZ3VsYXRvcgpjb250cm9sIHRo
+cm91Z2ggR1BJTyB3b3VsZCBmYWlsIGZvciBtb3JlIHRoYW4gb25lIHJlZ3VsYXRvci9idWNrLgoK
+U2lnbmVkLW9mZi1ieTogQW5rdXIgPEFua3VyLlJhaW5hQGtwaXRjdW1taW5zLmNvbT4KLS0tCiBk
+cml2ZXJzL3JlZ3VsYXRvci9kYTkwNTUtcmVndWxhdG9yLmMgfCAgIDczICsrKysrKysrKysrKysr
+KysrKysrKy0tLS0tLS0tLS0tLS0KIDEgZmlsZXMgY2hhbmdlZCwgNDUgaW5zZXJ0aW9ucygrKSwg
+MjggZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9yZWd1bGF0b3IvZGE5MDU1LXJl
+Z3VsYXRvci5jIGIvZHJpdmVycy9yZWd1bGF0b3IvZGE5MDU1LXJlZ3VsYXRvci5jCmluZGV4IDMw
+MjIxMDkuLjg4OWEyYjggMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvcmVndWxhdG9yL2RhOTA1NS1yZWd1
+bGF0b3IuYworKysgYi9kcml2ZXJzL3JlZ3VsYXRvci9kYTkwNTUtcmVndWxhdG9yLmMKQEAgLTQ0
+LDYgKzQ0LDEwIEBACiAjZGVmaW5lIERBOTA1NV9JRF9MRE81CQk2CiAjZGVmaW5lIERBOTA1NV9J
+RF9MRE82CQk3CiAKKy8qIE1heCBHcGlvJ3MgQ29udHJvbGxpbmcgUmVndWxhdG9ycyAqLworI2Rl
+ZmluZSBNQVhfR1BJT19MRE8JCTIKKyNkZWZpbmUgR1BJX05BTUVfTEVOR1RICQkxOAorCiAvKiBE
+QTkwNTUgQlVDSyBjdXJyZW50IGxpbWl0ICovCiBzdGF0aWMgY29uc3QgaW50IGRhOTA1NV9jdXJy
+ZW50X2xpbWl0c1tdID0geyA1MDAwMDAsIDYwMDAwMCwgNzAwMDAwLCA4MDAwMDAgfTsKIApAQCAt
+NDQ1LDI0ICs0NDksMzAgQEAgc3RhdGljIGludCBkYTkwNTVfZ3Bpb19pbml0KHN0cnVjdCBkYTkw
+NTVfcmVndWxhdG9yICpyZWd1bGF0b3IsCiB7CiAJc3RydWN0IGRhOTA1NV9yZWd1bGF0b3JfaW5m
+byAqaW5mbyA9IHJlZ3VsYXRvci0+aW5mbzsKIAlpbnQgcmV0ID0gMDsKKwlzdGF0aWMgaW50IGFs
+bG9jX2dwaW8sIHJlcV9ncGlvW01BWF9HUElPX0xET107CisJY2hhciBuYW1lW0dQSV9OQU1FX0xF
+TkdUSF07CiAKLQlpZiAocGRhdGEtPmdwaW9fcmVuICYmIHBkYXRhLT5ncGlvX3JlbltpZF0pIHsK
+LQkJY2hhciBuYW1lWzE4XTsKLQkJaW50IGdwaW9fbXV4ID0gcGRhdGEtPmdwaW9fcmVuW2lkXTsK
+LQotCQljb25maWctPmVuYV9ncGlvID0gcGRhdGEtPmVuYV9ncGlvW2lkXTsKLQkJY29uZmlnLT5l
+bmFfZ3Bpb19mbGFncyA9IEdQSU9GX09VVF9JTklUX0hJR0g7Ci0JCWNvbmZpZy0+ZW5hX2dwaW9f
+aW52ZXJ0ID0gMTsKLQorCWlmIChwZGF0YS0+Z3Bpb19yc2VsICYmIHBkYXRhLT5ncGlvX3JzZWxb
+aWRdKSB7CiAJCS8qCi0JCSAqIEdQSSBwaW4gaXMgbXV4ZWQgd2l0aCByZWd1bGF0b3IgdG8gY29u
+dHJvbCB0aGUKLQkJICogcmVndWxhdG9yIHN0YXRlLgorCQkgKiBWZXJpZnkgd2hldGhlciBHUElP
+J3MgdG8gYmUgcmVxdWVzdGVkIGFyZSBub3QKKwkJICogYWxsb2NhdGVkIGJlZm9yZQogCQkgKi8K
+LQkJc3ByaW50ZihuYW1lLCAiREE5MDU1IEdQSSAlZCIsIGdwaW9fbXV4KTsKLQkJcmV0ID0gZGV2
+bV9ncGlvX3JlcXVlc3Rfb25lKGNvbmZpZy0+ZGV2LCBncGlvX211eCwgR1BJT0ZfRElSX0lOLAot
+CQkJCQkgICAgbmFtZSk7Ci0JCWlmIChyZXQgPCAwKQotCQkJZ290byBlcnI7CisJCWlmICgocGRh
+dGEtPmdwaW9fcnNlbFtpZF0gIT0gcmVxX2dwaW9bMF0KKwkJJiYgcGRhdGEtPmdwaW9fcnNlbFtp
+ZF0gIT0gcmVxX2dwaW9bMV0pICYmCisJCShhbGxvY19ncGlvIDwgTUFYX0dQSU9fTERPKSkgewor
+CQkJLyoKKwkJCSAqIEdQSSBwaW4gaXMgbXV4ZWQgd2l0aCByZWd1bGF0b3IgdG8gY29udHJvbCB0
+aGUKKwkJCSAqIHJlZ3VsYXRvciBzdGF0ZS4KKwkJCSAqLworCQkJc3ByaW50ZihuYW1lLCAiREE5
+MDU1IEdQSSAlZCIsIHBkYXRhLT5ncGlvX3JzZWxbaWRdKTsKKwkJCXJldCA9IGRldm1fZ3Bpb19y
+ZXF1ZXN0X29uZShjb25maWctPmRldiwKKwkJCQkJCSAgICBwZGF0YS0+Z3Bpb19yc2VsW2lkXSwK
+KwkJCQkJCSAgICBHUElPRl9ESVJfSU4sIG5hbWUpOworCQkJaWYgKHJldCA8IDApCisJCQkJZ290
+byBlcnI7CisJCQlyZXFfZ3Bpb1thbGxvY19ncGlvXSA9IHBkYXRhLT5ncGlvX3JzZWxbaWRdOwor
+CQkJYWxsb2NfZ3BpbysrOworCQl9CiAKIAkJLyoKIAkJICogTGV0IHRoZSByZWd1bGF0b3Iga25v
+dyB0aGF0IGl0cyBzdGF0ZSBpcyBjb250cm9sbGVkCkBAIC00NzYsMjEgKzQ4NiwyOCBAQCBzdGF0
+aWMgaW50IGRhOTA1NV9ncGlvX2luaXQoc3RydWN0IGRhOTA1NV9yZWd1bGF0b3IgKnJlZ3VsYXRv
+ciwKIAkJCWdvdG8gZXJyOwogCX0KIAotCWlmIChwZGF0YS0+Z3Bpb19yc2VsICYmIHBkYXRhLT5n
+cGlvX3JzZWxbaWRdKSB7Ci0JCWNoYXIgbmFtZVsxOF07Ci0JCWludCBncGlvX211eCA9IHBkYXRh
+LT5ncGlvX3JzZWxbaWRdOwotCi0JCXJlZ3VsYXRvci0+cmVnX3JzZWxlY3QgPSBwZGF0YS0+cmVn
+X3JzZWxbaWRdOwotCisJaWYgKHBkYXRhLT5ncGlvX3JlbiAmJiBwZGF0YS0+Z3Bpb19yZW5baWRd
+KSB7CiAJCS8qCi0JCSAqIEdQSSBwaW4gaXMgbXV4ZWQgd2l0aCByZWd1bGF0b3IgdG8gc2VsZWN0
+IHRoZQotCQkgKiByZWd1bGF0b3IgcmVnaXN0ZXIgc2V0IEEvQiBmb3Igdm9sdGFnZSByYW1waW5n
+LgorCQkgKiBWZXJpZnkgd2hldGhlciBHUElPJ3MgdG8gYmUgcmVxdWVzdGVkIGFyZSBub3QKKwkJ
+ICogYWxsb2NhdGVkIGJlZm9yZQogCQkgKi8KLQkJc3ByaW50ZihuYW1lLCAiREE5MDU1IEdQSSAl
+ZCIsIGdwaW9fbXV4KTsKLQkJcmV0ID0gZGV2bV9ncGlvX3JlcXVlc3Rfb25lKGNvbmZpZy0+ZGV2
+LCBncGlvX211eCwgR1BJT0ZfRElSX0lOLAotCQkJCQkgICAgbmFtZSk7Ci0JCWlmIChyZXQgPCAw
+KQotCQkJZ290byBlcnI7CisJCWlmICgocGRhdGEtPmdwaW9fcmVuW2lkXSAhPSByZXFfZ3Bpb1sw
+XQorCQkmJiBwZGF0YS0+Z3Bpb19yZW5baWRdICE9IHJlcV9ncGlvWzFdKSAmJgorCQkoYWxsb2Nf
+Z3BpbyA8IE1BWF9HUElPX0xETykpIHsKKwkJCXJlZ3VsYXRvci0+cmVnX3JzZWxlY3QgPSBwZGF0
+YS0+cmVnX3JzZWxbaWRdOworCQkJLyoKKwkJCSAqIEdQSSBwaW4gaXMgbXV4ZWQgd2l0aCByZWd1
+bGF0b3IgdG8gc2VsZWN0IHRoZQorCQkJICogcmVndWxhdG9yIHJlZ2lzdGVyIHNldCBBL0IgZm9y
+IHZvbHRhZ2UgcmFtcGluZy4KKwkJCSAqLworCQkJc3ByaW50ZihuYW1lLCAiREE5MDU1IEdQSSAl
+ZCIsIHBkYXRhLT5ncGlvX3JlbltpZF0pOworCQkJcmV0ID0gZGV2bV9ncGlvX3JlcXVlc3Rfb25l
+KGNvbmZpZy0+ZGV2LAorCQkJCQkJICAgIHBkYXRhLT5ncGlvX3JlbltpZF0sCisJCQkJCQkgICAg
+R1BJT0ZfRElSX0lOLCBuYW1lKTsKKwkJCWlmIChyZXQgPCAwKQorCQkJCWdvdG8gZXJyOworCQkJ
+cmVxX2dwaW9bYWxsb2NfZ3Bpb10gPSBwZGF0YS0+Z3Bpb19yZW5baWRdOworCQkJYWxsb2NfZ3Bp
+bysrOworCQl9CiAKIAkJLyoKIAkJICogTGV0IHRoZSByZWd1bGF0b3Iga25vdyB0aGF0IGl0cyBy
+ZWdpc3RlciBzZXQgQS9CCi0tIAoxLjcuMQoKCgoK
 
-Should we consider only private faults for preferred node?
-I would think if tasks have shared pages then moving all tasks that share
-the same pages to a node where the share pages are around would be
-preferred. No? If yes, how does the preferred node logic help to achieve
-the above?
 
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  include/linux/sched.h |  4 ++--
->  kernel/sched/fair.c   | 32 ++++++++++++++++++++++----------
->  mm/huge_memory.c      |  7 ++++---
->  mm/memory.c           |  9 ++++++---
->  4 files changed, 34 insertions(+), 18 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 82a6136..a41edea 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1600,10 +1600,10 @@ struct task_struct {
->  #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
->  
->  #ifdef CONFIG_NUMA_BALANCING
-> -extern void task_numa_fault(int node, int pages, bool migrated);
-> +extern void task_numa_fault(int last_node, int node, int pages, bool migrated);
->  extern void set_numabalancing_state(bool enabled);
->  #else
-> -static inline void task_numa_fault(int node, int pages, bool migrated)
-> +static inline void task_numa_fault(int last_node, int node, int pages, bool migrated)
->  {
->  }
->  static inline void set_numabalancing_state(bool enabled)
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 99951a8..490e601 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -833,6 +833,11 @@ find_idlest_cpu_node(int this_cpu, int nid)
->  	return idlest_cpu;
->  }
->  
-> +static inline int task_faults_idx(int nid, int priv)
-> +{
-> +	return 2 * nid + priv;
-> +}
-> +
->  static void task_numa_placement(struct task_struct *p)
->  {
->  	int seq, nid, max_nid = 0;
-> @@ -849,13 +854,19 @@ static void task_numa_placement(struct task_struct *p)
->  	/* Find the node with the highest number of faults */
->  	for (nid = 0; nid < nr_node_ids; nid++) {
->  		unsigned long faults;
-> +		int priv, i;
->  
-> -		/* Decay existing window and copy faults since last scan */
-> -		p->numa_faults[nid] >>= 1;
-> -		p->numa_faults[nid] += p->numa_faults_buffer[nid];
-> -		p->numa_faults_buffer[nid] = 0;
-> +		for (priv = 0; priv < 2; priv++) {
-> +			i = task_faults_idx(nid, priv);
-> +
-> +			/* Decay existing window and copy faults since last scan */
-> +			p->numa_faults[i] >>= 1;
-> +			p->numa_faults[i] += p->numa_faults_buffer[i];
-> +			p->numa_faults_buffer[i] = 0;
-> +		}
->  
-> -		faults = p->numa_faults[nid];
-> +		/* Find maximum private faults */
-> +		faults = p->numa_faults[task_faults_idx(nid, 1)];
->  		if (faults > max_faults) {
->  			max_faults = faults;
->  			max_nid = nid;
-> @@ -887,24 +898,25 @@ static void task_numa_placement(struct task_struct *p)
->  /*
->   * Got a PROT_NONE fault for a page on @node.
->   */
-> -void task_numa_fault(int node, int pages, bool migrated)
-> +void task_numa_fault(int last_nid, int node, int pages, bool migrated)
->  {
->  	struct task_struct *p = current;
-> +	int priv = (cpu_to_node(task_cpu(p)) == last_nid);
->  
->  	if (!sched_feat_numa(NUMA))
->  		return;
->  
->  	/* Allocate buffer to track faults on a per-node basis */
->  	if (unlikely(!p->numa_faults)) {
-> -		int size = sizeof(*p->numa_faults) * nr_node_ids;
-> +		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
->  
->  		/* numa_faults and numa_faults_buffer share the allocation */
-> -		p->numa_faults = kzalloc(size * 2, GFP_KERNEL);
-> +		p->numa_faults = kzalloc(size * 4, GFP_KERNEL);
->  		if (!p->numa_faults)
->  			return;
->  
->  		BUG_ON(p->numa_faults_buffer);
-> -		p->numa_faults_buffer = p->numa_faults + nr_node_ids;
-> +		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
->  	}
->  
->  	/*
-> @@ -918,7 +930,7 @@ void task_numa_fault(int node, int pages, bool migrated)
->  	task_numa_placement(p);
->  
->  	/* Record the fault, double the weight if pages were migrated */
-> -	p->numa_faults_buffer[node] += pages << migrated;
-> +	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages << migrated;
->  }
->  
->  static void reset_ptenuma_scan(struct task_struct *p)
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index e2f7f5aa..7cd7114 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1292,7 +1292,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  {
->  	struct page *page;
->  	unsigned long haddr = addr & HPAGE_PMD_MASK;
-> -	int target_nid;
-> +	int target_nid, last_nid;
->  	int current_nid = -1;
->  	bool migrated;
->  
-> @@ -1307,6 +1307,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  	if (current_nid == numa_node_id())
->  		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
->  
-> +	last_nid = page_nid_last(page);
->  	target_nid = mpol_misplaced(page, vma, haddr);
->  	if (target_nid == -1) {
->  		put_page(page);
-> @@ -1332,7 +1333,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  	if (!migrated)
->  		goto check_same;
->  
-> -	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
-> +	task_numa_fault(last_nid, target_nid, HPAGE_PMD_NR, true);
->  	return 0;
->  
->  check_same:
-> @@ -1347,7 +1348,7 @@ clear_pmdnuma:
->  out_unlock:
->  	spin_unlock(&mm->page_table_lock);
->  	if (current_nid != -1)
-> -		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
-> +		task_numa_fault(last_nid, current_nid, HPAGE_PMD_NR, false);
->  	return 0;
->  }
->  
-> diff --git a/mm/memory.c b/mm/memory.c
-> index ba94dec..c28bf52 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3536,7 +3536,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  {
->  	struct page *page = NULL;
->  	spinlock_t *ptl;
-> -	int current_nid = -1;
-> +	int current_nid = -1, last_nid;
->  	int target_nid;
->  	bool migrated = false;
->  
-> @@ -3566,6 +3566,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		return 0;
->  	}
->  
-> +	last_nid = page_nid_last(page);
->  	current_nid = page_to_nid(page);
->  	target_nid = numa_migrate_prep(page, vma, addr, current_nid);
->  	pte_unmap_unlock(ptep, ptl);
-> @@ -3586,7 +3587,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  
->  out:
->  	if (current_nid != -1)
-> -		task_numa_fault(current_nid, 1, migrated);
-> +		task_numa_fault(last_nid, current_nid, 1, migrated);
->  	return 0;
->  }
->  
-> @@ -3602,6 +3603,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  	spinlock_t *ptl;
->  	bool numa = false;
->  	int local_nid = numa_node_id();
-> +	int last_nid;
->  
->  	spin_lock(&mm->page_table_lock);
->  	pmd = *pmdp;
-> @@ -3654,6 +3656,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		 * migrated to.
->  		 */
->  		curr_nid = local_nid;
-> +		last_nid = page_nid_last(page);
->  		target_nid = numa_migrate_prep(page, vma, addr,
->  					       page_to_nid(page));
->  		if (target_nid == -1) {
-> @@ -3666,7 +3669,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		migrated = migrate_misplaced_page(page, target_nid);
->  		if (migrated)
->  			curr_nid = target_nid;
-> -		task_numa_fault(curr_nid, 1, migrated);
-> +		task_numa_fault(last_nid, curr_nid, 1, migrated);
->  
->  		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
->  	}
-> -- 
-> 1.8.1.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+--_000_4B6D9C89CD8BA349A71B74CA32C47E5850DA85DFKCHJEXMB02kpitc_
+Content-Disposition: attachment; filename="winmail.dat"
+Content-Transfer-Encoding: base64
+Content-Type: application/ms-tnef; name="winmail.dat"
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+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
+aGHCzD+AObgccmg4oJ/ZT2QRU32P752sIEwpcfuUkbvpa5rgB+AvAWABYZA/v4S7Aix1HnALMEz5
+Nzb3ZbA7AE3gOOORPUBmf2eP/2w/aa/dTNRva2jcj3gPjS//xP97H3wv769+T+5PgF+iqv9udyXB
+7ZMp0X8I9yb0n4vv/3jvf1+PP5BPug+7H7wo93U/lJ++niXBEXAboiliQS+uQiMTKOYYcG0AIWe/
+7/+YD5kfmi8HD5xP/X+eb8Kf/8OvoZ+ir8ffpM+l36bvzn//qQ+qH6sv6T/VL65f/KewD/+xH/v/
+s0+0X7Vvtn+3j/Yf//cv+D8nb7i/uc8ALwE/Akz/LW8D/wUPBh8xj8FPDx8QL//Ef/zVK38S3xPv
+yT/Tj8tf/zquP49An8+f0K/Rv9LP09//HO/V/9cPQf8rb9pP21/rH7/9z96P35/grTNu+UYtUqZg
+MS43LjFcZVmMfQZ9XLBbEAAAHwBCAAEAAAAYAAAAQQBuAGsAdQByACAAUgBhAGkAbgBhAAAAHwBl
+AAEAAAA4AAAAQQBuAGsAdQByAC4AUgBhAGkAbgBhAEAAawBwAGkAdABjAHUAbQBtAGkAbgBzAC4A
+YwBvAG0AAAAfAGQAAQAAAAoAAABTAE0AVABQAAAAAAACAUEAAQAAAHIAAAAAAAAAgSsfpL6jEBmd
+bgDdAQ9UAgAAAIBBAG4AawB1AHIAIABSAGEAaQBuAGEAAABTAE0AVABQAAAAQQBuAGsAdQByAC4A
+UgBhAGkAbgBhAEAAawBwAGkAdABjAHUAbQBtAGkAbgBzAC4AYwBvAG0AAAAAAB8AAl0BAAAAOAAA
+AEEAbgBrAHUAcgAuAFIAYQBpAG4AYQBAAGsAcABpAHQAYwB1AG0AbQBpAG4AcwAuAGMAbwBtAAAA
+HwDlXwEAAAAEAAAAIAAAAB8AGgwBAAAAGAAAAEEAbgBrAHUAcgAgAFIAYQBpAG4AYQAAAB8AHwwB
+AAAAOAAAAEEAbgBrAHUAcgAuAFIAYQBpAG4AYQBAAGsAcABpAHQAYwB1AG0AbQBpAG4AcwAuAGMA
+bwBtAAAAHwAeDAEAAAAKAAAAUwBNAFQAUAAAAAAAAgEZDAEAAAByAAAAAAAAAIErH6S+oxAZnW4A
+3QEPVAIAAACAQQBuAGsAdQByACAAUgBhAGkAbgBhAAAAUwBNAFQAUAAAAEEAbgBrAHUAcgAuAFIA
+YQBpAG4AYQBAAGsAcABpAHQAYwB1AG0AbQBpAG4AcwAuAGMAbwBtAAAAAAAfAAFdAQAAADgAAABB
+AG4AawB1AHIALgBSAGEAaQBuAGEAQABrAHAAaQB0AGMAdQBtAG0AaQBuAHMALgBjAG8AbQAAAB8A
++D8BAAAAGAAAAEEAbgBrAHUAcgAgAFIAYQBpAG4AYQAAAB8AI0ABAAAAOAAAAEEAbgBrAHUAcgAu
+AFIAYQBpAG4AYQBAAGsAcABpAHQAYwB1AG0AbQBpAG4AcwAuAGMAbwBtAAAAHwAiQAEAAAAKAAAA
+UwBNAFQAUAAAAAAAAgH5PwEAAAByAAAAAAAAAIErH6S+oxAZnW4A3QEPVAIAAACAQQBuAGsAdQBy
+ACAAUgBhAGkAbgBhAAAAUwBNAFQAUAAAAEEAbgBrAHUAcgAuAFIAYQBpAG4AYQBAAGsAcABpAHQA
+YwB1AG0AbQBpAG4AcwAuAGMAbwBtAAAAAAAfAAldAQAAADgAAABBAG4AawB1AHIALgBSAGEAaQBu
+AGEAQABrAHAAaQB0AGMAdQBtAG0AaQBuAHMALgBjAG8AbQAAAB8AMUABAAAAAgAAAAAAAAALAEA6
+AQAAAB8AMEABAAAAAgAAAAAAAAAfABoAAQAAABIAAABJAFAATQAuAE4AbwB0AGUAAAAAAAMA8T8J
+BAAACwBAOgEAAAADAP0/5AQAAAIBCzABAAAAEAAAAPPxjjoTWYZEnFTb4WyLJCQDABcAAQAAAEAA
+OQCAeazPzXPOAUAACDD9RS/QzXPOAR8AAICGAwIAAAAAAMAAAAAAAABGAQAAAB4AAABhAGMAYwBl
+AHAAdABsAGEAbgBnAHUAYQBnAGUAAAAAAAEAAAAaAAAAZQBuAC0ASQBOACwAIABlAG4ALQBVAFMA
+AAAAAB8ANwABAAAAZAAAAFsAcABhAHQAYwBoACAAdgAxACAAMQAvADEAXQByAGUAZwB1AGwAYQB0
+AG8AcgA6ACAAZgBpAHgAIABmAG8AcgAgAEQAQQA5ADAANQA1ACAAcgBlAGcAdQBsAGEAdABvAHIA
+AAAfAD0AAQAAAAIAAAAAAAAAAwA2AAAAAAACAXEAAQAAABYAAAABznPN0ASfVgY6GS1Jz6YM8MCb
+9NroAAAfAHAAAQAAAGQAAABbAHAAYQB0AGMAaAAgAHYAMQAgADEALwAxAF0AcgBlAGcAdQBsAGEA
+dABvAHIAOgAgAGYAaQB4ACAAZgBvAHIAIABEAEEAOQAwADUANQAgAHIAZQBnAHUAbABhAHQAbwBy
+AAAAHwA1EAEAAAB+AAAAPAA0AEIANgBEADkAQwA4ADkAQwBEADgAQgBBADMANAA5AEEANwAxAEIA
+NwA0AEMAQQAzADIAQwA0ADcARQA1ADgANQAwAEQAQQA4ADUARABGAEAASwBDAEgASgBFAFgATQBC
+ADAAMgAuAGsAcABpAHQALgBjAG8AbQA+AAAAAAADAN4/6f0AAEAABzCtbATQzXPOAQIBRwABAAAA
+PgAAAGM9dXM7YT0gO3A9S1BJVCBJbmZvc3lzdGVtcztsPUtDSEpFWE1CMDItMTMwNjI4MDcwNTAz
+Wi0xMjkxMjAAAAAfAPo/AQAAABgAAABBAG4AawB1AHIAIABSAGEAaQBuAGEAAAAfAACAH6TrM6h6
+LkK+e3nhqY5UswEAAAA4AAAAQwBvAG4AdgBlAHIAcwBhAHQAaQBvAG4ASQBuAGQAZQB4AFQAcgBh
+AGMAawBpAG4AZwBFAHgAAAABAAAAugAAAEkASQA9ADAAMQBDAEUANwAzAEMARABEADAAMAA0ADkA
+RgA1ADYAMAA2ADMAQQAxADkAMgBEADQAOQBDAEYAQQA2ADAAQwBGADAAQwAwADkAQgBGADQARABB
+AEUAOAA7AFYAZQByAHMAaQBvAG4APQBWAGUAcgBzAGkAbwBuACAAMQA0AC4AMwAgACgAQgB1AGkA
+bABkACAAMQAyADMALgAwACkALAAgAFMAdABhAGcAZQA9AEgANAAAAAAAAwANNP0/AAAfAACAhgMC
+AAAAAADAAAAAAAAARgEAAAAgAAAAeAAtAG0AcwAtAGgAYQBzAC0AYQB0AHQAYQBjAGgAAAABAAAA
+AgAAAAAAAAAfAACAhgMCAAAAAADAAAAAAAAARgEAAAAiAAAAeAAtAG8AcgBpAGcAaQBuAGEAdABp
+AG4AZwAtAGkAcAAAAAAAAQAAAB4AAABbADEAMAAuADEAMAAuADUAMAAuADEAMgA2AF0AAAAAAPdQ
 
+
+--_000_4B6D9C89CD8BA349A71B74CA32C47E5850DA85DFKCHJEXMB02kpitc_--
