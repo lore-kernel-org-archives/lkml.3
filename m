@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab3F1Lvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 07:51:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28006 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab3F1Lvf (ORCPT
+	id S1752933Ab3F1Lvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 07:51:46 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:63945 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3F1Lvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 07:51:35 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=CXyMsiOUoYoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=R4sMS_rjWVkA:10 a=VwQbUJbxAAAA:8 a=kKMRLMR-Ui14RdXTScEA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1372420293.18733.316.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/2 v3] tracing/uprobes: Support ftrace_event_file base
- multibuffer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 28 Jun 2013 07:51:33 -0400
-In-Reply-To: <51CD0E5D.3050605@hitachi.com>
-References: <51C90ECC.9030303@huawei.com>
-	 <20130627121231.GB8362@linux.vnet.ibm.com>
-	 <20130627162720.GA18961@redhat.com> <51CD0E5D.3050605@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Jun 2013 07:51:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130626061448.32202.192.stgit@localhost.localdomain>
+References: <20130624075245.17104.6279.stgit@localhost.localdomain> <20130626061448.32202.192.stgit@localhost.localdomain>
+From: William Dauchy <wdauchy@gmail.com>
+Date: Fri, 28 Jun 2013 13:51:23 +0200
+Message-ID: <CAJ75kXaRTfkCvT+=PdmHaRAXGKuMYW7aRRpGQJrQkfi6nDO9DQ@mail.gmail.com>
+Subject: Re: [PATCH v4] SUNRPC: fix races on PipeFS UMOUNT notifications
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>, devel@openvz.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jlayton@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-28 at 13:17 +0900, Masami Hiramatsu wrote:
+On Wed, Jun 26, 2013 at 8:15 AM, Stanislav Kinsbursky
+<skinsbursky@parallels.com> wrote:
+> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+> index b827a4b..41f180c 100644
+> --- a/net/sunrpc/clnt.c
+> +++ b/net/sunrpc/clnt.c
+> @@ -236,8 +236,6 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
+>                         continue;
+>                 if (rpc_clnt_skip_event(clnt, event))
+>                         continue;
+> -               if (atomic_inc_not_zero(&clnt->cl_count) == 0)
+> -                       continue;
+>                 spin_unlock(&sn->rpc_client_lock);
+>                 return clnt;
+>         }
+> @@ -254,7 +252,6 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
+>
+>         while ((clnt = rpc_get_client_for_event(sb->s_fs_info, event))) {
+>                 error = __rpc_pipefs_event(clnt, event, sb);
+> -               rpc_release_client(clnt);
+>                 if (error)
+>                         break;
+>         }
+> @@ -641,8 +638,8 @@ rpc_free_client(struct rpc_clnt *clnt)
+>                         rcu_dereference(clnt->cl_xprt)->servername);
+>         if (clnt->cl_parent != clnt)
+>                 rpc_release_client(clnt->cl_parent);
+> -       rpc_unregister_client(clnt);
+>         rpc_clnt_remove_pipedir(clnt);
+> +       rpc_unregister_client(clnt);
+>         rpc_free_iostats(clnt->cl_metrics);
+>         kfree(clnt->cl_principal);
+>         clnt->cl_metrics = NULL;
+> diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+> index c512448..9b4ec5b 100644
+> --- a/net/sunrpc/rpc_pipe.c
+> +++ b/net/sunrpc/rpc_pipe.c
+> @@ -1165,12 +1165,12 @@ static void rpc_kill_sb(struct super_block *sb)
+>                 goto out;
+>         }
+>         sn->pipefs_sb = NULL;
+> -       mutex_unlock(&sn->pipefs_sb_lock);
+>         dprintk("RPC:       sending pipefs UMOUNT notification for net %p%s\n",
+>                 net, NET_NAME(net));
+>         blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+>                                            RPC_PIPEFS_UMOUNT,
+>                                            sb);
+> +       mutex_unlock(&sn->pipefs_sb_lock);
+>         put_net(net);
+>  out:
+>         kill_litter_super(sb);
 
-> BTW, Steven, could you control the traffic of recent tracing works? :)
-> There are several works on the ftrace we made, but each of them
-> sometimes conflicting. We'd better make a merge plan or a working
-> branch on your tracing tree which allows us to work together on it.
+are these patches validated?
+any chance to see them in tree soon? I wasn't able to find them on
+http://git.linux-nfs.org/?p=trondmy/linux-nfs.git
 
-After I pull in patches end test it, I push it up to my for-next branch.
-
-git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-
--- Steve
-
-
+Thanks,
+--
+William
