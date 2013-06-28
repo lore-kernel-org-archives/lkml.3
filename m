@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3F1KGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:06:17 -0400
-Received: from gmmr7.centrum.cz ([46.255.225.249]:47627 "EHLO gmmr7.centrum.cz"
+	id S1755430Ab3F1KIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:08:04 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34470 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab3F1KGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:06:16 -0400
-To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=5D_memcg=3A_do_not_trap_chargers_with_full_callstack_on_OOM?=
-Date: Fri, 28 Jun 2013 12:06:13 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>
-References: <20130210150310.GA9504@dhcp22.suse.cz>, <20130210174619.24F20488@pobox.sk>, <20130211112240.GC19922@dhcp22.suse.cz>, <20130222092332.4001E4B6@pobox.sk>, <20130606160446.GE24115@dhcp22.suse.cz>, <20130606181633.BCC3E02E@pobox.sk>, <20130607131157.GF8117@dhcp22.suse.cz>, <20130617122134.2E072BA8@pobox.sk>, <20130619132614.GC16457@dhcp22.suse.cz>, <20130622220958.D10567A4@pobox.sk> <20130624201345.GA21822@cmpxchg.org>
-In-Reply-To: <20130624201345.GA21822@cmpxchg.org>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1755223Ab3F1KIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 06:08:02 -0400
+Date: Fri, 28 Jun 2013 15:37:23 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
+Message-ID: <20130628100723.GC8362@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Message-Id: <20130628120613.6D6CAD21@pobox.sk>
-X-Maser: Georgo
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20130628090447.GD28407@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+x-cbid: 13062810-0320-0000-0000-00000015EE1A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->It's not a kernel thread that does it because all kernel-context
->handle_mm_fault() are annotated properly, which means the task must be
->userspace and, since tasks is empty, have exited before synchronizing.
->
->Can you try with the following patch on top?
+> > > +
+> > > +
+> > >  /*
+> > >   * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
+> > >   */
+> > > @@ -3945,10 +3977,14 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+> > >  
+> > >  	/*
+> > >  	 * Aggressive migration if:
+> > > -	 * 1) task is cache cold, or
+> > > -	 * 2) too many balance attempts have failed.
+> > > +	 * 1) destination numa is preferred
+> > > +	 * 2) task is cache cold, or
+> > > +	 * 3) too many balance attempts have failed.
+> > >  	 */
+> > >  
+> > > +	if (migrate_improves_locality(p, env))
+> > > +		return 1;
+> > 
+> > Shouldnt this be under tsk_cache_hot check?
+> > 
+> > If the task is cache hot, then we would have to update the corresponding  schedstat
+> > metrics.
+> 
+> No; you want migrate_degrades_locality() to be like task_hot(). You want
+> to _always_ migrate tasks towards better locality irrespective of local
+> cache hotness.
+> 
 
+Yes, I understand that numa should have more priority over cache.
+But the schedstats will not be updated about whether the task was hot or
+cold.
 
-Michal and Johannes,
+So lets say the task was cache hot but numa wants it to move, then we
+should certainly move it but we should update the schedstats to mention that we
+moved a cache hot task.
 
-i have some observations which i made:
-Original patch from Johannes was really fixing something but definitely not everything and was introducing new problems. I'm running unpatched kernel from time i send my last message and problems with freezing cgroups are occuring very often (several times per day) - they were, on the other hand, quite rare with patch from Johannes.
+Something akin to this.
 
-Johannes, i didn't try your last patch yet. I would like to wait until you or Michal look at my last message which contained detailed information about freezing of cgroups on kernel running your original patch (which was suppose to fix it for good). Even more, i would like to hear your opinion about that stucked processes which was holding web server port and which forced me to reboot production server at the middle of the day :( more information was in my last message. Thank you very much for your time.
+	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
+	if (tsk_cache_hot) {
+		if (migrate_improves_locality(p, env) || 
+		 	(env->sd->nr_balance_failed > env->sd->cache_nice_tries)) {
+#ifdef CONFIG_SCHEDSTATS
+			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
+			schedstat_inc(p, se.statistics.nr_forced_migrations);
+#endif
+			return 1;
+		}
+		schedstat_inc(p, se.statistics.nr_failed_migrations_hot);
+		return 0;
+	}
+	return 1;
 
-azur
+-- 
+Thanks and Regards
+Srikar Dronamraju
+
