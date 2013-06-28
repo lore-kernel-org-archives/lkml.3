@@ -1,142 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab3F1TVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:21:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42130 "EHLO
+	id S1753234Ab3F1TUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:20:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41559 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab3F1TVb (ORCPT
+	with ESMTP id S1751886Ab3F1Sw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:21:31 -0400
-Date: Fri, 28 Jun 2013 14:21:17 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Tim Hockin <thockin@hockin.org>
-Cc: Mike Galbraith <bitbucket@online.de>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        jpoimboe <jpoimboe@redhat.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Cgroups <cgroups@vger.kernel.org>, vrigo <vrigo@google.com>,
-        vmarmol@google.com
-Subject: Re: cgroup access daemon
-Message-ID: <20130628192117.GA4553@sergelap>
-References: <CAAAKZwuKxxYoVRn6Ye72Vs7vSd_T4cbvEwiU6Q3j4D-Z+VAPrw@mail.gmail.com>
- <20130627181108.GA26334@sergelap>
- <CAAAKZwvXYBznJ5uiWaEV7fNCHbciwLa6U+E5RUJkz1ioMu=cRg@mail.gmail.com>
- <20130628163154.GA4989@sergelap>
- <CAAAKZwv1CQbCOweUOcvFXtwDsMHB6Pay-fUqz-CNrcOAda8ghA@mail.gmail.com>
+	Fri, 28 Jun 2013 14:52:28 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 012/105] net: qmi_wwan: fixup destination address (firmware bug workaround)
+Date: Fri, 28 Jun 2013 11:50:34 -0700
+Message-Id: <1372445527-24414-13-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAAKZwv1CQbCOweUOcvFXtwDsMHB6Pay-fUqz-CNrcOAda8ghA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tim Hockin (thockin@hockin.org):
-> On Fri, Jun 28, 2013 at 9:31 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> > Quoting Tim Hockin (thockin@hockin.org):
-> >> On Thu, Jun 27, 2013 at 11:11 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> >> > Quoting Tim Hockin (thockin@hockin.org):
-> > Could you give examples?
-> >
-> > If you have a white/academic paper I should go read, that'd be great.
-> 
-> We don't have anything on this, but examples may help.
-> 
-> Someone running as root should be able to connect to the "native"
-> daemon and read or write any cgroup file they want, right?  You could
-> argue that root should be able to do this to a child-daemon, too, but
-> let's ignore that.
-> 
-> But inside a container, I don't want the users to be able to write to
-> anything in their own container.  I do want them to be able to make
-> sub-cgroups, but only 5 levels deep.  For sub-cgroups, they should be
-> able to write to memory.limit_in_bytes, to read but not write
-> memory.soft_limit_in_bytes, and not be able to read memory.stat.
-> 
-> To get even fancier, a user should be able to create a sub-cgroup and
-> then designate that sub-cgroup as "final" - no further sub-sub-cgroups
-> allowed under it.  They should also be able to designate that a
-> sub-cgroup is "one-way" - once a process enters it, it can not leave.
-> 
-> These are real(ish) examples based on what people want to do today.
-> In particular, the last couple are things that we want to do, but
-> don't do today.
-> 
-> The particular policy can differ per-container.  Production jobs might
-> be allowed to create sub-cgroups, but batch jobs are not.  Some user
-> jobs are designated "trusted" in one facet or another and get more
-> (but still not full) access.
+3.8.13.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Interesting, thanks.
+------------------
 
-I'll think a bit on how to best address these.
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-> > At the moment I'm going on the naive belief that proper hierarchy
-> > controls will be enforced (eventually) by the kernel - i.e. if
-> > a task in cgroup /lxc/c1 is not allowed to mknod /dev/sda1, then it
-> > won't be possible for /lxc/c1/lxc/c2 to take that access.
-> >
-> > The native cgroup manager (the one using cgroupfs) will be checking
-> > the credentials of the requesting child manager for access(2) to
-> > the cgroup files.
-> 
-> This might be sufficient, or the basis for a sufficient access control
-> system for users.  The problem comes that we have multiple jobs on a
-> single machine running as the same user.  We need to ensure that the
-> jobs can not modify each other.
+commit 6483bdc9d76fb98174797516a19d289eb837909e upstream.
 
-Would running them each in user namespaces with different mappings (all
-jobs running as uid 1000, but uid 1000  mapped to different host uids
-for each job) would be (long-term) feasible?
+Received packets are sometimes addressed to 00:a0:c6:00:00:00
+instead of the address the device firmware should have learned
+from the host:
 
-> > It is a named socket.
-> 
-> So anyone can connect?  even with SO_PEERCRED, how do you know which
-> branches of the cgroup tree I am allowed to modify if the same user
-> owns more than one?
+321.224126 77.16.85.204 -> 148.122.171.134 ICMP 98 Echo (ping) request  id=0x4025, seq=64/16384, ttl=64
 
-I was assuming that any process requesting management of
-/c1/c2/c3 would have to be in one of its ancestor cgroups (i.e. /c1)
+0000  82 c0 82 c9 f1 67 82 c0 82 c9 f1 67 08 00 45 00   .....g.....g..E.
+0010  00 54 00 00 40 00 40 01 57 cc 4d 10 55 cc 94 7a   .T..@.@.W.M.U..z
+0020  ab 86 08 00 62 fc 40 25 00 40 b2 bc 6e 51 00 00   ....b.@%.@..nQ..
+0030  00 00 6b bd 09 00 00 00 00 00 10 11 12 13 14 15   ..k.............
+0040  16 17 18 19 1a 1b 1c 1d 1e 1f 20 21 22 23 24 25   .......... !"#$%
+0050  26 27 28 29 2a 2b 2c 2d 2e 2f 30 31 32 33 34 35   &'()*+,-./012345
+0060  36 37                                             67
 
-So if you have two jobs running as uid 1000, one under /c1 and one
-under /c2, and one as uid 1001 running under /c3 (with the uids owning
-the cgroups), then the file permissions will prevent 1000 and 1001
-from walk over each other, while the cgroup manager will not allow
-a process (child manager or otherwise) under /c1 to manage cgroups
-under /c2 and vice versa.
+321.240607 148.122.171.134 -> 77.16.85.204 ICMP 98 Echo (ping) reply    id=0x4025, seq=64/16384, ttl=55
 
-> >> Do you have a design spec, or a requirements list, or even a prototype
-> >> that we can look at?
-> >
-> > The readme at https://github.com/hallyn/cgroup-mgr/blob/master/README
-> > shows what I have in mind.  It (and the sloppy code next to it)
-> > represent a few hours' work over the last few days while waiting
-> > for compiles and in between emails...
-> 
-> Awesome.  Do you mind if we look?
+0000  00 a0 c6 00 00 00 02 50 f3 00 00 00 08 00 45 00   .......P......E.
+0010  00 54 00 56 00 00 37 01 a0 76 94 7a ab 86 4d 10   .T.V..7..v.z..M.
+0020  55 cc 00 00 6a fc 40 25 00 40 b2 bc 6e 51 00 00   U...j.@%.@..nQ..
+0030  00 00 6b bd 09 00 00 00 00 00 10 11 12 13 14 15   ..k.............
+0040  16 17 18 19 1a 1b 1c 1d 1e 1f 20 21 22 23 24 25   .......... !"#$%
+0050  26 27 28 29 2a 2b 2c 2d 2e 2f 30 31 32 33 34 35   &'()*+,-./012345
+0060  36 37                                             67
 
-No, but it might not be worth it (other than the readme) :) - so far
-it's only served to help me think through what I want and need from
-the mgr.
+The bogus address is always the same, and matches the address
+suggested by many devices as a default address.  It is likely a
+hardcoded firmware default.
 
-> > But again, it is completely predicated on my goal to have libvirt
-> > and lxc (and other cgroup users) be able to use the same library
-> > or API to make their requests whether they are on host or in a
-> > container, and regardless of the distro they're running under.
-> 
-> I think that is a good goal.  We'd like to not be different, if
-> possible.  Obviously, we can't impose our needs on you if you don't
-> want to handle them.  It sounds like what you are building is the
-> bottom layer in a stack - we (Google) should use that same bottom
-> layer.  But that can only happen iff you're open to hearing our
-> requirements.  Otherwise we have to strike out on our own or build
-> more layers in-between.
+The circumstances where this bug has been observed indicates that
+the trigger is related to timing or some other factor the host
+cannot control. Repeating the exact same configuration sequence
+that caused it to trigger once, will not necessarily cause it to
+trigger the next time. Reproducing the bug is therefore difficult.
+This opens up a possibility that the bug is more common than we can
+confirm, because affected devices often will work properly again
+after a reset.  A procedure most users are likely to try out before
+reporting a bug.
 
-I'm definately open to your requirements - whether providing what
-you need for another layer on top, or building it right in.
+Unconditionally rewriting the destination address if the first digit
+of the received packet is 0, is considered an acceptable compromise
+since we already have to inspect this digit.  The simplification will
+cause unnecessary rewrites if the real address starts with 0, but this
+is still better than adding additional tests for this particular case.
 
--serge
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/usb/qmi_wwan.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 5025ca6..31b9d45 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -68,6 +68,10 @@ struct qmi_wwan_state {
+  * This means that this function will reliably add the appropriate
+  * header iff necessary, provided our hardware address does not start
+  * with 4 or 6.
++ *
++ * Another common firmware bug results in all packets being addressed
++ * to 00:a0:c6:00:00:00 despite the host address being different.
++ * This function will also fixup such packets.
+  */
+ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
+@@ -84,6 +88,12 @@ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	case 0x60:
+ 		proto = htons(ETH_P_IPV6);
+ 		break;
++	case 0x00:
++		if (is_multicast_ether_addr(skb->data))
++			return 1;
++		/* possibly bogus destination - rewrite just in case */
++		skb_reset_mac_header(skb);
++		goto fix_dest;
+ 	default:
+ 		/* pass along other packets without modifications */
+ 		return 1;
+@@ -94,6 +104,7 @@ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	skb_reset_mac_header(skb);
+ 	eth_hdr(skb)->h_proto = proto;
+ 	memset(eth_hdr(skb)->h_source, 0, ETH_ALEN);
++fix_dest:
+ 	memcpy(eth_hdr(skb)->h_dest, dev->net->dev_addr, ETH_ALEN);
+ 	return 1;
+ }
+-- 
+1.8.1.2
+
