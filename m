@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3F1TA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:00:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42000 "EHLO
+	id S1753884Ab3F1TBb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:01:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41987 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab3F1S6k (ORCPT
+	with ESMTP id S1754077Ab3F1S6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:58:40 -0400
+	Fri, 28 Jun 2013 14:58:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 053/105] ALSA: usb-audio: work around Android accessory firmware bug
-Date: Fri, 28 Jun 2013 11:51:15 -0700
-Message-Id: <1372445527-24414-54-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 054/105] ALSA: usb-audio: Fix invalid volume resolution for Logitech HD Webcam c310
+Date: Fri, 28 Jun 2013 11:51:16 -0700
+Message-Id: <1372445527-24414-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -27,69 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 342cda29343a6272c630f94ed56810a76740251b upstream.
+commit 36691e1be6ec551eef4a5225f126a281f8c051c2 upstream.
 
-When the Android firmware enables the audio interfaces in accessory
-mode, it always declares in the control interface's baInterfaceNr array
-that interfaces 0 and 1 belong to the audio function.  However, the
-accessory interface itself, if also enabled, already is at index 0 and
-shifts the actual audio interface numbers to 1 and 2, which prevents the
-PCM streaming interface from being seen by the host driver.
+Just like the previous fix for LogitechHD Webcam c270 in commit
+11e7064f35bb87da8f427d1aa4bbd8b7473a3993, c310 model also requires the
+same workaround for avoiding the kernel warning.
 
-To get the PCM interface interface to work, detect when the descriptors
-point to the (for this driver useless) accessory interface, and redirect
-to the correct one.
-
-Reported-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
-Tested-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=59741
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/card.c | 22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+ sound/usb/mixer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/usb/card.c b/sound/usb/card.c
-index a9d5779..3e4565f 100644
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -144,14 +144,32 @@ static int snd_usb_create_stream(struct snd_usb_audio *chip, int ctrlif, int int
- 		return -EINVAL;
- 	}
+diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
+index 0a1e869..ce4b935 100644
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -884,6 +884,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
  
-+	alts = &iface->altsetting[0];
-+	altsd = get_iface_desc(alts);
-+
-+	/*
-+	 * Android with both accessory and audio interfaces enabled gets the
-+	 * interface numbers wrong.
-+	 */
-+	if ((chip->usb_id == USB_ID(0x18d1, 0x2d04) ||
-+	     chip->usb_id == USB_ID(0x18d1, 0x2d05)) &&
-+	    interface == 0 &&
-+	    altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC &&
-+	    altsd->bInterfaceSubClass == USB_SUBCLASS_VENDOR_SPEC) {
-+		interface = 2;
-+		iface = usb_ifnum_to_if(dev, interface);
-+		if (!iface)
-+			return -EINVAL;
-+		alts = &iface->altsetting[0];
-+		altsd = get_iface_desc(alts);
-+	}
-+
- 	if (usb_interface_claimed(iface)) {
- 		snd_printdd(KERN_INFO "%d:%d:%d: skipping, already claimed\n",
- 						dev->devnum, ctrlif, interface);
- 		return -EINVAL;
- 	}
- 
--	alts = &iface->altsetting[0];
--	altsd = get_iface_desc(alts);
- 	if ((altsd->bInterfaceClass == USB_CLASS_AUDIO ||
- 	     altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC) &&
- 	    altsd->bInterfaceSubClass == USB_SUBCLASS_MIDISTREAMING) {
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
++	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
+ 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+ 	case USB_ID(0x046d, 0x0991):
 -- 
 1.8.1.2
 
