@@ -1,120 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab3F1LT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 07:19:56 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:34476 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab3F1LTz (ORCPT
+	id S1755654Ab3F1LUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 07:20:07 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:60787 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755613Ab3F1LUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 07:19:55 -0400
-Date: Fri, 28 Jun 2013 13:19:48 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Wedson Almeida Filho <wedsonaf@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
-Message-ID: <20130628111948.GA31065@gmail.com>
-References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
+	Fri, 28 Jun 2013 07:20:01 -0400
+X-IronPort-AV: E=Sophos;i="4.87,958,1363132800"; 
+   d="scan'208";a="32429434"
+Date: Fri, 28 Jun 2013 12:19:54 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>, <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v7 0/6] xen/arm/arm64: CONFIG_PARAVIRT and stolen ticks
+ accounting
+Message-ID: <alpine.DEB.2.02.1306271614260.4782@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
+this patch series introduces stolen ticks accounting for Xen on ARM and
+ARM64.
+Stolen ticks are clocksource ticks that have been "stolen" from the cpu,
+typically because Linux is running in a virtual machine and the vcpu has
+been descheduled.
+To account for these ticks we introduce CONFIG_PARAVIRT and pv_time_ops
+so that we can make use of:
 
-* Wedson Almeida Filho <wedsonaf@gmail.com> wrote:
+kernel/sched/cputime.c:steal_account_process_tick
 
-> The new implementation allows the compiler to better optimize the code; the
-> original implementation is still used when the kernel is compiled with older
-> versions of gcc that don't support asm-goto.
-> 
-> Compiling with gcc 4.7.3, the original mutex_lock() is 60 bytes with the fast
-> path taking 16 instructions; the new mutex_lock() is 42 bytes, with the fast
-> path taking 12 instructions.
-> 
-> The original mutex_unlock() is 24 bytes with the fast path taking 7
-> instructions; the new mutex_unlock() is 25 bytes (because the compiler used
-> a 2-byte ret) with the fast path taking 4 instructions.
-> 
-> The two versions of the functions are included below for reference.
-> 
-> Old:
-> ffffffff817742a0 <mutex_lock>:
-> ffffffff817742a0:       55                      push   %rbp
-> ffffffff817742a1:       48 89 e5                mov    %rsp,%rbp
-> ffffffff817742a4:       48 83 ec 10             sub    $0x10,%rsp
-> ffffffff817742a8:       48 89 5d f0             mov    %rbx,-0x10(%rbp)
-> ffffffff817742ac:       48 89 fb                mov    %rdi,%rbx
-> ffffffff817742af:       4c 89 65 f8             mov    %r12,-0x8(%rbp)
-> ffffffff817742b3:       e8 28 15 00 00          callq  ffffffff817757e0 <_cond_resched>
-> ffffffff817742b8:       48 89 df                mov    %rbx,%rdi
-> ffffffff817742bb:       f0 ff 0f                lock decl (%rdi)
-> ffffffff817742be:       79 05                   jns    ffffffff817742c5 <mutex_lock+0x25>
-> ffffffff817742c0:       e8 cb 04 00 00          callq  ffffffff81774790 <__mutex_lock_slowpath>
-> ffffffff817742c5:       65 48 8b 04 25 c0 b7    mov    %gs:0xb7c0,%rax
-> ffffffff817742cc:       00 00
-> ffffffff817742ce:       4c 8b 65 f8             mov    -0x8(%rbp),%r12
-> ffffffff817742d2:       48 89 43 18             mov    %rax,0x18(%rbx)
-> ffffffff817742d6:       48 8b 5d f0             mov    -0x10(%rbp),%rbx
-> ffffffff817742da:       c9                      leaveq
-> ffffffff817742db:       c3                      retq
-> 
-> ffffffff81774250 <mutex_unlock>:
-> ffffffff81774250:       55                      push   %rbp
-> ffffffff81774251:       48 c7 47 18 00 00 00    movq   $0x0,0x18(%rdi)
-> ffffffff81774258:       00
-> ffffffff81774259:       48 89 e5                mov    %rsp,%rbp
-> ffffffff8177425c:       f0 ff 07                lock incl (%rdi)
-> ffffffff8177425f:       7f 05                   jg     ffffffff81774266 <mutex_unlock+0x16>
-> ffffffff81774261:       e8 ea 04 00 00          callq  ffffffff81774750 <__mutex_unlock_slowpath>
-> ffffffff81774266:       5d                      pop    %rbp
-> ffffffff81774267:       c3                      retq
-> 
-> New:
-> ffffffff81774920 <mutex_lock>:
-> ffffffff81774920:       55                      push   %rbp
-> ffffffff81774921:       48 89 e5                mov    %rsp,%rbp
-> ffffffff81774924:       53                      push   %rbx
-> ffffffff81774925:       48 89 fb                mov    %rdi,%rbx
-> ffffffff81774928:       e8 a3 0e 00 00          callq  ffffffff817757d0 <_cond_resched>
-> ffffffff8177492d:       f0 ff 0b                lock decl (%rbx)
-> ffffffff81774930:       79 08                   jns    ffffffff8177493a <mutex_lock+0x1a>
-> ffffffff81774932:       48 89 df                mov    %rbx,%rdi
-> ffffffff81774935:       e8 16 fe ff ff          callq  ffffffff81774750 <__mutex_lock_slowpath>
-> ffffffff8177493a:       65 48 8b 04 25 c0 b7    mov    %gs:0xb7c0,%rax
-> ffffffff81774941:       00 00
-> ffffffff81774943:       48 89 43 18             mov    %rax,0x18(%rbx)
-> ffffffff81774947:       5b                      pop    %rbx
-> ffffffff81774948:       5d                      pop    %rbp
-> ffffffff81774949:       c3                      retq
-> 
-> ffffffff81774730 <mutex_unlock>:
-> ffffffff81774730:       48 c7 47 18 00 00 00    movq   $0x0,0x18(%rdi)
-> ffffffff81774737:       00
-> ffffffff81774738:       f0 ff 07                lock incl (%rdi)
-> ffffffff8177473b:       7f 0a                   jg     ffffffff81774747 <mutex_unlock+0x17>
-> ffffffff8177473d:       55                      push   %rbp
-> ffffffff8177473e:       48 89 e5                mov    %rsp,%rbp
-> ffffffff81774741:       e8 aa ff ff ff          callq  ffffffff817746f0 <__mutex_unlock_slowpath>
-> ffffffff81774746:       5d                      pop    %rbp
-> ffffffff81774747:       f3 c3                   repz retq
 
-Very nice!
+Stefano Stabellini (6):
+      xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
+      kernel: missing include in cputime.c
+      arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+      arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+      core: remove ifdef CONFIG_PARAVIRT
+      xen/arm: account for stolen ticks
 
-One detail:
+ arch/arm/Kconfig                  |   20 ++++++++
+ arch/arm/include/asm/paravirt.h   |   20 ++++++++
+ arch/arm/kernel/Makefile          |    1 +
+ arch/arm/kernel/paravirt.c        |   25 ++++++++++
+ arch/arm/xen/enlighten.c          |   21 +++++++++
+ arch/arm64/Kconfig                |   20 ++++++++
+ arch/arm64/include/asm/paravirt.h |   20 ++++++++
+ arch/arm64/kernel/Makefile        |    1 +
+ arch/arm64/kernel/paravirt.c      |   25 ++++++++++
+ arch/ia64/xen/time.c              |   48 +++-----------------
+ arch/x86/xen/time.c               |   76 +------------------------------
+ drivers/xen/Makefile              |    2 +-
+ drivers/xen/time.c                |   91 +++++++++++++++++++++++++++++++++++++
+ include/xen/xen-ops.h             |    5 ++
+ kernel/sched/core.c               |    2 -
+ kernel/sched/cputime.c            |    1 +
+ 16 files changed, 258 insertions(+), 120 deletions(-)
+ create mode 100644 arch/arm/include/asm/paravirt.h
+ create mode 100644 arch/arm/kernel/paravirt.c
+ create mode 100644 arch/arm64/include/asm/paravirt.h
+ create mode 100644 arch/arm64/kernel/paravirt.c
+ create mode 100644 drivers/xen/time.c
 
-> +#if defined(CC_HAVE_ASM_GOTO)
-> +#if defined(CC_HAVE_ASM_GOTO)
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git lost_ticks_7
 
-Please change these to #ifdef.
 
-Thanks,
+Cheers,
 
-	Ingo
+Stefano
