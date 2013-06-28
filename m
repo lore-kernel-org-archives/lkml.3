@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3F1Pt5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:49:57 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:15930 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3F1Pt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:49:56 -0400
-X-IronPort-AV: E=Sophos;i="4.87,958,1363132800"; 
-   d="scan'208";a="32487977"
-Message-ID: <51CDB0A1.6080409@citrix.com>
-Date: Fri, 28 Jun 2013 16:49:53 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S1755398Ab3F1PwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:52:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55801 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752817Ab3F1PwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 11:52:07 -0400
+Message-ID: <51CDB06B.9010604@ti.com>
+Date: Fri, 28 Jun 2013 21:18:59 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <xen-devel@lists.xen.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH 5/5] x86/xen: sync the CMOS RTC as well as the Xen wallclock
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <1372329348-20841-6-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306281727240.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306281727240.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Fernandes, Joel" <joelf@ti.com>
+CC: <benoit.cousson@gmail.com>, "lars@metafoo.de" <lars@metafoo.de>,
+        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>, Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD data
+References: <1372209808-6532-1-git-send-email-joelagnel@ti.com> <CAD=GYpbdVVrh-tiqOcbHi3mkWRJUBdx0EsEZEFVVbgFgcCWgsw@mail.gmail.com> <51CC2A1E.2040003@ti.com> <CAD=GYpa9LQ1fV6=O9B65sJURVAigsgXCPLWav8cHXTuGQXPc9A@mail.gmail.com> <51CC67CA.2070805@ti.com> <083BC63EECB6FD41B8E81CF7FD87CC0F2E4F0F95@DLEE08.ent.ti.com>
+In-Reply-To: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4F0F95@DLEE08.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/13 16:38, Thomas Gleixner wrote:
-> On Thu, 27 Jun 2013, David Vrabel wrote:
-> 
->> From: David Vrabel <david.vrabel@citrix.com>
+On Thursday 27 June 2013 11:38 PM, Fernandes, Joel wrote:
+> Hi Balaji,
+>
+
+<snip>
+
+>>> Some patches were squashed and others dropped in the series resulting
+>>> in the single patch above. This patch should be good to apply
+>> Hi Joel,
 >>
->> Adjustments to Xen's persistent clock via update_persistent_clock()
->> don't actually persist, as the Xen wallclock is a software only clock
->> and modifications to it do not modify the underlying CMOS RTC.
+>> Before pushing mmc dts support for am335x, Can you please let me
+>> know if below 2 patches [1] are merged/accepted,
+>> IIRC these patches are needed for MMC to work properly.
 >>
->> The x86_platform.set_wallclock hook can be used to keep the hardware
->> RTC synchronized (as on bare metal).  Because the Xen wallclock is now
->> kept synchronized by pvclock_gtod notifier, xen_set_wallclock() need
->> not do this and dom0 can simply use the native implementation.
-> 
-> I can understand that part, but ...
->  
->>  static int xen_pvclock_gtod_notify(struct notifier_block *nb, unsigned long was_set,
->>  				   void *priv)
->>  {
->> +	static struct timespec next;
->>  	struct timespec now;
->>  	struct xen_platform_op op;
->>  
->> -	if (!was_set)
->> -		return NOTIFY_OK;
->> -
->>  	now = __current_kernel_time();
->>  
->> +	if (!was_set && timespec_compare(&now, &next) < 0)
->> +		return NOTIFY_OK;
->> +
->>  	op.cmd = XENPF_settime;
->>  	op.u.settime.secs = now.tv_sec;
->>  	op.u.settime.nsecs = now.tv_nsec;
->>  	op.u.settime.system_time = xen_clocksource_read();
->>  
->>  	(void)HYPERVISOR_dom0_op(&op);
->> +
->> +	/*
->> +	 * Don't update the wallclock for another 11 minutes. This is
->> +	 * the same period as the sync_cmos_clock() work.
->> +	 */
->> +	next = now;
->> +	next.tv_sec += 11*60;
->> +
-> 
-> How is this related to the changelog? /me is confused .....
+>> I suggest to hold the dts patch until slave_sg_limit gets merged
+>> otherwise it will cause regression in am335x mmc.
+>>
+>> [PATCH v4 1/3] dmaengine: add dma_get_slave_sg_limits()
+>> [PATCH v4 2/3] dma: edma: add device_slave_sg_limits() support
+>
+> Actually this is an independent regression and is currently worked on by Lars-Peter Clausen [1].
+>
+> Currently not having the MMC DTS merged is also a regression,
 
-Before:
+No, Right now mmc support is not added to am335x, so it is not really a regression
 
-Xen wallclock set when time is stepped.
-Xen wallclock set every 11 minutes (by sync_cmos_clock()).
-Hardware RTC never set.
+ > so I suggest lets take it one
+> step at a time and get the DTS merged in first. Also there will be overhead of reposting this
+> DTS patch later again which will not change. What do you say?
+>
 
-After:
+If it gets enabled via dts, without slave sg limit support,
+file read/write will fail, possibly corrupting file system.
 
-Xen wallclock set when time is stepped.
-Xen wallclock set every 11 minutes (in pvclock gtod notifier).
-Hardware RTC set every 11 minutes (by sync_cmos_clock()).
+> Thanks,
+>
+> -Joel
+>
+> [1] https://patchwork.kernel.org/patch/2228041/
+>
 
-I'll update the changelog to be more descriptive:
-
-  Adjustments to Xen's persistent clock via update_persistent_clock()
-  don't actually persist, as the Xen wallclock is a software only clock
-  and modifications to it do not modify the underlying CMOS RTC.
-
-  The x86_platform.set_wallclock hook can be used to keep the hardware
-  RTC synchronized (as on bare metal).  If (in dom0) we make the Xen
-  wallclock periodically synchronized by the pvclock_gtod notifier, the
-  set_wallclock hook need not update the Xen wallclock and the native
-  implementation can be used.
-
-Is that better?
-
-David
