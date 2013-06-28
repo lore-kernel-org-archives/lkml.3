@@ -1,192 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab3F1Bi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 21:38:57 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:43220 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878Ab3F1Biz (ORCPT
+	id S1754150Ab3F1Bks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 21:40:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33702 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753249Ab3F1Bkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 21:38:55 -0400
-Message-ID: <51CCE927.4090606@ozlabs.ru>
-Date: Fri, 28 Jun 2013 11:38:47 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] vfio: add external user support
-References: <20130627164752.657c165ec4492e5248945a51@canb.auug.org.au>   <1372317260-6438-1-git-send-email-aik@ozlabs.ru>  <1372347850.30572.659.camel@ul30vt.home> <51CCC353.7030905@ozlabs.ru> <1372380089.30572.689.camel@ul30vt.home>
-In-Reply-To: <1372380089.30572.689.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jun 2013 21:40:46 -0400
+Message-ID: <1372383630.23847.40.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH] genirq: Fix can_request_irq() for IRQs without an action
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Bjarni Ingi Gislason <bjarniig@rhi.hi.is>, stable@vger.kernel.org,
+        709647@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 28 Jun 2013 02:40:30 +0100
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-qvlGvbDGAoEQXbgJkDyQ"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 10:41 AM, Alex Williamson wrote:
-> On Fri, 2013-06-28 at 08:57 +1000, Alexey Kardashevskiy wrote:
->> On 06/28/2013 01:44 AM, Alex Williamson wrote:
->>> On Thu, 2013-06-27 at 17:14 +1000, Alexey Kardashevskiy wrote:
->>>> VFIO is designed to be used via ioctls on file descriptors
->>>> returned by VFIO.
->>>>
->>>> However in some situations support for an external user is required.
->>>> The first user is KVM on PPC64 (SPAPR TCE protocol) which is going to
->>>> use the existing VFIO groups for exclusive access in real/virtual mode
->>>> in the host kernel to avoid passing map/unmap requests to the user
->>>> space which would made things pretty slow.
->>>>
->>>> The proposed protocol includes:
->>>>
->>>> 1. do normal VFIO init stuff such as opening a new container, attaching
->>>> group(s) to it, setting an IOMMU driver for a container. When IOMMU is
->>>> set for a container, all groups in it are considered ready to use by
->>>> an external user.
->>>>
->>>> 2. pass a fd of the group we want to accelerate to KVM. KVM calls
->>>> vfio_group_iommu_id_from_file() to verify if the group is initialized
->>>> and IOMMU is set for it. The current TCE IOMMU driver marks the whole
->>>> IOMMU table as busy when IOMMU is set for a container what this prevents
->>>> other DMA users from allocating from it so it is safe to pass the group
->>>> to the user space.
->>>>
->>>> 3. KVM increases the container users counter via
->>>> vfio_group_add_external_user(). This prevents the VFIO group from
->>>> being disposed prior to exiting KVM.
->>>>
->>>> 4. When KVM is finished and doing cleanup, it releases the group file
->>>> and decrements the container users counter. Everything gets released.
->>>>
->>>> 5. KVM also keeps the group file as otherwise its fd might have been
->>>> closed at the moment of KVM finish so vfio_group_del_external_user()
->>>> call will not be possible.
->>>
->>> This is the wrong order in my mind.  An external user has no business
->>> checking or maintaining any state of a group until it calls
->>> add_external_user().  Only after that call is successful can the user
->>> assume the filep to group relationship is static and get the iommu_id.
->>> Any use of the "external user" API should start with "add" and end with
->>> "del".
->>
->> Yes, this is what I actually do, just wrong commit message, will fix.
->>
->>>
->>>> The "vfio: Limit group opens" patch is also required for the consistency.
->>>>
->>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>> ---
->>>>
->>>> v1->v2: added definitions to vfio.h :)
->>>> Should not compile but compiled. Hm.
->>>>
->>>> ---
->>>>  drivers/vfio/vfio.c  |   54 ++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>  include/linux/vfio.h |    7 +++++++
->>>>  2 files changed, 61 insertions(+)
->>>>
->>>> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
->>>> index c488da5..40875d2 100644
->>>> --- a/drivers/vfio/vfio.c
->>>> +++ b/drivers/vfio/vfio.c
->>>> @@ -1370,6 +1370,60 @@ static const struct file_operations vfio_device_fops = {
->>>>  };
->>>>  
->>>>  /**
->>>> + * External user API, exported by symbols to be linked dynamically.
->>>> + */
->>>> +
->>>> +/* Allows an external user (for example, KVM) to lock an IOMMU group */
->>>> +int vfio_group_add_external_user(struct file *filep)
->>>> +{
->>>> +	struct vfio_group *group = filep->private_data;
->>>> +
->>>> +	if (filep->f_op != &vfio_group_fops)
->>>> +		return -EINVAL;
->>>> +
->>>> +	if (!atomic_inc_not_zero(&group->container_users))
->>>> +		return -EINVAL;
->>>
->>> This is the place where I was suggesting we need tests to match
->>> get_device_fd.  It's not clear what the external user is holding if the
->>> group has no iommu or is not viable here.
->>
->>
->> In my mind this test must include test for iommu id so I would merge it
->> with vfio_group_iommu_id_from_file().
-> 
-> I'm not sure what that means.
 
-Sorry. Still a mess in my head :( I'll to explain.
+--=-qvlGvbDGAoEQXbgJkDyQ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-vfio_group_add_external_user() should tell if the group is viable and has
-iommu (does not the latter include check for viable?).
+Commit 02725e7471b8 ('genirq: Use irq_get/put functions'),
+inadvertently changed can_request_irq() to return 0 for IRQs that have
+no action.  This causes pcibios_lookup_irq() to select only IRQs that
+already have an action with IRQF_SHARED set, or to fail if there are
+none.  Change can_request_irq() to return 1 for IRQs that have no
+action (if the first two conditions are met).
 
-vfio_group_iommu_id_from_file() tells the group id which has to be compared
-by KVM with what KVM got from the userspace and KVM should reject if the
-group id is wrong.
+Reported-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is>
+References: http://bugs.debian.org/709647
+Tested-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is> (against 3.2)
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: stable@vger.kernel.org # 2.6.39+
+Cc: 709647@bugs.debian.org
+---
+ kernel/irq/manage.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-So there are 3 checks. KVM can continue if all three passed.
-
->> Till I check iommu id, I still cannot
->> use this group so where to put check for iommu/viable does not really
->> matter (for me).
-> 
-> The difference is that getting the group id may just be the first of
-> several external user API interfaces.  The idea of external user
-> interface is that from add->del the group is maintained in the same
-> state as if a device was opened.
-
-Good point.
-
-> If we disassemble that so that add
-> sets up some stuff and getting the group id does a little more, what
-> happens if we start adding more external user API callbacks?  A user of
-> the interface shouldn't need to know the internals to know which
-> interface allows what aspect of use.  Besides, I don't want to have to
-> worry about managing another state slightly different from that used by
-> the device fd.
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index fa17855..dc4db32 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -555,9 +555,9 @@ int can_request_irq(unsigned int irq, unsigned long irq=
+flags)
+ 		return 0;
+=20
+ 	if (irq_settings_can_request(desc)) {
+-		if (desc->action)
+-			if (irqflags & desc->action->flags & IRQF_SHARED)
+-				canrequest =3D1;
++		if (!desc->action ||
++		    irqflags & desc->action->flags & IRQF_SHARED)
++			canrequest =3D 1;
+ 	}
+ 	irq_put_desc_unlock(desc, flags);
+ 	return canrequest;
 
 
+--=-qvlGvbDGAoEQXbgJkDyQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
->>>
->>>
->>> if (!group->container->iommu_driver || !vfio_group_viable(group)) {
->>> 	vfio_group_try_dissolve_container(group);
->>> 	return -EINVAL;
->>> }
->>>
->>>> +
->>>> +	return 0;
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(vfio_group_add_external_user);
->>>> +
->>>> +/* Allows an external user (for example, KVM) to unlock an IOMMU group */
->>>> +void vfio_group_del_external_user(struct file *filep)
->>>> +{
->>>> +	struct vfio_group *group = filep->private_data;
->>>> +
->>>> +	if (WARN_ON(filep->f_op != &vfio_group_fops))
->>>> +		return;
->>>
->>> How about we make this return int so we can return 0/-EINVAL and the
->>> caller can decide the severity of the response?
->>
->> And what can the caller possibly do on !0?
-> 
-> What if the caller is just passing a filep from userspace, should they
-> be allowed to fill the logs by hitting this WARN_ON?  I don't know where
-> it comes from here and whether the caller can return an error to
-> userspace.  If this is the same filep that the caller used on add, they
-> they can legitimately WARN_ON, but we can't tell if that's the case
-> here.  Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Well, we say that holding file* is a part of API. Why would anyone call
-vfio_group_del_external_user() on something but the file* it got when
-opened a group fd?
+iQIVAwUAUczpjue/yOyVhhEJAQoTEhAAtB54E8PoboOTVVfiajISkNCtNcCKIRqa
+vQ/RbqY5N50OErw5WcaAJsp/3y8sCBxuh2IT6MLndXv9n1sScD0HGpIEpxiS1jyb
+Cv1t2CwEQTt7CC4KMuD4KZYdSnlYMuzkHvISPg3IKv1m6V3ux59+qvJaRZoUButF
+FLYysyps2U/sG9YMl/m5XKU08+c2a512mim7wYYNtmboWJZrMCAsbW+VEiZIu4z+
+KK8GpGbHncK7587wxc2i26NFNg3KZyV3W3fjuzY+8EczuECRSo/72tqGVMowhrRq
+CxGdFUD4/oscQl6ZXpIt+hQw0tzdFRj+SOFOh7znCZD1VWuOSnY8N+7d0Ci7RmBc
+grvCzWtqLmXUrTenl+vk4RhHaIJncanxdT6iqZyvjCoYEonw4dkFa1a9S0DvJTbB
+lK47qKDU7BvfF+MPe6wtZtQGnjOd1QfSA8GegTnd4V3UMJrtnKDHSVnx8QyOLTUJ
+vsUFCszoeE0ErEAxavrLIpwqnVh1BaQ+6NV0kJ5Cdbu3RAMIF3Q6oBNLZGDFERet
+pfjSt/OupqiOvTtT6sEQcPnlxnM3IXWgEMjIf7eHC6WCRUjIQ49gC/WVFVnOGHvZ
+0zO+NWBMpTCjR85QTrWE/+u7cRlWlL2W2+OAIbhtBLWizYXPnJew5QHdwQRMMQuT
+a0iV/S71ueY=
+=o2Hx
+-----END PGP SIGNATURE-----
 
-
--- 
-Alexey
+--=-qvlGvbDGAoEQXbgJkDyQ--
