@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3F1QUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:20:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:40255 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab3F1QUM (ORCPT
+	id S1755485Ab3F1QWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:22:35 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63368 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab3F1QWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:20:12 -0400
-Date: Fri, 28 Jun 2013 12:19:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCHv6 0/5] xen: maintain an accurate persistent clock in more
- cases
-Message-ID: <20130628161954.GB2452@phenom.dumpdata.com>
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com>
- <alpine.DEB.2.02.1306281510180.4013@ionos.tec.linutronix.de>
- <20130628150158.GA5035@phenom.dumpdata.com>
- <alpine.DEB.2.02.1306281711310.4013@ionos.tec.linutronix.de>
+	Fri, 28 Jun 2013 12:22:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306281711310.4013@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20130628093319.D4DE6E0090@blue.fi.intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
+	<CAE9FiQVt4gCiz20SmJVP6d7tXOior5Ehg+-c_fG7wFsDUj7H4Q@mail.gmail.com>
+	<20130628093319.D4DE6E0090@blue.fi.intel.com>
+Date: Fri, 28 Jun 2013 09:22:32 -0700
+X-Google-Sender-Auth: sdZQF8vzgWg5hSdPw1zASMaOXFA
+Message-ID: <CAE9FiQUQvVbcbWoBnSiNmtF6P_SHTqWYONzfa-WeQUDYPmvHYw@mail.gmail.com>
+Subject: Re: [PATCH 4/6] PCI: acpiphp: check for new devices on enabled host
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        John Ronciak <john.ronciak@intel.com>,
+        Miles J Penner <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 05:12:35PM +0200, Thomas Gleixner wrote:
-> On Fri, 28 Jun 2013, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Jun 28, 2013 at 03:14:42PM +0200, Thomas Gleixner wrote:
-> > > On Thu, 27 Jun 2013, David Vrabel wrote:
-> > > > These series fixes the above limitations and depends on "x86: increase
-> > > > precision of x86_platform.get/set_wallclock()" which was previously
-> > > > posted.
-> > > 
-> > > So I'd like to merge that in the following way:
-> > > 
-> > > I pick up patches 1-3 and stick them into tip timers/for-xen and merge
-> > > that branch into timers/core. When picking up 1/6, I'll drop the xen
-> > > part of that, so timers/core will not hold any xen specific bits.
-> > > 
-> > > Then the xen folks can pull timers/for-xen and apply the xen specific
-> > > stuff on top.
-> > 
-> > Wouldn't it be easier for you to pick the "xen part of that" as well?
-> > I am OK with you doing that and it all going through your tree.
-> 
-> I can do that, if that's not conflicting with other xen/x86 stuff
-> outside of timers/core.
+On Fri, Jun 28, 2013 at 2:33 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Yinghai Lu wrote:
+>> On Tue, Jun 25, 2013 at 9:22 AM, Mika Westerberg
+>> <mika.westerberg@linux.intel.com> wrote:
+>> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>> >
+>> > Current acpiphp_check_bridge() implementation is pretty dumb:
+>> >  - it enables the slot if it's not enabled and the slot status is
+>> >    ACPI_STA_ALL;
+>> >  - it disables the slot if it's enabled and slot is not in ACPI_STA_ALL
+>> >    state.
+>> >
+>> > This behavior is not enough to handle Thunderbolt chaining case
+>> > properly. We need to actually rescan for new devices even if a device
+>> > has already in the slot.
+>> >
+>> > The new implementation disables and stops the slot if it's not in
+>> > ACPI_STA_ALL state.
+>> >
+>> > For ACPI_STA_ALL state we first trim devices which don't respond and
+>> > look for the ones after that. We do that even if slot already enabled
+>> > (SLOT_ENABLED).
+>>
+>> that is not right, some time BUS_CHECK is even sent root bus.
+>> in that case, stop all devices in slots and load driver again.
+>>
+>> like you put one card in one slots, but all devices in other slots get stop
+>> and enable again.
+>
+> We don't stop enabled devices, we only stop and remove devices which don't
+> respond.  See patch 3/6.
+>
+> I don't see how it's harmful. Do you?
 
-I got one change in there and it seems to apply cleanly (woot!).
-But lets be on a safe side. There are also some Xen ARM changes that
-are fiddling with arch/x86/xen/time.c (different maintainer)) - so both
-me and Stefano can pull from the timers/for-xen and not have to worry about
-conflict resolution.
+then please check with disable_device to put back pci_dev ref,
+also may need to trim corresponding acpi devices.
 
-Thanks!
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+so this patch is helping: multiple plug-in and remove?
+
+Yinghai
