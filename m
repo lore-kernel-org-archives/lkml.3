@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab3F1I7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 04:59:47 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25177 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3F1I7p (ORCPT
+	id S1754927Ab3F1JAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:00:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45719 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab3F1JAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 04:59:45 -0400
-Message-ID: <51CD5062.5050501@huawei.com>
-Date: Fri, 28 Jun 2013 16:59:14 +0800
-From: wangyufen <wangyufen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Fri, 28 Jun 2013 05:00:06 -0400
+Date: Fri, 28 Jun 2013 10:59:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] sched: Select a preferred node with the most numa
+ hinting faults
+Message-ID: <20130628085956.GB28407@twins.programming.kicks-ass.net>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-4-git-send-email-mgorman@suse.de>
+ <20130628061428.GB17195@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: <davem@davemloft.net>
-CC: <joro@8bytes.org>, <Varun.Sethi@freescale.com>, <aik@ozlabs.ru>,
-        <alex.williamson@redhat.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <zhangdianfang@huawei.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [Bug Report] use bonding lacp mode aggregation NIC has performance
- problems while  intel_immu switch opening
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.70.116]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628061428.GB17195@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-           Summary: use bonding lacp mode aggregation NIC has performance problems while  intel_immu switch opening
-           Product: Networking
-           Version: 
-    Kernel Version: 3.10.0-rc5
-          Platform: X86
-        OS/Version: Linux
-              Tree: Mainline
-            Status: NEW
-          Severity: normal
-          Priority: P1
-         Component: bonding&ixgbe
-        AssignedTo: 
-        ReportedBy: wangyufen@huawei.com,wangweidong1@huawei.com
-        Regression: No
+On Fri, Jun 28, 2013 at 11:44:28AM +0530, Srikar Dronamraju wrote:
+> * Mel Gorman <mgorman@suse.de> [2013-06-26 15:38:02]:
+> 
+> > This patch selects a preferred node for a task to run on based on the
+> > NUMA hinting faults. This information is later used to migrate tasks
+> > towards the node during balancing.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  include/linux/sched.h |  1 +
+> >  kernel/sched/core.c   | 10 ++++++++++
+> >  kernel/sched/fair.c   | 16 ++++++++++++++--
+> >  kernel/sched/sched.h  |  2 +-
+> >  4 files changed, 26 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index 72861b4..ba46a64 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -1507,6 +1507,7 @@ struct task_struct {
+> >  	struct callback_head numa_work;
+> >  
+> >  	unsigned long *numa_faults;
+> > +	int numa_preferred_nid;
+> >  #endif /* CONFIG_NUMA_BALANCING */
+> >  
+> >  	struct rcu_head rcu;
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index f332ec0..019baae 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -1593,6 +1593,7 @@ static void __sched_fork(struct task_struct *p)
+> >  	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+> >  	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
+> >  	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+> > +	p->numa_preferred_nid = -1;
+> 
+> Though we may not want to inherit faults, I think the tasks generally
+> share pages with their siblings, parent. So will it make sense to
+> inherit the preferred node?
 
+One of the patches I have locally wipes the numa state on exec(). I
+think we want to do that if we're going to think about inheriting stuff.
 
-Hi I'am using bonding lacp mode aggregation intel 82599 NIC, there are  performance problems while intel_immu switch is open.
-I'am using iperf to test the network speeds.
-When intel_immu switch is closed, 4 port after polymerization, the network port speeds up to 37.6 Gbits / sec,
-when intel_immu switch is turned on, 4port After polymerization, the network port speed only to 28.7 Gbits / sec.
-
-
-intel_iommu=off
-dma_ops = &swiotlb_dma_ops,so map_page = swiotlb_map_page and unmap_page = swiotlb_unmap_page
-intel_iommu=on
-dma_ops = &intel_dma_ops,so map_page=intel_map_page and unmap_page=intel_unmap_page
-
-I think the intel_dma_ops will cost more performance, and the dma_map_page and
-dma_map_single_attrs will call map_page(),but the paramters is not same. Therefor, I do a test
-about the time of funcs call map_page or unmap_page.
-
-----------------------------------------------------------------------------
-func\count				350(*10000)		
-dma_map_single_attrs,iommu-off		640000(ns)~1000000(ns)		
-dma_map_single_attrs,iommu-on		4900000(ns)~5700000(ns)
-dma_unmap_single_attrs,iommu-off	330000(ns)~620000(ns)
-dma_unmap_single_attrs,iommu-on		3000000(ns)~47000000(ns)
-
-func\count				2900(*10000)
-dma_map_page,iommu-off			350000(ns)~610000(ns)
-dma_map_page,iommu-on			2160000(ns)~3000000(ns)
-dma_unmap_page,iommu-off		345000(ns)~670000(ns)
-dma_unmap_page,iommu-on			3000000(ns)~4300000(ns)
-----------------------------------------------------------------------------
-the time that map and unmap function cost show huge gap when iommu is on and off.
 
