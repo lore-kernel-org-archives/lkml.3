@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3F1P15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:27:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53790 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab3F1P14 (ORCPT
+	id S1755464Ab3F1P3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:29:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40447 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3F1P3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:27:56 -0400
-Date: Fri, 28 Jun 2013 17:27:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/5] perf: add two new features
-Message-ID: <20130628152745.GH6626@twins.programming.kicks-ass.net>
-References: <1372425741-1676-1-git-send-email-adrian.hunter@intel.com>
+	Fri, 28 Jun 2013 11:29:38 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        Liang Li <liang.li@windriver.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: request for stable inclusion
+References: <51CD518B.2050106@huawei.com>
+Date: Fri, 28 Jun 2013 16:29:27 +0100
+In-Reply-To: <51CD518B.2050106@huawei.com> (Yijing Wang's message of "Fri, 28
+	Jun 2013 17:04:11 +0800")
+Message-ID: <871u7m8d9k.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372425741-1676-1-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 04:22:16PM +0300, Adrian Hunter wrote:
-> Hi
-> 
-> Please consider these two new perf features:
->       x86: add ability to calculate TSC from perf sample timestamps
->       perf: add 'keep tracking' flag to PERF_EVENT_IOC_DISABLE
+Yijing Wang <wangyijing@huawei.com> writes:
 
-Please explain to us why you'd like to do this..
+> Hi Greg, Jiri or Liang Li
+>
+> 384e301e3519599b000c1a2ecd938b533fc15d85
+> pch_uart: fix a deadlock when pch_uart as console
+>
+> This looks applicable to stable-3.4, and it
+> was built successful for me. What do you think?
+>
+> Thanks!
+> Yijing.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+I'm queuing it for the 3.5 as well.
+
+Also, this seems to be applicable to older kernels as well.
+
+Cheers,
+-- 
+Luis
