@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab3F1Q2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:28:19 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:61388 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755736Ab3F1Q2Q (ORCPT
+	id S1755897Ab3F1Q2J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:28:09 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:48159 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755736Ab3F1Q2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:28:16 -0400
+	Fri, 28 Jun 2013 12:28:06 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>
 Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v3 10/10] ACPI: simplify acpiphp driver with new helper functions
-Date: Sat, 29 Jun 2013 00:24:43 +0800
-Message-Id: <1372436683-31711-11-git-send-email-liuj97@gmail.com>
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+Subject: [PATCH v3 08/10] ACPI: change acpi_[bay|dock]_match() in scan.c as global functions
+Date: Sat, 29 Jun 2013 00:24:41 +0800
+Message-Id: <1372436683-31711-9-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372436683-31711-1-git-send-email-liuj97@gmail.com>
 References: <1372436683-31711-1-git-send-email-liuj97@gmail.com>
@@ -26,105 +24,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use new helper functions to simplify acpiphp driver.
+Function acpi_[bay|dock]_match() in scan.c could be shared with dock.c
+to reduce duplicated code, so refine and change them as global functions.
+Also add a new function acpi_ata_match() to check whether an ACPI object
+device is an ATA device.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Len Brown <lenb@kernel.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yijing Wang <wangyijing@huawei.com>
 Cc: linux-acpi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pci/hotplug/acpiphp_glue.c | 30 ++++++++----------------------
- 1 file changed, 8 insertions(+), 22 deletions(-)
+ drivers/acpi/scan.c     | 77 +++++++++++++++++++++++--------------------------
+ include/acpi/acpi_bus.h |  3 ++
+ 2 files changed, 39 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 59df857..a0a7133 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -201,7 +201,6 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	struct acpiphp_bridge *bridge = (struct acpiphp_bridge *)context;
- 	struct acpiphp_slot *slot;
- 	struct acpiphp_func *newfunc;
--	acpi_handle tmp;
- 	acpi_status status = AE_OK;
- 	unsigned long long adr, sun;
- 	int device, function, retval, found = 0;
-@@ -232,19 +231,19 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	newfunc->handle = handle;
- 	newfunc->function = function;
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 101a267..e7fd101 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -1481,43 +1481,45 @@ static void acpi_device_get_busid(struct acpi_device *device)
+ }
  
--	if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &tmp)))
-+	if (acpi_has_method(handle, "_EJ0"))
- 		newfunc->flags = FUNC_HAS_EJ0;
- 
--	if (ACPI_SUCCESS(acpi_get_handle(handle, "_STA", &tmp)))
-+	if (acpi_has_method(handle, "_STA"))
- 		newfunc->flags |= FUNC_HAS_STA;
- 
--	if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS0", &tmp)))
-+	if (acpi_has_method(handle, "_PS0"))
- 		newfunc->flags |= FUNC_HAS_PS0;
- 
--	if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS3", &tmp)))
-+	if (acpi_has_method(handle, "_PS3"))
- 		newfunc->flags |= FUNC_HAS_PS3;
- 
--	if (ACPI_SUCCESS(acpi_get_handle(handle, "_DCK", &tmp)))
-+	if (acpi_has_method(handle, "_DCK"))
- 		newfunc->flags |= FUNC_HAS_DCK;
- 
- 	status = acpi_evaluate_integer(handle, "_SUN", NULL, &sun);
-@@ -843,25 +842,14 @@ static unsigned int get_slot_status(struct acpiphp_slot *slot)
+ /*
++ * acpi_ata_match - see if an acpi object is an ATA device
++ *
++ * If an acpi object has one of the ACPI ATA methods defined,
++ * then we can safely call it an ATA device.
++ */
++bool acpi_ata_match(acpi_handle handle)
++{
++	return acpi_has_method(handle, "_GTF") ||
++	       acpi_has_method(handle, "_GTM") ||
++	       acpi_has_method(handle, "_STM") ||
++	       acpi_has_method(handle, "_SDD");
++}
++
++/*
+  * acpi_bay_match - see if an acpi object is an ejectable driver bay
+  *
+  * If an acpi object is ejectable and has one of the ACPI ATA methods defined,
+  * then we can safely call it an ejectable drive bay
   */
- int acpiphp_eject_slot(struct acpiphp_slot *slot)
+-static int acpi_bay_match(acpi_handle handle)
++bool acpi_bay_match(acpi_handle handle)
  {
--	acpi_status status;
- 	struct acpiphp_func *func;
--	struct acpi_object_list arg_list;
--	union acpi_object arg;
+ 	acpi_handle phandle;
  
- 	list_for_each_entry(func, &slot->funcs, sibling) {
- 		/* We don't want to call _EJ0 on non-existing functions. */
- 		if ((func->flags & FUNC_HAS_EJ0)) {
--			/* _EJ0 method take one argument */
--			arg_list.count = 1;
--			arg_list.pointer = &arg;
--			arg.type = ACPI_TYPE_INTEGER;
--			arg.integer.value = 1;
+ 	if (!acpi_has_method(handle, "_EJ0"))
+-		return -ENODEV;
++		return false;
++	if (acpi_ata_match(handle))
++		return true;
++	if (ACPI_FAILURE(acpi_get_parent(handle, &phandle)))
++		return false;
+ 
+-	if (acpi_has_method(handle, "_GTF") ||
+-	    acpi_has_method(handle, "_GTM") ||
+-	    acpi_has_method(handle, "_STM") ||
+-	    acpi_has_method(handle, "_SDD"))
+-		return 0;
 -
--			status = acpi_evaluate_object(func->handle, "_EJ0", &arg_list, NULL);
--			if (ACPI_FAILURE(status)) {
--				warn("%s: _EJ0 failed\n", __func__);
-+			if (ACPI_FAILURE(acpi_evaluate_ej0(func->handle)))
- 				return -1;
--			} else
-+			else
- 				break;
- 		}
- 	}
-@@ -1171,7 +1159,6 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+-	if (acpi_get_parent(handle, &phandle))
+-		return -ENODEV;
+-
+-	if (acpi_has_method(phandle, "_GTF") ||
+-	    acpi_has_method(phandle, "_GTM") ||
+-	    acpi_has_method(phandle, "_STM") ||
+-	    acpi_has_method(phandle, "_SDD"))
+-                return 0;
+-
+-	return -ENODEV;
++	return acpi_ata_match(phandle);
+ }
+ 
+ /*
+  * acpi_dock_match - see if an acpi object has a _DCK method
   */
- void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
+-static int acpi_dock_match(acpi_handle handle)
++bool acpi_dock_match(acpi_handle handle)
  {
--	acpi_handle dummy_handle;
- 	struct acpiphp_bridge *bridge;
+-	acpi_handle tmp;
+-	return acpi_get_handle(handle, "_DCK", &tmp);
++	return acpi_has_method(handle, "_DCK");
+ }
  
- 	if (acpiphp_disabled)
-@@ -1200,8 +1187,7 @@ void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
- 	get_device(&bus->dev);
+ const char *acpi_device_hid(struct acpi_device *device)
+@@ -1555,33 +1557,26 @@ static void acpi_add_id(struct acpi_device_pnp *pnp, const char *dev_id)
+  * lacks the SMBUS01 HID and the methods do not have the necessary "_"
+  * prefix.  Work around this.
+  */
+-static int acpi_ibm_smbus_match(acpi_handle handle)
++static bool acpi_ibm_smbus_match(acpi_handle handle)
+ {
+-	struct acpi_buffer path = {ACPI_ALLOCATE_BUFFER, NULL};
+-	int result;
++	char node_name[ACPI_PATH_SEGMENT_LENGTH];
++	struct acpi_buffer path = { sizeof(node_name), node_name };
  
- 	if (!pci_is_root_bus(bridge->pci_bus) &&
--	    ACPI_SUCCESS(acpi_get_handle(bridge->handle,
--					"_EJ0", &dummy_handle))) {
-+	    acpi_has_method(bridge->handle, "_EJ0")) {
- 		dbg("found ejectable p2p bridge\n");
- 		bridge->flags |= BRIDGE_HAS_EJ0;
- 		bridge->func = acpiphp_bridge_handle_to_function(handle);
+ 	if (!dmi_name_in_vendors("IBM"))
+-		return -ENODEV;
++		return false;
+ 
+ 	/* Look for SMBS object */
+-	result = acpi_get_name(handle, ACPI_SINGLE_NAME, &path);
+-	if (result)
+-		return result;
+-
+-	if (strcmp("SMBS", path.pointer)) {
+-		result = -ENODEV;
+-		goto out;
+-	}
++	if (ACPI_FAILURE(acpi_get_name(handle, ACPI_SINGLE_NAME, &path)) ||
++	    strcmp("SMBS", path.pointer))
++		return false;
+ 
+ 	/* Does it have the necessary (but misnamed) methods? */
+-	result = -ENODEV;
+ 	if (acpi_has_method(handle, "SBI") &&
+ 	    acpi_has_method(handle, "SBR") &&
+ 	    acpi_has_method(handle, "SBW"))
+-		result = 0;
+-out:
+-	kfree(path.pointer);
+-	return result;
++		return true;
++
++	return false;
+ }
+ 
+ static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
+@@ -1629,11 +1624,11 @@ static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
+ 		 */
+ 		if (acpi_is_video_device(handle))
+ 			acpi_add_id(pnp, ACPI_VIDEO_HID);
+-		else if (ACPI_SUCCESS(acpi_bay_match(handle)))
++		else if (acpi_bay_match(handle))
+ 			acpi_add_id(pnp, ACPI_BAY_HID);
+-		else if (ACPI_SUCCESS(acpi_dock_match(handle)))
++		else if (acpi_dock_match(handle))
+ 			acpi_add_id(pnp, ACPI_DOCK_HID);
+-		else if (!acpi_ibm_smbus_match(handle))
++		else if (acpi_ibm_smbus_match(handle))
+ 			acpi_add_id(pnp, ACPI_SMBUS_IBM_HID);
+ 		else if (list_empty(&pnp->ids) && handle == ACPI_ROOT_OBJECT) {
+ 			acpi_add_id(pnp, ACPI_BUS_HID); /* \_SB, LNXSYBUS */
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 6c378d9..60fff75 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -62,6 +62,9 @@ acpi_status acpi_execute_simple_method(acpi_handle handle, char *method,
+ 				       u64 arg);
+ acpi_status acpi_evaluate_ej0(acpi_handle handle);
+ acpi_status acpi_evaluate_lck(acpi_handle handle, int lock);
++bool acpi_ata_match(acpi_handle handle);
++bool acpi_bay_match(acpi_handle handle);
++bool acpi_dock_match(acpi_handle handle);
+ 
+ #ifdef CONFIG_ACPI
+ 
 -- 
 1.8.1.2
 
