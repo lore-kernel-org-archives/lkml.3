@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab3F1PJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:09:56 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:33480 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab3F1PJy (ORCPT
+	id S1755282Ab3F1PLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:11:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53474 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab3F1PLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:09:54 -0400
-Date: Fri, 28 Jun 2013 17:09:41 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Chen Gang <gang.chen@asianux.com>,
-        =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] arch: tile: include: asm: add cmpxchg64() definition
-Message-ID: <20130628150941.GA22767@linux-mips.org>
-References: <51CA6D21.3090901@asianux.com>
- <51CC492C.1040105@tilera.com>
- <51CCD891.8000806@asianux.com>
- <51CCEC27.8050508@asianux.com>
+	Fri, 28 Jun 2013 11:11:00 -0400
+Date: Fri, 28 Jun 2013 17:10:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
+Message-ID: <20130628151048.GB6626@twins.programming.kicks-ass.net>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-6-git-send-email-mgorman@suse.de>
+ <20130627161127.GZ28407@twins.programming.kicks-ass.net>
+ <20130628134535.GX1875@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51CCEC27.8050508@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130628134535.GX1875@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 09:51:35AM +0800, Chen Gang wrote:
+On Fri, Jun 28, 2013 at 02:45:35PM +0100, Mel Gorman wrote:
 
-> Need add cmpxchg64(), or will cause compiling issue.
+> > Also, until I just actually _read_ that function; I assumed it would
+> > compare p->numa_faults[src_nid] and p->numa_faults[dst_nid]. Because
+> > even when the dst_nid isn't the preferred nid; it might still have more
+> > pages than where we currently are.
+> > 
 > 
-> Just define it as cmpxchg(), since cmpxchg() can support 8 bytes.
-> 
-> The related error (with allmodconfig):
-> 
->   drivers/block/blockconsole.c: In function ‘bcon_advance_console_bytes’:
->   drivers/block/blockconsole.c:164:2: error: implicit declaration of function ‘cmpxchg64’ [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/tile/include/asm/cmpxchg.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/tile/include/asm/cmpxchg.h b/arch/tile/include/asm/cmpxchg.h
-> index 276f067..7688c28 100644
-> --- a/arch/tile/include/asm/cmpxchg.h
-> +++ b/arch/tile/include/asm/cmpxchg.h
-> @@ -68,6 +68,8 @@ extern unsigned long __cmpxchg_called_with_bad_pointer(void);
->  
->  #define tas(ptr) (xchg((ptr), 1))
->  
-> +#define cmpxchg64(ptr, o, n)		cmpxchg((ptr), (o), (n))
+> I tested something like this and also tested it when only taking shared
+> accesses into account but it performed badly in some cases.  I've included
+> the last patch I tested below for reference but dropped it until I figured
+> out why it performed badly. I guessed it was due to increased bouncing
+> due to shared faults but didn't prove it.
 
-that's broken.  cmpxchg64 is suposed to work on 64 bit operands ONLY.  This
-definition (used by MIPS and Alpha) will work properly:
-
-#define cmpxchg64(ptr, o, n)                                            \
-({                                                                      \
-	BUILD_BUG_ON(sizeof(*(ptr)) != 8);                              \
-	cmpxchg((ptr), (o), (n));                                       \
-})
-
-This should cure blockconsole on Tile but not on MIPS.
-
-struct blockconsole {
-...
-           u64 console_bytes;
-...
-};
-
-static void bcon_advance_console_bytes(struct blockconsole *bc, int bytes)
-{
-	u64 old, new;
-	...
-	} while (cmpxchg64(&bc->console_bytes, old, new) != old);
-}
-
-So it's using cmpxchg64() to operate on 64 bit objects - but that's not
-going to work on every architecture.  Many 32 bit architectures only
-provide atomic operations that operate on 32 bit quantities.
-
-  Ralf
+Oh, interesting. Yeah it would be good to figure out why that gave
+funnies.
