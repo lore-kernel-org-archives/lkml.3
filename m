@@ -1,103 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab3F1KFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:05:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56641 "EHLO mga01.intel.com"
+	id S1755416Ab3F1KGR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:06:17 -0400
+Received: from gmmr7.centrum.cz ([46.255.225.249]:47627 "EHLO gmmr7.centrum.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101Ab3F1KFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:05:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,958,1363158000"; 
-   d="scan'208";a="361938441"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-In-Reply-To: <CAErSpo4Ks+8PPvpscWZE7LrRd-daOzV-kJi6Oim42A+nZnp3HQ@mail.gmail.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-2-git-send-email-mika.westerberg@linux.intel.com>
- <CAErSpo4Ks+8PPvpscWZE7LrRd-daOzV-kJi6Oim42A+nZnp3HQ@mail.gmail.com>
-Subject: Re: [PATCH 1/6] PCI: acpiphp: do not check for SLOT_ENABLED in
- enable_device()
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130628095138.D5B7BE0090@blue.fi.intel.com>
-Date: Fri, 28 Jun 2013 12:51:38 +0300 (EEST)
+	id S1755185Ab3F1KGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 06:06:16 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=5D_memcg=3A_do_not_trap_chargers_with_full_callstack_on_OOM?=
+Date: Fri, 28 Jun 2013 12:06:13 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>
+References: <20130210150310.GA9504@dhcp22.suse.cz>, <20130210174619.24F20488@pobox.sk>, <20130211112240.GC19922@dhcp22.suse.cz>, <20130222092332.4001E4B6@pobox.sk>, <20130606160446.GE24115@dhcp22.suse.cz>, <20130606181633.BCC3E02E@pobox.sk>, <20130607131157.GF8117@dhcp22.suse.cz>, <20130617122134.2E072BA8@pobox.sk>, <20130619132614.GC16457@dhcp22.suse.cz>, <20130622220958.D10567A4@pobox.sk> <20130624201345.GA21822@cmpxchg.org>
+In-Reply-To: <20130624201345.GA21822@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
+MIME-Version: 1.0
+Message-Id: <20130628120613.6D6CAD21@pobox.sk>
+X-Maser: Georgo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas wrote:
-> On Tue, Jun 25, 2013 at 10:22 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >
-> > With Thunderbolt you can chain devices: connect a new devices to plugged
-> > one. In this case the slot is already enabled, but we still want to look
-> > for new devices behind it.
-> >
-> > We're going to reuse enable_device() for rescan for new devices on the
-> > enabled slot. Let's push the check up by stack.
-> >
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> >  drivers/pci/hotplug/acpiphp_glue.c | 5 ++---
-> >  1 file changed, 2 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> > index 59df857..b983e29 100644
-> > --- a/drivers/pci/hotplug/acpiphp_glue.c
-> > +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> > @@ -688,9 +688,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
-> >         int num, max, pass;
-> >         LIST_HEAD(add_list);
-> >
-> > -       if (slot->flags & SLOT_ENABLED)
-> > -               goto err_exit;
-> > -
-> >         list_for_each_entry(func, &slot->funcs, sibling)
-> >                 acpiphp_bus_add(func);
-> >
-> > @@ -1242,6 +1239,8 @@ int acpiphp_enable_slot(struct acpiphp_slot *slot)
-> >                 goto err_exit;
-> >
-> >         if (get_slot_status(slot) == ACPI_STA_ALL) {
-> > +               if (slot->flags & SLOT_ENABLED)
-> > +                       goto err_exit;
-> 
-> Why do we check for SLOT_ENABLED at all?  I think we're handling a Bus
-> Check notification, which means "re-enumerate on the device tree
-> starting from the notification point."  It doesn't say anything about
-> skipping the re-enumeration if we find a device that's already
-> enabled.
-> 
-> It seems like we ought to just re-enumerate all the way down in case a
-> device was added farther down in the tree (which is what it sounds
-> like Thunderbolt is doing).
+>It's not a kernel thread that does it because all kernel-context
+>handle_mm_fault() are annotated properly, which means the task must be
+>userspace and, since tasks is empty, have exited before synchronizing.
+>
+>Can you try with the following patch on top?
 
-Currently (with patchset applied), we have two users of
-acpiphp_enable_slot():
 
-- /sys/bus/pci/slots/*/power
-- ACPI_NOTIFY_BUS_CHECK in _handle_hotplug_event_func().
+Michal and Johannes,
 
-Both are not related to Thunderbolt.
+i have some observations which i made:
+Original patch from Johannes was really fixing something but definitely not everything and was introducing new problems. I'm running unpatched kernel from time i send my last message and problems with freezing cgroups are occuring very often (several times per day) - they were, on the other hand, quite rare with patch from Johannes.
 
-Although, I think remove the check is good idea, I prefer to keep it
-separate from Thunderbolt enabling patchset, since it will change sysfs
-ABI a bit and can potentially affect othe ACPI PCI hotplug
-implementations.
+Johannes, i didn't try your last patch yet. I would like to wait until you or Michal look at my last message which contained detailed information about freezing of cgroups on kernel running your original patch (which was suppose to fix it for good). Even more, i would like to hear your opinion about that stucked processes which was holding web server port and which forced me to reboot production server at the middle of the day :( more information was in my last message. Thank you very much for your time.
 
--- 
- Kirill A. Shutemov
+azur
