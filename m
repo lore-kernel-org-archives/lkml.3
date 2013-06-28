@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3F1Qfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:35:34 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57805 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529Ab3F1Qfc (ORCPT
+	id S1755708Ab3F1Qhi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:37:38 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:60993 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529Ab3F1Qhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:35:32 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 28 Jun 2013 09:35:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Jean Delvare <khali@linux-fr.org>,
-        jimwall@q.com, brian@crystalfontz.com,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 3/4] hwmon: Add a simple driver to read the MXS SoC
- temperature
-Message-ID: <20130628163540.GA26547@roeck-us.net>
-References: <1372236673-20725-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1372236673-20725-4-git-send-email-alexandre.belloni@free-electrons.com>
- <20130626143927.GB31998@roeck-us.net>
- <20130627091732.GP5803@lukather>
- <20130627142758.GA5812@roeck-us.net>
- <51CC91E8.50605@free-electrons.com>
- <51CD9B19.90407@metafoo.de>
- <51CDA2BF.5050501@free-electrons.com>
- <51CDAABB.4020505@metafoo.de>
+	Fri, 28 Jun 2013 12:37:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CDAABB.4020505@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <CAA9_cmf0WE=hFm8B_hk1GY87fk-R-Zv+iGXuBnqpiMA+bJ2oMg@mail.gmail.com>
+References: <2026698.ciHxSBJcBE@amdc1032>
+	<CAA9_cmf0WE=hFm8B_hk1GY87fk-R-Zv+iGXuBnqpiMA+bJ2oMg@mail.gmail.com>
+Date: Fri, 28 Jun 2013 09:37:36 -0700
+Message-ID: <CAOesGMgO6ywqk8XzYMdnBfDmB80bu0uPUL2s5kkux-zi5Sa4cw@mail.gmail.com>
+Subject: Re: [resend2 PATCH] DMA: remove unused support for MEMSET operations
+From: Olof Johansson <olof@lixom.net>
+To: Dan Williams <djbw@fb.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 05:24:43PM +0200, Lars-Peter Clausen wrote:
-> On 06/28/2013 04:50 PM, Alexandre Belloni wrote:
-> > On 28/06/2013 16:18, Lars-Peter Clausen wrote:
-> >> On 06/27/2013 09:26 PM, Alexandre Belloni wrote:
-> >>>
-> >>> They are already registered as IIO_TEMP but only implement read_raw. Also,
-> >>>
-> >>> iio_hwmon_read_val() is using iio_read_channel_processed() and that will
-> >>> basically only read one of the 2 channels. As I documented, you actually
-> >>> need to read both channel 8 and channel 9 and then compute the value in
-> >>> Kelvins. I'm not sure how you want me to do that in the current framework.
-> >> What are these two channels actually measuring? Is the value of a single
-> >> channel meaningful on it's own? If not it might make sense to update the IIO
-> >> driver to just have one temperature channel.
-> > 
-> > It's not actually meaningful on its own. So, what you would do is expose
-> > one iio channel for two ADC channels and do the computation in read_raw
-> > ? or read_processed ? Then using iio-hwon to export it. ?
-> > 
-> > Regards,
-> > 
-> 
-> Yes, return channel9 - channel8 as the raw value for the temperature channel
-> and provide proper scale and offset values, so that
-> iio_read_channel_processed() will return the correct value.
-> 
-Agreed.
+Bartlomiej,
 
-Guenter
+Did you build test on the platforms you changed? You broke dove_defconfig:
+
+In file included from /home/olof/work/next/include/linux/skbuff.h:31:0,
+                 from /home/olof/work/next/include/linux/if_ether.h:23,
+                 from /home/olof/work/next/include/net/dsa.h:14,
+                 from /home/olof/work/next/arch/arm/plat-orion/common.c:21:
+/home/olof/work/next/arch/arm/plat-orion/common.c: In function
+'orion_xor1_init':
+/home/olof/work/next/arch/arm/plat-orion/common.c:737:14: error:
+'DMA_MEMSET' undeclared (first use in this function)
+  dma_cap_set(DMA_MEMSET, orion_xor1_channels_data[1].cap_mask);
+              ^
+/home/olof/work/next/include/linux/dmaengine.h:862:46: note: in
+definition of macro 'dma_cap_set'
+ #define dma_cap_set(tx, mask) __dma_cap_set((tx), &(mask))
+                                              ^
+/home/olof/work/next/arch/arm/plat-orion/common.c:737:14: note: each
+undeclared identifier is reported only once for each function it
+appears in
+  dma_cap_set(DMA_MEMSET, orion_xor1_channels_data[1].cap_mask);
+              ^
+/home/olof/work/next/include/linux/dmaengine.h:862:46: note: in
+definition of macro 'dma_cap_set'
+ #define dma_cap_set(tx, mask) __dma_cap_set((tx), &(mask))
+
+
+This would also have been found by a "git grep DMA_MEMSET" across the tree.
+
+Andrew, this is coming really late before the merge window, I think it
+makes sense to hold off to 3.12 if it can't be done without trivial
+regressions. :(
+
+
+
+-Olof
+
+On Thu, Jun 27, 2013 at 1:20 PM, Dan Williams <djbw@fb.com> wrote:
+> On Wed, Jun 26, 2013 at 6:31 AM, Bartlomiej Zolnierkiewicz
+> <b.zolnierkie@samsung.com> wrote:
+>> There have never been any real users of MEMSET operations
+>> since they have been introduced in January 2007 (commit
+>> 7405f74badf46b5d023c5d2b670b4471525f6c91 "dmaengine: refactor
+>> dmaengine around dma_async_tx_descriptor").  Therefore remove
+>> support for them for now, it can be always brought back when
+>> needed.
+>>
+>> Cc: Vinod Koul <vinod.koul@intel.com>
+>> Cc: Dan Williams <djbw@fb.com>
+>> Cc: Tomasz Figa <t.figa@samsung.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>
+> I see Andrew has already picked this up.
+>
+> Acked-by: Dan Williams <djbw@fb.com>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
