@@ -1,109 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab3F1RAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 13:00:54 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:50685 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab3F1RAw (ORCPT
+	id S1755903Ab3F1RDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 13:03:17 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:32994 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab3F1RDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 13:00:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130628095138.D5B7BE0090@blue.fi.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-2-git-send-email-mika.westerberg@linux.intel.com>
- <CAErSpo4Ks+8PPvpscWZE7LrRd-daOzV-kJi6Oim42A+nZnp3HQ@mail.gmail.com> <20130628095138.D5B7BE0090@blue.fi.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 28 Jun 2013 11:00:31 -0600
-Message-ID: <CAErSpo7pLoiaOeCbL1yLjdSbW7n0E8NMfkLGYpj8N=bvYBRN5w@mail.gmail.com>
-Subject: Re: [PATCH 1/6] PCI: acpiphp: do not check for SLOT_ENABLED in enable_device()
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+	Fri, 28 Jun 2013 13:03:16 -0400
+Date: Fri, 28 Jun 2013 19:03:01 +0200
+From: "maxime.ripard" <maxime.ripard@free-electrons.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: =?utf-8?B?5byg54yb?= <kevin@allwinnertech.com>,
+        Siarhei Siamashka <siarhei.siamashka@gmail.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Emilio Lopez <emilio@elopez.com.ar>,
+        =?utf-8?B?5a2Z5b2m6YKm?= <sunny@allwinnertech.com>,
+        =?utf-8?B?5ZC05Lmm6ICV?= <shuge@allwinnertech.com>
+Subject: Re: Re: [linux-sunxi] [PATCH 0/8] clocksource: sunxi: Timer fixes
+ and cleanup
+Message-ID: <20130628170301.GN4319@lukather>
+References: <1372281421-2099-1-git-send-email-maxime.ripard@free-electrons.com>
+ <51CC0566.8010302@redhat.com>
+ <20130627094307.GC8437@lukather>
+ <51CC0BC3.5090309@redhat.com>
+ <20130627165436.GB4319@lukather>
+ <20130627232608.1174558b@i7>
+ <2013062809433715678058@allwinnertech.com>
+ <alpine.DEB.2.02.1306281559490.4013@ionos.tec.linutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WoqaC9TUMqqIOlla"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306281559490.4013@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 3:51 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Bjorn Helgaas wrote:
->> On Tue, Jun 25, 2013 at 10:22 AM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->> >
->> > With Thunderbolt you can chain devices: connect a new devices to plugged
->> > one. In this case the slot is already enabled, but we still want to look
->> > for new devices behind it.
->> >
->> > We're going to reuse enable_device() for rescan for new devices on the
->> > enabled slot. Let's push the check up by stack.
->> >
->> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> > ---
->> >  drivers/pci/hotplug/acpiphp_glue.c | 5 ++---
->> >  1 file changed, 2 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
->> > index 59df857..b983e29 100644
->> > --- a/drivers/pci/hotplug/acpiphp_glue.c
->> > +++ b/drivers/pci/hotplug/acpiphp_glue.c
->> > @@ -688,9 +688,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->> >         int num, max, pass;
->> >         LIST_HEAD(add_list);
->> >
->> > -       if (slot->flags & SLOT_ENABLED)
->> > -               goto err_exit;
->> > -
->> >         list_for_each_entry(func, &slot->funcs, sibling)
->> >                 acpiphp_bus_add(func);
->> >
->> > @@ -1242,6 +1239,8 @@ int acpiphp_enable_slot(struct acpiphp_slot *slot)
->> >                 goto err_exit;
->> >
->> >         if (get_slot_status(slot) == ACPI_STA_ALL) {
->> > +               if (slot->flags & SLOT_ENABLED)
->> > +                       goto err_exit;
->>
->> Why do we check for SLOT_ENABLED at all?  I think we're handling a Bus
->> Check notification, which means "re-enumerate on the device tree
->> starting from the notification point."  It doesn't say anything about
->> skipping the re-enumeration if we find a device that's already
->> enabled.
->>
->> It seems like we ought to just re-enumerate all the way down in case a
->> device was added farther down in the tree (which is what it sounds
->> like Thunderbolt is doing).
->
-> Currently (with patchset applied), we have two users of
-> acpiphp_enable_slot():
->
-> - /sys/bus/pci/slots/*/power
-> - ACPI_NOTIFY_BUS_CHECK in _handle_hotplug_event_func().
->
-> Both are not related to Thunderbolt.
->
-> Although, I think remove the check is good idea, I prefer to keep it
-> separate from Thunderbolt enabling patchset, since it will change sysfs
-> ABI a bit and can potentially affect othe ACPI PCI hotplug
-> implementations.
 
-I'll think about this some more, but if we can make a change that
-simplifies things and makes them more spec-compliant, and also happens
-to make Thunderbolt work, that sounds better than fixing Thunderbolt
-while leaving the wart there.
+--WoqaC9TUMqqIOlla
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If we only fix Thunderbolt, it just feels like we're adding to an
-ever-growing "deferred maintenance" list.
+Hi Thomas,
 
-Bjorn
+On Fri, Jun 28, 2013 at 04:02:23PM +0200, Thomas Gleixner wrote:
+> On Fri, 28 Jun 2013, =E5=BC=A0=E7=8C=9B wrote:
+> > > The A10 manual from http://free-electrons.com/~maxime/pub/datasheet/
+> > > does not seem to contain any details about what bad things may happen
+> > > if we try to read CNT64_LO_REG while latching is still in progress and
+> > > CNT64_RL_EN bit in CNT64_CTRL_REG has not changed to zero yet.
+> > > I can imagine the following possible scenarios:
+> > >  1. We read either the old stale CNT64_LO_REG value or the new
+> > >     correct value.
+> > >  2. We read either the old stale CNT64_LO_REG value or the new
+> > >     correct value, or some random garbage.
+> > >  3. The processor may deadlock, eat your dog, or do some other
+> > >     nasty thing.
+> > >
+> > > In the case of 1, we probably can get away without using any spinlock=
+s?
+> >=20
+> > About the 64bits counter, the latch bit is needed because of the asynch=
+ronous circuit.
+> > The internal circuit of 64bits counter is working under 24Mhz clock, an=
+d CNT_LO/HI
+> > is read with APB clock. So the clock synchronize is needed. The functio=
+n of the latch
+> > is synchronous the 64bits counter from 24Mhz clock domain to APB clock =
+domain.
+> > So, if the latch is not completely, value of the CNT_LO/HI maybe a rand=
+om value, because
+> > some bits are latched, but others are not. So, the CNT_LO/HI should be =
+read after
+> > latch is completely.
+> > The latch just takes 3 cycles of 24Mhz clock, the time is nearly 0.125 =
+micro-second.
+> >=20
+>=20
+> I really wonder why we're trying to use that timer. AFAICT the A10 has
+> another six 32bit timers which do not have this restriction and the
+> clocksoure/sched_clock implementation works nicely with 32 bits. So
+> what's the point of using that 64 bit counter if it's horrible to
+> access?
+
+Yes, you're right. I actually wanted at first not to use a timer for
+this since we had a counter to do just that.
+
+But that's true that actually using a timer would make the code simpler
+and presumably faster as well.
+
+I'll change this in the v2.
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--WoqaC9TUMqqIOlla
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzcHFAAoJEBx+YmzsjxAgFRsP/jRU9Kcjh+edYCZxEAIojMAL
+R1kVsy7WTvYETrv4+VSsSsX+DvNou+PGoRe136bnF34ujlxzjJV4wDB0U65p6PXw
+nafA8PvWFz0dk4PWlirlifLY9EpW5Fyu/1dFXLPkmzLqnJjGVGw4wQrXlTgITVXe
+ciAWhkxp3RCtJegfjAv3Qyk9z6UcF6wdChg/HOdYOYlOoIjC4ATE4KWNONZMr7e2
+lEHruMQotchfF0Yu5KA3i3ZUDifcoLkKqJw3O5qWefeJq60Z6pozs63ImLDr2H7F
+CP/WBN0ZOXwtxfY07tgDXCo8kJRGU/0LgI8Ys6Ias9JnEf477ih8CFpgAQWEgv4Y
+4gaa1TcA/Yvjtbj5tX7dgRhUjnboCzZb9KgMjMYgr1V1q03LQkCW6dYHPA0JYci3
+9e28A1iG52Zg2bqr1gW00XDEShLRZRdH6IccgR7KddXE4Re5TzVH2SBzo2fIJdhb
++vEqDLGOWSbUJRiDtyvo4NsRagcVDhNN3qDs10DDjbrupIOSfikMt+Z4KsATE663
+Gqr2BU47DK2qWI2fHHNhoN7SeKoLxA5+6lr30X+jsTk23Z/tyg0FmdHJsDEeOz1h
+7q1I9WAzHjGNMVg79UWuI08Ktb33iai8TE0jllC6FC0IbrgAooUgk5IIfjVcdSMe
+31pJw3e8RWAj85TGkwNM
+=YwQj
+-----END PGP SIGNATURE-----
+
+--WoqaC9TUMqqIOlla--
