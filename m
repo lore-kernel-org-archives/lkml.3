@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab3F1UMf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 16:12:35 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:34203 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab3F1UMe (ORCPT
+	id S1753545Ab3F1UNL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 16:13:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48171 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab3F1UNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 16:12:34 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20130628200333.GA2756@lukather>
-References: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
-	<20130628171532.GD30603@e102568-lin.cambridge.arm.com>
-	<20130628200333.GA2756@lukather>
-Date: Fri, 28 Jun 2013 13:05:42 -0700
-Message-ID: <CAOesGMgsD+tK4+ywvLzsWd+mngrP7zGgSFn0naWjSsQLGaUn2Q@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ARM: sunxi: Convert DTSI to new CPU bindings
-From: Olof Johansson <olof@lixom.net>
+	Fri, 28 Jun 2013 16:13:10 -0400
+Date: Fri, 28 Jun 2013 22:13:08 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+cc: John Stultz <john.stultz@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Emilio Lopez <emilio@elopez.com.ar>,
+        kevin@allwinnertech.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCHv2 4/8] clocksource: sun4i: Fix the next event code
+In-Reply-To: <1372449386-1334-5-git-send-email-maxime.ripard@free-electrons.com>
+Message-ID: <alpine.DEB.2.02.1306282204220.4013@ionos.tec.linutronix.de>
+References: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com> <1372449386-1334-5-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 1:03 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Fri, Jun 28, 2013 at 06:15:32PM +0100, Lorenzo Pieralisi wrote:
->> On Fri, Jun 28, 2013 at 05:44:02PM +0100, Maxime Ripard wrote:
->> > Hi Arnd, Olof,
->> >
->> > Sorry for steping in so late, but these two patches fixes a warning
->> > introduced by the commit 1ba9bf0a (ARM: 7762/1: kernel: fix
->> > arm_dt_init_cpu_maps() to skip non-cpu nodes) after 3.10-rc7.
->> >
->> > These two patches solve the situation for sunxi. The first one by
->> > Lorenzo is to be applied for 3.10 if it's still possible, and the
->> > second one on top of arm-soc/for-next. Tell me if you prefer a more
->> > formal pull request for these patches
->> >
->> > Thanks!
->> > Maxime
->> >
->> > Lorenzo Pieralisi (1):
->> >   ARM: dts: sunxi: cpus/cpu nodes dts updates
->>
->> The patch above should already be queued in next/dt right ?
->
-> Indeed.
->
-> Then why the latest patch of your patchset got in 3.10, while the
-> patches actually fixing the DT it would have impacted were delayed to
-> 3.11?
->
-> (And why was it merged so late in the development cycle?)
+On Fri, 28 Jun 2013, Maxime Ripard wrote:
 
-This. So now we have to scramble because some device trees will
-produce warnings at boot.
+> The next_event logic was setting the next interval to fire in the
+> current timer value instead of the interval value register, which is
+> obviously wrong.
 
-Russell, the alternative is to revert Lorenzo's patch for 3.10 (and
-re-introduce it for 3.11). Do you have a preference?
+Ok.
 
+> Plus the logic to set the actual value was wrong as well, so this
+> code has always been broken.
 
--Olof
+This lacks an explanation why the logic is wrong and what the actual
+fix is.
+ 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  drivers/clocksource/sun4i_timer.c | 12 +++++++++---
+>  1 file changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+> index 84ace76..695c8c8 100644
+> --- a/drivers/clocksource/sun4i_timer.c
+> +++ b/drivers/clocksource/sun4i_timer.c
+> @@ -16,6 +16,7 @@
+>  
+>  #include <linux/clk.h>
+>  #include <linux/clockchips.h>
+> +#include <linux/delay.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/irq.h>
+>  #include <linux/irqreturn.h>
+> @@ -61,9 +62,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
+>  static int sun4i_clkevt_next_event(unsigned long evt,
+>  				   struct clock_event_device *unused)
+>  {
+> -	u32 u = readl(timer_base + TIMER_CTL_REG(0));
+> -	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
+> -	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
+> +	u32 val = readl(timer_base + TIMER_CTL_REG(0));
+> +	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
+> +	udelay(1);
+
+That udelay() is more than suspicious. Is there really no other way to
+deal with that hardware?
+
+If no, you really need to put a proper explanation for that into the code.
+
+Thanks,
+
+	tglx
