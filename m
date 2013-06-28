@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab3F1Vim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 17:38:42 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13544 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab3F1ViD (ORCPT
+	id S1753130Ab3F1Vii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 17:38:38 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17568 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab3F1ViM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 17:38:03 -0400
+	Fri, 28 Jun 2013 17:38:12 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 28 Jun 2013 14:35:56 -0700
+	by hqnvupgp07.nvidia.com on Fri, 28 Jun 2013 14:36:05 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <balbi@ti.com>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
         <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 4/9] ARM: tegra: Remove USB platform data
-Date: Sat, 29 Jun 2013 00:37:02 +0300
-Message-ID: <1372455427-20898-5-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH 8/9] usb: phy: tegra: Use DT helpers for phy_type
+Date: Sat, 29 Jun 2013 00:37:06 +0300
+Message-ID: <1372455427-20898-9-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1372455427-20898-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1372455427-20898-1-git-send-email-ttynkkynen@nvidia.com>
@@ -27,134 +27,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-USB-related platform data is not used anymore in the Tegra USB drivers,
-so remove all of it.
+Use the new of_usb_get_phy_mode helper function for parsing phy_type
+from the device tree.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- arch/arm/mach-tegra/tegra.c             | 38 +--------------------------------
- include/linux/platform_data/tegra_usb.h | 32 ---------------------------
- include/linux/usb/tegra_usb_phy.h       |  5 -----
- 3 files changed, 1 insertion(+), 74 deletions(-)
- delete mode 100644 include/linux/platform_data/tegra_usb.h
+ drivers/usb/phy/phy-tegra-usb.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
-index 0d1e412..fc97cfd 100644
---- a/arch/arm/mach-tegra/tegra.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@ -29,7 +29,6 @@
- #include <linux/of_fdt.h>
- #include <linux/of_platform.h>
- #include <linux/pda_power.h>
--#include <linux/platform_data/tegra_usb.h>
- #include <linux/io.h>
- #include <linux/slab.h>
- #include <linux/sys_soc.h>
-@@ -46,40 +45,6 @@
- #include "fuse.h"
- #include "iomap.h"
+diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+index 2cba13e..13049ce 100644
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -31,6 +31,7 @@
+ #include <linux/of_gpio.h>
+ #include <linux/usb/otg.h>
+ #include <linux/usb/ulpi.h>
++#include <linux/usb/of.h>
+ #include <asm/mach-types.h>
+ #include <linux/usb/ehci_def.h>
+ #include <linux/usb/tegra_usb_phy.h>
+@@ -859,6 +860,7 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	struct tegra_usb_phy *tegra_phy = NULL;
+ 	struct device_node *np = pdev->dev.of_node;
++	enum usb_phy_interface phy_type;
+ 	int err;
  
--static struct tegra_ehci_platform_data tegra_ehci1_pdata = {
--	.operating_mode = TEGRA_USB_OTG,
--	.power_down_on_bus_suspend = 1,
--	.vbus_gpio = -1,
--};
--
--static struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config = {
--	.reset_gpio = -1,
--	.clk = "cdev2",
--};
--
--static struct tegra_ehci_platform_data tegra_ehci2_pdata = {
--	.phy_config = &tegra_ehci2_ulpi_phy_config,
--	.operating_mode = TEGRA_USB_HOST,
--	.power_down_on_bus_suspend = 1,
--	.vbus_gpio = -1,
--};
--
--static struct tegra_ehci_platform_data tegra_ehci3_pdata = {
--	.operating_mode = TEGRA_USB_HOST,
--	.power_down_on_bus_suspend = 1,
--	.vbus_gpio = -1,
--};
--
--static struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
--	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5000000, "tegra-ehci.0",
--		       &tegra_ehci1_pdata),
--	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5004000, "tegra-ehci.1",
--		       &tegra_ehci2_pdata),
--	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5008000, "tegra-ehci.2",
--		       &tegra_ehci3_pdata),
--	{}
--};
--
- static void __init tegra_dt_init(void)
- {
- 	struct soc_device_attribute *soc_dev_attr;
-@@ -112,8 +77,7 @@ static void __init tegra_dt_init(void)
- 	 * devices
- 	 */
- out:
--	of_platform_populate(NULL, of_default_bus_match_table,
--				tegra20_auxdata_lookup, parent);
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
- }
+ 	tegra_phy = devm_kzalloc(&pdev->dev, sizeof(*tegra_phy), GFP_KERNEL);
+@@ -883,12 +885,12 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 	tegra_phy->is_legacy_phy =
+ 		of_property_read_bool(np, "nvidia,has-legacy-mode");
  
- static void __init trimslice_init(void)
-diff --git a/include/linux/platform_data/tegra_usb.h b/include/linux/platform_data/tegra_usb.h
-deleted file mode 100644
-index 66c673f..0000000
---- a/include/linux/platform_data/tegra_usb.h
-+++ /dev/null
-@@ -1,32 +0,0 @@
--/*
-- * Copyright (C) 2010 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#ifndef _TEGRA_USB_H_
--#define _TEGRA_USB_H_
--
--enum tegra_usb_operating_modes {
--	TEGRA_USB_DEVICE,
--	TEGRA_USB_HOST,
--	TEGRA_USB_OTG,
--};
--
--struct tegra_ehci_platform_data {
--	enum tegra_usb_operating_modes operating_mode;
--	/* power down the phy on bus suspend */
--	int power_down_on_bus_suspend;
--	void *phy_config;
--	int vbus_gpio;
--};
--
--#endif /* _TEGRA_USB_H_ */
-diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index c2bc710..8474153 100644
---- a/include/linux/usb/tegra_usb_phy.h
-+++ b/include/linux/usb/tegra_usb_phy.h
-@@ -28,11 +28,6 @@ struct tegra_utmip_config {
- 	u8 xcvr_lsrslew;
- };
+-	err = of_property_match_string(np, "phy_type", "ulpi");
+-	if (err < 0) {
++	phy_type = of_usb_get_phy_mode(np);
++	if (phy_type == USBPHY_INTERFACE_MODE_UTMI) {
+ 		err = utmi_phy_probe(tegra_phy, pdev);
+ 		if (err < 0)
+ 			return err;
+-	} else {
++	} else if (phy_type == USBPHY_INTERFACE_MODE_ULPI) {
+ 		tegra_phy->is_ulpi_phy = true;
  
--struct tegra_ulpi_config {
--	int reset_gpio;
--	const char *clk;
--};
+ 		tegra_phy->reset_gpio =
+@@ -898,8 +900,10 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 				tegra_phy->reset_gpio);
+ 			return tegra_phy->reset_gpio;
+ 		}
 -
- enum tegra_usb_phy_port_speed {
- 	TEGRA_USB_PHY_PORT_SPEED_FULL = 0,
- 	TEGRA_USB_PHY_PORT_SPEED_LOW,
+ 		tegra_phy->config = NULL;
++	} else {
++		dev_err(&pdev->dev, "phy_type is invalid or unsupported\n");
++		return -EINVAL;
+ 	}
+ 
+ 	err = of_property_match_string(np, "dr_mode", "otg");
 -- 
 1.8.1.5
 
