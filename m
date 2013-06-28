@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab3F1QBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:01:12 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:34503 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3F1QBL (ORCPT
+	id S1755544Ab3F1QCn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:02:43 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:45914 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752817Ab3F1QCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:01:11 -0400
+	Fri, 28 Jun 2013 12:02:42 -0400
+Date: Fri, 28 Jun 2013 17:01:56 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>, "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH v7 0/6] xen/arm/arm64: CONFIG_PARAVIRT and stolen ticks
+ accounting
+Message-ID: <20130628160156.GH1643@arm.com>
+References: <alpine.DEB.2.02.1306271614260.4782@kaball.uk.xensource.com>
+ <20130628155840.GA13468@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGjg+kGUo8vqv6hzobuyNoQjipLBXXofZ5q1rUyEehbD3cba9A@mail.gmail.com>
-References: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
- <51C7B9B8.6090309@intel.com> <CAPM31RKq4sVR2_mU8PWx8dK+STQDj3Geyi8dVg3MnL=ymjfV6Q@mail.gmail.com>
- <51C867CF.70908@intel.com> <CAPM31RLTrQ_E6VAwO000zcL09F1oV7vgkjTJXY9wPC-pZ_6h0Q@mail.gmail.com>
- <CAGjg+kGUo8vqv6hzobuyNoQjipLBXXofZ5q1rUyEehbD3cba9A@mail.gmail.com>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 28 Jun 2013 09:00:39 -0700
-Message-ID: <CAPM31R+DrqbK3bRwBBSFL3U+HgYHie4KaARqkYnxt0FOpLxrKQ@mail.gmail.com>
-Subject: Re: [Resend patch v8 0/13] use runnable load in schedule balance
-To: Alex Shi <lkml.alex@gmail.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        Clark Williams <clark.williams@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628155840.GA13468@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 6:20 AM, Alex Shi <lkml.alex@gmail.com> wrote:
->
->> So this is actually an interesting idea, but don't think of it as
->> overweight.  What "cfs_rq->blocked_load_avg / 2" means is actually
->> blocked_load_avg one period from now.  This is interesting because it
->> makes the (reasonable) supposition that blocked load is not about to
->> immediately wake, but will continue to decay.
->>
->> Could you try testing the gvr_lb_tip branch at
->> git://git.kernel.org/pub/scm/linux/kernel/git/pjt/sched-tip.git ?
->>
->
-> Could you rebase the patch on latest tip/sched/core?
+On Fri, Jun 28, 2013 at 04:58:40PM +0100, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jun 28, 2013 at 12:19:54PM +0100, Stefano Stabellini wrote:
+> > Hi all,
+> > this patch series introduces stolen ticks accounting for Xen on ARM and
+> > ARM64.
+> > Stolen ticks are clocksource ticks that have been "stolen" from the cpu,
+> > typically because Linux is running in a virtual machine and the vcpu has
+> > been descheduled.
+> > To account for these ticks we introduce CONFIG_PARAVIRT and pv_time_ops
+> > so that we can make use of:
+> > 
+> > kernel/sched/cputime.c:steal_account_process_tick
+> > 
+> > 
+> > Stefano Stabellini (6):
+> >       xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
+> >       kernel: missing include in cputime.c
+> >       arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+> >       arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+> >       core: remove ifdef CONFIG_PARAVIRT
+> >       xen/arm: account for stolen ticks
+> > 
+> >  arch/arm/Kconfig                  |   20 ++++++++
+> >  arch/arm/include/asm/paravirt.h   |   20 ++++++++
+> >  arch/arm/kernel/Makefile          |    1 +
+> >  arch/arm/kernel/paravirt.c        |   25 ++++++++++
+> >  arch/arm/xen/enlighten.c          |   21 +++++++++
+> >  arch/arm64/Kconfig                |   20 ++++++++
+> >  arch/arm64/include/asm/paravirt.h |   20 ++++++++
+> >  arch/arm64/kernel/Makefile        |    1 +
+> >  arch/arm64/kernel/paravirt.c      |   25 ++++++++++
+> >  arch/ia64/xen/time.c              |   48 +++-----------------
+> >  arch/x86/xen/time.c               |   76 +------------------------------
+> 
+> This is going to hit some of the patches that David
+> has sent to tglx, I think. You might want to try to rebase on top
+> of them (tip/time/for-xen, or something like that ) when they
+> are ready.
+> 
+> But for the Xen generic maintainer I am OK with these changes
+> so you can stick Acked-by on them.
+> 
+> Are you thinking to push them yourself or via the arm64 maintainer?
 
-I suspect it's more direct to just check out and test the branch
-directly (e.g. you should not need to apply it on top of any other
-branch).  It should be based on round-about where you previously
-tested.
+Once the core Xen support is pushed via the arm64 tree (queued for
+3.11-rc1), I'm happy for the subsequent Xen patches to go directly
+(similarly for KVM). But it's -rc7 now and I'm not taking any more
+patches for the upcoming merging window (unless they are fixes).
 
->
->>
->> It's an extension to your series that tries to improve some of the
->> cpu_load interactions in an alternate way to the above.
->>
->> It seems a little better on one and two-socket machines; but we
->> couldn't reproduce/compare to your best performance results since they
->> were taken on larger machines.
->>
->>
->
-> --
-> Thanks
->     Alex
+-- 
+Catalin
