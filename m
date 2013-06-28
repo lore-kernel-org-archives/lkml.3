@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab3F1KY0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:24:26 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42455 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305Ab3F1KYY (ORCPT
+	id S1755552Ab3F1KYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:24:54 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:63367 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754975Ab3F1KYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:24:24 -0400
-Date: Fri, 28 Jun 2013 15:54:04 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] sched: Select a preferred node with the most numa
- hinting faults
-Message-ID: <20130628102404.GE8362@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-4-git-send-email-mgorman@suse.de>
- <20130628061428.GB17195@linux.vnet.ibm.com>
- <20130628085956.GB28407@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130628085956.GB28407@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062810-3620-0000-0000-00000354605D
+	Fri, 28 Jun 2013 06:24:51 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Anders Hammarquist <iko@iko.pp.se>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        stable <stable@vger.kernel.org>
+Subject: [PATCH] USB: ti_usb_3410_5052: fix dynamic-id matching
+Date: Fri, 28 Jun 2013 12:24:26 +0200
+Message-Id: <1372415066-1031-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <20130628102333.GA13241@localhost>
+References: <20130628102333.GA13241@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >  
-> > >  	struct rcu_head rcu;
-> > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > > index f332ec0..019baae 100644
-> > > --- a/kernel/sched/core.c
-> > > +++ b/kernel/sched/core.c
-> > > @@ -1593,6 +1593,7 @@ static void __sched_fork(struct task_struct *p)
-> > >  	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
-> > >  	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
-> > >  	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
-> > > +	p->numa_preferred_nid = -1;
-> > 
-> > Though we may not want to inherit faults, I think the tasks generally
-> > share pages with their siblings, parent. So will it make sense to
-> > inherit the preferred node?
-> 
-> One of the patches I have locally wipes the numa state on exec(). I
-> think we want to do that if we're going to think about inheriting stuff.
-> 
-> 
+The driver failed to take the dynamic ids into account when determining
+the device type and therefore all devices were detected as 2-port
+devices when using the dynamic-id interface.
 
-Agree, if we inherit the preferred node, we would have to reset on exec.
-Since we have to reset the numa_faults also on exec, the reset of
-preferred node can go in task_numa_free
+Match on the usb-serial-driver field instead of doing redundant id-table
+searches.
 
+Reported-by: Anders Hammarquist <iko@iko.pp.se>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/usb/serial/ti_usb_3410_5052.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
+index 5585b20..5c07d55 100644
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -309,7 +309,7 @@ static int ti_startup(struct usb_serial *serial)
+ 	usb_set_serial_data(serial, tdev);
+ 
+ 	/* determine device type */
+-	if (usb_match_id(serial->interface, ti_id_table_3410))
++	if (serial->type == &ti_1port_device)
+ 		tdev->td_is_3410 = 1;
+ 	dev_dbg(&dev->dev, "%s - device type is %s\n", __func__,
+ 		tdev->td_is_3410 ? "3410" : "5052");
 -- 
-Thanks and Regards
-Srikar Dronamraju
+1.8.2.1
 
