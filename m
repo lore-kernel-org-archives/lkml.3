@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab3F1FBn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 01:01:43 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:60067 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab3F1FBl (ORCPT
+	id S1751262Ab3F1FHR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 01:07:17 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:48404 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab3F1FHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 01:01:41 -0400
-Date: Thu, 27 Jun 2013 22:01:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Tim Hockin <thockin@hockin.org>, Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-Message-ID: <20130628050138.GD2500@htj.dyndns.org>
-References: <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
- <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
- <20130625000118.GT1918@mtj.dyndns.org>
- <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
- <20130626212047.GB4536@htj.dyndns.org>
- <1372311907.5871.78.camel@marge.simpson.net>
- <20130627180143.GD5599@mtj.dyndns.org>
- <1372391198.5989.110.camel@marge.simpson.net>
- <20130628040930.GC2500@htj.dyndns.org>
- <1372394950.5989.128.camel@marge.simpson.net>
+	Fri, 28 Jun 2013 01:07:15 -0400
+Date: Thu, 27 Jun 2013 22:07:12 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, Luiz Capitulino <lcapitulino@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
+        kmpark@infradead.org, hyunhee.kim@samsung.com
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130628050712.GA10097@teo>
+References: <20130626231712.4a7392a7@redhat.com>
+ <20130627150231.2bc00e3efcd426c4beef894c@linux-foundation.org>
+ <20130628000201.GB15637@bbox>
+ <20130627173433.d0fc6ecd.akpm@linux-foundation.org>
+ <20130628005852.GA8093@teo>
+ <20130627181353.3d552e64.akpm@linux-foundation.org>
+ <20130628043411.GA9100@teo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1372394950.5989.128.camel@marge.simpson.net>
+In-Reply-To: <20130628043411.GA9100@teo>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Mike.
+On Thu, Jun 27, 2013 at 09:34:11PM -0700, Anton Vorontsov wrote:
+> ... we can add the strict mode and deprecate the
+> "filtering" -- basically we'll implement the idea of requiring that
+> userspace registers a separate fd for each level.
 
-On Fri, Jun 28, 2013 at 06:49:10AM +0200, Mike Galbraith wrote:
-> I always thought that was a very cool feature, mkdir+echo, poof done.
-> Now maybe that interface is suboptimal for serious usage, but it makes
-> the things usable via dirt simple scripts, very flexible, nice.
+Btw, assuming that more levels can be added, there will be a problem:
+imagine that an app hooked up onto low, med, crit levels in "strict"
+mode... then once we add a new level, the app will start missing the new
+level events.
 
-Oh, that in itself is not bad.  I mean, if you're root, it's pretty
-easy to play with and that part is fine.  But combined with the
-hierarchical nature of cgroup and file permissions, it encourages
-people to "deligate" subdirectories to less previledged domains, which
-in turn leads to normal binaries to manipulate them directly, which is
-where the horror begins.  We end up exposing control knobs which are
-tightly coupled to kernel implementation details right into lay
-binaries and scripts directly used by end users.
+In the old scheme it is not a problem because of the >= condition.
 
-I think this is the first time this happened, which is probably why
-nobody really noticed the mess earlier.
+With a proper versioning this won't be a problem for a new scheme too.
 
-Anyways, if you're root, you can keep doing whatever you want.  You
-could be stepping on the centralized agent's toes a bit and vice-versa
-but I don't think that's gonna be disastrous.  What I'm trying to
-stamp out is direct usages from !root domains and !system-management
-binaries / scripts.  They absolutely have to go.  There's no question
-about it and I'll take totalitarian userland agent anyday over the
-current mess.
-
-Eventually, I think we'll be able to reach an equilibrium where most
-things are reasonable and we'll be exploring the acceptable limits of
-flexibility again, but right now, please bear with the brutality.
-We're way over the line and I can't see a way back which isn't gonna
-sting a bit.  I'm and will keep trying to make it as painless as
-possible.
-
-Thanks!
-
--- 
-tejun
+Anton
