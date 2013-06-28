@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3F1PiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:38:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46822 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3F1PiP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:38:15 -0400
-Date: Fri, 28 Jun 2013 17:38:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Vrabel <david.vrabel@citrix.com>
-cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH 5/5] x86/xen: sync the CMOS RTC as well as the Xen
- wallclock
-In-Reply-To: <1372329348-20841-6-git-send-email-david.vrabel@citrix.com>
-Message-ID: <alpine.DEB.2.02.1306281727240.4013@ionos.tec.linutronix.de>
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <1372329348-20841-6-git-send-email-david.vrabel@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755464Ab3F1Pid (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:38:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31655 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754640Ab3F1Pic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 11:38:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,958,1363158000"; 
+   d="scan'208";a="261439990"
+Date: Fri, 28 Jun 2013 17:36:15 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH] MAINTAINERS: Add include directory to MFD file patterns
+Message-ID: <20130628153615.GC13700@zurbaran>
+References: <1372428851-31767-1-git-send-email-broonie@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372428851-31767-1-git-send-email-broonie@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013, David Vrabel wrote:
+Hi Mark,
 
-> From: David Vrabel <david.vrabel@citrix.com>
+On Fri, Jun 28, 2013 at 03:14:11PM +0100, Mark Brown wrote:
+> From: Mark Brown <broonie@linaro.org>
 > 
-> Adjustments to Xen's persistent clock via update_persistent_clock()
-> don't actually persist, as the Xen wallclock is a software only clock
-> and modifications to it do not modify the underlying CMOS RTC.
+> Ensure that get_maintainer.pl does the right thing for header only
+> changes.
 > 
-> The x86_platform.set_wallclock hook can be used to keep the hardware
-> RTC synchronized (as on bare metal).  Because the Xen wallclock is now
-> kept synchronized by pvclock_gtod notifier, xen_set_wallclock() need
-> not do this and dom0 can simply use the native implementation.
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+> ---
+>  MAINTAINERS | 1 +
+>  1 file changed, 1 insertion(+)
+Applied to mfd-next, thanks.
 
-I can understand that part, but ...
- 
->  static int xen_pvclock_gtod_notify(struct notifier_block *nb, unsigned long was_set,
->  				   void *priv)
->  {
-> +	static struct timespec next;
->  	struct timespec now;
->  	struct xen_platform_op op;
->  
-> -	if (!was_set)
-> -		return NOTIFY_OK;
-> -
->  	now = __current_kernel_time();
->  
-> +	if (!was_set && timespec_compare(&now, &next) < 0)
-> +		return NOTIFY_OK;
-> +
->  	op.cmd = XENPF_settime;
->  	op.u.settime.secs = now.tv_sec;
->  	op.u.settime.nsecs = now.tv_nsec;
->  	op.u.settime.system_time = xen_clocksource_read();
->  
->  	(void)HYPERVISOR_dom0_op(&op);
-> +
-> +	/*
-> +	 * Don't update the wallclock for another 11 minutes. This is
-> +	 * the same period as the sync_cmos_clock() work.
-> +	 */
-> +	next = now;
-> +	next.tv_sec += 11*60;
-> +
+Cheers,
+Samuel.
 
-How is this related to the changelog? /me is confused .....
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
