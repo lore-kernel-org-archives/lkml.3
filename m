@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3F1P5d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:57:33 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42268 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab3F1P5c (ORCPT
+	id S1755641Ab3F1P7b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:59:31 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49712 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3F1P73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:57:32 -0400
-Message-ID: <51CDB26A.9060500@codeaurora.org>
-Date: Fri, 28 Jun 2013 08:57:30 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Stehle Vincent-B46079 <B46079@freescale.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
+	Fri, 28 Jun 2013 11:59:29 -0400
+Date: Fri, 28 Jun 2013 11:58:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: next-20130627 breaks i.MX6 sabre sd UART console
-References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>, arnd@arndb.de,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v7 0/6] xen/arm/arm64: CONFIG_PARAVIRT and stolen ticks
+ accounting
+Message-ID: <20130628155840.GA13468@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1306271614260.4782@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306271614260.4782@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/13 05:09, Thomas Gleixner wrote:
-> On Thu, 27 Jun 2013, Stehle Vincent-B46079 wrote:
->
-> Cc'ed Mark and Stephen.
->
->> FYI I remark that today's Linux next 'next-20130627' breaks i.MX6
->> sabre sd UART console with ARM config imx_v6_v7_defconfig.
->> This was working fine yesterday with 'next-20130626'.
->>
->> Bisecting gave me this commit:
->>
->>   064706514ec3fea740c2656e03c4f01f6a551ac4 clocksource: Add generic
->> dummy timer driver
->>
->> If I revert it I do indeed get the boot messages on the UART console
->> again, but the kernel then crashes in wm8962_probe(). So there is
->> more to find out...
+On Fri, Jun 28, 2013 at 12:19:54PM +0100, Stefano Stabellini wrote:
+> Hi all,
+> this patch series introduces stolen ticks accounting for Xen on ARM and
+> ARM64.
+> Stolen ticks are clocksource ticks that have been "stolen" from the cpu,
+> typically because Linux is running in a virtual machine and the vcpu has
+> been descheduled.
+> To account for these ticks we introduce CONFIG_PARAVIRT and pv_time_ops
+> so that we can make use of:
+> 
+> kernel/sched/cputime.c:steal_account_process_tick
+> 
+> 
+> Stefano Stabellini (6):
+>       xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
+>       kernel: missing include in cputime.c
+>       arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+>       arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+>       core: remove ifdef CONFIG_PARAVIRT
+>       xen/arm: account for stolen ticks
+> 
+>  arch/arm/Kconfig                  |   20 ++++++++
+>  arch/arm/include/asm/paravirt.h   |   20 ++++++++
+>  arch/arm/kernel/Makefile          |    1 +
+>  arch/arm/kernel/paravirt.c        |   25 ++++++++++
+>  arch/arm/xen/enlighten.c          |   21 +++++++++
+>  arch/arm64/Kconfig                |   20 ++++++++
+>  arch/arm64/include/asm/paravirt.h |   20 ++++++++
+>  arch/arm64/kernel/Makefile        |    1 +
+>  arch/arm64/kernel/paravirt.c      |   25 ++++++++++
+>  arch/ia64/xen/time.c              |   48 +++-----------------
+>  arch/x86/xen/time.c               |   76 +------------------------------
 
+This is going to hit some of the patches that David
+has sent to tglx, I think. You might want to try to rebase on top
+of them (tip/time/for-xen, or something like that ) when they
+are ready.
 
+But for the Xen generic maintainer I am OK with these changes
+so you can stick Acked-by on them.
 
-Do you have debug_ll support to get some serial logs? Also could you try
-booting with maxcpus=1 on the kernel commandline? And it would be useful
-to have the output of /proc/timer_list if you have it from a working
-device. I believe you have a per-cpu TWD timer and a global imx-gpt? Can
-you try this patch? (sorry about the whitespace damage)
-
-----8<-----
-
-diff --git a/arch/arm/mach-imx/time.c b/arch/arm/mach-imx/time.c
-index fea9131..f05f1f1 100644
---- a/arch/arm/mach-imx/time.c
-+++ b/arch/arm/mach-imx/time.c
-@@ -267,7 +267,7 @@ static int __init mxc_clockevent_init(struct clk *timer_clk)
-        if (timer_is_v2())
-                clockevent_mxc.set_next_event = v2_set_next_event;
- 
--       clockevent_mxc.cpumask = cpumask_of(0);
-+       clockevent_mxc.cpumask = cpu_all_mask;
-        clockevents_config_and_register(&clockevent_mxc,
-                                        clk_get_rate(timer_clk),
-                                        0xff, 0xfffffffe);
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Are you thinking to push them yourself or via the arm64 maintainer?
 
