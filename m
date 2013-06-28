@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab3F1LI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 07:08:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48336 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab3F1LI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 07:08:27 -0400
-Date: Fri, 28 Jun 2013 13:07:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        gregkh@linuxfoundation.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        Clark Williams <clark.williams@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        fweisbec@gmail.com
-Subject: Re: [Resend patch v8 0/13] use runnable load in schedule balance
-Message-ID: <20130628110730.GA6626@twins.programming.kicks-ass.net>
-References: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
- <51C7B9B8.6090309@intel.com>
- <CAPM31RKq4sVR2_mU8PWx8dK+STQDj3Geyi8dVg3MnL=ymjfV6Q@mail.gmail.com>
- <51C867CF.70908@intel.com>
- <CAPM31RLTrQ_E6VAwO000zcL09F1oV7vgkjTJXY9wPC-pZ_6h0Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM31RLTrQ_E6VAwO000zcL09F1oV7vgkjTJXY9wPC-pZ_6h0Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755464Ab3F1LKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 07:10:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4316 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750977Ab3F1LKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 07:10:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,958,1363158000"; 
+   d="scan'208";a="336937781"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, pjt@google.com, kamalesh@linux.vnet.ibm.com
+Subject: [patch based tip/sched/core] sched/debug: remove CONFIG_FAIR_GROUP_SCHED mask
+Date: Fri, 28 Jun 2013 19:10:35 +0800
+Message-Id: <1372417835-4698-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 03:56:25AM -0700, Paul Turner wrote:
+Now we are using runnable load avg in sched balance. So don't need
+keep marking them under CONFIG_FAIR_GROUP_SCHED. Also align the code
+style to #ifdef instead of #if defined() and reorder the tg output info.
 
-> So this is actually an interesting idea, but don't think of it as
-> overweight.  What "cfs_rq->blocked_load_avg / 2" means is actually
-> blocked_load_avg one period from now.  This is interesting because it
-> makes the (reasonable) supposition that blocked load is not about to
-> immediately wake, but will continue to decay.
-> 
-> Could you try testing the gvr_lb_tip branch at
-> git://git.kernel.org/pub/scm/linux/kernel/git/pjt/sched-tip.git ?
-> 
-> It's an extension to your series that tries to improve some of the
-> cpu_load interactions in an alternate way to the above.
-> 
-> It seems a little better on one and two-socket machines; but we
-> couldn't reproduce/compare to your best performance results since they
-> were taken on larger machines.
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/debug.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-Oh nice.. it does away with the entire cpu_load[] array thing. Just what
-Frederic needs for his NOHZ stuff as well -- he's currently abusing
-LB_BIAS for that.
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 62632098..3d1fe86 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -209,22 +209,24 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			cfs_rq->nr_spread_over);
+ 	SEQ_printf(m, "  .%-30s: %d\n", "nr_running", cfs_rq->nr_running);
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+ #ifdef CONFIG_SMP
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "runnable_load_avg",
+ 			cfs_rq->runnable_load_avg);
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "blocked_load_avg",
+ 			cfs_rq->blocked_load_avg);
+-	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
+-			atomic_long_read(&cfs_rq->tg->load_avg));
++#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_contrib",
+ 			cfs_rq->tg_load_contrib);
+ 	SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
+ 			cfs_rq->tg_runnable_contrib);
++	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
++			atomic_long_read(&cfs_rq->tg->load_avg));
+ 	SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
+ 			atomic_read(&cfs_rq->tg->runnable_avg));
+ #endif
++#endif
+ 
++#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+ #endif
+ }
+@@ -566,7 +568,7 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+ 		   "nr_involuntary_switches", (long long)p->nivcsw);
+ 
+ 	P(se.load.weight);
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ 	P(se.avg.runnable_avg_sum);
+ 	P(se.avg.runnable_avg_period);
+ 	P(se.avg.load_avg_contrib);
+-- 
+1.7.5.4
+
