@@ -1,71 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3F1QFl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:05:41 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31790 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229Ab3F1QFj (ORCPT
+	id S1755663Ab3F1QF6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:05:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18232 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755532Ab3F1QF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:05:39 -0400
-Date: Fri, 28 Jun 2013 12:05:13 -0400
+	Fri, 28 Jun 2013 12:05:56 -0400
+Date: Fri, 28 Jun 2013 12:05:40 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Ben Guthro <benjamin.guthro@citrix.com>
 Cc: Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        xen-devel@lists.xen.org, tboot-devel@lists.sourceforge.net,
-        Gang Wei <gang.wei@intel.com>
-Subject: Re: [PATCH v5 4/5] x86/tboot: Fail extended mode reduced hardware
- sleep
-Message-ID: <20130628160513.GC13468@phenom.dumpdata.com>
+        xen-devel@lists.xen.org
+Subject: Re: [PATCH v5 5/5] xen/acpi: notify xen when reduced hardware sleep
+ is available
+Message-ID: <20130628160540.GD13468@phenom.dumpdata.com>
 References: <1372427184-6197-1-git-send-email-benjamin.guthro@citrix.com>
- <1372427184-6197-5-git-send-email-benjamin.guthro@citrix.com>
+ <1372427184-6197-6-git-send-email-benjamin.guthro@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372427184-6197-5-git-send-email-benjamin.guthro@citrix.com>
+In-Reply-To: <1372427184-6197-6-git-send-email-benjamin.guthro@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 09:46:23AM -0400, Ben Guthro wrote:
-> As tboot currently does not support the reduced hardware sleep
-> interface, fail this extended call.
+On Fri, Jun 28, 2013 at 09:46:24AM -0400, Ben Guthro wrote:
+> Make use of acpi_os_prepare_sleep extended parameter to notify xen
+> to make use of the reduced hardware sleep functionality
+> 
+> The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
+> v5 (reduced HW) sleep interface") on the master branch of
+> git://xenbits.xen.org/xen.git.
 > 
 > Signed-off-by: Jan Beulich <jbeulich@suse.com>
 > Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-> Cc: tboot-devel@lists.sourceforge.net
-> Cc: Gang Wei <gang.wei@intel.com>
+> Cc: Konrad Wilk <konrad.wilk@oracle.com>
+
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > ---
->  arch/x86/kernel/tboot.c |    3 +++
->  1 file changed, 3 insertions(+)
+>  drivers/xen/acpi.c               |   25 ++++++++++++-------------
+>  include/xen/acpi.h               |    3 +--
+>  include/xen/interface/platform.h |    7 ++++---
+>  3 files changed, 17 insertions(+), 18 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-> index d578c9c..57383b2 100644
-> --- a/arch/x86/kernel/tboot.c
-> +++ b/arch/x86/kernel/tboot.c
-> @@ -285,6 +285,9 @@ static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control,
->  	if (!tboot_enabled())
->  		return 0;
+> diff --git a/drivers/xen/acpi.c b/drivers/xen/acpi.c
+> index 36d2be1..371dade 100644
+> --- a/drivers/xen/acpi.c
+> +++ b/drivers/xen/acpi.c
+> @@ -35,28 +35,27 @@
+>  #include <asm/xen/hypercall.h>
+>  #include <asm/xen/hypervisor.h>
 >  
-> +	if (extended)
-> +		return -1;
-
-I would add WARN_ON just so that the user is aware of.
-Perhaps
-
-	if (WARN(extended,"tboot is not able to suspend on ACPI extended platforms. Contact
-tboot-something mailing list please."))
-		return -1
-
-Otherwise
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
+> -int xen_acpi_notify_hypervisor_state(u8 sleep_state,
+> -				     u32 pm1a_cnt, u32 pm1b_cnt,
+> +int xen_acpi_notify_hypervisor_state(u8 sleep_state, u32 val_a, u32 val_b,
+>  				     bool extended)
+>  {
+> +	unsigned int bits = extended ? 8 : 16;
 > +
->  	tboot_copy_fadt(&acpi_gbl_FADT);
->  	tboot->acpi_sinfo.pm1a_cnt_val = pm1a_control;
->  	tboot->acpi_sinfo.pm1b_cnt_val = pm1b_control;
+>  	struct xen_platform_op op = {
+>  		.cmd = XENPF_enter_acpi_sleep,
+>  		.interface_version = XENPF_INTERFACE_VERSION,
+> -		.u = {
+> -			.enter_acpi_sleep = {
+> -				.pm1a_cnt_val = (u16)pm1a_cnt,
+> -				.pm1b_cnt_val = (u16)pm1b_cnt,
+> -				.sleep_state = sleep_state,
+> -			},
+> +		.u.enter_acpi_sleep = {
+> +			.val_a = (u16)val_a,
+> +			.val_b = (u16)val_b,
+> +			.sleep_state = sleep_state,
+> +			.flags = extended ? XENPF_ACPI_SLEEP_EXTENDED : 0,
+>  		},
+>  	};
+>  
+> -	if ((pm1a_cnt & 0xffff0000) || (pm1b_cnt & 0xffff0000)) {
+> -		WARN(1, "Using more than 16bits of PM1A/B 0x%x/0x%x!"
+> -		     "Email xen-devel@lists.xensource.com  Thank you.\n", \
+> -		     pm1a_cnt, pm1b_cnt);
+> +	if (WARN((val_a & (~0 << bits)) || (val_b & (~0 << bits)),
+> +		 "Using more than %u bits of sleep control values %#x/%#x!"
+> +		 "Email xen-devel@lists.xen.org - Thank you.\n", \
+> +		 bits, val_a, val_b))
+>  		return -1;
+> -	}
+>  
+>  	HYPERVISOR_dom0_op(&op);
+>  	return 1;
+> diff --git a/include/xen/acpi.h b/include/xen/acpi.h
+> index 9f7e2e6..a2d5667 100644
+> --- a/include/xen/acpi.h
+> +++ b/include/xen/acpi.h
+> @@ -75,8 +75,7 @@ static inline int xen_acpi_get_pxm(acpi_handle h)
+>  	return -ENXIO;
+>  }
+>  
+> -int xen_acpi_notify_hypervisor_state(u8 sleep_state,
+> -				     u32 pm1a_cnt, u32 pm1b_cnd,
+> +int xen_acpi_notify_hypervisor_state(u8 sleep_state, u32 val_a, u32 val_b,
+>  				     bool extended);
+>  
+>  static inline void xen_acpi_sleep_register(void)
+> diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
+> index c57d5f6..f1331e3 100644
+> --- a/include/xen/interface/platform.h
+> +++ b/include/xen/interface/platform.h
+> @@ -152,10 +152,11 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_firmware_info_t);
+>  #define XENPF_enter_acpi_sleep    51
+>  struct xenpf_enter_acpi_sleep {
+>  	/* IN variables */
+> -	uint16_t pm1a_cnt_val;      /* PM1a control value. */
+> -	uint16_t pm1b_cnt_val;      /* PM1b control value. */
+> +	uint16_t val_a;             /* PM1a control / sleep type A. */
+> +	uint16_t val_b;             /* PM1b control / sleep type B. */
+>  	uint32_t sleep_state;       /* Which state to enter (Sn). */
+> -	uint32_t flags;             /* Must be zero. */
+> +#define XENPF_ACPI_SLEEP_EXTENDED 0x00000001
+> +	uint32_t flags;             /* XENPF_ACPI_SLEEP_*. */
+>  };
+>  DEFINE_GUEST_HANDLE_STRUCT(xenpf_enter_acpi_sleep_t);
+>  
 > -- 
 > 1.7.9.5
 > 
