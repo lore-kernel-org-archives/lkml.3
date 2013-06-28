@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab3F1NDK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:03:10 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:59991 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab3F1NDH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755271Ab3F1NDH (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Jun 2013 09:03:07 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:59960 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754804Ab3F1NDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 09:03:02 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Shawn Guo <shawn.guo@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -14,9 +14,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 8/8] ARM: mxs: dt: cfa10057: remove hogpins
-Date: Fri, 28 Jun 2013 15:02:57 +0200
-Message-Id: <1372424577-8279-9-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 3/8] ARM: mxs: dt: Add Crystalfontz CFA-10058 device tree
+Date: Fri, 28 Jun 2013 15:02:52 +0200
+Message-Id: <1372424577-8279-4-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372424577-8279-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1372424577-8279-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -24,64 +24,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Necessary pins are now grabbed by respective drivers. Unecessary hogpins are
-simply removed.
+From: Brian Lilly <brian@crystalfontz.com>
 
+The CFA-10058 is a breakout board for the CFA-10036 that has Ethernet, USB and a
+5" LCD screen on it.
+
+Signed-off-by: Brian Lilly <brian@crystalfontz.com>
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/boot/dts/imx28-cfa10057.dts | 23 +++--------------------
- 1 file changed, 3 insertions(+), 20 deletions(-)
+ arch/arm/boot/dts/Makefile           |   1 +
+ arch/arm/boot/dts/imx28-cfa10058.dts | 141 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 142 insertions(+)
+ create mode 100644 arch/arm/boot/dts/imx28-cfa10058.dts
 
-diff --git a/arch/arm/boot/dts/imx28-cfa10057.dts b/arch/arm/boot/dts/imx28-cfa10057.dts
-index 2da713c..0333c05 100644
---- a/arch/arm/boot/dts/imx28-cfa10057.dts
-+++ b/arch/arm/boot/dts/imx28-cfa10057.dts
-@@ -23,35 +23,16 @@
- 	apb@80000000 {
- 		apbh@80000000 {
- 			pinctrl@80018000 {
--				pinctrl-names = "default", "default";
--				pinctrl-1 = <&hog_pins_cfa10057
--					&hog_pins_cfa10057_pullup>;
--
--				hog_pins_cfa10057: hog-10057@0 {
-+				usb_pins_cfa10057: usb-10057@0 {
- 					reg = <0>;
- 					fsl,pinmux-ids = <
- 						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
--						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
- 					>;
- 					fsl,drive-strength = <0>;
- 					fsl,voltage = <1>;
- 					fsl,pull-up = <0>;
- 				};
- 
--				hog_pins_cfa10057_pullup: hog-10057-pullup@0 {
--					reg = <0>;
--					fsl,pinmux-ids = <
--						0x2133 /* MX28_PAD_SSP2_D3__GPIO_2_19 */
--						0x3183 /* MX28_PAD_I2C0_SCL__GPIO_3_24 */
--						0x3193 /* MX28_PAD_I2C0_SDA__GPIO_3_25 */
--						0x31a3 /* MX28_PAD_SAIF_SDATA0__GPIO_3_26 */
--						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
--					>;
--					fsl,drive-strength = <0>;
--					fsl,voltage = <1>;
--					fsl,pull-up = <1>;
--				};
--
- 				lcdif_18bit_pins_cfa10057: lcdif-18bit@0 {
- 					reg = <0>;
- 					fsl,pinmux-ids = <
-@@ -164,6 +145,8 @@
- 
- 		reg_usb1_vbus: usb1_vbus {
- 			compatible = "regulator-fixed";
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index da75139..92d66cf 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -145,6 +145,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
+ 	imx28-cfa10055.dtb \
+ 	imx28-cfa10056.dtb \
+ 	imx28-cfa10057.dtb \
++	imx28-cfa10058.dtb \
+ 	imx28-evk.dtb \
+ 	imx28-m28evk.dtb \
+ 	imx28-sps1.dtb \
+diff --git a/arch/arm/boot/dts/imx28-cfa10058.dts b/arch/arm/boot/dts/imx28-cfa10058.dts
+new file mode 100644
+index 0000000..64c64c5
+--- /dev/null
++++ b/arch/arm/boot/dts/imx28-cfa10058.dts
+@@ -0,0 +1,141 @@
++/*
++ * Copyright 2013 Crystalfontz America, Inc.
++ * Copyright 2013 Free Electrons
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/*
++ * The CFA-10058 is an expansion board for the CFA-10036 module, thus we
++ * need to include the CFA-10036 DTS.
++ */
++/include/ "imx28-cfa10036.dts"
++
++/ {
++	model = "Crystalfontz CFA-10058 Board";
++	compatible = "crystalfontz,cfa10058", "crystalfontz,cfa10036", "fsl,imx28";
++
++	apb@80000000 {
++		apbh@80000000 {
++			pinctrl@80018000 {
++				usb_pins_cfa10058: usb-10058@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++
++				lcdif_pins_cfa10058: lcdif-10058@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x1181 /* MX28_PAD_LCD_RD_E__LCD_VSYNC */
++						0x1191 /* MX28_PAD_LCD_WR_RWN__LCD_HSYNC */
++						0x11a1 /* MX28_PAD_LCD_RS__LCD_DOTCLK */
++						0x11b1 /* MX28_PAD_LCD_CS__LCD_ENABLE */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++			};
++
++			lcdif@80030000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <&lcdif_24bit_pins_a
++						 &lcdif_pins_cfa10058>;
++				display = <&display>;
++				status = "okay";
++
++				display: display {
++					bits-per-pixel = <32>;
++					bus-width = <24>;
++
++					display-timings {
++						native-mode = <&timing0>;
++						timing0: timing0 {
++							clock-frequency = <30000000>;
++							hactive = <800>;
++							vactive = <480>;
++							hback-porch = <40>;
++							hfront-porch = <40>;
++							vback-porch = <13>;
++							vfront-porch = <29>;
++							hsync-len = <8>;
++							vsync-len = <8>;
++							hsync-active = <0>;
++							vsync-active = <0>;
++							de-active = <1>;
++							pixelclk-active = <1>;
++						};
++					};
++				};
++			};
++		};
++
++		apbx@80040000 {
++			lradc@80050000 {
++				fsl,lradc-touchscreen-wires = <4>;
++				status = "okay";
++			};
++
++			pwm: pwm@80064000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <&pwm3_pins_b>;
++				status = "okay";
++			};
++
++			usbphy1: usbphy@8007e000 {
++				status = "okay";
++			};
++		};
++	};
++
++	ahb@80080000 {
++		usb1: usb@80090000 {
++			vbus-supply = <&reg_usb1_vbus>;
++			pinctrl-0 = <&usbphy1_pins_a>;
 +			pinctrl-names = "default";
-+			pinctrl-0 = <&usb_pins_cfa10057>;
- 			regulator-name = "usb1_vbus";
- 			regulator-min-microvolt = <5000000>;
- 			regulator-max-microvolt = <5000000>;
++			status = "okay";
++		};
++	};
++
++	regulators {
++		compatible = "simple-bus";
++
++		reg_usb1_vbus: usb1_vbus {
++			pinctrl-names = "default";
++			pinctrl-0 = <&usb_pins_cfa10058>;
++			compatible = "regulator-fixed";
++			regulator-name = "usb1_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&gpio0 7 1>;
++		};
++	};
++
++	ahb@80080000 {
++		mac0: ethernet@800f0000 {
++			phy-mode = "rmii";
++			pinctrl-names = "default";
++			pinctrl-0 = <&mac0_pins_a>;
++			phy-reset-gpios = <&gpio2 21 0>;
++			phy-reset-duration = <100>;
++			status = "okay";
++		};
++	};
++
++	backlight {
++		compatible = "pwm-backlight";
++		pwms = <&pwm 3 5000000>;
++		brightness-levels = <0 4 8 16 32 64 128 255>;
++		default-brightness-level = <6>;
++	};
++};
 -- 
 1.8.1.2
 
