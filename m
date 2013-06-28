@@ -1,85 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab3F1LUH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 07:20:07 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:60787 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755613Ab3F1LUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 07:20:01 -0400
+	id S1755678Ab3F1LVN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 07:21:13 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:25721 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755523Ab3F1LVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 07:21:11 -0400
 X-IronPort-AV: E=Sophos;i="4.87,958,1363132800"; 
-   d="scan'208";a="32429434"
-Date: Fri, 28 Jun 2013 12:19:54 +0100
+   d="scan'208";a="34056481"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH v7 0/6] xen/arm/arm64: CONFIG_PARAVIRT and stolen ticks
- accounting
-Message-ID: <alpine.DEB.2.02.1306271614260.4782@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
+        <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>, <linux@arm.linux.org.uk>, <olof@lixom.net>,
+        <arnd@arndb.de>, <catalin.marinas@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <nico@linaro.org>, <cov@codeaurora.org>
+Subject: [PATCH v7 3/6] arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+Date: Fri, 28 Jun 2013 12:20:44 +0100
+Message-ID: <1372418447-24066-3-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1306271614260.4782@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1306271614260.4782@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series introduces stolen ticks accounting for Xen on ARM and
-ARM64.
-Stolen ticks are clocksource ticks that have been "stolen" from the cpu,
-typically because Linux is running in a virtual machine and the vcpu has
-been descheduled.
-To account for these ticks we introduce CONFIG_PARAVIRT and pv_time_ops
-so that we can make use of:
+Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM.
 
-kernel/sched/cputime.c:steal_account_process_tick
+The only paravirt interface supported is pv_time_ops.steal_clock, so no
+runtime pvops patching needed.
 
+This allows us to make use of steal_account_process_tick for stolen
+ticks accounting.
 
-Stefano Stabellini (6):
-      xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
-      kernel: missing include in cputime.c
-      arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-      arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-      core: remove ifdef CONFIG_PARAVIRT
-      xen/arm: account for stolen ticks
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Christopher Covington <cov@codeaurora.org>
+CC: linux@arm.linux.org.uk
+CC: will.deacon@arm.com
+CC: nico@linaro.org
+CC: marc.zyngier@arm.com
+CC: cov@codeaurora.org
+CC: arnd@arndb.de
+CC: olof@lixom.net
 
- arch/arm/Kconfig                  |   20 ++++++++
- arch/arm/include/asm/paravirt.h   |   20 ++++++++
- arch/arm/kernel/Makefile          |    1 +
- arch/arm/kernel/paravirt.c        |   25 ++++++++++
- arch/arm/xen/enlighten.c          |   21 +++++++++
- arch/arm64/Kconfig                |   20 ++++++++
- arch/arm64/include/asm/paravirt.h |   20 ++++++++
- arch/arm64/kernel/Makefile        |    1 +
- arch/arm64/kernel/paravirt.c      |   25 ++++++++++
- arch/ia64/xen/time.c              |   48 +++-----------------
- arch/x86/xen/time.c               |   76 +------------------------------
- drivers/xen/Makefile              |    2 +-
- drivers/xen/time.c                |   91 +++++++++++++++++++++++++++++++++++++
- include/xen/xen-ops.h             |    5 ++
- kernel/sched/core.c               |    2 -
- kernel/sched/cputime.c            |    1 +
- 16 files changed, 258 insertions(+), 120 deletions(-)
+---
+Changes in v7:
+- ifdef CONFIG_PARAVIRT the content of paravirt.h.
+
+Changes in v3:
+- improve commit description and Kconfig help text;
+- no need to initialize pv_time_ops;
+- add PARAVIRT_TIME_ACCOUNTING.
+---
+ arch/arm/Kconfig                |   20 ++++++++++++++++++++
+ arch/arm/include/asm/paravirt.h |   20 ++++++++++++++++++++
+ arch/arm/kernel/Makefile        |    1 +
+ arch/arm/kernel/paravirt.c      |   25 +++++++++++++++++++++++++
+ 4 files changed, 66 insertions(+), 0 deletions(-)
  create mode 100644 arch/arm/include/asm/paravirt.h
  create mode 100644 arch/arm/kernel/paravirt.c
- create mode 100644 arch/arm64/include/asm/paravirt.h
- create mode 100644 arch/arm64/kernel/paravirt.c
- create mode 100644 drivers/xen/time.c
 
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git lost_ticks_7
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 49d993c..5621a02 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1786,12 +1786,32 @@ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN
+ 
++config PARAVIRT
++	bool "Enable paravirtualization code"
++	---help---
++	  This changes the kernel so it can modify itself when it is run
++	  under a hypervisor, potentially improving performance significantly
++	  over full virtualization.
++
++config PARAVIRT_TIME_ACCOUNTING
++	bool "Paravirtual steal time accounting"
++	select PARAVIRT
++	default n
++	---help---
++	  Select this option to enable fine granularity task steal time
++	  accounting. Time spent executing other tasks in parallel with
++	  the current vCPU is discounted from the vCPU power. To account for
++	  that, there can be a small performance impact.
++
++	  If in doubt, say N here.
++
+ config XEN
+ 	bool "Xen guest support on ARM (EXPERIMENTAL)"
+ 	depends on ARM && AEABI && OF
+ 	depends on CPU_V7 && !CPU_V6
+ 	depends on !GENERIC_ATOMIC64
+ 	select ARM_PSCI
++	select PARAVIRT
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+ 
+diff --git a/arch/arm/include/asm/paravirt.h b/arch/arm/include/asm/paravirt.h
+new file mode 100644
+index 0000000..8435ff59
+--- /dev/null
++++ b/arch/arm/include/asm/paravirt.h
+@@ -0,0 +1,20 @@
++#ifndef _ASM_ARM_PARAVIRT_H
++#define _ASM_ARM_PARAVIRT_H
++
++#ifdef CONFIG_PARAVIRT
++struct static_key;
++extern struct static_key paravirt_steal_enabled;
++extern struct static_key paravirt_steal_rq_enabled;
++
++struct pv_time_ops {
++	unsigned long long (*steal_clock)(int cpu);
++};
++extern struct pv_time_ops pv_time_ops;
++
++static inline u64 paravirt_steal_clock(int cpu)
++{
++	return pv_time_ops.steal_clock(cpu);
++}
++#endif
++
++#endif
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 5f3338e..d911db6 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -76,6 +76,7 @@ obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
+ ifneq ($(CONFIG_ARCH_EBSA110),y)
+   obj-y		+= io.o
+ endif
++obj-$(CONFIG_PARAVIRT)	+= paravirt.o
+ 
+ head-y			:= head$(MMUEXT).o
+ obj-$(CONFIG_DEBUG_LL)	+= debug.o
+diff --git a/arch/arm/kernel/paravirt.c b/arch/arm/kernel/paravirt.c
+new file mode 100644
+index 0000000..53f371e
+--- /dev/null
++++ b/arch/arm/kernel/paravirt.c
+@@ -0,0 +1,25 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Copyright (C) 2013 Citrix Systems
++ *
++ * Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
++ */
++
++#include <linux/export.h>
++#include <linux/jump_label.h>
++#include <linux/types.h>
++#include <asm/paravirt.h>
++
++struct static_key paravirt_steal_enabled;
++struct static_key paravirt_steal_rq_enabled;
++
++struct pv_time_ops pv_time_ops;
++EXPORT_SYMBOL_GPL(pv_time_ops);
+-- 
+1.7.2.5
 
-
-Cheers,
-
-Stefano
