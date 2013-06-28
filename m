@@ -1,75 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab3F1Bal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 21:30:41 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55202 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab3F1Bak (ORCPT
+	id S1754103Ab3F1BcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 21:32:24 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:20942 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab3F1BcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 21:30:40 -0400
-Message-ID: <51CCE703.8070800@ahsoftware.de>
-Date: Fri, 28 Jun 2013 03:29:39 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: rtc-linux@googlegroups.com
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] Re: [PATCH 3/9 v2] rtc: rtc-hid-sensor-time: delay
- registering as rtc into a work
-References: <1371228732-5749-4-git-send-email-holler@ahsoftware.de> <1371724776-5572-1-git-send-email-holler@ahsoftware.de> <20130626125501.3d64408309a6f63100cc7d08@linux-foundation.org> <51CB5E6B.109@ahsoftware.de>
-In-Reply-To: <51CB5E6B.109@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 27 Jun 2013 21:32:22 -0400
+Message-ID: <1372383138.2072.42.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] mutex: do not unnecessarily deal with waiters
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 27 Jun 2013 18:32:18 -0700
+In-Reply-To: <20130627090016.GA4398@gmail.com>
+References: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
+	 <20130627090016.GA4398@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.06.2013 23:34, schrieb Alexander Holler:
-> Am 26.06.2013 21:55, schrieb Andrew Morton:
->> On Thu, 20 Jun 2013 12:39:36 +0200 Alexander Holler <holler@ahsoftware.de> wrote:
+On Thu, 2013-06-27 at 11:00 +0200, Ingo Molnar wrote:
+[...]
+> 
+> So I tried this out yesterday, but it interacted with the Wait/Wound 
+> patches in tip:core/mutexes.
+> 
+> Maarten Lankhorst pointed out that if this patch is applied on top of the 
+> WW patches as-is, then we get this semantic merge conflict:
+> 
+> > > @@ -340,6 +339,14 @@ slowpath:
+> > >  #endif
+> > >     spin_lock_mutex(&lock->wait_lock, flags);
+> > >  
+> > > +   /* once more, can we acquire the lock? */
+> > > +   if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
+> > > +           lock_acquired(&lock->dep_map, ip);
+> > > +           mutex_set_owner(lock);
+> > > +           spin_unlock_mutex(&lock->wait_lock, flags);
+> > > +           goto done;
+> > > +   }
+> > >
+> > ^^^^^^^^^^^^^^
+> >
+> > This part skips the whole if (!__builtin_constant_p(ww_ctx == NULL)) { 
+> > section with the wait_lock held.
 
->>> +static void hid_time_register_rtc_work(struct work_struct *work)
->>> +{
->>> +	struct hid_time_state *time_state =
->>> +		container_of(work, struct hid_time_workts, work)
->>> +			->time_state;
->>> +	struct platform_device *pdev = time_state->callbacks.pdev;
->>
->> Ick.  When the initialisers overflow 80 cols, the fix is easy: don't
->> use initalisers:
->>
->> 	struct hid_time_state *time_state;
->> 	struct platform_device *pdev;
->>
->> 	time_state = container_of(work, struct hid_time_workts, work)->time_state;
->> 	pdev = time_state->callbacks.pdev;
->>
->
-> Sorry, but it's long ago since I had to use a DOS machine and I still
-> don't use a phone to write source, therefor I'm not very skilled in
-> writing readable source with meaningfull names in max. 72 (80-8) chars
-> per line. But I will work hard to relearn those long forgotten skills,
-> they might become handy again, when PCs with monitors got finally
-> replaced by phones and tablets with small screens. ;)
+I see what you mean, I hadn't really looked at the W/W patches. BTW
+those __builtin_constant_p() calls are pretty ugly/annoying to read,
+plus why the negation of the NULL check? Couldn't we just do something
+like:
 
-To do other poor patch submitters which don't use a video terminal too a 
-favor, I've decided it might make sense to describe the workflow which 
-is responsible for the above stuff which makes you cry so often. It 
-isn't that I don't know that I don't have to use initializers, I know C 
-since 3 decades.
+#define is_ww_ctx(x) (__builtin_constant_p(x))
+...
+if (is_ww_ctxt(ww_ctx)) { ... }
 
-The following happens here:
 
-- I'm writing source/patches without limiting myself to 80x25 chars.
-- Then I'm executing the insulting and must be one of the most hated 
-piece of software callled checkpatch.pl.
-- It tells me to place or delete spaces here and cut lines there.
-- I do exactly that, while having my brain turned off (self-protection)
+Anyway, so going back to the actual patch, we need a few cleanups in
+__mutex_lock_common() before we can rebase this patch - otherwise we're
+going to end up duplicating a lot of code (and the function is already
+big enough):
 
-Therefor stuff the like the above happens. It isn't badwill, 
-incompetence or inability.
+How about a new ww_mutex_set_context_slowpath() function that does the
+w/w lock acquiring and wakes up any sleeping processes. We'd use this
+function whenever we acquire the lock in the slowpath (with the
+->wait_lock taken):
 
-Regards,
+static __always_inline void
+ww_mutex_set_context_slowpath(struct mutex *lock,
+			      struct ww_acquire_ctx *ww_ctx, bool debug)
+{
+	if (!__builtin_constant_p(ww_ctx == NULL)) {
+		struct mutex_waiter *cur;
+		struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
 
-Alexander Holler
+		/*
+		 * This branch gets optimized out for the common case,
+		 * and is only important for ww_mutex_lock.
+		 */
+		ww_mutex_lock_acquired(ww, ww_ctx);
+		ww->ctx = ww_ctx;
+
+		/*
+		 * Give any possible sleeping processes the chance to wake up,
+		 * so they can recheck if they have to back off.
+		 */
+		list_for_each_entry(cur, &lock->wait_list, list) {
+			if (debug)
+				debug_mutex_wake_waiter(lock, cur);
+			wake_up_process(cur->task);
+		}
+	}
+}
+
+In ww_mutex_set_context_fastpath() I'm a little confused with the
+debug_mutex_wake_waiter() calls since we don't deal with debug in the
+fast path (->wait_lock isn't held). So are these calls
+correct/necessary?
+
+For ww_mutex_set_context_slowpath(), the 'debug' parameter would be
+necessary since with this patch we avoid doing the debug_mutex on a
+quick attempt to grab the lock, otherwise we do the slowpath debug,
+waiters, etc. For instance:
+
+...
+slowpath:
+#endif
+	spin_lock_mutex(&lock->wait_lock, flags);
+	/* once more, can we acquire the lock? */
+	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
+        	lock_acquired(&lock->dep_map, ip);
+	        mutex_set_owner(lock);
+		ww_mutex_set_context_fastpath(lock, ww_ctx, false);
+        	spin_unlock_mutex(&lock->wait_lock, flags);
+	        goto done;
+  	}
+...
+
+lock_acquired(&lock->dep_map, ip);
+/* got the lock - rejoice! */
+mutex_remove_waiter(lock, &waiter, current_thread_info());
+mutex_set_owner(lock);
+ww_mutex_set_context_slowpath(lock, ww_ctx, true);
+...
+
+
+Thanks,
+Davidlohr
+
