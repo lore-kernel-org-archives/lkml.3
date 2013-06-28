@@ -1,121 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab3F1ORO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:17:14 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:44505 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab3F1ORL (ORCPT
+	id S1755234Ab3F1OVt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:21:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28508 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178Ab3F1OVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:17:11 -0400
-Message-ID: <51CD9A1A.1060908@linux.vnet.ibm.com>
-Date: Fri, 28 Jun 2013 19:43:46 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCH] cpu hotplug: rework cpu_hotplug locking (was [LOCKDEP]
- cpufreq: possible circular locking dependency detected)
-References: <20130625211544.GA2270@swordfish> <CAKohpo=ij+LTB80FtVFQZa_4uh-fceG80GBhGnhbxKio7N-Zuw@mail.gmail.com> <20130628074403.GA2201@swordfish>
-In-Reply-To: <20130628074403.GA2201@swordfish>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 28 Jun 2013 10:21:47 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=F6bfKC6atTwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=4o3xqwvaRjkA:10 a=x30EXVXcAAAA:8 a=3Cv3BT6-Dkr-EQOFqdMA:9 a=QEXdDO2ut3YA:10 a=2F0HLYTCHDIA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1372429303.18733.325.camel@gandalf.local.home>
+Subject: Re: [PATCH -tip] x86,trace: Add rcu_irq_enter/exit() in
+ smp_trace_reschedule_interrupt()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com, mingo@elte.hu,
+        tglx@linutronix.de, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 28 Jun 2013 10:21:43 -0400
+In-Reply-To: <51C8AA31.3070208@hds.com>
+References: <51C8AA31.3070208@hds.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062814-4790-0000-0000-000009067D5A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 01:14 PM, Sergey Senozhatsky wrote:
-> Hello,
-> Yes, this helps, of course, but at the same time it returns the previous
-> problem -- preventing cpu_hotplug in some places.
+[ Added Peter Z. and Paul ]
+
+On Mon, 2013-06-24 at 16:21 -0400, Seiji Aguchi wrote:
+> Reschedule vector tracepoints may be called in cpu idle state.
+> This causes lockdep check warning below.
+> So, add rcu_irq_enter/exit() to smp_trace_reschedule_interrupt().
 > 
+> [   50.720557] Testing event reschedule_exit:
+> [   50.721349]
+> [   50.721502] ===============================
+> [   50.721835] [ INFO: suspicious RCU usage. ]
+> [   50.722169] 3.10.0-rc6-00004-gcf910e8 #190 Not tainted
+> [   50.722582] -------------------------------
+> [   50.722915] /c/kernel-tests/src/linux/arch/x86/include/asm/trace/irq_vectors.h:50 suspicious rcu_dereference_check() usage!
+> [   50.723770]
+> [   50.723770] other info that might help us debug this:
+> [   50.723770]
+> [   50.724385]
+> [   50.724385] RCU used illegally from idle CPU!
+> [   50.724385] rcu_scheduler_active = 1, debug_locks = 0
+> [   50.725232] RCU used illegally from extended quiescent state!
+> [   50.725690] no locks held by swapper/0/0.
+> [   50.726010]
+> [   50.726010] stack backtrace:
+> [   50.726359] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-rc6-00004-gcf910e8 #190
+> [   50.726965] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
 > 
-> I have a bit different (perhaps naive) RFC patch and would like to hear
-> comments.
+> [   50.727417]  00000001 00000001 79c53f04 798bd9f9 79c53f2c 79077a70 79b412c6 79b41fd1
+> [   50.728159]  00000001 00000000 79c5ef8c 87147c58 00000000 79c55800 79c53f38 79010b65
+> [   50.728849]  79c52000 79c53f7c 798c720e 79c52000 79c5ef8c 00000004 00000000 79c55800
+> [   50.729532] Call Trace:
+> [   50.729730]  [<798bd9f9>] dump_stack+0x16/0x18
+> [   50.730072]  [<79077a70>] lockdep_rcu_suspicious+0xf2/0xfa
+> [   50.730498]  [<79010b65>] smp_trace_reschedule_interrupt+0x1c8/0x1d0
+> [   50.730979]  [<798c720e>] trace_reschedule_interrupt+0x36/0x3c
+> [   50.731214]  [<7901875f>] ? native_safe_halt+0x5/0x7
+> [   50.731214]  [<790085cc>] default_idle+0xb1/0x1e2
+> [   50.731214]  [<79008d05>] arch_cpu_idle+0xe/0x10
+> [   50.731214]  [<79069ddf>] cpu_startup_entry+0x1e4/0x2c3
+> [   50.731214]  [<798adb34>] rest_init+0x12c/0x132
+> [   50.731214]  [<798ada08>] ? __read_lock_failed+0x14/0x14
+> [   50.731214]  [<79d309e4>] start_kernel+0x38d/0x393
+> [   50.731214]  [<79d30489>] ? repair_env_string+0x51/0x51
+> [   50.731214]  [<79d302c3>] i386_start_kernel+0x79/0x7d
+> [   50.771947] OK
+> [   50.772099] Testing event reschedule_entry: OK
 > 
+> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> ---
+>  arch/x86/kernel/smp.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> 
-> The idead is to brake existing lock dependency chain by not holding
-> cpu_hotplug lock mutex across the calls. In order to detect active
-> refcount readers or active writer, refcount now may have the following
-> values:
-> 
-> -1: active writer -- only one writer may be active, readers are blocked
->  0: no readers/writer
->> 0: active readers -- many readers may be active, writer is blocked
-> 
-> "blocked" reader or writer goes to wait_queue. as soon as writer finishes
-> (refcount becomes 0), it wakeups all existing processes in a wait_queue.
-> reader perform wakeup call only when it sees that pending writer is present
-> (active_writer is not NULL).
-> 
-> cpu_hotplug lock now only required to protect refcount cmp, inc, dec
-> operations so it can be changed to spinlock.
-> 
+> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+> index f4fe0b8..b959056 100644
+> --- a/arch/x86/kernel/smp.c
+> +++ b/arch/x86/kernel/smp.c
+> @@ -268,9 +268,11 @@ void smp_reschedule_interrupt(struct pt_regs *regs)
+>  void smp_trace_reschedule_interrupt(struct pt_regs *regs)
+>  {
+>  	ack_APIC_irq();
+> +	rcu_irq_enter();
+>  	trace_reschedule_entry(RESCHEDULE_VECTOR);
+>  	__smp_reschedule_interrupt();
+>  	trace_reschedule_exit(RESCHEDULE_VECTOR);
+> +	rcu_irq_exit();
 
-Hmm, now that I actually looked at your patch, I see that it is completely
-wrong! I'm sure you intended to fix the *bug*, but instead you ended
-up merely silencing the *warning* (and also left lockdep blind), leaving
-the actual bug as it is!
+The question is, should we add normal irq_enter/exit here? As that
+should be OK to nest. There's a comment in scheduler_ipi():
 
-So let me summarize what the actual bug is and what is it that actually
-needs fixing:
+	/*
+	 * Not all reschedule IPI handlers call irq_enter/irq_exit, since
+	 * traditionally all their work was done from the interrupt return
+	 * path. Now that we actually do some work, we need to make sure
+	 * we do call them.
+	 *
+	 * Some archs already do call them, luckily irq_enter/exit nest
+	 * properly.
+	 *
+	 * Arguably we should visit all archs and update all handlers,
+	 * however a fair share of IPIs are still resched only so this would
+	 * somewhat pessimize the simple resched case.
+	 */
 
-Basically you have 2 things -
-1. A worker item (cs_dbs_timer in this case) that can re-arm itself
-   using gov_queue_work(). And gov_queue_work() uses get/put_online_cpus().
+just before it calls irq_enter(). Seems that not calling irq_enter() for
+the reschedule ipi interrupt is more of a legacy thing. It also states
+that its OK for an arch to call irq_enter() before calling this as it
+can nest. I wonder if we should invest time in fixing all archs and
+remove this irq_enter? But that's out of scope for this change.
 
-2. In the cpu_down() path, you want to cancel the worker item and destroy
-   and cleanup its resources (the timer_mutex).
+Either way, the tracepoint requires rcu but for accuracy it also
+requires irq_enter() (tracepoints record the irq context), thus, the
+tracepoint interrupt handler should be calling irq_enter() and not
+rcu_irq_enter() (irq_enter() calls rcu_irq_enter())
 
-So the problem is that you can deadlock like this:
+-- Steve
 
-    CPU 3                                  CPU 4
+>  	/*
+>  	 * KVM uses this interrupt to force a cpu out of guest mode
+>  	 */
 
-   cpu_down()
-   -> acquire hotplug.lock
-
-				      cs_dbs_timer()
-				        -> get_online_cpus()
-					   //wait on hotplug.lock
-
-
-   try to cancel cs_dbs_timer()
-   synchronously.
-
-That leads to a deadlock, because, cs_dbs_timer() is waiting to
-get the hotplug lock which CPU 3 is holding, whereas CPU 3 is
-waiting for cs_dbs_timer() to finish. So they can end up mutually
-waiting for each other, forever. (Yeah, the lockdep splat might have
-been a bit cryptic to decode this, but here it is).
-
-So to fix the *bug*, you need to avoid waiting synchronously while
-holding the hotplug lock. Possibly by using cancel_delayed_work_sync()
-under CPU_POST_DEAD or something like that. That would remove the deadlock
-possibility.
-
-Your patch, on the other hand, doesn't remove the deadlock possibility:
-just because you don't hold the lock throughout the hotplug operation
-doesn't mean that the task calling get_online_cpus() can sneak in and
-finish its work in-between a hotplug operation (because the refcount
-won't allow it to). Also, it should *not* be allowed to sneak in like
-that, since that constitutes *racing* with CPU hotplug, which it was
-meant to avoid!.
-
-Also, as a side effect of not holding the lock throughout the hotplug
-operation, lockdep goes blind, and doesn't complain, even though the
-actual bug is still there! Effectively, this is nothing but papering
-over the bug and silencing the warning, which we should never do.
-
-So, please, fix the _cpufreq_ code to resolve the deadlock.
-
-Regards,
-Srivatsa S. Bhat
 
