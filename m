@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab3F1ROr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 13:14:47 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45171 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755346Ab3F1ROp (ORCPT
+	id S1755897Ab3F1RPi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 13:15:38 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42859 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab3F1RPh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 13:14:45 -0400
-Date: Fri, 28 Jun 2013 22:44:27 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
-Message-ID: <20130628171427.GO8362@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20130628090447.GD28407@twins.programming.kicks-ass.net>
- <20130628100723.GC8362@linux.vnet.ibm.com>
- <20130628135114.GY1875@suse.de>
+	Fri, 28 Jun 2013 13:15:37 -0400
+Date: Fri, 28 Jun 2013 18:15:32 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Emilio Lopez <emilio@elopez.com.ar>
+Subject: Re: [PATCH 0/2] ARM: sunxi: Convert DTSI to new CPU bindings
+Message-ID: <20130628171532.GD30603@e102568-lin.cambridge.arm.com>
+References: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130628135114.GY1875@suse.de>
+In-Reply-To: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062817-7282-0000-0000-000018C435ED
+X-OriginalArrivalTime: 28 Jun 2013 17:15:33.0799 (UTC) FILETIME=[1954D370:01CE7423]
+X-MC-Unique: 113062818153500201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Yes, I understand that numa should have more priority over cache.
-> > But the schedstats will not be updated about whether the task was hot or
-> > cold.
-> > 
-> > So lets say the task was cache hot but numa wants it to move, then we
-> > should certainly move it but we should update the schedstats to mention that we
-> > moved a cache hot task.
-> > 
-> > Something akin to this.
-> > 
-> > 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
-> > 	if (tsk_cache_hot) {
-> > 		if (migrate_improves_locality(p, env) || 
-> > 		 	(env->sd->nr_balance_failed > env->sd->cache_nice_tries)) {
-> > #ifdef CONFIG_SCHEDSTATS
-> > 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-> > 			schedstat_inc(p, se.statistics.nr_forced_migrations);
-> > #endif
-> > 			return 1;
-> > 		}
-> > 		schedstat_inc(p, se.statistics.nr_failed_migrations_hot);
-> > 		return 0;
-> > 	}
-> > 	return 1;
-> > 
+On Fri, Jun 28, 2013 at 05:44:02PM +0100, Maxime Ripard wrote:
+> Hi Arnd, Olof,
 > 
-> Thanks. Is this acceptable?
+> Sorry for steping in so late, but these two patches fixes a warning
+> introduced by the commit 1ba9bf0a (ARM: 7762/1: kernel: fix
+> arm_dt_init_cpu_maps() to skip non-cpu nodes) after 3.10-rc7.
 > 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index b3848e0..c3a153e 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4088,8 +4088,13 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
->  	 * 3) too many balance attempts have failed.
->  	 */
+> These two patches solve the situation for sunxi. The first one by
+> Lorenzo is to be applied for 3.10 if it's still possible, and the
+> second one on top of arm-soc/for-next. Tell me if you prefer a more
+> formal pull request for these patches
 > 
-> -	if (migrate_improves_locality(p, env))
-> +	if (migrate_improves_locality(p, env)) {
-> +#ifdef CONFIG_SCHEDSTATS
-> +		schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-> +		schedstat_inc(p, se.statistics.nr_forced_migrations);
-> +#endif
->  		return 1;
-> +	}
+> Thanks!
+> Maxime
 > 
+> Lorenzo Pieralisi (1):
+>   ARM: dts: sunxi: cpus/cpu nodes dts updates
 
-In this case, we account even cache cold threads as _cache hot_ in
-schedstats.
+The patch above should already be queued in next/dt right ?
 
-We need the task_hot() call to determine if task is cache hot or not.
-So the migrate_improves_locality(), I think should be called within the
-tsk_cache_hot check.
+Thanks,
+Lorenzo
 
-Do you have issues with the above snippet that I posted earlier?
-
->  	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
->  	if (!tsk_cache_hot)
+> 
+> Maxime Ripard (1):
+>   sunxi: a10s: dtsi: Convert cpu node to the new cpu bindings
+> 
+>  arch/arm/boot/dts/sun4i-a10.dtsi  | 2 ++
+>  arch/arm/boot/dts/sun5i-a10s.dtsi | 2 ++
+>  arch/arm/boot/dts/sun5i-a13.dtsi  | 2 ++
+>  3 files changed, 6 insertions(+)
 > 
 > -- 
-> Mel Gorman
-> SUSE Labs
+> 1.8.3.1
 > 
-
--- 
-Thanks and Regards
-Srikar Dronamraju
+> 
 
