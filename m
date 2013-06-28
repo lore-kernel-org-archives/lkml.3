@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab3F1LWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 07:22:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37014 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755198Ab3F1LWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 07:22:48 -0400
-Message-ID: <1372418531.21065.53.camel@cumari.coelho.fi>
-Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
-From: Luciano Coelho <coelho@ti.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: <mturquette@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-arm@vger.kernel.org" <linux-arm-kernel@lists.infradead.org>
-Date: Fri, 28 Jun 2013 14:22:11 +0300
-In-Reply-To: <1372415514.21065.50.camel@cumari.coelho.fi>
-References: <1372149330-24335-1-git-send-email-coelho@ti.com>
-	 <20130628093848.GA2139@e106331-lin.cambridge.arm.com>
-	 <1372413215.21065.41.camel@cumari.coelho.fi>
-	 <20130628102145.GB2139@e106331-lin.cambridge.arm.com>
-	 <1372415514.21065.50.camel@cumari.coelho.fi>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1755741Ab3F1L05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 07:26:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39208 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694Ab3F1L0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 07:26:55 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "'Gustavo Padovan'" <gustavo.padovan@collabora.co.uk>,
+        "'Daniel Drake'" <dsd@laptop.org>,
+        "'Marcel Holtmann'" <marcel@holtmann.org>
+Subject: Re: [PATCH 3.9-stable]  Bluetooth: btmrvl: fix thread stopping race
+References: <002501ce7390$9f7c4750$de74d5f0$%choi@samsung.com>
+Date: Fri, 28 Jun 2013 12:26:51 +0100
+In-Reply-To: <002501ce7390$9f7c4750$de74d5f0$%choi@samsung.com> (Jonghwan
+	Choi's message of "Fri, 28 Jun 2013 08:47:02 +0900")
+Message-ID: <8761wy8ohw.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-28 at 13:31 +0300, Luciano Coelho wrote:
-> (fixed Mike's address)
-> 
-> On Fri, 2013-06-28 at 11:21 +0100, Mark Rutland wrote:
-> > On Fri, Jun 28, 2013 at 10:53:35AM +0100, Luciano Coelho wrote:
-> > > On Fri, 2013-06-28 at 10:38 +0100, Mark Rutland wrote:
-> > > > On Tue, Jun 25, 2013 at 09:35:30AM +0100, Luciano Coelho wrote:
-> > > > > +Optional properties:
-> > > > > +--------------------
-> > > > > +
-> > > > > +- refclock: the internal WLAN reference clock frequency (required for
-> > > > > +  WiLink6 and WiLink7; not used for WiLink8).  Must be one of the
-> > > > > +  following:
-> > > > > +	0 = 19.2 MHz
-> > > > > +	1 = 26.0 MHz
-> > > > > +	2 = 38.4 MHz
-> > > > > +	3 = 52.0 MHz
-> > > > > +	4 = 38.4 MHz, XTAL
-> > > > > +	5 = 26.0 MHz, XTAL
-> > > > > +
-> > > > > +- tcxoclock: the internal WLAN TCXO clock frequency (required for
-> > > > > +  WiLink7 not used for WiLink6 and WiLink8).  Must be one of the
-> > > > > +  following:
-> > > > > +	0 = 19.200 MHz
-> > > > > +	1 = 26.000 MHz
-> > > > > +	2 = 38.400 MHz
-> > > > > +	3 = 52.000 MHz
-> > > > > +	4 = 16.368 MHz
-> > > > > +	5 = 32.736 MHz
-> > > > > +	6 = 16.800 MHz
-> > > > > +	7 = 33.600 MHz
-> > > > 
-> > > > This looks suspiciously like what we have the common clock bindings for:
-> > > > 
-> > > > refclk {
-> > > > 	compatible = "fixed-clock";
-> > > > 	#clock-cells = <0>;
-> > > > 	clock-frequency = <19200000>;
-> > > > }
-> > > > 
-> > > > wilink {
-> > > > 	compatible = "ti,wilink7";
-> > > > 	interrupt-parent = <&some_interrupt_controller>;
-> > > > 	interrupts = <0 1 1>;
-> > > > 	clocks = <&refclk>, <&refclk>;
-> > > > 	clock-names = "refclk", "txoclk";
-> > > > };
-> > > > 
-> > > > Could you not use them?
-> > > 
-> > > Hmmm... this actually does look good.  But these are internal clocks in
-> > > the modules, they cannot be accessed from outside.  Does it make sense
-> > > to register them with the clock framework?
-> > 
-> > Given we already have a common way of describing clocks, I think it
-> > makes sense to use it -- people already understand the common bindings,
-> > and it's less code to add add to the kernel. I don't think the fact
-> > these clocks are internal should prevent us from describing them as we
-> > would an external clock.
-> 
-> Yes, I agree with you.  Thanks for the suggestion! I think it will look
-> much better.  And now that I dug a bit more into the code, I can see
-> that there are only structs being populated, so there shouldn't be any
-> other side-effects.
+Jonghwan Choi <jhbird.choi@samsung.com> writes:
 
-Hmmm, one thing that escaped me.  Besides the frequency, I also need a
-boolean that tells if the clock is XTAL or not.  I can't figure out how
-to pass this if I use the generic clock framework.  Any suggestions?
+> This patch looks like it should be in the 3.9-stable tree, should we apply
+> it?
 
---
-Luca.
+This seems to be applicable to all the other stable kernels as well
+(and its a clean cherry-pick for all of them).  I'm queuing it for the
+3.5 kernel.
 
+Cheers,
+-- 
+Luis
+
+
+>
+> ------------------
+>
+> From: "Daniel Drake <dsd@laptop.org>"
+>
+> commit ea05fea9042620ac3b8ab9a3e5e4d2ed80c89244 upstream
+>
+> There is currently a race condition in the btmrvl_remove_card() which
+> is causing hangs on suspend for OLPC. When the race occurs,
+> kthread_stop() never returns.
+>
+> The problem is that btmrvl_service_main_thread() calls kthread_should_stop()
+> and then does a fair number of things before restarting the loop and
+> sleeping.
+>
+> If the thread gets stopped after kthread_should_stop() is checked, but
+> before the sleep happens, the thread will go to sleep and won't necessarily
+> be woken up.
+>
+> Move the kthread_should_stop() check into a race-free place.
+>
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+> Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> ---
+>  drivers/bluetooth/btmrvl_main.c |    9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/bluetooth/btmrvl_main.c
+> b/drivers/bluetooth/btmrvl_main.c
+> index 3a4343b..9a9f518 100644
+> --- a/drivers/bluetooth/btmrvl_main.c
+> +++ b/drivers/bluetooth/btmrvl_main.c
+> @@ -498,6 +498,10 @@ static int btmrvl_service_main_thread(void *data)
+>  		add_wait_queue(&thread->wait_q, &wait);
+>  
+>  		set_current_state(TASK_INTERRUPTIBLE);
+> +		if (kthread_should_stop()) {
+> +			BT_DBG("main_thread: break from main thread");
+> +			break;
+> +		}
+>  
+>  		if (adapter->wakeup_tries ||
+>  				((!adapter->int_count) &&
+> @@ -513,11 +517,6 @@ static int btmrvl_service_main_thread(void *data)
+>  
+>  		BT_DBG("main_thread woke up");
+>  
+> -		if (kthread_should_stop()) {
+> -			BT_DBG("main_thread: break from main thread");
+> -			break;
+> -		}
+> -
+>  		spin_lock_irqsave(&priv->driver_lock, flags);
+>  		if (adapter->int_count) {
+>  			adapter->int_count = 0;
