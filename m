@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab3F1GAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 02:00:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58606 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267Ab3F1GAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 02:00:19 -0400
-Message-ID: <1372399204.5989.166.camel@marge.simpson.net>
-Subject: Re: cgroup: status-quo and userland efforts
-From: Mike Galbraith <bitbucket@online.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Tim Hockin <thockin@hockin.org>, Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 28 Jun 2013 08:00:04 +0200
-In-Reply-To: <20130628050138.GD2500@htj.dyndns.org>
-References: <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
-	 <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
-	 <20130625000118.GT1918@mtj.dyndns.org>
-	 <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
-	 <20130626212047.GB4536@htj.dyndns.org>
-	 <1372311907.5871.78.camel@marge.simpson.net>
-	 <20130627180143.GD5599@mtj.dyndns.org>
-	 <1372391198.5989.110.camel@marge.simpson.net>
-	 <20130628040930.GC2500@htj.dyndns.org>
-	 <1372394950.5989.128.camel@marge.simpson.net>
-	 <20130628050138.GD2500@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1754588Ab3F1GAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 02:00:48 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46399 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753762Ab3F1GAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 02:00:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,956,1363158000"; 
+   d="scan'208";a="361858360"
+Message-ID: <51CD2689.2020305@linux.intel.com>
+Date: Fri, 28 Jun 2013 09:00:41 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Cody P Schafer <devel-lists@codyps.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v4 net-next] net: poll/select low latency socket support
+References: <20130624072751.26134.78163.stgit@ladj378.jer.intel.com> <20130624072803.26134.41593.stgit@ladj378.jer.intel.com> <51CCD812.5090408@codyps.com> <51CCD906.6030902@codyps.com>
+In-Reply-To: <51CCD906.6030902@codyps.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:6q38eHmuI37AFlvd7DjrM1+U5kdkciCo+R8Nkb9Wyy3
- qKhOopENPkhTEPdwmRTFCUHonplDQ/8Hq0/MbdqdPnlF3csblb
- vWXPlnyUH4wtwzSkXEu25wI16nr8f6BDU4mgkFVAr/2DsOXkOy
- 67xhwhvNaRDsLR5mFupvxTLZMJ6a57bujqdY/BZiuYeD7QBe2k
- SXDDbfitPghWRKvQ+pB1PXIhtzUSGyvgmV+iWtHz9z+lB8HLTJ
- V7x8OqFzb6nL1PhbQB07NgI5JZD+ojcRU64AsLEtxR4F/N67AU
- Gt5QoBI6V5hRU5lk4UAQTE3BZqmTEfsH7BoFYYc1NBQKkJ+WJB
- dQaMm4glP6RNAHYYKg0UvOsXVUa+R22eajbYVDJ/9xbO8kLdLy
- uXDiR2aRbVRSg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 22:01 -0700, Tejun Heo wrote:
+On 28/06/2013 03:29, Cody P Schafer wrote:
+> On 06/27/2013 05:25 PM, Cody P Schafer wrote:
+>> On 06/24/2013 12:28 AM, Eliezer Tamir wrote:
+>>> select/poll busy-poll support.
+>>> ...
+>>
+>> I'm seeing warnings about using smp_processor_id() while preemptable
+>> (log included below) due to this patch. I expect the use of
+>> ll_end_time() -> sched_clock() here is triggering this.
+>>
+>> Apologies if this has already been noted.
+>
+> To be clear, given how sched_time() is used here the BUG appears
+> invalid, but we need a way to mark this as OK for the smp_processor_id()
+> checks so we don't get BUG spam.
+>
+Thanks for reporting this.
 
-> Anyways, if you're root, you can keep doing whatever you want.  You
-> could be stepping on the centralized agent's toes a bit and vice-versa
-
-Keep on truckn' sounds good, that vice-versa toe stomping not so good,
-but yeah, until systemd or ilk grows the ability to shut me down, I
-shouldn't feel any burning need to introduce it to my machete.
-
-> but I don't think that's gonna be disastrous.  What I'm trying to
-> stamp out is direct usages from !root domains and !system-management
-> binaries / scripts.  They absolutely have to go.  There's no question
-> about it and I'll take totalitarian userland agent anyday over the
-> current mess.
-
-I get some of the why.. and yeah, it's the dirt simple usage that I care
-about most, not the big hairy problem cases you're trying to address. 
-
-> Eventually, I think we'll be able to reach an equilibrium where most
-> things are reasonable and we'll be exploring the acceptable limits of
-> flexibility again, but right now, please bear with the brutality.
-> We're way over the line and I can't see a way back which isn't gonna
-> sting a bit.  I'm and will keep trying to make it as painless as
-> possible.
-
-Keep on driving, and thanks for listening.  Aaaooooo ;-)
-
--Mike
-
+-Eliezer
