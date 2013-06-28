@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab3F1PnL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:43:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3734 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3F1PnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:43:09 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=K1mbgpsWD8tucXQvhV0A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1372434187.18733.339.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.83-rt111
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Fri, 28 Jun 2013 11:43:07 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755427Ab3F1Pn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:43:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754295Ab3F1PnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 11:43:22 -0400
+Date: Fri, 28 Jun 2013 17:38:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2013-06-27-16-36 uploaded (wait event common)
+Message-ID: <20130628153828.GA24371@redhat.com>
+References: <20130627233733.BAEB131C3BE@corp2gmr1-1.hot.corp.google.com> <51CD1F81.4040202@infradead.org> <20130627225139.798e7b00.akpm@linux-foundation.org> <51CD27F3.30104@infradead.org> <20130628165641.2193bfcd78c1f27d6f68f9a5@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628165641.2193bfcd78c1f27d6f68f9a5@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/28, Stephen Rothwell wrote:
+>
+> On Thu, 27 Jun 2013 23:06:43 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
+> >
+> > >> My builds are littered with hundreds of warnings like this one:
+> > >>
+> > >> drivers/tty/tty_ioctl.c:220:6: warning: the omitted middle operand in ?: will always be 'true', suggest explicit middle operand [-Wparentheses]
+> > >>
+> > >> I guess due to this line from wait_event_common():
+> > >>
+> > >> +		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;
+> > >>
+> I added the following to linux-next today:
+> (sorry Randy, I forgot the Reported-by:, Andrew please add)
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 28 Jun 2013 16:52:58 +1000
+> Subject: [PATCH] fix warnings from ?: operator in wait.h
 
-Dear RT Folks,
+Argh. This patch strikes again.
 
-I'm pleased to announce the 3.0.83-rt111 stable release.
+Thanks, and sorry. And please help!
 
-
-This release is just an update to the new stable 3.0.83 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.0-rt
-  Head SHA1: 10bff64d16891c70050f715999f91b3eb69ba21f
-
-
-Or to build 3.0.83-rt111 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.83.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.83-rt111.patch.xz
-
-
+I am not sure I understand. Since when gcc dislikes '?:' ?
+/bin/grep shows a lot of users of 'X ?: Y' shortcut?
 
 
-Enjoy,
 
--- Steve
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  include/linux/wait.h | 18 ++++++++++++++----
+>  1 file changed, 14 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/wait.h b/include/linux/wait.h
+> index 1c08a6c..f3b793d 100644
+> --- a/include/linux/wait.h
+> +++ b/include/linux/wait.h
+> @@ -197,7 +197,12 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+>  	for (;;) {							\
+>  		__ret = prepare_to_wait_event(&wq, &__wait, state);	\
+>  		if (condition) {					\
+> -			__ret = __wait_no_timeout(tout) ?: __tout ?: 1;	\
+> +			__ret = __wait_no_timeout(tout);		\
+> +			if (!__ret) {					\
+> +				__ret = __tout;				\
+> +				if (!__ret)				\
+> +					__ret = 1;			\
+> +			}						\
+>  			break;						\
+>  		}							\
+>  									\
+> @@ -218,9 +223,14 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+>  #define wait_event_common(wq, condition, state, tout)			\
+>  ({									\
+>  	long __ret;							\
+> -	if (condition)							\
+> -		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;		\
+> -	else								\
+> +	if (condition) {						\
+> +		__ret = __wait_no_timeout(tout);			\
+> +		if (!__ret) {						\
+> +			__ret = (tout);					\
+> +			if (!__ret)					\
+> +				__ret = 1;				\
+> +		}							\
+> +	} else								\
+>  		__ret = __wait_event_common(wq, condition, state, tout);\
+>  	__ret;								\
+>  })
+> -- 
+> 1.8.3.1
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
 
 
