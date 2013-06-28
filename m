@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab3F1RHD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 13:07:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45072 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab3F1RHA (ORCPT
+	id S1755923Ab3F1RJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 13:09:24 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:58469 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636Ab3F1RJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 13:07:00 -0400
-Message-ID: <51CDC2B3.1030907@codeaurora.org>
-Date: Fri, 28 Jun 2013 10:06:59 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 28 Jun 2013 13:09:20 -0400
+Date: Fri, 28 Jun 2013 10:09:17 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org,
+        hyunhee.kim@samsung.com
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130628170917.GA12610@teo>
+References: <20130626231712.4a7392a7@redhat.com>
+ <20130627150231.2bc00e3efcd426c4beef894c@linux-foundation.org>
+ <20130628000201.GB15637@bbox>
+ <20130627173433.d0fc6ecd.akpm@linux-foundation.org>
+ <20130628005852.GA8093@teo>
+ <20130627181353.3d552e64.akpm@linux-foundation.org>
+ <20130628043411.GA9100@teo>
+ <20130628050712.GA10097@teo>
+ <20130628100027.31504abe@redhat.com>
+ <20130628165722.GA12271@teo>
 MIME-Version: 1.0
-To: Stehle Vincent-B46079 <B46079@freescale.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: next-20130627 breaks i.MX6 sabre sd UART console
-References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de> <51CDB26A.9060500@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net>
-In-Reply-To: <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130628165722.GA12271@teo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/13 09:58, Stehle Vincent-B46079 wrote:
-> From: linux-next-owner@vger.kernel.org [mailto:linux-next-owner@vger.kernel.org] On Behalf Of Stephen Boyd
-> (..)
->> Do you have debug_ll support to get some serial logs?
-> Hi,
->
-> Thanks for your concern on the matter. You are right, there is debug_ll support for i.MX6. If I activate it for next-20130628 imx_v6_v7_defconfig, that only "buys" me one additional line, though:
->
->   Uncompressing Linux... done, booting the kernel.
+On Fri, Jun 28, 2013 at 09:57:22AM -0700, Anton Vorontsov wrote:
+> On Fri, Jun 28, 2013 at 10:00:27AM -0400, Luiz Capitulino wrote:
+> > On Thu, 27 Jun 2013 22:07:12 -0700
+> > Anton Vorontsov <anton@enomsg.org> wrote:
+> > 
+> > > On Thu, Jun 27, 2013 at 09:34:11PM -0700, Anton Vorontsov wrote:
+> > > > ... we can add the strict mode and deprecate the
+> > > > "filtering" -- basically we'll implement the idea of requiring that
+> > > > userspace registers a separate fd for each level.
+> > > 
+> > > Btw, assuming that more levels can be added, there will be a problem:
+> > > imagine that an app hooked up onto low, med, crit levels in "strict"
+> > > mode... then once we add a new level, the app will start missing the new
+> > > level events.
+> > 
+> > That's how it's expected to work, because on strict mode you're notified
+> > for the level you registered for. So apps registering for critical, will
+> > still be notified on critical just like before.
+> 
+> Suppose you introduce a new level, and the system hits this level. Before,
+> the app would receive at least some notification for the given memory load
+> (i.e. one of the old levels), with the new level introduced in the kernel,
+> the app will receive no events at all. This makes a serious behavioural
+> change in the app (read: it'll break it).
 
-Oh and also add earlyprintk to the command line and enable the
-earlyprintk config. It should buy you some more lines.
+Btw, why exactly you need the strict mode? Why 'medium' won't work for the
+load-balancing? If you want some special logic for the critical level in
+addition to the load-balancing, then you can hook into medium and critical
+in the current scheme, and it will be an equivalent, except that you will
+still be receiving 'medium' events, which you can filter out in userland.
 
->
->> Also could you try booting with maxcpus=1 on the kernel commandline?
-> Good idea; it goes much further with this one (until it crashes in wm8962_probe(), which is as far as I go when I revert 064706514ec3fea740c2656e03c4f01f6a551ac4).
+You don't even need additional syscalls -- you don't have to read from the
+medium-level eventfd if poll() returned events from the critical-level
+eventfd.
 
-Interesting. Thanks for the test.
+So, I would now argue that the current scheme is perfectly OK and can do
+everything you can do with the "strict" one, except that the old one is
+better, as it handles backwards-compatibility in a nice way. :)
 
->
->> And it would be useful to have the output of /proc/timer_list if you have it from a working device.
-> Sure; I pasted it below.
-
-Is this an SMP capable device? What devicetree blob are you using?
-
->
->> I believe you have a per-cpu TWD timer and a global imx-gpt?
-> I think you are right from what I see in /proc/interrupts.
-
-Well oddly I don't see any twd in the timer list but that may be because
-you're not running more than one CPU? It would be good to get the output
-when you run SMP if it has that support.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Anton
