@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab3F1TbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:31:15 -0400
+	id S1752676Ab3F1TbK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:31:10 -0400
 Received: from mxout1.idt.com ([157.165.5.25]:42267 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752469Ab3F1TbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:31:11 -0400
+	id S1752469Ab3F1TbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:31:07 -0400
 X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jun 2013 15:30:57 EDT
 From: Alexandre Bounine <alexandre.bounine@idt.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
         Andre van Herk <andre.van.herk@Prodrive.nl>,
         Micha Nelissen <micha.nelissen@Prodrive.nl>,
         Stef van Os <stef.van.os@Prodrive.nl>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 3/7] rapidio: update enumerator registration mechanism
-Date: Fri, 28 Jun 2013 15:18:52 -0400
-Message-Id: <1372447136-5751-4-git-send-email-alexandre.bounine@idt.com>
+Subject: [PATCH 7/7] rapidio: documentation update
+Date: Fri, 28 Jun 2013 15:18:56 -0400
+Message-Id: <1372447136-5751-8-git-send-email-alexandre.bounine@idt.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
 References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
@@ -26,33 +26,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update enumeration/discovery method registration mechanism to allow loading
-enumeration/discovery methods before all mports are registered.
+Update RapidIO documentation files to reflect modularization changes.
 
-Existing statically linked RapidIO subsystem expects that all available RapidIO
-mport devices are initialized and registered before the enumeration/discovery
-method is registered. Switching to loadable mport device drivers creates
-situation when mport device driver can be loaded after enumeration/discovery
-method is attached (e.g., loadable mport driver in a system with statically
-linked RapidIO core and enumerator). This also will happen in a system with
-hot-pluggable RapidIO controllers.
-
-To remove the dependency on the initialization/registration order this patch
-introduces enumeration/discovery registration mechanism that supports arbitrary
-registration order of mports and enumerator/discovery methods.
-
-The following registration rules are implemented:
-- only one enumeration/discovery method can be registered for given mport ID
-  (including RIO_MPORT_ANY);
-- when new enumeration/discovery methods tries to attach to the registered mport
-  device, method with matching mport ID will replace a default method previously
-  registered for given mport (if any);
-- enumeration/discovery method with target ID=RIO_MPORT_ANY will be attached
-  only to mports that do not have another enumerator attached to them;
-- when new mport device is registered with RapidIO subsystem, registration
-  routine searches for the enumeration/discovery method with the best matching
-  mport ID;
-  
 Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: Matt Porter <mporter@kernel.crashing.org>
 Cc: Li Yang <leoli@freescale.com>
@@ -62,384 +37,173 @@ Cc: Micha Nelissen <micha.nelissen@Prodrive.nl>
 Cc: Stef van Os <stef.van.os@Prodrive.nl>
 Cc: Jean Delvare <jdelvare@suse.de>
 ---
- drivers/rapidio/rio-scan.c  |    1 +
- drivers/rapidio/rio-sysfs.c |   17 +----
- drivers/rapidio/rio.c       |  176 +++++++++++++++++++++++++++++++++++--------
- drivers/rapidio/rio.h       |    3 +-
- include/linux/rio.h         |   15 ++++
- 5 files changed, 164 insertions(+), 48 deletions(-)
+ Documentation/rapidio/rapidio.txt |   98 ++++++++++++++++++++++++++++++++-----
+ Documentation/rapidio/sysfs.txt   |    1 +
+ 2 files changed, 86 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
-index 61c913f..0e86569 100644
---- a/drivers/rapidio/rio-scan.c
-+++ b/drivers/rapidio/rio-scan.c
-@@ -1162,6 +1162,7 @@ bail:
- }
+diff --git a/Documentation/rapidio/rapidio.txt b/Documentation/rapidio/rapidio.txt
+index a9c16c9..717f5aa 100644
+--- a/Documentation/rapidio/rapidio.txt
++++ b/Documentation/rapidio/rapidio.txt
+@@ -73,28 +73,44 @@ data structure. This structure includes lists of all devices and local master
+ ports that form the same network. It also contains a pointer to the default
+ master port that is used to communicate with devices within the network.
  
- static struct rio_scan rio_scan_ops = {
-+	.owner = THIS_MODULE,
- 	.enumerate = rio_enum_mport,
- 	.discover = rio_disc_mport,
- };
-diff --git a/drivers/rapidio/rio-sysfs.c b/drivers/rapidio/rio-sysfs.c
-index 864e52f..0c4473e 100644
---- a/drivers/rapidio/rio-sysfs.c
-+++ b/drivers/rapidio/rio-sysfs.c
-@@ -286,7 +286,6 @@ static ssize_t bus_scan_store(struct bus_type *bus, const char *buf,
- 				size_t count)
- {
- 	long val;
--	struct rio_mport *port = NULL;
- 	int rc;
++2.5 Device Drivers
++
++RapidIO device-specific drivers follow Linux Kernel Driver Model and are
++intended to support specific RapidIO devices attached to the RapidIO network.
++
++2.6 Subsystem Interfaces
++
++RapidIO interconnect specification defines features that may be used to provide
++one or more common service layers for all participating RapidIO devices. These
++common services may act separately from device-specific drivers or be used by
++device-specific drivers. Example of such service provider is the RIONET driver
++which implements Ethernet-over-RapidIO interface. Because only one driver can be
++registered for a device, all common RapidIO services have to be registered as
++subsystem interfaces. This allows to have multiple common services attached to
++the same device without blocking attachment of a device-specific driver.
++
+ 3. Subsystem Initialization
+ ---------------------------
  
- 	if (kstrtol(buf, 0, &val) < 0)
-@@ -300,21 +299,7 @@ static ssize_t bus_scan_store(struct bus_type *bus, const char *buf,
- 	if (val < 0 || val >= RIO_MAX_MPORTS)
- 		return -EINVAL;
+ In order to initialize the RapidIO subsystem, a platform must initialize and
+ register at least one master port within the RapidIO network. To register mport
+-within the subsystem controller driver initialization code calls function
++within the subsystem controller driver's initialization code calls function
+ rio_register_mport() for each available master port.
  
--	port = rio_find_mport((int)val);
+-RapidIO subsystem uses subsys_initcall() or device_initcall() to perform
+-controller initialization (depending on controller device type).
 -
--	if (!port) {
--		pr_debug("RIO: %s: mport_%d not available\n",
--			 __func__, (int)val);
--		return -EINVAL;
--	}
--
--	if (!port->nscan)
--		return -EINVAL;
--
--	if (port->host_deviceid >= 0)
--		rc = port->nscan->enumerate(port, 0);
--	else
--		rc = port->nscan->discover(port, RIO_SCAN_ENUM_NO_WAIT);
-+	rc = rio_mport_scan((int)val);
- exit:
- 	if (!rc)
- 		rc = count;
-diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
-index b17d521..5eb727c 100644
---- a/drivers/rapidio/rio.c
-+++ b/drivers/rapidio/rio.c
-@@ -34,6 +34,7 @@ static LIST_HEAD(rio_devices);
- static DEFINE_SPINLOCK(rio_global_list_lock);
+ After all active master ports are registered with a RapidIO subsystem,
+ an enumeration and/or discovery routine may be called automatically or
+ by user-space command.
  
- static LIST_HEAD(rio_mports);
-+static LIST_HEAD(rio_scans);
- static DEFINE_MUTEX(rio_mport_list_lock);
- static unsigned char next_portid;
- static DEFINE_SPINLOCK(rio_mmap_lock);
-@@ -1602,34 +1603,73 @@ found:
-  * rio_register_scan - enumeration/discovery method registration interface
-  * @mport_id: mport device ID for which fabric scan routine has to be set
-  *            (RIO_MPORT_ANY = set for all available mports)
-- * @scan_ops: enumeration/discovery control structure
-+ * @scan_ops: enumeration/discovery operations structure
-+ *
-+ * Registers enumeration/discovery operations with RapidIO subsystem and
-+ * attaches it to the specified mport device (or all available mports
-+ * if RIO_MPORT_ANY is specified).
-  *
-- * Assigns enumeration or discovery method to the specified mport device (or all
-- * available mports if RIO_MPORT_ANY is specified).
-  * Returns error if the mport already has an enumerator attached to it.
-- * In case of RIO_MPORT_ANY ignores ports with valid scan routines and returns
-- * an error if was unable to find at least one available mport.
-+ * In case of RIO_MPORT_ANY skips mports with valid scan routines (no error).
-  */
- int rio_register_scan(int mport_id, struct rio_scan *scan_ops)
- {
- 	struct rio_mport *port;
--	int rc = -EBUSY;
-+	struct rio_scan_node *scan;
-+	int rc = 0;
++RapidIO subsystem can be configured to be built as a statically linked or
++modular component of the kernel (see details below).
++
+ 4. Enumeration and Discovery
+ ----------------------------
  
--	mutex_lock(&rio_mport_list_lock);
--	list_for_each_entry(port, &rio_mports, node) {
--		if (port->id == mport_id || mport_id == RIO_MPORT_ANY) {
--			if (port->nscan && mport_id == RIO_MPORT_ANY)
--				continue;
--			else if (port->nscan)
--				break;
-+	pr_debug("RIO: %s for mport_id=%d\n", __func__, mport_id);
+ 4.1 Overview
+ ------------
  
--			port->nscan = scan_ops;
--			rc = 0;
-+	if ((mport_id != RIO_MPORT_ANY && mport_id >= RIO_MAX_MPORTS) ||
-+	    !scan_ops)
-+		return -EINVAL;
+-RapidIO subsystem configuration options allow users to specify enumeration and
++RapidIO subsystem configuration options allow users to build enumeration and
+ discovery methods as statically linked components or loadable modules.
+ An enumeration/discovery method implementation and available input parameters
+ define how any given method can be attached to available RapidIO mports:
+@@ -115,8 +131,8 @@ several methods to initiate an enumeration and/or discovery process:
+   endpoint waits for enumeration to be completed. If the specified timeout
+   expires the discovery process is terminated without obtaining RapidIO network
+   information. NOTE: a timed out discovery process may be restarted later using
+-  a user-space command as it is described later if the given endpoint was
+-  enumerated successfully.
++  a user-space command as it is described below (if the given endpoint was
++  enumerated successfully).
  
--			if (mport_id != RIO_MPORT_ANY)
--				break;
-+	mutex_lock(&rio_mport_list_lock);
-+
-+	/*
-+	 * Check if there is another enumerator already registered for
-+	 * the same mport ID (including RIO_MPORT_ANY). Multiple enumerators
-+	 * for the same mport ID are not supported.
-+	 */
-+	list_for_each_entry(scan, &rio_scans, node) {
-+		if (scan->mport_id == mport_id) {
-+			rc = -EBUSY;
-+			goto err_out;
- 		}
- 	}
-+
-+	/*
-+	 * Allocate and initialize new scan registration node.
-+	 */
-+	scan = kzalloc(sizeof(*scan), GFP_KERNEL);
-+	if (!scan) {
-+		rc = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	scan->mport_id = mport_id;
-+	scan->ops = scan_ops;
-+
-+	/*
-+	 * Traverse the list of registered mports to attach this new scan.
-+	 *
-+	 * The new scan with matching mport ID overrides any previously attached
-+	 * scan assuming that old scan (if any) is the default one (based on the
-+	 * enumerator registration check above).
-+	 * If the new scan is the global one, it will be attached only to mports
-+	 * that do not have their own individual operations already attached.
-+	 */
-+	list_for_each_entry(port, &rio_mports, node) {
-+		if (port->id == mport_id) {
-+			port->nscan = scan_ops;
-+			break;
-+		} else if (mport_id == RIO_MPORT_ANY && !port->nscan)
-+			port->nscan = scan_ops;
-+	}
-+
-+	list_add_tail(&scan->node, &rio_scans);
-+
-+err_out:
- 	mutex_unlock(&rio_mport_list_lock);
+   (b) Statically linked enumeration and discovery process can be started by
+   a command from user space. This initiation method provides more flexibility
+@@ -138,15 +154,42 @@ When a network scan process is started it calls an enumeration or discovery
+ routine depending on the configured role of a master port: host or agent.
  
- 	return rc;
-@@ -1639,30 +1679,81 @@ EXPORT_SYMBOL_GPL(rio_register_scan);
- /**
-  * rio_unregister_scan - removes enumeration/discovery method from mport
-  * @mport_id: mport device ID for which fabric scan routine has to be
-- *            unregistered (RIO_MPORT_ANY = set for all available mports)
-+ *            unregistered (RIO_MPORT_ANY = apply to all mports that use
-+ *            the specified scan_ops)
-+ * @scan_ops: enumeration/discovery operations structure
-  *
-  * Removes enumeration or discovery method assigned to the specified mport
-- * device (or all available mports if RIO_MPORT_ANY is specified).
-+ * device. If RIO_MPORT_ANY is specified, removes the specified operations from
-+ * all mports that have them attached.
-  */
--int rio_unregister_scan(int mport_id)
-+int rio_unregister_scan(int mport_id, struct rio_scan *scan_ops)
- {
- 	struct rio_mport *port;
-+	struct rio_scan_node *scan;
+ Enumeration is performed by a master port if it is configured as a host port by
+-assigning a host device ID greater than or equal to zero. A host device ID is
+-assigned to a master port through the kernel command line parameter "riohdid=",
+-or can be configured in a platform-specific manner. If the host device ID for
+-a specific master port is set to -1, the discovery process will be performed
+-for it.
++assigning a host destination ID greater than or equal to zero. The host
++destination ID can be assigned to a master port using various methods depending
++on RapidIO subsystem build configuration:
 +
-+	pr_debug("RIO: %s for mport_id=%d\n", __func__, mport_id);
++  (a) For a statically linked RapidIO subsystem core use command line parameter
++  "rapidio.hdid=" with a list of destination ID assignments in order of mport
++  device registration. For example, in a system with two RapidIO controllers
++  the command line parameter "rapidio.hdid=-1,7" will result in assignment of
++  the host destination ID=7 to the second RapidIO controller, while the first
++  one will be assigned destination ID=-1.
 +
-+	if (mport_id != RIO_MPORT_ANY && mport_id >= RIO_MAX_MPORTS)
-+		return -EINVAL;
++  (b) If the RapidIO subsystem core is built as a loadable module, in addition
++  to the method shown above, the host destination ID(s) can be specified using
++  traditional methods of passing module parameter "hdid=" during its loading:
++  - from command line: "modprobe rapidio hdid=-1,7", or
++  - from modprobe configuration file using configuration command "options",
++    like in this example: "options rapidio hdid=-1,7". An example of modprobe
++    configuration file is provided in the section below.
++
++  NOTES:
++  (i) if "hdid=" parameter is omitted all available mport will be assigned
++  destination ID = -1;
++  (ii) the "hdid=" parameter in systems with multiple mports can have
++  destination ID assignments omitted from the end of list (default = -1).
++
++If the host device ID for a specific master port is set to -1, the discovery
++process will be performed for it.
  
- 	mutex_lock(&rio_mport_list_lock);
--	list_for_each_entry(port, &rio_mports, node) {
--		if (port->id == mport_id || mport_id == RIO_MPORT_ANY) {
--			if (port->nscan)
--				port->nscan = NULL;
--			if (mport_id != RIO_MPORT_ANY)
--				break;
-+
-+	list_for_each_entry(port, &rio_mports, node)
-+		if (port->id == mport_id ||
-+		    (mport_id == RIO_MPORT_ANY && port->nscan == scan_ops))
-+			port->nscan = NULL;
-+
-+	list_for_each_entry(scan, &rio_scans, node)
-+		if (scan->mport_id == mport_id) {
-+			list_del(&scan->node);
-+			kfree(scan);
- 		}
--	}
-+
- 	mutex_unlock(&rio_mport_list_lock);
+ The enumeration and discovery routines use RapidIO maintenance transactions
+ to access the configuration space of devices.
  
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(rio_unregister_scan);
++NOTE: If RapidIO switch-specific device drivers are built as loadable modules
++they must be loaded before enumeration/discovery process starts.
++This requirement is cased by the fact that enumeration/discovery methods invoke
++vendor-specific callbacks on early stages.
++
+ 4.2 Automatic Start of Enumeration and Discovery
+ ------------------------------------------------
  
-+/**
-+ * rio_mport_scan - execute enumeration/discovery on the specified mport
-+ * @mport_id: number (ID) of mport device
-+ */
-+int rio_mport_scan(int mport_id)
-+{
-+	struct rio_mport *port = NULL;
-+	int rc;
-+
-+	mutex_lock(&rio_mport_list_lock);
-+	list_for_each_entry(port, &rio_mports, node) {
-+		if (port->id == mport_id)
-+			goto found;
-+	}
-+	mutex_unlock(&rio_mport_list_lock);
-+	return -ENODEV;
-+found:
-+	if (!port->nscan) {
-+		mutex_unlock(&rio_mport_list_lock);
-+		return -EINVAL;
-+	}
-+
-+	if (!try_module_get(port->nscan->owner)) {
-+		mutex_unlock(&rio_mport_list_lock);
-+		return -ENODEV;
-+	}
-+
-+	mutex_unlock(&rio_mport_list_lock);
-+
-+	if (port->host_deviceid >= 0)
-+		rc = port->nscan->enumerate(port, 0);
-+	else
-+		rc = port->nscan->discover(port, RIO_SCAN_ENUM_NO_WAIT);
-+
-+	module_put(port->nscan->owner);
-+	return rc;
-+}
-+
- static void rio_fixup_device(struct rio_dev *dev)
- {
- }
-@@ -1691,7 +1782,10 @@ static void disc_work_handler(struct work_struct *_work)
- 	work = container_of(_work, struct rio_disc_work, work);
- 	pr_debug("RIO: discovery work for mport %d %s\n",
- 		 work->mport->id, work->mport->name);
--	work->mport->nscan->discover(work->mport, 0);
-+	if (try_module_get(work->mport->nscan->owner)) {
-+		work->mport->nscan->discover(work->mport, 0);
-+		module_put(work->mport->nscan->owner);
-+	}
- }
+@@ -266,7 +309,36 @@ method's module initialization routine calls rio_register_scan() to attach
+ an enumerator to a specified mport device (or devices). The basic enumerator
+ implementation demonstrates this process.
  
- int rio_init_mports(void)
-@@ -1710,8 +1804,10 @@ int rio_init_mports(void)
- 	mutex_lock(&rio_mport_list_lock);
- 	list_for_each_entry(port, &rio_mports, node) {
- 		if (port->host_deviceid >= 0) {
--			if (port->nscan)
-+			if (port->nscan && try_module_get(port->nscan->owner)) {
- 				port->nscan->enumerate(port, 0);
-+				module_put(port->nscan->owner);
-+			}
- 		} else
- 			n++;
- 	}
-@@ -1725,7 +1821,7 @@ int rio_init_mports(void)
- 	 * for each of them. If the code below fails to allocate needed
- 	 * resources, exit without error to keep results of enumeration
- 	 * process (if any).
--	 * TODO: Implement restart of dicovery process for all or
-+	 * TODO: Implement restart of discovery process for all or
- 	 * individual discovering mports.
- 	 */
- 	rio_wq = alloc_workqueue("riodisc", 0, 0);
-@@ -1751,9 +1847,9 @@ int rio_init_mports(void)
- 			n++;
- 		}
- 	}
--	mutex_unlock(&rio_mport_list_lock);
- 
- 	flush_workqueue(rio_wq);
-+	mutex_unlock(&rio_mport_list_lock);
- 	pr_debug("RIO: destroy discovery workqueue\n");
- 	destroy_workqueue(rio_wq);
- 	kfree(work);
-@@ -1784,6 +1880,8 @@ __setup("riohdid=", rio_hdid_setup);
- 
- int rio_register_mport(struct rio_mport *port)
- {
-+	struct rio_scan_node *scan = NULL;
+-5. References
++4.6 Using Loadable RapidIO Switch Drivers
++-----------------------------------------
 +
- 	if (next_portid >= RIO_MAX_MPORTS) {
- 		pr_err("RIO: reached specified max number of mports\n");
- 		return 1;
-@@ -1792,9 +1890,25 @@ int rio_register_mport(struct rio_mport *port)
- 	port->id = next_portid++;
- 	port->host_deviceid = rio_get_hdid(port->id);
- 	port->nscan = NULL;
++In the case when RapidIO switch drivers are built as loadable modules a user
++must ensure that they are loaded before the enumeration/discovery starts.
++This process can be automated by specifying pre- or post- dependencies in the
++RapidIO-specific modprobe configuration file as shown in the example below.
 +
- 	mutex_lock(&rio_mport_list_lock);
- 	list_add_tail(&port->node, &rio_mports);
++  File /etc/modprobe.d/rapidio.conf:
++  ----------------------------------
 +
-+	/*
-+	 * Check if there are any registered enumeration/discovery operations
-+	 * that have to be attached to the added mport.
-+	 */
-+	list_for_each_entry(scan, &rio_scans, node) {
-+		if (port->id == scan->mport_id ||
-+		    scan->mport_id == RIO_MPORT_ANY) {
-+			port->nscan = scan->ops;
-+			if (port->id == scan->mport_id)
-+				break;
-+		}
-+	}
- 	mutex_unlock(&rio_mport_list_lock);
++  # Configure RapidIO subsystem modules
 +
-+	pr_debug("RIO: %s %s id=%d\n", __func__, port->name, port->id);
- 	return 0;
- }
- 
-diff --git a/drivers/rapidio/rio.h b/drivers/rapidio/rio.h
-index d595877..085215c 100644
---- a/drivers/rapidio/rio.h
-+++ b/drivers/rapidio/rio.h
-@@ -42,9 +42,10 @@ extern int rio_add_device(struct rio_dev *rdev);
- extern int rio_enable_rx_tx_port(struct rio_mport *port, int local, u16 destid,
- 				 u8 hopcount, u8 port_num);
- extern int rio_register_scan(int mport_id, struct rio_scan *scan_ops);
--extern int rio_unregister_scan(int mport_id);
-+extern int rio_unregister_scan(int mport_id, struct rio_scan *scan_ops);
- extern void rio_attach_device(struct rio_dev *rdev);
- extern struct rio_mport *rio_find_mport(int mport_id);
-+extern int rio_mport_scan(int mport_id);
- 
- /* Structures internal to the RIO core code */
- extern struct device_attribute rio_dev_attrs[];
-diff --git a/include/linux/rio.h b/include/linux/rio.h
-index fcd492e..8d3db1b 100644
---- a/include/linux/rio.h
-+++ b/include/linux/rio.h
-@@ -465,14 +465,29 @@ static inline struct rio_mport *dma_to_mport(struct dma_device *ddev)
- 
- /**
-  * struct rio_scan - RIO enumeration and discovery operations
-+ * @owner: The module owner of this structure
-  * @enumerate: Callback to perform RapidIO fabric enumeration.
-  * @discover: Callback to perform RapidIO fabric discovery.
-  */
- struct rio_scan {
-+	struct module *owner;
- 	int (*enumerate)(struct rio_mport *mport, u32 flags);
- 	int (*discover)(struct rio_mport *mport, u32 flags);
- };
- 
-+/**
-+ * struct rio_scan_node - list node to register RapidIO enumeration and
-+ * discovery methods with RapidIO core.
-+ * @mport_id: ID of an mport (net) serviced by this enumerator
-+ * @node: node in global list of registered enumerators
-+ * @ops: RIO enumeration and discovery operations
-+ */
-+struct rio_scan_node {
-+	int mport_id;
-+	struct list_head node;
-+	struct rio_scan *ops;
-+};
++  # Set enumerator host destination ID (overrides kernel command line option)
++  options rapidio hdid=-1,2
 +
- /* Architecture and hardware-specific functions */
- extern int rio_register_mport(struct rio_mport *);
- extern int rio_open_inb_mbox(struct rio_mport *, void *, int, int);
++  # Load RapidIO switch drivers immediately after rapidio core module was loaded
++  softdep rapidio post: idt_gen2 idtcps tsi57x
++
++  # OR :
++
++  # Load RapidIO switch drivers just before rio-scan enumerator module is loaded
++  softdep rio-scan pre: idt_gen2 idtcps tsi57x
++
++  --------------------------
++
++NOTE: In the example above, one of "softdep" commands must be removed or
++commented out to keep required module loading sequence.
++
++A. References
+ -------------
+ 
+ [1] RapidIO Trade Association. RapidIO Interconnect Specifications.
+diff --git a/Documentation/rapidio/sysfs.txt b/Documentation/rapidio/sysfs.txt
+index 1987817..271438c 100644
+--- a/Documentation/rapidio/sysfs.txt
++++ b/Documentation/rapidio/sysfs.txt
+@@ -40,6 +40,7 @@ device_rev - returns the device revision level
+              (see 4.1 for switch specific details)
+    lprev   - returns name of previous device (switch) on the path to the device
+              that that owns this attribute
++  modalias - returns the device modalias
+ 
+ In addition to the files listed above, each device has a binary attribute file
+ that allows read/write access to the device configuration registers using
 -- 
 1.7.8.4
 
