@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab3F1JfQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:35:16 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55282 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab3F1JfN (ORCPT
+	id S1755046Ab3F1JhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:37:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46604 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab3F1Jg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:35:13 -0400
-Message-ID: <51CD57F6.9050906@linux.vnet.ibm.com>
-Date: Fri, 28 Jun 2013 15:01:34 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 28 Jun 2013 05:36:58 -0400
+Date: Fri, 28 Jun 2013 11:36:25 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/8] sched: Split accounting of NUMA hinting faults that
+ pass two-stage filter
+Message-ID: <20130628093625.GF29209@dyad.programming.kicks-ass.net>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-8-git-send-email-mgorman@suse.de>
+ <20130628070027.GD17195@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCH] cpu hotplug: rework cpu_hotplug locking (was [LOCKDEP]
- cpufreq: possible circular locking dependency detected)
-References: <20130625211544.GA2270@swordfish> <CAKohpo=ij+LTB80FtVFQZa_4uh-fceG80GBhGnhbxKio7N-Zuw@mail.gmail.com> <20130628074403.GA2201@swordfish>
-In-Reply-To: <20130628074403.GA2201@swordfish>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062809-1396-0000-0000-00000330154F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628070027.GD17195@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 01:14 PM, Sergey Senozhatsky wrote:
-> On (06/28/13 10:13), Viresh Kumar wrote:
->> On 26 June 2013 02:45, Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
->>>
->>> [   60.277396] ======================================================
->>> [   60.277400] [ INFO: possible circular locking dependency detected ]
->>> [   60.277407] 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744 Not tainted
->>> [   60.277411] -------------------------------------------------------
->>> [   60.277417] bash/2225 is trying to acquire lock:
->>> [   60.277422]  ((&(&j_cdbs->work)->work)){+.+...}, at: [<ffffffff810621b5>] flush_work+0x5/0x280
->>> [   60.277444]
->>> but task is already holding lock:
->>> [   60.277449]  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
->>> [   60.277465]
->>> which lock already depends on the new lock.
->>
->> Hi Sergey,
->>
->> Can you try reverting this patch?
->>
->> commit 2f7021a815f20f3481c10884fe9735ce2a56db35
->> Author: Michael Wang <wangyun@linux.vnet.ibm.com>
->> Date:   Wed Jun 5 08:49:37 2013 +0000
->>
->>     cpufreq: protect 'policy->cpus' from offlining during __gov_queue_work()
->>
+On Fri, Jun 28, 2013 at 12:30:27PM +0530, Srikar Dronamraju wrote:
+> * Mel Gorman <mgorman@suse.de> [2013-06-26 15:38:06]:
 > 
-> Hello,
-> Yes, this helps, of course, but at the same time it returns the previous
-> problem -- preventing cpu_hotplug in some places.
+> > Ideally it would be possible to distinguish between NUMA hinting faults
+> > that are private to a task and those that are shared. This would require
+> > that the last task that accessed a page for a hinting fault would be
+> > recorded which would increase the size of struct page. Instead this patch
+> > approximates private pages by assuming that faults that pass the two-stage
+> > filter are private pages and all others are shared. The preferred NUMA
+> > node is then selected based on where the maximum number of approximately
+> > private faults were measured.
 > 
-> 
-> I have a bit different (perhaps naive) RFC patch and would like to hear
-> comments.
-> 
-> 
-> 
-> The idead is to brake existing lock dependency chain by not holding
-> cpu_hotplug lock mutex across the calls. In order to detect active
-> refcount readers or active writer, refcount now may have the following
-> values:
-> 
-> -1: active writer -- only one writer may be active, readers are blocked
->  0: no readers/writer
->> 0: active readers -- many readers may be active, writer is blocked
-> 
-> "blocked" reader or writer goes to wait_queue. as soon as writer finishes
-> (refcount becomes 0), it wakeups all existing processes in a wait_queue.
-> reader perform wakeup call only when it sees that pending writer is present
-> (active_writer is not NULL).
-> 
-> cpu_hotplug lock now only required to protect refcount cmp, inc, dec
-> operations so it can be changed to spinlock.
-> 
+> Should we consider only private faults for preferred node?
 
-Its best to avoid changing the core infrastructure in order to fix some
-call-site, unless that scenario is really impossible to handle with the
-current infrastructure.
+I don't think so; its optimal for the task to be nearest most of its pages;
+irrespective of whether they be private or shared.
 
-I have a couple of suggestions below, to solve this issue, without touching
-the core hotplug code:
+> I would think if tasks have shared pages then moving all tasks that share
+> the same pages to a node where the share pages are around would be
+> preferred. No? 
 
-You can perhaps try cancelling the work item in two steps:
-  a. using cancel_delayed_work() under CPU_DOWN_PREPARE
-  b. using cancel_delayed_work_sync() under CPU_POST_DEAD
+Well no; not if there's only 5 shared pages but 1024 private pages.
 
-And of course, destroy the resources associated with that work (like
-the timer_mutex) only after the full tear-down.
+> If yes, how does the preferred node logic help to achieve
+> the above?
 
-Or perhaps you might find a way to perform the tear-down in just one step
-at the CPU_POST_DEAD stage. Whatever works correctly.
-
-The key point here is that the core CPU hotplug code provides us with the
-CPU_POST_DEAD stage, where the hotplug lock is _not_ held. Which is exactly
-what you want in solving the issue with cpufreq.
-
-Regards,
-Srivatsa S. Bhat
-
+There's no packing logic yet...
