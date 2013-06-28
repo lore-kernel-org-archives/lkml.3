@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab3F1BXK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 21:23:10 -0400
-Received: from s15338416.onlinehome-server.info ([87.106.68.36]:42545 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab3F1BXI (ORCPT
+	id S1754171Ab3F1BYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 21:24:06 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:57809 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab3F1BYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 21:23:08 -0400
-Date: Fri, 28 Jun 2013 03:23:07 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Sven-Thorsten Dietrich <sven@vyatta.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Mike Davison <Mike.Davison@vyatta.com>
-Subject: Re: [PATCH] Set the correct RTNL family for multicast netconf messages
-Message-ID: <20130628012307.GB15799@order.stressinduktion.org>
-Mail-Followup-To: Sven-Thorsten Dietrich <sven@vyatta.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Stephen Hemminger <shemminger@vyatta.com>,
-	"nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	Mike Davison <Mike.Davison@vyatta.com>
-References: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com>
+	Thu, 27 Jun 2013 21:24:02 -0400
+X-Spam-Score: -100.9
+Message-ID: <51CCE57C.5000901@asianux.com>
+Date: Fri, 28 Jun 2013 09:23:08 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: paul.mckenney@linaro.org, josh@joshtriplett.org,
+        Ben Hutchings <bhutchings@solarflare.com>, decot@googlers.com
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] include/linux/interrupt.h: add dummy irq_set_irq_wake() for
+ "!GENERIC_HARDIRQS"
+References: <51C8F685.6000209@asianux.com> <20130625064832.GA4999@osiris> <51C94599.1020707@asianux.com> <20130625090928.GA8981@osiris> <51CBA6B6.1010809@asianux.com> <20130627081845.GA3824@osiris> <51CC046F.2050009@asianux.com>
+In-Reply-To: <51CC046F.2050009@asianux.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 04:44:47PM -0700, Sven-Thorsten Dietrich wrote:
-> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-> index dfc39d4..695858b 100644
-> --- a/net/ipv4/devinet.c
-> +++ b/net/ipv4/devinet.c
-> @@ -1705,7 +1705,16 @@ static int inet_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
->  		return -EMSGSIZE;
->  
->  	ncm = nlmsg_data(nlh);
-> -	ncm->ncm_family = AF_INET;
-> +
-> +	switch (type) {
-> +		case NETCONFA_MC_FORWARDING:
-> +			ncm->ncm_family = RTNL_FAMILY_IPMR;
-> +			break;
-> +
-> +		default:
-> +			ncm->ncm_family = AF_INET;
-> +			break;
-> +	}
->  
->  	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
->  		goto nla_put_failure;
-> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-> index 4ab4c38..a177da4 100644
-> --- a/net/ipv6/addrconf.c
-> +++ b/net/ipv6/addrconf.c
-> @@ -492,7 +492,16 @@ static int inet6_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
->  		return -EMSGSIZE;
->  
->  	ncm = nlmsg_data(nlh);
-> -	ncm->ncm_family = AF_INET6;
-> +
-> +	switch (type) {
-> +		case NETCONFA_MC_FORWARDING:
-> +			ncm->ncm_family = RTNL_FAMILY_IP6MR;
-> +			break;
-> +
-> +		default:
-> +			ncm->ncm_family = AF_INET6;
-> +			break;
-> +	}
->  
+Since irq_set_irq_wake() has already declared in header file, when
+GENERIC_HARDIRQS enabled.
 
-Hm, are you sure? NETCONFA_MC_FORWARDING is of type RTM_NEWNETCONF
-and expects ncm_family to be either AF_INET or AF_INET6 (at least in
-iproute2/ipmonitor.c).
+Recommend to define the dummy one for GENERIC_HARDIRQS disabled, and
+also let the other related "static inline" functions are independent
+from GENERIC_HARDIRQS.
 
-Greetings,
+So can avoid the compiling error below, and also let the code simpler
+and clearer.
 
-  Hannes
+The related compiling error (ARCH=s390 allmodconfig):
 
+  sound/soc/codecs/wm0010.c: In function ‘wm0010_spi_probe’:
+  sound/soc/codecs/wm0010.c:976:2: error: implicit declaration of function ‘irq_set_irq_wake’ [-Werror=implicit-function-declaration]
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ include/linux/interrupt.h |   23 ++++++++++-------------
+ 1 files changed, 10 insertions(+), 13 deletions(-)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 5fa5afe..1a311e0 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -344,16 +344,6 @@ static inline void enable_irq_lockdep_irqrestore(unsigned int irq, unsigned long
+ /* IRQ wakeup (PM) control: */
+ extern int irq_set_irq_wake(unsigned int irq, unsigned int on);
+ 
+-static inline int enable_irq_wake(unsigned int irq)
+-{
+-	return irq_set_irq_wake(irq, 1);
+-}
+-
+-static inline int disable_irq_wake(unsigned int irq)
+-{
+-	return irq_set_irq_wake(irq, 0);
+-}
+-
+ #else /* !CONFIG_GENERIC_HARDIRQS */
+ /*
+  * NOTE: non-genirq architectures, if they want to support the lock
+@@ -370,16 +360,23 @@ static inline int disable_irq_wake(unsigned int irq)
+ 						enable_irq(irq)
+ # endif
+ 
+-static inline int enable_irq_wake(unsigned int irq)
++/* IRQ wakeup (PM) control: */
++static inline int irq_set_irq_wake(unsigned int irq, unsigned int on)
+ {
+ 	return 0;
+ }
+ 
++#endif /* CONFIG_GENERIC_HARDIRQS */
++
++static inline int enable_irq_wake(unsigned int irq)
++{
++	return irq_set_irq_wake(irq, 1);
++}
++
+ static inline int disable_irq_wake(unsigned int irq)
+ {
+-	return 0;
++	return irq_set_irq_wake(irq, 0);
+ }
+-#endif /* CONFIG_GENERIC_HARDIRQS */
+ 
+ 
+ #ifdef CONFIG_IRQ_FORCED_THREADING
+-- 
+1.7.7.6
