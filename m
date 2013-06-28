@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab3F1SyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:54:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41630 "EHLO
+	id S1752793Ab3F1SyY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:54:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41637 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab3F1SyP (ORCPT
+	with ESMTP id S1752144Ab3F1SyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:54:15 -0400
+	Fri, 28 Jun 2013 14:54:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anders Hammarquist <iko@iko.pp.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Neal Cardwell <ncardwell@google.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 061/105] USB: serial: ti_usb_3410_5052: new device id for Abbot strip port cable
-Date: Fri, 28 Jun 2013 11:51:23 -0700
-Message-Id: <1372445527-24414-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 068/105] ipv6: fix possible crashes in ip6_cork_release()
+Date: Fri, 28 Jun 2013 11:51:30 -0700
+Message-Id: <1372445527-24414-69-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,50 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anders Hammarquist <iko@iko.pp.se>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 35a2fbc941accd0e9f1bfadd669311786118d874 upstream.
+[ Upstream commit 284041ef21fdf2e0d216ab6b787bc9072b4eb58a ]
 
-Add product id for Abbott strip port cable for Precision meter which
-uses the TI 3410 chip.
+commit 0178b695fd6b4 ("ipv6: Copy cork options in ip6_append_data")
+added some code duplication and bad error recovery, leading to potential
+crash in ip6_cork_release() as kfree() could be called with garbage.
 
-Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+use kzalloc() to make sure this wont happen.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ti_usb_3410_5052.c | 3 ++-
- drivers/usb/serial/ti_usb_3410_5052.h | 4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ net/ipv6/ip6_output.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
-index 4a8b685..a166761 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -178,7 +178,8 @@ static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- };
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 0c7c03d..2adff32 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1164,7 +1164,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 			if (WARN_ON(np->cork.opt))
+ 				return -EINVAL;
  
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.h b/drivers/usb/serial/ti_usb_3410_5052.h
-index b353e7e..4a2423e 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.h
-+++ b/drivers/usb/serial/ti_usb_3410_5052.h
-@@ -52,7 +52,9 @@
+-			np->cork.opt = kmalloc(opt->tot_len, sk->sk_allocation);
++			np->cork.opt = kzalloc(opt->tot_len, sk->sk_allocation);
+ 			if (unlikely(np->cork.opt == NULL))
+ 				return -ENOBUFS;
  
- /* Abbott Diabetics vendor and product ids */
- #define ABBOTT_VENDOR_ID		0x1a61
--#define ABBOTT_PRODUCT_ID		0x3410
-+#define ABBOTT_STEREO_PLUG_ID		0x3410
-+#define ABBOTT_PRODUCT_ID		ABBOTT_STEREO_PLUG_ID
-+#define ABBOTT_STRIP_PORT_ID		0x3420
- 
- /* Commands */
- #define TI_GET_VERSION			0x01
 -- 
 1.8.1.2
 
