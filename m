@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab3F1TWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:22:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48713 "EHLO mga09.intel.com"
+	id S1752438Ab3F1TXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:23:23 -0400
+Received: from 8bytes.org ([85.214.48.195]:47351 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981Ab3F1TWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:22:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,961,1363158000"; 
-   d="scan'208";a="337184581"
-Message-ID: <51CDE273.9080209@intel.com>
-Date: Fri, 28 Jun 2013 22:22:27 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1751067Ab3F1TXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:23:22 -0400
+Date: Fri, 28 Jun 2013 21:23:19 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Andreas Hartmann <andihartmann@01019freenet.de>,
+        Alex Williamson <alex.williamson@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ 102/127] iommu/amd: Workaround for ERBT1312
+Message-ID: <20130628192319.GV11309@8bytes.org>
+References: <lhtAZ-q1-5@gated-at.bofh.it>
+ <lhtB1-q1-53@gated-at.bofh.it>
+ <20130628181136.52d00e9c@dualc.maya.org>
+ <20130628182533.GT11309@8bytes.org>
+ <51CDD8FD.808@01019freenet.de>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/5] perf: add two new features
-References: <1372425741-1676-1-git-send-email-adrian.hunter@intel.com> <20130628152745.GH6626@twins.programming.kicks-ass.net>
-In-Reply-To: <20130628152745.GH6626@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CDD8FD.808@01019freenet.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jun 28 21:23:20 2013
+X-DSPAM-Confidence: 0.9988
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51cde2a820862074613982
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/2013 6:27 p.m., Peter Zijlstra wrote:
-> On Fri, Jun 28, 2013 at 04:22:16PM +0300, Adrian Hunter wrote:
->> Hi
->>
->> Please consider these two new perf features:
->>        x86: add ability to calculate TSC from perf sample timestamps
->>        perf: add 'keep tracking' flag to PERF_EVENT_IOC_DISABLE
->
-> Please explain to us why you'd like to do this..
+Alex, Andreas,
 
-I will see what information I can dig up.  The short answer is that I 
-need to disable and re-enable a perf event but still be able to map IPs 
-to their DSOs and symbols - which means not losing mmap events.
+On Fri, Jun 28, 2013 at 08:42:05PM +0200, Andreas Hartmann wrote:
+> You're right, there is exactly one entry directly after loading of vfio.
+> I can see this message, too, with linux 3.4.43.
+
+Can you please test this patch? It should reduce the noise
+significantly, but a few of those error messages are still expected.
+
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index e3c2d74..74e1d1c 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1431,6 +1431,7 @@ static void init_device_table_dma(void)
+ 	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
+ 		set_dev_entry_bit(devid, DEV_ENTRY_VALID);
+ 		set_dev_entry_bit(devid, DEV_ENTRY_TRANSLATION);
++		set_dev_entry_bit(devid, DEV_ENTRY_ONE_FAULT);
+ 	}
+ }
+ 
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index 083f98c..4872b68 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -173,6 +173,7 @@
+ #define DEV_ENTRY_TRANSLATION   0x01
+ #define DEV_ENTRY_IR            0x3d
+ #define DEV_ENTRY_IW            0x3e
++#define DEV_ENTRY_ONE_FAULT	0x61
+ #define DEV_ENTRY_NO_PAGE_FAULT	0x62
+ #define DEV_ENTRY_EX            0x67
+ #define DEV_ENTRY_SYSMGT1       0x68
+
