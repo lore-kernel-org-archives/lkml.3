@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab3F1QCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:02:43 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:45914 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752817Ab3F1QCm (ORCPT
+	id S1755595Ab3F1QDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:03:33 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:57138 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382Ab3F1QDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:02:42 -0400
-Date: Fri, 28 Jun 2013 17:01:56 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH v7 0/6] xen/arm/arm64: CONFIG_PARAVIRT and stolen ticks
- accounting
-Message-ID: <20130628160156.GH1643@arm.com>
-References: <alpine.DEB.2.02.1306271614260.4782@kaball.uk.xensource.com>
- <20130628155840.GA13468@phenom.dumpdata.com>
+	Fri, 28 Jun 2013 12:03:31 -0400
+Message-ID: <51CDB3CB.8040304@gmail.com>
+Date: Fri, 28 Jun 2013 10:03:23 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130628155840.GA13468@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf tools: Fixup for removing -f option in perf record
+References: <1372307120-737-1-git-send-email-namhyung@kernel.org> <20130627093609.GO28407@twins.programming.kicks-ass.net> <20130627103931.GA5534@gmail.com> <20130627104750.GB27378@dyad.programming.kicks-ass.net> <20130628094738.GA28751@krava.brq.redhat.com> <51CD9AE4.6060307@gmail.com> <20130628153736.GA462@gmail.com>
+In-Reply-To: <20130628153736.GA462@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 04:58:40PM +0100, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jun 28, 2013 at 12:19:54PM +0100, Stefano Stabellini wrote:
-> > Hi all,
-> > this patch series introduces stolen ticks accounting for Xen on ARM and
-> > ARM64.
-> > Stolen ticks are clocksource ticks that have been "stolen" from the cpu,
-> > typically because Linux is running in a virtual machine and the vcpu has
-> > been descheduled.
-> > To account for these ticks we introduce CONFIG_PARAVIRT and pv_time_ops
-> > so that we can make use of:
-> > 
-> > kernel/sched/cputime.c:steal_account_process_tick
-> > 
-> > 
-> > Stefano Stabellini (6):
-> >       xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
-> >       kernel: missing include in cputime.c
-> >       arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-> >       arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-> >       core: remove ifdef CONFIG_PARAVIRT
-> >       xen/arm: account for stolen ticks
-> > 
-> >  arch/arm/Kconfig                  |   20 ++++++++
-> >  arch/arm/include/asm/paravirt.h   |   20 ++++++++
-> >  arch/arm/kernel/Makefile          |    1 +
-> >  arch/arm/kernel/paravirt.c        |   25 ++++++++++
-> >  arch/arm/xen/enlighten.c          |   21 +++++++++
-> >  arch/arm64/Kconfig                |   20 ++++++++
-> >  arch/arm64/include/asm/paravirt.h |   20 ++++++++
-> >  arch/arm64/kernel/Makefile        |    1 +
-> >  arch/arm64/kernel/paravirt.c      |   25 ++++++++++
-> >  arch/ia64/xen/time.c              |   48 +++-----------------
-> >  arch/x86/xen/time.c               |   76 +------------------------------
-> 
-> This is going to hit some of the patches that David
-> has sent to tglx, I think. You might want to try to rebase on top
-> of them (tip/time/for-xen, or something like that ) when they
-> are ready.
-> 
-> But for the Xen generic maintainer I am OK with these changes
-> so you can stick Acked-by on them.
-> 
-> Are you thinking to push them yourself or via the arm64 maintainer?
+On 6/28/13 9:37 AM, Ingo Molnar wrote:
+>
+> * David Ahern <dsahern@gmail.com> wrote:
+>
+>> On 6/28/13 3:47 AM, Jiri Olsa wrote:
+>>>>> I thought -f was the implied default for ages?
+>>>>
+>>>> OK.. I've been dutifully typing it all this while :-)
+>>>
+>>> The '-f' option in record command had no affect.. myabe it got
+>>> depreceated when we started to backup perf.data to perf.data.old..?
+>>
+>> Way back in 2010, 2.6.34 kernel - 7865e817 commit. I've been typing
+>> the -f for while too. Now about the need for the pesky -f on the
+>> analysis side....
+>
+> That's only needed when perf.data is owned by a different user, right?
+>
 
-Once the core Xen support is pushed via the arm64 tree (queued for
-3.11-rc1), I'm happy for the subsequent Xen patches to go directly
-(similarly for KVM). But it's -rc7 now and I'm not taking any more
-patches for the upcoming merging window (unless they are fixes).
+Yes, why not let file permissions dictate of uid x can read uid y files? 
+Why does perf need to have that restriction? For example, QA collects 
+the data files, developers analyze them.
 
--- 
-Catalin
+David
+
