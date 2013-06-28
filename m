@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab3F1Tci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:32:38 -0400
+	id S1752460Ab3F1TbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:31:01 -0400
 Received: from mxout1.idt.com ([157.165.5.25]:42267 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501Ab3F1TbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:31:04 -0400
+	id S1751329Ab3F1Ta7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:30:59 -0400
 X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jun 2013 15:30:57 EDT
 From: Alexandre Bounine <alexandre.bounine@idt.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
         Andre van Herk <andre.van.herk@Prodrive.nl>,
         Micha Nelissen <micha.nelissen@Prodrive.nl>,
         Stef van Os <stef.van.os@Prodrive.nl>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 6/7] rapidio: add udev notification
-Date: Fri, 28 Jun 2013 15:18:55 -0400
-Message-Id: <1372447136-5751-7-git-send-email-alexandre.bounine@idt.com>
+Subject: [PATCH 4/7] rapidio/tsi721: convert to modular mport driver
+Date: Fri, 28 Jun 2013 15:18:53 -0400
+Message-Id: <1372447136-5751-5-git-send-email-alexandre.bounine@idt.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
 References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
@@ -26,21 +26,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add RapidIO-specific modalias generation to enable udev notifications about
-RapidIO-specific events.
+This patch adds an option to build device driver for Tsi721 PCIe-to-SRIO bridge
+device as a kernel module.
 
-The RapidIO modalias string format is shown below:
-
-"rapidio:vNNNNdNNNNavNNNNadNNNN"
-
-Where:
-v  - Device Vendor ID (16 bit),
-d  - Device ID (16 bit),
-av - Assembly Vendor ID (16 bit),
-ad - Assembly ID (16 bit),
-
-as they are reported in corresponding Capability Registers (CARs)
-of each RapidIO device.
+Currently this module cannot be unloaded because the existing RapidIO subsystem
+code does not support dynamic removal of local RapidIO controllers (TODO).
 
 Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: Matt Porter <mporter@kernel.crashing.org>
@@ -51,201 +41,70 @@ Cc: Micha Nelissen <micha.nelissen@Prodrive.nl>
 Cc: Stef van Os <stef.van.os@Prodrive.nl>
 Cc: Jean Delvare <jdelvare@suse.de>
 ---
- drivers/rapidio/rio-driver.c      |   18 ++++++++++++++++++
- drivers/rapidio/rio-sysfs.c       |   10 ++++++++++
- include/linux/mod_devicetable.h   |   19 +++++++++++++++++++
- include/linux/rio.h               |   16 +---------------
- include/linux/rio_ids.h           |    2 --
- scripts/mod/devicetable-offsets.c |    6 ++++++
- scripts/mod/file2alias.c          |   20 ++++++++++++++++++++
- 7 files changed, 74 insertions(+), 17 deletions(-)
+ drivers/rapidio/devices/Kconfig  |    2 +-
+ drivers/rapidio/devices/Makefile |    7 +++----
+ drivers/rapidio/devices/tsi721.c |    9 ++++-----
+ drivers/rapidio/rio.c            |    1 +
+ 4 files changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/rapidio/rio-driver.c b/drivers/rapidio/rio-driver.c
-index a0c8755..3e9b6a7 100644
---- a/drivers/rapidio/rio-driver.c
-+++ b/drivers/rapidio/rio-driver.c
-@@ -199,6 +199,23 @@ static int rio_match_bus(struct device *dev, struct device_driver *drv)
-       out:return 0;
+diff --git a/drivers/rapidio/devices/Kconfig b/drivers/rapidio/devices/Kconfig
+index 12a9d7f..c4cb087 100644
+--- a/drivers/rapidio/devices/Kconfig
++++ b/drivers/rapidio/devices/Kconfig
+@@ -3,7 +3,7 @@
+ #
+ 
+ config RAPIDIO_TSI721
+-	bool "IDT Tsi721 PCI Express SRIO Controller support"
++	tristate "IDT Tsi721 PCI Express SRIO Controller support"
+ 	depends on RAPIDIO && PCIEPORTBUS
+ 	default "n"
+ 	---help---
+diff --git a/drivers/rapidio/devices/Makefile b/drivers/rapidio/devices/Makefile
+index 7b62860..9432c49 100644
+--- a/drivers/rapidio/devices/Makefile
++++ b/drivers/rapidio/devices/Makefile
+@@ -2,7 +2,6 @@
+ # Makefile for RapidIO devices
+ #
+ 
+-obj-$(CONFIG_RAPIDIO_TSI721)	+= tsi721.o
+-ifeq ($(CONFIG_RAPIDIO_DMA_ENGINE),y)
+-obj-$(CONFIG_RAPIDIO_TSI721)	+= tsi721_dma.o
+-endif
++obj-$(CONFIG_RAPIDIO_TSI721)	+= tsi721_mport.o
++tsi721_mport-y			:= tsi721.o
++tsi721_mport-$(CONFIG_RAPIDIO_DMA_ENGINE) += tsi721_dma.o
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index a8b2c23..ff7cbf2 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -2515,9 +2515,8 @@ static int __init tsi721_init(void)
+ 	return pci_register_driver(&tsi721_driver);
  }
  
-+static int rio_uevent(struct device *dev, struct kobj_uevent_env *env)
-+{
-+	struct rio_dev *rdev;
-+
-+	if (!dev)
-+		return -ENODEV;
-+
-+	rdev = to_rio_dev(dev);
-+	if (!rdev)
-+		return -ENODEV;
-+
-+	if (add_uevent_var(env, "MODALIAS=rapidio:v%04Xd%04Xav%04Xad%04X",
-+			   rdev->vid, rdev->did, rdev->asm_vid, rdev->asm_did))
-+		return -ENOMEM;
-+	return 0;
-+}
-+
- struct device rio_bus = {
- 	.init_name = "rapidio",
- };
-@@ -210,6 +227,7 @@ struct bus_type rio_bus_type = {
- 	.bus_attrs = rio_bus_attrs,
- 	.probe = rio_device_probe,
- 	.remove = rio_device_remove,
-+	.uevent	= rio_uevent,
- };
- 
- /**
-diff --git a/drivers/rapidio/rio-sysfs.c b/drivers/rapidio/rio-sysfs.c
-index 0c4473e..9331be6 100644
---- a/drivers/rapidio/rio-sysfs.c
-+++ b/drivers/rapidio/rio-sysfs.c
-@@ -84,6 +84,15 @@ static ssize_t lnext_show(struct device *dev,
- 	return str - buf;
- }
- 
-+static ssize_t modalias_show(struct device *dev,
-+			     struct device_attribute *attr, char *buf)
-+{
-+	struct rio_dev *rdev = to_rio_dev(dev);
-+
-+	return sprintf(buf, "rapidio:v%04Xd%04Xav%04Xad%04X\n",
-+		       rdev->vid, rdev->did, rdev->asm_vid, rdev->asm_did);
-+}
-+
- struct device_attribute rio_dev_attrs[] = {
- 	__ATTR_RO(did),
- 	__ATTR_RO(vid),
-@@ -93,6 +102,7 @@ struct device_attribute rio_dev_attrs[] = {
- 	__ATTR_RO(asm_rev),
- 	__ATTR_RO(lprev),
- 	__ATTR_RO(destid),
-+	__ATTR_RO(modalias),
- 	__ATTR_NULL,
- };
- 
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index b508016..4b0ac9c 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -577,4 +577,23 @@ struct mei_cl_device_id {
- 	kernel_ulong_t driver_info;
- };
- 
-+/* RapidIO */
-+
-+#define RIO_ANY_ID	0xffff
-+
-+/**
-+ * struct rio_device_id - RIO device identifier
-+ * @did: RapidIO device ID
-+ * @vid: RapidIO vendor ID
-+ * @asm_did: RapidIO assembly device ID
-+ * @asm_vid: RapidIO assembly vendor ID
-+ *
-+ * Identifies a RapidIO device based on both the device/vendor IDs and
-+ * the assembly device/vendor IDs.
-+ */
-+struct rio_device_id {
-+	__u16 did, vid;
-+	__u16 asm_did, asm_vid;
-+};
-+
- #endif /* LINUX_MOD_DEVICETABLE_H */
-diff --git a/include/linux/rio.h b/include/linux/rio.h
-index 8d3db1b..e2faf7b 100644
---- a/include/linux/rio.h
-+++ b/include/linux/rio.h
-@@ -20,6 +20,7 @@
- #include <linux/errno.h>
- #include <linux/device.h>
- #include <linux/rio_regs.h>
-+#include <linux/mod_devicetable.h>
- #ifdef CONFIG_RAPIDIO_DMA_ENGINE
- #include <linux/dmaengine.h>
- #endif
-@@ -396,21 +397,6 @@ struct rio_driver {
- 
- #define	to_rio_driver(drv) container_of(drv,struct rio_driver, driver)
- 
--/**
-- * struct rio_device_id - RIO device identifier
-- * @did: RIO device ID
-- * @vid: RIO vendor ID
-- * @asm_did: RIO assembly device ID
-- * @asm_vid: RIO assembly vendor ID
-- *
-- * Identifies a RIO device based on both the device/vendor IDs and
-- * the assembly device/vendor IDs.
-- */
--struct rio_device_id {
--	u16 did, vid;
--	u16 asm_did, asm_vid;
--};
+-static void __exit tsi721_exit(void)
+-{
+-	pci_unregister_driver(&tsi721_driver);
+-}
 -
- union rio_pw_msg {
- 	struct {
- 		u32 comptag;	/* Component Tag CSR */
-diff --git a/include/linux/rio_ids.h b/include/linux/rio_ids.h
-index b66d13d..2543bc1 100644
---- a/include/linux/rio_ids.h
-+++ b/include/linux/rio_ids.h
-@@ -13,8 +13,6 @@
- #ifndef LINUX_RIO_IDS_H
- #define LINUX_RIO_IDS_H
- 
--#define RIO_ANY_ID			0xffff
--
- #define RIO_VID_FREESCALE		0x0002
- #define RIO_DID_MPC8560			0x0003
- 
-diff --git a/scripts/mod/devicetable-offsets.c b/scripts/mod/devicetable-offsets.c
-index e66d4d2..bb5d115 100644
---- a/scripts/mod/devicetable-offsets.c
-+++ b/scripts/mod/devicetable-offsets.c
-@@ -177,5 +177,11 @@ int main(void)
- 	DEVID(mei_cl_device_id);
- 	DEVID_FIELD(mei_cl_device_id, name);
- 
-+	DEVID(rio_device_id);
-+	DEVID_FIELD(rio_device_id, did);
-+	DEVID_FIELD(rio_device_id, vid);
-+	DEVID_FIELD(rio_device_id, asm_did);
-+	DEVID_FIELD(rio_device_id, asm_vid);
+ device_initcall(tsi721_init);
 +
++MODULE_DESCRIPTION("IDT Tsi721 PCIExpress-to-SRIO bridge driver");
++MODULE_AUTHOR("Integrated Device Technology, Inc.");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
+index 5eb727c..2054b62 100644
+--- a/drivers/rapidio/rio.c
++++ b/drivers/rapidio/rio.c
+@@ -1911,6 +1911,7 @@ int rio_register_mport(struct rio_mport *port)
+ 	pr_debug("RIO: %s %s id=%d\n", __func__, port->name, port->id);
  	return 0;
  }
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 45f9a33..d9e67b7 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -1145,6 +1145,26 @@ static int do_mei_entry(const char *filename, void *symval,
- }
- ADD_TO_DEVTABLE("mei", mei_cl_device_id, do_mei_entry);
++EXPORT_SYMBOL_GPL(rio_register_mport);
  
-+/* Looks like: rapidio:vNdNavNadN */
-+static int do_rio_entry(const char *filename,
-+			void *symval, char *alias)
-+{
-+	DEF_FIELD(symval, rio_device_id, did);
-+	DEF_FIELD(symval, rio_device_id, vid);
-+	DEF_FIELD(symval, rio_device_id, asm_did);
-+	DEF_FIELD(symval, rio_device_id, asm_vid);
-+
-+	strcpy(alias, "rapidio:");
-+	ADD(alias, "v", vid != RIO_ANY_ID, vid);
-+	ADD(alias, "d", did != RIO_ANY_ID, did);
-+	ADD(alias, "av", asm_vid != RIO_ANY_ID, asm_vid);
-+	ADD(alias, "ad", asm_did != RIO_ANY_ID, asm_did);
-+
-+	add_wildcard(alias);
-+	return 1;
-+}
-+ADD_TO_DEVTABLE("rapidio", rio_device_id, do_rio_entry);
-+
- /* Does namelen bytes of name exactly match the symbol? */
- static bool sym_is(const char *name, unsigned namelen, const char *symbol)
- {
+ EXPORT_SYMBOL_GPL(rio_local_get_device_id);
+ EXPORT_SYMBOL_GPL(rio_get_device);
 -- 
 1.7.8.4
 
