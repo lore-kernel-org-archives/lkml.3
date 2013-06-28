@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab3F1S7d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:59:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754344Ab3F1S7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:59:03 -0400
-Date: Fri, 28 Jun 2013 14:58:29 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org,
-        hyunhee.kim@samsung.com
-Subject: Re: [PATCH v2] vmpressure: implement strict mode
-Message-ID: <20130628145829.14dde5a2@redhat.com>
-In-Reply-To: <20130628184547.GA14287@teo>
-References: <20130628000201.GB15637@bbox>
-	<20130627173433.d0fc6ecd.akpm@linux-foundation.org>
-	<20130628005852.GA8093@teo>
-	<20130627181353.3d552e64.akpm@linux-foundation.org>
-	<20130628043411.GA9100@teo>
-	<20130628050712.GA10097@teo>
-	<20130628100027.31504abe@redhat.com>
-	<20130628165722.GA12271@teo>
-	<20130628170917.GA12610@teo>
-	<20130628142558.5da3d030@redhat.com>
-	<20130628184547.GA14287@teo>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754490Ab3F1S77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:59:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42013 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab3F1S6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 14:58:49 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Igor Mammedov <imammedo@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 060/105] x86: kvmclock: zero initialize pvclock shared memory area
+Date: Fri, 28 Jun 2013 11:51:22 -0700
+Message-Id: <1372445527-24414-61-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jun 2013 11:45:47 -0700
-Anton Vorontsov <anton@enomsg.org> wrote:
+3.8.13.4 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Fri, Jun 28, 2013 at 02:25:58PM -0400, Luiz Capitulino wrote:
-> > > > > That's how it's expected to work, because on strict mode you're notified
-> > > > > for the level you registered for. So apps registering for critical, will
-> > > > > still be notified on critical just like before.
-> > > > 
-> > > > Suppose you introduce a new level, and the system hits this level. Before,
-> > > > the app would receive at least some notification for the given memory load
-> > > > (i.e. one of the old levels), with the new level introduced in the kernel,
-> > > > the app will receive no events at all.
-> > 
-> > That's not true. If an app registered for critical it will still get
-> > critical notification when the system is at the critical level. Just as it
-> > always did. No new events will change this.
-> > 
-> > With today's semantics though, new events will change when current events
-> > are triggered. So each new extension will cause applications to have
-> > different behaviors, in different kernel versions. This looks quite
-> > undesirable to me.
-> 
-> I'll try to explain it again.
-> 
-> Old behaviour:
-> 
-> low -> event
->   x <- but the system is at this unnamed level, between low and med
-> med
-> crit
-> 
-> 
-> We add a level:
-> 
-> low
-> low-med <- system at this state, we send an event, but the old app does
->            not know about it, so it won't receive *any* notifications. (In
-> 	   older kernels it would receive low level notification
-> med
-> crit
-> 
-> You really don't see a problem here?
+------------------
 
-I do get what you're saying. We disagree it's a problem. In my mind the
-best API is to get what you registered for. Nothing more, nothing less.
+From: Igor Mammedov <imammedo@redhat.com>
 
-Now, there might be ways around it (being it a problem or not). I was
-also considering this:
+commit 07868fc6aaf57847b0f3a3d53086b7556eb83f4a upstream.
 
-> 3. Never change the levels (how can we know?)
+kernel might hung in pvclock_clocksource_read() due to
+uninitialized memory might contain odd version value in
+following cycle:
 
-If we fail at determining levels (I honestly think current levels are
-all we need), we can add a new interface later.
+        do {
+                version = __pvclock_read_cycles(src, &ret, &flags);
+        } while ((src->version & 1) || version != src->version);
 
-Also, what I said in the last email should work, which is to make
-memory.pressure_level return supported levels, so an application can
-register for all available levels. This way it will never miss a level.
+if secondary kvmclock is accessed before it's registered with kvm.
 
-I also think this matches having the mechanism in the kernel and
-policy in user-space.
+Clear garbage in pvclock shared memory area right after it's
+allocated to avoid this issue.
+
+Ref: https://bugzilla.kernel.org/show_bug.cgi?id=59521
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+[See BZ for analysis.  We may want a different fix for 3.11, but
+ this is the safest for now - Paolo]
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/x86/kernel/kvmclock.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index 5bedbdd..a855a2e 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -238,6 +238,7 @@ void __init kvmclock_init(void)
+ 	if (!mem)
+ 		return;
+ 	hv_clock = __va(mem);
++	memset(hv_clock, 0, size);
+ 
+ 	if (kvm_register_clock("boot clock")) {
+ 		hv_clock = NULL;
+-- 
+1.8.1.2
+
