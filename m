@@ -1,138 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3F1RUo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 13:20:44 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:41365 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab3F1RUl (ORCPT
+	id S1755978Ab3F1RYV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 13:24:21 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:50580 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755063Ab3F1RYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 13:20:41 -0400
+	Fri, 28 Jun 2013 13:24:20 -0400
+Message-ID: <51CDC6BF.10301@gmail.com>
+Date: Fri, 28 Jun 2013 11:24:15 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1372436683-31711-11-git-send-email-liuj97@gmail.com>
-References: <1372436683-31711-1-git-send-email-liuj97@gmail.com> <1372436683-31711-11-git-send-email-liuj97@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 28 Jun 2013 11:20:21 -0600
-Message-ID: <CAErSpo7DTioqp_atjr5NLfGk=afqgbdt=ZZerSzV=EJeR1WwLA@mail.gmail.com>
-Subject: Re: [PATCH v3 10/10] ACPI: simplify acpiphp driver with new helper functions
-To: Jiang Liu <liuj97@gmail.com>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V3 13/15] perf tools: struct thread has a tid not a pid
+References: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com> <1372409006-8431-14-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1372409006-8431-14-git-send-email-adrian.hunter@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 10:24 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
+On 6/28/13 2:43 AM, Adrian Hunter wrote:
+> As evident from 'machine__process_fork_event()' and
+> 'machine__process_exit_event()' the 'pid' member of
+> struct thread is actually the tid.
 >
-> Use new helper functions to simplify acpiphp driver.
+> Rename 'pid' to 'tid' in struct thread accordingly.
 >
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: David Ahern <dsahern@gmail.com>
 
-I assume this will be merged via linux-pm with the rest of the series.
-
-> Cc: Jiang Liu <liuj97@gmail.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Yijing Wang <wangyijing@huawei.com>
-> Cc: linux-acpi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/pci/hotplug/acpiphp_glue.c | 30 ++++++++----------------------
->  1 file changed, 8 insertions(+), 22 deletions(-)
->
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index 59df857..a0a7133 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -201,7 +201,6 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
->         struct acpiphp_bridge *bridge = (struct acpiphp_bridge *)context;
->         struct acpiphp_slot *slot;
->         struct acpiphp_func *newfunc;
-> -       acpi_handle tmp;
->         acpi_status status = AE_OK;
->         unsigned long long adr, sun;
->         int device, function, retval, found = 0;
-> @@ -232,19 +231,19 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
->         newfunc->handle = handle;
->         newfunc->function = function;
->
-> -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &tmp)))
-> +       if (acpi_has_method(handle, "_EJ0"))
->                 newfunc->flags = FUNC_HAS_EJ0;
->
-> -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_STA", &tmp)))
-> +       if (acpi_has_method(handle, "_STA"))
->                 newfunc->flags |= FUNC_HAS_STA;
->
-> -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS0", &tmp)))
-> +       if (acpi_has_method(handle, "_PS0"))
->                 newfunc->flags |= FUNC_HAS_PS0;
->
-> -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS3", &tmp)))
-> +       if (acpi_has_method(handle, "_PS3"))
->                 newfunc->flags |= FUNC_HAS_PS3;
->
-> -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_DCK", &tmp)))
-> +       if (acpi_has_method(handle, "_DCK"))
->                 newfunc->flags |= FUNC_HAS_DCK;
->
->         status = acpi_evaluate_integer(handle, "_SUN", NULL, &sun);
-> @@ -843,25 +842,14 @@ static unsigned int get_slot_status(struct acpiphp_slot *slot)
->   */
->  int acpiphp_eject_slot(struct acpiphp_slot *slot)
->  {
-> -       acpi_status status;
->         struct acpiphp_func *func;
-> -       struct acpi_object_list arg_list;
-> -       union acpi_object arg;
->
->         list_for_each_entry(func, &slot->funcs, sibling) {
->                 /* We don't want to call _EJ0 on non-existing functions. */
->                 if ((func->flags & FUNC_HAS_EJ0)) {
-> -                       /* _EJ0 method take one argument */
-> -                       arg_list.count = 1;
-> -                       arg_list.pointer = &arg;
-> -                       arg.type = ACPI_TYPE_INTEGER;
-> -                       arg.integer.value = 1;
-> -
-> -                       status = acpi_evaluate_object(func->handle, "_EJ0", &arg_list, NULL);
-> -                       if (ACPI_FAILURE(status)) {
-> -                               warn("%s: _EJ0 failed\n", __func__);
-> +                       if (ACPI_FAILURE(acpi_evaluate_ej0(func->handle)))
->                                 return -1;
-> -                       } else
-> +                       else
->                                 break;
->                 }
->         }
-> @@ -1171,7 +1159,6 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
->   */
->  void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
->  {
-> -       acpi_handle dummy_handle;
->         struct acpiphp_bridge *bridge;
->
->         if (acpiphp_disabled)
-> @@ -1200,8 +1187,7 @@ void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
->         get_device(&bus->dev);
->
->         if (!pci_is_root_bus(bridge->pci_bus) &&
-> -           ACPI_SUCCESS(acpi_get_handle(bridge->handle,
-> -                                       "_EJ0", &dummy_handle))) {
-> +           acpi_has_method(bridge->handle, "_EJ0")) {
->                 dbg("found ejectable p2p bridge\n");
->                 bridge->flags |= BRIDGE_HAS_EJ0;
->                 bridge->func = acpiphp_bridge_handle_to_function(handle);
-> --
-> 1.8.1.2
->
