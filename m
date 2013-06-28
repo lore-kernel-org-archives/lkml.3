@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab3F1Ksr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:48:47 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:13851
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755191Ab3F1Ksq (ORCPT
+	id S1755667Ab3F1KwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:52:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45524 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755595Ab3F1KwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:48:46 -0400
-X-Forefront-Antispam-Report: CIP:59.163.77.177;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC02.kpit.com;RD:59.163.77.177.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI936eI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23hbe9i1155h)
-Subject: Re: [patch v1 1/1]mfd: fix for DA9055 driver initialization
-From: Ankur Raina <Ankur.Raina@kpitcummins.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: <broonie@kernel.org>, "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <david.chen@diasemi.com>
-In-Reply-To: <20130627174111.GG20292@zurbaran>
-References: <4B6D9C89CD8BA349A71B74CA32C47E5850DA82AF@KCHJEXMB02.kpit.com>
-	 <20130627174111.GG20292@zurbaran>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Jun 2013 16:18:39 +0530
-Message-ID: <1372416519.13538.25.camel@ankurr1-desktop>
+	Fri, 28 Jun 2013 06:52:02 -0400
+Date: Fri, 28 Jun 2013 12:52:02 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Prarit Bhargava <prarit@redhat.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>, athorlton@sgi.com,
+        CAI Qian <caiqian@redhat.com>
+Subject: Re: BUG: tick device NULL pointer during system initialization and
+ shutdown
+In-Reply-To: <51CC708B.7040605@redhat.com>
+Message-ID: <alpine.DEB.2.02.1306281250270.4013@ionos.tec.linutronix.de>
+References: <51C0AB09.2090605@redhat.com> <alpine.DEB.2.02.1306241551020.4013@ionos.tec.linutronix.de> <51CA2CBF.70404@redhat.com> <alpine.DEB.2.02.1306261303260.4013@ionos.tec.linutronix.de> <51CC708B.7040605@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.50.126]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 19:41 +0200, Samuel Ortiz wrote:
-> Hi Ankur,
+On Thu, 27 Jun 2013, Prarit Bhargava wrote:
+> On 06/26/2013 07:05 AM, Thomas Gleixner wrote:
+> > Subject: tick: Make oneshot broadcast robust vs. CPU offlining
+> > From: Thomas Gleixner <tglx@linutronix.de>
+> > Date: Wed, 26 Jun 2013 12:17:32 +0200
+> > 
+> > In periodic mode we remove offline cpus from the broadcast propagation
+> > mask. In oneshot mode we fail to do so. This was not a problem so far,
+> > but the recent changes to the broadcast propagation introduced a
+> > constellation which can result in a NULL pointer dereference.
+> > 
 > 
-> On Thu, Jun 27, 2013 at 02:06:45PM +0000, Ankur Raina wrote:
-> > This patch adds support for clearing events received while
-> > powering up DA9055.
-> Could you please explain what that fixes ?
-While powering up DA9055,events are received of power sequencer.Events are also received on gpio's.
-These events remain uncleared after boot up, due to which further event handling also fails.
-This patch clears all the events received, during driver initialization, so that we have a clean state after boot up.
+> Unfortunately this patch causes an NMI watchdog during system shutdown.  Most of
+> the CPUs are in start_secondary+0x254/0x256.
 
-> 
-> Cheers,
-> Samuel.
-> 
+Huch. Did the warning in the broadcast code trigger before that?
+ 
+Thanks,
 
-
+	tglx
