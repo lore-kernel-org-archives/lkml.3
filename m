@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab3F1T4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:56:34 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:33708 "EHLO
+	id S1753349Ab3F1T4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:56:33 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:33707 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab3F1T4a (ORCPT
+	with ESMTP id S1751316Ab3F1T4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Jun 2013 15:56:30 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv2 3/8] clocksource: sun4i: Don't forget to enable the clock we use
-Date: Fri, 28 Jun 2013 21:56:21 +0200
-Message-Id: <1372449386-1334-4-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 1/8] clocksource: sun4i: Use the BIT macros where possible
+Date: Fri, 28 Jun 2013 21:56:19 +0200
+Message-Id: <1372449386-1334-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,25 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if in our case, this clock was non-gatable, used as a parent clock
-for several IPs, it still is a good idea to enable it.
-
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clocksource/sun4i_timer.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/clocksource/sun4i_timer.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 050e94f..84ace76 100644
+index d4674e7..bdf34d9 100644
 --- a/drivers/clocksource/sun4i_timer.c
 +++ b/drivers/clocksource/sun4i_timer.c
-@@ -118,6 +118,7 @@ static void __init sun4i_timer_init(struct device_node *node)
- 	clk = of_clk_get(node, 0);
- 	if (IS_ERR(clk))
- 		panic("Can't get timer clock");
-+	clk_prepare_enable(clk);
+@@ -24,12 +24,12 @@
+ #include <linux/of_irq.h>
  
- 	rate = clk_get_rate(clk);
+ #define TIMER_IRQ_EN_REG	0x00
+-#define TIMER_IRQ_EN(val)		(1 << val)
++#define TIMER_IRQ_EN(val)		BIT(val)
+ #define TIMER_IRQ_ST_REG	0x04
+ #define TIMER_CTL_REG(val)	(0x10 * val + 0x10)
+-#define TIMER_CTL_ENABLE		(1 << 0)
+-#define TIMER_CTL_AUTORELOAD		(1 << 1)
+-#define TIMER_CTL_ONESHOT		(1 << 7)
++#define TIMER_CTL_ENABLE		BIT(0)
++#define TIMER_CTL_AUTORELOAD		BIT(1)
++#define TIMER_CTL_ONESHOT		BIT(7)
+ #define TIMER_INTVAL_REG(val)	(0x10 * val + 0x14)
+ #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
  
 -- 
 1.8.3.1
