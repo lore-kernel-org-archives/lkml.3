@@ -1,71 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab3F1Et2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 00:49:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58358 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab3F1Et0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 00:49:26 -0400
-Message-ID: <1372394950.5989.128.camel@marge.simpson.net>
-Subject: Re: cgroup: status-quo and userland efforts
-From: Mike Galbraith <bitbucket@online.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Tim Hockin <thockin@hockin.org>, Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 28 Jun 2013 06:49:10 +0200
-In-Reply-To: <20130628040930.GC2500@htj.dyndns.org>
-References: <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
-	 <20130422214159.GG12543@htj.dyndns.org>
-	 <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
-	 <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
-	 <20130625000118.GT1918@mtj.dyndns.org>
-	 <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
-	 <20130626212047.GB4536@htj.dyndns.org>
-	 <1372311907.5871.78.camel@marge.simpson.net>
-	 <20130627180143.GD5599@mtj.dyndns.org>
-	 <1372391198.5989.110.camel@marge.simpson.net>
-	 <20130628040930.GC2500@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	id S1751407Ab3F1E5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 00:57:52 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44019 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750922Ab3F1E5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 00:57:51 -0400
+Message-ID: <1372395469.2060.36.camel@joe-AO722>
+Subject: [PATCH next] xen: Use more current logging styles
+From: Joe Perches <joe@perches.com>
+To: Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "virtualization@lists.osdl.org" 
+	<virtualization@lists.linux-foundation.org>
+Date: Thu, 27 Jun 2013 21:57:49 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-X-Provags-ID: V02:K0:03QzSHLDs5Bcp4esbLSOKdmnCLB8wO4FF52STErJGAU
- 5xg0YgCpWMVzYuY8EUMGxVMJUwVIYDd8p18aZWWha7EteWF1En
- oaqU9YaPWpuNLtuqezR/C1hlRYkPLCpMRh1DutIutTSXp95p0M
- eBSKZhAVxYmGgSDrP0FfgcuLSBO97JmmlX5Lh+a0NKJ21UEHsu
- u9iWdnlnlah1V8gXfs33u5eEBx9wo0xlzsZwfyUBC9QVUwFOZn
- n1ZKbcghBABAkVXN8cGSfC0Y8B1Lrw1ZYthT+/7p+ZxHOmpUAm
- vYumlIKv680ufGAzMhT8N8p7esWQIszif9MLqlcG03UNcriyEW
- 3zfBpcLSC31uIUo2KJ10SMMpyH0DPSfue4crET6/a18UNI85gb
- 2mfSry32tuB9g==
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 21:09 -0700, Tejun Heo wrote:
+Instead of mixing printk and pr_<level> forms,
+just use pr_<level>
 
-> No, it's completely messed up.  We're now starting to see users trying
-> to embed low level cgroup details into their binaries and cgroup is
-> exposing sysctl-level konbs which are directly tied to internal
-> implementation of core subsystems.  cgroup successfully bypassed the
-> usual kernel API policing with the help of hierarchical filesystem
-> interface which allows delegation on the surface.  We completely
-> fucked up.  This is a full scale disaster unrolling.
+Miscellaneous changes around these conversions:
 
-I always thought that was a very cool feature, mkdir+echo, poof done.
-Now maybe that interface is suboptimal for serious usage, but it makes
-the things usable via dirt simple scripts, very flexible, nice.
+Add a missing newline to avoid message interleaving,
+coalesce formats, reflow modified lines to 80 columns.
 
-But whatever, not my call, you know your business better than I.  If
-mandatory agent happens, fine, but imho that will be sad day.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/xen-netback/netback.c |  7 +++----
+ drivers/net/xen-netfront.c        | 28 +++++++++++++---------------
+ 2 files changed, 16 insertions(+), 19 deletions(-)
 
--Mike
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 130bcb2..64828de 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1890,9 +1890,8 @@ static int __init netback_init(void)
+ 		return -ENODEV;
+ 
+ 	if (fatal_skb_slots < XEN_NETBK_LEGACY_SLOTS_MAX) {
+-		printk(KERN_INFO
+-		       "xen-netback: fatal_skb_slots too small (%d), bump it to XEN_NETBK_LEGACY_SLOTS_MAX (%d)\n",
+-		       fatal_skb_slots, XEN_NETBK_LEGACY_SLOTS_MAX);
++		pr_info("fatal_skb_slots too small (%d), bump it to XEN_NETBK_LEGACY_SLOTS_MAX (%d)\n",
++			fatal_skb_slots, XEN_NETBK_LEGACY_SLOTS_MAX);
+ 		fatal_skb_slots = XEN_NETBK_LEGACY_SLOTS_MAX;
+ 	}
+ 
+@@ -1921,7 +1920,7 @@ static int __init netback_init(void)
+ 					     "netback/%u", group);
+ 
+ 		if (IS_ERR(netbk->task)) {
+-			printk(KERN_ALERT "kthread_create() fails at netback\n");
++			pr_alert("kthread_create() fails at netback\n");
+ 			del_timer(&netbk->net_timer);
+ 			rc = PTR_ERR(netbk->task);
+ 			goto failed_init;
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 76a2236..ff7f111 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -29,6 +29,8 @@
+  * IN THE SOFTWARE.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/netdevice.h>
+@@ -385,9 +387,8 @@ static void xennet_tx_buf_gc(struct net_device *dev)
+ 			skb = np->tx_skbs[id].skb;
+ 			if (unlikely(gnttab_query_foreign_access(
+ 				np->grant_tx_ref[id]) != 0)) {
+-				printk(KERN_ALERT "xennet_tx_buf_gc: warning "
+-				       "-- grant still in use by backend "
+-				       "domain.\n");
++				pr_alert("%s: warning -- grant still in use by backend domain\n",
++					 __func__);
+ 				BUG();
+ 			}
+ 			gnttab_end_foreign_access_ref(
+@@ -804,14 +805,14 @@ static int xennet_set_skb_gso(struct sk_buff *skb,
+ {
+ 	if (!gso->u.gso.size) {
+ 		if (net_ratelimit())
+-			printk(KERN_WARNING "GSO size must not be zero.\n");
++			pr_warn("GSO size must not be zero\n");
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* Currently only TCPv4 S.O. is supported. */
+ 	if (gso->u.gso.type != XEN_NETIF_GSO_TYPE_TCPV4) {
+ 		if (net_ratelimit())
+-			printk(KERN_WARNING "Bad GSO type %d.\n", gso->u.gso.type);
++			pr_warn("Bad GSO type %d\n", gso->u.gso.type);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -910,9 +911,8 @@ static int checksum_setup(struct net_device *dev, struct sk_buff *skb)
+ 		break;
+ 	default:
+ 		if (net_ratelimit())
+-			printk(KERN_ERR "Attempting to checksum a non-"
+-			       "TCP/UDP packet, dropping a protocol"
+-			       " %d packet", iph->protocol);
++			pr_err("Attempting to checksum a non-TCP/UDP packet, dropping a protocol %d packet\n",
++			       iph->protocol);
+ 		goto out;
+ 	}
+ 
+@@ -1359,14 +1359,14 @@ static struct net_device *xennet_create_dev(struct xenbus_device *dev)
+ 	/* A grant for every tx ring slot */
+ 	if (gnttab_alloc_grant_references(TX_MAX_TARGET,
+ 					  &np->gref_tx_head) < 0) {
+-		printk(KERN_ALERT "#### netfront can't alloc tx grant refs\n");
++		pr_alert("can't alloc tx grant refs\n");
+ 		err = -ENOMEM;
+ 		goto exit_free_stats;
+ 	}
+ 	/* A grant for every rx ring slot */
+ 	if (gnttab_alloc_grant_references(RX_MAX_TARGET,
+ 					  &np->gref_rx_head) < 0) {
+-		printk(KERN_ALERT "#### netfront can't alloc rx grant refs\n");
++		pr_alert("can't alloc rx grant refs\n");
+ 		err = -ENOMEM;
+ 		goto exit_free_tx;
+ 	}
+@@ -1430,16 +1430,14 @@ static int netfront_probe(struct xenbus_device *dev,
+ 
+ 	err = register_netdev(info->netdev);
+ 	if (err) {
+-		printk(KERN_WARNING "%s: register_netdev err=%d\n",
+-		       __func__, err);
++		pr_warn("%s: register_netdev err=%d\n", __func__, err);
+ 		goto fail;
+ 	}
+ 
+ 	err = xennet_sysfs_addif(info->netdev);
+ 	if (err) {
+ 		unregister_netdev(info->netdev);
+-		printk(KERN_WARNING "%s: add sysfs failed err=%d\n",
+-		       __func__, err);
++		pr_warn("%s: add sysfs failed err=%d\n", __func__, err);
+ 		goto fail;
+ 	}
+ 
+@@ -2116,7 +2114,7 @@ static int __init netif_init(void)
+ 	if (xen_hvm_domain() && !xen_platform_pci_unplug)
+ 		return -ENODEV;
+ 
+-	printk(KERN_INFO "Initialising Xen virtual ethernet driver.\n");
++	pr_info("Initialising Xen virtual ethernet driver\n");
+ 
+ 	return xenbus_register_frontend(&netfront_driver);
+ }
+
 
