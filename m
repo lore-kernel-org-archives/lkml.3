@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3F1U6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 16:58:16 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:55534 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab3F1U6P (ORCPT
+	id S1752299Ab3F1VCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 17:02:15 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:64969 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab3F1VCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 16:58:15 -0400
-Date: Fri, 28 Jun 2013 16:57:40 -0400 (EDT)
-From: Lenny Szubowicz <lszubowi@redhat.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        n hamaguchi <n.hamaguchi@jp.fujitsu.com>,
-        Don Zickus <dzickus@redhat.com>
-Message-ID: <1199079191.10029297.1372453060353.JavaMail.root@redhat.com>
-In-Reply-To: <CA+8MBbJrU51R5TMV6m4nhAiz2kZQBOcmkeAkEcg-erJhDwrChA@mail.gmail.com>
-References: <1372450451-8790-1-git-send-email-lszubowi@redhat.com> <1372450451-8790-3-git-send-email-lszubowi@redhat.com> <CA+8MBbJrU51R5TMV6m4nhAiz2kZQBOcmkeAkEcg-erJhDwrChA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] acpi: Eliminate console msg if pstore.backend
- excludes ERST
+	Fri, 28 Jun 2013 17:02:13 -0400
+Date: Fri, 28 Jun 2013 17:07:38 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: [testcase] perf: yet another fuzzer triggered crash
+In-Reply-To: <alpine.DEB.2.10.1306281531070.10799@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1306281705340.10799@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1306140058520.8617@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1306281531070.10799@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF17 (Linux)/8.0.3_GA_5664)
-Thread-Topic: acpi: Eliminate console msg if pstore.backend excludes ERST
-Thread-Index: Cb4+me5MqG8Arusxp5mT8hsG6JNUMA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 28 Jun 2013, Vince Weaver wrote:
 
+> On Fri, 14 Jun 2013, Vince Weaver wrote:
+>  
+> > OK, I haven't managed to get a small reproducible test case for the system 
+> > crash yet
+> 
+> I wasted the last 2 days bisecting a 10000 syscall trace, but below is a 
+> 20-syscall testcase that rapidly makes a core2 machine running 3.10-rc7 
+> unusable.
 
------ Original Message -----
-> From: "Tony Luck" <tony.luck@gmail.com>
-> To: "Lenny Szubowicz" <lszubowi@redhat.com>
-> Cc: "Anton Vorontsov" <cbouatmailru@gmail.com>, "Matt Fleming" <matt.fleming@intel.com>, "Linux Kernel Mailing List"
-> <linux-kernel@vger.kernel.org>, "n hamaguchi" <n.hamaguchi@jp.fujitsu.com>, "Don Zickus" <dzickus@redhat.com>
-> Sent: Friday, June 28, 2013 4:44:51 PM
-> Subject: Re: [PATCH 2/3] acpi: Eliminate console msg if pstore.backend excludes ERST
-> 
-> On Fri, Jun 28, 2013 at 1:14 PM, Lenny Szubowicz <lszubowi@redhat.com> wrote:
-> 
-> > -               if (pstore_register(&erst_info)) {
-> > -                       pr_info(ERST_PFX "Could not register with
-> > persistent store\n");
-> > +               rc = pstore_register(&erst_info);
-> > +               if (rc) {
-> > +                       if (rc != -EPERM)
-> > +                               pr_info(ERST_PFX
-> > +                               "Could not register with persistent
-> > store\n");
-> > +                       erst_info.buf = NULL;
-> > +                       erst_info.bufsize = 0;
-> 
-> Mismatch between part 1 and part 2 here ... we return -EINVAL if
-> our name doesn't match the desired backend ... but you only suppress
-> the "Could not register" message for -EPERM
-> 
-> Or am I confused while just looking at patch fragments?
-> 
-> -Tony
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+and it turns out I might have bisected down too much, as though that 
+crashes my core2 system it doesn't crash newer machines.
 
-Yes, you are absolutely correct. My [PATCH 1/3] is not what I intended. Thanks!
+I'm too lazy to re-bisect today, but the much longer program here:
+   http://web.eece.maine.edu/~vweaver/files/nmi_bug_snb.c
+reliably causes the same crash on a Sandybridge machine I have running 3.9
 
-                         -Lenny.
+Vince Weaver
+vincent.weaver@maine.edu
+http://www.eece.maine.edu/~vweaver/
