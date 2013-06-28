@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab3F1SzV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:55:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41706 "EHLO
+	id S1753072Ab3F1Sz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:55:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41715 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab3F1SzR (ORCPT
+	with ESMTP id S1751817Ab3F1SzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:55:17 -0400
+	Fri, 28 Jun 2013 14:55:22 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 023/105] xen-netback: fix sparse warning
-Date: Fri, 28 Jun 2013 11:50:45 -0700
-Message-Id: <1372445527-24414-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 033/105] drm/gma500: Increase max resolution for mode setting
+Date: Fri, 28 Jun 2013 11:50:55 -0700
+Message-Id: <1372445527-24414-34-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,32 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
-commit 9eaee8beeeb3bca0d9b14324fd9d467d48db784c upstream.
+commit cbbd379aa43890f36da934f5af619d2fb8ec3d87 upstream.
 
-Fix warning about 0 used as NULL.
+By having a higher max resolution we can now set up a virtual
+framebuffer that spans several monitors. 4096 should be ok since we're
+gen 3 or higher and should be enough for most dual head setups.
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/xen-netback/netback.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/gma500/framebuffer.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index aa28550..40a4766 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -1547,7 +1547,7 @@ static void xen_netbk_idx_release(struct xen_netbk *netbk, u16 pending_idx,
+diff --git a/drivers/gpu/drm/gma500/framebuffer.c b/drivers/gpu/drm/gma500/framebuffer.c
+index afded54..a3d26e2 100644
+--- a/drivers/gpu/drm/gma500/framebuffer.c
++++ b/drivers/gpu/drm/gma500/framebuffer.c
+@@ -799,8 +799,8 @@ void psb_modeset_init(struct drm_device *dev)
+ 	for (i = 0; i < dev_priv->num_pipe; i++)
+ 		psb_intel_crtc_init(dev, i, mode_dev);
  
- 	xenvif_put(vif);
+-	dev->mode_config.max_width = 2048;
+-	dev->mode_config.max_height = 2048;
++	dev->mode_config.max_width = 4096;
++	dev->mode_config.max_height = 4096;
  
--	netbk->mmap_pages[pending_idx]->mapping = 0;
-+	netbk->mmap_pages[pending_idx]->mapping = NULL;
- 	put_page(netbk->mmap_pages[pending_idx]);
- 	netbk->mmap_pages[pending_idx] = NULL;
- }
+ 	psb_setup_outputs(dev);
+ 
 -- 
 1.8.1.2
 
