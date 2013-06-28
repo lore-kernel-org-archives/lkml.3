@@ -1,70 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878Ab3F1L4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 07:56:25 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52258 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab3F1L4Y (ORCPT
+	id S1752744Ab3F1MEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 08:04:14 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43947 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3F1MEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 07:56:24 -0400
-Date: Fri, 28 Jun 2013 12:56:21 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chao Xie <chao.xie@marvell.com>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com, xiechao.mail@gmail.com,
-        Yi Zhang <yizhang@marvell.com>
-Message-ID: <20130628115621.GI27646@sirena.org.uk>
-References: <1372322764-26070-1-git-send-email-chao.xie@marvell.com>
+	Fri, 28 Jun 2013 08:04:12 -0400
+Subject: Re: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+To: tony.luck@intel.com, bp@alien8.de
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: ananth@in.ibm.com, masbock@linux.vnet.ibm.com, lcm@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        ying.huang@intel.com
+Date: Fri, 28 Jun 2013 17:34:02 +0530
+Message-ID: <20130628120224.7781.45438.stgit@localhost.localdomain>
+In-Reply-To: <20130621072725.GB22006@pd.tnic>
+References: <20130621072725.GB22006@pd.tnic>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Or+E1gVcyGxE6cpa"
-Content-Disposition: inline
-In-Reply-To: <1372322764-26070-1-git-send-email-chao.xie@marvell.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V3] regulator: 88pm800: add regulator driver for 88pm800
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062811-8256-0000-0000-0000081F5363
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tony, Boris,
+Here is a patch which implements this technique. Kindly take a look and let me
+know what you think.
 
---Or+E1gVcyGxE6cpa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks,
+Naveen
 
-On Thu, Jun 27, 2013 at 04:46:04AM -0400, Chao Xie wrote:
-> Add the regulator driver for PMIC 88pm800 including device tree
-> support.
-> 88pm800 is an I2C-based power-management IC containing voltage
-> regulators, a real-time clock, and some general purpose ADC devices,
+--
+If the firmware indicates in GHES error data entry that the error threshold
+has exceeded for a corrected error event, then we try to soft-offline the
+page.
 
-Applied, thanks.  Your table based list and map voltage functions
-actually look very generic so should be added to the core but I'll do
-that myself as a refactoring so this can go into v3.11.
+Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+---
+ drivers/acpi/apei/ghes.c |    7 ++++++
+ include/linux/mm.h       |    1 +
+ mm/memory-failure.c      |   53 ++++++++++++++++++++++++++++++----------------
+ 3 files changed, 43 insertions(+), 18 deletions(-)
 
---Or+E1gVcyGxE6cpa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index fcd7d91..17137cf 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -422,6 +422,13 @@ static void ghes_do_proc(struct ghes *ghes,
+ 				 CPER_SEC_PLATFORM_MEM)) {
+ 			struct cper_sec_mem_err *mem_err;
+ 			mem_err = (struct cper_sec_mem_err *)(gdata+1);
++			if (sec_sev == GHES_SEV_CORRECTED &&
++			    (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
++			    (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
++				unsigned long pfn;
++				pfn = mem_err->physical_addr >> PAGE_SHIFT;
++				soft_memory_failure_queue(pfn, 0, 0);
++			}
+ 			ghes_edac_report_mem_error(ghes, sev, mem_err);
+ 
+ #ifdef CONFIG_X86_MCE
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e0c8528..f9907d2 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1787,6 +1787,7 @@ enum mf_flags {
+ };
+ extern int memory_failure(unsigned long pfn, int trapno, int flags);
+ extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
++extern void soft_memory_failure_queue(unsigned long pfn, int trapno, int flags);
+ extern int unpoison_memory(unsigned long pfn);
+ extern int sysctl_memory_failure_early_kill;
+ extern int sysctl_memory_failure_recovery;
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index ceb0c7f..50caefd 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1222,6 +1222,7 @@ struct memory_failure_entry {
+ 	unsigned long pfn;
+ 	int trapno;
+ 	int flags;
++	bool soft_offline;
+ };
+ 
+ struct memory_failure_cpu {
+@@ -1233,6 +1234,28 @@ struct memory_failure_cpu {
+ 
+ static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
+ 
++void __memory_failure_queue(unsigned long pfn, int trapno, int flags, int soft_offline)
++{
++	struct memory_failure_cpu *mf_cpu;
++	unsigned long proc_flags;
++	struct memory_failure_entry entry = {
++		.pfn =		pfn,
++		.trapno =	trapno,
++		.flags =	flags,
++		.soft_offline = soft_offline
++	};
++
++	mf_cpu = &get_cpu_var(memory_failure_cpu);
++	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
++	if (kfifo_put(&mf_cpu->fifo, &entry))
++		schedule_work_on(smp_processor_id(), &mf_cpu->work);
++	else
++		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
++		       pfn);
++	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
++	put_cpu_var(memory_failure_cpu);
++}
++
+ /**
+  * memory_failure_queue - Schedule handling memory failure of a page.
+  * @pfn: Page Number of the corrupted page
+@@ -1250,28 +1273,19 @@ static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
+  *
+  * Can run in IRQ context.
+  */
++
+ void memory_failure_queue(unsigned long pfn, int trapno, int flags)
+ {
+-	struct memory_failure_cpu *mf_cpu;
+-	unsigned long proc_flags;
+-	struct memory_failure_entry entry = {
+-		.pfn =		pfn,
+-		.trapno =	trapno,
+-		.flags =	flags,
+-	};
+-
+-	mf_cpu = &get_cpu_var(memory_failure_cpu);
+-	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
+-	if (kfifo_put(&mf_cpu->fifo, &entry))
+-		schedule_work_on(smp_processor_id(), &mf_cpu->work);
+-	else
+-		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
+-		       pfn);
+-	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
+-	put_cpu_var(memory_failure_cpu);
++	__memory_failure_queue(pfn, trapno, flags, false);
+ }
+ EXPORT_SYMBOL_GPL(memory_failure_queue);
+ 
++void soft_memory_failure_queue(unsigned long pfn, int trapno, int flags)
++{
++	__memory_failure_queue(pfn, trapno, flags, true);
++}
++EXPORT_SYMBOL_GPL(soft_memory_failure_queue);
++
+ static void memory_failure_work_func(struct work_struct *work)
+ {
+ 	struct memory_failure_cpu *mf_cpu;
+@@ -1286,7 +1300,10 @@ static void memory_failure_work_func(struct work_struct *work)
+ 		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
+ 		if (!gotten)
+ 			break;
+-		memory_failure(entry.pfn, entry.trapno, entry.flags);
++		if (entry.soft_offline)
++			soft_offline_page(pfn_to_page(entry.pfn), entry.flags);
++		else
++			memory_failure(entry.pfn, entry.trapno, entry.flags);
+ 	}
+ }
+ 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRzXniAAoJELSic+t+oim9YZcP/jWAJUi/d29/bcojir4RRgCc
-smxAly+l/asqqfzOhZlZFcbWQWB7E1sTdi64HnVHBCyxUNrGfICCI5spQ1acA87K
-dRJokwJ/NdhKet+HafFD6Pu15f5DrnoMaXNUELcy3QwgWYG8pIkCe9czyxGi2E8U
-mLtSr7Jmk/ZOwHC0EcLrEuxcENRsEmcC87ukWfxrgRg+F5066N6c4XAOap0YMxKL
-rwTaVBbLWXFciME31yLu7yAmO1o4h5XJdyy6xvHYxoGR5oUcE77K8pyQKpJCpHXf
-wQP+TRf4XpwXi96zbNb7qVfH2erdWOkruZ6ZDS9jTJteopdE5OT4qND9CL0vzv/I
-JHmGcEG+Eq65bbR0wu0rHTalM53c0lMBrShK0qaD4N5DMoO17ATX4GWb1FAaf8GI
-Y+GfcLBF/pvwms9OX5a6EVm6zkCoDaFxhCZqSIPdt0gTLrjuOIl4JtzjdyHAO2AT
-k9qeaudfiY+nCIlGHgMjNJ8ZcGxgn4xjKTvAVjqykesu2UvrEJXZClTXDg9JkP0s
-jYR4H/Vqw3zaN6ctUDSqaOO5wAioUlT28iIy5Myfmv7uu6c3ZtutQaSnHW1lUt2z
-3tpwuEoqVeRaDQlW5Zp7ay8BcYgiMlYe2/pALFLHtYetWxqLnp0hkBbrVc+eQF0W
-8Jc4P6X51A0HYeSD/XVb
-=xGmG
------END PGP SIGNATURE-----
-
---Or+E1gVcyGxE6cpa--
