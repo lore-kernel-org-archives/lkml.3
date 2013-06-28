@@ -1,167 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab3F1Kyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:54:40 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:57448 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396Ab3F1Kyj (ORCPT
+	id S1755732Ab3F1Kyq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:54:46 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:35266 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755712Ab3F1Kyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:54:39 -0400
-From: Wedson Almeida Filho <wedsonaf@gmail.com>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Wedson Almeida Filho <wedsonaf@gmail.com>
-Subject: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
-Date: Fri, 28 Jun 2013 03:54:11 -0700
-Message-Id: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 28 Jun 2013 06:54:43 -0400
+Message-ID: <51CD6A21.4070201@st.com>
+Date: Fri, 28 Jun 2013 11:49:05 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: linus.walleij@linaro.org, grant.likely@linaro.org, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH -next] pinctrl: st: fix return value check
+References: <CAPgLHd8-jbXfb95x1Bp7GsMuEJ3mOudUcknRqbxNpNmcdQvg3w@mail.gmail.com>
+In-Reply-To: <CAPgLHd8-jbXfb95x1Bp7GsMuEJ3mOudUcknRqbxNpNmcdQvg3w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new implementation allows the compiler to better optimize the code; the
-original implementation is still used when the kernel is compiled with older
-versions of gcc that don't support asm-goto.
+On 26/06/13 17:30, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> In case of error, the function pinctrl_register() returns
+> NULL not ERR_PTR(). The IS_ERR() test in the return value
+> check should be replaced with NULL test.
+> The function syscon_regmap_lookup_by_phandle() returns ERR_PTR()
+> and never returns NULL. The NULL test in the return value check
+> should be replaced with IS_ERR().
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/pinctrl/pinctrl-st.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+> index 7effedf..de8c626 100644
+> --- a/drivers/pinctrl/pinctrl-st.c
+> +++ b/drivers/pinctrl/pinctrl-st.c
+> @@ -1299,9 +1299,9 @@ static int st_pctl_probe_dt(struct platform_device *pdev,
+>  		return -ENOMEM;
+>  
+>  	info->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
+> -	if (!info->regmap) {
+> +	if (IS_ERR(info->regmap)) {
+>  		dev_err(info->dev, "No syscfg phandle specified\n");
+> -		return -ENOMEM;
+> +		return PTR_ERR(info->regmap);
+>  	}
+>  	info->data = of_match_node(st_pctl_of_match, np)->data;
+>  
+> @@ -1376,9 +1376,9 @@ static int st_pctl_probe(struct platform_device *pdev)
+>  	pctl_desc->name		= dev_name(&pdev->dev);
+>  
+>  	info->pctl = pinctrl_register(pctl_desc, &pdev->dev, info);
+> -	if (IS_ERR(info->pctl)) {
+> +	if (!info->pctl) {
+>  		dev_err(&pdev->dev, "Failed pinctrl registration\n");
+> -		return PTR_ERR(info->pctl);
+> +		return -EINVAL;
+>  	}
+>  
+>  	for (i = 0; i < info->nbanks; i++)
+> 
+Thankyou for the patch, It looks OK.
+Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Compiling with gcc 4.7.3, the original mutex_lock() is 60 bytes with the fast
-path taking 16 instructions; the new mutex_lock() is 42 bytes, with the fast
-path taking 12 instructions.
+Can you resend it with cc to Mark Brown <broonie@kernel.org>
 
-The original mutex_unlock() is 24 bytes with the fast path taking 7
-instructions; the new mutex_unlock() is 25 bytes (because the compiler used
-a 2-byte ret) with the fast path taking 4 instructions.
+Thanks,
+srini
 
-The two versions of the functions are included below for reference.
 
-Old:
-ffffffff817742a0 <mutex_lock>:
-ffffffff817742a0:       55                      push   %rbp
-ffffffff817742a1:       48 89 e5                mov    %rsp,%rbp
-ffffffff817742a4:       48 83 ec 10             sub    $0x10,%rsp
-ffffffff817742a8:       48 89 5d f0             mov    %rbx,-0x10(%rbp)
-ffffffff817742ac:       48 89 fb                mov    %rdi,%rbx
-ffffffff817742af:       4c 89 65 f8             mov    %r12,-0x8(%rbp)
-ffffffff817742b3:       e8 28 15 00 00          callq  ffffffff817757e0 <_cond_resched>
-ffffffff817742b8:       48 89 df                mov    %rbx,%rdi
-ffffffff817742bb:       f0 ff 0f                lock decl (%rdi)
-ffffffff817742be:       79 05                   jns    ffffffff817742c5 <mutex_lock+0x25>
-ffffffff817742c0:       e8 cb 04 00 00          callq  ffffffff81774790 <__mutex_lock_slowpath>
-ffffffff817742c5:       65 48 8b 04 25 c0 b7    mov    %gs:0xb7c0,%rax
-ffffffff817742cc:       00 00
-ffffffff817742ce:       4c 8b 65 f8             mov    -0x8(%rbp),%r12
-ffffffff817742d2:       48 89 43 18             mov    %rax,0x18(%rbx)
-ffffffff817742d6:       48 8b 5d f0             mov    -0x10(%rbp),%rbx
-ffffffff817742da:       c9                      leaveq
-ffffffff817742db:       c3                      retq
 
-ffffffff81774250 <mutex_unlock>:
-ffffffff81774250:       55                      push   %rbp
-ffffffff81774251:       48 c7 47 18 00 00 00    movq   $0x0,0x18(%rdi)
-ffffffff81774258:       00
-ffffffff81774259:       48 89 e5                mov    %rsp,%rbp
-ffffffff8177425c:       f0 ff 07                lock incl (%rdi)
-ffffffff8177425f:       7f 05                   jg     ffffffff81774266 <mutex_unlock+0x16>
-ffffffff81774261:       e8 ea 04 00 00          callq  ffffffff81774750 <__mutex_unlock_slowpath>
-ffffffff81774266:       5d                      pop    %rbp
-ffffffff81774267:       c3                      retq
-
-New:
-ffffffff81774920 <mutex_lock>:
-ffffffff81774920:       55                      push   %rbp
-ffffffff81774921:       48 89 e5                mov    %rsp,%rbp
-ffffffff81774924:       53                      push   %rbx
-ffffffff81774925:       48 89 fb                mov    %rdi,%rbx
-ffffffff81774928:       e8 a3 0e 00 00          callq  ffffffff817757d0 <_cond_resched>
-ffffffff8177492d:       f0 ff 0b                lock decl (%rbx)
-ffffffff81774930:       79 08                   jns    ffffffff8177493a <mutex_lock+0x1a>
-ffffffff81774932:       48 89 df                mov    %rbx,%rdi
-ffffffff81774935:       e8 16 fe ff ff          callq  ffffffff81774750 <__mutex_lock_slowpath>
-ffffffff8177493a:       65 48 8b 04 25 c0 b7    mov    %gs:0xb7c0,%rax
-ffffffff81774941:       00 00
-ffffffff81774943:       48 89 43 18             mov    %rax,0x18(%rbx)
-ffffffff81774947:       5b                      pop    %rbx
-ffffffff81774948:       5d                      pop    %rbp
-ffffffff81774949:       c3                      retq
-
-ffffffff81774730 <mutex_unlock>:
-ffffffff81774730:       48 c7 47 18 00 00 00    movq   $0x0,0x18(%rdi)
-ffffffff81774737:       00
-ffffffff81774738:       f0 ff 07                lock incl (%rdi)
-ffffffff8177473b:       7f 0a                   jg     ffffffff81774747 <mutex_unlock+0x17>
-ffffffff8177473d:       55                      push   %rbp
-ffffffff8177473e:       48 89 e5                mov    %rsp,%rbp
-ffffffff81774741:       e8 aa ff ff ff          callq  ffffffff817746f0 <__mutex_unlock_slowpath>
-ffffffff81774746:       5d                      pop    %rbp
-ffffffff81774747:       f3 c3                   repz retq
-
-Signed-off-by: Wedson Almeida Filho <wedsonaf@gmail.com>
----
- arch/x86/include/asm/mutex_64.h |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
-
-diff --git a/arch/x86/include/asm/mutex_64.h b/arch/x86/include/asm/mutex_64.h
-index 68a87b0..ac3517b 100644
---- a/arch/x86/include/asm/mutex_64.h
-+++ b/arch/x86/include/asm/mutex_64.h
-@@ -16,6 +16,20 @@
-  *
-  * Atomically decrements @v and calls <fail_fn> if the result is negative.
-  */
-+#if defined(CC_HAVE_ASM_GOTO)
-+static inline void __mutex_fastpath_lock(atomic_t *v,
-+					 void (*fail_fn)(atomic_t *))
-+{
-+	asm volatile goto(LOCK_PREFIX "   decl %0\n"
-+			  "   jns %l[exit]\n"
-+			  : : "m" (v->counter)
-+			  : "memory", "cc"
-+			  : exit);
-+	fail_fn(v);
-+exit:
-+	return;
-+}
-+#else
- #define __mutex_fastpath_lock(v, fail_fn)			\
- do {								\
- 	unsigned long dummy;					\
-@@ -32,6 +46,7 @@ do {								\
- 		     : "rax", "rsi", "rdx", "rcx",		\
- 		       "r8", "r9", "r10", "r11", "memory");	\
- } while (0)
-+#endif
- 
- /**
-  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
-@@ -59,6 +74,20 @@ static inline int __mutex_fastpath_lock_retval(atomic_t *count,
-  *
-  * Atomically increments @v and calls <fail_fn> if the result is nonpositive.
-  */
-+#if defined(CC_HAVE_ASM_GOTO)
-+static inline void __mutex_fastpath_unlock(atomic_t *v,
-+					   void (*fail_fn)(atomic_t *))
-+{
-+	asm volatile goto(LOCK_PREFIX "   incl %0\n"
-+			  "   jg %l[exit]\n"
-+			  : : "m" (v->counter)
-+			  : "memory", "cc"
-+			  : exit);
-+	fail_fn(v);
-+exit:
-+	return;
-+}
-+#else
- #define __mutex_fastpath_unlock(v, fail_fn)			\
- do {								\
- 	unsigned long dummy;					\
-@@ -75,6 +104,7 @@ do {								\
- 		     : "rax", "rsi", "rdx", "rcx",		\
- 		       "r8", "r9", "r10", "r11", "memory");	\
- } while (0)
-+#endif
- 
- #define __mutex_slowpath_needs_to_unlock()	1
- 
--- 
-1.7.9.5
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> 
+> 
 
