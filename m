@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab3F1JE7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:04:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45804 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab3F1JE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:04:57 -0400
-Date: Fri, 28 Jun 2013 11:04:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
-Message-ID: <20130628090447.GD28407@twins.programming.kicks-ass.net>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-6-git-send-email-mgorman@suse.de>
- <20130628081120.GE17195@linux.vnet.ibm.com>
+	id S1755047Ab3F1JJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:09:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23308 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754975Ab3F1JJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 05:09:25 -0400
+Date: Fri, 28 Jun 2013 10:09:10 +0100
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Tim Hockin <thockin@hockin.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter <lpoetter@redhat.com>, Cgroups <cgroups@vger.kernel.org>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        workman-devel <workman-devel@redhat.com>
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130628090910.GB2507@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
+ <20130422214159.GG12543@htj.dyndns.org>
+ <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
+ <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+ <20130625000118.GT1918@mtj.dyndns.org>
+ <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+ <20130626212047.GB4536@htj.dyndns.org>
+ <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627132206.GE4003@sergelap>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130628081120.GE17195@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130627132206.GE4003@sergelap>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 01:41:20PM +0530, Srikar Dronamraju wrote:
-
-Please trim your replies.
-
-> > +/* Returns true if the destination node has incurred more faults */
-> > +static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
-> > +{
-> > +	int src_nid, dst_nid;
-> > +
-> > +	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
-> > +		return false;
-> > +
-> > +	src_nid = cpu_to_node(env->src_cpu);
-> > +	dst_nid = cpu_to_node(env->dst_cpu);
-> > +
-> > +	if (src_nid == dst_nid)
-> > +		return false;
-> > +
-> > +	if (p->numa_migrate_seq < sysctl_numa_balancing_settle_count &&
+On Thu, Jun 27, 2013 at 08:22:06AM -0500, Serge Hallyn wrote:
+> FWIW, the code is too embarassing yet to see daylight, but I'm playing
+> with a very lowlevel cgroup manager which supports nesting itself.
+> Access in this POC is low-level ("set freezer.state to THAWED for cgroup
+> /c1/c2", "Create /c3"), but the key feature is that it can run in two
+> modes - native mode in which it uses cgroupfs, and child mode where it
+> talks to a parent manager to make the changes.
 > 
-> Lets say even if the numa_migrate_seq is greater than settle_count but running
-> on a wrong node, then shouldnt this be taken as a good opportunity to 
-> move the task?
-
-I think that's what its doing; so this stmt says; if seq is large and
-we're trying to move to the 'right' node; move it noaw.
-
-> > +	    p->numa_preferred_nid == dst_nid)
-> > +		return true;
-> > +
-> > +	return false;
-> > +}
-> > +
-> > +
-> >  /*
-> >   * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
-> >   */
-> > @@ -3945,10 +3977,14 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
-> >  
-> >  	/*
-> >  	 * Aggressive migration if:
-> > -	 * 1) task is cache cold, or
-> > -	 * 2) too many balance attempts have failed.
-> > +	 * 1) destination numa is preferred
-> > +	 * 2) task is cache cold, or
-> > +	 * 3) too many balance attempts have failed.
-> >  	 */
-> >  
-> > +	if (migrate_improves_locality(p, env))
-> > +		return 1;
+> So then the idea would be that userspace (like libvirt and lxc) would
+> talk over /dev/cgroup to its manager.  Userspace inside a container
+> (which can't actually mount cgroups itself) would talk to its own
+> manager which is talking over a passed-in socket to the host manager,
+> which in turn runs natively (uses cgroupfs, and nests "create /c1" under
+> the requestor's cgroup).
 > 
-> Shouldnt this be under tsk_cache_hot check?
-> 
-> If the task is cache hot, then we would have to update the corresponding  schedstat
-> metrics.
+> At some point (probably soon) we might want to talk about a standard API
+> for these things.  However I think it will have to come in the form of
+> a standard library, which knows to either send requests over dbus to
+> systemd, or over /dev/cgroup sock to the manager.
 
-No; you want migrate_degrades_locality() to be like task_hot(). You want
-to _always_ migrate tasks towards better locality irrespective of local
-cache hotness.
+Are you also planning to actually write a new cgroup parent manager
+daemon too ? Currently my plan for libvirt is to just talk directly
+to systemd's new DBus APIs for all management of cgroups, and then
+fall back to writing to cgroupfs directly for cases where systemd
+is not around.  Having a library to abstract these two possible
+alternatives isn't all that compelling unless we think there will
+be multiple cgroups manager daemons. I've been somewhat assuming that
+even Ubuntu will eventually see the benefits & switch to systemd,
+then the issue of multiple manager daemons wouldn't really exist.
+
+Daniel
+-- 
+|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
+|: http://libvirt.org              -o-             http://virt-manager.org :|
+|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
+|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
