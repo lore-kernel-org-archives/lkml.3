@@ -1,66 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab3F1M3w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 08:29:52 -0400
-Received: from cns1-135.icoremail.net ([120.31.129.135]:48064 "HELO
-	cns1-7.icoremail.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with SMTP id S1753571Ab3F1M3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 08:29:51 -0400
-Date: Fri, 28 Jun 2013 20:19:24 +0800
-From: "Bqxz" <sales6@chinamiaoji.com>
-Reply-To: swt@swtindustry.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: A4 paper here
-Message-ID: <201306282019240311425@chinamiaoji.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1754580Ab3F1MaY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 08:30:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35674 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754268Ab3F1MaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 08:30:22 -0400
+Date: Fri, 28 Jun 2013 13:30:15 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] sched: Track NUMA hinting faults on per-node basis
+Message-ID: <20130628123015.GT1875@suse.de>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-3-git-send-email-mgorman@suse.de>
+ <20130628060829.GA17195@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-CM-TRANSID: SwGowHDrX7EFf81R_yASAA--.502S4
-X-Coremail-Antispam: 1UD129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
-	VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UUUFj7k042IEc7kJM7k042IE4IxYO2xFxVAq
-	jxCEw4Av424lb7IF0VCFIxCj07C26xAqzxv262kKe7AKxwAYjxAI6xCI4x8I1I0E4c8EcI
-	0Ec7CjxVAaw2AFwI1lb7Iv0xC_Cr1lb4IE77IF4wAFF20E14v26r1j6r4UM7CY07I20VC2
-	zVCF04k26cxKx2IYs7xG6rWj6s0DM7CIcVAFz4kK6r1j6r18M28lY4IEw2IIxxk0rwA2F7
-	IY1VAKz4vEj48ve4kI8wA2z4x0Y4vE2Ix0cI8IcVAFwI0_Xr0_Ar1l84ACjcxK6xIIjxv2
-	0xvEc7CjxVAFwI0_Gr0_Cr1l84ACjcxK6I8E87Iv67AKxVWxJr0_GcWl84ACjcxK6I8E87
-	Iv6xkF7I0E14v26F4UJVW0owAawVACjsI_Ar4v6c8GOVW06r1DJrWUAwAS0I0E0xvYzxvE
-	52x082IY62kv0487Mc804VCqF7xvr2I5Mc02F40EFcxC0VAKzVAqx4xG6I80ewAv7VC0I7
-	IYx2IY67AKxVWUAVWUtwAv7VC2z280aVAFwI0_Gr1j6F4UJwAm72CE4IkC6x0Yz7v_Jr0_
-	Gr1lF7xvr2IYc2Ij64vIr41lFcxC0VAYjxAxZF0Ew4CEw7xC0wACY4xI67k04243AVC20s
-	07MxkIecxEwVAFwVW5JwCF04k20xvY0x0EwIxGrwCF54CYxVAaw2AFwI0_GFyj6rW5JwCF
-	54CYxVCY1x0262kKe7AKxVW8Zr0_WryUMxC20s026xCaFVCjc4AY6r1j6r4UMxCIbckI1I
-	0E14v26Fy26r43JwCFI7vE0wC20s026c02F40E14v26r1j6r18MI8I3I0E7480Y4vE14v2
-	6r106r1rMI8E67AF67kF1VAFwI0_Jr0_JrylIxkGc2Ij64vIr41lIxAIcVC0I7IYx2IY67
-	AKxVWUJVWUCwCI42IY6xIIjxv20xvEc7CjxVAFwI0_Jr0_Gr1lIxAIcVCF04k26cxKx2IY
-	s7xG6Fyj6rWUJwCI42IY6I8E87Iv67AKxVW8Jr0_Cr1UMIIF0xvEx4A2jsIEc7CjxVAFwI
-	0_Gr1j6F4UJwCE64xvF2IEb7IF0Fy7YxBIdaVFxhVjvjDU0xZFpf9x07bnHUgUUUUU=
-X-Originating-IP: [110.240.232.31]
-X-CM-SenderInfo: 5vdov2uw6fxx5qdpxtxrmlhudrp/
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130628060829.GA17195@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5SCTxnc020764
 
-Dear Purchasing manager:
-Nice time to you
+On Fri, Jun 28, 2013 at 11:38:29AM +0530, Srikar Dronamraju wrote:
+> * Mel Gorman <mgorman@suse.de> [2013-06-26 15:38:01]:
+> 
+> > This patch tracks what nodes numa hinting faults were incurred on.  Greater
+> > weight is given if the pages were to be migrated on the understanding
+> > that such faults cost significantly more. If a task has paid the cost to
+> > migrating data to that node then in the future it would be preferred if the
+> > task did not migrate the data again unnecessarily. This information is later
+> > used to schedule a task on the node incurring the most NUMA hinting faults.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  include/linux/sched.h |  2 ++
+> >  kernel/sched/core.c   |  3 +++
+> >  kernel/sched/fair.c   | 12 +++++++++++-
+> >  kernel/sched/sched.h  | 12 ++++++++++++
+> >  4 files changed, 28 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index e692a02..72861b4 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -1505,6 +1505,8 @@ struct task_struct {
+> >  	unsigned int numa_scan_period;
+> >  	u64 node_stamp;			/* migration stamp  */
+> >  	struct callback_head numa_work;
+> > +
+> > +	unsigned long *numa_faults;
+> >  #endif /* CONFIG_NUMA_BALANCING */
+> >  
+> >  	struct rcu_head rcu;
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index 67d0465..f332ec0 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -1594,6 +1594,7 @@ static void __sched_fork(struct task_struct *p)
+> >  	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
+> >  	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+> >  	p->numa_work.next = &p->numa_work;
+> > +	p->numa_faults = NULL;
+> >  #endif /* CONFIG_NUMA_BALANCING */
+> >  }
+> >  
+> > @@ -1853,6 +1854,8 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+> >  	if (mm)
+> >  		mmdrop(mm);
+> >  	if (unlikely(prev_state == TASK_DEAD)) {
+> > +		task_numa_free(prev);
+> > +
+> >  		/*
+> >  		 * Remove function-return probe instances associated with this
+> >  		 * task and put them back on the free list.
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 7a33e59..904fd6f 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -815,7 +815,14 @@ void task_numa_fault(int node, int pages, bool migrated)
+> >  	if (!sched_feat_numa(NUMA))
+> >  		return;
+> >  
+> > -	/* FIXME: Allocate task-specific structure for placement policy here */
+> > +	/* Allocate buffer to track faults on a per-node basis */
+> > +	if (unlikely(!p->numa_faults)) {
+> > +		int size = sizeof(*p->numa_faults) * nr_node_ids;
+> > +
+> > +		p->numa_faults = kzalloc(size, GFP_KERNEL);
+> > +		if (!p->numa_faults)
+> > +			return;
+> > +	}
+> >  
+> >  	/*
+> >  	 * If pages are properly placed (did not migrate) then scan slower.
+> > @@ -826,6 +833,9 @@ void task_numa_fault(int node, int pages, bool migrated)
+> >  			p->numa_scan_period + jiffies_to_msecs(10));
+> >  
+> >  	task_numa_placement(p);
+> > +
+> > +	/* Record the fault, double the weight if pages were migrated */
+> > +	p->numa_faults[node] += pages << migrated;
+> 
+> 
+> Why are we doing this after the placement.
+> I mean we should probably be doing this in the task_numa_placement,
+> 
 
-It is my big pleasure to hear you need A4 paper
-If you still need that pls tell me
+Peter covered this.
 
-Then i can send you our best price
-Best wishes
-Ida
+> Since doubling the pages can have an effect on the preferred node. If we
+> do it here, wont it end up in a case where the numa_faults on one node
+> is actually higher but it may end up being not the preferred node?
+> 
 
-Ida Chen
+Possibly but it's important to take into account the cost of migration. I
+want to prefer keeping tasks on nodes that data was migrated to.
 
-SALES MANAGER
+There is a much more serious problem with fault sampling that I have yet
+to think of a good solution for. Consider a task that exhibits very high
+locality and occasionally updates shared statistics. This hypothetical
+workload is dominated by addressing a small array with the shared statistics
+in a large array. In this case the PTE scanner will incur a larger number
+of faults in the shared array even though it's less important to the
+workload. The preferred node will be wrong in this case and is a much more
+serious problem.
 
-East Siweite industry Co., Ltd
-www.dfswtpaper.com
-
-SKYPE: siweite
-
-Email:swt@swtindustry.comˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+Mel Gorman
+SUSE Labs
