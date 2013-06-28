@@ -1,149 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab3F1Sd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:33:26 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:54331 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab3F1SdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:33:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v3 10/10] ACPI: simplify acpiphp driver with new helper functions
-Date: Fri, 28 Jun 2013 20:42:51 +0200
-Message-ID: <1908581.jLjdVJokRn@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo7DTioqp_atjr5NLfGk=afqgbdt=ZZerSzV=EJeR1WwLA@mail.gmail.com>
-References: <1372436683-31711-1-git-send-email-liuj97@gmail.com> <1372436683-31711-11-git-send-email-liuj97@gmail.com> <CAErSpo7DTioqp_atjr5NLfGk=afqgbdt=ZZerSzV=EJeR1WwLA@mail.gmail.com>
+	id S1752119Ab3F1SiD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:38:03 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:45449 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab3F1SiA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 14:38:00 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130628163154.GA4989@sergelap>
+References: <CAAAKZwuKxxYoVRn6Ye72Vs7vSd_T4cbvEwiU6Q3j4D-Z+VAPrw@mail.gmail.com>
+ <20130627181108.GA26334@sergelap> <CAAAKZwvXYBznJ5uiWaEV7fNCHbciwLa6U+E5RUJkz1ioMu=cRg@mail.gmail.com>
+ <20130628163154.GA4989@sergelap>
+From: Tim Hockin <thockin@hockin.org>
+Date: Fri, 28 Jun 2013 11:37:39 -0700
+X-Google-Sender-Auth: QiBRtCvHAcoQIpKFfIHwmiRKARg
+Message-ID: <CAAAKZwv1CQbCOweUOcvFXtwDsMHB6Pay-fUqz-CNrcOAda8ghA@mail.gmail.com>
+Subject: Re: cgroup access daemon
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        jpoimboe <jpoimboe@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>, vrigo <vrigo@google.com>,
+        vmarmol@google.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 28, 2013 11:20:21 AM Bjorn Helgaas wrote:
-> On Fri, Jun 28, 2013 at 10:24 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> > From: Jiang Liu <jiang.liu@huawei.com>
-> >
-> > Use new helper functions to simplify acpiphp driver.
-> >
-> > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> I assume this will be merged via linux-pm with the rest of the series.
+On Fri, Jun 28, 2013 at 9:31 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> Quoting Tim Hockin (thockin@hockin.org):
+>> On Thu, Jun 27, 2013 at 11:11 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+>> > Quoting Tim Hockin (thockin@hockin.org):
+>> >
+>> >> For our use case this is a huge problem.  We have people who access
+>> >> cgroup files in a fairly tight loops, polling for information.  We
+>> >> have literally hundeds of jobs running on sub-second frequencies -
+>> >> plumbing all of that through a daemon is going to be a disaster.
+>> >> Either your daemon becomes a bottleneck, or we have to build something
+>> >> far more scalable than you really want to.  Not to mention the
+>> >> inefficiency of inserting a layer.
+>> >
+>> > Currently you can trivially create a container which has the
+>> > container's cgroups bind-mounted to the expected places
+>> > (/sys/fs/cgroup/$controller) by uncommenting two lines in the
+>> > configuration file, and handle cgroups through cgroupfs there.
+>> > (This is what the management agent wants to be an alternative
+>> > for)  The main deficiency there is that /proc/self/cgroups is
+>> > not filtered, so it will show /lxc/c1 for init's cgroup, while
+>> > the host's /sys/fs/cgroup/devices/lxc/c1/c1.real will be what
+>> > is seen under the container's /sys/fs/cgroup/devices (for
+>> > instance).  Not ideal.
+>>
+>> I'm really saying that if your daemon is to provide a replacement for
+>> cgroupfs direct access, it needs to be designed to be scalable.  If
+>> we're going to get away from bind mounting cgroupfs into user
+>> namespaces, then let's try to solve ALL the problems.
+>>
+>> >> We also need the ability to set up eventfds for users or to let them
+>> >> poll() on the socket from this daemon.
+>> >
+>> > So you'd want to be able to request updates when any cgroup value
+>> > is changed, right?
+>>
+>> Not necessarily ANY, but that's the terminus of this API facet.
+>>
+>> > That's currently not in my very limited set of commands, but I can
+>> > certainly add it, and yes it would be a simple unix sock so you can
+>> > set up eventfd, select/poll, etc.
+>>
+>> Assuming the protocol is basically a pass-through to basic filesystem
+>> ops, it should be pretty easy.  You just need to add it to your
+>> protocol.
+>>
+>> But it brings up another point - access control.  How do you decide
+>> which files a child agent should have access to?  Does that ever
+>> change based on the child's configuration? In our world, the answer is
+>> almost certainly yes.
+>
+> Could you give examples?
+>
+> If you have a white/academic paper I should go read, that'd be great.
 
-Yup, into 3.12.
+We don't have anything on this, but examples may help.
 
-Thanks,
-Rafael
+Someone running as root should be able to connect to the "native"
+daemon and read or write any cgroup file they want, right?  You could
+argue that root should be able to do this to a child-daemon, too, but
+let's ignore that.
 
+But inside a container, I don't want the users to be able to write to
+anything in their own container.  I do want them to be able to make
+sub-cgroups, but only 5 levels deep.  For sub-cgroups, they should be
+able to write to memory.limit_in_bytes, to read but not write
+memory.soft_limit_in_bytes, and not be able to read memory.stat.
 
-> > Cc: Jiang Liu <liuj97@gmail.com>
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Yinghai Lu <yinghai@kernel.org>
-> > Cc: Len Brown <lenb@kernel.org>
-> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > Cc: Yijing Wang <wangyijing@huawei.com>
-> > Cc: linux-acpi@vger.kernel.org
-> > Cc: linux-pci@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  drivers/pci/hotplug/acpiphp_glue.c | 30 ++++++++----------------------
-> >  1 file changed, 8 insertions(+), 22 deletions(-)
-> >
-> > diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> > index 59df857..a0a7133 100644
-> > --- a/drivers/pci/hotplug/acpiphp_glue.c
-> > +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> > @@ -201,7 +201,6 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-> >         struct acpiphp_bridge *bridge = (struct acpiphp_bridge *)context;
-> >         struct acpiphp_slot *slot;
-> >         struct acpiphp_func *newfunc;
-> > -       acpi_handle tmp;
-> >         acpi_status status = AE_OK;
-> >         unsigned long long adr, sun;
-> >         int device, function, retval, found = 0;
-> > @@ -232,19 +231,19 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-> >         newfunc->handle = handle;
-> >         newfunc->function = function;
-> >
-> > -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &tmp)))
-> > +       if (acpi_has_method(handle, "_EJ0"))
-> >                 newfunc->flags = FUNC_HAS_EJ0;
-> >
-> > -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_STA", &tmp)))
-> > +       if (acpi_has_method(handle, "_STA"))
-> >                 newfunc->flags |= FUNC_HAS_STA;
-> >
-> > -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS0", &tmp)))
-> > +       if (acpi_has_method(handle, "_PS0"))
-> >                 newfunc->flags |= FUNC_HAS_PS0;
-> >
-> > -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS3", &tmp)))
-> > +       if (acpi_has_method(handle, "_PS3"))
-> >                 newfunc->flags |= FUNC_HAS_PS3;
-> >
-> > -       if (ACPI_SUCCESS(acpi_get_handle(handle, "_DCK", &tmp)))
-> > +       if (acpi_has_method(handle, "_DCK"))
-> >                 newfunc->flags |= FUNC_HAS_DCK;
-> >
-> >         status = acpi_evaluate_integer(handle, "_SUN", NULL, &sun);
-> > @@ -843,25 +842,14 @@ static unsigned int get_slot_status(struct acpiphp_slot *slot)
-> >   */
-> >  int acpiphp_eject_slot(struct acpiphp_slot *slot)
-> >  {
-> > -       acpi_status status;
-> >         struct acpiphp_func *func;
-> > -       struct acpi_object_list arg_list;
-> > -       union acpi_object arg;
-> >
-> >         list_for_each_entry(func, &slot->funcs, sibling) {
-> >                 /* We don't want to call _EJ0 on non-existing functions. */
-> >                 if ((func->flags & FUNC_HAS_EJ0)) {
-> > -                       /* _EJ0 method take one argument */
-> > -                       arg_list.count = 1;
-> > -                       arg_list.pointer = &arg;
-> > -                       arg.type = ACPI_TYPE_INTEGER;
-> > -                       arg.integer.value = 1;
-> > -
-> > -                       status = acpi_evaluate_object(func->handle, "_EJ0", &arg_list, NULL);
-> > -                       if (ACPI_FAILURE(status)) {
-> > -                               warn("%s: _EJ0 failed\n", __func__);
-> > +                       if (ACPI_FAILURE(acpi_evaluate_ej0(func->handle)))
-> >                                 return -1;
-> > -                       } else
-> > +                       else
-> >                                 break;
-> >                 }
-> >         }
-> > @@ -1171,7 +1159,6 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
-> >   */
-> >  void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
-> >  {
-> > -       acpi_handle dummy_handle;
-> >         struct acpiphp_bridge *bridge;
-> >
-> >         if (acpiphp_disabled)
-> > @@ -1200,8 +1187,7 @@ void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
-> >         get_device(&bus->dev);
-> >
-> >         if (!pci_is_root_bus(bridge->pci_bus) &&
-> > -           ACPI_SUCCESS(acpi_get_handle(bridge->handle,
-> > -                                       "_EJ0", &dummy_handle))) {
-> > +           acpi_has_method(bridge->handle, "_EJ0")) {
-> >                 dbg("found ejectable p2p bridge\n");
-> >                 bridge->flags |= BRIDGE_HAS_EJ0;
-> >                 bridge->func = acpiphp_bridge_handle_to_function(handle);
-> > --
-> > 1.8.1.2
-> >
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+To get even fancier, a user should be able to create a sub-cgroup and
+then designate that sub-cgroup as "final" - no further sub-sub-cgroups
+allowed under it.  They should also be able to designate that a
+sub-cgroup is "one-way" - once a process enters it, it can not leave.
+
+These are real(ish) examples based on what people want to do today.
+In particular, the last couple are things that we want to do, but
+don't do today.
+
+The particular policy can differ per-container.  Production jobs might
+be allowed to create sub-cgroups, but batch jobs are not.  Some user
+jobs are designated "trusted" in one facet or another and get more
+(but still not full) access.
+
+> At the moment I'm going on the naive belief that proper hierarchy
+> controls will be enforced (eventually) by the kernel - i.e. if
+> a task in cgroup /lxc/c1 is not allowed to mknod /dev/sda1, then it
+> won't be possible for /lxc/c1/lxc/c2 to take that access.
+>
+> The native cgroup manager (the one using cgroupfs) will be checking
+> the credentials of the requesting child manager for access(2) to
+> the cgroup files.
+
+This might be sufficient, or the basis for a sufficient access control
+system for users.  The problem comes that we have multiple jobs on a
+single machine running as the same user.  We need to ensure that the
+jobs can not modify each other.
+
+>> >> >> > So then the idea would be that userspace (like libvirt and lxc) would
+>> >> >> > talk over /dev/cgroup to its manager.  Userspace inside a container
+>> >> >> > (which can't actually mount cgroups itself) would talk to its own
+>> >> >> > manager which is talking over a passed-in socket to the host manager,
+>> >> >> > which in turn runs natively (uses cgroupfs, and nests "create /c1" under
+>> >> >> > the requestor's cgroup).
+>> >> >>
+>> >> >> How do you handle updates of this agent?  Suppose I have hundreds of
+>> >> >> running containers, and I want to release a new version of the cgroupd
+>> >> >> ?
+>> >> >
+>> >> > This may change (which is part of what I want to investigate with some
+>> >> > POC), but right now I'm building any controller-aware smarts into it.  I
+>> >> > think that's what you're asking about?  The agent doesn't do "slices"
+>> >> > etc.  This may turn out to be insufficient, we'll see.
+>> >>
+>> >> No, what I am asking is a release-engineering problem.  Suppose we
+>> >> need to roll out a new version of this daemon (some new feature or a
+>> >> bug or something).  We have hundreds of these "child" agents running
+>> >> in the job containers.
+>> >
+>> > When I say "container" I mean an lxc container, with it's own isolated
+>> > rootfs and mntns.  I'm not sure what your "containers" are, but I if
+>> > they're not that, then they shouldn't need to run a child agent.  They
+>> > can just talk over the host cgroup agent's socket.
+>>
+>> If they talk over the host agent's socket, where is the access control
+>> and restriction done?  Who decides how deep I can nest groups?  Who
+>> says which files I may access?  Who stops me from modifying someone
+>> else's container?
+>>
+>> Our containers are somewhat thinner and more managed than LXC, but not
+>> that much.  If we're running a system agent in a user container, we
+>> need to manage that software.  We can't just start up a version and
+>> leave it running until the user decides to upgrade - we force
+>> upgrades.
+>>
+>> >> How do I bring down all these children, and then bring them back up on
+>> >> a new version in a way that does not disrupt user jobs (much)?
+>> >>
+>> >> Similarly, what happens when one of these child agents crashes?  Does
+>> >> someone restart it?  Do user jobs just stop working?
+>> >
+>> > An upstart^W$init_system job will restart it...
+>>
+>> What happens when the main agent crashes?  All those children on UNIX
+>> sockets need to reconnect, I guess.  This means your UNIX socket needs
+>> to be a named socket, not just a socketpair(),  making your auth model
+>> more complicated.
+>
+> It is a named socket.
+
+So anyone can connect?  even with SO_PEERCRED, how do you know which
+branches of the cgroup tree I am allowed to modify if the same user
+owns more than one?
+
+>> What happens when the main agent hangs?  Is someone health-checking
+>> it?  How about all the child daemons?
+>>
+>> I guess my main point is that this SOUNDS like a simple project, but
+>
+> I guess it's not "simple".  It just focuses on one specific problem.
+>
+>> if you just do the simple obvious things, it will be woefully
+>> inadequate for anything but simple use-cases.  If we get forced into
+>> such a model (and there are some good reasons to do it, even
+>> disregarding all the other chatter), we'd rather use the same thing
+>> that the upstream world uses, and not re-invent the whole thing
+>> ourselves.
+>>
+>> Do you have a design spec, or a requirements list, or even a prototype
+>> that we can look at?
+>
+> The readme at https://github.com/hallyn/cgroup-mgr/blob/master/README
+> shows what I have in mind.  It (and the sloppy code next to it)
+> represent a few hours' work over the last few days while waiting
+> for compiles and in between emails...
+
+Awesome.  Do you mind if we look?
+
+> But again, it is completely predicated on my goal to have libvirt
+> and lxc (and other cgroup users) be able to use the same library
+> or API to make their requests whether they are on host or in a
+> container, and regardless of the distro they're running under.
+
+I think that is a good goal.  We'd like to not be different, if
+possible.  Obviously, we can't impose our needs on you if you don't
+want to handle them.  It sounds like what you are building is the
+bottom layer in a stack - we (Google) should use that same bottom
+layer.  But that can only happen iff you're open to hearing our
+requirements.  Otherwise we have to strike out on our own or build
+more layers in-between.
+
+Tim
