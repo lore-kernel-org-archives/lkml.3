@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab3F1Jat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:30:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53474 "EHLO mga02.intel.com"
+	id S1755111Ab3F1JdP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:33:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41719 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755138Ab3F1Jar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:30:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,958,1363158000"; 
-   d="scan'208";a="360980185"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        John Ronciak <john.ronciak@intel.com>,
-        Miles J Penner <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-In-Reply-To: <CAE9FiQVt4gCiz20SmJVP6d7tXOior5Ehg+-c_fG7wFsDUj7H4Q@mail.gmail.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
- <CAE9FiQVt4gCiz20SmJVP6d7tXOior5Ehg+-c_fG7wFsDUj7H4Q@mail.gmail.com>
-Subject: Re: [PATCH 4/6] PCI: acpiphp: check for new devices on enabled host
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130628093319.D4DE6E0090@blue.fi.intel.com>
-Date: Fri, 28 Jun 2013 12:33:19 +0300 (EEST)
+	id S1754813Ab3F1JdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 05:33:14 -0400
+From: Hebbar Gururaja <gururaja.hebbar@ti.com>
+To: <khilman@linaro.org>, <tony@atomide.com>, <b-cousson@ti.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
+        <gururaja.hebbar@ti.com>
+Subject: [PATCH 0/4] rtc: omap: handle rtc wakeup support in driver
+Date: Fri, 28 Jun 2013 15:05:05 +0530
+Message-ID: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu wrote:
-> On Tue, Jun 25, 2013 at 9:22 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >
-> > Current acpiphp_check_bridge() implementation is pretty dumb:
-> >  - it enables the slot if it's not enabled and the slot status is
-> >    ACPI_STA_ALL;
-> >  - it disables the slot if it's enabled and slot is not in ACPI_STA_ALL
-> >    state.
-> >
-> > This behavior is not enough to handle Thunderbolt chaining case
-> > properly. We need to actually rescan for new devices even if a device
-> > has already in the slot.
-> >
-> > The new implementation disables and stops the slot if it's not in
-> > ACPI_STA_ALL state.
-> >
-> > For ACPI_STA_ALL state we first trim devices which don't respond and
-> > look for the ones after that. We do that even if slot already enabled
-> > (SLOT_ENABLED).
-> 
-> that is not right, some time BUS_CHECK is even sent root bus.
-> in that case, stop all devices in slots and load driver again.
-> 
-> like you put one card in one slots, but all devices in other slots get stop
-> and enable again.
+rtc-omap driver modules is used both by OMAP1/2, Davinci SoC platforms.
 
-We don't stop enabled devices, we only stop and remove devices which don't
-respond.  See patch 3/6.
+However, rtc wake support on OMAP1 is broken. Hence the
+device_init_wakeup() was removed from rtc-omap driver and moved to
+platform board files that supported it (DA850/OMAP-L138). [1]
 
-I don't see how it's harmful. Do you?
+However, recently [2] it was suggested that driver should always do a
+device_init_wakeup(dev, true). Platforms that don't want/need
+wakeup support can disable it from userspace via:
+
+    echo disabled > /sys/devices/.../power/wakeup
+
+Also, with the new DT boot-up, board file doesn't exist and hence there
+is no way to have device wakeup support rtc.
+
+The fix for above issues, is to hard code device_init_wakeup() inside
+driver and let platforms that don't need this, handle it through the
+sysfs power entry.
+
+
+Also, update Davinci & AM335x files to above changes.
+
+[1]
+https://patchwork.kernel.org/patch/136731/
+
+[2]
+http://www.mail-archive.com/davinci-linux-open-source@linux.
+davincidsp.com/msg26077.html
+
+Hebbar Gururaja (4):
+  rtc: omap: restore back (hard-code) wakeup support
+  davinci: da8xx/omap-l1: Remove hard coding of rtc device wakeup
+  rtc: omap: add rtc wakeup support to alarm events
+  ARM: dts: AM33XX: update rtc node compatibility
+
+ Documentation/devicetree/bindings/rtc/rtc-omap.txt |    6 +-
+ arch/arm/boot/dts/am33xx.dtsi                      |    2 +-
+ arch/arm/mach-davinci/devices-da8xx.c              |    9 +--
+ drivers/rtc/rtc-omap.c                             |   58 +++++++++++++++++---
+ 4 files changed, 58 insertions(+), 17 deletions(-)
 
 -- 
- Kirill A. Shutemov
+1.7.9.5
+
