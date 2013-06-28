@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3F1QWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:22:35 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63368 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab3F1QWd (ORCPT
+	id S1755458Ab3F1Q1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:27:05 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:37577 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab3F1Q1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:22:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130628093319.D4DE6E0090@blue.fi.intel.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
-	<CAE9FiQVt4gCiz20SmJVP6d7tXOior5Ehg+-c_fG7wFsDUj7H4Q@mail.gmail.com>
-	<20130628093319.D4DE6E0090@blue.fi.intel.com>
-Date: Fri, 28 Jun 2013 09:22:32 -0700
-X-Google-Sender-Auth: sdZQF8vzgWg5hSdPw1zASMaOXFA
-Message-ID: <CAE9FiQUQvVbcbWoBnSiNmtF6P_SHTqWYONzfa-WeQUDYPmvHYw@mail.gmail.com>
-Subject: Re: [PATCH 4/6] PCI: acpiphp: check for new devices on enabled host
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        John Ronciak <john.ronciak@intel.com>,
-        Miles J Penner <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 28 Jun 2013 12:27:03 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: "Rafael J . Wysocki" <rjw@sisk.pl>
+Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 00/10] minor improvements for ACPI dock and acpiphp drivers
+Date: Sat, 29 Jun 2013 00:24:33 +0800
+Message-Id: <1372436683-31711-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 2:33 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Yinghai Lu wrote:
->> On Tue, Jun 25, 2013 at 9:22 AM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->> >
->> > Current acpiphp_check_bridge() implementation is pretty dumb:
->> >  - it enables the slot if it's not enabled and the slot status is
->> >    ACPI_STA_ALL;
->> >  - it disables the slot if it's enabled and slot is not in ACPI_STA_ALL
->> >    state.
->> >
->> > This behavior is not enough to handle Thunderbolt chaining case
->> > properly. We need to actually rescan for new devices even if a device
->> > has already in the slot.
->> >
->> > The new implementation disables and stops the slot if it's not in
->> > ACPI_STA_ALL state.
->> >
->> > For ACPI_STA_ALL state we first trim devices which don't respond and
->> > look for the ones after that. We do that even if slot already enabled
->> > (SLOT_ENABLED).
->>
->> that is not right, some time BUS_CHECK is even sent root bus.
->> in that case, stop all devices in slots and load driver again.
->>
->> like you put one card in one slots, but all devices in other slots get stop
->> and enable again.
->
-> We don't stop enabled devices, we only stop and remove devices which don't
-> respond.  See patch 3/6.
->
-> I don't see how it's harmful. Do you?
+From: Jiang Liu <jiang.liu@huawei.com>
 
-then please check with disable_device to put back pci_dev ref,
-also may need to trim corresponding acpi devices.
+This is an following up patchset of "[PATCH 0/3] ACPI / dock / PCI: Fix
+problems with dock and PCI hotplug" with minor code cleanups and
+refinements. It applies to
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git linux-next
 
-so this patch is helping: multiple plug-in and remove?
+Due to hardware resource limitation, I have only done compilation and
+boot tests.
 
-Yinghai
+V2->V3:
+    The first four patches are the same as previous version and rework
+    all other patches according to review comments.
+
+Jiang Liu (10):
+  ACPI, DOCK: avoid initializing acpi_dock_notifier_list multiple times
+  ACPI, DOCK: kill redundant spin lock in dock station object
+  ACPI, DOCK: mark initialization functions with __init
+  ACPI, DOCK: simplify implementation of dock_create_acpi_device()
+  ACPI: introduce helper function acpi_has_method()
+  ACPI: introduce helper function acpi_execute_simple_method()
+  ACPI: introduce two helper functions to simplify code
+  ACPI: change acpi_[bay|dock]_match() in scan.c as global functions
+  ACPI: simplify dock driver with new helper functions
+  ACPI: simplify acpiphp driver with new helper functions
+
+ drivers/acpi/battery.c             |  19 +---
+ drivers/acpi/bus.c                 |   6 +-
+ drivers/acpi/dock.c                | 152 ++++-------------------------
+ drivers/acpi/ec.c                  |   4 +-
+ drivers/acpi/power.c               |   4 +-
+ drivers/acpi/processor_perflib.c   |  22 ++---
+ drivers/acpi/resource.c            |   4 +-
+ drivers/acpi/scan.c                | 189 +++++++++++++------------------------
+ drivers/acpi/sleep.c               |   7 +-
+ drivers/acpi/thermal.c             |  18 +---
+ drivers/acpi/utils.c               |  70 ++++++++++++++
+ drivers/acpi/video.c               |  56 ++++-------
+ drivers/acpi/video_detect.c        |  19 ++--
+ drivers/pci/hotplug/acpiphp_glue.c |  30 ++----
+ include/acpi/acpi_bus.h            |  10 ++
+ 15 files changed, 218 insertions(+), 392 deletions(-)
+
+-- 
+1.8.1.2
+
