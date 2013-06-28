@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab3F1UKc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 16:10:32 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:35742 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab3F1UKa (ORCPT
+	id S1753680Ab3F1UKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 16:10:45 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:42057 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab3F1UKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 16:10:30 -0400
+	Fri, 28 Jun 2013 16:10:43 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,82 +15,108 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC nohz_full v2 4/7] nohz_full: Add full-system idle states and variables
-Date: Fri, 28 Jun 2013 13:10:19 -0700
-Message-Id: <1372450222-19420-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC nohz_full v2 7/7] nohz_full: Force RCU's grace-period kthreads onto timekeeping CPU
+Date: Fri, 28 Jun 2013 13:10:22 -0700
+Message-Id: <1372450222-19420-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130628200949.GA17458@linux.vnet.ibm.com>
  <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062820-7408-0000-0000-0000119A6A41
+x-cbid: 13062820-7282-0000-0000-000018C63825
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit adds control variables and states for full-system idle.
-The system will progress through the states in numerical order when
-the system is fully idle (other than the timekeeping CPU), and reset
-down to the initial state if any non-timekeeping CPU goes non-idle.
-The current state is kept in full_sysidle_state.
-
-A RCU_SYSIDLE_SMALL macro is defined, and systems with this number
-of CPUs or fewer move through the states more aggressively.  The idea
-is that the resulting memory contention is less of a problem on small
-systems.  Architectures can adjust this value (which defaults to 8)
-using CONFIG_ARCH_RCU_SYSIDLE_SMALL.
-
-One flavor of RCU will be in charge of driving the state machine,
-defined by rcu_sysidle_state.  This should be the busiest flavor of RCU.
+Because RCU's quiescent-state-forcing mechanism is used to drive the
+full-system-idle state machine, and because this mechanism is executed
+by RCU's grace-period kthreads, this commit forces these kthreads to
+run on the timekeeping CPU (tick_do_timer_cpu).  To do otherwise would
+mean that the RCU grace-period kthreads would force the system into
+non-idle state every time they drove the state machine, which would
+be just a bit on the futile side.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/rcutree_plugin.h | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ kernel/rcutree.c        |  1 +
+ kernel/rcutree.h        |  1 +
+ kernel/rcutree_plugin.h | 20 +++++++++++++++++++-
+ 3 files changed, 21 insertions(+), 1 deletion(-)
 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 06cfd75..ad9a5ec 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1286,6 +1286,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 	struct rcu_data *rdp;
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
++	rcu_bind_gp_kthread();
+ 	raw_spin_lock_irq(&rnp->lock);
+ 	rsp->gp_flags = 0; /* Clear all flags: New grace period. */
+ 
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 7326a3c..1602c21 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -558,6 +558,7 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq);
+ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+ 				  unsigned long *maxj);
+ static bool is_sysidle_rcu_state(struct rcu_state *rsp);
++static void rcu_bind_gp_kthread(void);
+ static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
+ 			       unsigned long maxj);
+ static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
 diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 6f0bce4..a4b2c09 100644
+index 9b60df5..4478cfd 100644
 --- a/kernel/rcutree_plugin.h
 +++ b/kernel/rcutree_plugin.h
-@@ -2380,6 +2380,33 @@ static void rcu_kick_nohz_cpu(int cpu)
- #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
+@@ -2543,7 +2543,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+ 	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
+ 	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
+ 		return;
+-	/* WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu); */
++	WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+ 
+ 	/*
+ 	 * Pick up current idle and NMI-nesting counters, check.  We check
+@@ -2577,6 +2577,20 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+ }
  
  /*
-+ * Handle small systems specially, accelerating their transition into
-+ * full idle state.  Allow arches to override this code's idea of
-+ * what constitutes a "small" system.
++ * Bind the grace-period kthread for the sysidle flavor of RCU to the
++ * timekeeping CPU.
 + */
-+#ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL
-+#define RCU_SYSIDLE_SMALL CONFIG_ARCH_RCU_SYSIDLE_SMALL
-+#else /* #ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL */
-+#define RCU_SYSIDLE_SMALL 8
-+#endif
++static void rcu_bind_gp_kthread(void)
++{
++	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
++
++	if (cpu < 0 || cpu >= nr_cpu_ids)
++		return;
++	if (raw_smp_processor_id() != cpu)
++		set_cpus_allowed_ptr(current, cpumask_of(cpu));
++}
 +
 +/*
-+ * Define RCU flavor that holds sysidle state.  This needs to be the
-+ * most active flavor of RCU.
-+ */
-+#ifdef CONFIG_PREEMPT_RCU
-+static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_preempt_state;
-+#else /* #ifdef CONFIG_PREEMPT_RCU */
-+static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_sched_state;
-+#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
+  * Return a delay in jiffies based on the number of CPUs, rcu_node
+  * leaf fanout, and jiffies tick rate.  The idea is to allow larger
+  * systems more time to transition to full-idle state in order to
+@@ -2744,6 +2758,10 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+ 	return false;
+ }
+ 
++static void rcu_bind_gp_kthread(void)
++{
++}
 +
-+static int __maybe_unused full_sysidle_state; /* Current system-idle state. */
-+#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-+#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-+#define RCU_SYSIDLE_FULL	2	/* All CPUs idle, ready for sysidle. */
-+#define RCU_SYSIDLE_FULL_NOTED	3	/* Actually entered sysidle state. */
-+
-+/*
-  * Invoked to note exit from irq or task transition to idle.  Note that
-  * usermode execution does -not- count as idle here!  The caller must
-  * have disabled interrupts.
+ static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
+ 			       unsigned long maxj)
+ {
 -- 
 1.8.1.5
 
