@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3F1TAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:00:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47758 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab3F1S6l (ORCPT
+	id S1754244Ab3F1TA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:00:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42000 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab3F1S6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:58:41 -0400
-Date: Fri, 28 Jun 2013 20:58:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCHv6 0/5] xen: maintain an accurate persistent clock in more
- cases
-In-Reply-To: <20130628161954.GB2452@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1306282054340.4013@ionos.tec.linutronix.de>
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306281510180.4013@ionos.tec.linutronix.de> <20130628150158.GA5035@phenom.dumpdata.com> <alpine.DEB.2.02.1306281711310.4013@ionos.tec.linutronix.de>
- <20130628161954.GB2452@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 28 Jun 2013 14:58:40 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 053/105] ALSA: usb-audio: work around Android accessory firmware bug
+Date: Fri, 28 Jun 2013 11:51:15 -0700
+Message-Id: <1372445527-24414-54-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jun 2013, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jun 28, 2013 at 05:12:35PM +0200, Thomas Gleixner wrote:
-> > On Fri, 28 Jun 2013, Konrad Rzeszutek Wilk wrote:
-> > > On Fri, Jun 28, 2013 at 03:14:42PM +0200, Thomas Gleixner wrote:
-> > > > On Thu, 27 Jun 2013, David Vrabel wrote:
-> > > > > These series fixes the above limitations and depends on "x86: increase
-> > > > > precision of x86_platform.get/set_wallclock()" which was previously
-> > > > > posted.
-> > > > 
-> > > > So I'd like to merge that in the following way:
-> > > > 
-> > > > I pick up patches 1-3 and stick them into tip timers/for-xen and merge
-> > > > that branch into timers/core. When picking up 1/6, I'll drop the xen
-> > > > part of that, so timers/core will not hold any xen specific bits.
-> > > > 
-> > > > Then the xen folks can pull timers/for-xen and apply the xen specific
-> > > > stuff on top.
-> > > 
-> > > Wouldn't it be easier for you to pick the "xen part of that" as well?
-> > > I am OK with you doing that and it all going through your tree.
-> > 
-> > I can do that, if that's not conflicting with other xen/x86 stuff
-> > outside of timers/core.
-> 
-> I got one change in there and it seems to apply cleanly (woot!).
-> But lets be on a safe side. There are also some Xen ARM changes that
-> are fiddling with arch/x86/xen/time.c (different maintainer)) - so both
-> me and Stefano can pull from the timers/for-xen and not have to worry about
-> conflict resolution.
+3.8.13.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Hrmpf, just noticed, that it depends on other stuff in timers/core:
+------------------
 
-ce0b098: x86: Fix vrtc_get_time/set_mmss to use new timespec interface
-3565184: x86: Increase precision of x86_platform.get/set_wallclock()
+From: Clemens Ladisch <clemens@ladisch.de>
 
-/me rumages for frozen shark.
+commit 342cda29343a6272c630f94ed56810a76740251b upstream.
+
+When the Android firmware enables the audio interfaces in accessory
+mode, it always declares in the control interface's baInterfaceNr array
+that interfaces 0 and 1 belong to the audio function.  However, the
+accessory interface itself, if also enabled, already is at index 0 and
+shifts the actual audio interface numbers to 1 and 2, which prevents the
+PCM streaming interface from being seen by the host driver.
+
+To get the PCM interface interface to work, detect when the descriptors
+point to the (for this driver useless) accessory interface, and redirect
+to the correct one.
+
+Reported-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
+Tested-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ sound/usb/card.c | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
+
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index a9d5779..3e4565f 100644
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -144,14 +144,32 @@ static int snd_usb_create_stream(struct snd_usb_audio *chip, int ctrlif, int int
+ 		return -EINVAL;
+ 	}
+ 
++	alts = &iface->altsetting[0];
++	altsd = get_iface_desc(alts);
++
++	/*
++	 * Android with both accessory and audio interfaces enabled gets the
++	 * interface numbers wrong.
++	 */
++	if ((chip->usb_id == USB_ID(0x18d1, 0x2d04) ||
++	     chip->usb_id == USB_ID(0x18d1, 0x2d05)) &&
++	    interface == 0 &&
++	    altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC &&
++	    altsd->bInterfaceSubClass == USB_SUBCLASS_VENDOR_SPEC) {
++		interface = 2;
++		iface = usb_ifnum_to_if(dev, interface);
++		if (!iface)
++			return -EINVAL;
++		alts = &iface->altsetting[0];
++		altsd = get_iface_desc(alts);
++	}
++
+ 	if (usb_interface_claimed(iface)) {
+ 		snd_printdd(KERN_INFO "%d:%d:%d: skipping, already claimed\n",
+ 						dev->devnum, ctrlif, interface);
+ 		return -EINVAL;
+ 	}
+ 
+-	alts = &iface->altsetting[0];
+-	altsd = get_iface_desc(alts);
+ 	if ((altsd->bInterfaceClass == USB_CLASS_AUDIO ||
+ 	     altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC) &&
+ 	    altsd->bInterfaceSubClass == USB_SUBCLASS_MIDISTREAMING) {
+-- 
+1.8.1.2
+
