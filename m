@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3F1FYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 01:24:24 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:24926 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751200Ab3F1FYW (ORCPT
+	id S1752172Ab3F1FYw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 01:24:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42384 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab3F1FYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 01:24:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtINAMQdzVF5LB/8/2dsb2JhbABbgwkxujKFIQQBgQcXdIIjAQEFOhwjEAgDGAklDwUlAyETiA0NuzgEFo4igR0HgwJjA5dEih+HJ4MjKg
-Date: Fri, 28 Jun 2013 15:23:52 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tux3@tux3.org
-Subject: Re: [PATCH] Optimize wait_sb_inodes()
-Message-ID: <20130628052352.GA9047@dastard>
-References: <20130627044705.GB29790@dastard>
- <87y59w5dye.fsf@devron.myhome.or.jp>
- <20130627063816.GD29790@dastard>
- <87ppv83tnn.fsf@devron.myhome.or.jp>
- <20130627094042.GZ29338@dastard>
- <87mwqb3m1e.fsf@devron.myhome.or.jp>
- <20130627183631.GB22832@thunk.org>
- <871u7nrupn.fsf@devron.myhome.or.jp>
- <20130627234521.GC22832@thunk.org>
- <87hagjqdpi.fsf@devron.myhome.or.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hagjqdpi.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Jun 2013 01:24:51 -0400
+Date: Thu, 27 Jun 2013 22:24:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Minchan Kim <minchan@kernel.org>, Luiz Capitulino <lcapitulino@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
+        kmpark@infradead.org, hyunhee.kim@samsung.com
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-Id: <20130627222429.d90ec469.akpm@linux-foundation.org>
+In-Reply-To: <20130628043411.GA9100@teo>
+References: <20130626231712.4a7392a7@redhat.com>
+	<20130627150231.2bc00e3efcd426c4beef894c@linux-foundation.org>
+	<20130628000201.GB15637@bbox>
+	<20130627173433.d0fc6ecd.akpm@linux-foundation.org>
+	<20130628005852.GA8093@teo>
+	<20130627181353.3d552e64.akpm@linux-foundation.org>
+	<20130628043411.GA9100@teo>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 09:30:17AM +0900, OGAWA Hirofumi wrote:
-> Theodore Ts'o <tytso@mit.edu> writes:
+On Thu, 27 Jun 2013 21:34:11 -0700 Anton Vorontsov <anton@enomsg.org> wrote:
+
+> On Thu, Jun 27, 2013 at 06:13:53PM -0700, Andrew Morton wrote:
+> > On Thu, 27 Jun 2013 17:58:53 -0700 Anton Vorontsov <anton@enomsg.org> wrote:
+> > > Current frequency is 1/(2MB). Suppose we ended up scanning the whole
+> > > memory on a 2GB host, this will give us 1024 hits. Doesn't feel too much*
+> > > to me... But for what it worth, I am against adding read() to the
+> > > interface -- just because we can avoid the unnecessary switch into the
+> > > kernel.
+> > 
+> > What was it they said about premature optimization?
+> > 
+> > I think I'd rather do nothing than add a mode hack (already!).
+> > 
+> > The information Luiz wants is already available with the existing
+> > interface, so why not just use it until there is a real demonstrated
+> > problem?
+> > 
+> > But all this does point at the fact that the chosen interface was not a
+> > good one.  And it's happening so soon :( A far better interface would
+> > be to do away with this level filtering stuff in the kernel altogether.
 > 
-> > On Fri, Jun 28, 2013 at 08:37:40AM +0900, OGAWA Hirofumi wrote:
-> >> 
-> >> Well, anyway, it is simple. This issue was came as the performance
-> >> regression when I was experimenting to use kernel bdi flusher from own
-> >> flusher. The issue was sync(2) like I said.  And this was just I
-> >> couldn't solve this issue by tux3 side unlike other optimizations.
-> >
-> > A performance regression using fsstress?  That's not a program
-> > intended to be a useful benchmark for measuring performance.
+> OK, I am convinced that modes might be not necessary, but I see no big
+> problem in current situation, we can add the strict mode and deprecate the
+> "filtering" -- basically we'll implement the idea of requiring that
+> userspace registers a separate fd for each level.
 > 
-> Right. fsstress is used as stress tool for me too as part of CI, with
-> background vmstat 1. Anyway, it is why I noticed this.
+> As one of the ways to change the interface, we can do the strict mode by
+> writing levels in uppercase, and warn_once on lowercase levels, describing
+> that the old behaviour will go away.
+
+I do think the feature is too young to be bothered about
+back-compatibility things.  We could put a little patch into 3.10
+tomorrow which disables the vmpressure feature (just putting a few
+"return 0"s in there would suffice), then turn the feature back on in
+3.11-rc1.
+
+Another option is to change the interface in 3.11 and say "sorry" if
+that causes anyone trouble.  But that's obviously less desirable.
+
+
+> Once (if ever) we remove the old
+> behaviour, the apps trying the old-style lowercase levels will fail
+> gracefully with EINVAL.
 > 
-> I agree it would not be high priority. But I don't think we should stop
-> to optimize it.
+> Or we can be honest and admit that we can't be perfect and just add an
+> explicit versioning to the interface. :)
+> 
+> It might be unfortunate that we did not foresee this and have to change
+> things that soon, but we did change interfaces in the past for a lot of
+> sysfs and proc knobs, so it is not something new. Once the vmpressure
+> feature will get even wider usage exposure, we might realize that we need
+> to make even more changes...
 
-But you're not proposing any sort of optimisation at all - you're
-simply proposing to hack around the problem so you don't have to
-care about it. The VFS is a shared resource - it has to work well
-for everyone - and that means we need to fix problems and not ignore
-them.
+Hopefully not ;) But the interface should be designed with that
+possibility in mind, of course.
 
-As I said, wait_sb_inodes() is fixable. I'm not fixing for tux3,
-though - I'm fixing it because it's causing soft lockups on XFS and
-ext4 in 3.10-rc6:
 
-https://lkml.org/lkml/2013/6/27/772
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
