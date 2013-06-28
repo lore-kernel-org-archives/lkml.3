@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab3F1Pxt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:53:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab3F1Pxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:53:48 -0400
-Message-ID: <51CDB183.1070209@redhat.com>
-Date: Fri, 28 Jun 2013 17:53:39 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755534Ab3F1Py0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:54:26 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:34941 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab3F1PyY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 11:54:24 -0400
+Message-ID: <51CDB1AD.1020202@6wind.com>
+Date: Fri, 28 Jun 2013 17:54:21 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next v3 1/2] lib: vsprintf: add IPv4/v6 generic %p[Ii]S[pfs]
- format specifier
-References: <1372421131-1672-1-git-send-email-dborkman@redhat.com>  <1372421131-1672-2-git-send-email-dborkman@redhat.com> <1372434289.29380.6.camel@joe-AO722>
-In-Reply-To: <1372434289.29380.6.camel@joe-AO722>
+To: Stephen Hemminger <stephen@networkplumber.org>
+CC: Sven-Thorsten Dietrich <sven@vyatta.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Mike Davison <Mike.Davison@vyatta.com>
+Subject: Re: [PATCH] Set the correct RTNL family for multicast netconf messages
+References: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com> <20130628082617.42a802a4@nehalam.linuxnetplumber.net>
+In-Reply-To: <20130628082617.42a802a4@nehalam.linuxnetplumber.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 05:44 PM, Joe Perches wrote:
-> On Fri, 2013-06-28 at 14:05 +0200, Daniel Borkmann wrote:
->> In order to avoid making code that deals with printing both, IPv4 and
->> IPv6 addresses, unnecessary complicated as for example ...
+Le 28/06/2013 17:26, Stephen Hemminger a écrit :
+> On Thu, 27 Jun 2013 16:44:47 -0700
+> Sven-Thorsten Dietrich <sven@vyatta.com> wrote:
 >
-> Thanks Daniel, seems sensible.  Just trivial comments...
-
-Ok, thanks.
-
-> []
->
->> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> []
->
-> Should any other include other than net/addrconf be needed?
-
-I'm not sure I understand this question.
-
->> +char *ip6_addr_string_sa(char *buf, char *end, const struct sockaddr_in6 *sa,
->> +			 struct printf_spec spec, const char *fmt)
->> +{
-> []
->> +	char fmt6[2] = { fmt[0], '6'};
->
-> This looks odd to me.  why not use a bool compressed
-> flag and identify this before the isalpha loop and not
-> have fmt6 at all?
-
-Well, we have a bool called 'have_c' that identifies if 'c' was specified. To have
-the same behaviour as with %pI6, this is used to create a temporary fmt that we then
-can pass to ip6_string(). If you look at ip6_addr_string(), it's done the same way,
-and by that, we stay compatible in behaviour.
-
->> +	u8 off = 0;
+>> There may be other cases that require a special case, so I chose the switch approach.
+>>
+>> Please note, that all other messages from ipmr[6].c correctly set the family, while these do not.
+>>
+>> Thanks
+>>
+>> Sven
+>>
+>>
+>>
+>> Subject: Set correct RTNL family for multicast netconf messages
+>> From: Sven-Thorsten Dietrich sven@vyatta.com Thu Jun 27 16:40:17 2013 -0700
+>> Date: Thu Jun 27 16:40:17 2013 -0700:
+>>
+>>
+>> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+>> index dfc39d4..695858b 100644
+>> --- a/net/ipv4/devinet.c
+>> +++ b/net/ipv4/devinet.c
+>> @@ -1705,7 +1705,16 @@ static int inet_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
+>>   		return -EMSGSIZE;
+>>
+>>   	ncm = nlmsg_data(nlh);
+>> -	ncm->ncm_family = AF_INET;
 >> +
->> +	fmt++;
->> +	while (isalpha(*++fmt)) {
->> +		switch (*fmt) {
->> +		case 'p':
->> +			have_p = true;
+>> +	switch (type) {
+>> +		case NETCONFA_MC_FORWARDING:
+>> +			ncm->ncm_family = RTNL_FAMILY_IPMR;
 >> +			break;
->> +		case 'f':
->> +			have_f = true;
+>> +
+>> +		default:
+>> +			ncm->ncm_family = AF_INET;
 >> +			break;
->> +		case 's':
->> +			have_s = true;
->> +			break;
->> +		case 'c':
->> +			have_c = true;
->> +			break;
->> +		}
 >> +	}
+>>
+>>   	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
+>>   		goto nla_put_failure;
+>> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+>> index 4ab4c38..a177da4 100644
+>> --- a/net/ipv6/addrconf.c
+>> +++ b/net/ipv6/addrconf.c
+>> @@ -492,7 +492,16 @@ static int inet6_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
+>>   		return -EMSGSIZE;
+>>
+>>   	ncm = nlmsg_data(nlh);
+>> -	ncm->ncm_family = AF_INET6;
+>> +
+>> +	switch (type) {
+>> +		case NETCONFA_MC_FORWARDING:
+>> +			ncm->ncm_family = RTNL_FAMILY_IP6MR;
+>> +			break;
+>> +
+>> +		default:
+>> +			ncm->ncm_family = AF_INET6;
+>> +			break;
+>> +	}
+>>
+>>   	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
+>>   		goto nla_put_failure;
+>>
 >
+> Found another issue that needs some thought.
+> If type == ALL, in that case the family comes up as AF_INET.
+> That means that if application is doing a request to get netconf
+> it will receive a different answer than if it is montoring for netconf
+> changes.
 >
+> One way to solve would be to split fill_devconf into two parts, one
+> for unicast, and one for multicast.
+If I understand well, to get all conf variables for IPv4, you will need to make 
+two dump?
+
+Note that the initial idea of netconf was to be able to dump via netlink the 
+content of /proc/sys/net/ipv4/conf/ or /proc/sys/net/ipv6/conf/, hence 
+AF_INET[6] was used to specify 'ipv4' or 'ipv6'.
