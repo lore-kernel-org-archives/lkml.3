@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3F1BvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 21:51:24 -0400
-Received: from s15338416.onlinehome-server.info ([87.106.68.36]:42573 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249Ab3F1BvW (ORCPT
+	id S1754196Ab3F1Bwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 21:52:30 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:45166 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249Ab3F1Bw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 21:51:22 -0400
-Date: Fri, 28 Jun 2013 03:51:21 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Sven-Thorsten Dietrich <sven@vyatta.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Mike Davison <Mike.Davison@vyatta.com>
-Subject: Re: [PATCH] Set the correct RTNL family for multicast netconf messages
-Message-ID: <20130628015121.GC15799@order.stressinduktion.org>
-Mail-Followup-To: Stephen Hemminger <stephen@networkplumber.org>,
-	Sven-Thorsten Dietrich <sven@vyatta.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Stephen Hemminger <shemminger@vyatta.com>,
-	"nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	Mike Davison <Mike.Davison@vyatta.com>
-References: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com> <20130628012307.GB15799@order.stressinduktion.org> <20130627183342.4b9c5598@nehalam.linuxnetplumber.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130627183342.4b9c5598@nehalam.linuxnetplumber.net>
+	Thu, 27 Jun 2013 21:52:29 -0400
+X-Spam-Score: -100.9
+Message-ID: <51CCEC27.8050508@asianux.com>
+Date: Fri, 28 Jun 2013 09:51:35 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: tile: include: asm: add cmpxchg64() definition
+References: <51CA6D21.3090901@asianux.com> <51CC492C.1040105@tilera.com> <51CCD891.8000806@asianux.com>
+In-Reply-To: <51CCD891.8000806@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 06:33:42PM -0700, Stephen Hemminger wrote:
-> On Fri, 28 Jun 2013 03:23:07 +0200
-> Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
-> > Hm, are you sure? NETCONFA_MC_FORWARDING is of type RTM_NEWNETCONF
-> > and expects ncm_family to be either AF_INET or AF_INET6 (at least in
-> > iproute2/ipmonitor.c).
-> > 
-> 
-> I agree with Sven on this, looks like the recent addition of netconf
-> configuration to netlink didn't embrace how multicast is handled in kernel.
-> 
-> Multicast forwarding is a routing related configuration value.
-> All the multicast routing events come in as special family RTNL_FAMILY_IPMR
-> (see net/ipv4/ipmr.c function ipmr_fill_route). I would expect that multicast
-> routing daemons would like to be able to use special family to listen for
-> all multicast related changes (and not see non-multicast events).
-> 
-> 
-> Minor nit: the patch is formatted incorrectly (case should line up with switch).
+Need add cmpxchg64(), or will cause compiling issue.
 
-Yes, this seems reasonable but would need a small update to ipnetconf.c, too.
+Just define it as cmpxchg(), since cmpxchg() can support 8 bytes.
 
-Thanks,
+The related error (with allmodconfig):
 
-  Hannes
+  drivers/block/blockconsole.c: In function ¡®bcon_advance_console_bytes¡¯:
+  drivers/block/blockconsole.c:164:2: error: implicit declaration of function ¡®cmpxchg64¡¯ [-Werror=implicit-function-declaration]
 
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/tile/include/asm/cmpxchg.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/tile/include/asm/cmpxchg.h b/arch/tile/include/asm/cmpxchg.h
+index 276f067..7688c28 100644
+--- a/arch/tile/include/asm/cmpxchg.h
++++ b/arch/tile/include/asm/cmpxchg.h
+@@ -68,6 +68,8 @@ extern unsigned long __cmpxchg_called_with_bad_pointer(void);
+ 
+ #define tas(ptr) (xchg((ptr), 1))
+ 
++#define cmpxchg64(ptr, o, n)		cmpxchg((ptr), (o), (n))
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* _ASM_TILE_CMPXCHG_H */
+-- 
+1.7.7.6
