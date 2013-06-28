@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab3F1Iip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 04:38:45 -0400
-Received: from mga14.intel.com ([143.182.124.37]:10888 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755260Ab3F1IiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 04:38:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,957,1363158000"; 
-   d="scan'208";a="323821424"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V3 11/15] perf tools: fix symbol_conf.nr_events
-Date: Fri, 28 Jun 2013 11:43:22 +0300
-Message-Id: <1372409006-8431-12-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com>
-References: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1755369Ab3F1IjU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 04:39:20 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:45823 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755081Ab3F1IjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 04:39:17 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Bo Shen <voice.shen@atmel.com>, Josh Wu <josh.wu@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91/DT: fix at91sam9n12ek memory node
+Date: Fri, 28 Jun 2013 10:39:15 +0200
+Message-ID: <1372408755-7946-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-symbol_conf.nr_events must be updated when processing
-attribute events.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- tools/perf/util/header.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/boot/dts/at91sam9n12ek.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 4037b0a..81a3a0d 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2968,6 +2968,8 @@ int perf_event__process_attr(struct perf_tool *tool __maybe_unused,
- 		perf_evlist__id_add(evlist, evsel, 0, i, event->attr.id[i]);
- 	}
+diff --git a/arch/arm/boot/dts/at91sam9n12ek.dts b/arch/arm/boot/dts/at91sam9n12ek.dts
+index d59b70c..3d77dbe 100644
+--- a/arch/arm/boot/dts/at91sam9n12ek.dts
++++ b/arch/arm/boot/dts/at91sam9n12ek.dts
+@@ -14,11 +14,11 @@
+ 	compatible = "atmel,at91sam9n12ek", "atmel,at91sam9n12", "atmel,at91sam9";
  
-+	symbol_conf.nr_events = evlist->nr_entries;
-+
- 	return 0;
- }
+ 	chosen {
+-		bootargs = "mem=128M console=ttyS0,115200 root=/dev/mtdblock1 rw rootfstype=jffs2";
++		bootargs = "console=ttyS0,115200 root=/dev/mtdblock1 rw rootfstype=jffs2";
+ 	};
  
+ 	memory {
+-		reg = <0x20000000 0x10000000>;
++		reg = <0x20000000 0x8000000>;
+ 	};
+ 
+ 	clocks {
 -- 
-1.7.11.7
+1.8.2.2
 
