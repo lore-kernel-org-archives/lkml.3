@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab3F1OM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:12:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42734 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754802Ab3F1OM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:12:58 -0400
-Message-ID: <51CD99C2.9040109@zytor.com>
-Date: Fri, 28 Jun 2013 07:12:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@kernel.org>, Wedson Almeida Filho <wedsonaf@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
-References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com> <20130628111948.GA31065@gmail.com> <20130628140938.GA24819@pd.tnic>
-In-Reply-To: <20130628140938.GA24819@pd.tnic>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755198Ab3F1OOj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:14:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40131 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3F1OOh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 10:14:37 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
+Date: Fri, 28 Jun 2013 15:14:11 +0100
+Message-Id: <1372428851-31767-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] MAINTAINERS: Add include directory to MFD file patterns
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 07:09 AM, Borislav Petkov wrote:
-> 
-> Our testing for asm goto otherwise is a bit more, hmm, hands-on in
-> arch/x86/include/asm/cpufeature.h:
-> 
-> #if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
-> 
-> Maybe I should change that to the more explicit CC_HAVE_ASM_GOTO then.
-> 
+From: Mark Brown <broonie@linaro.org>
 
-We should... we didn't have the asm goto test at the time that code was
-written, but I think the tracing guys added it either because some
-distros backported asm goto or to deal with it on non-x86 architectures.
+Ensure that get_maintainer.pl does the right thing for header only
+changes.
 
-	-hpa
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index bd30092..3e56bde 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5506,6 +5506,7 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-fixes.git
+ S:	Supported
+ F:	drivers/mfd/
++F:	include/linux/mfd/
+ 
+ MULTIMEDIA CARD (MMC), SECURE DIGITAL (SD) AND SDIO SUBSYSTEM
+ M:	Chris Ball <cjb@laptop.org>
+-- 
+1.8.3.1
 
