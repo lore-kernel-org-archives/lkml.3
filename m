@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab3F1TOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:14:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41681 "EHLO
+	id S1752880Ab3F1Sy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:54:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41665 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab3F1SzF (ORCPT
+	with ESMTP id S1752858Ab3F1Sy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:55:05 -0400
+	Fri, 28 Jun 2013 14:54:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Keir Fraser <keir.fraser@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 031/105] xen/events: Handle VIRQ_TIMER before any other hardirq in event loop.
-Date: Fri, 28 Jun 2013 11:50:53 -0700
-Message-Id: <1372445527-24414-32-git-send-email-kamal@canonical.com>
+Subject: [PATCH 073/105] tcp: xps: fix reordering issues
+Date: Fri, 28 Jun 2013 11:51:35 -0700
+Message-Id: <1372445527-24414-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -29,87 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keir Fraser <keir.fraser@citrix.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit bee980d9e9642e96351fa3ca9077b853ecf62f57 upstream.
+[ Upstream commit 547669d483e5783d722772af1483fa474da7caf9 ]
 
-This avoids any other hardirq handler seeing a very stale jiffies
-value immediately after wakeup from a long idle period. The one
-observable symptom of this was a USB keyboard, with software keyboard
-repeat, which would always repeat a key immediately that it was
-pressed. This is due to the key press waking the guest, the key
-handler immediately runs, sees an old jiffies value, and then that
-jiffies value significantly updated, before the key is unpressed.
+commit 3853b5841c01a ("xps: Improvements in TX queue selection")
+introduced ooo_okay flag, but the condition to set it is slightly wrong.
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Keir Fraser <keir.fraser@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[ luis: backported to 3.5:
-  - replaced xen_ulong_t by unsigned long ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+In our traces, we have seen ACK packets being received out of order,
+and RST packets sent in response.
+
+We should test if we have any packets still in host queue.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/xen/events.c | 19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ net/ipv4/tcp_output.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 8aa3867..7ae3821 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1298,7 +1298,7 @@ static void __xen_evtchn_do_upcall(void)
- {
- 	int start_word_idx, start_bit_idx;
- 	int word_idx, bit_idx;
--	int i;
-+	int i, irq;
- 	int cpu = get_cpu();
- 	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
-@@ -1306,6 +1306,8 @@ static void __xen_evtchn_do_upcall(void)
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index a9f50ee..18b6e16 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1032,11 +1032,13 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
+ 							   &md5);
+ 	tcp_header_size = tcp_options_size + sizeof(struct tcphdr);
  
- 	do {
- 		unsigned long pending_words;
-+		unsigned long pending_bits;
-+		struct irq_desc *desc;
- 
- 		vcpu_info->evtchn_upcall_pending = 0;
- 
-@@ -1316,6 +1318,17 @@ static void __xen_evtchn_do_upcall(void)
- 		/* Clear master flag /before/ clearing selector flag. */
- 		wmb();
- #endif
-+		if ((irq = per_cpu(virq_to_irq, cpu)[VIRQ_TIMER]) != -1) {
-+			int evtchn = evtchn_from_irq(irq);
-+			word_idx = evtchn / BITS_PER_LONG;
-+			pending_bits = evtchn % BITS_PER_LONG;
-+			if (active_evtchns(cpu, s, word_idx) & (1ULL << pending_bits)) {
-+				desc = irq_to_desc(irq);
-+				if (desc)
-+					generic_handle_irq_desc(irq, desc);
-+			}
-+		}
+-	if (tcp_packets_in_flight(tp) == 0) {
++	if (tcp_packets_in_flight(tp) == 0)
+ 		tcp_ca_event(sk, CA_EVENT_TX_START);
+-		skb->ooo_okay = 1;
+-	} else
+-		skb->ooo_okay = 0;
 +
- 		pending_words = xchg(&vcpu_info->evtchn_pending_sel, 0);
++	/* if no packet is in qdisc/device queue, then allow XPS to select
++	 * another queue.
++	 */
++	skb->ooo_okay = sk_wmem_alloc_get(sk) == 0;
  
- 		start_word_idx = __this_cpu_read(current_word_idx);
-@@ -1324,7 +1337,6 @@ static void __xen_evtchn_do_upcall(void)
- 		word_idx = start_word_idx;
- 
- 		for (i = 0; pending_words != 0; i++) {
--			unsigned long pending_bits;
- 			unsigned long words;
- 
- 			words = MASK_LSBS(pending_words, word_idx);
-@@ -1353,8 +1365,7 @@ static void __xen_evtchn_do_upcall(void)
- 
- 			do {
- 				unsigned long bits;
--				int port, irq;
--				struct irq_desc *desc;
-+				int port;
- 
- 				bits = MASK_LSBS(pending_bits, bit_idx);
- 
+ 	skb_push(skb, tcp_header_size);
+ 	skb_reset_transport_header(skb);
 -- 
 1.8.1.2
 
