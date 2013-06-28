@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab3F1PwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:52:09 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55801 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817Ab3F1PwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:52:07 -0400
-Message-ID: <51CDB06B.9010604@ti.com>
-Date: Fri, 28 Jun 2013 21:18:59 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1755458Ab3F1PxT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:53:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40578 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab3F1PxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 11:53:17 -0400
+Date: Fri, 28 Jun 2013 10:53:06 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: "Daniel P. Berrange" <berrange@redhat.com>
+Cc: Tim Hockin <thockin@hockin.org>, Mike Galbraith <bitbucket@online.de>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter <lpoetter@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>,
+        workman-devel <workman-devel@redhat.com>
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130628155306.GC26841@sergelap>
+References: <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
+ <20130422214159.GG12543@htj.dyndns.org>
+ <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
+ <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+ <20130625000118.GT1918@mtj.dyndns.org>
+ <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+ <20130626212047.GB4536@htj.dyndns.org>
+ <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627132206.GE4003@sergelap>
+ <20130628090910.GB2507@redhat.com>
 MIME-Version: 1.0
-To: "Fernandes, Joel" <joelf@ti.com>
-CC: <benoit.cousson@gmail.com>, "lars@metafoo.de" <lars@metafoo.de>,
-        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>, Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 0/5] AM33xx: MMC resources from DT without HWMOD data
-References: <1372209808-6532-1-git-send-email-joelagnel@ti.com> <CAD=GYpbdVVrh-tiqOcbHi3mkWRJUBdx0EsEZEFVVbgFgcCWgsw@mail.gmail.com> <51CC2A1E.2040003@ti.com> <CAD=GYpa9LQ1fV6=O9B65sJURVAigsgXCPLWav8cHXTuGQXPc9A@mail.gmail.com> <51CC67CA.2070805@ti.com> <083BC63EECB6FD41B8E81CF7FD87CC0F2E4F0F95@DLEE08.ent.ti.com>
-In-Reply-To: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4F0F95@DLEE08.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628090910.GB2507@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 June 2013 11:38 PM, Fernandes, Joel wrote:
-> Hi Balaji,
->
+Quoting Daniel P. Berrange (berrange@redhat.com):
+> On Thu, Jun 27, 2013 at 08:22:06AM -0500, Serge Hallyn wrote:
+> > FWIW, the code is too embarassing yet to see daylight, but I'm playing
+> > with a very lowlevel cgroup manager which supports nesting itself.
+> > Access in this POC is low-level ("set freezer.state to THAWED for cgroup
+> > /c1/c2", "Create /c3"), but the key feature is that it can run in two
+> > modes - native mode in which it uses cgroupfs, and child mode where it
+> > talks to a parent manager to make the changes.
+> > 
+> > So then the idea would be that userspace (like libvirt and lxc) would
+> > talk over /dev/cgroup to its manager.  Userspace inside a container
+> > (which can't actually mount cgroups itself) would talk to its own
+> > manager which is talking over a passed-in socket to the host manager,
+> > which in turn runs natively (uses cgroupfs, and nests "create /c1" under
+> > the requestor's cgroup).
+> > 
+> > At some point (probably soon) we might want to talk about a standard API
+> > for these things.  However I think it will have to come in the form of
+> > a standard library, which knows to either send requests over dbus to
+> > systemd, or over /dev/cgroup sock to the manager.
+> 
+> Are you also planning to actually write a new cgroup parent manager
+> daemon too ? Currently my plan for libvirt is to just talk directly
 
-<snip>
+I'm toying with the idea, yes.  (Right now my toy runs in either native
+mode, using cgroupfs, or child mode, talking to a parent manager)  I'd
+love if someone else does it, but it needs to be done.
 
->>> Some patches were squashed and others dropped in the series resulting
->>> in the single patch above. This patch should be good to apply
->> Hi Joel,
->>
->> Before pushing mmc dts support for am335x, Can you please let me
->> know if below 2 patches [1] are merged/accepted,
->> IIRC these patches are needed for MMC to work properly.
->>
->> I suggest to hold the dts patch until slave_sg_limit gets merged
->> otherwise it will cause regression in am335x mmc.
->>
->> [PATCH v4 1/3] dmaengine: add dma_get_slave_sg_limits()
->> [PATCH v4 2/3] dma: edma: add device_slave_sg_limits() support
->
-> Actually this is an independent regression and is currently worked on by Lars-Peter Clausen [1].
->
-> Currently not having the MMC DTS merged is also a regression,
+As I've said elsewhere in the thread, I see 2 problems to be addressed:
 
-No, Right now mmc support is not added to am335x, so it is not really a regression
+1. The ability to nest the cgroup manager daemons, so that a daemon
+running in a container can talk to a daemon running on the host.  This
+is the problem my current toy is aiming to address.  But the API it
+exports is just a thin layer over cgroupfs.
 
- > so I suggest lets take it one
-> step at a time and get the DTS merged in first. Also there will be overhead of reposting this
-> DTS patch later again which will not change. What do you say?
->
+2. Abstract away the kernel/cgroupfs details so that userspace can
+explain its cgroup needs generically.  This is IIUC what systemd is
+addressing with slices and scopes.
 
-If it gets enabled via dts, without slave sg limit support,
-file read/write will fail, possibly corrupting file system.
+(2) is where I'd really like to have a well thought out, community
+designed API that everyone can agree on, and it might be worth getting
+together (with Tejun) at plumbers or something to lay something out.
 
-> Thanks,
->
-> -Joel
->
-> [1] https://patchwork.kernel.org/patch/2228041/
->
+In the end, something like libvirt or lxc should not need to care
+what is running underneat it.  It should be able to make its requests
+the same way regardless of whether it running in fedora or ubuntu,
+and whether it is running on the host or in a tightly bound container.
+That's my goal anyway :)
 
+> to systemd's new DBus APIs for all management of cgroups, and then
+> fall back to writing to cgroupfs directly for cases where systemd
+> is not around.  Having a library to abstract these two possible
+> alternatives isn't all that compelling unless we think there will
+> be multiple cgroups manager daemons. I've been somewhat assuming that
+> even Ubuntu will eventually see the benefits & switch to systemd,
+
+So far I've seen no indication of that :)
+
+If the systemd code to manage slices could be made separately
+compileable as a standalone library or daemon, then I'd advocate
+using that.  But I don't see a lot of incentive for systemd to do
+that, so I'd feel like a heel even asking.
+
+> then the issue of multiple manager daemons wouldn't really exist.
+
+True.  But I'm running under the assumption that Ubuntu will stick with
+upstart, and therefore yes I'll need a separate (perhaps pair of)
+management daemons.
+
+Even if we were to switch to systemd, I'd like the API for userspace
+programs to configure and use cgroups to be as generic as possible,
+so that anyone who wanted to write their own daemon could do so.
+
+-serge
