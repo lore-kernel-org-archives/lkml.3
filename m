@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab3F1KqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:46:00 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:60877 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab3F1Kp7 (ORCPT
+	id S1755604Ab3F1Ksr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:48:47 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:13851
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755191Ab3F1Ksq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:45:59 -0400
-Date: Fri, 28 Jun 2013 12:45:49 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Maxim Uvarov <muvarov@gmail.com>
-Cc: David Daney <ddaney.cavm@gmail.com>,
-        Wladislav Wiebe <wladislav.kw@gmail.com>, david.daney@cavium.com,
-        davem@davemloft.net, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] MIPS: Octeon: fix for held reboot_mutex lock at
- task exit time
-Message-ID: <20130628104548.GL10727@linux-mips.org>
-References: <519DDF8D.70700@gmail.com>
- <519E4C3C.7010400@gmail.com>
- <CAJGZr0KRAJty5+hY77e8s50NmK5jLq8zNQ_r6fz9LOVpPo_WCA@mail.gmail.com>
+	Fri, 28 Jun 2013 06:48:46 -0400
+X-Forefront-Antispam-Report: CIP:59.163.77.177;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC02.kpit.com;RD:59.163.77.177.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI936eI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23hbe9i1155h)
+Subject: Re: [patch v1 1/1]mfd: fix for DA9055 driver initialization
+From: Ankur Raina <Ankur.Raina@kpitcummins.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: <broonie@kernel.org>, "axel.lin@gmail.com" <axel.lin@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <david.chen@diasemi.com>
+In-Reply-To: <20130627174111.GG20292@zurbaran>
+References: <4B6D9C89CD8BA349A71B74CA32C47E5850DA82AF@KCHJEXMB02.kpit.com>
+	 <20130627174111.GG20292@zurbaran>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 Jun 2013 16:18:39 +0530
+Message-ID: <1372416519.13538.25.camel@ankurr1-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJGZr0KRAJty5+hY77e8s50NmK5jLq8zNQ_r6fz9LOVpPo_WCA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.50.126]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late reply - this ended up in the moderator queue for the
-mailing list and I rarely look at it - it's tens of thousands of emails!
-  
-On Thu, May 23, 2013 at 11:58:34PM +0400, Maxim Uvarov wrote:
+On Thu, 2013-06-27 at 19:41 +0200, Samuel Ortiz wrote:
+> Hi Ankur,
+> 
+> On Thu, Jun 27, 2013 at 02:06:45PM +0000, Ankur Raina wrote:
+> > This patch adds support for clearing events received while
+> > powering up DA9055.
+> Could you please explain what that fixes ?
+While powering up DA9055,events are received of power sequencer.Events are also received on gpio's.
+These events remain uncleared after boot up, due to which further event handling also fails.
+This patch clears all the events received, during driver initialization, so that we have a clean state after boot up.
 
-> >> diff --git a/arch/mips/cavium-octeon/**setup.c b/arch/mips/cavium-octeon/
-> >> **setup.c
-> >> index b0baa29..04ce396 100644
-> >> --- a/arch/mips/cavium-octeon/**setup.c
-> >> +++ b/arch/mips/cavium-octeon/**setup.c
-> >> @@ -457,6 +457,10 @@ static void octeon_halt(void)
-> >>         }
-> >>
-> >>         octeon_kill_core(NULL);
-> >> +
-> >> +       /* We stop here */
-> >> +       while (1)
-> >> +               ;
-> >>
-> >
-> > I want to put a WAIT here so we don't burn so much power.
-> >
-> > I will send a patch to do that instead.
-> >
-> >
-> what about adding wait for other mips boards where is while (1) is used?
+> 
+> Cheers,
+> Samuel.
+> 
 
-Many platforms have their own variants of eternal loops, some using
-just "while (1);", others trying to save power using the WAIT instruction.
-I was planing to work through all of them and come up with a common
-defaut implementation.
 
-  Ralf
