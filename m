@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab3F1NxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:53:19 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:60348 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3F1NxR (ORCPT
+	id S1754861Ab3F1Nxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:53:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35093 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788Ab3F1Nxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 09:53:17 -0400
-Date: Fri, 28 Jun 2013 15:53:14 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Richard Genoud <richard.genoud@gmail.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: rtl8192cu: slow path warning
-Message-ID: <20130628135314.GJ4319@lukather>
-References: <20130611123814.GA9854@lnx-rg>
- <20130626142241.GA13107@lnx-rg>
- <51CB0E9C.50408@lwfinger.net>
- <CACQ1gAh+WjQZHo+_afZpzcwt1=KPM8VMBOe=YCHN_LEZu+jPNQ@mail.gmail.com>
- <51CC8284.9070301@lwfinger.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LQAwcd5tHl0Qlnzi"
-Content-Disposition: inline
-In-Reply-To: <51CC8284.9070301@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Jun 2013 09:53:35 -0400
+Message-ID: <1372427593.4257.7.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH 5/5] imx-drm: ipu-dp: Adjust the maximum number of flows
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: gregkh@linuxfoundation.org, shawn.guo@linaro.org, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Date: Fri, 28 Jun 2013 15:53:13 +0200
+In-Reply-To: <1372390325-7566-5-git-send-email-festevam@gmail.com>
+References: <1372390325-7566-1-git-send-email-festevam@gmail.com>
+	 <1372390325-7566-5-git-send-email-festevam@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Fabio,
 
---LQAwcd5tHl0Qlnzi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Am Freitag, den 28.06.2013, 00:32 -0300 schrieb Fabio Estevam:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+> 
+> Later in ipu_dp_get() the index of the flow array is calculated by:
+> flow >> 1
+> 
+> So adjust its maximum to IPUV3_NUM_FLOWS << 1.
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+>  drivers/staging/imx-drm/ipu-v3/ipu-dp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+> index 3bdff6af..ae2c199 100644
+> --- a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+> +++ b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+> @@ -282,7 +282,7 @@ struct ipu_dp *ipu_dp_get(struct ipu_soc *ipu, unsigned int flow)
+>  	struct ipu_dp_priv *priv = ipu->dp_priv;
+>  	struct ipu_dp *dp;
+>  
+> -	if (flow > 5)
+> +	if (flow > IPUV3_NUM_FLOWS << 1)
 
-Hi Larry,
+If (flow == IPUV3_NUM_FLOWS << 1), this will continue and try to access
+&priv->flow[3] below, which is invalid. How about
 
-On Thu, Jun 27, 2013 at 01:20:52PM -0500, Larry Finger wrote:
-> A revised patch for the warning is attached. The fix relatively
-> simple and the only difference between this one and the earlier
-> version is that routine rtl_lps_change_work_callback() was moved
-> from pci.c to ps.c. As a result, it will be available for ARM and
-> other architectures without a PCI bus.
++	if ((flow >> 1) >= IPUV3_NUM_FLOWS)
 
-I just tested it on top of 3.10-rc7 with an imx28, and it works fine.
+instead?
 
-You can add my
-Tested-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>  		return ERR_PTR(-EINVAL);
+>  
+>  	if (flow & 1)
 
-Thanks!
-Maxime
+regards
+Philipp
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---LQAwcd5tHl0Qlnzi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRzZVJAAoJEBx+YmzsjxAg9fQQALhkCRClt1Y54AATGzKuQd4+
-9mHROC5pxaMSOvVKVBK84+tSaXw79FfDrjiFFKn/tTi3lcPTtO7d4N/l0Q/FQnso
-KT0P3KAcgStPb4OxeQ7IFpRXkJf/0MjVIpkFoBUEx20GoWxuxCR6qPngwlI8YU+m
-fQNW+zSNbzFPSzsxTJzVtewdNux7Gcdcy2+vCq020XqQvnOHEIuYd84ZHBs/pQoX
-DaefkrO2RS+TnXuGEGm/SeLDtsHFo+WJdDEziumcATIVHGoqe4QJGg5iXdSBg6Be
-Cw/NuhEtZy5pYpzGc15jIhldZAVO0UXUA7vCItI/TfugydcQHyb06kV28DeCO8bP
-U4C3UeDdJvPXd9dfoJoEGrJLLuCeGrjxV9G8stncCNg8OWEl/SeG63ib4B7TvVoL
-3pzQiJIydecbvxqrG03P/puleU5giy9DOnZ5w9CULdgD3XnQwrPBhBcL6h9RYLad
-bpKM2hb+XeZ7FtZ1NJC8E3nBvtf72Jcp7groxHl0miLQd2Xegf8KbdTBWjX6JUVU
-wMzkLTb0lDHqAk1pqakodVKwKEChBSE+eLrXvzrizjj3lz1CS88im8lzw7EmQOoB
-vl69Izck0ymvOb533iYJwPSHIeitAzzLJpA2E+Rnw86/EacLisaSucD3JoucuZHm
-lG0i70QgiDhQDB7dXkqq
-=1gK/
------END PGP SIGNATURE-----
-
---LQAwcd5tHl0Qlnzi--
