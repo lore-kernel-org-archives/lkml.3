@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab3F1KcW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:32:22 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.119]:45789 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755198Ab3F1KcT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:32:19 -0400
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-12.tower-193.messagelabs.com!1372415529!11138699!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.9; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
+	id S1755485Ab3F1KdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:33:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47776 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755198Ab3F1KdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 06:33:12 -0400
+Date: Fri, 28 Jun 2013 12:33:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC V1] COMMIT 1: DA9210 driver files
-Thread-Topic: [RFC V1] COMMIT 1: DA9210 driver files
-Thread-Index: AQHObmXY+PFPby+OME2lP/6mSPiChZlHqFwJgANFEFA=
-Date: Fri, 28 Jun 2013 10:32:08 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB71D6CF2E6@SW-EX-MBX02.diasemi.com>
-References: <201306201454.r5KEsAAS010978@swsrvapps-01.diasemi.com>
- <Pine.LNX.4.64.1306211035210.27277@axis700.grange>
- <6ED8E3B22081A4459DAC7699F3695FB71D6CABE7@SW-EX-MBX02.diasemi.com>
- <Pine.LNX.4.64.1306260952160.8856@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1306260952160.8856@axis700.grange>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 7/8] sched: Split accounting of NUMA hinting faults that
+ pass two-stage filter
+Message-ID: <20130628103304.GF28407@twins.programming.kicks-ass.net>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-8-git-send-email-mgorman@suse.de>
+ <20130628070027.GD17195@linux.vnet.ibm.com>
+ <20130628093625.GF29209@dyad.programming.kicks-ass.net>
+ <20130628101245.GD8362@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628101245.GD8362@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 28, 2013 at 03:42:45PM +0530, Srikar Dronamraju wrote:
+> > > 
+> > > > Ideally it would be possible to distinguish between NUMA hinting faults
+> > > > that are private to a task and those that are shared. This would require
+> > > > that the last task that accessed a page for a hinting fault would be
+> > > > recorded which would increase the size of struct page. Instead this patch
+> > > > approximates private pages by assuming that faults that pass the two-stage
+> > > > filter are private pages and all others are shared. The preferred NUMA
+> > > > node is then selected based on where the maximum number of approximately
+> > > > private faults were measured.
+> > > 
+> > > Should we consider only private faults for preferred node?
+> > 
+> > I don't think so; its optimal for the task to be nearest most of its pages;
+> > irrespective of whether they be private or shared.
+> 
+> Then the preferred node should have been chosen based on both the
+> private and shared faults and not just private faults.
 
-On Wed, 26 June 2013, Guennadi Liakhovetski wrote:
->
->Hi Steve
->
->On Mon, 24 Jun 2013, Opensource [Steve Twiss] wrote:
->
->[snip]
->
->> Thank you for the comments.
->
->Thanks for your work on this! I've got one more question to you though: it looks like
->you're doing Linux kernel driver open-sourcing for DiaSemi ATM.
->In the past
->
->http://lwn.net/Articles/513859/
->
->a patch series has been submitted by your employer to support the da9063 PMIC. Are
->there plans to continue that work and update the driver? Any specific dates when a new
->submission can be expected?
+Oh duh indeed. I totally missed it did that. Changelog also isn't giving
+rationale for this. Mel?
 
-Hi Guennadi,
+> > 
+> > > I would think if tasks have shared pages then moving all tasks that share
+> > > the same pages to a node where the share pages are around would be
+> > > preferred. No? 
+> > 
+> > Well no; not if there's only 5 shared pages but 1024 private pages.
+> 
+> Yes, agree, but should we try to give the shared pages some additional weightage?
 
-Dialog are planning to submit a DA9063 driver that 'stands alone' instead of being fully integrated with a combined DA9210 driver (i.e. the one that was uploaded to the mailing list about a year ago). Having said that, there will be a strong similarity between the combined DA9063/DA9210 mailing-list driver and the upcoming stand-alone DA9063 driver.
+Yes because you'll get 1/n amount of this on shared pages for threads --
+other threads will contend for the same PTE fault. And no because for
+inter process shared memory they'll each have their own PTE. And maybe
+because even for the threaded case its hard to tell how many threads
+will actually contend for that one PTE.
 
-This DA9063 work is continuing and it will be submitted to LKML after the DA9210 work has [hopefully] been accepted. In this way I am aiming to try and side-step as many DA9063 submission pitfalls as possible by ensuring any relevant comments from this DA9210 submission work have been added into the new driver.
+Confused enough? :-)
 
-I hope that helps...
-
-Regards,
-Steve
-
->
->Thanks
->Guennadi
->---
->Guennadi Liakhovetski, Ph.D.
->Freelance Open-Source Software Developer http://www.open-technology.de/
