@@ -1,47 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab3F1MJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 08:09:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45879 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab3F1MJ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 08:09:28 -0400
-Date: Fri, 28 Jun 2013 14:09:28 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stehle Vincent-B46079 <B46079@freescale.com>
-cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
+	id S1754115Ab3F1MO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 08:14:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44985 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236Ab3F1MOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 08:14:25 -0400
+Message-ID: <1372421632.21065.60.camel@cumari.coelho.fi>
+Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
+From: Luciano Coelho <coelho@ti.com>
+To: <balbi@ti.com>, <mturquette@linaro.org>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: next-20130627 breaks i.MX6 sabre sd UART console
-In-Reply-To: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net>
-Message-ID: <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de>
-References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-arm@vger.kernel.org" <linux-arm-kernel@lists.infradead.org>
+Date: Fri, 28 Jun 2013 15:13:52 +0300
+In-Reply-To: <20130628114129.GO11297@arwen.pp.htv.fi>
+References: <1372149330-24335-1-git-send-email-coelho@ti.com>
+	 <20130628093848.GA2139@e106331-lin.cambridge.arm.com>
+	 <1372413215.21065.41.camel@cumari.coelho.fi>
+	 <20130628102145.GB2139@e106331-lin.cambridge.arm.com>
+	 <1372415514.21065.50.camel@cumari.coelho.fi>
+	 <1372418531.21065.53.camel@cumari.coelho.fi>
+	 <20130628114129.GO11297@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013, Stehle Vincent-B46079 wrote:
+On Fri, 2013-06-28 at 14:41 +0300, Felipe Balbi wrote:
+> On Fri, Jun 28, 2013 at 02:22:11PM +0300, Luciano Coelho wrote:
+> > On Fri, 2013-06-28 at 13:31 +0300, Luciano Coelho wrote:
+> > > (fixed Mike's address)
+> > > 
+> > > On Fri, 2013-06-28 at 11:21 +0100, Mark Rutland wrote:
+> > > > On Fri, Jun 28, 2013 at 10:53:35AM +0100, Luciano Coelho wrote:
+> > > > > On Fri, 2013-06-28 at 10:38 +0100, Mark Rutland wrote:
+> > > > > > On Tue, Jun 25, 2013 at 09:35:30AM +0100, Luciano Coelho wrote:
+> > > > > > > +Optional properties:
+> > > > > > > +--------------------
+> > > > > > > +
+> > > > > > > +- refclock: the internal WLAN reference clock frequency (required for
+> > > > > > > +  WiLink6 and WiLink7; not used for WiLink8).  Must be one of the
+> > > > > > > +  following:
+> > > > > > > +	0 = 19.2 MHz
+> > > > > > > +	1 = 26.0 MHz
+> > > > > > > +	2 = 38.4 MHz
+> > > > > > > +	3 = 52.0 MHz
+> > > > > > > +	4 = 38.4 MHz, XTAL
+> > > > > > > +	5 = 26.0 MHz, XTAL
+> > > > > > > +
+> > > > > > > +- tcxoclock: the internal WLAN TCXO clock frequency (required for
+> > > > > > > +  WiLink7 not used for WiLink6 and WiLink8).  Must be one of the
+> > > > > > > +  following:
+> > > > > > > +	0 = 19.200 MHz
+> > > > > > > +	1 = 26.000 MHz
+> > > > > > > +	2 = 38.400 MHz
+> > > > > > > +	3 = 52.000 MHz
+> > > > > > > +	4 = 16.368 MHz
+> > > > > > > +	5 = 32.736 MHz
+> > > > > > > +	6 = 16.800 MHz
+> > > > > > > +	7 = 33.600 MHz
+> > > > > > 
+> > > > > > This looks suspiciously like what we have the common clock bindings for:
+> > > > > > 
+> > > > > > refclk {
+> > > > > > 	compatible = "fixed-clock";
+> > > > > > 	#clock-cells = <0>;
+> > > > > > 	clock-frequency = <19200000>;
+> > > > > > }
+> > > > > > 
+> > > > > > wilink {
+> > > > > > 	compatible = "ti,wilink7";
+> > > > > > 	interrupt-parent = <&some_interrupt_controller>;
+> > > > > > 	interrupts = <0 1 1>;
+> > > > > > 	clocks = <&refclk>, <&refclk>;
+> > > > > > 	clock-names = "refclk", "txoclk";
+> > > > > > };
+> > > > > > 
+> > > > > > Could you not use them?
+> > > > > 
+> > > > > Hmmm... this actually does look good.  But these are internal clocks in
+> > > > > the modules, they cannot be accessed from outside.  Does it make sense
+> > > > > to register them with the clock framework?
+> > > > 
+> > > > Given we already have a common way of describing clocks, I think it
+> > > > makes sense to use it -- people already understand the common bindings,
+> > > > and it's less code to add add to the kernel. I don't think the fact
+> > > > these clocks are internal should prevent us from describing them as we
+> > > > would an external clock.
+> > > 
+> > > Yes, I agree with you.  Thanks for the suggestion! I think it will look
+> > > much better.  And now that I dug a bit more into the code, I can see
+> > > that there are only structs being populated, so there shouldn't be any
+> > > other side-effects.
+> > 
+> > Hmmm, one thing that escaped me.  Besides the frequency, I also need a
+> > boolean that tells if the clock is XTAL or not.  I can't figure out how
+> > to pass this if I use the generic clock framework.  Any suggestions?
+> 
+> Could you use clock-output-names for that ?
+> 
+> XTAL clock:
+> 
+> refclk {
+> 	compatible = "fixed-clock";
+> 	#clock cells = <0>;
+> 	clock-frequency = <19200000>;
+> 	clock-output-names = "xtal";
+> };
+> 
+> non-XTAL clock:
+> 
+> refclk {
+> 	compatible = "fixed-clock";
+> 	#clock cells = <0>;
+> 	clock-frequency = <19200000>;
+> 	clock-output-names = "osc"; /* any better name ? */
+> };
 
-Cc'ed Mark and Stephen.
+This starts looking a bit hacky.  Using the output name as a flag is not
+very pretty.
 
-> FYI I remark that today's Linux next 'next-20130627' breaks i.MX6
-> sabre sd UART console with ARM config imx_v6_v7_defconfig.
-> This was working fine yesterday with 'next-20130626'.
-> 
-> Bisecting gave me this commit:
-> 
->   064706514ec3fea740c2656e03c4f01f6a551ac4 clocksource: Add generic
-> dummy timer driver
-> 
-> If I revert it I do indeed get the boot messages on the UART console
-> again, but the kernel then crashes in wm8962_probe(). So there is
-> more to find out...
+I think it would be better to have a separate flag for it in the wlan
+node.  Like an optional "refclock-xtal" boolean or something.  The
+downside of this is that we would be adding information about the clock
+details in the wilink node. :(
+
+OTOH, we could add a flag to the generic clock binding? A new optional
+boolean that tells whether the clock is XTAL or not:
+
+refclk {
+	compatible = "fixed-clock";
+	#clock cells = <0>;
+	clock-frequency = <19200000>;
+	clock-xtal;
+};
+
+Do you think that would make sense?
+
+--
+Luca.
+
