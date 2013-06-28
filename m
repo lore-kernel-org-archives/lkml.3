@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab3F1LNH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 07:13:07 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:52436 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3F1LNB (ORCPT
+	id S1755627Ab3F1LNN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 07:13:13 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49613 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab3F1LNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 07:13:01 -0400
-X-IronPort-AV: E=Sophos;i="4.87,958,1363132800"; 
-   d="scan'208";a="6167419"
-Message-ID: <1372417978.8976.123.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH next] xen: Convert printks to pr_<level>
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Joe Perches <joe@perches.com>
-CC: Wei Liu <wei.liu2@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, <xen-devel@lists.xensource.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" 
-	<virtualization@lists.linux-foundation.org>
-Date: Fri, 28 Jun 2013 12:12:58 +0100
-In-Reply-To: <1372414901.2060.44.camel@joe-AO722>
-References: <1372395469.2060.36.camel@joe-AO722>
-	 <20130628080250.GA16643@zion.uk.xensource.com>
-	 <1372414901.2060.44.camel@joe-AO722>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Fri, 28 Jun 2013 07:13:07 -0400
+Date: Fri, 28 Jun 2013 12:12:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20130628111241.GC27646@sirena.org.uk>
+References: <201306201454.r5KEsAAS010978@swsrvapps-01.diasemi.com>
+ <Pine.LNX.4.64.1306211035210.27277@axis700.grange>
+ <6ED8E3B22081A4459DAC7699F3695FB71D6CABE7@SW-EX-MBX02.diasemi.com>
+ <Pine.LNX.4.64.1306260952160.8856@axis700.grange>
+ <6ED8E3B22081A4459DAC7699F3695FB71D6CF2E6@SW-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XrVBOfxXXtKOgaXT"
+Content-Disposition: inline
+In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB71D6CF2E6@SW-EX-MBX02.diasemi.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC V1] COMMIT 1: DA9210 driver files
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-28 at 03:21 -0700, Joe Perches wrote:
-> Convert printks to pr_<level> (excludes printk(KERN_DEBUG...)
-> to be more consistent throughout the xen subsystem.
-> 
-> Add pr_fmt with KBUILD_MODNAME or "xen:" KBUILD_MODNAME
-> Coalesce formats and add missing word spaces
-> Add missing newlines
-> Align arguments and reflow to 80 columns
-> Remove DRV_NAME from formats as pr_fmt adds the same content
-> 
-> This does change some of the prefixes of these messages
-> but it also does make them more consistent.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> 
-> On Fri, 2013-06-28 at 09:02 +0100, Wei Liu wrote:
-> > Do you also need to replace other printk occurences in xen-netback
-> > directory, say, interface.c and xenbus.c?
-> 
-> Well, I don't _need_ to but if you want it
 
-I think Wei just mean drivers/net/xen-blkback/{interface.c,xenbus.c} in
-addition to the netback.c you were patching in your previous patch.
+--XrVBOfxXXtKOgaXT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> this is what I suggest.
+On Fri, Jun 28, 2013 at 10:32:08AM +0000, Opensource [Steve Twiss] wrote:
 
-Wow ;-)
+Please fix your mail client to word wrap between paragraphs for
+legibility.
 
->  drivers/xen/balloon.c                       |  6 +++--
->  drivers/xen/cpu_hotplug.c                   |  6 +++--
->  drivers/xen/events.c                        | 23 +++++++++---------
->  drivers/xen/evtchn.c                        |  6 +++--
->  drivers/xen/gntalloc.c                      |  6 +++--
->  drivers/xen/gntdev.c                        |  8 ++++---
->  drivers/xen/grant-table.c                   | 17 +++++++-------
->  drivers/xen/manage.c                        | 23 +++++++++---------
->  drivers/xen/mcelog.c                        | 36 +++++++++++------------------
->  drivers/xen/pcpu.c                          | 12 +++++-----
->  drivers/xen/privcmd.c                       |  4 +++-
->  drivers/xen/swiotlb-xen.c                   | 12 ++++++----
->  drivers/xen/tmem.c                          | 10 ++++----
->  drivers/xen/xen-acpi-cpuhotplug.c           |  2 ++
->  drivers/xen/xen-acpi-memhotplug.c           |  2 ++
->  drivers/xen/xen-acpi-pad.c                  |  2 ++
->  drivers/xen/xen-acpi-processor.c            | 25 ++++++++++----------
->  drivers/xen/xen-balloon.c                   |  6 +++--
->  drivers/xen/xen-pciback/conf_space_header.c | 16 ++++++-------
->  drivers/xen/xen-pciback/pci_stub.c          | 25 +++++++++-----------
->  drivers/xen/xen-pciback/pciback_ops.c       |  9 +++++---
->  drivers/xen/xen-pciback/vpci.c              | 10 ++++----
->  drivers/xen/xen-pciback/xenbus.c            |  8 ++++---
->  drivers/xen/xen-selfballoon.c               | 11 ++++-----
->  drivers/xen/xenbus/xenbus_comms.c           | 13 ++++++-----
->  drivers/xen/xenbus/xenbus_dev_backend.c     |  4 +++-
->  drivers/xen/xenbus/xenbus_dev_frontend.c    |  4 +++-
->  drivers/xen/xenbus/xenbus_probe.c           | 30 +++++++++++-------------
->  drivers/xen/xenbus/xenbus_probe_backend.c   |  8 ++++---
->  drivers/xen/xenbus/xenbus_probe_frontend.c  | 35 ++++++++++++++--------------
->  drivers/xen/xenbus/xenbus_xs.c              | 22 ++++++++----------
->  drivers/xen/xencomm.c                       |  2 ++
->  drivers/xen/xenfs/super.c                   |  4 +++-
->  include/xen/hvm.h                           |  4 ++--
->  34 files changed, 215 insertions(+), 196 deletions(-)
+> Dialog are planning to submit a DA9063 driver that 'stands alone'
+> instead of being fully integrated with a combined DA9210 driver (i.e.
+> the one that was uploaded to the mailing list about a year ago).
+> Having said that, there will be a strong similarity between the
+> combined DA9063/DA9210 mailing-list driver and the upcoming
+> stand-alone DA9063 driver.
 
+If there's a lot of similarity then one of the obvious review comments
+is going to be that the two drivers should be merged to promote code
+reuse.
 
+--XrVBOfxXXtKOgaXT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRzW+mAAoJELSic+t+oim9UNkQAIqKgdG63mZq7rcQYd0Uk1Y9
+uGXrliGISMml8faA47ge9dENBfDUX7MKgt98eQVBWYWcnd8dziwByLvQ8Slw3JRn
+Q2c5guPriC2vK+sKwtK2KXwpMppQ1WkyJnHYdRuwI3t0AjJds99mqv7VkaneJvUO
+EaYB12+JSUS1M+0Mte+Z242A839bJXYoUsBvH1/xjb1Zo5LrQ8tVKvgmWD1NKYfT
+xtwCumCH7xK2Piy91xANx9PigtHzrezuX+LzZOss5YuHapOcJXYtraF+P07Uj7r2
+zXnpnaKe0MEiVREh6NTvU97aC7jK7kOQwYw7xQSEhARL+haaeQVbOOYb8eUbgerr
+1LrLQBUN4cpwo7AObeOrS6FMTEzTV5b86aY9wIkQbJuktms2rZE0Ne0B/lV2UOwz
+61fPmBWkTtyR7fHteB1igYQILWvyelBUYDFRK+LSYfEr1DGNBW1p7+z10waYGtdK
+1W4yWfbzNAea/8d9WYsQxM3/WKUFLHl/F3UuIcW3uDc0FJbqHeE7hj3ZkblZfXzW
+t/IfoP2w1D2RW1Qj9mKPZzQ7NEkjSAYhBQrWhv+YetXnPokpWz9YM0xRl8Uwk6Kg
+SBQ9GLZochLad4VhtjrmqHhHGRxX/iMlx86LMJlTwkfiU+NhAiCxGL9JG6CImzYp
+IcbVub9xhIS2OTh/GmAT
+=WyUM
+-----END PGP SIGNATURE-----
+
+--XrVBOfxXXtKOgaXT--
