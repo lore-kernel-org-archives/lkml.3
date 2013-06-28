@@ -1,107 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab3F1KcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 06:32:13 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45103 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755198Ab3F1KcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 06:32:10 -0400
-Message-ID: <1372415514.21065.50.camel@cumari.coelho.fi>
-Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
-From: Luciano Coelho <coelho@ti.com>
-To: Mark Rutland <mark.rutland@arm.com>, <mturquette@linaro.org>
-CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-arm@vger.kernel.org" <linux-arm@vger.kernel.org>
-Date: Fri, 28 Jun 2013 13:31:54 +0300
-In-Reply-To: <20130628102145.GB2139@e106331-lin.cambridge.arm.com>
-References: <1372149330-24335-1-git-send-email-coelho@ti.com>
-	 <20130628093848.GA2139@e106331-lin.cambridge.arm.com>
-	 <1372413215.21065.41.camel@cumari.coelho.fi>
-	 <20130628102145.GB2139@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1755497Ab3F1KcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 06:32:22 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.119]:45789 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755198Ab3F1KcT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 06:32:19 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-12.tower-193.messagelabs.com!1372415529!11138699!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.9; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC V1] COMMIT 1: DA9210 driver files
+Thread-Topic: [RFC V1] COMMIT 1: DA9210 driver files
+Thread-Index: AQHObmXY+PFPby+OME2lP/6mSPiChZlHqFwJgANFEFA=
+Date: Fri, 28 Jun 2013 10:32:08 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB71D6CF2E6@SW-EX-MBX02.diasemi.com>
+References: <201306201454.r5KEsAAS010978@swsrvapps-01.diasemi.com>
+ <Pine.LNX.4.64.1306211035210.27277@axis700.grange>
+ <6ED8E3B22081A4459DAC7699F3695FB71D6CABE7@SW-EX-MBX02.diasemi.com>
+ <Pine.LNX.4.64.1306260952160.8856@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1306260952160.8856@axis700.grange>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(fixed Mike's address)
 
-On Fri, 2013-06-28 at 11:21 +0100, Mark Rutland wrote:
-> On Fri, Jun 28, 2013 at 10:53:35AM +0100, Luciano Coelho wrote:
-> > On Fri, 2013-06-28 at 10:38 +0100, Mark Rutland wrote:
-> > > On Tue, Jun 25, 2013 at 09:35:30AM +0100, Luciano Coelho wrote:
-> > > > +Optional properties:
-> > > > +--------------------
-> > > > +
-> > > > +- refclock: the internal WLAN reference clock frequency (required for
-> > > > +  WiLink6 and WiLink7; not used for WiLink8).  Must be one of the
-> > > > +  following:
-> > > > +	0 = 19.2 MHz
-> > > > +	1 = 26.0 MHz
-> > > > +	2 = 38.4 MHz
-> > > > +	3 = 52.0 MHz
-> > > > +	4 = 38.4 MHz, XTAL
-> > > > +	5 = 26.0 MHz, XTAL
-> > > > +
-> > > > +- tcxoclock: the internal WLAN TCXO clock frequency (required for
-> > > > +  WiLink7 not used for WiLink6 and WiLink8).  Must be one of the
-> > > > +  following:
-> > > > +	0 = 19.200 MHz
-> > > > +	1 = 26.000 MHz
-> > > > +	2 = 38.400 MHz
-> > > > +	3 = 52.000 MHz
-> > > > +	4 = 16.368 MHz
-> > > > +	5 = 32.736 MHz
-> > > > +	6 = 16.800 MHz
-> > > > +	7 = 33.600 MHz
-> > > 
-> > > This looks suspiciously like what we have the common clock bindings for:
-> > > 
-> > > refclk {
-> > > 	compatible = "fixed-clock";
-> > > 	#clock-cells = <0>;
-> > > 	clock-frequency = <19200000>;
-> > > }
-> > > 
-> > > wilink {
-> > > 	compatible = "ti,wilink7";
-> > > 	interrupt-parent = <&some_interrupt_controller>;
-> > > 	interrupts = <0 1 1>;
-> > > 	clocks = <&refclk>, <&refclk>;
-> > > 	clock-names = "refclk", "txoclk";
-> > > };
-> > > 
-> > > Could you not use them?
-> > 
-> > Hmmm... this actually does look good.  But these are internal clocks in
-> > the modules, they cannot be accessed from outside.  Does it make sense
-> > to register them with the clock framework?
-> 
-> Given we already have a common way of describing clocks, I think it
-> makes sense to use it -- people already understand the common bindings,
-> and it's less code to add add to the kernel. I don't think the fact
-> these clocks are internal should prevent us from describing them as we
-> would an external clock.
+On Wed, 26 June 2013, Guennadi Liakhovetski wrote:
+>
+>Hi Steve
+>
+>On Mon, 24 Jun 2013, Opensource [Steve Twiss] wrote:
+>
+>[snip]
+>
+>> Thank you for the comments.
+>
+>Thanks for your work on this! I've got one more question to you though: it looks like
+>you're doing Linux kernel driver open-sourcing for DiaSemi ATM.
+>In the past
+>
+>http://lwn.net/Articles/513859/
+>
+>a patch series has been submitted by your employer to support the da9063 PMIC. Are
+>there plans to continue that work and update the driver? Any specific dates when a new
+>submission can be expected?
 
-Yes, I agree with you.  Thanks for the suggestion! I think it will look
-much better.  And now that I dug a bit more into the code, I can see
-that there are only structs being populated, so there shouldn't be any
-other side-effects.
+Hi Guennadi,
 
+Dialog are planning to submit a DA9063 driver that 'stands alone' instead of being fully integrated with a combined DA9210 driver (i.e. the one that was uploaded to the mailing list about a year ago). Having said that, there will be a strong similarity between the combined DA9063/DA9210 mailing-list driver and the upcoming stand-alone DA9063 driver.
 
-> Perhaps Mike Turquette [Cc'd] has an opinion on the matter. 
+This DA9063 work is continuing and it will be submitted to LKML after the DA9210 work has [hopefully] been accepted. In this way I am aiming to try and side-step as many DA9063 submission pitfalls as possible by ensuring any relevant comments from this DA9210 submission work have been added into the new driver.
 
-Experts' opinions are appreciated. :)
+I hope that helps...
 
---
-Luca.
+Regards,
+Steve
 
+>
+>Thanks
+>Guennadi
+>---
+>Guennadi Liakhovetski, Ph.D.
+>Freelance Open-Source Software Developer http://www.open-technology.de/
