@@ -1,63 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab3F1S3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:29:49 -0400
-Received: from 8bytes.org ([85.214.48.195]:47157 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459Ab3F1S3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:29:47 -0400
-Date: Fri, 28 Jun 2013 20:29:46 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ 102/127] iommu/amd: Workaround for ERBT1312
-Message-ID: <20130628182946.GU11309@8bytes.org>
-References: <lhtAZ-q1-5@gated-at.bofh.it>
- <lhtB1-q1-53@gated-at.bofh.it>
- <20130628181136.52d00e9c@dualc.maya.org>
- <1372441744.30572.765.camel@ul30vt.home>
+	id S1752065Ab3F1SbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:31:09 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:64380 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab3F1SbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 14:31:07 -0400
+Date: Fri, 28 Jun 2013 11:30:59 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Mike Galbraith <bitbucket@online.de>, Tim Hockin <thockin@hockin.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130628183059.GE18889@mtj.dyndns.org>
+References: <20130625000118.GT1918@mtj.dyndns.org>
+ <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+ <20130626212047.GB4536@htj.dyndns.org>
+ <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627180143.GD5599@mtj.dyndns.org>
+ <1372391198.5989.110.camel@marge.simpson.net>
+ <20130628040930.GC2500@htj.dyndns.org>
+ <1372394950.5989.128.camel@marge.simpson.net>
+ <20130628050138.GD2500@htj.dyndns.org>
+ <20130628150513.GD5125@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372441744.30572.765.camel@ul30vt.home>
+In-Reply-To: <20130628150513.GD5125@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jun 28 20:29:46 2013
-X-DSPAM-Confidence: 0.9974
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51cdd61a20861916217421
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+Hello, Michal.
 
-On Fri, Jun 28, 2013 at 11:49:04AM -0600, Alex Williamson wrote:
-> That's interesting, I PXE boot my system from one NIC then use a
-> different NIC for the iSCSI root.  The PXE boot NIC now screams like
-> this, _until_ I attach it to vfio, then it quiets down.
+On Fri, Jun 28, 2013 at 05:05:13PM +0200, Michal Hocko wrote:
+> OK, this really depends on what you expose to non-root users. I have
+> seen use cases where admin prepares top-level which is root-only but
+> it allows creating sub-groups which are under _full_ control of the
+> subdomain. This worked nicely for memcg for example because hard limit,
+> oom handling and other knobs are hierarchical so the subdomain cannot
+> overwrite what admin has said.
 
-Can you please send an example line of the reported fault? The addresses
-it faults on would be interesting.
+Some knobs are safer than others and memcg probably has it easy as it
+doesn't implement proportional control.  But, even then, there's a
+huge chasm between cgroup knobs and proper kernel API visible to
+normal programs.  Just imagine exposing memcg features by extending
+rlimits.  It'll take months if not a couple years ironing out the API
+details and going through review process, and rightfully so, these
+things, once published and made widely available, can't be taken back.
+Now compare that to how we decide what knobs to expose in cgroup.  I
+mean, you even recently suggested flipping the default polarity of
+soft limit knob.
 
-> > Any idea?
-> 
-> Not really without some digging.  I wonder if it's a new event each time
-> or if something is just not clearing a previous event.  ISTR that a boot
-> used to often, but not always, generate a couple faults between the
-> IOMMU being enabled and the NIC driver being loaded.  All the faults I
-> see are to the same address, so my guess is that it's getting replayed.
+cgroup's interface standard is very low.  It's probably a notch higher
+than boot params but about at the same level as sysctl knobs.  It
+isn't necessarily a bad thing as it allows us to rapidly explore
+various options and expose useable things in a very agile manner, but
+we should be very aware of how widely the interface is exposed;
+otherwise, we'd be exposing features and leaking kernel implementation
+details directly into userland programs without going through proper
+review process or buliding consensus, which, in the long term, is
+gonna be much worse than not having the feature exposed at all.
 
-Well, I think it is a problem uncovered by the patch that re-enables the
-event-log interrupt after it happened once. We need to find a strategy
-to cope with those problems.
+"It works for special cases XXX and YYY" is a very poor and extremely
+short-sighted argument when the whole approach is breaching the very
+fundamentals of kernel API conventions.
 
-To my mind as a quick-fix comes rate-limiting for the printks. Or we use
-the suppress-pf bit in the DTE to suppress all page-faults after the
-first one.
+In addition, I really don't think cgroup is the right interface to
+directly expose to individual programs.  As a management thing, it
+does make some sense but kernel API already has its, at times ancient
+but, generally working hierarchy and inheritance rules and conventions
+and primitive resource control contructs - nice, ionice, rlimits and
+so on.  If exposing cgroup-level resource control directly to
+individual applications proves to be beneficial enough, what we should
+do is extending those things.  The backend sure can be supported by
+cgroups but this mkdiring and echoing things with separate hierarchy
+from the usual process hierarchy isn't something which should be
+visible to individual applications.
 
+Currently, I'm not convinced that this is something which should be
+exposed to individual applications, but I sure can be wrong.  But,
+right now, let's first get the existing part settled.  We can worry
+about the rest later.
 
-	Joerg
+Also, in light of the rather sneaky subversion happened with cgroup
+filesystem interface, I wonder whether we need to add some sort of
+generic warning mechanism which warns when permissions of pseudo file
+systems like cgroupfs are delegated to lesser security domains.  In
+itself, it could be harmless but it can serves as a useful beacon.
+Not sure to what extent or how tho.
 
+> OK, so libcgroup's rules daemon will still work and place my tasks in
+> appropriate cgroups?
 
+You have two competing managers of the same hierarchy.  There are ways
+to make them not interfere with each other too much but ultimately
+it's gonna be something clunky.  That said, libcgroup itself is pretty
+clunky, so maybe you'll be okay with it.  I don't know.
+
+> This is not quite in par with "libcgroup is dead and others have to
+> migrate to systemd as well" statements from the link posted earlier.
+> I really do not think that _any_ central agent will understand my
+> requirements and needs so I need a way to talk to cgroupfs somehow - I
+> have used libcgroups so far but touching cgroupfs is quite convinient
+> as well.
+
+As a developer who knows what's going on, I don't think it'd be too
+difficult to meddle with things manually with or without the central
+manager.  It'll complain that someone else is meddling with the cgroup
+hierarchy and some functionalities might not work as expected, but I
+don't think it'll lock you out.
+
+At the same time, while us, the developers, having the level of
+latitude required to do our work is necessary, that shouldn't be the
+overruling focal point of the design of the whole system.  It's
+something to be used and supporting the actual use cases should be the
+priority.  I'm not saying developer convenience is not important but
+that it's not the only thing which matters.  The way I see it, cgroup
+has basically been a playground for devs going wild without too much,
+if any, thought on how it'll actually be useable and useful to wider
+audience, so let's please adjust our priorities a bit.
+
+And, no, I don't believe that the use cases are so wildly different
+that we can't have a capable enough central manager.  That's usually a
+symptom of not understanding the problem space well enough and how one
+ends up with mess like e.g. grub2 configuration.  There sure are and
+will be outliers but it should be possible to come up with something
+which can serve most of the use cases reasonably well, and right now,
+I believe that should be the focus.
+
+> And the systemd, with its history of eating projects and not caring much
+> about their previous users who are not willing to jump in to the systemd
+> car, doesn't sound like a good place where to place the new interface to
+> me.
+
+That part I don't know.  I really don't care whether it's systemd or
+something else but it sure seems there are people who dislike it with
+passion.  To me, it seems rather silly but to each his/her own.  Maybe
+ubuntu will come up with their own manager paired with upstart and
+people can use that one instead?  Who knows.
+
+Thanks.
+
+-- 
+tejun
