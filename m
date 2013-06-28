@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab3F1S6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:58:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42009 "EHLO
+	id S1754040Ab3F1S6U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:58:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41966 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab3F1S6s (ORCPT
+	with ESMTP id S1753983Ab3F1S6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:58:48 -0400
+	Fri, 28 Jun 2013 14:58:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhang Haoyu <haoyu.zhang@huawei.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 058/105] KVM: x86: remove vcpu's CPL check in host-invoked XCR set
-Date: Fri, 28 Jun 2013 11:51:20 -0700
-Message-Id: <1372445527-24414-59-git-send-email-kamal@canonical.com>
+Subject: [PATCH 087/105] packet: packet_getname_spkt: make sure string is always 0-terminated
+Date: Fri, 28 Jun 2013 11:51:49 -0700
+Message-Id: <1372445527-24414-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -27,56 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 764bcbc5a6d7a2f3e75c9f0e4caa984e2926e346 upstream.
+[ Upstream commit 2dc85bf323515e59e15dfa858d1472bb25cad0fe ]
 
-__kvm_set_xcr function does the CPL check when set xcr. __kvm_set_xcr is
-called in two flows, one is invoked by guest, call stack shown as below,
+uaddr->sa_data is exactly of size 14, which is hard-coded here and
+passed as a size argument to strncpy(). A device name can be of size
+IFNAMSIZ (== 16), meaning we might leave the destination string
+unterminated. Thus, use strlcpy() and also sizeof() while we're
+at it. We need to memset the data area beforehand, since strlcpy
+does not padd the remaining buffer with zeroes for user space, so
+that we do not possibly leak anything.
 
-  handle_xsetbv(or xsetbv_interception)
-    kvm_set_xcr
-      __kvm_set_xcr
-
-the other one is invoked by host, for example during system reset:
-
-  kvm_arch_vcpu_ioctl
-    kvm_vcpu_ioctl_x86_set_xcrs
-      __kvm_set_xcr
-
-The former does need the CPL check, but the latter does not.
-
-Signed-off-by: Zhang Haoyu <haoyu.zhang@huawei.com>
-[Tweaks to commit message. - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kvm/x86.c | 5 ++---
+ net/packet/af_packet.c | 5 ++---
  1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 9a51121..ff74a2c 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -558,8 +558,6 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- 	if (index != XCR_XFEATURE_ENABLED_MASK)
- 		return 1;
- 	xcr0 = xcr;
--	if (kvm_x86_ops->get_cpl(vcpu) != 0)
--		return 1;
- 	if (!(xcr0 & XSTATE_FP))
- 		return 1;
- 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
-@@ -573,7 +571,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index d376545..dbddeb4 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -2769,12 +2769,11 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
+ 		return -EOPNOTSUPP;
  
- int kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- {
--	if (__kvm_set_xcr(vcpu, index, xcr)) {
-+	if (kvm_x86_ops->get_cpl(vcpu) != 0 ||
-+	    __kvm_set_xcr(vcpu, index, xcr)) {
- 		kvm_inject_gp(vcpu, 0);
- 		return 1;
- 	}
+ 	uaddr->sa_family = AF_PACKET;
++	memset(uaddr->sa_data, 0, sizeof(uaddr->sa_data));
+ 	rcu_read_lock();
+ 	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+ 	if (dev)
+-		strncpy(uaddr->sa_data, dev->name, 14);
+-	else
+-		memset(uaddr->sa_data, 0, 14);
++		strlcpy(uaddr->sa_data, dev->name, sizeof(uaddr->sa_data));
+ 	rcu_read_unlock();
+ 	*uaddr_len = sizeof(*uaddr);
+ 
 -- 
 1.8.1.2
 
