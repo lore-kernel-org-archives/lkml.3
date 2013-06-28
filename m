@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3F1S5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:57:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41899 "EHLO
+	id S1753862Ab3F1S5x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:57:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41914 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753768Ab3F1S5m (ORCPT
+	with ESMTP id S1753824Ab3F1S5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:57:42 -0400
+	Fri, 28 Jun 2013 14:57:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guillaume Nault <g.nault@alphalink.fr>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Nikolay Martynov <mar.kolya@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 088/105] l2tp: Fix PPP header erasure and memory leak
-Date: Fri, 28 Jun 2013 11:51:50 -0700
-Message-Id: <1372445527-24414-89-git-send-email-kamal@canonical.com>
+Subject: [PATCH 098/105] iwlwifi: dvm: fix chain noise calibration
+Date: Fri, 28 Jun 2013 11:52:00 -0700
+Message-Id: <1372445527-24414-99-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,40 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+From: Nikolay Martynov <mar.kolya@gmail.com>
 
-[ Upstream commit 55b92b7a11690bc377b5d373872a6b650ae88e64 ]
+commit b28b6dfe580ab1ab8bf08b908fd69e299b877103 upstream.
 
-Copy user data after PPP framing header. This prevents erasure of the
-added PPP header and avoids leaking two bytes of uninitialised memory
-at the end of skb's data buffer.
+First step of chain noise calibration process had disable flag
+check inverted. Chain noise calibration never started because
+of this.
 
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested on intel 5300 with two antennas attached. The driver
+correctly disabled one chain.
+
+Signed-off-by: Nikolay Martynov <mar.kolya@gmail.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/l2tp/l2tp_ppp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 044e9e1..88ba2e4 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -345,12 +345,12 @@ static int pppol2tp_sendmsg(struct kiocb *iocb, struct socket *sock, struct msgh
- 	skb_put(skb, 2);
+diff --git a/drivers/net/wireless/iwlwifi/dvm/rxon.c b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+index 9a891e6..c799635 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1377,7 +1377,7 @@ static void iwlagn_chain_noise_reset(struct iwl_priv *priv)
+ 	struct iwl_chain_noise_data *data = &priv->chain_noise_data;
+ 	int ret;
  
- 	/* Copy user data into skb */
--	error = memcpy_fromiovec(skb->data, m->msg_iov, total_len);
-+	error = memcpy_fromiovec(skb_put(skb, total_len), m->msg_iov,
-+				 total_len);
- 	if (error < 0) {
- 		kfree_skb(skb);
- 		goto error_put_sess_tun;
- 	}
--	skb_put(skb, total_len);
+-	if (!(priv->calib_disabled & IWL_CHAIN_NOISE_CALIB_DISABLED))
++	if (priv->calib_disabled & IWL_CHAIN_NOISE_CALIB_DISABLED)
+ 		return;
  
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
- 
+ 	if ((data->state == IWL_CHAIN_NOISE_ALIVE) &&
 -- 
 1.8.1.2
 
