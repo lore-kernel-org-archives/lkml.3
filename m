@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab3F1BYG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 21:24:06 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:57809 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab3F1BYC (ORCPT
+	id S1754160Ab3F1Bal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 21:30:41 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:55202 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab3F1Bak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 21:24:02 -0400
-X-Spam-Score: -100.9
-Message-ID: <51CCE57C.5000901@asianux.com>
-Date: Fri, 28 Jun 2013 09:23:08 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 27 Jun 2013 21:30:40 -0400
+Message-ID: <51CCE703.8070800@ahsoftware.de>
+Date: Fri, 28 Jun 2013 03:29:39 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: paul.mckenney@linaro.org, josh@joshtriplett.org,
-        Ben Hutchings <bhutchings@solarflare.com>, decot@googlers.com
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] include/linux/interrupt.h: add dummy irq_set_irq_wake() for
- "!GENERIC_HARDIRQS"
-References: <51C8F685.6000209@asianux.com> <20130625064832.GA4999@osiris> <51C94599.1020707@asianux.com> <20130625090928.GA8981@osiris> <51CBA6B6.1010809@asianux.com> <20130627081845.GA3824@osiris> <51CC046F.2050009@asianux.com>
-In-Reply-To: <51CC046F.2050009@asianux.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: rtc-linux@googlegroups.com
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [rtc-linux] Re: [PATCH 3/9 v2] rtc: rtc-hid-sensor-time: delay
+ registering as rtc into a work
+References: <1371228732-5749-4-git-send-email-holler@ahsoftware.de> <1371724776-5572-1-git-send-email-holler@ahsoftware.de> <20130626125501.3d64408309a6f63100cc7d08@linux-foundation.org> <51CB5E6B.109@ahsoftware.de>
+In-Reply-To: <51CB5E6B.109@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since irq_set_irq_wake() has already declared in header file, when
-GENERIC_HARDIRQS enabled.
+Am 26.06.2013 23:34, schrieb Alexander Holler:
+> Am 26.06.2013 21:55, schrieb Andrew Morton:
+>> On Thu, 20 Jun 2013 12:39:36 +0200 Alexander Holler <holler@ahsoftware.de> wrote:
 
-Recommend to define the dummy one for GENERIC_HARDIRQS disabled, and
-also let the other related "static inline" functions are independent
-from GENERIC_HARDIRQS.
+>>> +static void hid_time_register_rtc_work(struct work_struct *work)
+>>> +{
+>>> +	struct hid_time_state *time_state =
+>>> +		container_of(work, struct hid_time_workts, work)
+>>> +			->time_state;
+>>> +	struct platform_device *pdev = time_state->callbacks.pdev;
+>>
+>> Ick.  When the initialisers overflow 80 cols, the fix is easy: don't
+>> use initalisers:
+>>
+>> 	struct hid_time_state *time_state;
+>> 	struct platform_device *pdev;
+>>
+>> 	time_state = container_of(work, struct hid_time_workts, work)->time_state;
+>> 	pdev = time_state->callbacks.pdev;
+>>
+>
+> Sorry, but it's long ago since I had to use a DOS machine and I still
+> don't use a phone to write source, therefor I'm not very skilled in
+> writing readable source with meaningfull names in max. 72 (80-8) chars
+> per line. But I will work hard to relearn those long forgotten skills,
+> they might become handy again, when PCs with monitors got finally
+> replaced by phones and tablets with small screens. ;)
 
-So can avoid the compiling error below, and also let the code simpler
-and clearer.
+To do other poor patch submitters which don't use a video terminal too a 
+favor, I've decided it might make sense to describe the workflow which 
+is responsible for the above stuff which makes you cry so often. It 
+isn't that I don't know that I don't have to use initializers, I know C 
+since 3 decades.
 
-The related compiling error (ARCH=s390 allmodconfig):
+The following happens here:
 
-  sound/soc/codecs/wm0010.c: In function ‘wm0010_spi_probe’:
-  sound/soc/codecs/wm0010.c:976:2: error: implicit declaration of function ‘irq_set_irq_wake’ [-Werror=implicit-function-declaration]
+- I'm writing source/patches without limiting myself to 80x25 chars.
+- Then I'm executing the insulting and must be one of the most hated 
+piece of software callled checkpatch.pl.
+- It tells me to place or delete spaces here and cut lines there.
+- I do exactly that, while having my brain turned off (self-protection)
 
+Therefor stuff the like the above happens. It isn't badwill, 
+incompetence or inability.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/linux/interrupt.h |   23 ++++++++++-------------
- 1 files changed, 10 insertions(+), 13 deletions(-)
+Regards,
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 5fa5afe..1a311e0 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -344,16 +344,6 @@ static inline void enable_irq_lockdep_irqrestore(unsigned int irq, unsigned long
- /* IRQ wakeup (PM) control: */
- extern int irq_set_irq_wake(unsigned int irq, unsigned int on);
- 
--static inline int enable_irq_wake(unsigned int irq)
--{
--	return irq_set_irq_wake(irq, 1);
--}
--
--static inline int disable_irq_wake(unsigned int irq)
--{
--	return irq_set_irq_wake(irq, 0);
--}
--
- #else /* !CONFIG_GENERIC_HARDIRQS */
- /*
-  * NOTE: non-genirq architectures, if they want to support the lock
-@@ -370,16 +360,23 @@ static inline int disable_irq_wake(unsigned int irq)
- 						enable_irq(irq)
- # endif
- 
--static inline int enable_irq_wake(unsigned int irq)
-+/* IRQ wakeup (PM) control: */
-+static inline int irq_set_irq_wake(unsigned int irq, unsigned int on)
- {
- 	return 0;
- }
- 
-+#endif /* CONFIG_GENERIC_HARDIRQS */
-+
-+static inline int enable_irq_wake(unsigned int irq)
-+{
-+	return irq_set_irq_wake(irq, 1);
-+}
-+
- static inline int disable_irq_wake(unsigned int irq)
- {
--	return 0;
-+	return irq_set_irq_wake(irq, 0);
- }
--#endif /* CONFIG_GENERIC_HARDIRQS */
- 
- 
- #ifdef CONFIG_IRQ_FORCED_THREADING
--- 
-1.7.7.6
+Alexander Holler
