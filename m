@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab3F1OMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:12:33 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45038 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109Ab3F1OMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:12:31 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Sangbeom Kim <sbkim73@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>
-Date: Fri, 28 Jun 2013 15:12:23 +0100
-Message-Id: <1372428743-31687-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] mfd: sec: Remove fields not used since regmap conversion
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1755122Ab3F1OM7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:12:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42734 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754802Ab3F1OM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 10:12:58 -0400
+Message-ID: <51CD99C2.9040109@zytor.com>
+Date: Fri, 28 Jun 2013 07:12:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@kernel.org>, Wedson Almeida Filho <wedsonaf@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
+References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com> <20130628111948.GA31065@gmail.com> <20130628140938.GA24819@pd.tnic>
+In-Reply-To: <20130628140938.GA24819@pd.tnic>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On 06/28/2013 07:09 AM, Borislav Petkov wrote:
+> 
+> Our testing for asm goto otherwise is a bit more, hmm, hands-on in
+> arch/x86/include/asm/cpufeature.h:
+> 
+> #if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
+> 
+> Maybe I should change that to the more explicit CC_HAVE_ASM_GOTO then.
+> 
 
-These were all used by the open coded I/O and IRQ implementations and are
-no longer referenced now that the regmap core variants are used instead.
+We should... we didn't have the asm goto test at the time that code was
+written, but I think the tracing guys added it either because some
+distros backported asm goto or to deal with it on non-x86 architectures.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- include/linux/mfd/samsung/core.h | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-index f0f4de3..378ae8a 100644
---- a/include/linux/mfd/samsung/core.h
-+++ b/include/linux/mfd/samsung/core.h
-@@ -14,8 +14,6 @@
- #ifndef __LINUX_MFD_SEC_CORE_H
- #define __LINUX_MFD_SEC_CORE_H
- 
--#define NUM_IRQ_REGS	4
--
- enum sec_device_type {
- 	S5M8751X,
- 	S5M8763X,
-@@ -44,8 +42,6 @@ struct sec_pmic_dev {
- 	struct regmap *regmap;
- 	struct i2c_client *i2c;
- 	struct i2c_client *rtc;
--	struct mutex iolock;
--	struct mutex irqlock;
- 
- 	int device_type;
- 	int irq_base;
-@@ -53,8 +49,6 @@ struct sec_pmic_dev {
- 	struct regmap_irq_chip_data *irq_data;
- 
- 	int ono;
--	u8 irq_masks_cur[NUM_IRQ_REGS];
--	u8 irq_masks_cache[NUM_IRQ_REGS];
- 	int type;
- 	bool wakeup;
- };
--- 
-1.8.3.1
+	-hpa
 
