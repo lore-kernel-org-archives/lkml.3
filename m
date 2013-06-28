@@ -1,93 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3F1Tog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:44:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930Ab3F1Tof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:44:35 -0400
-Date: Fri, 28 Jun 2013 15:44:02 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org,
-        hyunhee.kim@samsung.com
-Subject: Re: [PATCH v2] vmpressure: implement strict mode
-Message-ID: <20130628154402.4035f2fa@redhat.com>
-In-Reply-To: <20130628185547.GA14520@teo>
-References: <20130628000201.GB15637@bbox>
-	<20130627173433.d0fc6ecd.akpm@linux-foundation.org>
-	<20130628005852.GA8093@teo>
-	<20130627181353.3d552e64.akpm@linux-foundation.org>
-	<20130628043411.GA9100@teo>
-	<20130628050712.GA10097@teo>
-	<20130628100027.31504abe@redhat.com>
-	<20130628165722.GA12271@teo>
-	<20130628170917.GA12610@teo>
-	<20130628144507.37d28ed9@redhat.com>
-	<20130628185547.GA14520@teo>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752949Ab3F1Trs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:47:48 -0400
+Received: from mail.iece.fin.ec ([186.46.90.196]:51282 "HELO mail.iece.fin.ec"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752589Ab3F1Trr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:47:47 -0400
+X-Greylist: delayed 17185 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jun 2013 15:47:36 EDT
+Date: Fri, 28 Jun 2013 05:49:55 -0500 (ECT)
+From: web-services <dsalinas@iece.fin.ec>
+Subject: INTENTO RECHAZADO!
+Message-ID: <a665562a-b4af-4a33-ae06-c29ad6463f17@mail.iece.fin.ec>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Originating-IP: [41.206.11.40]
+X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jun 2013 11:55:47 -0700
-Anton Vorontsov <anton@enomsg.org> wrote:
-
-> On Fri, Jun 28, 2013 at 02:45:07PM -0400, Luiz Capitulino wrote:
-> > On Fri, 28 Jun 2013 10:09:17 -0700
-> > Anton Vorontsov <anton@enomsg.org> wrote:
-> > 
-> > > So, I would now argue that the current scheme is perfectly OK and can do
-> > > everything you can do with the "strict" one,
-> > 
-> > I forgot commenting this bit. This is not true, because I don't want a
-> > low fd to be notified on critical level. The current interface just
-> > can't do that.
-> 
-> Why can't you use poll() and demultiplex the events? Check if there is an
-> event in the crit fd, and if there is, then just ignore all the rest.
-
-This may be a valid workaround for current kernels, but application
-behavior will be different among kernels with a different number of
-events.
-
-Say, we events on top of critical. Then crit fd will now be
-notified for cases where it didn't use to on older kernels.
-
-> > However, it *is* possible to make non-strict work on strict if we make
-> > strict default _and_ make reads on memory.pressure_level return
-> > available events. Just do this on app initialization:
-> > 
-> > for each event in memory.pressure_level; do
-> > 	/* register eventfd to be notified on "event" */
-> > done
-> 
-> This scheme registers "all" events.
-
-Yes, because I thought that's the user-case that matters for activity
-manager :)
-
-> Here is more complicated case:
-> 
-> Old kernels, pressure_level reads:
-> 
->   low, med, crit
-> 
-> The app just wants to listen for med level.
-> 
-> New kernels, pressure_level reads:
-> 
->   low, FOO, med, BAR, crit
-> 
-> How would application decide which of FOO and BAR are ex-med levels?
-
-What you meant by ex-med?
-
-Let's not over-design. I agree that allowing the API to be extended
-is a good thing, but we shouldn't give complex meaning to events,
-otherwise we're better with a numeric scale instead.
+BUZÓN BUZÓN VIOLACIÓn CUOTA límite de tamaño se ha superado CLICK EN CLIENTHELP http://www.formstack.com/forms/?1511180-qlWETyhWXH
+DE LIMPIEZA
