@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab3F1TTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:19:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41563 "EHLO
+	id S1753427Ab3F1TUO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:20:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41509 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab3F1Sw2 (ORCPT
+	with ESMTP id S1751629Ab3F1Sw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:52:28 -0400
+	Fri, 28 Jun 2013 14:52:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shuduo Sang <sangshuduo@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Martin Michlmayr <tbm@cyrius.com>, Jason Cooper <jason@lakedaemon.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 010/105] iwlwifi: add new pci id for 6x35 series
-Date: Fri, 28 Jun 2013 11:50:32 -0700
-Message-Id: <1372445527-24414-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 014/105] Kirkwood: Enable PCIe port 1 on QNAP TS-11x/TS-21x
+Date: Fri, 28 Jun 2013 11:50:36 -0700
+Message-Id: <1372445527-24414-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,36 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shuduo Sang <sangshuduo@gmail.com>
+From: Martin Michlmayr <tbm@cyrius.com>
 
-commit 20ecf9fd3bebc4147e2996c08a75d6f0229b90df upstream.
+commit 99e11334dcb846f9b76fb808196c7f47aa83abb3 upstream.
 
-some new thinkpad laptops use intel chip with new pci id need be added
-lspci -vnn output:
- Network controller [0280]: Intel Corporation Centrino Advanced-N 6235
- [8086:088f] (rev 24)
- Subsystem: Intel Corporation Device [8086:5260]
+Enable KW_PCIE1 on QNAP TS-11x/TS-21x devices as newer revisions
+(rev 1.3) have a USB 3.0 chip from Etron on PCIe port 1.  Thanks
+to Marek Vasut for identifying this issue!
 
-Signed-off-by: Shuduo Sang <sangshuduo@gmail.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
+Tested-by: Marek Vasut <marex@denx.de>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/pcie/drv.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-kirkwood/ts219-setup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/drv.c b/drivers/net/wireless/iwlwifi/pcie/drv.c
-index c2e141a..2c18171 100644
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -243,6 +243,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
- 	{IWL_PCI_DEVICE(0x088F, 0x4260, iwl6035_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4460, iwl6035_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4860, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088F, 0x5260, iwl6035_2agn_cfg)},
+diff --git a/arch/arm/mach-kirkwood/ts219-setup.c b/arch/arm/mach-kirkwood/ts219-setup.c
+index 73e2b6c..3a73fc7 100644
+--- a/arch/arm/mach-kirkwood/ts219-setup.c
++++ b/arch/arm/mach-kirkwood/ts219-setup.c
+@@ -124,7 +124,7 @@ static void __init qnap_ts219_init(void)
+ static int __init ts219_pci_init(void)
+ {
+ 	if (machine_is_ts219())
+-		kirkwood_pcie_init(KW_PCIE0);
++		kirkwood_pcie_init(KW_PCIE1 | KW_PCIE0);
  
- /* 105 Series */
- 	{IWL_PCI_DEVICE(0x0894, 0x0022, iwl105_bgn_cfg)},
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
