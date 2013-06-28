@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3F1S4s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:56:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41807 "EHLO
+	id S1753497Ab3F1S4z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:56:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41828 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab3F1S4o (ORCPT
+	with ESMTP id S1753183Ab3F1S4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:56:44 -0400
+	Fri, 28 Jun 2013 14:56:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joern Engel <joern@logfs.org>, Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 047/105] target/iscsi: don't corrupt bh_count in iscsit_stop_time2retain_timer()
-Date: Fri, 28 Jun 2013 11:51:09 -0700
-Message-Id: <1372445527-24414-48-git-send-email-kamal@canonical.com>
+Subject: [PATCH 042/105] USB: f81232: fix device initialisation at open
+Date: Fri, 28 Jun 2013 11:51:04 -0700
+Message-Id: <1372445527-24414-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -27,84 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 574780fd5e6ec52bd43e0bdb777a19e4c4c6aa9c upstream.
+commit 21886725d58e92188159731c7c1aac803dd6b9dc upstream.
 
-Here is a fun one.  Bug seems to have been introduced by commit 140854cb,
-almost two years ago.  I have no idea why we only started seeing it now,
-but we did.
+Do not use uninitialised termios data to determine when to configure the
+device at open.
 
-Rough callgraph:
-core_tpg_set_initiator_node_queue_depth()
-`-> spin_lock_irqsave(&tpg->session_lock, flags);
-`-> lio_tpg_shutdown_session()
-    `-> iscsit_stop_time2retain_timer()
-        `-> spin_unlock_bh(&se_tpg->session_lock);
-        `-> spin_lock_bh(&se_tpg->session_lock);
-`-> spin_unlock_irqrestore(&tpg->session_lock, flags);
+This also prevents stack data from leaking to userspace.
 
-core_tpg_set_initiator_node_queue_depth() used to call spin_lock_bh(),
-but 140854cb changed that to spin_lock_irqsave().  However,
-lio_tpg_shutdown_session() still claims to be called with spin_lock_bh()
-held, as does iscsit_stop_time2retain_timer():
- *      Called with spin_lock_bh(&struct se_portal_group->session_lock) held
-
-Stale documentation is mostly annoying, but in this case the dropping
-the lock with the _bh variant is plain wrong.  It is also wrong to drop
-locks two functions below the lock-holder, but I will ignore that bit
-for now.
-
-After some more locking and unlocking we eventually hit this backtrace:
-------------[ cut here ]------------
-WARNING: at kernel/softirq.c:159 local_bh_enable_ip+0xe8/0x100()
-Pid: 24645, comm: lio_helper.py Tainted: G           O 3.6.11+
-Call Trace:
- [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
- [<ffffffffa040ae37>] ? iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
- [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff810472f8>] local_bh_enable_ip+0xe8/0x100
- [<ffffffff815b8365>] _raw_spin_unlock_bh+0x15/0x20
- [<ffffffffa040ae37>] iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
- [<ffffffffa041149a>] iscsit_stop_session+0xfa/0x1c0 [iscsi_target_mod]
- [<ffffffffa0417fab>] lio_tpg_shutdown_session+0x7b/0x90 [iscsi_target_mod]
- [<ffffffffa033ede4>] core_tpg_set_initiator_node_queue_depth+0xe4/0x290 [target_core_mod]
- [<ffffffffa0409032>] iscsit_tpg_set_initiator_node_queue_depth+0x12/0x20 [iscsi_target_mod]
- [<ffffffffa0415c29>] lio_target_nacl_store_cmdsn_depth+0xa9/0x180 [iscsi_target_mod]
- [<ffffffffa0331b49>] target_fabric_nacl_base_attr_store+0x39/0x40 [target_core_mod]
- [<ffffffff811b857d>] configfs_write_file+0xbd/0x120
- [<ffffffff81148f36>] vfs_write+0xc6/0x180
- [<ffffffff81149251>] sys_write+0x51/0x90
- [<ffffffff815c0969>] system_call_fastpath+0x16/0x1b
----[ end trace 3747632b9b164652 ]---
-
-As a pure band-aid, this patch drops the _bh.
-
-Signed-off-by: Joern Engel <joern@logfs.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target_erl0.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/f81232.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_erl0.c b/drivers/target/iscsi/iscsi_target_erl0.c
-index 8e6298c..dcb199d 100644
---- a/drivers/target/iscsi/iscsi_target_erl0.c
-+++ b/drivers/target/iscsi/iscsi_target_erl0.c
-@@ -842,11 +842,11 @@ int iscsit_stop_time2retain_timer(struct iscsi_session *sess)
- 		return 0;
+diff --git a/drivers/usb/serial/f81232.c b/drivers/usb/serial/f81232.c
+index 1e64343..96fa734 100644
+--- a/drivers/usb/serial/f81232.c
++++ b/drivers/usb/serial/f81232.c
+@@ -170,11 +170,12 @@ static void f81232_set_termios(struct tty_struct *tty,
+ 	/* FIXME - Stubbed out for now */
  
- 	sess->time2retain_timer_flags |= ISCSI_TF_STOP;
--	spin_unlock_bh(&se_tpg->session_lock);
-+	spin_unlock(&se_tpg->session_lock);
+ 	/* Don't change anything if nothing has changed */
+-	if (!tty_termios_hw_change(&tty->termios, old_termios))
++	if (old_termios && !tty_termios_hw_change(&tty->termios, old_termios))
+ 		return;
  
- 	del_timer_sync(&sess->time2retain_timer);
+ 	/* Do the real work here... */
+-	tty_termios_copy_hw(&tty->termios, old_termios);
++	if (old_termios)
++		tty_termios_copy_hw(&tty->termios, old_termios);
+ }
  
--	spin_lock_bh(&se_tpg->session_lock);
-+	spin_lock(&se_tpg->session_lock);
- 	sess->time2retain_timer_flags &= ~ISCSI_TF_RUNNING;
- 	pr_debug("Stopped Time2Retain Timer for SID: %u\n",
- 			sess->sid);
+ static int f81232_tiocmget(struct tty_struct *tty)
+@@ -192,12 +193,11 @@ static int f81232_tiocmset(struct tty_struct *tty,
+ 
+ static int f81232_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
+-	struct ktermios tmp_termios;
+ 	int result;
+ 
+ 	/* Setup termios */
+ 	if (tty)
+-		f81232_set_termios(tty, port, &tmp_termios);
++		f81232_set_termios(tty, port, NULL);
+ 
+ 	result = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
+ 	if (result) {
 -- 
 1.8.1.2
 
