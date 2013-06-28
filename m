@@ -1,37 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab3F1H7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 03:59:55 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:16714 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab3F1H7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 03:59:54 -0400
+	id S1754885Ab3F1ICz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 04:02:55 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:35826 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751372Ab3F1ICw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 04:02:52 -0400
 X-IronPort-AV: E=Sophos;i="4.87,957,1363132800"; 
-   d="scan'208";a="6156606"
-Message-ID: <1372406390.8976.67.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH next] xen: Use more current logging styles
-From: Ian Campbell <Ian.Campbell@citrix.com>
+   d="scan'208";a="34026250"
+Date: Fri, 28 Jun 2013 09:02:50 +0100
+From: Wei Liu <wei.liu2@citrix.com>
 To: Joe Perches <joe@perches.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+CC: Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Jeremy Fitzhardinge <jeremy@goop.org>, <xen-devel@lists.xensource.com>,
         <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         "virtualization@lists.osdl.org" 
-	<virtualization@lists.linux-foundation.org>
-Date: Fri, 28 Jun 2013 08:59:50 +0100
-In-Reply-To: <1372395469.2060.36.camel@joe-AO722>
+	<virtualization@lists.linux-foundation.org>,
+        <wei.liu2@citrix.com>
+Subject: Re: [PATCH next] xen: Use more current logging styles
+Message-ID: <20130628080250.GA16643@zion.uk.xensource.com>
 References: <1372395469.2060.36.camel@joe-AO722>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1372395469.2060.36.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 21:57 -0700, Joe Perches wrote:
+On Thu, Jun 27, 2013 at 09:57:49PM -0700, Joe Perches wrote:
 > Instead of mixing printk and pr_<level> forms,
 > just use pr_<level>
 > 
@@ -40,10 +39,14 @@ On Thu, 2013-06-27 at 21:57 -0700, Joe Perches wrote:
 > Add a missing newline to avoid message interleaving,
 > coalesce formats, reflow modified lines to 80 columns.
 > 
+
+Do you also need to replace other printk occurences in xen-netback
+directory, say, interface.c and xenbus.c?
+
+
+Wei.
+
 > Signed-off-by: Joe Perches <joe@perches.com>
-
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
 > ---
 >  drivers/net/xen-netback/netback.c |  7 +++----
 >  drivers/net/xen-netfront.c        | 28 +++++++++++++---------------
@@ -175,5 +178,7 @@ Acked-by: Ian Campbell <ian.campbell@citrix.com>
 >  }
 > 
 > 
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
