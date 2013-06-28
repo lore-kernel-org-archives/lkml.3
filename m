@@ -1,145 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab3F1TtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:49:11 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:53974 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab3F1TtJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:49:09 -0400
+	id S1753217Ab3F1Tt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:49:58 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54411 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751017Ab3F1Tt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:49:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/6] PCI: introduce pci_trim_stale_devices()
+Date: Fri, 28 Jun 2013 21:59:26 +0200
+Message-ID: <2795933.HtOzpJWrsk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1372177330-28013-4-git-send-email-mika.westerberg@linux.intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com> <1372177330-28013-4-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130628192117.GA4553@sergelap>
-References: <CAAAKZwuKxxYoVRn6Ye72Vs7vSd_T4cbvEwiU6Q3j4D-Z+VAPrw@mail.gmail.com>
- <20130627181108.GA26334@sergelap> <CAAAKZwvXYBznJ5uiWaEV7fNCHbciwLa6U+E5RUJkz1ioMu=cRg@mail.gmail.com>
- <20130628163154.GA4989@sergelap> <CAAAKZwv1CQbCOweUOcvFXtwDsMHB6Pay-fUqz-CNrcOAda8ghA@mail.gmail.com>
- <20130628192117.GA4553@sergelap>
-From: Tim Hockin <thockin@hockin.org>
-Date: Fri, 28 Jun 2013 12:48:48 -0700
-X-Google-Sender-Auth: 9nkI2D-o5FbXurfmhy2DJjS66nI
-Message-ID: <CAAAKZwvKJ2p6Bv17mbPJPAQUA5pQyvJcVzQ3fyQ+Nt=h6n-mHw@mail.gmail.com>
-Subject: Re: cgroup access daemon
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Mike Galbraith <bitbucket@online.de>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        jpoimboe <jpoimboe@redhat.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Cgroups <cgroups@vger.kernel.org>, vrigo <vrigo@google.com>,
-        vmarmol <vmarmol@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 12:21 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> Quoting Tim Hockin (thockin@hockin.org):
->> On Fri, Jun 28, 2013 at 9:31 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
->> > Quoting Tim Hockin (thockin@hockin.org):
->> >> On Thu, Jun 27, 2013 at 11:11 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
->> >> > Quoting Tim Hockin (thockin@hockin.org):
->> > Could you give examples?
->> >
->> > If you have a white/academic paper I should go read, that'd be great.
->>
->> We don't have anything on this, but examples may help.
->>
->> Someone running as root should be able to connect to the "native"
->> daemon and read or write any cgroup file they want, right?  You could
->> argue that root should be able to do this to a child-daemon, too, but
->> let's ignore that.
->>
->> But inside a container, I don't want the users to be able to write to
->> anything in their own container.  I do want them to be able to make
->> sub-cgroups, but only 5 levels deep.  For sub-cgroups, they should be
->> able to write to memory.limit_in_bytes, to read but not write
->> memory.soft_limit_in_bytes, and not be able to read memory.stat.
->>
->> To get even fancier, a user should be able to create a sub-cgroup and
->> then designate that sub-cgroup as "final" - no further sub-sub-cgroups
->> allowed under it.  They should also be able to designate that a
->> sub-cgroup is "one-way" - once a process enters it, it can not leave.
->>
->> These are real(ish) examples based on what people want to do today.
->> In particular, the last couple are things that we want to do, but
->> don't do today.
->>
->> The particular policy can differ per-container.  Production jobs might
->> be allowed to create sub-cgroups, but batch jobs are not.  Some user
->> jobs are designated "trusted" in one facet or another and get more
->> (but still not full) access.
->
-> Interesting, thanks.
->
-> I'll think a bit on how to best address these.
->
->> > At the moment I'm going on the naive belief that proper hierarchy
->> > controls will be enforced (eventually) by the kernel - i.e. if
->> > a task in cgroup /lxc/c1 is not allowed to mknod /dev/sda1, then it
->> > won't be possible for /lxc/c1/lxc/c2 to take that access.
->> >
->> > The native cgroup manager (the one using cgroupfs) will be checking
->> > the credentials of the requesting child manager for access(2) to
->> > the cgroup files.
->>
->> This might be sufficient, or the basis for a sufficient access control
->> system for users.  The problem comes that we have multiple jobs on a
->> single machine running as the same user.  We need to ensure that the
->> jobs can not modify each other.
->
-> Would running them each in user namespaces with different mappings (all
-> jobs running as uid 1000, but uid 1000  mapped to different host uids
-> for each job) would be (long-term) feasible?
+On Tuesday, June 25, 2013 07:22:07 PM Mika Westerberg wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> The new function stops and removes the device if it doesn't respond.
+> If the device responds and it's a bus we apply the function to all
+> subdevices recursively.
+> 
+> It's useful for hotplug bus check case, when you need drop all unplugged
+> devices before looking for new ones.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Possibly.  It's a largish imposition to make on the caller (we don't
-use user namespaces today, though we are evaluating how to start using
-them) but perhaps not terrible.
+I think it'd be better to fold this into [4/6].  This way it would be clearer
+what that patch did.
 
->> > It is a named socket.
->>
->> So anyone can connect?  even with SO_PEERCRED, how do you know which
->> branches of the cgroup tree I am allowed to modify if the same user
->> owns more than one?
->
-> I was assuming that any process requesting management of
-> /c1/c2/c3 would have to be in one of its ancestor cgroups (i.e. /c1)
->
-> So if you have two jobs running as uid 1000, one under /c1 and one
-> under /c2, and one as uid 1001 running under /c3 (with the uids owning
-> the cgroups), then the file permissions will prevent 1000 and 1001
-> from walk over each other, while the cgroup manager will not allow
-> a process (child manager or otherwise) under /c1 to manage cgroups
-> under /c2 and vice versa.
->
->> >> Do you have a design spec, or a requirements list, or even a prototype
->> >> that we can look at?
->> >
->> > The readme at https://github.com/hallyn/cgroup-mgr/blob/master/README
->> > shows what I have in mind.  It (and the sloppy code next to it)
->> > represent a few hours' work over the last few days while waiting
->> > for compiles and in between emails...
->>
->> Awesome.  Do you mind if we look?
->
-> No, but it might not be worth it (other than the readme) :) - so far
-> it's only served to help me think through what I want and need from
-> the mgr.
->
->> > But again, it is completely predicated on my goal to have libvirt
->> > and lxc (and other cgroup users) be able to use the same library
->> > or API to make their requests whether they are on host or in a
->> > container, and regardless of the distro they're running under.
->>
->> I think that is a good goal.  We'd like to not be different, if
->> possible.  Obviously, we can't impose our needs on you if you don't
->> want to handle them.  It sounds like what you are building is the
->> bottom layer in a stack - we (Google) should use that same bottom
->> layer.  But that can only happen iff you're open to hearing our
->> requirements.  Otherwise we have to strike out on our own or build
->> more layers in-between.
->
-> I'm definately open to your requirements - whether providing what
-> you need for another layer on top, or building it right in.
+Thanks,
+Rafael
 
-Great.  That's a good place to start :)
+
+> ---
+>  drivers/pci/remove.c | 20 ++++++++++++++++++++
+>  include/linux/pci.h  |  1 +
+>  2 files changed, 21 insertions(+)
+> 
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index 8fc54b7..77b7a64 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -112,6 +112,26 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
+>  }
+>  EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
+>  
+> +/**
+> + * pci_trim_stale_devices - remove stale device or any stale child
+> + */
+> +void pci_trim_stale_devices(struct pci_dev *dev)
+> +{
+> +	struct pci_bus *bus = dev->subordinate;
+> +	struct pci_dev *child, *tmp;
+> +	bool alive;
+> +	u32 l;
+> +
+> +	/* check if the device responds */
+> +	alive = pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &l, 0);
+> +	if (!alive)
+> +		pci_stop_and_remove_bus_device(dev);
+> +
+> +	if (alive && bus)
+> +		list_for_each_entry_safe(child, tmp, &bus->devices, bus_list)
+> +			pci_trim_stale_devices(child);
+> +}
+> +
+>  void pci_stop_root_bus(struct pci_bus *bus)
+>  {
+>  	struct pci_dev *child, *tmp;
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 3a24e4f..8f6e7a0 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -754,6 +754,7 @@ struct pci_dev *pci_dev_get(struct pci_dev *dev);
+>  void pci_dev_put(struct pci_dev *dev);
+>  void pci_remove_bus(struct pci_bus *b);
+>  void pci_stop_and_remove_bus_device(struct pci_dev *dev);
+> +void pci_trim_stale_devices(struct pci_dev *dev);
+>  void pci_stop_root_bus(struct pci_bus *bus);
+>  void pci_remove_root_bus(struct pci_bus *bus);
+>  void pci_setup_cardbus(struct pci_bus *bus);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
