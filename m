@@ -1,192 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab3F1F3a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 01:29:30 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:48143 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab3F1F33 (ORCPT
+	id S1752713Ab3F1Fam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 01:30:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13841 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228Ab3F1Fak convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 01:29:29 -0400
-Date: Fri, 28 Jun 2013 13:47:57 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] mm: madvise: MADV_POPULATE for quick pre-faulting
-Message-ID: <20130628054757.GA10429@gmail.com>
-Mail-Followup-To: Dave Hansen <dave@sr71.net>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org
-References: <20130627231605.8F9F12E6@viggo.jf.intel.com>
+	Fri, 28 Jun 2013 01:30:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,956,1363158000"; 
+   d="scan'208";a="261259914"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: amit daniel kachhap <amit.daniel@samsung.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH V7 00/30] thermal: exynos: Re-structure driver and add
+ support for exynos5440
+Thread-Topic: [PATCH V7 00/30] thermal: exynos: Re-structure driver and add
+ support for exynos5440
+Thread-Index: AQHOcMjJfsm2m9Zlgk+2z9bk7sOGaZlElK4AgAAsEACAAQzEgIAESRKAgACI87A=
+Date: Fri, 28 Jun 2013 05:30:32 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B90926301132206@SHSMSX101.ccr.corp.intel.com>
+References: <1372071051-3167-1-git-send-email-amit.daniel@samsung.com>
+	<51C87E48.4040604@samsung.com>	<51C8A33E.1000009@ti.com>
+	<CADGdYn5RvSNke=RjROrZRNNe0BFYS-et_Z5DUQkhyiZ6Q6F-8Q@mail.gmail.com>
+ <CADGdYn6Y1fut3D+RhNbuGE_1DjjMRHCnLBUgKzcHTSKYtAxp-A@mail.gmail.com>
+In-Reply-To: <CADGdYn6Y1fut3D+RhNbuGE_1DjjMRHCnLBUgKzcHTSKYtAxp-A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627231605.8F9F12E6@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
 
-On Thu, Jun 27, 2013 at 04:16:05PM -0700, Dave Hansen wrote:
-> 
-> I've been doing some testing involving large amounts of
-> page cache.  It's quite painful to get hundreds of GB
-> of page cache mapped in, especially when I am trying to
-> do it in parallel threads.  This is true even when the
-> page cache is already allocated and I only need to map
-> it in.  The test:
-> 
-> 1. take 160 16MB files
-> 2. clone 160 threads, mmap the 16MB files, and either
->   a. walk through the file touching each page
 
-Why not change MAP_POPULATE flag in mmap(2)?  Now it is only for private
-mappings.  But maybe we could let it support shared mapping.
+> -----Original Message-----
+> From: amit.kachhap@gmail.com [mailto:amit.kachhap@gmail.com] On Behalf
+> Of amit daniel kachhap
+> Sent: Friday, June 28, 2013 1:20 PM
+> To: Zhang, Rui
+> Cc: Eduardo Valentin; Kukjin Kim; linux-pm@vger.kernel.org; linux-
+> samsung-soc@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH V7 00/30] thermal: exynos: Re-structure driver and
+> add support for exynos5440
+> Importance: High
+> 
+> On Tue, Jun 25, 2013 at 5:23 PM, amit daniel kachhap
+> <amit.daniel@samsung.com> wrote:
+> > On Tue, Jun 25, 2013 at 1:21 AM, Eduardo Valentin
+> > <eduardo.valentin@ti.com> wrote:
+> >> On 24-06-2013 13:13, Kukjin Kim wrote:
+> >>> On 06/24/13 19:50, Amit Daniel Kachhap wrote:
+> >>>> Submitting V7 version with all comments fixed. Most of the patches
+> >>>> are acked by Eduardo. All the un-acked patches are modified
+> >>>> according to the review comments.
+> >>>> If any comments please let me know.
+> >>>>
+> >>>> Thanks,
+> >>>> Amit Daniel
+> >>>>
+> >>>> Changes in V7:
+> >>>> * Fixed all the coding guidelines comments given by Eduardo.
+> >>>> * Moved the request irq call below the core thermal registration
+> as
+> >>>> per discussion
+> >>>>    with Eduardo.
+> >>>> * Appropriate logs/TODO's/comments added for some review comments
+> >>>> which are still
+> >>>>    same as before,
+> >>>>    1) calibration register setting still uses enums.
+> >>>>    2) very few soc check's still left in the driver.
+> >>>>    3) Cooling devices stored in an array in the exynos core
+> thermal
+> >>>> layer.
+> >>>>
+> >>>> Changes in V6:
+> >>>> * Uses ARCH_HAS_BANDGAP config flag which is merged now in arm
+> tree.
+> >>>>
+> (http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7758/1).
+> >>>> * In this version patches 1, 2, 3, 4 and 30 are modified. Others
+> >>>> are same as V5.
+> >>>> * Added acked by from Jonghwa Lee.
+> >>>> * Rebased against Thermal Maintainer next tree.
+> >>>>
+> >>>> Changes in V5:
+> >>>> * Most of the changes in this version is as per suggestion from
+> >>>> Jonghwa Lee. I
+> >>>>   have retained one to one mapping of platform data with TMU
+> >>>> instances as the
+> >>>>   TMU's are different devices. In exynos5440 soc there is some
+> register
+> >>>>   sharing across multiple TMU's but in exynos5420 there is no
+> >>>> register between
+> >>>>   multiple TMU's, so the current implementation is useful to
+> >>>> support both of the
+> >>>>   above.
+> >>>>   This patch uses localized ARCH_HAS_TMU Kconfig option and is a
+> >>>> temporary solution
+> >>>>   until a more generic macro ARCH_HAS_BANDGAP is introduced as per
+> >>>> discussion in
+> >>>>   the link https://patchwork.kernel.org/patch/2659001/.
+> >>>> * trip type is passed as platform data.
+> >>>> * HW trip is allowed only for maximum level.
+> >>>> * Platform data structure is now abstracted inside 1 more
+> structure
+> >>>> to support
+> >>>>    multiple sensor TMU data.
+> >>>>
+> >>>> Changes in V4:
+> >>>>   Almost all the changes in this version is as per suggestion from
+> >>>> Eduardo.The
+> >>>>   major ones are listed below,
+> >>>> * Added kconfig symbol ARCH_HAS_TMU which needs to be enabled by
+> >>>> platform. With
+> >>>>    this change existing symbol EXYNOS_TMU_DATA is not needed.
+> >>>> * Movement of freq_clip_table from exynos_tmu.h to
+> >>>> exynos_thermal_common.h is
+> >>>>    explained in the commit logs.
+> >>>> * Wrote all register description documentation.
+> >>>> * Split 5440 TMU support patch into controller change,
+> >>>> configuration data and
+> >>>>    feature addition patches.
+> >>>> * Remove all *LINUX_* in the header files.
+> >>>> * Still regulator enable is kept optional but a TODO: comment is
+> >>>> added to fix
+> >>>>    it later.
+> >>>>
+> >>>> Changes in V3:
+> >>>> * Added proper dependency of different exynos thermal Kconfig
+> symbols.
+> >>>> Basically 3
+> >>>>   Kconfig can be enabled now and corresponds to tmu driver. exynos
+> >>>> common part
+> >>>>   and exynos configuration data. This issue was raised by Rui
+> Zhang.
+> >>>>
+> >>>> Changes in V2:
+> >>>> * Separated SOC data from TMU driver. This is as per suggestion
+> >>>> from Eduardo.
+> >>>> * Merged the new file created for exynos5440 TMU controller with
+> >>>> the existing
+> >>>>   TMU controller code.
+> >>>> * Removed the DT parsing code as now the SOC specific data are
+> >>>> cleanly put
+> >>>>   inside the data specific file.
+> >>>> * Even the register definations/bitfields are treated as data as
+> there is
+> >>>>   some variation across SOC's.
+> >>>>
+> >>>> This patchset adds TMU(Thermal management Unit) driver support for
+> >>>> exynos5440 platform. There are 3 instances of the TMU controllers
+> >>>> so necessary cleanup/re-structure is done to handle multiple
+> thermal zone.
+> >>>>
+> >>>> Patch (exynos4: Add documentation for Exynos SoC thermal bindings)
+> >>>> from Lukasz Majewski is already posted to mainline. Using it as it
+> is needed.
+> >>>> (http://www.mail-archive.com/linux-samsung-
+> soc@vger.kernel.org/msg1
+> >>>> 7817.html)
+> >>>>
+> >>>>
+> >>>> Patch (thermal: exynos: Support thermal tripping ) from Jonghwan
+> >>>> Choi is added here with some changes.
+> >>>> (https://patchwork.kernel.org/patch/1668371/)
+> >>>>
+> >>>> Patch (thermal: exynos: Support for TMU regulator defined at
+> device
+> >>>> tree) is a repost of my earlier
+> >>>> patch(https://patchwork-mail1.kernel.org/patch/2510771/)
+> >>>> and adds regulator support.
+> >>>>
+> >>>> Patch (ARM: dts: Add device tree node for exynos5440 TMU
+> >>>> controller) and patch (arm: exynos: enable ARCH_HAS_BANDGAP) can
+> be
+> >>>> merged through exynos platform maintainer as this can cause merge
+> >>>> conflict.
+> >>>>
+> >>>> All these patches are based on thermal maintainers git tree,
+> >>>> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git
+> next.
+> >>>>
+> >>>> Amit Daniel Kachhap (30):
+> >>>>    thermal: exynos: Moving exynos thermal files into samsung
+> directory
+> >>>>    thermal: exynos: Use ARCH_HAS_BANDGAP config to know the
+> supported
+> >>>>      soc's
+> >>>>    thermal: exynos: Remove un-necessary CPU_THERMAL dependency
+> >>>>    thermal: exynos: Bifurcate exynos thermal common and tmu
+> controller
+> >>>>      code
+> >>>>    thermal: exynos: Rename exynos_thermal.c to exynos_tmu.c
+> >>>>    thermal: exynos: Move exynos_thermal.h from include/* to
+> driver/*
+> >>>>      folder
+> >>>>    thermal: exynos: Bifurcate exynos tmu driver and configuration
+> data
+> >>>>    thermal: exynos: Add missing definations and code cleanup
+> >>>>    thermal: exynos: Add extra entries in the tmu platform data
+> >>>>    thermal: exynos: Move register definitions from driver to data
+> file
+> >>>>    thermal: exynos: Support thermal tripping
+> >>>>    thermal: exynos: Fix to clear only the generated interrupts
+> >>>>    thermal: exynos: Add support for instance based
+> register/unregister
+> >>>>    thermal: exynos: Modify private_data to appropriate name
+> driver_data
+> >>>>    thermal: exynos: Return success even if no cooling data
+> supplied
+> >>>>    thermal: exynos: Make the zone handling use trip information
+> >>>>    thermal: exynos: Remove non DT based support
+> >>>>    thermal: exynos: Add support to handle many instances of TMU
+> >>>>    thermal: exynos: Add TMU features to check instead of using SOC
+> type
+> >>>>    thermal: exynos: use device resource management infrastructure
+> >>>>    thermal: exynos: Add support to access common register for
+> >>>>      multistance
+> >>>>    thermal: exynos: Add driver support for exynos5440 TMU sensor
+> >>>>    thermal: exynos: Add thermal configuration data for exynos5440
+> TMU
+> >>>>      sensor
+> >>>>    thermal: exynos: Fix to set the second point correction value
+> >>>>    thermal: exynos: Add hardware mode thermal calibration support
+> >>>>    thermal: exynos: Support for TMU regulator defined at device
+> tree
+> >>>>    ARM: dts: thermal: exynos: Add documentation for Exynos SoC
+> thermal
+> >>>>      bindings
+> >>>>    Documentation: thermal: Explain the exynos thermal driver model
+> >>>>    ARM: dts: Add device tree node for exynos5440 TMU controller
+> >>>>    arm: exynos: enable ARCH_HAS_BANDGAP
+> >>>>
+> >>>>   .../devicetree/bindings/thermal/exynos-thermal.txt |   55 +
+> >>>>   Documentation/thermal/exynos_thermal               |   43 +-
+> >>>>   arch/arm/boot/dts/exynos5440.dtsi                  |   30 +
+> >>>>   arch/arm/mach-exynos/Kconfig                       |    5 +
+> >>>>   drivers/thermal/Kconfig                            |   13 +-
+> >>>>   drivers/thermal/Makefile                           |    2 +-
+> >>>>   drivers/thermal/exynos_thermal.c                   | 1058
+> >>>> --------------------
+> >>>>   drivers/thermal/samsung/Kconfig                    |   18 +
+> >>>>   drivers/thermal/samsung/Makefile                   |    7 +
+> >>>>   drivers/thermal/samsung/exynos_thermal_common.c    |  432
+> ++++++++
+> >>>>   drivers/thermal/samsung/exynos_thermal_common.h    |  107 ++
+> >>>>   drivers/thermal/samsung/exynos_tmu.c               |  752
+> >>>> ++++++++++++++
+> >>>>   drivers/thermal/samsung/exynos_tmu.h               |  309 ++++++
+> >>>>   drivers/thermal/samsung/exynos_tmu_data.c          |  250 +++++
+> >>>>   drivers/thermal/samsung/exynos_tmu_data.h          |  155 +++
+> >>>>   include/linux/platform_data/exynos_thermal.h       |  119 ---
+> >>>>   16 files changed, 2160 insertions(+), 1195 deletions(-)
+> >>>>   create mode 100644
+> >>>> Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> >>>>   delete mode 100644 drivers/thermal/exynos_thermal.c
+> >>>>   create mode 100644 drivers/thermal/samsung/Kconfig
+> >>>>   create mode 100644 drivers/thermal/samsung/Makefile
+> >>>>   create mode 100644
+> drivers/thermal/samsung/exynos_thermal_common.c
+> >>>>   create mode 100644
+> drivers/thermal/samsung/exynos_thermal_common.h
+> >>>>   create mode 100644 drivers/thermal/samsung/exynos_tmu.c
+> >>>>   create mode 100644 drivers/thermal/samsung/exynos_tmu.h
+> >>>>   create mode 100644 drivers/thermal/samsung/exynos_tmu_data.c
+> >>>>   create mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
+> >>>>   delete mode 100644 include/linux/platform_data/exynos_thermal.h
+> >>>>
+> >>> Hi Eduardo,
+> >>>
+> >>> I think, Amit almost addressed comments from you guys, there are
+> >>> several comments though. And it can be fixed during -rc ;-)
+> >>>
+> >>> So please consider pick this series in your tmu tree. If any
+> >>> concerns, please kindly let me know.
+> >>>
+> >>> Note, if any merge conflicts with Samsung DT files, let me check.
+> >>
+> >> No concerns so far. I have acked almost all the remaining. There two
+> >> patches that still need some minor amendment (16 and 25). I am ok to
+> >> add this series to my tree. But the final pull request to Linus goes
+> >> via Rui. Rui how do you want to proceed with this series? Do you
+> want
+> >> me to send you a pull request?
+> > Hi Eduardo,
+> >
+> > thanks for the acks.
+> > I just submitted the resend version of patch16(cool device size
+> > fixed), patch 20(due to dependency on patch 16) and patch 25(fixing
+> > enum issue).
+> >
+> > Thanks,
+> > Amit D
+> Hi Rui,
+> 
+> Any update on this patch series? Now all 30  patches in V7 version(with
+> RESEND patch 16, 20, 25) are acked by Eduardo.
+> 
+Will apply it soon.
 
-Regards,
-                                                - Zheng
+Thanks,
+Rui
 
->   b. run MADV_POPULATE on the file
-> 3. MADV_DONTNEED on the mmap()'d area
-> 
-> 160 threads/processes:
-> 	    faulting | MADV_POPULATE
->   Threads:       698 |        102239 (146x speedup)
-> Proceeses:    154247 |        297518 (1.9x speedup)
-> 
-> single threaded:
-> 	    faulting | MADV_POPULATE
->                 1908 |          3710 (1.9x speedup)
-> 
-> To fix the thread suckage, this patch just walks the
-> VMAs and maps all the pages in.  Since it does a
-> bunch of them in one go, it amortizes the cost of
-> acquiring the mmap_sem across all of those pages.
-> 
-> FAQ:
-> 
-> Why do threads suck so much?
-> 
-> 	Bouncing the mmap_sem cacheline around, plus anything
-> 	else that we write to during a fault.  We do one page,
-> 	move the cachelines to another CPU, do one more page,
-> 	etc...
-> 
-> Does MADV_DONTNEED work for this?
-> 
-> 	No.  It brings the pages in to the page cache, but
-> 	does not map them the way it is implemented at the
-> 	moment.  I guess we'd be within our rights to make
-> 	it behave like MADV_POPULATE if we want though.
-> 
-> 
-> 
-> ---
-> 
->  linux.git-davehans/include/uapi/asm-generic/mman-common.h |    1 
->  linux.git-davehans/mm/madvise.c                           |   40 +++++++++++++-
->  2 files changed, 40 insertions(+), 1 deletion(-)
-> 
-> diff -puN include/uapi/asm-generic/mman-common.h~madv_populate include/uapi/asm-generic/mman-common.h
-> --- linux.git/include/uapi/asm-generic/mman-common.h~madv_populate	2013-06-27 15:22:35.651854196 -0700
-> +++ linux.git-davehans/include/uapi/asm-generic/mman-common.h	2013-06-27 15:22:35.656854418 -0700
-> @@ -51,6 +51,7 @@
->  #define MADV_DONTDUMP   16		/* Explicity exclude from the core dump,
->  					   overrides the coredump filter bits */
->  #define MADV_DODUMP	17		/* Clear the MADV_NODUMP flag */
-> +#define MADV_POPULATE	18		/* Fill in mapping like faults would */
->  
->  /* compatibility flags */
->  #define MAP_FILE	0
-> diff -puN mm/madvise.c~madv_populate mm/madvise.c
-> --- linux.git/mm/madvise.c~madv_populate	2013-06-27 15:22:35.652854240 -0700
-> +++ linux.git-davehans/mm/madvise.c	2013-06-27 15:22:35.656854418 -0700
-> @@ -19,6 +19,7 @@
->  #include <linux/blkdev.h>
->  #include <linux/swap.h>
->  #include <linux/swapops.h>
-> +#include "internal.h"
->  
->  /*
->   * Any behaviour which results in changes to the vma->vm_flags needs to
-> @@ -31,6 +32,7 @@ static int madvise_need_mmap_write(int b
->  	case MADV_REMOVE:
->  	case MADV_WILLNEED:
->  	case MADV_DONTNEED:
-> +	case MADV_POPULATE:
->  		return 0;
->  	default:
->  		/* be safe, default to 1. list exceptions explicitly */
-> @@ -252,6 +254,39 @@ static long madvise_willneed(struct vm_a
->  }
->  
->  /*
-> + * Do not just populate the page cache (WILLNEED), also map the pages.
-> + */
-> +static long madvise_populate(struct vm_area_struct * vma,
-> +			     struct vm_area_struct ** prev,
-> +			     unsigned long start, unsigned long end)
-> +{
-> +	struct file *file = vma->vm_file;
-> +	int locked = 1;
-> +	int ret;
-> +
-> +	if (file && file->f_mapping->a_ops->get_xip_mem) {
-> +		/* no bad return value, but ignore advice */
-> +		return 0;
-> +	}
-> +
-> +	ret = __mlock_vma_pages_range(vma, start, end, &locked);
-> +	/*
-> +	 * Make sure that out down_read() matches (read vs.
-> +	 * write) what we did in sys_madvise.
-> +	 */
-> +	BUG_ON(madvise_need_mmap_write(MADV_POPULATE));
-> +	if (!locked) {
-> +		down_read(&current->mm->mmap_sem);
-> +		/* tell sys_madvise we drop mmap_sem: */
-> +		*prev = NULL;
-> +	} else {
-> +		*prev = vma;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +/*
->   * Application no longer needs these pages.  If the pages are dirty,
->   * it's OK to just throw them away.  The app will be more careful about
->   * data it wants to keep.  Be sure to free swap resources too.  The
-> @@ -378,6 +413,8 @@ madvise_vma(struct vm_area_struct *vma,
->  		return madvise_remove(vma, prev, start, end);
->  	case MADV_WILLNEED:
->  		return madvise_willneed(vma, prev, start, end);
-> +	case MADV_POPULATE:
-> +		return madvise_populate(vma, prev, start, end);
->  	case MADV_DONTNEED:
->  		return madvise_dontneed(vma, prev, start, end);
->  	default:
-> @@ -407,6 +444,7 @@ madvise_behavior_valid(int behavior)
->  #endif
->  	case MADV_DONTDUMP:
->  	case MADV_DODUMP:
-> +	case MADV_POPULATE:
->  		return 1;
->  
->  	default:
-> @@ -536,7 +574,7 @@ SYSCALL_DEFINE3(madvise, unsigned long,
->  			goto out;
->  		if (prev)
->  			vma = prev->vm_next;
-> -		else	/* madvise_remove dropped mmap_sem */
-> +		else	/* madvise_remove/populate dropped mmap_sem */
->  			vma = find_vma(current->mm, start);
->  	}
->  out:
-> _
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Thanks,
+> Amit Daniel
+> >>
+> >>>
+> >>> Thanks,
+> >>> - Kukjin
+> >>>
+> >>>
+> >>
+> >>
+> >> --
+> >> You have got to be excited about what you are doing. (L. Lamport)
+> >>
+> >> Eduardo Valentin
+> >>
