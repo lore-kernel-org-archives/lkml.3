@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab3F1WoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 18:44:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58077 "EHLO mx2.suse.de"
+	id S1753262Ab3F1Wpg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 18:45:36 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54520 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab3F1WoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 18:44:24 -0400
-Message-ID: <51CE11C2.5020406@suse.cz>
-Date: Sat, 29 Jun 2013 00:44:18 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752415Ab3F1Wpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 18:45:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E. Patrakov" <patrakov@gmail.com>
+Subject: [PATCH 2/3] ACPI: Drop ACPI bus notifier call chain
+Date: Sat, 29 Jun 2013 00:54:21 +0200
+Message-ID: <38153939.Z5E3mv4vzh@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1515394.L46AJCfCTt@vostro.rjw.lan>
+References: <1640211.P0jyS5muX2@vostro.rjw.lan> <1515394.L46AJCfCTt@vostro.rjw.lan>
 MIME-Version: 1.0
-To: =?UTF-8?B?5byg5b+g5bGx?= <zzs0213@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] let kbuild mkdir for dir/file.o
-References: <1370335532-17891-1-git-send-email-zzs0213@gmail.com> <1370335532-17891-2-git-send-email-zzs0213@gmail.com>
-In-Reply-To: <1370335532-17891-2-git-send-email-zzs0213@gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-sorry for the late feedback.
+There are no users of the ACPI bus notifier call chain,
+acpi_bus_notify_list, any more, so drop it.
 
-Dne 4.6.2013 10:45, 张忠山 napsal(a):
-> when add a obj with dir to obj-y, like this
-> 
->     obj-y += dir/file.o
-> 
-> the $(obj)/dir not created, this patch fix this
-> 
-> this bug caused by commit
->    f5fb976520a53f45f8bbf2e851f16b3b5558d485
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/bus.c      |   16 ----------------
+ include/acpi/acpi_bus.h |    2 --
+ 2 files changed, 18 deletions(-)
 
-Please also include the wonderful explanation including the error
-message that you posted separately
-(http://permalink.gmane.org/gmane.linux.kbuild.devel/10050). Also,
-please CC linux-kernel in addition to linux-kbuild.
+Index: linux-pm/drivers/acpi/bus.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/bus.c
++++ linux-pm/drivers/acpi/bus.c
+@@ -499,19 +499,6 @@ static void acpi_bus_check_scope(acpi_ha
+ 	 */
+ }
+ 
+-static BLOCKING_NOTIFIER_HEAD(acpi_bus_notify_list);
+-int register_acpi_bus_notifier(struct notifier_block *nb)
+-{
+-	return blocking_notifier_chain_register(&acpi_bus_notify_list, nb);
+-}
+-EXPORT_SYMBOL_GPL(register_acpi_bus_notifier);
+-
+-void unregister_acpi_bus_notifier(struct notifier_block *nb)
+-{
+-	blocking_notifier_chain_unregister(&acpi_bus_notify_list, nb);
+-}
+-EXPORT_SYMBOL_GPL(unregister_acpi_bus_notifier);
+-
+ /**
+  * acpi_bus_notify
+  * ---------------
+@@ -525,9 +512,6 @@ static void acpi_bus_notify(acpi_handle
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Notification %#02x to handle %p\n",
+ 			  type, handle));
+ 
+-	blocking_notifier_call_chain(&acpi_bus_notify_list,
+-		type, (void *)handle);
+-
+ 	switch (type) {
+ 
+ 	case ACPI_NOTIFY_BUS_CHECK:
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -356,8 +356,6 @@ extern int acpi_notifier_call_chain(stru
+ extern int register_acpi_notifier(struct notifier_block *);
+ extern int unregister_acpi_notifier(struct notifier_block *);
+ 
+-extern int register_acpi_bus_notifier(struct notifier_block *nb);
+-extern void unregister_acpi_bus_notifier(struct notifier_block *nb);
+ /*
+  * External Functions
+  */
 
-
-> 
-> Signed-off-by: 张忠山 <zzs0213@gmail.com>
-> ---
->  scripts/Makefile.lib |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 51bb3de..6bae5a9 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -63,7 +63,8 @@ multi-objs   := $(multi-objs-y) $(multi-objs-m)
->  subdir-obj-y := $(filter %/built-in.o, $(obj-y))
->  
->  # $(obj-dirs) is a list of directories that contain object files
-> -obj-dirs := $(dir $(multi-objs) $(subdir-obj-y))
-> +__subdir-obj-y := $(foreach o,$(obj-y),$(if $(filter-out $(o),$(notdir $(o))),$(o)))
-
-This complicated filter returns entries from $(obj-y) that contain a
-slash, is that correct? If so, is it really necessary? Why not simply
-add whole $(obj-y) to $(obj-dirs) and be done? $(multi-objs) is also
-added without any filtering.
-
-> +obj-dirs := $(dir $(multi-objs) $(__subdir-obj-y))
-
-
-thanks,
-Michal
