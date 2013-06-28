@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab3F1Nu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:50:56 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34012 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab3F1Nuz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 09:50:55 -0400
-Date: Fri, 28 Jun 2013 14:50:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Yi Zhang <yizhang@marvell.com>, Chao Xie <chao.xie@marvell.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20130628135051.GK27646@sirena.org.uk>
-References: <1372426585.28529.5.camel@phoenix>
+	id S1754771Ab3F1NvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:51:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39205 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab3F1NvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 09:51:18 -0400
+Date: Fri, 28 Jun 2013 14:51:14 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
+Message-ID: <20130628135114.GY1875@suse.de>
+References: <20130628090447.GD28407@twins.programming.kicks-ass.net>
+ <20130628100723.GC8362@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hLThDcvT216edA+z"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1372426585.28529.5.camel@phoenix>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <20130628100723.GC8362@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: regulator: Is there any reason the 88PM800 regulator driver can
- not be built as module?
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 28, 2013 at 03:37:23PM +0530, Srikar Dronamraju wrote:
+> > > > +
+> > > > +
+> > > >  /*
+> > > >   * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
+> > > >   */
+> > > > @@ -3945,10 +3977,14 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+> > > >  
+> > > >  	/*
+> > > >  	 * Aggressive migration if:
+> > > > -	 * 1) task is cache cold, or
+> > > > -	 * 2) too many balance attempts have failed.
+> > > > +	 * 1) destination numa is preferred
+> > > > +	 * 2) task is cache cold, or
+> > > > +	 * 3) too many balance attempts have failed.
+> > > >  	 */
+> > > >  
+> > > > +	if (migrate_improves_locality(p, env))
+> > > > +		return 1;
+> > > 
+> > > Shouldnt this be under tsk_cache_hot check?
+> > > 
+> > > If the task is cache hot, then we would have to update the corresponding  schedstat
+> > > metrics.
+> > 
+> > No; you want migrate_degrades_locality() to be like task_hot(). You want
+> > to _always_ migrate tasks towards better locality irrespective of local
+> > cache hotness.
+> > 
+> 
+> Yes, I understand that numa should have more priority over cache.
+> But the schedstats will not be updated about whether the task was hot or
+> cold.
+> 
+> So lets say the task was cache hot but numa wants it to move, then we
+> should certainly move it but we should update the schedstats to mention that we
+> moved a cache hot task.
+> 
+> Something akin to this.
+> 
+> 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
+> 	if (tsk_cache_hot) {
+> 		if (migrate_improves_locality(p, env) || 
+> 		 	(env->sd->nr_balance_failed > env->sd->cache_nice_tries)) {
+> #ifdef CONFIG_SCHEDSTATS
+> 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
+> 			schedstat_inc(p, se.statistics.nr_forced_migrations);
+> #endif
+> 			return 1;
+> 		}
+> 		schedstat_inc(p, se.statistics.nr_failed_migrations_hot);
+> 		return 0;
+> 	}
+> 	return 1;
+> 
 
---hLThDcvT216edA+z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks. Is this acceptable?
 
-On Fri, Jun 28, 2013 at 09:36:25PM +0800, Axel Lin wrote:
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index b3848e0..c3a153e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4088,8 +4088,13 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	 * 3) too many balance attempts have failed.
+ 	 */
+ 
+-	if (migrate_improves_locality(p, env))
++	if (migrate_improves_locality(p, env)) {
++#ifdef CONFIG_SCHEDSTATS
++		schedstat_inc(env->sd, lb_hot_gained[env->idle]);
++		schedstat_inc(p, se.statistics.nr_forced_migrations);
++#endif
+ 		return 1;
++	}
+ 
+ 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
+ 	if (!tsk_cache_hot)
 
-> I ask this because MFD_88PM800 can be built as module.
-> So any reason REGULATOR_88PM800 must be bool?
-
-No, it should be module capable.
-
---hLThDcvT216edA+z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRzZS4AAoJELSic+t+oim9r9cP/0E7UNtx/GoJLsKAS/IKyihh
-TKg9PxvLr9uOukoJxk5LDm912kbhZHEZOFDtOIUvlXKEoebpJsD0HOHfmMXkhYjy
-SdpXTiuf8vcGqxsVGOPNFO+7lIvo44CZmnMf+da14hzUNw5hHgNINX/Unbsozq5q
-iR20dXhwL1E+xn6YKzbxBLf1jkN0ddd8ksf6/nczmSMrlR1nHCqkdvhUP+EzjprR
-wuRLW0wb0XNCpDETm8J3yNesyf+zdJWk5bVhMrPapArZ7h/uYW8ZDtfeTwWw/uFp
-yANZrPkkbVCbxiJ4LygzvdXpdMjSOf+SDSw3CBJV2BFvfW0vJ3r+LV928Ht3MEld
-RbJo5RJRNiwcmK8WPWSumFdeFCtvx93IN6t/pbd+p7GwAlEq6G2H0BRhvzFFL1C4
-fLwTfZAV9Y7dgBzieqnypTolvUjBgzfHQx5bktZsVyaYr6KF9mZvoT3+vCP8iP9y
-XGRFutPAywFiZyecwjBEHxc2qxmj7QOX1S+9xQv3z4QdMMRWUEIm/V87twUW63TX
-EKWKw+jqvyPMRdQlKQlm+AdEEkLKRL+T8jFybwvVJ3mYWsfZN74l5vWeJJ7HLKLX
-C4N7aWzsUCFJVDqu9/Q7vKA5eek8dBre8jcfQNYUqcZrHkzycUkOxH+FIoCHgBvB
-+bS5Dd5iBCIJstYNdQ3Y
-=RG4h
------END PGP SIGNATURE-----
-
---hLThDcvT216edA+z--
+-- 
+Mel Gorman
+SUSE Labs
