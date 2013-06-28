@@ -1,137 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab3F1BcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 21:32:24 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:20942 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab3F1BcW (ORCPT
+	id S1754188Ab3F1Bds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 21:33:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40046 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249Ab3F1Bdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 21:32:22 -0400
-Message-ID: <1372383138.2072.42.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mutex: do not unnecessarily deal with waiters
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 27 Jun 2013 18:32:18 -0700
-In-Reply-To: <20130627090016.GA4398@gmail.com>
-References: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
-	 <20130627090016.GA4398@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Thu, 27 Jun 2013 21:33:46 -0400
+Date: Thu, 27 Jun 2013 18:33:42 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Sven-Thorsten Dietrich <sven@vyatta.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Mike Davison <Mike.Davison@vyatta.com>
+Subject: Re: [PATCH] Set the correct RTNL family for multicast netconf
+ messages
+Message-ID: <20130627183342.4b9c5598@nehalam.linuxnetplumber.net>
+In-Reply-To: <20130628012307.GB15799@order.stressinduktion.org>
+References: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com>
+	<20130628012307.GB15799@order.stressinduktion.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 11:00 +0200, Ingo Molnar wrote:
-[...]
+On Fri, 28 Jun 2013 03:23:07 +0200
+Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
+
+> On Thu, Jun 27, 2013 at 04:44:47PM -0700, Sven-Thorsten Dietrich wrote:
+> > diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+> > index dfc39d4..695858b 100644
+> > --- a/net/ipv4/devinet.c
+> > +++ b/net/ipv4/devinet.c
+> > @@ -1705,7 +1705,16 @@ static int inet_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
+> >  		return -EMSGSIZE;
+> >  
+> >  	ncm = nlmsg_data(nlh);
+> > -	ncm->ncm_family = AF_INET;
+> > +
+> > +	switch (type) {
+> > +		case NETCONFA_MC_FORWARDING:
+> > +			ncm->ncm_family = RTNL_FAMILY_IPMR;
+> > +			break;
+> > +
+> > +		default:
+> > +			ncm->ncm_family = AF_INET;
+> > +			break;
+> > +	}
+> >  
+> >  	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
+> >  		goto nla_put_failure;
+> > diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+> > index 4ab4c38..a177da4 100644
+> > --- a/net/ipv6/addrconf.c
+> > +++ b/net/ipv6/addrconf.c
+> > @@ -492,7 +492,16 @@ static int inet6_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
+> >  		return -EMSGSIZE;
+> >  
+> >  	ncm = nlmsg_data(nlh);
+> > -	ncm->ncm_family = AF_INET6;
+> > +
+> > +	switch (type) {
+> > +		case NETCONFA_MC_FORWARDING:
+> > +			ncm->ncm_family = RTNL_FAMILY_IP6MR;
+> > +			break;
+> > +
+> > +		default:
+> > +			ncm->ncm_family = AF_INET6;
+> > +			break;
+> > +	}
+> >  
 > 
-> So I tried this out yesterday, but it interacted with the Wait/Wound 
-> patches in tip:core/mutexes.
+> Hm, are you sure? NETCONFA_MC_FORWARDING is of type RTM_NEWNETCONF
+> and expects ncm_family to be either AF_INET or AF_INET6 (at least in
+> iproute2/ipmonitor.c).
 > 
-> Maarten Lankhorst pointed out that if this patch is applied on top of the 
-> WW patches as-is, then we get this semantic merge conflict:
-> 
-> > > @@ -340,6 +339,14 @@ slowpath:
-> > >  #endif
-> > >     spin_lock_mutex(&lock->wait_lock, flags);
-> > >  
-> > > +   /* once more, can we acquire the lock? */
-> > > +   if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
-> > > +           lock_acquired(&lock->dep_map, ip);
-> > > +           mutex_set_owner(lock);
-> > > +           spin_unlock_mutex(&lock->wait_lock, flags);
-> > > +           goto done;
-> > > +   }
-> > >
-> > ^^^^^^^^^^^^^^
-> >
-> > This part skips the whole if (!__builtin_constant_p(ww_ctx == NULL)) { 
-> > section with the wait_lock held.
 
-I see what you mean, I hadn't really looked at the W/W patches. BTW
-those __builtin_constant_p() calls are pretty ugly/annoying to read,
-plus why the negation of the NULL check? Couldn't we just do something
-like:
+I agree with Sven on this, looks like the recent addition of netconf
+configuration to netlink didn't embrace how multicast is handled in kernel.
 
-#define is_ww_ctx(x) (__builtin_constant_p(x))
-...
-if (is_ww_ctxt(ww_ctx)) { ... }
+Multicast forwarding is a routing related configuration value.
+All the multicast routing events come in as special family RTNL_FAMILY_IPMR
+(see net/ipv4/ipmr.c function ipmr_fill_route). I would expect that multicast
+routing daemons would like to be able to use special family to listen for
+all multicast related changes (and not see non-multicast events).
 
 
-Anyway, so going back to the actual patch, we need a few cleanups in
-__mutex_lock_common() before we can rebase this patch - otherwise we're
-going to end up duplicating a lot of code (and the function is already
-big enough):
-
-How about a new ww_mutex_set_context_slowpath() function that does the
-w/w lock acquiring and wakes up any sleeping processes. We'd use this
-function whenever we acquire the lock in the slowpath (with the
-->wait_lock taken):
-
-static __always_inline void
-ww_mutex_set_context_slowpath(struct mutex *lock,
-			      struct ww_acquire_ctx *ww_ctx, bool debug)
-{
-	if (!__builtin_constant_p(ww_ctx == NULL)) {
-		struct mutex_waiter *cur;
-		struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
-
-		/*
-		 * This branch gets optimized out for the common case,
-		 * and is only important for ww_mutex_lock.
-		 */
-		ww_mutex_lock_acquired(ww, ww_ctx);
-		ww->ctx = ww_ctx;
-
-		/*
-		 * Give any possible sleeping processes the chance to wake up,
-		 * so they can recheck if they have to back off.
-		 */
-		list_for_each_entry(cur, &lock->wait_list, list) {
-			if (debug)
-				debug_mutex_wake_waiter(lock, cur);
-			wake_up_process(cur->task);
-		}
-	}
-}
-
-In ww_mutex_set_context_fastpath() I'm a little confused with the
-debug_mutex_wake_waiter() calls since we don't deal with debug in the
-fast path (->wait_lock isn't held). So are these calls
-correct/necessary?
-
-For ww_mutex_set_context_slowpath(), the 'debug' parameter would be
-necessary since with this patch we avoid doing the debug_mutex on a
-quick attempt to grab the lock, otherwise we do the slowpath debug,
-waiters, etc. For instance:
-
-...
-slowpath:
-#endif
-	spin_lock_mutex(&lock->wait_lock, flags);
-	/* once more, can we acquire the lock? */
-	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
-        	lock_acquired(&lock->dep_map, ip);
-	        mutex_set_owner(lock);
-		ww_mutex_set_context_fastpath(lock, ww_ctx, false);
-        	spin_unlock_mutex(&lock->wait_lock, flags);
-	        goto done;
-  	}
-...
-
-lock_acquired(&lock->dep_map, ip);
-/* got the lock - rejoice! */
-mutex_remove_waiter(lock, &waiter, current_thread_info());
-mutex_set_owner(lock);
-ww_mutex_set_context_slowpath(lock, ww_ctx, true);
-...
-
-
-Thanks,
-Davidlohr
-
+Minor nit: the patch is formatted incorrectly (case should line up with switch).
