@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab3F1Q1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:27:42 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:64711 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab3F1Q1k (ORCPT
+	id S1755808Ab3F1Q11 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:27:27 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:55721 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755768Ab3F1Q1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:27:40 -0400
+	Fri, 28 Jun 2013 12:27:24 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>
 Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
-Subject: [PATCH v3 07/10] ACPI: introduce two helper functions to simplify code
-Date: Sat, 29 Jun 2013 00:24:40 +0800
-Message-Id: <1372436683-31711-8-git-send-email-liuj97@gmail.com>
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH v3 05/10] ACPI: introduce helper function acpi_has_method()
+Date: Sat, 29 Jun 2013 00:24:38 +0800
+Message-Id: <1372436683-31711-6-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372436683-31711-1-git-send-email-liuj97@gmail.com>
 References: <1372436683-31711-1-git-send-email-liuj97@gmail.com>
@@ -24,137 +25,572 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Introduce two helper functions, acpi_evaluate_ej0() and acpi_evaluate_lck()
-to simplify code.
+Introduce helper function acpi_has_method() to simplify code.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Jiang Liu <liuj97@gmail.com>
 Cc: Len Brown <lenb@kernel.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/acpi/scan.c     | 31 ++++++-------------------------
- drivers/acpi/utils.c    | 43 +++++++++++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h |  2 ++
- 3 files changed, 51 insertions(+), 25 deletions(-)
+ drivers/acpi/battery.c           | 11 ++---
+ drivers/acpi/ec.c                |  4 +-
+ drivers/acpi/processor_perflib.c | 22 +++------
+ drivers/acpi/resource.c          |  4 +-
+ drivers/acpi/scan.c              | 99 ++++++++++++----------------------------
+ drivers/acpi/utils.c             | 15 ++++++
+ drivers/acpi/video.c             | 39 +++++-----------
+ drivers/acpi/video_detect.c      | 19 ++++----
+ include/acpi/acpi_bus.h          |  3 ++
+ 9 files changed, 80 insertions(+), 136 deletions(-)
 
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 082b4dd..a762716 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -548,12 +548,8 @@ static int acpi_battery_set_alarm(struct acpi_battery *battery)
+ 
+ static int acpi_battery_init_alarm(struct acpi_battery *battery)
+ {
+-	acpi_status status = AE_OK;
+-	acpi_handle handle = NULL;
+-
+ 	/* See if alarms are supported, and if so, set default */
+-	status = acpi_get_handle(battery->device->handle, "_BTP", &handle);
+-	if (ACPI_FAILURE(status)) {
++	if (!acpi_has_method(battery->device->handle, "_BTP")) {
+ 		clear_bit(ACPI_BATTERY_ALARM_PRESENT, &battery->flags);
+ 		return 0;
+ 	}
+@@ -1066,7 +1062,7 @@ static int acpi_battery_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+ 	struct acpi_battery *battery = NULL;
+-	acpi_handle handle;
++
+ 	if (!device)
+ 		return -EINVAL;
+ 	battery = kzalloc(sizeof(struct acpi_battery), GFP_KERNEL);
+@@ -1078,8 +1074,7 @@ static int acpi_battery_add(struct acpi_device *device)
+ 	device->driver_data = battery;
+ 	mutex_init(&battery->lock);
+ 	mutex_init(&battery->sysfs_lock);
+-	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
+-			"_BIX", &handle)))
++	if (acpi_has_method(battery->device->handle, "_BIX"))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+ 	result = acpi_battery_update(battery);
+ 	if (result)
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index 80403c1..84bf06c 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -1049,10 +1049,8 @@ int __init acpi_ec_ecdt_probe(void)
+ 		* which needs it, has fake EC._INI method, so use it as flag.
+ 		* Keep boot_ec struct as it will be needed soon.
+ 		*/
+-		acpi_handle dummy;
+ 		if (!dmi_name_in_vendors("ASUS") ||
+-		    ACPI_FAILURE(acpi_get_handle(boot_ec->handle, "_INI",
+-							&dummy)))
++		    !acpi_has_method(boot_ec->handle, "_INI"))
+ 			return -ENODEV;
+ 	}
+ install:
+diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+index 1e9732d..51d7948 100644
+--- a/drivers/acpi/processor_perflib.c
++++ b/drivers/acpi/processor_perflib.c
+@@ -164,17 +164,12 @@ static void acpi_processor_ppc_ost(acpi_handle handle, int status)
+ 		{.type = ACPI_TYPE_INTEGER,},
+ 	};
+ 	struct acpi_object_list arg_list = {2, params};
+-	acpi_handle temp;
+ 
+-	params[0].integer.value = ACPI_PROCESSOR_NOTIFY_PERFORMANCE;
+-	params[1].integer.value =  status;
+-
+-	/* when there is no _OST , skip it */
+-	if (ACPI_FAILURE(acpi_get_handle(handle, "_OST", &temp)))
+-		return;
+-
+-	acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
+-	return;
++	if (acpi_has_method(handle, "_OST")) {
++		params[0].integer.value = ACPI_PROCESSOR_NOTIFY_PERFORMANCE;
++		params[1].integer.value =  status;
++		acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
++	}
+ }
+ 
+ int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
+@@ -468,14 +463,11 @@ static int acpi_processor_get_performance_states(struct acpi_processor *pr)
+ int acpi_processor_get_performance_info(struct acpi_processor *pr)
+ {
+ 	int result = 0;
+-	acpi_status status = AE_OK;
+-	acpi_handle handle = NULL;
+ 
+ 	if (!pr || !pr->performance || !pr->handle)
+ 		return -EINVAL;
+ 
+-	status = acpi_get_handle(pr->handle, "_PCT", &handle);
+-	if (ACPI_FAILURE(status)) {
++	if (!acpi_has_method(pr->handle, "_PCT")) {
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 				  "ACPI-based processor performance control unavailable\n"));
+ 		return -ENODEV;
+@@ -501,7 +493,7 @@ int acpi_processor_get_performance_info(struct acpi_processor *pr)
+ 	 */
+  update_bios:
+ #ifdef CONFIG_X86
+-	if (ACPI_SUCCESS(acpi_get_handle(pr->handle, "_PPC", &handle))){
++	if (acpi_has_method(pr->handle, "_PPC")) {
+ 		if(boot_cpu_has(X86_FEATURE_EST))
+ 			printk(KERN_WARNING FW_BUG "BIOS needs update for CPU "
+ 			       "frequency support\n");
+diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+index 3322b47..b7201fc 100644
+--- a/drivers/acpi/resource.c
++++ b/drivers/acpi/resource.c
+@@ -505,14 +505,12 @@ int acpi_dev_get_resources(struct acpi_device *adev, struct list_head *list,
+ 			   void *preproc_data)
+ {
+ 	struct res_proc_context c;
+-	acpi_handle not_used;
+ 	acpi_status status;
+ 
+ 	if (!adev || !adev->handle || !list_empty(list))
+ 		return -EINVAL;
+ 
+-	status = acpi_get_handle(adev->handle, METHOD_NAME__CRS, &not_used);
+-	if (ACPI_FAILURE(status))
++	if (!acpi_has_method(adev->handle, METHOD_NAME__CRS))
+ 		return 0;
+ 
+ 	c.list = list;
 diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 84d88a0..101a267 100644
+index dfe76f1..84d88a0 100644
 --- a/drivers/acpi/scan.c
 +++ b/drivers/acpi/scan.c
-@@ -194,8 +194,6 @@ static acpi_status acpi_bus_online_companions(acpi_handle handle, u32 lvl,
+@@ -194,7 +194,6 @@ static acpi_status acpi_bus_online_companions(acpi_handle handle, u32 lvl,
  static int acpi_scan_hot_remove(struct acpi_device *device)
  {
  	acpi_handle handle = device->handle;
--	struct acpi_object_list arg_list;
--	union acpi_object arg;
+-	acpi_handle not_used;
+ 	struct acpi_object_list arg_list;
+ 	union acpi_object arg;
  	struct device *errdev;
- 	acpi_status status;
- 	unsigned long long sta;
-@@ -258,32 +256,15 @@ static int acpi_scan_hot_remove(struct acpi_device *device)
+@@ -259,7 +258,7 @@ static int acpi_scan_hot_remove(struct acpi_device *device)
  	put_device(&device->dev);
  	device = NULL;
  
--	if (acpi_has_method(handle, "_LCK")) {
--		arg_list.count = 1;
--		arg_list.pointer = &arg;
--		arg.type = ACPI_TYPE_INTEGER;
--		arg.integer.value = 0;
--		acpi_evaluate_object(handle, "_LCK", &arg_list, NULL);
--	}
--
--	arg_list.count = 1;
--	arg_list.pointer = &arg;
--	arg.type = ACPI_TYPE_INTEGER;
--	arg.integer.value = 1;
--
-+	acpi_evaluate_lck(handle, 0);
+-	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &not_used))) {
++	if (acpi_has_method(handle, "_LCK")) {
+ 		arg_list.count = 1;
+ 		arg_list.pointer = &arg;
+ 		arg.type = ACPI_TYPE_INTEGER;
+@@ -653,7 +652,6 @@ static int acpi_device_setup_files(struct acpi_device *dev)
+ {
+ 	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
+ 	acpi_status status;
+-	acpi_handle temp;
+ 	unsigned long long sun;
+ 	int result = 0;
+ 
+@@ -679,8 +677,7 @@ static int acpi_device_setup_files(struct acpi_device *dev)
  	/*
- 	 * TBD: _EJD support.
+ 	 * If device has _STR, 'description' file is created
  	 */
--	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
--	if (ACPI_FAILURE(status)) {
--		if (status == AE_NOT_FOUND) {
--			return -ENODEV;
--		} else {
--			acpi_handle_warn(handle, "Eject failed (0x%x)\n",
--								status);
--			return -EIO;
--		}
--	}
-+	status = acpi_evaluate_ej0(handle);
-+	if (status == AE_NOT_FOUND)
-+		return -ENODEV;
-+	else if (ACPI_FAILURE(status))
-+		return -EIO;
+-	status = acpi_get_handle(dev->handle, "_STR", &temp);
+-	if (ACPI_SUCCESS(status)) {
++	if (acpi_has_method(dev->handle, "_STR")) {
+ 		status = acpi_evaluate_object(dev->handle, "_STR",
+ 					NULL, &buffer);
+ 		if (ACPI_FAILURE(status))
+@@ -710,8 +707,7 @@ static int acpi_device_setup_files(struct acpi_device *dev)
+          * If device has _EJ0, 'eject' file is created that is used to trigger
+          * hot-removal function from userland.
+          */
+-	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
+-	if (ACPI_SUCCESS(status)) {
++	if (acpi_has_method(dev->handle, "_EJ0")) {
+ 		result = device_create_file(&dev->dev, &dev_attr_eject);
+ 		if (result)
+ 			return result;
+@@ -733,9 +729,6 @@ end:
+ 
+ static void acpi_device_remove_files(struct acpi_device *dev)
+ {
+-	acpi_status status;
+-	acpi_handle temp;
+-
+ 	if (dev->flags.power_manageable) {
+ 		device_remove_file(&dev->dev, &dev_attr_power_state);
+ 		if (dev->power.flags.power_resources)
+@@ -746,20 +739,17 @@ static void acpi_device_remove_files(struct acpi_device *dev)
+ 	/*
+ 	 * If device has _STR, remove 'description' file
+ 	 */
+-	status = acpi_get_handle(dev->handle, "_STR", &temp);
+-	if (ACPI_SUCCESS(status)) {
++	if (acpi_has_method(dev->handle, "_STR")) {
+ 		kfree(dev->pnp.str_obj);
+ 		device_remove_file(&dev->dev, &dev_attr_description);
+ 	}
+ 	/*
+ 	 * If device has _EJ0, remove 'eject' file.
+ 	 */
+-	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
+-	if (ACPI_SUCCESS(status))
++	if (acpi_has_method(dev->handle, "_EJ0"))
+ 		device_remove_file(&dev->dev, &dev_attr_eject);
+ 
+-	status = acpi_get_handle(dev->handle, "_SUN", &temp);
+-	if (ACPI_SUCCESS(status))
++	if (acpi_has_method(dev->handle, "_SUN"))
+ 		device_remove_file(&dev->dev, &dev_attr_sun);
+ 
+ 	if (dev->pnp.unique_id)
+@@ -1335,13 +1325,10 @@ static void acpi_bus_set_run_wake_flags(struct acpi_device *device)
+ 
+ static void acpi_bus_get_wakeup_device_flags(struct acpi_device *device)
+ {
+-	acpi_handle temp;
+-	acpi_status status = 0;
+ 	int err;
+ 
+ 	/* Presence of _PRW indicates wake capable */
+-	status = acpi_get_handle(device->handle, "_PRW", &temp);
+-	if (ACPI_FAILURE(status))
++	if (!acpi_has_method(device->handle, "_PRW"))
+ 		return;
+ 
+ 	err = acpi_bus_extract_wakeup_device_power_package(device->handle,
+@@ -1371,7 +1358,6 @@ static void acpi_bus_init_power_state(struct acpi_device *device, int state)
+ 	struct acpi_device_power_state *ps = &device->power.states[state];
+ 	char pathname[5] = { '_', 'P', 'R', '0' + state, '\0' };
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+-	acpi_handle handle;
+ 	acpi_status status;
+ 
+ 	INIT_LIST_HEAD(&ps->resources);
+@@ -1394,8 +1380,7 @@ static void acpi_bus_init_power_state(struct acpi_device *device, int state)
+ 
+ 	/* Evaluate "_PSx" to see if we can do explicit sets */
+ 	pathname[2] = 'S';
+-	status = acpi_get_handle(device->handle, pathname, &handle);
+-	if (ACPI_SUCCESS(status))
++	if (acpi_has_method(device->handle, pathname))
+ 		ps->flags.explicit_set = 1;
  
  	/*
- 	 * Verify if eject was indeed successful.  If not, log an error
+@@ -1414,28 +1399,21 @@ static void acpi_bus_init_power_state(struct acpi_device *device, int state)
+ 
+ static void acpi_bus_get_power_flags(struct acpi_device *device)
+ {
+-	acpi_status status;
+-	acpi_handle handle;
+ 	u32 i;
+ 
+ 	/* Presence of _PS0|_PR0 indicates 'power manageable' */
+-	status = acpi_get_handle(device->handle, "_PS0", &handle);
+-	if (ACPI_FAILURE(status)) {
+-		status = acpi_get_handle(device->handle, "_PR0", &handle);
+-		if (ACPI_FAILURE(status))
+-			return;
+-	}
++	if (!acpi_has_method(device->handle, "_PS0") &&
++	    !acpi_has_method(device->handle, "_PR0"))
++		return;
+ 
+ 	device->flags.power_manageable = 1;
+ 
+ 	/*
+ 	 * Power Management Flags
+ 	 */
+-	status = acpi_get_handle(device->handle, "_PSC", &handle);
+-	if (ACPI_SUCCESS(status))
++	if (acpi_has_method(device->handle, "_PSC"))
+ 		device->power.flags.explicit_get = 1;
+-	status = acpi_get_handle(device->handle, "_IRC", &handle);
+-	if (ACPI_SUCCESS(status))
++	if (acpi_has_method(device->handle, "_IRC"))
+ 		device->power.flags.inrush_current = 1;
+ 
+ 	/*
+@@ -1469,28 +1447,18 @@ static void acpi_bus_get_power_flags(struct acpi_device *device)
+ 
+ static void acpi_bus_get_flags(struct acpi_device *device)
+ {
+-	acpi_status status = AE_OK;
+-	acpi_handle temp = NULL;
+-
+ 	/* Presence of _STA indicates 'dynamic_status' */
+-	status = acpi_get_handle(device->handle, "_STA", &temp);
+-	if (ACPI_SUCCESS(status))
++	if (acpi_has_method(device->handle, "_STA"))
+ 		device->flags.dynamic_status = 1;
+ 
+ 	/* Presence of _RMV indicates 'removable' */
+-	status = acpi_get_handle(device->handle, "_RMV", &temp);
+-	if (ACPI_SUCCESS(status))
++	if (acpi_has_method(device->handle, "_RMV"))
+ 		device->flags.removable = 1;
+ 
+ 	/* Presence of _EJD|_EJ0 indicates 'ejectable' */
+-	status = acpi_get_handle(device->handle, "_EJD", &temp);
+-	if (ACPI_SUCCESS(status))
++	if (acpi_has_method(device->handle, "_EJD") ||
++	    acpi_has_method(device->handle, "_EJ0"))
+ 		device->flags.ejectable = 1;
+-	else {
+-		status = acpi_get_handle(device->handle, "_EJ0", &temp);
+-		if (ACPI_SUCCESS(status))
+-			device->flags.ejectable = 1;
+-	}
+ }
+ 
+ static void acpi_device_get_busid(struct acpi_device *device)
+@@ -1539,27 +1507,24 @@ static void acpi_device_get_busid(struct acpi_device *device)
+  */
+ static int acpi_bay_match(acpi_handle handle)
+ {
+-	acpi_status status;
+-	acpi_handle tmp;
+ 	acpi_handle phandle;
+ 
+-	status = acpi_get_handle(handle, "_EJ0", &tmp);
+-	if (ACPI_FAILURE(status))
++	if (!acpi_has_method(handle, "_EJ0"))
+ 		return -ENODEV;
+ 
+-	if ((ACPI_SUCCESS(acpi_get_handle(handle, "_GTF", &tmp))) ||
+-		(ACPI_SUCCESS(acpi_get_handle(handle, "_GTM", &tmp))) ||
+-		(ACPI_SUCCESS(acpi_get_handle(handle, "_STM", &tmp))) ||
+-		(ACPI_SUCCESS(acpi_get_handle(handle, "_SDD", &tmp))))
++	if (acpi_has_method(handle, "_GTF") ||
++	    acpi_has_method(handle, "_GTM") ||
++	    acpi_has_method(handle, "_STM") ||
++	    acpi_has_method(handle, "_SDD"))
+ 		return 0;
+ 
+ 	if (acpi_get_parent(handle, &phandle))
+ 		return -ENODEV;
+ 
+-        if ((ACPI_SUCCESS(acpi_get_handle(phandle, "_GTF", &tmp))) ||
+-                (ACPI_SUCCESS(acpi_get_handle(phandle, "_GTM", &tmp))) ||
+-                (ACPI_SUCCESS(acpi_get_handle(phandle, "_STM", &tmp))) ||
+-                (ACPI_SUCCESS(acpi_get_handle(phandle, "_SDD", &tmp))))
++	if (acpi_has_method(phandle, "_GTF") ||
++	    acpi_has_method(phandle, "_GTM") ||
++	    acpi_has_method(phandle, "_STM") ||
++	    acpi_has_method(phandle, "_SDD"))
+                 return 0;
+ 
+ 	return -ENODEV;
+@@ -1611,7 +1576,6 @@ static void acpi_add_id(struct acpi_device_pnp *pnp, const char *dev_id)
+  */
+ static int acpi_ibm_smbus_match(acpi_handle handle)
+ {
+-	acpi_handle h_dummy;
+ 	struct acpi_buffer path = {ACPI_ALLOCATE_BUFFER, NULL};
+ 	int result;
+ 
+@@ -1630,9 +1594,9 @@ static int acpi_ibm_smbus_match(acpi_handle handle)
+ 
+ 	/* Does it have the necessary (but misnamed) methods? */
+ 	result = -ENODEV;
+-	if (ACPI_SUCCESS(acpi_get_handle(handle, "SBI", &h_dummy)) &&
+-	    ACPI_SUCCESS(acpi_get_handle(handle, "SBR", &h_dummy)) &&
+-	    ACPI_SUCCESS(acpi_get_handle(handle, "SBW", &h_dummy)))
++	if (acpi_has_method(handle, "SBI") &&
++	    acpi_has_method(handle, "SBR") &&
++	    acpi_has_method(handle, "SBW"))
+ 		result = 0;
+ out:
+ 	kfree(path.pointer);
+@@ -1899,7 +1863,6 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
+ 	struct acpi_device *device = NULL;
+ 	int type;
+ 	unsigned long long sta;
+-	acpi_status status;
+ 	int result;
+ 
+ 	acpi_bus_get_device(handle, &device);
+@@ -1920,10 +1883,8 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
+ 	if (!(sta & ACPI_STA_DEVICE_PRESENT) &&
+ 	    !(sta & ACPI_STA_DEVICE_FUNCTIONING)) {
+ 		struct acpi_device_wakeup wakeup;
+-		acpi_handle temp;
+ 
+-		status = acpi_get_handle(handle, "_PRW", &temp);
+-		if (ACPI_SUCCESS(status)) {
++		if (acpi_has_method(handle, "_PRW")) {
+ 			acpi_bus_extract_wakeup_device_power_package(handle,
+ 								     &wakeup);
+ 			acpi_power_resources_list_free(&wakeup.resources);
 diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index 87b8588..552248b 100644
+index 74437130..b08d973 100644
 --- a/drivers/acpi/utils.c
 +++ b/drivers/acpi/utils.c
-@@ -522,3 +522,46 @@ acpi_status acpi_execute_simple_method(acpi_handle handle, char *method,
- 	return acpi_evaluate_object(handle, method, &arg_list, NULL);
+@@ -495,3 +495,18 @@ acpi_handle_printk(const char *level, acpi_handle handle, const char *fmt, ...)
+ 	kfree(buffer.pointer);
  }
- EXPORT_SYMBOL(acpi_execute_simple_method);
+ EXPORT_SYMBOL(acpi_handle_printk);
 +
 +/**
-+ * acpi_evaluate_ej0: Evaluate _EJ0 method for hotplug operations
++ * acpi_has_method: Check whether @handle has a method named @name
 + * @handle: ACPI device handle
++ * @name: name of object or method
 + *
-+ * Evaluate device's _EJ0 method for hotplug operations.
++ * Check whether @handle has a method named @name.
 + */
-+acpi_status acpi_evaluate_ej0(acpi_handle handle)
++bool acpi_has_method(acpi_handle handle, char *name)
 +{
-+	acpi_status status;
++	acpi_handle tmp;
 +
-+	status = acpi_execute_simple_method(handle, "_EJ0", 1);
-+	if (status == AE_NOT_FOUND)
-+		acpi_handle_warn(handle, "No _EJ0 support for device\n");
-+	else if (ACPI_FAILURE(status))
-+		acpi_handle_warn(handle, "Eject failed (0x%x)\n", status);
-+
-+	return status;
++	return ACPI_SUCCESS(acpi_get_handle(handle, name, &tmp));
 +}
-+
-+/**
-+ * acpi_evaluate_lck: Evaluate _LCK method to lock/unlock device
-+ * @handle: ACPI device handle
-+ * @lock: lock device if non-zero, otherwise unlock device
-+ *
-+ * Evaluate device's _LCK method if present to lock/unlock device
-+ */
-+acpi_status acpi_evaluate_lck(acpi_handle handle, int lock)
-+{
-+	acpi_status status;
-+
-+	status = acpi_execute_simple_method(handle, "_LCK", !!lock);
-+	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
-+		if (lock)
-+			acpi_handle_warn(handle,
-+				"Locking device failed (0x%x)\n", status);
-+		else
-+			acpi_handle_warn(handle,
-+				"Unlocking device failed (0x%x)\n", status);
-+	}
-+
-+	return status;
-+}
++EXPORT_SYMBOL(acpi_has_method);
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 5d7075d..a84533e 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -875,28 +875,21 @@ out:
+ 
+ static void acpi_video_device_find_cap(struct acpi_video_device *device)
+ {
+-	acpi_handle h_dummy1;
+-
+-	if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle, "_ADR", &h_dummy1))) {
++	if (acpi_has_method(device->dev->handle, "_ADR"))
+ 		device->cap._ADR = 1;
+-	}
+-	if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle, "_BCL", &h_dummy1))) {
++	if (acpi_has_method(device->dev->handle, "_BCL"))
+ 		device->cap._BCL = 1;
+-	}
+-	if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle, "_BCM", &h_dummy1))) {
++	if (acpi_has_method(device->dev->handle, "_BCM"))
+ 		device->cap._BCM = 1;
+-	}
+-	if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle,"_BQC",&h_dummy1)))
++	if (acpi_has_method(device->dev->handle, "_BQC")) {
+ 		device->cap._BQC = 1;
+-	else if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle, "_BCQ",
+-				&h_dummy1))) {
++	} else if (acpi_has_method(device->dev->handle, "_BCQ")) {
+ 		printk(KERN_WARNING FW_BUG "_BCQ is used instead of _BQC\n");
+ 		device->cap._BCQ = 1;
+ 	}
+ 
+-	if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle, "_DDC", &h_dummy1))) {
++	if (acpi_has_method(device->dev->handle, "_DDC"))
+ 		device->cap._DDC = 1;
+-	}
+ 
+ 	if (acpi_video_backlight_support()) {
+ 		struct backlight_properties props;
+@@ -984,26 +977,18 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
+ 
+ static void acpi_video_bus_find_cap(struct acpi_video_bus *video)
+ {
+-	acpi_handle h_dummy1;
+-
+-	if (ACPI_SUCCESS(acpi_get_handle(video->device->handle, "_DOS", &h_dummy1))) {
++	if (acpi_has_method(video->device->handle, "_DOS"))
+ 		video->cap._DOS = 1;
+-	}
+-	if (ACPI_SUCCESS(acpi_get_handle(video->device->handle, "_DOD", &h_dummy1))) {
++	if (acpi_has_method(video->device->handle, "_DOD"))
+ 		video->cap._DOD = 1;
+-	}
+-	if (ACPI_SUCCESS(acpi_get_handle(video->device->handle, "_ROM", &h_dummy1))) {
++	if (acpi_has_method(video->device->handle, "_ROM"))
+ 		video->cap._ROM = 1;
+-	}
+-	if (ACPI_SUCCESS(acpi_get_handle(video->device->handle, "_GPD", &h_dummy1))) {
++	if (acpi_has_method(video->device->handle, "_GPD"))
+ 		video->cap._GPD = 1;
+-	}
+-	if (ACPI_SUCCESS(acpi_get_handle(video->device->handle, "_SPD", &h_dummy1))) {
++	if (acpi_has_method(video->device->handle, "_SPD"))
+ 		video->cap._SPD = 1;
+-	}
+-	if (ACPI_SUCCESS(acpi_get_handle(video->device->handle, "_VPO", &h_dummy1))) {
++	if (acpi_has_method(video->device->handle, "_VPO"))
+ 		video->cap._VPO = 1;
+-	}
+ }
+ 
+ /*
+diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+index e6bd910..ddefa5f 100644
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -51,14 +51,13 @@ acpi_backlight_cap_match(acpi_handle handle, u32 level, void *context,
+ 			  void **retyurn_value)
+ {
+ 	long *cap = context;
+-	acpi_handle h_dummy;
+ 
+-	if (ACPI_SUCCESS(acpi_get_handle(handle, "_BCM", &h_dummy)) &&
+-	    ACPI_SUCCESS(acpi_get_handle(handle, "_BCL", &h_dummy))) {
++	if (acpi_has_method(handle, "_BCM") &&
++	    acpi_has_method(handle, "_BCL")) {
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found generic backlight "
+ 				  "support\n"));
+ 		*cap |= ACPI_VIDEO_BACKLIGHT;
+-		if (ACPI_FAILURE(acpi_get_handle(handle, "_BQC", &h_dummy)))
++		if (!acpi_has_method(handle, "_BQC"))
+ 			printk(KERN_WARNING FW_BUG PREFIX "No _BQC method, "
+ 				"cannot determine initial brightness\n");
+ 		/* We have backlight support, no need to scan further */
+@@ -77,22 +76,20 @@ acpi_backlight_cap_match(acpi_handle handle, u32 level, void *context,
+  */
+ long acpi_is_video_device(acpi_handle handle)
+ {
+-	acpi_handle h_dummy;
+ 	long video_caps = 0;
+ 
+ 	/* Is this device able to support video switching ? */
+-	if (ACPI_SUCCESS(acpi_get_handle(handle, "_DOD", &h_dummy)) ||
+-	    ACPI_SUCCESS(acpi_get_handle(handle, "_DOS", &h_dummy)))
++	if (acpi_has_method(handle, "_DOD") || acpi_has_method(handle, "_DOS"))
+ 		video_caps |= ACPI_VIDEO_OUTPUT_SWITCHING;
+ 
+ 	/* Is this device able to retrieve a video ROM ? */
+-	if (ACPI_SUCCESS(acpi_get_handle(handle, "_ROM", &h_dummy)))
++	if (acpi_has_method(handle, "_ROM"))
+ 		video_caps |= ACPI_VIDEO_ROM_AVAILABLE;
+ 
+ 	/* Is this device able to configure which video head to be POSTed ? */
+-	if (ACPI_SUCCESS(acpi_get_handle(handle, "_VPO", &h_dummy)) &&
+-	    ACPI_SUCCESS(acpi_get_handle(handle, "_GPD", &h_dummy)) &&
+-	    ACPI_SUCCESS(acpi_get_handle(handle, "_SPD", &h_dummy)))
++	if (acpi_has_method(handle, "_VPO") &&
++	    acpi_has_method(handle, "_GPD") &&
++	    acpi_has_method(handle, "_SPD"))
+ 		video_caps |= ACPI_VIDEO_DEVICE_POSTING;
+ 
+ 	/* Only check for backlight functionality if one of the above hit. */
 diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index d3d5fc1..6c378d9 100644
+index ca081ac..503b1b7 100644
 --- a/include/acpi/acpi_bus.h
 +++ b/include/acpi/acpi_bus.h
-@@ -60,6 +60,8 @@ acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld
- bool acpi_has_method(acpi_handle handle, char *name);
- acpi_status acpi_execute_simple_method(acpi_handle handle, char *method,
- 				       u64 arg);
-+acpi_status acpi_evaluate_ej0(acpi_handle handle);
-+acpi_status acpi_evaluate_lck(acpi_handle handle, int lock);
+@@ -56,6 +56,9 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
  
+ acpi_status
+ acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
++
++bool acpi_has_method(acpi_handle handle, char *name);
++
  #ifdef CONFIG_ACPI
  
+ #include <linux/proc_fs.h>
 -- 
 1.8.1.2
 
