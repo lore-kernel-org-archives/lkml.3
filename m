@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab3F1OoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:44:16 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:40142 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab3F1OoA convert rfc822-to-8bit (ORCPT
+	id S1754430Ab3F1Opk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:45:40 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:35556 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab3F1Opj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:44:00 -0400
+	Fri, 28 Jun 2013 10:45:39 -0400
+Date: Fri, 28 Jun 2013 22:45:16 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: bp@alien8.de
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        bp@suse.de, fenghua.yu@intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2]x86: Fix override new_cpu_data.x86 with 486
+Message-ID: <20130628144516.GA2177@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, bp@alien8.de,
+	hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+	bp@suse.de, fenghua.yu@intel.com, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20130628072950.GI27010@pengutronix.de>
-References: <1372390325-7566-1-git-send-email-festevam@gmail.com>
-	<20130628072950.GI27010@pengutronix.de>
-Date: Fri, 28 Jun 2013 11:43:59 -0300
-Message-ID: <CAOMZO5AtbfsrXnNyXKwyfqPn48bsuimk_D6gddXchzGcCfD-RA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] imx-drm: imx-drm-core: Export imx_drm_encoder_get_mux_id
-From: Fabio Estevam <festevam@gmail.com>
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: gregkh@linuxfoundation.org, shawn.guo@linaro.org, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+We should set X86 to 486 before use cpuid
+to detect the cpu type, if we set X86 to 486
+after cpuid, then we will get 486 until
+cpu_detect runs.
 
-On Fri, Jun 28, 2013 at 4:29 AM, Uwe Kleine-König
-<u.kleine-koenig@pengutronix.de> wrote:
-> On Fri, Jun 28, 2013 at 12:32:01AM -0300, Fabio Estevam wrote:
->> From: Fabio Estevam <fabio.estevam@freescale.com>
->>
->> When building imx_v6_v7_defconfig with imx-drm drivers selected as modules, we
->> get the following build error:
->>
->> ERROR: "imx_drm_encoder_get_mux_id" [drivers/staging/imx-drm/imx-ldb.ko] undefined!
-> So imx-ldb.c needs a symbol from imx-drm-core.c right? The alternative
-> to exporting this symbol for a single user(?) is to link these two files
-> into a single module. Does this make sense? If yes, that would IMHO be
-> the better fix.
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ChangeLog
+v1-v2:
+1:Use more accurate and short commit log
 
-The Makefile for these files is:
+ arch/x86/kernel/head_32.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-imxdrm-objs := imx-drm-core.o imx-fb.o
-
-obj-$(CONFIG_DRM_IMX) += imxdrm.o
-
-obj-$(CONFIG_DRM_IMX_PARALLEL_DISPLAY) += parallel-display.o
-obj-$(CONFIG_DRM_IMX_TVE) += imx-tve.o
-obj-$(CONFIG_DRM_IMX_LDB) += imx-ldb.o
-obj-$(CONFIG_DRM_IMX_FB_HELPER) += imx-fbdev.o
-obj-$(CONFIG_DRM_IMX_IPUV3_CORE) += ipu-v3/
-obj-$(CONFIG_DRM_IMX_IPUV3)	+= ipuv3-crtc.o
-
-so imx-drm-core is always built and imx-ldb is only built when
-CONFIG_DRM_IMX_LDB is selected.
-
-In this case, we should keep the two modules separate and fix this
-error using the export.
-
-Regards,
-
-Fabio Estevam
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 73afd11..24c6675 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -410,6 +410,7 @@ enable_paging:
+ /*
+  * Check if it is 486
+  */
++	movb $4,X86			# at least 486
+ 	cmpl $-1,X86_CPUID
+ 	je is486
+ 
+@@ -437,7 +438,6 @@ enable_paging:
+ 	movl %edx,X86_CAPABILITY
+ 
+ is486:
+-	movb $4,X86
+ 	movl $0x50022,%ecx	# set AM, WP, NE and MP
+ 	movl %cr0,%eax
+ 	andl $0x80000011,%eax	# Save PG,PE,ET
+-- 
+1.7.12.4.dirty
