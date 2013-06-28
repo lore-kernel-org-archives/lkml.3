@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3F1TQy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:16:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41609 "EHLO
+	id S1752861Ab3F1TRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:17:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41571 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab3F1SyB (ORCPT
+	with ESMTP id S1752055Ab3F1Sw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:54:01 -0400
+	Fri, 28 Jun 2013 14:52:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Bernhard Beck <bbeck@google.com>,
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 065/105] tcp: fix tcp_md5_hash_skb_data()
-Date: Fri, 28 Jun 2013 11:51:27 -0700
-Message-Id: <1372445527-24414-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 007/105] netrom: fix invalid use of sizeof in nr_recvmsg()
+Date: Fri, 28 Jun 2013 11:50:29 -0700
+Message-Id: <1372445527-24414-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,50 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-[ Upstream commit 54d27fcb338bd9c42d1dfc5a39e18f6f9d373c2e ]
+commit c802d759623acbd6e1ee9fbdabae89159a513913 upstream.
 
-TCP md5 communications fail [1] for some devices, because sg/crypto code
-assume page offsets are below PAGE_SIZE.
+sizeof() when applied to a pointer typed expression gives the size of the
+pointer, not that of the pointed data.
+Introduced by commit 3ce5ef(netrom: fix info leak via msg_name in nr_recvmsg)
 
-This was discovered using mlx4 driver [2], but I suspect loopback
-might trigger the same bug now we use order-3 pages in tcp_sendmsg()
-
-[1] Failure is giving following messages.
-
-huh, entered softirq 3 NET_RX ffffffff806ad230 preempt_count 00000100,
-exited with 00000101?
-
-[2] mlx4 driver uses order-2 pages to allocate RX frags
-
-Reported-by: Matt Schnall <mischnal@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Bernhard Beck <bbeck@google.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/tcp.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/netrom/af_netrom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 45b63ca..425058e 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3371,8 +3371,11 @@ int tcp_md5_hash_skb_data(struct tcp_md5sig_pool *hp,
- 
- 	for (i = 0; i < shi->nr_frags; ++i) {
- 		const struct skb_frag_struct *f = &shi->frags[i];
--		struct page *page = skb_frag_page(f);
--		sg_set_page(&sg, page, skb_frag_size(f), f->page_offset);
-+		unsigned int offset = f->page_offset;
-+		struct page *page = skb_frag_page(f) + (offset >> PAGE_SHIFT);
-+
-+		sg_set_page(&sg, page, skb_frag_size(f),
-+			    offset_in_page(offset));
- 		if (crypto_hash_update(desc, &sg, skb_frag_size(f)))
- 			return 1;
+diff --git a/net/netrom/af_netrom.c b/net/netrom/af_netrom.c
+index 14c106b..f334fbd 100644
+--- a/net/netrom/af_netrom.c
++++ b/net/netrom/af_netrom.c
+@@ -1177,7 +1177,7 @@ static int nr_recvmsg(struct kiocb *iocb, struct socket *sock,
  	}
+ 
+ 	if (sax != NULL) {
+-		memset(sax, 0, sizeof(sax));
++		memset(sax, 0, sizeof(*sax));
+ 		sax->sax25_family = AF_NETROM;
+ 		skb_copy_from_linear_data_offset(skb, 7, sax->sax25_call.ax25_call,
+ 			      AX25_ADDR_LEN);
 -- 
 1.8.1.2
 
