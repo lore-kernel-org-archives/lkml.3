@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab3F1OBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:01:32 -0400
-Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:57745 "EHLO
-	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752819Ab3F1OBb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:01:31 -0400
-Message-ID: <51CD95FE.6070205@st.com>
-Date: Fri, 28 Jun 2013 14:56:14 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl: st: Fix checking return value of syscon_regmap_lookup_by_phandle()
-References: <1372415628.1860.1.camel@phoenix> <51CD6743.3050603@st.com> <CAFRkauBbajREymRRZ8rbB6nzw4KgPWSd684Qz75MekcLzpoR=g@mail.gmail.com>
-In-Reply-To: <CAFRkauBbajREymRRZ8rbB6nzw4KgPWSd684Qz75MekcLzpoR=g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754949Ab3F1OCJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:02:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6685 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752566Ab3F1OCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 10:02:08 -0400
+Date: Fri, 28 Jun 2013 09:43:25 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org,
+        hyunhee.kim@samsung.com
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130628094325.45f5139b@redhat.com>
+In-Reply-To: <20130628043411.GA9100@teo>
+References: <20130626231712.4a7392a7@redhat.com>
+	<20130627150231.2bc00e3efcd426c4beef894c@linux-foundation.org>
+	<20130628000201.GB15637@bbox>
+	<20130627173433.d0fc6ecd.akpm@linux-foundation.org>
+	<20130628005852.GA8093@teo>
+	<20130627181353.3d552e64.akpm@linux-foundation.org>
+	<20130628043411.GA9100@teo>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/13 13:16, Axel Lin wrote:
-> 2013/6/28 Srinivas KANDAGATLA <srinivas.kandagatla@st.com>:
->> Thankyou Axel for looking at this.
->>
->> There is already a patch is submitted for this.
->> https://lkml.org/lkml/2013/6/26/494 which I have Acked.
-> 
-> That is strange.
-> I don't think the patch you mentioned can be applied to current pinctrl tree.
-> Current code does check pinctrl_register by IS_ERR.
-The patch removes the IS_ERR, because, pinctrl_register returns NULL or
-a valid pointer, using IS_ERR is this case is incorrect.
+On Thu, 27 Jun 2013 21:34:11 -0700
+Anton Vorontsov <anton@enomsg.org> wrote:
 
-Thanks,
-srini
+> On Thu, Jun 27, 2013 at 06:13:53PM -0700, Andrew Morton wrote:
+> > On Thu, 27 Jun 2013 17:58:53 -0700 Anton Vorontsov <anton@enomsg.org> wrote:
+> > > Current frequency is 1/(2MB). Suppose we ended up scanning the whole
+> > > memory on a 2GB host, this will give us 1024 hits. Doesn't feel too much*
+> > > to me... But for what it worth, I am against adding read() to the
+> > > interface -- just because we can avoid the unnecessary switch into the
+> > > kernel.
+> > 
+> > What was it they said about premature optimization?
+> > 
+> > I think I'd rather do nothing than add a mode hack (already!).
+> > 
+> > The information Luiz wants is already available with the existing
+> > interface, so why not just use it until there is a real demonstrated
+> > problem?
+> > 
+> > But all this does point at the fact that the chosen interface was not a
+> > good one.  And it's happening so soon :( A far better interface would
+> > be to do away with this level filtering stuff in the kernel altogether.
 > 
->         info->pctl = pinctrl_register(pctl_desc, &pdev->dev, info);
->         if (IS_ERR(info->pctl)) {
+> OK, I am convinced that modes might be not necessary, but I see no big
+> problem in current situation, we can add the strict mode and deprecate the
+> "filtering" -- basically we'll implement the idea of requiring that
+> userspace registers a separate fd for each level.
 
-> 
-> Regards,
-> Axel
-> 
+Agreed this is a good solution.
 
+> As one of the ways to change the interface, we can do the strict mode by
+> writing levels in uppercase, and warn_once on lowercase levels, describing
+> that the old behaviour will go away. Once (if ever) we remove the old
+> behaviour, the apps trying the old-style lowercase levels will fail
+> gracefully with EINVAL.
+
+Why don't we just break it? There's no non-development kernel released
+with this interface yet.
