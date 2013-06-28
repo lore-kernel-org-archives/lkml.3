@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab3F1S4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:56:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41797 "EHLO
+	id S1753417Ab3F1S4n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:56:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41802 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab3F1S4i (ORCPT
+	with ESMTP id S1753280Ab3F1S4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:56:38 -0400
+	Fri, 28 Jun 2013 14:56:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ferruh Yigit <fery@cypress.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: David Cohen <david.a.cohen@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 040/105] Input: cyttsp - fix memcpy size param
-Date: Fri, 28 Jun 2013 11:51:02 -0700
-Message-Id: <1372445527-24414-41-git-send-email-kamal@canonical.com>
+Subject: [PATCH 039/105] MODSIGN: do not send garbage to stderr when enabling modules signature
+Date: Fri, 28 Jun 2013 11:51:01 -0700
+Message-Id: <1372445527-24414-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ferruh Yigit <fery@cypress.com>
+From: David Cohen <david.a.cohen@intel.com>
 
-commit d2983cdb480157f637df07723f28aaa657b1080d upstream.
+commit 07c449bbc6aa514098c4f12c7b04180cec2417c6 upstream.
 
-memcpy param is wrong because of offset in bl_cmd, this may corrupt the
-stack which may cause a crash.
+When compiling kernel with -jN (N > 1), all warning/error messages
+printed while openssl is generating key pair may get mixed dots and
+other symbols openssl sends to stderr. This patch makes sure openssl
+logs go to default stdout.
 
-Tested-by: Ferruh Yigit <fery@cypress.com> on TMA300-DVK
-Signed-off-by: Ferruh Yigit <fery@cypress.com>
-Acked-by: Javier Martinez Canillas <javier@dowhile0.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Example of the garbage on stderr:
+
+crypto/anubis.c:581: warning: ‘inter’ is used uninitialized in this function
+Generating a 4096 bit RSA private key
+.........
+drivers/gpu/drm/i915/i915_gem_gtt.c: In function ‘gen6_ggtt_insert_entries’:
+drivers/gpu/drm/i915/i915_gem_gtt.c:440: warning: ‘addr’ may be used uninitialized in this function
+.net/mac80211/tx.c: In function ‘ieee80211_subif_start_xmit’:
+net/mac80211/tx.c:1780: warning: ‘chanctx_conf’ may be used uninitialized in this function
+..drivers/isdn/hardware/mISDN/hfcpci.c: In function ‘hfcpci_softirq’:
+.....drivers/isdn/hardware/mISDN/hfcpci.c:2298: warning: ignoring return value of ‘driver_for_each_device’, declared with attribute warn_unused_result
+
+Signed-off-by: David Cohen <david.a.cohen@intel.com>
+Reviewed-by: mark gross <mark.gross@intel.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/touchscreen/cyttsp_core.c | 2 +-
+ kernel/Makefile | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/touchscreen/cyttsp_core.c b/drivers/input/touchscreen/cyttsp_core.c
-index 8e60437..97ba891 100644
---- a/drivers/input/touchscreen/cyttsp_core.c
-+++ b/drivers/input/touchscreen/cyttsp_core.c
-@@ -133,7 +133,7 @@ static int cyttsp_exit_bl_mode(struct cyttsp *ts)
- 	memcpy(bl_cmd, bl_command, sizeof(bl_command));
- 	if (ts->pdata->bl_keys)
- 		memcpy(&bl_cmd[sizeof(bl_command) - CY_NUM_BL_KEYS],
--			ts->pdata->bl_keys, sizeof(bl_command));
-+			ts->pdata->bl_keys, CY_NUM_BL_KEYS);
- 
- 	error = ttsp_write_block_data(ts, CY_REG_BASE,
- 				      sizeof(bl_cmd), bl_cmd);
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 6c072b6..f8f435a 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -185,7 +185,7 @@ signing_key.priv signing_key.x509: x509.genkey
+ 	openssl req -new -nodes -utf8 $(sign_key_with_hash) -days 36500 -batch \
+ 		-x509 -config x509.genkey \
+ 		-outform DER -out signing_key.x509 \
+-		-keyout signing_key.priv
++		-keyout signing_key.priv 2>&1
+ 	@echo "###"
+ 	@echo "### Key pair generated."
+ 	@echo "###"
 -- 
 1.8.1.2
 
