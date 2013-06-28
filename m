@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3F1TUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:20:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41559 "EHLO
+	id S1753051Ab3F1TUG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:20:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41560 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab3F1Sw2 (ORCPT
+	with ESMTP id S1751894Ab3F1Sw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Jun 2013 14:52:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 012/105] net: qmi_wwan: fixup destination address (firmware bug workaround)
-Date: Fri, 28 Jun 2013 11:50:34 -0700
-Message-Id: <1372445527-24414-13-git-send-email-kamal@canonical.com>
+Subject: [PATCH 020/105] reiserfs: fix problems with chowning setuid file w/ xattrs
+Date: Fri, 28 Jun 2013 11:50:42 -0700
+Message-Id: <1372445527-24414-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,97 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 6483bdc9d76fb98174797516a19d289eb837909e upstream.
+commit 4a8570112b76a63ad21cfcbe2783f98f7fd5ba1b upstream.
 
-Received packets are sometimes addressed to 00:a0:c6:00:00:00
-instead of the address the device firmware should have learned
-from the host:
+reiserfs_chown_xattrs() takes the iattr struct passed into ->setattr
+and uses it to iterate over all the attrs associated with a file to change
+ownership of xattrs (and transfer quota associated with the xattr files).
 
-321.224126 77.16.85.204 -> 148.122.171.134 ICMP 98 Echo (ping) request  id=0x4025, seq=64/16384, ttl=64
+When the setuid bit is cleared during chown, ATTR_MODE and iattr->ia_mode
+are passed to all the xattrs as well. This means that the xattr directory
+will have S_IFREG added to its mode bits.
 
-0000  82 c0 82 c9 f1 67 82 c0 82 c9 f1 67 08 00 45 00   .....g.....g..E.
-0010  00 54 00 00 40 00 40 01 57 cc 4d 10 55 cc 94 7a   .T..@.@.W.M.U..z
-0020  ab 86 08 00 62 fc 40 25 00 40 b2 bc 6e 51 00 00   ....b.@%.@..nQ..
-0030  00 00 6b bd 09 00 00 00 00 00 10 11 12 13 14 15   ..k.............
-0040  16 17 18 19 1a 1b 1c 1d 1e 1f 20 21 22 23 24 25   .......... !"#$%
-0050  26 27 28 29 2a 2b 2c 2d 2e 2f 30 31 32 33 34 35   &'()*+,-./012345
-0060  36 37                                             67
+This has been prevented in practice by a missing IS_PRIVATE check
+in reiserfs_acl_chmod, which caused a double-lock to occur while holding
+the write lock. Since the file system was completely locked up, the
+writeout of the corrupted mode never happened.
 
-321.240607 148.122.171.134 -> 77.16.85.204 ICMP 98 Echo (ping) reply    id=0x4025, seq=64/16384, ttl=55
+This patch temporarily clears everything but ATTR_UID|ATTR_GID for the
+calls to reiserfs_setattr and adds the missing IS_PRIVATE check.
 
-0000  00 a0 c6 00 00 00 02 50 f3 00 00 00 08 00 45 00   .......P......E.
-0010  00 54 00 56 00 00 37 01 a0 76 94 7a ab 86 4d 10   .T.V..7..v.z..M.
-0020  55 cc 00 00 6a fc 40 25 00 40 b2 bc 6e 51 00 00   U...j.@%.@..nQ..
-0030  00 00 6b bd 09 00 00 00 00 00 10 11 12 13 14 15   ..k.............
-0040  16 17 18 19 1a 1b 1c 1d 1e 1f 20 21 22 23 24 25   .......... !"#$%
-0050  26 27 28 29 2a 2b 2c 2d 2e 2f 30 31 32 33 34 35   &'()*+,-./012345
-0060  36 37                                             67
-
-The bogus address is always the same, and matches the address
-suggested by many devices as a default address.  It is likely a
-hardcoded firmware default.
-
-The circumstances where this bug has been observed indicates that
-the trigger is related to timing or some other factor the host
-cannot control. Repeating the exact same configuration sequence
-that caused it to trigger once, will not necessarily cause it to
-trigger the next time. Reproducing the bug is therefore difficult.
-This opens up a possibility that the bug is more common than we can
-confirm, because affected devices often will work properly again
-after a reset.  A procedure most users are likely to try out before
-reporting a bug.
-
-Unconditionally rewriting the destination address if the first digit
-of the received packet is 0, is considered an acceptable compromise
-since we already have to inspect this digit.  The simplification will
-cause unnecessary rewrites if the real address starts with 0, but this
-is still better than adding additional tests for this particular case.
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/usb/qmi_wwan.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ fs/reiserfs/xattr.c     | 14 +++++++++++++-
+ fs/reiserfs/xattr_acl.c |  3 +++
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index 5025ca6..31b9d45 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -68,6 +68,10 @@ struct qmi_wwan_state {
-  * This means that this function will reliably add the appropriate
-  * header iff necessary, provided our hardware address does not start
-  * with 4 or 6.
-+ *
-+ * Another common firmware bug results in all packets being addressed
-+ * to 00:a0:c6:00:00:00 despite the host address being different.
-+ * This function will also fixup such packets.
-  */
- static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+diff --git a/fs/reiserfs/xattr.c b/fs/reiserfs/xattr.c
+index 4cce1d9..821bcf7 100644
+--- a/fs/reiserfs/xattr.c
++++ b/fs/reiserfs/xattr.c
+@@ -318,7 +318,19 @@ static int delete_one_xattr(struct dentry *dentry, void *data)
+ static int chown_one_xattr(struct dentry *dentry, void *data)
  {
-@@ -84,6 +88,12 @@ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	case 0x60:
- 		proto = htons(ETH_P_IPV6);
- 		break;
-+	case 0x00:
-+		if (is_multicast_ether_addr(skb->data))
-+			return 1;
-+		/* possibly bogus destination - rewrite just in case */
-+		skb_reset_mac_header(skb);
-+		goto fix_dest;
- 	default:
- 		/* pass along other packets without modifications */
- 		return 1;
-@@ -94,6 +104,7 @@ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	skb_reset_mac_header(skb);
- 	eth_hdr(skb)->h_proto = proto;
- 	memset(eth_hdr(skb)->h_source, 0, ETH_ALEN);
-+fix_dest:
- 	memcpy(eth_hdr(skb)->h_dest, dev->net->dev_addr, ETH_ALEN);
- 	return 1;
+ 	struct iattr *attrs = data;
+-	return reiserfs_setattr(dentry, attrs);
++	int ia_valid = attrs->ia_valid;
++	int err;
++
++	/*
++	 * We only want the ownership bits. Otherwise, we'll do
++	 * things like change a directory to a regular file if
++	 * ATTR_MODE is set.
++	 */
++	attrs->ia_valid &= (ATTR_UID|ATTR_GID);
++	err = reiserfs_setattr(dentry, attrs);
++	attrs->ia_valid = ia_valid;
++
++	return err;
  }
+ 
+ /* No i_mutex, but the inode is unconnected. */
+diff --git a/fs/reiserfs/xattr_acl.c b/fs/reiserfs/xattr_acl.c
+index d7c01ef..6c8767f 100644
+--- a/fs/reiserfs/xattr_acl.c
++++ b/fs/reiserfs/xattr_acl.c
+@@ -443,6 +443,9 @@ int reiserfs_acl_chmod(struct inode *inode)
+ 	int depth;
+ 	int error;
+ 
++	if (IS_PRIVATE(inode))
++		return 0;
++
+ 	if (S_ISLNK(inode->i_mode))
+ 		return -EOPNOTSUPP;
+ 
 -- 
 1.8.1.2
 
