@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3F1S77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:59:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42013 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab3F1S6t (ORCPT
+	id S1754216Ab3F1TAm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:00:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47758 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab3F1S6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:58:49 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Igor Mammedov <imammedo@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 060/105] x86: kvmclock: zero initialize pvclock shared memory area
-Date: Fri, 28 Jun 2013 11:51:22 -0700
-Message-Id: <1372445527-24414-61-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
-References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 28 Jun 2013 14:58:41 -0400
+Date: Fri, 28 Jun 2013 20:58:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCHv6 0/5] xen: maintain an accurate persistent clock in more
+ cases
+In-Reply-To: <20130628161954.GB2452@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1306282054340.4013@ionos.tec.linutronix.de>
+References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306281510180.4013@ionos.tec.linutronix.de> <20130628150158.GA5035@phenom.dumpdata.com> <alpine.DEB.2.02.1306281711310.4013@ionos.tec.linutronix.de>
+ <20130628161954.GB2452@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.4 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 28 Jun 2013, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jun 28, 2013 at 05:12:35PM +0200, Thomas Gleixner wrote:
+> > On Fri, 28 Jun 2013, Konrad Rzeszutek Wilk wrote:
+> > > On Fri, Jun 28, 2013 at 03:14:42PM +0200, Thomas Gleixner wrote:
+> > > > On Thu, 27 Jun 2013, David Vrabel wrote:
+> > > > > These series fixes the above limitations and depends on "x86: increase
+> > > > > precision of x86_platform.get/set_wallclock()" which was previously
+> > > > > posted.
+> > > > 
+> > > > So I'd like to merge that in the following way:
+> > > > 
+> > > > I pick up patches 1-3 and stick them into tip timers/for-xen and merge
+> > > > that branch into timers/core. When picking up 1/6, I'll drop the xen
+> > > > part of that, so timers/core will not hold any xen specific bits.
+> > > > 
+> > > > Then the xen folks can pull timers/for-xen and apply the xen specific
+> > > > stuff on top.
+> > > 
+> > > Wouldn't it be easier for you to pick the "xen part of that" as well?
+> > > I am OK with you doing that and it all going through your tree.
+> > 
+> > I can do that, if that's not conflicting with other xen/x86 stuff
+> > outside of timers/core.
+> 
+> I got one change in there and it seems to apply cleanly (woot!).
+> But lets be on a safe side. There are also some Xen ARM changes that
+> are fiddling with arch/x86/xen/time.c (different maintainer)) - so both
+> me and Stefano can pull from the timers/for-xen and not have to worry about
+> conflict resolution.
 
-------------------
+Hrmpf, just noticed, that it depends on other stuff in timers/core:
 
-From: Igor Mammedov <imammedo@redhat.com>
+ce0b098: x86: Fix vrtc_get_time/set_mmss to use new timespec interface
+3565184: x86: Increase precision of x86_platform.get/set_wallclock()
 
-commit 07868fc6aaf57847b0f3a3d53086b7556eb83f4a upstream.
-
-kernel might hung in pvclock_clocksource_read() due to
-uninitialized memory might contain odd version value in
-following cycle:
-
-        do {
-                version = __pvclock_read_cycles(src, &ret, &flags);
-        } while ((src->version & 1) || version != src->version);
-
-if secondary kvmclock is accessed before it's registered with kvm.
-
-Clear garbage in pvclock shared memory area right after it's
-allocated to avoid this issue.
-
-Ref: https://bugzilla.kernel.org/show_bug.cgi?id=59521
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-[See BZ for analysis.  We may want a different fix for 3.11, but
- this is the safest for now - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/kernel/kvmclock.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index 5bedbdd..a855a2e 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -238,6 +238,7 @@ void __init kvmclock_init(void)
- 	if (!mem)
- 		return;
- 	hv_clock = __va(mem);
-+	memset(hv_clock, 0, size);
- 
- 	if (kvm_register_clock("boot clock")) {
- 		hv_clock = NULL;
--- 
-1.8.1.2
-
+/me rumages for frozen shark.
