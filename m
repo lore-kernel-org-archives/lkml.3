@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab3F1NDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 09:03:06 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:59954 "EHLO
+	id S1755449Ab3F1NDw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 09:03:52 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:59980 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab3F1NDB (ORCPT
+	with ESMTP id S1755138Ab3F1NDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 09:03:01 -0400
+	Fri, 28 Jun 2013 09:03:06 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Shawn Guo <shawn.guo@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -14,9 +14,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 2/8] ARM: mxs: dt: Add Crystalfontz CFA-10056 device tree
-Date: Fri, 28 Jun 2013 15:02:51 +0200
-Message-Id: <1372424577-8279-3-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 6/8] ARM: mxs: dt: cfa10049: make hogpins grabbed by respective drivers
+Date: Fri, 28 Jun 2013 15:02:55 +0200
+Message-Id: <1372424577-8279-7-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372424577-8279-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1372424577-8279-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -24,88 +24,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Lilly <brian@crystalfontz.com>
-
-The CFA-10056 is a breakout board for the CFA-10036, and is
-basically a CFA-10037, with a 4.3" screen.
-
-Signed-off-by: Brian Lilly <brian@crystalfontz.com>
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/boot/dts/Makefile           |   1 +
- arch/arm/boot/dts/imx28-cfa10056.dts | 120 +++++++++++++++++++++++++++++++++++
- 2 files changed, 121 insertions(+)
- create mode 100644 arch/arm/boot/dts/imx28-cfa10056.dts
+ arch/arm/boot/dts/imx28-cfa10049.dts | 73 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 63 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 641b3c9..da75139 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -143,6 +143,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
- 	imx28-cfa10037.dtb \
- 	imx28-cfa10049.dtb \
- 	imx28-cfa10055.dtb \
-+	imx28-cfa10056.dtb \
- 	imx28-cfa10057.dtb \
- 	imx28-evk.dtb \
- 	imx28-m28evk.dtb \
-diff --git a/arch/arm/boot/dts/imx28-cfa10056.dts b/arch/arm/boot/dts/imx28-cfa10056.dts
-new file mode 100644
-index 0000000..0f66c40
---- /dev/null
-+++ b/arch/arm/boot/dts/imx28-cfa10056.dts
-@@ -0,0 +1,120 @@
-+/*
-+ * Copyright 2013 Free Electrons
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/*
-+ * The CFA-10056 is an expansion board for the CFA-10036 module, thus we
-+ * need to include the CFA-10036 DTS.
-+ */
-+/include/ "imx28-cfa10037.dts"
-+
-+/ {
-+	model = "Crystalfontz CFA-10056 Board";
-+	compatible = "crystalfontz,cfa10056", "crystalfontz,cfa10036", "fsl,imx28";
-+
-+	apb@80000000 {
-+		apbh@80000000 {
-+			pinctrl@80018000 {
-+				spi2_pins_cfa10056: spi2-cfa10056@0 {
-+					reg = <0>;
-+					fsl,pinmux-ids = <
-+						0x2103 /* MX28_PAD_SSP2_SCK__GPIO_2_16 */
-+						0x2113 /* MX28_PAD_SSP2_CMD__GPIO_2_17 */
-+						0x2123 /* MX28_PAD_SSP2_D0__GPIO_2_18 */
-+						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
-+					>;
-+					fsl,drive-strength = <1>;
-+					fsl,voltage = <1>;
-+					fsl,pull-up = <1>;
-+				};
-+
-+				lcdif_pins_cfa10056: lcdif-10056@0 {
-+					reg = <0>;
-+					fsl,pinmux-ids = <
-+						0x1181 /* MX28_PAD_LCD_RD_E__LCD_VSYNC */
-+						0x1191 /* MX28_PAD_LCD_WR_RWN__LCD_HSYNC */
-+						0x11a1 /* MX28_PAD_LCD_RS__LCD_DOTCLK */
-+						0x11b1 /* MX28_PAD_LCD_CS__LCD_ENABLE */
+diff --git a/arch/arm/boot/dts/imx28-cfa10049.dts b/arch/arm/boot/dts/imx28-cfa10049.dts
+index 04b2f76..06e4cfa 100644
+--- a/arch/arm/boot/dts/imx28-cfa10049.dts
++++ b/arch/arm/boot/dts/imx28-cfa10049.dts
+@@ -22,32 +22,62 @@
+ 	apb@80000000 {
+ 		apbh@80000000 {
+ 			pinctrl@80018000 {
+-				pinctrl-names = "default", "default";
+-				pinctrl-1 = <&hog_pins_cfa10049
+-					&hog_pins_cfa10049_pullup>;
+-
+-				hog_pins_cfa10049: hog-10049@0 {
++				usb_pins_cfa10049: usb-10049@0 {
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+ 						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
 +					>;
 +					fsl,drive-strength = <0>;
 +					fsl,voltage = <1>;
 +					fsl,pull-up = <0>;
 +				};
 +
-+				lcdif_pins_cfa10056_pullup: lcdif-10056-pullup@0 {
++				i2cmux_pins_cfa10049: i2cmux-10049@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x1163 /* MX28_PAD_LCD_D22__GPIO_1_22 */
+ 						0x1173 /* MX28_PAD_LCD_D22__GPIO_1_23 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++
++				mac0_pins_cfa10049: mac0-10049@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x2153 /* MX28_PAD_SSP2_D5__GPIO_2_21 */
+-						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
+ 					>;
+ 					fsl,drive-strength = <0>;
+ 					fsl,voltage = <1>;
+ 					fsl,pull-up = <0>;
+ 				};
+ 
+-				hog_pins_cfa10049_pullup: hog-10049-pullup@0 {
++				pca_pins_cfa10049: pca-10049@0 {
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+ 						0x2133 /* MX28_PAD_SSP2_D3__GPIO_2_19 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <1>;
++				};
++
++				rotary_pins_cfa10049: rotary-10049@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x3183 /* MX28_PAD_I2C0_SCL__GPIO_3_24 */
+ 						0x3193 /* MX28_PAD_I2C0_SDA__GPIO_3_25 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <1>;
++				};
++
++				rotary_btn_pins_cfa10049: rotary-btn-10049@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x31a3 /* MX28_PAD_SAIF_SDATA0__GPIO_3_26 */
+-						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
+ 					>;
+ 					fsl,drive-strength = <0>;
+ 					fsl,voltage = <1>;
+@@ -60,6 +90,7 @@
+ 						0x2103 /* MX28_PAD_SSP2_SCK__GPIO_2_16 */
+ 						0x2113 /* MX28_PAD_SSP2_CMD__GPIO_2_17 */
+ 						0x2123 /* MX28_PAD_SSP2_D0__GPIO_2_18 */
++						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
+ 					>;
+ 					fsl,drive-strength = <1>;
+ 					fsl,voltage = <1>;
+@@ -120,6 +151,16 @@
+ 					fsl,pull-up = <0>;
+ 				};
+ 
++				lcdif_pins_cfa10049_pullup: lcdif-10049-pullup@0 {
 +					reg = <0>;
 +					fsl,pinmux-ids = <
 +						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
@@ -115,66 +126,74 @@ index 0000000..0f66c40
 +					fsl,pull-up = <1>;
 +				};
 +
-+			};
-+
-+			lcdif@80030000 {
+ 				w1_gpio_pins: w1-gpio@0 {
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+@@ -134,7 +175,8 @@
+ 			lcdif@80030000 {
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&lcdif_18bit_pins_cfa10049
+-					     &lcdif_pins_cfa10049>;
++					     &lcdif_pins_cfa10049
++					     &lcdif_pins_cfa10049_pullup>;
+ 				display = <&display>;
+ 				status = "okay";
+ 
+@@ -181,6 +223,8 @@
+ 				compatible = "i2c-mux-gpio";
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
 +				pinctrl-names = "default";
-+				pinctrl-0 = <&lcdif_24bit_pins_a
-+						&lcdif_pins_cfa10056
-+						&lcdif_pins_cfa10056_pullup >;
-+				display = <&display>;
-+				status = "okay";
-+
-+				display: display {
-+					bits-per-pixel = <32>;
-+					bus-width = <24>;
-+
-+					display-timings {
-+						native-mode = <&timing0>;
-+						timing0: timing0 {
-+							clock-frequency = <32000000>;
-+							hactive = <480>;
-+							vactive = <800>;
-+							hback-porch = <2>;
-+							hfront-porch = <2>;
-+							vback-porch = <2>;
-+							vfront-porch = <2>;
-+							hsync-len = <5>;
-+							vsync-len = <5>;
-+							hsync-active = <0>;
-+							vsync-active = <0>;
-+							de-active = <1>;
-+							pixelclk-active = <1>;
-+						};
-+					};
-+				};
-+			};
-+		};
-+	};
-+
-+	spi2 {
-+		compatible = "spi-gpio";
++				pinctrl-0 = <&i2cmux_pins_cfa10049>;
+ 				mux-gpios = <&gpio1 22 0 &gpio1 23 0>;
+ 				i2c-parent = <&i2c1>;
+ 
+@@ -203,6 +247,8 @@
+ 
+ 					pca9555: pca9555@20 {
+ 						compatible = "nxp,pca9555";
++						pinctrl-names = "default";
++						pinctrl-0 = <&pca_pins_cfa10049>;
+ 						interrupt-parent = <&gpio2>;
+ 						interrupts = <19 0x2>;
+ 						gpio-controller;
+@@ -239,6 +285,8 @@
+ 
+ 		reg_usb1_vbus: usb1_vbus {
+ 			compatible = "regulator-fixed";
++			pinctrl-names = "default";
++			pinctrl-0 = <&usb_pins_cfa10049>;
+ 			regulator-name = "usb1_vbus";
+ 			regulator-min-microvolt = <5000000>;
+ 			regulator-max-microvolt = <5000000>;
+@@ -250,7 +298,8 @@
+ 		mac0: ethernet@800f0000 {
+ 			phy-mode = "rmii";
+ 			pinctrl-names = "default";
+-			pinctrl-0 = <&mac0_pins_a>;
++			pinctrl-0 = <&mac0_pins_a
++				&mac0_pins_cfa10049>;
+ 			phy-reset-gpios = <&gpio2 21 0>;
+ 			phy-reset-duration = <100>;
+ 			status = "okay";
+@@ -320,6 +369,8 @@
+ 
+ 	gpio_keys {
+ 		compatible = "gpio-keys";
 +		pinctrl-names = "default";
-+		pinctrl-0 = <&spi2_pins_cfa10056>;
-+		status = "okay";
-+		gpio-sck = <&gpio2 16 0>;
-+		gpio-mosi = <&gpio2 17 0>;
-+		gpio-miso = <&gpio2 18 0>;
-+		cs-gpios = <&gpio3 5 0>;
-+		num-chipselects = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		hx8369: hx8369@0 {
-+			compatible = "himax,hx8369a", "himax,hx8369";
-+			reg = <0>;
-+			spi-max-frequency = <100000>;
-+			spi-cpol;
-+			spi-cpha;
-+			gpios-reset = <&gpio3 30 0>;
-+		};
-+	};
-+};
++		pinctrl-0 = <&rotary_btn_pins_cfa10049>;
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+@@ -333,6 +384,8 @@
+ 
+ 	rotary {
+ 		compatible = "rotary-encoder";
++		pinctrl-names = "default";
++		pinctrl-0 = <&rotary_pins_cfa10049>;
+ 		gpios = <&gpio3 24 1>, <&gpio3 25 1>;
+ 		linux,axis = <1>; /* REL_Y */
+ 		rotary-encoder,relative-axis;
 -- 
 1.8.1.2
 
