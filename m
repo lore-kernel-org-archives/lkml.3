@@ -1,85 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab3F1H6x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 03:58:53 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:44132 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab3F1H6w (ORCPT
+	id S1754869Ab3F1H7z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 03:59:55 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:16714 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab3F1H7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 03:58:52 -0400
-Message-ID: <51CD4233.3040209@iki.fi>
-Date: Fri, 28 Jun 2013 10:58:43 +0300
-From: Tomi Valkeinen <tomi.valkeinen@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 28 Jun 2013 03:59:54 -0400
+X-IronPort-AV: E=Sophos;i="4.87,957,1363132800"; 
+   d="scan'208";a="6156606"
+Message-ID: <1372406390.8976.67.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH next] xen: Use more current logging styles
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Joe Perches <joe@perches.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, <xen-devel@lists.xensource.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" 
+	<virtualization@lists.linux-foundation.org>
+Date: Fri, 28 Jun 2013 08:59:50 +0100
+In-Reply-To: <1372395469.2060.36.camel@joe-AO722>
+References: <1372395469.2060.36.camel@joe-AO722>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-To: Ruslan Bilovol <ruslan.bilovol@ti.com>
-CC: b-cousson@ti.com, tony@atomide.com, benoit.cousson@linaro.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v2] ARM: DTS: OMAP4: Add OMAP4 Blaze Tablet support
-References: <1372159970-6361-1-git-send-email-ruslan.bilovol@ti.com>
-In-Reply-To: <1372159970-6361-1-git-send-email-ruslan.bilovol@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2KCGSAMPDOGDKJLXTPATW"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2KCGSAMPDOGDKJLXTPATW
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-06-27 at 21:57 -0700, Joe Perches wrote:
+> Instead of mixing printk and pr_<level> forms,
+> just use pr_<level>
+> 
+> Miscellaneous changes around these conversions:
+> 
+> Add a missing newline to avoid message interleaving,
+> coalesce formats, reflow modified lines to 80 columns.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-On 25/06/13 14:32, Ruslan Bilovol wrote:
-> The OMAP4 Blaze Tablet is TI OMAP4 processor-based
-> development platform in a tablet formfactor.
-> The platform contains many of the features found in
-> present-day handsets (such as audio, video, wireless
-> functions and user interfaces) and in addition
-> contains features for software development and test.
->=20
-> This patch adds initial support for the OMAP4 Blaze
-> Tablet development platform. Additional functionality
-> depends on different drivers and code modifications that
-> are not upstreamed yet or do not support DT yet, so will
-> be added later.
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-I think there are (at least) two revisions of the blaze tablet, the
-newer one has a higher resolution LCD. I don't know what the other
-differences are.
+> ---
+>  drivers/net/xen-netback/netback.c |  7 +++----
+>  drivers/net/xen-netfront.c        | 28 +++++++++++++---------------
+>  2 files changed, 16 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index 130bcb2..64828de 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -1890,9 +1890,8 @@ static int __init netback_init(void)
+>  		return -ENODEV;
+>  
+>  	if (fatal_skb_slots < XEN_NETBK_LEGACY_SLOTS_MAX) {
+> -		printk(KERN_INFO
+> -		       "xen-netback: fatal_skb_slots too small (%d), bump it to XEN_NETBK_LEGACY_SLOTS_MAX (%d)\n",
+> -		       fatal_skb_slots, XEN_NETBK_LEGACY_SLOTS_MAX);
+> +		pr_info("fatal_skb_slots too small (%d), bump it to XEN_NETBK_LEGACY_SLOTS_MAX (%d)\n",
+> +			fatal_skb_slots, XEN_NETBK_LEGACY_SLOTS_MAX);
+>  		fatal_skb_slots = XEN_NETBK_LEGACY_SLOTS_MAX;
+>  	}
+>  
+> @@ -1921,7 +1920,7 @@ static int __init netback_init(void)
+>  					     "netback/%u", group);
+>  
+>  		if (IS_ERR(netbk->task)) {
+> -			printk(KERN_ALERT "kthread_create() fails at netback\n");
+> +			pr_alert("kthread_create() fails at netback\n");
+>  			del_timer(&netbk->net_timer);
+>  			rc = PTR_ERR(netbk->task);
+>  			goto failed_init;
+> diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+> index 76a2236..ff7f111 100644
+> --- a/drivers/net/xen-netfront.c
+> +++ b/drivers/net/xen-netfront.c
+> @@ -29,6 +29,8 @@
+>   * IN THE SOFTWARE.
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/kernel.h>
+>  #include <linux/netdevice.h>
+> @@ -385,9 +387,8 @@ static void xennet_tx_buf_gc(struct net_device *dev)
+>  			skb = np->tx_skbs[id].skb;
+>  			if (unlikely(gnttab_query_foreign_access(
+>  				np->grant_tx_ref[id]) != 0)) {
+> -				printk(KERN_ALERT "xennet_tx_buf_gc: warning "
+> -				       "-- grant still in use by backend "
+> -				       "domain.\n");
+> +				pr_alert("%s: warning -- grant still in use by backend domain\n",
+> +					 __func__);
+>  				BUG();
+>  			}
+>  			gnttab_end_foreign_access_ref(
+> @@ -804,14 +805,14 @@ static int xennet_set_skb_gso(struct sk_buff *skb,
+>  {
+>  	if (!gso->u.gso.size) {
+>  		if (net_ratelimit())
+> -			printk(KERN_WARNING "GSO size must not be zero.\n");
+> +			pr_warn("GSO size must not be zero\n");
+>  		return -EINVAL;
+>  	}
+>  
+>  	/* Currently only TCPv4 S.O. is supported. */
+>  	if (gso->u.gso.type != XEN_NETIF_GSO_TYPE_TCPV4) {
+>  		if (net_ratelimit())
+> -			printk(KERN_WARNING "Bad GSO type %d.\n", gso->u.gso.type);
+> +			pr_warn("Bad GSO type %d\n", gso->u.gso.type);
+>  		return -EINVAL;
+>  	}
+>  
+> @@ -910,9 +911,8 @@ static int checksum_setup(struct net_device *dev, struct sk_buff *skb)
+>  		break;
+>  	default:
+>  		if (net_ratelimit())
+> -			printk(KERN_ERR "Attempting to checksum a non-"
+> -			       "TCP/UDP packet, dropping a protocol"
+> -			       " %d packet", iph->protocol);
+> +			pr_err("Attempting to checksum a non-TCP/UDP packet, dropping a protocol %d packet\n",
+> +			       iph->protocol);
+>  		goto out;
+>  	}
+>  
+> @@ -1359,14 +1359,14 @@ static struct net_device *xennet_create_dev(struct xenbus_device *dev)
+>  	/* A grant for every tx ring slot */
+>  	if (gnttab_alloc_grant_references(TX_MAX_TARGET,
+>  					  &np->gref_tx_head) < 0) {
+> -		printk(KERN_ALERT "#### netfront can't alloc tx grant refs\n");
+> +		pr_alert("can't alloc tx grant refs\n");
+>  		err = -ENOMEM;
+>  		goto exit_free_stats;
+>  	}
+>  	/* A grant for every rx ring slot */
+>  	if (gnttab_alloc_grant_references(RX_MAX_TARGET,
+>  					  &np->gref_rx_head) < 0) {
+> -		printk(KERN_ALERT "#### netfront can't alloc rx grant refs\n");
+> +		pr_alert("can't alloc rx grant refs\n");
+>  		err = -ENOMEM;
+>  		goto exit_free_tx;
+>  	}
+> @@ -1430,16 +1430,14 @@ static int netfront_probe(struct xenbus_device *dev,
+>  
+>  	err = register_netdev(info->netdev);
+>  	if (err) {
+> -		printk(KERN_WARNING "%s: register_netdev err=%d\n",
+> -		       __func__, err);
+> +		pr_warn("%s: register_netdev err=%d\n", __func__, err);
+>  		goto fail;
+>  	}
+>  
+>  	err = xennet_sysfs_addif(info->netdev);
+>  	if (err) {
+>  		unregister_netdev(info->netdev);
+> -		printk(KERN_WARNING "%s: add sysfs failed err=%d\n",
+> -		       __func__, err);
+> +		pr_warn("%s: add sysfs failed err=%d\n", __func__, err);
+>  		goto fail;
+>  	}
+>  
+> @@ -2116,7 +2114,7 @@ static int __init netif_init(void)
+>  	if (xen_hvm_domain() && !xen_platform_pci_unplug)
+>  		return -ENODEV;
+>  
+> -	printk(KERN_INFO "Initialising Xen virtual ethernet driver.\n");
+> +	pr_info("Initialising Xen virtual ethernet driver\n");
+>  
+>  	return xenbus_register_frontend(&netfront_driver);
+>  }
+> 
+> 
 
-I think you have the newer revision. I have the older. Do you know about
-the diff of those revisions, or more importantly, will the same blaze
-tablet support work for the older revision also?
 
- Tomi
-
-
-
-------enig2KCGSAMPDOGDKJLXTPATW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRzUI3AAoJEPo9qoy8lh71X10QAI0GTRyNcaK2aEWzd4Wd7oHh
-Q2f88YpyYttnEVYEwJqRaLCgqN9OMQ4zzwxcxFH6sGYoAhIhALKZRP88YZr9vhUy
-WkaHU8xgOb3oDs7Mz5xPEMGgXXRmBEzuaNxU1o8VPNfgW2nINsQU6Qq4bnQDdKgV
-0nperAnILmaVD09zn4bhLhmBOWTGRRHs07Hs5J2auCh0+h7kyEVu9ppPcqeph9VH
-NlnEkMHuueaXT1qq84uvMRS9weQefLhEmk66hJRM5AZP47tc5xYWs5ZN++NxZqMO
-FvBuRmzqkiAwDKuwyGpNoE0YOZoliQnQP+LfglpTfC3lxVAYS8dxC8iAGOpfGwRx
-ivAjdDRrRPi1PnRTri8MnAcc9OR5FfrY4wP56+ZvrffKoXqfsWy309Fj4gYhwFzL
-/WEmLldKMFciKUiEtmqbvv50uqm6Tcd6wm8WKV2qilF125h3Aa62LgBEBBDuB9rm
-pQpKFER8BL6JyCLUaZDjGwIhishvQnJGvivztieCRRJhJ0kqFGFCItsnNAiTFd2i
-bSsjfcXQRSk6ypTli4whYgjmsuNsm0l8mWM6ciRpT+fvzNvKVx+njL0V7mXCbLTp
-kFjOE1SNPmpKJ/Yh0/0+FCC2hqyaTMQTQ2X+qVMQBKrmZ375ZYpojFvbDx+8tmXJ
-JcPKMqrpG9RXJJz3K+K0
-=xf48
------END PGP SIGNATURE-----
-
-------enig2KCGSAMPDOGDKJLXTPATW--
