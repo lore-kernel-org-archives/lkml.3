@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab3F1SAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:00:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37664 "EHLO arroyo.ext.ti.com"
+	id S1752002Ab3F1SA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:00:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52665 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab3F1SAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:00:21 -0400
-Date: Fri, 28 Jun 2013 21:00:00 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Michael Grzeschik <mgr@pengutronix.de>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        George Cherian <george.cherian@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] usb: dwc3: core: continue probe even if usb3 phy is not
- available
-Message-ID: <20130628180000.GF25498@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1372238954-29047-1-git-send-email-george.cherian@ti.com>
- <20130626101647.GT12640@arwen.pp.htv.fi>
- <51CAD977.6040309@ti.com>
- <20130626121210.GA12640@arwen.pp.htv.fi>
- <874nclghu2.fsf@ashishki-desk.ger.corp.intel.com>
- <20130627061416.GI3523@pengutronix.de>
- <20130627063526.GG15455@arwen.pp.htv.fi>
- <20130627072408.GJ3523@pengutronix.de>
- <20130627073033.GN15455@arwen.pp.htv.fi>
+	id S1751249Ab3F1SA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 14:00:56 -0400
+Date: Fri, 28 Jun 2013 19:55:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <ddaney@caviumnetworks.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>,
+        David Daney <david.daney@cavium.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mips@linux-mips.org, stable@vger.kernel.org
+Subject: Re: [PATCH v3] kernel/signal.c: fix BUG_ON with SIG128 (MIPS)
+Message-ID: <20130628175559.GA30445@redhat.com>
+References: <51C4BB86.1020004@caviumnetworks.com> <20130622190940.GA14150@redhat.com> <51C80CF0.4070608@imgtec.com> <20130625144015.1e4e70a0ac888f4ccf5c6a8f@linux-foundation.org> <CAAG0J9-5J6=c=1VxEW6FevMHKsjShtbjM8G6Q1vu1P+LurQqoQ@mail.gmail.com> <51CACB80.5020706@imgtec.com> <20130626161452.GA2888@redhat.com> <20130626165900.GF7171@linux-mips.org> <20130626171551.GA5830@redhat.com> <51CD7C8C.4050807@imgtec.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yQbNiKLmgenwUfTN"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130627073033.GN15455@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51CD7C8C.4050807@imgtec.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---yQbNiKLmgenwUfTN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/28, James Hogan wrote:
+>
+> On 26/06/13 18:15, Oleg Nesterov wrote:
+> >
+> > I meant the minimal hack like
+> >
+> > 	--- x/arch/mips/include/uapi/asm/signal.h
+> > 	+++ x/arch/mips/include/uapi/asm/signal.h
+> > 	@@ -11,9 +11,9 @@
+> >
+> > 	 #include <linux/types.h>
+> >
+> > 	-#define _NSIG		128
+> > 	+#define _NSIG		127
+> > 	 #define _NSIG_BPW	(sizeof(unsigned long) * 8)
+> > 	-#define _NSIG_WORDS	(_NSIG / _NSIG_BPW)
+> > 	+#define _NSIG_WORDS	DIV_ROUND_UP(_NSIG / _NSIG_BPW)
+> >
+> > 	 typedef struct {
+> > 		unsigned long sig[_NSIG_WORDS];
+> >
+> > just to avoid BUG_ON().
+> >
+> > I agree that _NSIG == 126 or 64 needs more discussion. Although personally
+> > I think this is the only choice in the long term, or we should change ABI
+> > and break user-space completely.
+> >
+> > And, just in case, the hack above doesn't kill SIG_128 completely.
+> > Say, the task can block/unblock it.
+>
+> Well it prevents a handler being added or the signal being sent, so it
+> pretty much does kill it (patch v2 did this).
 
-Hi,
+Yes, iirc you already sent something like the hack above.
 
-On Thu, Jun 27, 2013 at 10:30:33AM +0300, Felipe Balbi wrote:
-> Hi,
->=20
-> On Thu, Jun 27, 2013 at 09:24:08AM +0200, Michael Grzeschik wrote:
-> > > > > > right, but in DT you will define both instances and each instan=
-ce will
-> > > > > > have a seaparate snps,maximum_speed attribute :-)
-> > > > > >
-> > > > > > I'm now considering if we should make maximum_speed a generic a=
-ttribute,
-> > > > > > Kishon ? Alex ? Alan ?
-> > > > > >
-> > > > > > anyone else needs such thing ?
-> > > > >=20
-> > > > > We have a force-full-speed attibute for chipidea on the way. This
-> > > > > maximum_speed looks like a more generic alternative. Michael, wha=
-t say
-> > > > > you?
-> > > >=20
-> > > > The maximum_speed attribute sounds more reasonable. I will change my
-> > > > patch to it.
-> > >=20
-> > > thanks, perhaps we can add a generic helper in udc-core or usb-common=
- ?
-> >=20
-> > As this function is not only udc specific, this should go into usb-comm=
-on.
-> > But right, we should go with a helper here. I will write one in addition
-> > to my full-speed patch as first user of it.
->=20
-> alright, thanks :-)
+> but it looks like it may be safe to
+> reduce _NSIG to 127 for a stable fix
 
-Michael, if you need any help with patching in maximum_speed attribute,
-let me know as I have some time to work on that part.
+This was my point.
 
-cheers
+Sure, this change can break something anyway, we can't know if nobody
+ever uses 128 anyway. But this is better than the ability to crash the
+kernel. No need to use strace, just block(128) + kill(128) + unblock().
 
---=20
-balbi
+So perhaps you can resend your patch? Just I think it makes sense to
+update the changelog to explain that this is not the "final" solution
+but the minimal fix.
 
---yQbNiKLmgenwUfTN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Oleg.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRzc8gAAoJEIaOsuA1yqREmHIQAIxdWheDf+szT0G39nO4b92U
-h+ydOWA42VquQ8AmICYM+xOXq0l17immZb3y9ySNY7woji9fas78dCeps/DlPjcd
-FyEbdmR0fYXL3wXkAEESsjx9hHV3KW8Zl/80GjetzebZzPMPrAXOeI7mpgYDgLUJ
-TyhTK4brnC0UyHBwTiVt0F2jLuXB955taLXwzxPHv6ejL8ysNStkPPPVBoq6rclt
-VsM6pY89mhbgOtpj/KBxCLKK5/2SsT0gJRuQVsFLEOvK7aXit9H200W7JZk+bh4C
-NTn1gnN8UHz/Y5Gps43rZYdjHJaAVLdSugMu2d0A70NQDIFPAVFY+Ogj4h+6d3jU
-QLaMXWhkQk0AT1Jb1AXEY5KBhSkgQnEBtO5jJw3DRTg9BitZTDBa8D2BYhFLBCad
-lWxmRfRJSj7z8xbLyjdoOdXQ4zbgJvkz/D/rkLyS5igO1N4+XDi0JfNfKEj0tv6T
-gbKCgF88sZJRRPyw4uyo23+icDV2V7CRfN7abshIRPHDDAe392+zNiS5cLahS2YS
-Tr9nD0iBucS8h79ugK8zxfmhQKfBV2NpJh22IZWtZE4H65CRcGSdOhE91fiVHBzx
-U63SevQK/aAG2UpaOcS6l09sZY/Q8yPHA+4fKiDxkHRTqHjZAiAwzY5pMoT4ZE1G
-ynnJE/ByKUPhUSU2fRnH
-=CHmE
------END PGP SIGNATURE-----
-
---yQbNiKLmgenwUfTN--
