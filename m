@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab3F1CiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jun 2013 22:38:16 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:38370 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab3F1CiO (ORCPT
+	id S1754161Ab3F1Cy4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jun 2013 22:54:56 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:39629 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab3F1Cyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jun 2013 22:38:14 -0400
-X-Spam-Score: -100.9
-Message-ID: <51CCF6E1.3080200@asianux.com>
-Date: Fri, 28 Jun 2013 10:37:21 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 27 Jun 2013 22:54:55 -0400
 MIME-Version: 1.0
-To: "'Jiri Kosina'" <trivial@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH v2] include/asm-generic/iomap.h: trivial: use '__ASM_GENERIC_IOMAP_H'
- instead of '__GENERIC_IO_H'
-References: <51CCF58E.9000007@asianux.com> <51CCF659.7070908@asianux.com>
-In-Reply-To: <51CCF659.7070908@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130628011843.GD32195@dastard>
+References: <20130623143634.GA2000@redhat.com>
+	<20130623150603.GA32313@redhat.com>
+	<20130623160452.GA11740@redhat.com>
+	<20130624155758.GA5993@redhat.com>
+	<20130624173510.GA1321@redhat.com>
+	<20130625153520.GA7784@redhat.com>
+	<20130626191853.GA29049@redhat.com>
+	<20130627002255.GA16553@redhat.com>
+	<20130627075543.GA32195@dastard>
+	<20130627143055.GA1000@redhat.com>
+	<20130628011843.GD32195@dastard>
+Date: Thu, 27 Jun 2013 16:54:53 -1000
+X-Google-Sender-Auth: -Gx31qkP6xvWckAyub7pStVCNjo
+Message-ID: <CA+55aFze-=6e_P1syCs=3b6-xj-itVyZKvpejqBR83gA5tV+4w@mail.gmail.com>
+Subject: Re: frequent softlockups with 3.10rc6.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recommend to let the header file macro mark match the file name.
+On Thu, Jun 27, 2013 at 3:18 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> Right, that will be what is happening - the entire system will go
+> unresponsive when a sync call happens, so it's entirely possible
+> to see the soft lockups on inode_sb_list_add()/inode_sb_list_del()
+> trying to get the lock because of the way ticket spinlocks work...
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/asm-generic/iomap.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+So what made it all start happening now? I don't recall us having had
+these kinds of issues before..
 
-diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
-index 6afd7d6..facfb39 100644
---- a/include/asm-generic/iomap.h
-+++ b/include/asm-generic/iomap.h
-@@ -1,5 +1,5 @@
--#ifndef __GENERIC_IO_H
--#define __GENERIC_IO_H
-+#ifndef __ASM_GENERIC_IOMAP_H
-+#define __ASM_GENERIC_IOMAP_H
- 
- #include <linux/linkage.h>
- #include <asm/byteorder.h>
-@@ -78,4 +78,4 @@ static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr)
- 
- #include <asm-generic/pci_iomap.h>
- 
--#endif
-+#endif /* __ASM_GENERIC_IOMAP_H */
--- 
-1.7.7.6
+                Linus
