@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab3F1Ouo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 10:50:44 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:60603 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab3F1Oum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 10:50:42 -0400
-Message-ID: <51CDA2BF.5050501@free-electrons.com>
-Date: Fri, 28 Jun 2013 16:50:39 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755173Ab3F1Oyr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 10:54:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39169 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754518Ab3F1Oyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 10:54:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,958,1363158000"; 
+   d="scan'208";a="361140353"
+Message-ID: <51CDA3B3.7010605@linux.intel.com>
+Date: Fri, 28 Jun 2013 17:54:43 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Jean Delvare <khali@linux-fr.org>,
-        jimwall@q.com, brian@crystalfontz.com,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 3/4] hwmon: Add a simple driver to read the MXS SoC temperature
-References: <1372236673-20725-1-git-send-email-alexandre.belloni@free-electrons.com> <1372236673-20725-4-git-send-email-alexandre.belloni@free-electrons.com> <20130626143927.GB31998@roeck-us.net> <20130627091732.GP5803@lukather> <20130627142758.GA5812@roeck-us.net> <51CC91E8.50605@free-electrons.com> <51CD9B19.90407@metafoo.de>
-In-Reply-To: <51CD9B19.90407@metafoo.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+CC: linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH net-next 2/2] net: avoid calling sched_clock when LLS
+ is off
+References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com> <20130628125934.14419.38109.stgit@ladj378.jer.intel.com> <20130628143840.GS6123@two.firstfloor.org>
+In-Reply-To: <20130628143840.GS6123@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/2013 16:18, Lars-Peter Clausen wrote:
-> On 06/27/2013 09:26 PM, Alexandre Belloni wrote:
->>
->> They are already registered as IIO_TEMP but only implement read_raw. Also,
->>
->> iio_hwmon_read_val() is using iio_read_channel_processed() and that will
->> basically only read one of the 2 channels. As I documented, you actually
->> need to read both channel 8 and channel 9 and then compute the value in
->> Kelvins. I'm not sure how you want me to do that in the current framework.
-> What are these two channels actually measuring? Is the value of a single
-> channel meaningful on it's own? If not it might make sense to update the IIO
-> driver to just have one temperature channel.
+On 28/06/2013 17:38, Andi Kleen wrote:
+>> diff --git a/fs/select.c b/fs/select.c
+>> index 79b876e..3654075 100644
+>> --- a/fs/select.c
+>> +++ b/fs/select.c
+>> @@ -402,7 +402,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+>>   	poll_table *wait;
+>>   	int retval, i, timed_out = 0;
+>>   	unsigned long slack = 0;
+>> -	unsigned int ll_flag = POLL_LL;
+>> +	unsigned int ll_flag = ll_get_flag();
+>
+> Is that a global flag? That's still the wrong level. It should
+> look at something in the file descriptor (preferably without
+> fetching any new cache lines)
+>
 
-It's not actually meaningful on its own. So, what you would do is expose
-one iio channel for two ADC channels and do the computation in read_raw
-? or read_processed ? Then using iio-hwon to export it. ?
+There is a global flag that decides if we even try to find supported
+files (sockets).
 
-Regards,
+If it is on we look to see if anyone will return POLL_LL.
+at the individual socket level, you need both the socket option to
+be on, and the queue data to be available for it to return POLL_LL.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
+I wanted to find a way to control this at the time the user calls poll().
+I was not able to find any simple way of doing it that way.
+I'm open to suggestion.
