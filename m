@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab3F1S5P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:57:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41866 "EHLO
+	id S1753336Ab3F1S4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:56:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41817 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab3F1S5L (ORCPT
+	with ESMTP id S1753276Ab3F1S4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:57:11 -0400
+	Fri, 28 Jun 2013 14:56:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Baatz <gmbnomis@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 096/105] ARM: 7772/1: Fix missing flush_kernel_dcache_page() for noMMU
-Date: Fri, 28 Jun 2013 11:51:58 -0700
-Message-Id: <1372445527-24414-97-git-send-email-kamal@canonical.com>
+Subject: [PATCH 045/105] drm/radeon: do not try to uselessly update virtual memory pagetable
+Date: Fri, 28 Jun 2013 11:51:07 -0700
+Message-Id: <1372445527-24414-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -28,40 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Baatz <gmbnomis@gmail.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 63384fd0b1509acf522a8a8fcede09087eedb7df upstream.
+commit 3813f5ca9ab7a00e80a17aab34f155453c66c78a upstream.
 
-Commit 1bc3974 (ARM: 7755/1: handle user space mapped pages in
-flush_kernel_dcache_page) moved the implementation of
-flush_kernel_dcache_page() into mm/flush.c but did not implement it
-on noMMU ARM.
+If a buffer is never bound to a virtual memory pagetable than don't try
+to unbind it. Only drawback is that we don't update the pagetable when
+unbinding the ib pool buffer which is fine because it only happens at
+suspend or module unload/shutdown.
 
-Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
-Acked-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Fixes spurious messages about buffers without VM mappings. E.g.:
+radeon 0000:01:00.0: bo ffff88020afac400 don't has a mapping in vm ffff88021ca2b900
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mm/nommu.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/radeon/radeon_gart.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mm/nommu.c b/arch/arm/mm/nommu.c
-index d51225f..eb5293a 100644
---- a/arch/arm/mm/nommu.c
-+++ b/arch/arm/mm/nommu.c
-@@ -57,6 +57,12 @@ void flush_dcache_page(struct page *page)
- }
- EXPORT_SYMBOL(flush_dcache_page);
+diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+index 6e24f84..daf9710 100644
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -1209,11 +1209,13 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+ int radeon_vm_bo_rmv(struct radeon_device *rdev,
+ 		     struct radeon_bo_va *bo_va)
+ {
+-	int r;
++	int r = 0;
  
-+void flush_kernel_dcache_page(struct page *page)
-+{
-+	__cpuc_flush_dcache_area(page_address(page), PAGE_SIZE);
-+}
-+EXPORT_SYMBOL(flush_kernel_dcache_page);
-+
- void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
- 		       unsigned long uaddr, void *dst, const void *src,
- 		       unsigned long len)
+ 	mutex_lock(&rdev->vm_manager.lock);
+ 	mutex_lock(&bo_va->vm->mutex);
+-	r = radeon_vm_bo_update_pte(rdev, bo_va->vm, bo_va->bo, NULL);
++	if (bo_va->soffset) {
++		r = radeon_vm_bo_update_pte(rdev, bo_va->vm, bo_va->bo, NULL);
++	}
+ 	mutex_unlock(&rdev->vm_manager.lock);
+ 	list_del(&bo_va->vm_list);
+ 	mutex_unlock(&bo_va->vm->mutex);
 -- 
 1.8.1.2
 
