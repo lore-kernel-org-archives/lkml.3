@@ -1,121 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab3F1JiP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:38:15 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:37848 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab3F1JiO (ORCPT
+	id S1755277Ab3F1JjA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:39:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40683 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754950Ab3F1Ji6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:38:14 -0400
-Date: Fri, 28 Jun 2013 11:38:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-Message-ID: <20130628093809.GB29205@gmail.com>
-References: <1371165992.27102.573.camel@schen9-DESK>
- <20130619131611.GC24957@gmail.com>
- <1371660831.27102.663.camel@schen9-DESK>
- <1372205996.22432.119.camel@schen9-DESK>
- <20130626095108.GB29181@gmail.com>
- <1372282560.22432.139.camel@schen9-DESK>
- <1372292701.22432.152.camel@schen9-DESK>
- <20130627083651.GA3730@gmail.com>
- <1372366385.22432.185.camel@schen9-DESK>
- <1372375873.22432.200.camel@schen9-DESK>
+	Fri, 28 Jun 2013 05:38:58 -0400
+Date: Fri, 28 Jun 2013 10:38:48 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Luciano Coelho <coelho@ti.com>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-arm@vger.kernel.org" <linux-arm@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: dt: bindings: TI WiLink modules
+Message-ID: <20130628093848.GA2139@e106331-lin.cambridge.arm.com>
+References: <1372149330-24335-1-git-send-email-coelho@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372375873.22432.200.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372149330-24335-1-git-send-email-coelho@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tim Chen <tim.c.chen@linux.intel.com> wrote:
-
-> I tried some tweaking that checks sem->count for read owned lock. Even 
-> though it reduces the percentage of acquisitions that need sleeping by 
-> 8.14% (from 18.6% to 10.46%), it increases the writer acquisition 
-> blocked count by 11%. This change still doesn't boost throughput and has 
-> a tiny regression for the workload.
+On Tue, Jun 25, 2013 at 09:35:30AM +0100, Luciano Coelho wrote:
+> Add device tree bindings documentation for the TI WiLink modules.
+> Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
+> modules is supported.
 > 
-> 						Opt Spin Opt Spin
-> 							 (with tweak)	
-> Writer acquisition blocked count		7359040	8168006
-> Blocked by reader				 0.55%	 0.52%
-> Lock acquired first attempt (lock stealing)	16.92%	19.70%
-> Lock acquired second attempt (1 sleep)	17.60%	 9.32%
-> Lock acquired after more than 1 sleep		 1.00%	 1.14%
-> Lock acquired with optimistic spin		64.48%	69.84%
-> Optimistic spin abort 1 			11.77%	 1.14%
-> Optimistic spin abort 2			 6.81%	 9.22%
-> Optimistic spin abort 3			 0.02%	 0.10%
+> Signed-off-by: Luciano Coelho <coelho@ti.com>
+> ---
+> 
+> I created a new directory under net to contain wireless bindings documentation.
+> 
+> The actual implementation in the driver will follow separately.
+> 
+>  .../devicetree/bindings/net/wireless/ti-wilink.txt |   46 ++++++++++++++++++++
+>  1 file changed, 46 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> new file mode 100644
+> index 0000000..d8e8bfbb
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> @@ -0,0 +1,46 @@
+> +TI WiLink Wireless Modules Device Tree Bindings
+> +===============================================
+> +
+> +The WiLink modules provide wireless connectivity, such as WLAN,
+> +Bluetooth, FM and NFC.
+> +
+> +There are several different modules available, which can be grouped by
+> +their generation: WiLink6, WiLink7 and WiLink8.  WiLink4 is not
+> +currently supported with device tree.
+> +
+> +Currently, only the WLAN portion of the modules is supported with
+> +device tree.
+> +
+> +Required properties:
+> +--------------------
+> +
+> +- compatible: should be "ti,wilink6", "ti,wilink7" or "ti,wilink8"
+> +- interrupt-parent: the interrupt controller
+> +- interrupts: out-of-band WLAN interrupt
+> +	See the interrupt controller's bindings documentation for
+> +	detailed definition.
+> +
+> +Optional properties:
+> +--------------------
+> +
+> +- refclock: the internal WLAN reference clock frequency (required for
+> +  WiLink6 and WiLink7; not used for WiLink8).  Must be one of the
+> +  following:
+> +	0 = 19.2 MHz
+> +	1 = 26.0 MHz
+> +	2 = 38.4 MHz
+> +	3 = 52.0 MHz
+> +	4 = 38.4 MHz, XTAL
+> +	5 = 26.0 MHz, XTAL
+> +
+> +- tcxoclock: the internal WLAN TCXO clock frequency (required for
+> +  WiLink7 not used for WiLink6 and WiLink8).  Must be one of the
+> +  following:
+> +	0 = 19.200 MHz
+> +	1 = 26.000 MHz
+> +	2 = 38.400 MHz
+> +	3 = 52.000 MHz
+> +	4 = 16.368 MHz
+> +	5 = 32.736 MHz
+> +	6 = 16.800 MHz
+> +	7 = 33.600 MHz
 
-So lock stealing+spinning now acquires the lock successfully ~90% of the 
-time, the remaining sleeps are:
+This looks suspiciously like what we have the common clock bindings for:
 
-> Lock acquired second attempt (1 sleep)	......	 9.32%
+refclk {
+	compatible = "fixed-clock";
+	#clock-cells = <0>;
+	clock-frequency = <19200000>;
+}
 
-And the reason these sleeps are mostly due to:
+wilink {
+	compatible = "ti,wilink7";
+	interrupt-parent = <&some_interrupt_controller>;
+	interrupts = <0 1 1>;
+	clocks = <&refclk>, <&refclk>;
+	clock-names = "refclk", "txoclk";
+};
 
-> Optimistic spin abort 2			 .....	 9.22%
-
-Right?
-
-So this particular #2 abort point is:
-
-|       preempt_disable();
-|       for (;;) {
-|               owner = ACCESS_ONCE(sem->owner);
-|               if (owner && !rwsem_spin_on_owner(sem, owner))
-|                       break;   <--------------------------- abort (2)
-
-Next step would be to investigate why we decide to not spin there, why 
-does rwsem_spin_on_owner() fail?
-
-If I got all the patches right, rwsem_spin_on_owner() is this:
-
-+static noinline
-+int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
-+{
-+       rcu_read_lock();
-+       while (owner_running(lock, owner)) {
-+               if (need_resched())
-+                       break;
-+
-+               arch_mutex_cpu_relax();
-+       }
-+       rcu_read_unlock();
-+
-+       /*
-+        * We break out the loop above on need_resched() and when the
-+        * owner changed, which is a sign for heavy contention. Return
-+        * success only when lock->owner is NULL.
-+        */
-+       return lock->owner == NULL;
-+}
-
-where owner_running() is similar to the mutex spinning code: it in the end 
-checks owner->on_cpu - like the mutex code.
-
-If my analysis is correct so far then it might be useful to add two more 
-stats: did rwsem_spin_on_owner() fail because lock->owner == NULL [owner 
-released the rwsem], or because owner_running() failed [owner went to 
-sleep]?
+Could you not use them?
 
 Thanks,
-
-	Ingo
+Mark.
