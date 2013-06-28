@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab3F1PWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:22:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53696 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab3F1PWl (ORCPT
+	id S1755422Ab3F1P0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:26:23 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:43783 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293Ab3F1P0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:22:41 -0400
-Date: Fri, 28 Jun 2013 17:22:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/5] perf: fix broken union in perf_event_mmap_page
-Message-ID: <20130628152224.GG6626@twins.programming.kicks-ass.net>
-References: <1372425741-1676-1-git-send-email-adrian.hunter@intel.com>
- <1372425741-1676-2-git-send-email-adrian.hunter@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 28 Jun 2013 11:26:21 -0400
+Date: Fri, 28 Jun 2013 08:26:17 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Sven-Thorsten Dietrich <sven@vyatta.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Mike Davison <Mike.Davison@vyatta.com>
+Subject: Re: [PATCH] Set the correct RTNL family for multicast netconf
+ messages
+Message-ID: <20130628082617.42a802a4@nehalam.linuxnetplumber.net>
+In-Reply-To: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com>
+References: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 04:22:17PM +0300, Adrian Hunter wrote:
-> The capabilities bits must not be "union'ed" together.
-> Put them in a separate struct.
+On Thu, 27 Jun 2013 16:44:47 -0700
+Sven-Thorsten Dietrich <sven@vyatta.com> wrote:
+
+> There may be other cases that require a special case, so I chose the switch approach.
 > 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  include/uapi/linux/perf_event.h | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
+> Please note, that all other messages from ipmr[6].c correctly set the family, while these do not.
 > 
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index 0b1df41..19f6ee5 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -375,9 +375,11 @@ struct perf_event_mmap_page {
->  	__u64	time_running;		/* time event on cpu */
->  	union {
->  		__u64	capabilities;
-> -		__u64	cap_usr_time  : 1,
-> -			cap_usr_rdpmc : 1,
-> -			cap_____res   : 62;
-> +		struct {
-> +			__u64	cap_usr_time		: 1,
-> +				cap_usr_rdpmc		: 1,
-> +				cap_____res		: 62;
-> +		};
->  	};
+> Thanks
+> 
+> Sven
+> 
+> 
+> 
+> Subject: Set correct RTNL family for multicast netconf messages
+> From: Sven-Thorsten Dietrich sven@vyatta.com Thu Jun 27 16:40:17 2013 -0700
+> Date: Thu Jun 27 16:40:17 2013 -0700:
+> 
+> 
+> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+> index dfc39d4..695858b 100644
+> --- a/net/ipv4/devinet.c
+> +++ b/net/ipv4/devinet.c
+> @@ -1705,7 +1705,16 @@ static int inet_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
+>  		return -EMSGSIZE;
+>  
+>  	ncm = nlmsg_data(nlh);
+> -	ncm->ncm_family = AF_INET;
+> +
+> +	switch (type) {
+> +		case NETCONFA_MC_FORWARDING:
+> +			ncm->ncm_family = RTNL_FAMILY_IPMR;
+> +			break;
+> +
+> +		default:
+> +			ncm->ncm_family = AF_INET;
+> +			break;
+> +	}
+>  
+>  	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
+>  		goto nla_put_failure;
+> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+> index 4ab4c38..a177da4 100644
+> --- a/net/ipv6/addrconf.c
+> +++ b/net/ipv6/addrconf.c
+> @@ -492,7 +492,16 @@ static int inet6_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
+>  		return -EMSGSIZE;
+>  
+>  	ncm = nlmsg_data(nlh);
+> -	ncm->ncm_family = AF_INET6;
+> +
+> +	switch (type) {
+> +		case NETCONFA_MC_FORWARDING:
+> +			ncm->ncm_family = RTNL_FAMILY_IP6MR;
+> +			break;
+> +
+> +		default:
+> +			ncm->ncm_family = AF_INET6;
+> +			break;
+> +	}
+>  
+>  	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
+>  		goto nla_put_failure;
+> 
 
-Ick, it did that!? and here I thought there was a difference between:
+Found another issue that needs some thought.
+If type == ALL, in that case the family comes up as AF_INET.
+That means that if application is doing a request to get netconf
+it will receive a different answer than if it is montoring for netconf
+changes.
 
-  int foo:1,
-      bar:1;
+One way to solve would be to split fill_devconf into two parts, one
+for unicast, and one for multicast.
 
-and
-
-  int foo:1;
-  int bar:1;
-
-That made all the difference in this particular case. I guess I should
-go read the language spec more carefully next time.
