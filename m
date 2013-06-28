@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab3F1ReQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 13:34:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48022 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754645Ab3F1ReP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 13:34:15 -0400
-Date: Fri, 28 Jun 2013 18:34:08 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] sched: Favour moving tasks towards the preferred node
-Message-ID: <20130628173407.GC1875@suse.de>
-References: <20130628090447.GD28407@twins.programming.kicks-ass.net>
- <20130628100723.GC8362@linux.vnet.ibm.com>
- <20130628135114.GY1875@suse.de>
- <20130628171427.GO8362@linux.vnet.ibm.com>
+	id S1756007Ab3F1Rez (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 13:34:55 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:46462 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755897Ab3F1Rex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 13:34:53 -0400
+Date: Fri, 28 Jun 2013 10:34:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] rculist: list_first_or_null_rcu() should use
+ list_entry_rcu()
+Message-ID: <20130628173448.GD18889@mtj.dyndns.org>
+References: <20130621003244.GD11837@mtj.dyndns.org>
+ <20130626172753.GC4405@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130628171427.GO8362@linux.vnet.ibm.com>
+In-Reply-To: <20130626172753.GC4405@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 10:44:27PM +0530, Srikar Dronamraju wrote:
-> > > Yes, I understand that numa should have more priority over cache.
-> > > But the schedstats will not be updated about whether the task was hot or
-> > > cold.
-> > > 
-> > > So lets say the task was cache hot but numa wants it to move, then we
-> > > should certainly move it but we should update the schedstats to mention that we
-> > > moved a cache hot task.
-> > > 
-> > > Something akin to this.
-> > > 
-> > > 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
-> > > 	if (tsk_cache_hot) {
-> > > 		if (migrate_improves_locality(p, env) || 
-> > > 		 	(env->sd->nr_balance_failed > env->sd->cache_nice_tries)) {
-> > > #ifdef CONFIG_SCHEDSTATS
-> > > 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-> > > 			schedstat_inc(p, se.statistics.nr_forced_migrations);
-> > > #endif
-> > > 			return 1;
-> > > 		}
-> > > 		schedstat_inc(p, se.statistics.nr_failed_migrations_hot);
-> > > 		return 0;
-> > > 	}
-> > > 	return 1;
-> > > 
-> > 
-> > Thanks. Is this acceptable?
-> > 
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index b3848e0..c3a153e 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -4088,8 +4088,13 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
-> >  	 * 3) too many balance attempts have failed.
-> >  	 */
-> > 
-> > -	if (migrate_improves_locality(p, env))
-> > +	if (migrate_improves_locality(p, env)) {
-> > +#ifdef CONFIG_SCHEDSTATS
-> > +		schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-> > +		schedstat_inc(p, se.statistics.nr_forced_migrations);
-> > +#endif
-> >  		return 1;
-> > +	}
-> > 
-> 
-> In this case, we account even cache cold threads as _cache hot_ in
-> schedstats.
-> 
-> We need the task_hot() call to determine if task is cache hot or not.
-> So the migrate_improves_locality(), I think should be called within the
-> tsk_cache_hot check.
-> 
-> Do you have issues with the above snippet that I posted earlier?
-> 
+list_first_or_null() should test whether the list is empty and return
+pointer to the first entry if not in a RCU safe manner.  It's broken
+in several ways.
 
-The migrate_improves_locality call had already happened so it cannot be
-true after the tsk_cache_hot check is made so I was confused. If the call is
-moved within task cache hot then it changes the intent of the patch because
-cache hotness then trumps memory locality which is not intended. Memory
-locality is expected to trump cache hotness.
+* It compares __kernel @__ptr with __rcu @__next triggering the
+  following sparse warning.
 
-How about this?
+  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
 
-        tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
+* It doesn't perform rcu_dereference*() and computes the entry address
+  using container_of() directly from the __rcu pointer which is
+  inconsitent with other rculist interface.  As a result, all three
+  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
+  dereference the pointer w/o going through read barrier.
 
-        if (migrate_improves_locality(p, env)) {
-#ifdef CONFIG_SCHEDSTATS
-                if (tsk_cache_hot) {
-                        schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-                        schedstat_inc(p, se.statistics.nr_forced_migrations);
-                }
-#endif
-                return 1;
-        }
+* While ->next dereference passes through list_next_rcu(), the
+  compiler is still free to fetch ->next more than once and thus
+  nullify the "__ptr != __next" condition check.
 
-        if (!tsk_cache_hot ||
-                env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
-#ifdef CONFIG_SCHEDSTATS
-                if (tsk_cache_hot) {
-                        schedstat_inc(env->sd, lb_hot_gained[env->idle]);
-                        schedstat_inc(p, se.statistics.nr_forced_migrations);
-                }
-#endif
-                return 1;
-        }
+Fix it by making list_first_or_null_rcu() dereference ->next directly
+using ACCESS_ONCE() and then use list_entry_rcu() on it like other
+rculist accessors.
 
+v2: Paul pointed out that the compiler may fetch the pointer more than
+    once nullifying the condition check.  ACCESS_ONCE() added on
+    ->next dereference.
+
+v3: Restored () around macro param which was accidentally removed.
+    Spotted by Paul.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: stable@vger.kernel.org
+---
+ include/linux/rculist.h |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+index 8089e35..523f13c 100644
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -267,8 +267,9 @@ static inline void list_splice_init_rcu(struct list_head *list,
+  */
+ #define list_first_or_null_rcu(ptr, type, member) \
+ 	({struct list_head *__ptr = (ptr); \
+-	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
+-	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
++	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
++	  likely(__ptr != __next) ? \
++		list_entry_rcu(__next, type, member) : NULL; \
+ 	})
+ 
+ /**
