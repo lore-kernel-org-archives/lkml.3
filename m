@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab3F1Szy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:55:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41761 "EHLO
+	id S1753171Ab3F1Szp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:55:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41747 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab3F1Szw (ORCPT
+	with ESMTP id S1753144Ab3F1Szl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:55:52 -0400
+	Fri, 28 Jun 2013 14:55:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jaganath Kanakkassery <jaganath.k@samsung.com>,
-        Chan-Yeol Park <chanyeol.park@samsung.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+Cc: Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 101/105] Bluetooth: Fix invalid length check in l2cap_information_rsp()
-Date: Fri, 28 Jun 2013 11:52:03 -0700
-Message-Id: <1372445527-24414-102-git-send-email-kamal@canonical.com>
+Subject: [PATCH 104/105] dlci: validate the net device in dlci_del()
+Date: Fri, 28 Jun 2013 11:52:06 -0700
+Message-Id: <1372445527-24414-105-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -29,50 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jaganath Kanakkassery <jaganath.k@samsung.com>
+From: Zefan Li <lizefan@huawei.com>
 
-commit 3f6fa3d489e127ca5a5b298eabac3ff5dbe0e112 upstream.
+commit 578a1310f2592ba90c5674bca21c1dbd1adf3f0a upstream.
 
-The length check is invalid since the length varies with type of
-info response.
+We triggered an oops while running trinity with 3.4 kernel:
 
-This was introduced by the commit cb3b3152b2f5939d67005cff841a1ca748b19888
+BUG: unable to handle kernel paging request at 0000000100000d07
+IP: [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
+PGD 640c0d067 PUD 0
+Oops: 0000 [#1] PREEMPT SMP
+CPU 3
+...
+Pid: 7302, comm: trinity-child3 Not tainted 3.4.24.09+ 40 Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
+RIP: 0010:[<ffffffffa0109738>]  [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
+...
+Call Trace:
+  [<ffffffff8137c5c3>] sock_ioctl+0x153/0x280
+  [<ffffffff81195494>] do_vfs_ioctl+0xa4/0x5e0
+  [<ffffffff8118354a>] ? fget_light+0x3ea/0x490
+  [<ffffffff81195a1f>] sys_ioctl+0x4f/0x80
+  [<ffffffff81478b69>] system_call_fastpath+0x16/0x1b
+...
 
-Because of this, l2cap info rsp is not handled and command reject is sent.
+It's because the net device is not a dlci device.
 
-> ACL data: handle 11 flags 0x02 dlen 16
-        L2CAP(s): Info rsp: type 2 result 0
-          Extended feature mask 0x00b8
-            Enhanced Retransmission mode
-            Streaming mode
-            FCS Option
-            Fixed Channels
-< ACL data: handle 11 flags 0x00 dlen 10
-        L2CAP(s): Command rej: reason 0
-          Command not understood
-
-Signed-off-by: Jaganath Kanakkassery <jaganath.k@samsung.com>
-Signed-off-by: Chan-Yeol Park <chanyeol.park@samsung.com>
-Acked-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Reported-by: Li Jinyue <lijinyue@huawei.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/l2cap_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wan/dlci.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 9f03abb..e133d58 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -4229,7 +4229,7 @@ static inline int l2cap_information_rsp(struct l2cap_conn *conn,
- 	struct l2cap_info_rsp *rsp = (struct l2cap_info_rsp *) data;
- 	u16 type, result;
+diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
+index 1f6e053..6a8a382 100644
+--- a/drivers/net/wan/dlci.c
++++ b/drivers/net/wan/dlci.c
+@@ -384,6 +384,7 @@ static int dlci_del(struct dlci_add *dlci)
+ 	struct frad_local	*flp;
+ 	struct net_device	*master, *slave;
+ 	int			err;
++	bool			found = false;
  
--	if (cmd_len != sizeof(*rsp))
-+	if (cmd_len < sizeof(*rsp))
- 		return -EPROTO;
+ 	rtnl_lock();
  
- 	type   = __le16_to_cpu(rsp->type);
+@@ -394,6 +395,17 @@ static int dlci_del(struct dlci_add *dlci)
+ 		goto out;
+ 	}
+ 
++	list_for_each_entry(dlp, &dlci_devs, list) {
++		if (dlp->master == master) {
++			found = true;
++			break;
++		}
++	}
++	if (!found) {
++		err = -ENODEV;
++		goto out;
++	}
++
+ 	if (netif_running(master)) {
+ 		err = -EBUSY;
+ 		goto out;
 -- 
 1.8.1.2
 
