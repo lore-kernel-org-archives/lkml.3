@@ -1,78 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270Ab3F1VtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 17:49:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751966Ab3F1VtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 17:49:05 -0400
-Message-ID: <1372456136.30572.777.camel@ul30vt.home>
-Subject: Re: [ 102/127] iommu/amd: Workaround for ERBT1312
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 28 Jun 2013 15:48:56 -0600
-In-Reply-To: <20130628192319.GV11309@8bytes.org>
-References: <lhtAZ-q1-5@gated-at.bofh.it> <lhtB1-q1-53@gated-at.bofh.it>
-	 <20130628181136.52d00e9c@dualc.maya.org>
-	 <20130628182533.GT11309@8bytes.org> <51CDD8FD.808@01019freenet.de>
-	 <20130628192319.GV11309@8bytes.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752797Ab3F1Vxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 17:53:36 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56363 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab3F1Vxf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 17:53:35 -0400
+X-Originating-IP: 108.223.40.66
+Date: Fri, 28 Jun 2013 14:53:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Adding support for ARINC429 into the Linux kernel
+Message-ID: <20130628215344.GA9437@roeck-us.net>
+References: <20130619202954.GA5594@roeck-us.net>
+ <201306192345.31106.arnd@arndb.de>
+ <20130620041001.GA1099@roeck-us.net>
+ <201306201052.53898.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201306201052.53898.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-28 at 21:23 +0200, Joerg Roedel wrote:
-> Alex, Andreas,
+On Thu, Jun 20, 2013 at 10:52:53AM +0200, Arnd Bergmann wrote:
+> On Thursday 20 June 2013, Guenter Roeck wrote:
+> > On Wed, Jun 19, 2013 at 11:45:30PM +0200, Arnd Bergmann wrote:
+> > > On Wednesday 19 June 2013, Guenter Roeck wrote:
+> > > 
+> > > Since this is a standard protocol, a driver that just supports a specific
+> > > chip (1a) would be the worst option IMHO.
+> > > 
+> > It would not be optimal, but straightforward and easy to implement.
 > 
-> On Fri, Jun 28, 2013 at 08:42:05PM +0200, Andreas Hartmann wrote:
-> > You're right, there is exactly one entry directly after loading of vfio.
-> > I can see this message, too, with linux 3.4.43.
+> The most important aspect would be the user interface: We should not
+> merge a driver that implements a character device (or something else)
+> in a way that would not be compatible with a general subsystem. I think
+> designing a generic interface is the hard part here, much more so than
+> implementing an abstraction layer.
 > 
-> Can you please test this patch? It should reduce the noise
-> significantly, but a few of those error messages are still expected.
-
-Seems to work for me.  I generated a few errors, but each one seems
-unique and is more like what I would expect if the PXE ROM left the NIC
-running:
-
-[    2.574155] AMD-Vi: Event logged [IO_PAGE_FAULT device=02:00.0 domain=0x001b address=0x00000000000946b0 flags=0x0020]                                        
-[    2.574157] AMD-Vi: Event logged [IO_PAGE_FAULT device=02:00.0 domain=0x001b address=0x000000000008f8d0 flags=0x0020]                                        
-[    4.992074] AMD-Vi: Event logged [IO_PAGE_FAULT device=02:00.0 domain=0x001b address=0x000000000008f880 flags=0x0000] 
-
-I booted the system four times and twice got just three log messages,
-like above, and twice got no faults.  Thanks,
-
-Alex
-
-> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-> index e3c2d74..74e1d1c 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -1431,6 +1431,7 @@ static void init_device_table_dma(void)
->  	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
->  		set_dev_entry_bit(devid, DEV_ENTRY_VALID);
->  		set_dev_entry_bit(devid, DEV_ENTRY_TRANSLATION);
-> +		set_dev_entry_bit(devid, DEV_ENTRY_ONE_FAULT);
->  	}
->  }
->  
-> diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-> index 083f98c..4872b68 100644
-> --- a/drivers/iommu/amd_iommu_types.h
-> +++ b/drivers/iommu/amd_iommu_types.h
-> @@ -173,6 +173,7 @@
->  #define DEV_ENTRY_TRANSLATION   0x01
->  #define DEV_ENTRY_IR            0x3d
->  #define DEV_ENTRY_IW            0x3e
-> +#define DEV_ENTRY_ONE_FAULT	0x61
->  #define DEV_ENTRY_NO_PAGE_FAULT	0x62
->  #define DEV_ENTRY_EX            0x67
->  #define DEV_ENTRY_SYSMGT1       0x68
+> > > A character device and a network protocol both sound reasonable, but
+> > > it really depends on the use cases:
+> > > 
+> > > * Does Linux act both as the sender and receiver, or do you want to
+> > >   support just one of the cases (which?)?
+> > > 
+> > Both, depending on the use case. Some of those are
+> > 
+> > 1) ACARS -
+> >    http://en.wikipedia.org/wiki/Aircraft_Communications_Addressing_and_Reporting_System
+> >    Rx and tx
+> > 
+> > 2) CIDS - Cabin Intercommunication Data System
+> >    Rx and tx
+> > 
+> > 3) IRS (Inertial Reference System) and FMS (Flight Management System)
+> >    Rx only
 > 
+> Ok, I see.
+> 
+> > > * Would you expect to always just transfer a single 32-bit word, or
+> > >   are there larger chunks of logically contigous data? What are typical
+> > >   and maximum sizes for those?
+> > > 
+> > The raw protocol is chunks of 32 bit (Logical Data Unit, or LDU), which
+> > the protocol refers to as 'physical layer'. Broadcast messages such as
+> > those from IRS and FMS use this format.
+> > 
+> > There is also bit-oriented data. The two protocols I am aware of are "Bit-
+> > Oriented File Transfer Protocol", and "Bit-Oriented Media Access Control
+> > (MAC) Protocol", which is supposed to be IEEE 802 compliant. Packet size
+> > is 3 to 255 LDUs for FTP and 3 to 1023 LDUs for the MAC protocol.
+> > Both include a SOF and EOF marker, so the actual data size would be 1-253
+> > or 1-1021 LDUs. Each LDU carries 20 bit, and partial words are possible
+> > in 4-bit increments, which means the data transfer size is 4 to 20,420 bit
+> > (2,552.5 bytes) for the MAC protocol, and 4 to 5,060 bit (632.5 bytes)
+> > for FTP.
+> > 
+> > Bit-oriented data is commonly used for ACARS and CIDS, where bi-directional
+> > communication is used.
+> > 
+> > Details are available in Specification ARINC-429P3-19-2009, sections 2.5 and 3.0.
+> > You should be able to find it on the web if you are interested.
+> 
+> Ok, this sounds like it would make a network type interface more
+> practical, at least for the 802 specific parts.
+> 
+> > > * Would you expect the kernel to filter for specific data on the
+> > >   receiver side?
+> > > 
+> > Each LDU has an 8-bit label. Applications listen for specific sets of labels.
+> > The chips have a configurable hardware filter; if there are not enough hardware
+> > filters, the kernel would have to do the filtering. Either case, the kernel
+> > has to select protocol receivers (sockets or open file descriptors) based
+> > on bind/registration information. For example, one aplication may register
+> > for label 1,3,5, and 7, and another for labels 1, 3, 12, and 14. So there can
+> > be overlaps.
+> 
+> Ok
+> 
+> > > * Would a user space receiver want to always see all data from one
+> > >   sender, or only the latest word?
+> > > 
+> > The receiver would want to receive all data for the labels it has registered
+> > for.
+> > 
+> > Hope this helps. Note that, at least as first step, I only envision to handle
+> > 4-byte units and pass those to/from user-space. Implementing the two link layer
+> > protocols would probably make sense, especially with the socket interface,
+> > but that would be a second step.
+> 
+> My vote would be for a new socket family for the low-level protocol,
+> with room for extension later to support the advanced features.
+> 
+> This should be one of the simplest socket implementations possible, if
+> you just need to send and receive 32 bit words, and can bind to a
+> a set of labels for rx as you described above.
+> 
+> The only possible concern I see with that interface is slightly higher
+> latency than what you would be able to get with a straight read/write
+> based character device.
+> 
+Any further feedback on this ?
 
+Key question: Would a new address family have a chance of being accepted ?
 
-
+Guenter
