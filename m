@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab3F1S6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 14:58:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41946 "EHLO
+	id S1754015Ab3F1S6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:58:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41956 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933Ab3F1S6F (ORCPT
+	with ESMTP id S1753983Ab3F1S6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:58:05 -0400
+	Fri, 28 Jun 2013 14:58:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gao feng <gaofeng@cn.fujitsu.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Jason Wang <jasowang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 081/105] ipv6: assign rt6_info to inet6_ifaddr in init_loopback
-Date: Fri, 28 Jun 2013 11:51:43 -0700
-Message-Id: <1372445527-24414-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 082/105] vhost_net: clear msg.control for non-zerocopy case during tx
+Date: Fri, 28 Jun 2013 11:51:44 -0700
+Message-Id: <1372445527-24414-83-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -27,43 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 534c877928a16ae5f9776436a497109639bf67dc ]
+[ Upstream commit 4364d5f96eed7994a2c625bd9216656e55fba0cb ]
 
-Commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
-"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
-forgot to assign rt6_info to the inet6_ifaddr.
-When disable the net device, the rt6_info which allocated
-in init_loopback will not be destroied in __ipv6_ifa_notify.
+When we decide not use zero-copy, msg.control should be set to NULL otherwise
+macvtap/tap may set zerocopy callbacks which may decrease the kref of ubufs
+wrongly.
 
-This will trigger the waring message below
-[23527.916091] unregister_netdevice: waiting for tap0 to become free. Usage count = 1
+Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
+(vhost-net: skip head management if no outstanding).
 
-Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+This solves the following warnings:
+
+WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
+Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
+CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
+Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
+ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
+ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
+ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
+Call Trace:
+[<ffffffff81796b73>] dump_stack+0x19/0x1e
+[<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
+[<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
+[<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
+[<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
+[<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
+[<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+[<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+[<ffffffff81061f46>] kthread+0xc6/0xd0
+[<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+[<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
+[<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/addrconf.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/vhost/net.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index e8676c2..b4b756c 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2558,8 +2558,10 @@ static void init_loopback(struct net_device *dev)
- 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
- 
- 			/* Failure cases are ignored */
--			if (!IS_ERR(sp_rt))
-+			if (!IS_ERR(sp_rt)) {
-+				sp_ifa->rt = sp_rt;
- 				ip6_ins_rt(sp_rt);
-+			}
- 		}
- 		read_unlock_bh(&idev->lock);
- 	}
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index ec6fb3f..dfff647 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -353,7 +353,8 @@ static void handle_tx(struct vhost_net *net)
+ 				kref_get(&ubufs->kref);
+ 			}
+ 			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
+-		}
++		} else
++			msg.msg_control = NULL;
+ 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+ 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+ 		if (unlikely(err < 0)) {
 -- 
 1.8.1.2
 
