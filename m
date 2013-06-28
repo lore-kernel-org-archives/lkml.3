@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab3F1JCL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:02:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45776 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab3F1JCI (ORCPT
+	id S1754885Ab3F1JEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:04:40 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:47071 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab3F1JEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:02:08 -0400
-Date: Fri, 28 Jun 2013 11:01:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/8] sched: Update NUMA hinting faults once per scan
-Message-ID: <20130628090159.GC28407@twins.programming.kicks-ass.net>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-5-git-send-email-mgorman@suse.de>
- <20130628063233.GC17195@linux.vnet.ibm.com>
+	Fri, 28 Jun 2013 05:04:37 -0400
+Message-ID: <51CD518B.2050106@huawei.com>
+Date: Fri, 28 Jun 2013 17:04:11 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130628063233.GC17195@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        Liang Li <liang.li@windriver.com>, Li Zefan <lizefan@huawei.com>
+Subject: request for stable inclusion
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 12:02:33PM +0530, Srikar Dronamraju wrote:
-> * Mel Gorman <mgorman@suse.de> [2013-06-26 15:38:03]:
-> > @@ -831,9 +837,13 @@ void task_numa_fault(int node, int pages, bool migrated)
-> >  	if (unlikely(!p->numa_faults)) {
-> >  		int size = sizeof(*p->numa_faults) * nr_node_ids;
-> >  
-> > -		p->numa_faults = kzalloc(size, GFP_KERNEL);
-> > +		/* numa_faults and numa_faults_buffer share the allocation */
-> > +		p->numa_faults = kzalloc(size * 2, GFP_KERNEL);
-> 
-> Instead of allocating buffer to hold the current faults, cant we pass
-> the nr of pages and node information (and probably migrate) to
-> task_numa_placement()?.
+Hi Greg, Jiri or Liang Li
 
-I'm afraid I don't get your question; there's more storage required than
-just the arguments.
+384e301e3519599b000c1a2ecd938b533fc15d85
+pch_uart: fix a deadlock when pch_uart as console
 
-> Why should task_struct be passed as an argument to  task_numa_placement().
-> It seems it always will be current.
+This looks applicable to stable-3.4, and it
+was built successful for me. What do you think?
 
-Customary for parts -- motivated by the fact that usage of current
-is/can be more expensive than passing an argument.
+Thanks!
+Yijing.
+
