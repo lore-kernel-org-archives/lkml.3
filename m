@@ -1,92 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab3F1TUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:20:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41554 "EHLO
+	id S1752709Ab3F1TVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:21:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42130 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab3F1Sw2 (ORCPT
+	with ESMTP id S1751243Ab3F1TVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:52:28 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Josh Boyer <jwboyer@redhat.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 003/105] Bluetooth: Add support for atheros 04ca:3004 device to ath3k
-Date: Fri, 28 Jun 2013 11:50:25 -0700
-Message-Id: <1372445527-24414-4-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
-References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 28 Jun 2013 15:21:31 -0400
+Date: Fri, 28 Jun 2013 14:21:17 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Tim Hockin <thockin@hockin.org>
+Cc: Mike Galbraith <bitbucket@online.de>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        jpoimboe <jpoimboe@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>, vrigo <vrigo@google.com>,
+        vmarmol@google.com
+Subject: Re: cgroup access daemon
+Message-ID: <20130628192117.GA4553@sergelap>
+References: <CAAAKZwuKxxYoVRn6Ye72Vs7vSd_T4cbvEwiU6Q3j4D-Z+VAPrw@mail.gmail.com>
+ <20130627181108.GA26334@sergelap>
+ <CAAAKZwvXYBznJ5uiWaEV7fNCHbciwLa6U+E5RUJkz1ioMu=cRg@mail.gmail.com>
+ <20130628163154.GA4989@sergelap>
+ <CAAAKZwv1CQbCOweUOcvFXtwDsMHB6Pay-fUqz-CNrcOAda8ghA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAAKZwv1CQbCOweUOcvFXtwDsMHB6Pay-fUqz-CNrcOAda8ghA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.4 -stable review patch.  If anyone has any objections, please let me know.
+Quoting Tim Hockin (thockin@hockin.org):
+> On Fri, Jun 28, 2013 at 9:31 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> > Quoting Tim Hockin (thockin@hockin.org):
+> >> On Thu, Jun 27, 2013 at 11:11 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> >> > Quoting Tim Hockin (thockin@hockin.org):
+> > Could you give examples?
+> >
+> > If you have a white/academic paper I should go read, that'd be great.
+> 
+> We don't have anything on this, but examples may help.
+> 
+> Someone running as root should be able to connect to the "native"
+> daemon and read or write any cgroup file they want, right?  You could
+> argue that root should be able to do this to a child-daemon, too, but
+> let's ignore that.
+> 
+> But inside a container, I don't want the users to be able to write to
+> anything in their own container.  I do want them to be able to make
+> sub-cgroups, but only 5 levels deep.  For sub-cgroups, they should be
+> able to write to memory.limit_in_bytes, to read but not write
+> memory.soft_limit_in_bytes, and not be able to read memory.stat.
+> 
+> To get even fancier, a user should be able to create a sub-cgroup and
+> then designate that sub-cgroup as "final" - no further sub-sub-cgroups
+> allowed under it.  They should also be able to designate that a
+> sub-cgroup is "one-way" - once a process enters it, it can not leave.
+> 
+> These are real(ish) examples based on what people want to do today.
+> In particular, the last couple are things that we want to do, but
+> don't do today.
+> 
+> The particular policy can differ per-container.  Production jobs might
+> be allowed to create sub-cgroups, but batch jobs are not.  Some user
+> jobs are designated "trusted" in one facet or another and get more
+> (but still not full) access.
 
-------------------
+Interesting, thanks.
 
-From: Josh Boyer <jwboyer@redhat.com>
+I'll think a bit on how to best address these.
 
-commit 3f63c340a72f2872a9362245cb2e03f3d2bb73a6 upstream.
+> > At the moment I'm going on the naive belief that proper hierarchy
+> > controls will be enforced (eventually) by the kernel - i.e. if
+> > a task in cgroup /lxc/c1 is not allowed to mknod /dev/sda1, then it
+> > won't be possible for /lxc/c1/lxc/c2 to take that access.
+> >
+> > The native cgroup manager (the one using cgroupfs) will be checking
+> > the credentials of the requesting child manager for access(2) to
+> > the cgroup files.
+> 
+> This might be sufficient, or the basis for a sufficient access control
+> system for users.  The problem comes that we have multiple jobs on a
+> single machine running as the same user.  We need to ensure that the
+> jobs can not modify each other.
 
-Yet another version of the atheros bluetooth chipset
+Would running them each in user namespaces with different mappings (all
+jobs running as uid 1000, but uid 1000  mapped to different host uids
+for each job) would be (long-term) feasible?
 
-T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=04ca ProdID=3004 Rev=00.01
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> > It is a named socket.
+> 
+> So anyone can connect?  even with SO_PEERCRED, how do you know which
+> branches of the cgroup tree I am allowed to modify if the same user
+> owns more than one?
 
-This resolves https://bugzilla.redhat.com/show_bug.cgi?id=844750
+I was assuming that any process requesting management of
+/c1/c2/c3 would have to be in one of its ancestor cgroups (i.e. /c1)
 
-Reported-by: niktr@mail.ru
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
+So if you have two jobs running as uid 1000, one under /c1 and one
+under /c2, and one as uid 1001 running under /c3 (with the uids owning
+the cgroups), then the file permissions will prevent 1000 and 1001
+from walk over each other, while the cgroup manager will not allow
+a process (child manager or otherwise) under /c1 to manage cgroups
+under /c2 and vice versa.
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index 1c0929b..a0e01dd 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -78,6 +78,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x0CF3, 0x817a) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
-+	{ USB_DEVICE(0x04CA, 0x3004) },
- 	{ USB_DEVICE(0x04CA, 0x3005) },
- 	{ USB_DEVICE(0x04CA, 0x3006) },
- 	{ USB_DEVICE(0x04CA, 0x3008) },
-@@ -112,6 +113,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 568e703..8a22250 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -136,6 +136,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
--- 
-1.8.1.2
+> >> Do you have a design spec, or a requirements list, or even a prototype
+> >> that we can look at?
+> >
+> > The readme at https://github.com/hallyn/cgroup-mgr/blob/master/README
+> > shows what I have in mind.  It (and the sloppy code next to it)
+> > represent a few hours' work over the last few days while waiting
+> > for compiles and in between emails...
+> 
+> Awesome.  Do you mind if we look?
 
+No, but it might not be worth it (other than the readme) :) - so far
+it's only served to help me think through what I want and need from
+the mgr.
+
+> > But again, it is completely predicated on my goal to have libvirt
+> > and lxc (and other cgroup users) be able to use the same library
+> > or API to make their requests whether they are on host or in a
+> > container, and regardless of the distro they're running under.
+> 
+> I think that is a good goal.  We'd like to not be different, if
+> possible.  Obviously, we can't impose our needs on you if you don't
+> want to handle them.  It sounds like what you are building is the
+> bottom layer in a stack - we (Google) should use that same bottom
+> layer.  But that can only happen iff you're open to hearing our
+> requirements.  Otherwise we have to strike out on our own or build
+> more layers in-between.
+
+I'm definately open to your requirements - whether providing what
+you need for another layer on top, or building it right in.
+
+-serge
