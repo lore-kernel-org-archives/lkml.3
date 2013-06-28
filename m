@@ -1,156 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab3F1QMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:12:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44941 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3F1QMb (ORCPT
+	id S1755691Ab3F1QNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:13:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35379 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845Ab3F1QNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:12:31 -0400
-Date: Fri, 28 Jun 2013 09:09:32 -0700
-From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
-Message-ID: <tip-13bfd47a0ef68fc8b21e67873dbdf269c7db6b59@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, qiaowei.ren@intel.com, hpa@zytor.com,
-        mingo@kernel.org, gang.wei@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, qiaowei.ren@intel.com,
-        linux-kernel@vger.kernel.org, gang.wei@intel.com, tglx@linutronix.de
-In-Reply-To: <1372053333-21788-1-git-send-email-qiaowei.ren@intel.com>
-References: <1372053333-21788-1-git-send-email-qiaowei.ren@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/debug] x86/tboot:
-  Provide debugfs interfaces to access TXT log
-Git-Commit-ID: 13bfd47a0ef68fc8b21e67873dbdf269c7db6b59
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 28 Jun 2013 09:09:39 -0700 (PDT)
+	Fri, 28 Jun 2013 12:13:43 -0400
+Date: Fri, 28 Jun 2013 09:13:38 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: nicolas.dichtel@6wind.com
+Cc: Sven-Thorsten Dietrich <sven@vyatta.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Mike Davison <Mike.Davison@vyatta.com>
+Subject: [RFC net] netconf: set mulitcast family for multicast forwarding
+ messages
+Message-ID: <20130628091338.547bd88d@nehalam.linuxnetplumber.net>
+In-Reply-To: <51CDB1AD.1020202@6wind.com>
+References: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com>
+	<20130628082617.42a802a4@nehalam.linuxnetplumber.net>
+	<51CDB1AD.1020202@6wind.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13bfd47a0ef68fc8b21e67873dbdf269c7db6b59
-Gitweb:     http://git.kernel.org/tip/13bfd47a0ef68fc8b21e67873dbdf269c7db6b59
-Author:     Qiaowei Ren <qiaowei.ren@intel.com>
-AuthorDate: Mon, 24 Jun 2013 13:55:33 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 28 Jun 2013 11:05:16 +0200
+Revised version of Sven's patch. The idea is that multicast forwarding
+should be under the multicast address family like other multicast netlink
+messages.
 
-x86/tboot: Provide debugfs interfaces to access TXT log
+This version generates each family under separate headers when
+doing dump all.
 
-These logs come from tboot (Trusted Boot, an open source,
-pre-kernel/VMM module that uses Intel TXT to perform a
-measured and verified launch of an OS kernel/VMM.).
+Compile tested only, this is to show some of the issues that need
+to be covered.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Gang Wei <gang.wei@intel.com>
-Link: http://lkml.kernel.org/r/1372053333-21788-1-git-send-email-qiaowei.ren@intel.com
-[ Beautified the code a bit. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/tboot.c | 73 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index f84fe00..3ff42d2 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -31,6 +31,7 @@
- #include <linux/pfn.h>
- #include <linux/mm.h>
- #include <linux/tboot.h>
-+#include <linux/debugfs.h>
+
+--- a/net/ipv4/devinet.c	2013-06-11 09:50:21.550918636 -0700
++++ b/net/ipv4/devinet.c	2013-06-28 09:07:18.147829543 -0700
+@@ -1685,6 +1685,11 @@ static int inet_netconf_msgsize_devconf(
+ 		size += nla_total_size(4);
+ 	if (type == -1 || type == NETCONFA_RP_FILTER)
+ 		size += nla_total_size(4);
++
++	/* additional header for MC family */
++	if (type == -1)
++		size += NLMSG_ALIGN(sizeof(struct netconfmsg))
++		   + nla_total_size(4);
+ 	if (type == -1 || type == NETCONFA_MC_FORWARDING)
+ 		size += nla_total_size(4);
  
- #include <asm/realmode.h>
- #include <asm/processor.h>
-@@ -338,6 +339,73 @@ static struct notifier_block tboot_cpu_notifier __cpuinitdata =
- 	.notifier_call = tboot_cpu_callback,
- };
- 
-+#ifdef CONFIG_DEBUG_FS
-+
-+#define TBOOT_LOG_UUID	{ 0x26, 0x25, 0x19, 0xc0, 0x30, 0x6b, 0xb4, 0x4d, \
-+			  0x4c, 0x84, 0xa3, 0xe9, 0x53, 0xb8, 0x81, 0x74 }
-+
-+#define TBOOT_SERIAL_LOG_ADDR	0x60000
-+#define TBOOT_SERIAL_LOG_SIZE	0x08000
-+#define LOG_MAX_SIZE_OFF	16
-+#define LOG_BUF_OFF		24
-+
-+static uint8_t tboot_log_uuid[16] = TBOOT_LOG_UUID;
-+
-+static ssize_t tboot_log_read(struct file *file, char __user *user_buf, size_t count, loff_t *ppos)
-+{
-+	void __iomem *log_base;
-+	u8 log_uuid[16];
-+	u32 max_size;
-+	void *kbuf;
-+	int ret = -EFAULT;
-+
-+	log_base = ioremap_nocache(TBOOT_SERIAL_LOG_ADDR, TBOOT_SERIAL_LOG_SIZE);
-+	if (!log_base)
-+		return ret;
-+
-+	memcpy_fromio(log_uuid, log_base, sizeof(log_uuid));
-+	if (memcmp(&tboot_log_uuid, log_uuid, sizeof(log_uuid)))
-+		goto err_iounmap;
-+
-+	max_size = readl(log_base + LOG_MAX_SIZE_OFF);
-+	if (*ppos >= max_size) {
-+		ret = 0;
-+		goto err_iounmap;
-+	}
-+
-+	if (*ppos + count > max_size)
-+		count = max_size - *ppos;
-+
-+	kbuf = kmalloc(count, GFP_KERNEL);
-+	if (!kbuf) {
-+		ret = -ENOMEM;
-+		goto err_iounmap;
-+	}
-+
-+	memcpy_fromio(kbuf, log_base + LOG_BUF_OFF + *ppos, count);
-+	if (copy_to_user(user_buf, kbuf, count))
-+		goto err_kfree;
-+
-+	*ppos += count;
-+
-+	ret = count;
-+
-+err_kfree:
-+	kfree(kbuf);
-+
-+err_iounmap:
-+	iounmap(log_base);
-+
-+	return ret;
-+}
-+
-+static const struct file_operations tboot_log_fops = {
-+	.read	= tboot_log_read,
-+	.llseek	= default_llseek,
-+};
-+
-+#endif /* CONFIG_DEBUG_FS */
-+
- static __init int tboot_late_init(void)
+@@ -1694,7 +1699,7 @@ static int inet_netconf_msgsize_devconf(
+ static int inet_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
+ 				     struct ipv4_devconf *devconf, u32 portid,
+ 				     u32 seq, int event, unsigned int flags,
+-				     int type)
++				     u8 family, int type)
  {
- 	if (!tboot_enabled())
-@@ -348,6 +416,11 @@ static __init int tboot_late_init(void)
- 	atomic_set(&ap_wfs_count, 0);
- 	register_hotcpu_notifier(&tboot_cpu_notifier);
+ 	struct nlmsghdr  *nlh;
+ 	struct netconfmsg *ncm;
+@@ -1705,21 +1710,24 @@ static int inet_netconf_fill_devconf(str
+ 		return -EMSGSIZE;
  
-+#ifdef CONFIG_DEBUG_FS
-+	debugfs_create_file("tboot_log", S_IRUSR,
-+			arch_debugfs_dir, NULL, &tboot_log_fops);
-+#endif
+ 	ncm = nlmsg_data(nlh);
+-	ncm->ncm_family = AF_INET;
++	ncm->ncm_family = family;
+ 
+ 	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
+ 		goto nla_put_failure;
+ 
+ 	/* type -1 is used for ALL */
+-	if ((type == -1 || type == NETCONFA_FORWARDING) &&
++	if (((type == -1 && family == AF_INET) ||
++	     type == NETCONFA_FORWARDING)  &&
+ 	    nla_put_s32(skb, NETCONFA_FORWARDING,
+ 			IPV4_DEVCONF(*devconf, FORWARDING)) < 0)
+ 		goto nla_put_failure;
+-	if ((type == -1 || type == NETCONFA_RP_FILTER) &&
++	if (((type == -1 && family == AF_INET) ||
++	     type == NETCONFA_RP_FILTER) &&
+ 	    nla_put_s32(skb, NETCONFA_RP_FILTER,
+ 			IPV4_DEVCONF(*devconf, RP_FILTER)) < 0)
+ 		goto nla_put_failure;
+-	if ((type == -1 || type == NETCONFA_MC_FORWARDING) &&
++	if (((type == -1 || family == RTNL_FAMILY_IPMR) ||
++	     type == NETCONFA_MC_FORWARDING) &&
+ 	    nla_put_s32(skb, NETCONFA_MC_FORWARDING,
+ 			IPV4_DEVCONF(*devconf, MC_FORWARDING)) < 0)
+ 		goto nla_put_failure;
+@@ -1737,12 +1745,17 @@ void inet_netconf_notify_devconf(struct
+ 	struct sk_buff *skb;
+ 	int err = -ENOBUFS;
+ 
++	BUG_ON(type == -1); /* ALL is not valid for notification */
 +
- 	acpi_os_set_prepare_sleep(&tboot_sleep);
- 	return 0;
- }
+ 	skb = nlmsg_new(inet_netconf_msgsize_devconf(type), GFP_ATOMIC);
+ 	if (skb == NULL)
+ 		goto errout;
+ 
+ 	err = inet_netconf_fill_devconf(skb, ifindex, devconf, 0, 0,
+-					RTM_NEWNETCONF, 0, type);
++					RTM_NEWNETCONF, 0,
++					(type == NETCONFA_MC_FORWARDING) ?
++					RTNL_FAMILY_IPMR : AF_INET,
++					type);
+ 	if (err < 0) {
+ 		/* -EMSGSIZE implies BUG in inet_netconf_msgsize_devconf() */
+ 		WARN_ON(err == -EMSGSIZE);
+@@ -1811,13 +1824,23 @@ static int inet_netconf_get_devconf(stru
+ 	err = inet_netconf_fill_devconf(skb, ifindex, devconf,
+ 					NETLINK_CB(in_skb).portid,
+ 					nlh->nlmsg_seq, RTM_NEWNETCONF, 0,
+-					-1);
++					AF_INET, -1);
+ 	if (err < 0) {
+ 		/* -EMSGSIZE implies BUG in inet_netconf_msgsize_devconf() */
+ 		WARN_ON(err == -EMSGSIZE);
+ 		kfree_skb(skb);
+ 		goto errout;
+ 	}
++
++	err = inet_netconf_fill_devconf(skb, ifindex, devconf,
++					NETLINK_CB(in_skb).portid,
++					nlh->nlmsg_seq, RTM_NEWNETCONF, 0,
++					RTNL_FAMILY_IPMR, -1);
++	if (err < 0) {
++		WARN_ON(err == -EMSGSIZE);
++		kfree_skb(skb);
++		goto errout;
++	}
+ 	err = rtnl_unicast(skb, net, NETLINK_CB(in_skb).portid);
+ errout:
+ 	return err;
+@@ -1855,10 +1878,23 @@ static int inet_netconf_dump_devconf(str
+ 						      cb->nlh->nlmsg_seq,
+ 						      RTM_NEWNETCONF,
+ 						      NLM_F_MULTI,
++						      AF_INET,
++						      -1) <= 0) {
++				rcu_read_unlock();
++				goto done;
++			}
++			if (inet_netconf_fill_devconf(skb, dev->ifindex,
++						      &in_dev->cnf,
++						      NETLINK_CB(cb->skb).portid,
++						      cb->nlh->nlmsg_seq,
++						      RTM_NEWNETCONF,
++						      NLM_F_MULTI,
++						      RTNL_FAMILY_IPMR,
+ 						      -1) <= 0) {
+ 				rcu_read_unlock();
+ 				goto done;
+ 			}
++
+ 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
+ cont:
+ 			idx++;
+@@ -1871,10 +1907,18 @@ cont:
+ 					      NETLINK_CB(cb->skb).portid,
+ 					      cb->nlh->nlmsg_seq,
+ 					      RTM_NEWNETCONF, NLM_F_MULTI,
+-					      -1) <= 0)
++					      AF_INET, -1) <= 0)
++			goto done;
++
++		if (inet_netconf_fill_devconf(skb, NETCONFA_IFINDEX_ALL,
++					      net->ipv4.devconf_all,
++					      NETLINK_CB(cb->skb).portid,
++					      cb->nlh->nlmsg_seq,
++					      RTM_NEWNETCONF, NLM_F_MULTI,
++					      RTNL_FAMILY_IPMR, -1) <= 0)
+ 			goto done;
+-		else
+-			h++;
++
++		h++;
+ 	}
+ 	if (h == NETDEV_HASHENTRIES + 1) {
+ 		if (inet_netconf_fill_devconf(skb, NETCONFA_IFINDEX_DEFAULT,
+@@ -1882,10 +1926,18 @@ cont:
+ 					      NETLINK_CB(cb->skb).portid,
+ 					      cb->nlh->nlmsg_seq,
+ 					      RTM_NEWNETCONF, NLM_F_MULTI,
+-					      -1) <= 0)
++					      AF_INET, -1) <= 0)
+ 			goto done;
+-		else
+-			h++;
++
++		if (inet_netconf_fill_devconf(skb, NETCONFA_IFINDEX_DEFAULT,
++					      net->ipv4.devconf_dflt,
++					      NETLINK_CB(cb->skb).portid,
++					      cb->nlh->nlmsg_seq,
++					      RTM_NEWNETCONF, NLM_F_MULTI,
++					      RTNL_FAMILY_IPMR, -1) <= 0)
++			goto done;
++
++		h++;
+ 	}
+ done:
+ 	cb->args[0] = h;
+--- a/net/ipv6/addrconf.c	2013-06-28 08:17:16.424664740 -0700
++++ b/net/ipv6/addrconf.c	2013-06-28 09:10:32.336959806 -0700
+@@ -471,6 +471,9 @@ static int inet6_netconf_msgsize_devconf
+ 	if (type == -1 || type == NETCONFA_FORWARDING)
+ 		size += nla_total_size(4);
+ #ifdef CONFIG_IPV6_MROUTE
++	if (type == -1)
++		size += NLMSG_ALIGN(sizeof(struct netconfmsg))
++			+ nla_total_size(4);
+ 	if (type == -1 || type == NETCONFA_MC_FORWARDING)
+ 		size += nla_total_size(4);
+ #endif
+@@ -481,7 +484,7 @@ static int inet6_netconf_msgsize_devconf
+ static int inet6_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
+ 				      struct ipv6_devconf *devconf, u32 portid,
+ 				      u32 seq, int event, unsigned int flags,
+-				      int type)
++				      u8 family, int type)
+ {
+ 	struct nlmsghdr  *nlh;
+ 	struct netconfmsg *ncm;
+@@ -492,17 +495,19 @@ static int inet6_netconf_fill_devconf(st
+ 		return -EMSGSIZE;
+ 
+ 	ncm = nlmsg_data(nlh);
+-	ncm->ncm_family = AF_INET6;
++	ncm->ncm_family = family;
+ 
+ 	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
+ 		goto nla_put_failure;
+ 
+ 	/* type -1 is used for ALL */
+-	if ((type == -1 || type == NETCONFA_FORWARDING) &&
++	if (((type == -1 && family == AF_INET6) ||
++	     type == NETCONFA_FORWARDING) &&
+ 	    nla_put_s32(skb, NETCONFA_FORWARDING, devconf->forwarding) < 0)
+ 		goto nla_put_failure;
+ #ifdef CONFIG_IPV6_MROUTE
+-	if ((type == -1 || type == NETCONFA_MC_FORWARDING) &&
++	if (((type == -1 && family == RTNL_FAMILY_IP6MR) ||
++	     type == NETCONFA_MC_FORWARDING) &&
+ 	    nla_put_s32(skb, NETCONFA_MC_FORWARDING,
+ 			devconf->mc_forwarding) < 0)
+ 		goto nla_put_failure;
+@@ -520,12 +525,23 @@ void inet6_netconf_notify_devconf(struct
+ 	struct sk_buff *skb;
+ 	int err = -ENOBUFS;
+ 
++	BUG_ON(type == -1);
++
+ 	skb = nlmsg_new(inet6_netconf_msgsize_devconf(type), GFP_ATOMIC);
+ 	if (skb == NULL)
+ 		goto errout;
+ 
++#ifdef CONFIG_IPV6_MROUTE
++	if (type == NETCONFA_MC_FORWARDING)
++		err = inet6_netconf_fill_devconf(skb, ifindex, devconf, 0, 0,
++						 RTM_NEWNETCONF, 0,
++						 RTNL_FAMILY_IP6MR, type);
++	else
++#endif
+ 	err = inet6_netconf_fill_devconf(skb, ifindex, devconf, 0, 0,
+-					 RTM_NEWNETCONF, 0, type);
++					 RTM_NEWNETCONF, 0,
++					 AF_INET6, type);
++#endif
+ 	if (err < 0) {
+ 		/* -EMSGSIZE implies BUG in inet6_netconf_msgsize_devconf() */
+ 		WARN_ON(err == -EMSGSIZE);
+@@ -592,13 +608,25 @@ static int inet6_netconf_get_devconf(str
+ 	err = inet6_netconf_fill_devconf(skb, ifindex, devconf,
+ 					 NETLINK_CB(in_skb).portid,
+ 					 nlh->nlmsg_seq, RTM_NEWNETCONF, 0,
+-					 -1);
++					 AF_INET6, -1);
++	if (err < 0) {
++		/* -EMSGSIZE implies BUG in inet6_netconf_msgsize_devconf() */
++		WARN_ON(err == -EMSGSIZE);
++		kfree_skb(skb);
++		goto errout;
++	}
++#ifdef CONFIG_IPV6_MROUTE
++	err = inet6_netconf_fill_devconf(skb, ifindex, devconf,
++					 NETLINK_CB(in_skb).portid,
++					 nlh->nlmsg_seq, RTM_NEWNETCONF, 0,
++					 RTNL_FAMILY_IP6MR, -1);
+ 	if (err < 0) {
+ 		/* -EMSGSIZE implies BUG in inet6_netconf_msgsize_devconf() */
+ 		WARN_ON(err == -EMSGSIZE);
+ 		kfree_skb(skb);
+ 		goto errout;
+ 	}
++#endif
+ 	err = rtnl_unicast(skb, net, NETLINK_CB(in_skb).portid);
+ errout:
+ 	return err;
+@@ -636,10 +664,23 @@ static int inet6_netconf_dump_devconf(st
+ 						       cb->nlh->nlmsg_seq,
+ 						       RTM_NEWNETCONF,
+ 						       NLM_F_MULTI,
++						       AF_INET6, -1) <= 0) {
++				rcu_read_unlock();
++				goto done;
++			}
++#ifdef CONFIG_IPV6_MROUTE
++			if (inet6_netconf_fill_devconf(skb, dev->ifindex,
++						       &idev->cnf,
++						       NETLINK_CB(cb->skb).portid,
++						       cb->nlh->nlmsg_seq,
++						       RTM_NEWNETCONF,
++						       NLM_F_MULTI,
++						       RTNL_FAMILY_IP6MR,
+ 						       -1) <= 0) {
+ 				rcu_read_unlock();
+ 				goto done;
+ 			}
++#endif
+ 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
+ cont:
+ 			idx++;
+@@ -652,10 +693,18 @@ cont:
+ 					       NETLINK_CB(cb->skb).portid,
+ 					       cb->nlh->nlmsg_seq,
+ 					       RTM_NEWNETCONF, NLM_F_MULTI,
+-					       -1) <= 0)
++					       AF_INET6, -1) <= 0)
+ 			goto done;
+-		else
+-			h++;
++#ifdef CONFIG_IPV6_MROUTE
++		if (inet6_netconf_fill_devconf(skb, NETCONFA_IFINDEX_ALL,
++					       net->ipv6.devconf_all,
++					       NETLINK_CB(cb->skb).portid,
++					       cb->nlh->nlmsg_seq,
++					       RTM_NEWNETCONF, NLM_F_MULTI,
++					       RTNL_FAMILY_IP6MR, -1) <= 0)
++			goto done;
++#endif
++		h++;
+ 	}
+ 	if (h == NETDEV_HASHENTRIES + 1) {
+ 		if (inet6_netconf_fill_devconf(skb, NETCONFA_IFINDEX_DEFAULT,
+@@ -663,9 +712,17 @@ cont:
+ 					       NETLINK_CB(cb->skb).portid,
+ 					       cb->nlh->nlmsg_seq,
+ 					       RTM_NEWNETCONF, NLM_F_MULTI,
+-					       -1) <= 0)
++					       AF_INET6, -1) <= 0)
++			goto done;
++#ifdef CONFIG_IPV6_MROUTE
++		if (inet6_netconf_fill_devconf(skb, NETCONFA_IFINDEX_DEFAULT,
++					       net->ipv6.devconf_dflt,
++					       NETLINK_CB(cb->skb).portid,
++					       cb->nlh->nlmsg_seq,
++					       RTM_NEWNETCONF, NLM_F_MULTI,
++					       RTNL_FAMILY_IP6MR, -1) <= 0)
+ 			goto done;
+-		else
++#endif
+ 			h++;
+ 	}
+ done:
+
