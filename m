@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab3F1TbK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:31:10 -0400
+	id S1752871Ab3F1TbU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:31:20 -0400
 Received: from mxout1.idt.com ([157.165.5.25]:42267 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752469Ab3F1TbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:31:07 -0400
+	id S1752772Ab3F1TbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:31:13 -0400
 X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jun 2013 15:30:57 EDT
 From: Alexandre Bounine <alexandre.bounine@idt.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -13,12 +13,13 @@ To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
 Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
         Matt Porter <mporter@kernel.crashing.org>,
         Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Andre van Herk <andre.van.herk@Prodrive.nl>,
         Micha Nelissen <micha.nelissen@Prodrive.nl>,
         Stef van Os <stef.van.os@Prodrive.nl>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 7/7] rapidio: documentation update
-Date: Fri, 28 Jun 2013 15:18:56 -0400
-Message-Id: <1372447136-5751-8-git-send-email-alexandre.bounine@idt.com>
+Subject: [PATCH 2/7] rapidio/rionet: rework driver initialization and removal
+Date: Fri, 28 Jun 2013 15:18:51 -0400
+Message-Id: <1372447136-5751-3-git-send-email-alexandre.bounine@idt.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
 References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
@@ -26,184 +27,207 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update RapidIO documentation files to reflect modularization changes.
+Rework probe/remove routines to prevent rionet driver from monopolizing
+target RapidIO devices. Fix conflict with modular RapidIO switch drivers.
+
+Using one of RapidIO messaging channels rionet driver provides a service layer
+common to all endpoint devices in a system's RapidIO network. These devices may
+also require their own specific device driver which will be blocked from
+attaching to the target device by rionet (or block rionet if loaded earlier).
+To avoid conflict with device-specific drivers, the rionet driver is reworked
+to be registered as a subsystem interface on the RapidIO bus.
+
+The reworked rio_remove_dev() and rionet_exit() routines also include handling
+of individual rionet peer device removal which was not supported before.    
 
 Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: Matt Porter <mporter@kernel.crashing.org>
 Cc: Li Yang <leoli@freescale.com>
 Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Andre van Herk <andre.van.herk@Prodrive.nl>
 Cc: Micha Nelissen <micha.nelissen@Prodrive.nl>
 Cc: Stef van Os <stef.van.os@Prodrive.nl>
 Cc: Jean Delvare <jdelvare@suse.de>
 ---
- Documentation/rapidio/rapidio.txt |   98 ++++++++++++++++++++++++++++++++-----
- Documentation/rapidio/sysfs.txt   |    1 +
- 2 files changed, 86 insertions(+), 13 deletions(-)
+ drivers/net/rionet.c |  103 +++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 78 insertions(+), 25 deletions(-)
 
-diff --git a/Documentation/rapidio/rapidio.txt b/Documentation/rapidio/rapidio.txt
-index a9c16c9..717f5aa 100644
---- a/Documentation/rapidio/rapidio.txt
-+++ b/Documentation/rapidio/rapidio.txt
-@@ -73,28 +73,44 @@ data structure. This structure includes lists of all devices and local master
- ports that form the same network. It also contains a pointer to the default
- master port that is used to communicate with devices within the network.
+diff --git a/drivers/net/rionet.c b/drivers/net/rionet.c
+index f433b59..6d1f6ed 100644
+--- a/drivers/net/rionet.c
++++ b/drivers/net/rionet.c
+@@ -208,6 +208,17 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 		if (nets[rnet->mport->id].active[destid])
+ 			rionet_queue_tx_msg(skb, ndev,
+ 					nets[rnet->mport->id].active[destid]);
++		else {
++			/*
++			 * If the target device was removed from the list of
++			 * active peers but we still have TX packets targeting
++			 * it just report sending a packet to the target
++			 * (without actual packet transfer).
++			 */
++			dev_kfree_skb_any(skb);
++			ndev->stats.tx_packets++;
++			ndev->stats.tx_bytes += skb->len;
++		}
+ 	}
  
-+2.5 Device Drivers
-+
-+RapidIO device-specific drivers follow Linux Kernel Driver Model and are
-+intended to support specific RapidIO devices attached to the RapidIO network.
-+
-+2.6 Subsystem Interfaces
-+
-+RapidIO interconnect specification defines features that may be used to provide
-+one or more common service layers for all participating RapidIO devices. These
-+common services may act separately from device-specific drivers or be used by
-+device-specific drivers. Example of such service provider is the RIONET driver
-+which implements Ethernet-over-RapidIO interface. Because only one driver can be
-+registered for a device, all common RapidIO services have to be registered as
-+subsystem interfaces. This allows to have multiple common services attached to
-+the same device without blocking attachment of a device-specific driver.
-+
- 3. Subsystem Initialization
- ---------------------------
+ 	spin_unlock_irqrestore(&rnet->tx_lock, flags);
+@@ -385,24 +396,28 @@ static int rionet_close(struct net_device *ndev)
+ 	return 0;
+ }
  
- In order to initialize the RapidIO subsystem, a platform must initialize and
- register at least one master port within the RapidIO network. To register mport
--within the subsystem controller driver initialization code calls function
-+within the subsystem controller driver's initialization code calls function
- rio_register_mport() for each available master port.
+-static void rionet_remove(struct rio_dev *rdev)
++static int rionet_remove_dev(struct device *dev, struct subsys_interface *sif)
+ {
+-	struct net_device *ndev = rio_get_drvdata(rdev);
++	struct rio_dev *rdev = to_rio_dev(dev);
+ 	unsigned char netid = rdev->net->hport->id;
+ 	struct rionet_peer *peer, *tmp;
  
--RapidIO subsystem uses subsys_initcall() or device_initcall() to perform
--controller initialization (depending on controller device type).
+-	unregister_netdev(ndev);
 -
- After all active master ports are registered with a RapidIO subsystem,
- an enumeration and/or discovery routine may be called automatically or
- by user-space command.
+-	free_pages((unsigned long)nets[netid].active, get_order(sizeof(void *) *
+-			RIO_MAX_ROUTE_ENTRIES(rdev->net->hport->sys_size)));
+-	nets[netid].active = NULL;
++	if (dev_rionet_capable(rdev)) {
++		list_for_each_entry_safe(peer, tmp, &nets[netid].peers, node) {
++			if (peer->rdev == rdev) {
++				if (nets[netid].active[rdev->destid]) {
++					nets[netid].active[rdev->destid] = NULL;
++					nets[netid].nact--;
++				}
  
-+RapidIO subsystem can be configured to be built as a statically linked or
-+modular component of the kernel (see details below).
-+
- 4. Enumeration and Discovery
- ----------------------------
+-	list_for_each_entry_safe(peer, tmp, &nets[netid].peers, node) {
+-		list_del(&peer->node);
+-		kfree(peer);
++				list_del(&peer->node);
++				kfree(peer);
++				break;
++			}
++		}
+ 	}
  
- 4.1 Overview
- ------------
+-	free_netdev(ndev);
++	return 0;
+ }
  
--RapidIO subsystem configuration options allow users to specify enumeration and
-+RapidIO subsystem configuration options allow users to build enumeration and
- discovery methods as statically linked components or loadable modules.
- An enumeration/discovery method implementation and available input parameters
- define how any given method can be attached to available RapidIO mports:
-@@ -115,8 +131,8 @@ several methods to initiate an enumeration and/or discovery process:
-   endpoint waits for enumeration to be completed. If the specified timeout
-   expires the discovery process is terminated without obtaining RapidIO network
-   information. NOTE: a timed out discovery process may be restarted later using
--  a user-space command as it is described later if the given endpoint was
--  enumerated successfully.
-+  a user-space command as it is described below (if the given endpoint was
-+  enumerated successfully).
+ static void rionet_get_drvinfo(struct net_device *ndev,
+@@ -503,12 +518,13 @@ static int rionet_setup_netdev(struct rio_mport *mport, struct net_device *ndev)
  
-   (b) Statically linked enumeration and discovery process can be started by
-   a command from user space. This initiation method provides more flexibility
-@@ -138,15 +154,42 @@ When a network scan process is started it calls an enumeration or discovery
- routine depending on the configured role of a master port: host or agent.
+ static unsigned long net_table[RIONET_MAX_NETS/sizeof(unsigned long) + 1];
  
- Enumeration is performed by a master port if it is configured as a host port by
--assigning a host device ID greater than or equal to zero. A host device ID is
--assigned to a master port through the kernel command line parameter "riohdid=",
--or can be configured in a platform-specific manner. If the host device ID for
--a specific master port is set to -1, the discovery process will be performed
--for it.
-+assigning a host destination ID greater than or equal to zero. The host
-+destination ID can be assigned to a master port using various methods depending
-+on RapidIO subsystem build configuration:
-+
-+  (a) For a statically linked RapidIO subsystem core use command line parameter
-+  "rapidio.hdid=" with a list of destination ID assignments in order of mport
-+  device registration. For example, in a system with two RapidIO controllers
-+  the command line parameter "rapidio.hdid=-1,7" will result in assignment of
-+  the host destination ID=7 to the second RapidIO controller, while the first
-+  one will be assigned destination ID=-1.
-+
-+  (b) If the RapidIO subsystem core is built as a loadable module, in addition
-+  to the method shown above, the host destination ID(s) can be specified using
-+  traditional methods of passing module parameter "hdid=" during its loading:
-+  - from command line: "modprobe rapidio hdid=-1,7", or
-+  - from modprobe configuration file using configuration command "options",
-+    like in this example: "options rapidio hdid=-1,7". An example of modprobe
-+    configuration file is provided in the section below.
-+
-+  NOTES:
-+  (i) if "hdid=" parameter is omitted all available mport will be assigned
-+  destination ID = -1;
-+  (ii) the "hdid=" parameter in systems with multiple mports can have
-+  destination ID assignments omitted from the end of list (default = -1).
-+
-+If the host device ID for a specific master port is set to -1, the discovery
-+process will be performed for it.
+-static int rionet_probe(struct rio_dev *rdev, const struct rio_device_id *id)
++static int rionet_add_dev(struct device *dev, struct subsys_interface *sif)
+ {
+ 	int rc = -ENODEV;
+ 	u32 lsrc_ops, ldst_ops;
+ 	struct rionet_peer *peer;
+ 	struct net_device *ndev = NULL;
++	struct rio_dev *rdev = to_rio_dev(dev);
+ 	unsigned char netid = rdev->net->hport->id;
+ 	int oldnet;
  
- The enumeration and discovery routines use RapidIO maintenance transactions
- to access the configuration space of devices.
+@@ -518,8 +534,9 @@ static int rionet_probe(struct rio_dev *rdev, const struct rio_device_id *id)
+ 	oldnet = test_and_set_bit(netid, net_table);
  
-+NOTE: If RapidIO switch-specific device drivers are built as loadable modules
-+they must be loaded before enumeration/discovery process starts.
-+This requirement is cased by the fact that enumeration/discovery methods invoke
-+vendor-specific callbacks on early stages.
+ 	/*
+-	 * First time through, make sure local device is rionet
+-	 * capable, setup netdev (will be skipped on later probes)
++	 * If first time through this net, make sure local device is rionet
++	 * capable and setup netdev (this step will be skipped in later probes
++	 * on the same net).
+ 	 */
+ 	if (!oldnet) {
+ 		rio_local_read_config_32(rdev->net->hport, RIO_SRC_OPS_CAR,
+@@ -541,6 +558,12 @@ static int rionet_probe(struct rio_dev *rdev, const struct rio_device_id *id)
+ 		}
+ 		nets[netid].ndev = ndev;
+ 		rc = rionet_setup_netdev(rdev->net->hport, ndev);
++		if (rc) {
++			printk(KERN_ERR "%s: failed to setup netdev (rc=%d)\n",
++			       DRV_NAME, rc);
++			goto out;
++		}
 +
- 4.2 Automatic Start of Enumeration and Discovery
- ------------------------------------------------
+ 		INIT_LIST_HEAD(&nets[netid].peers);
+ 		nets[netid].nact = 0;
+ 	} else if (nets[netid].ndev == NULL)
+@@ -559,31 +582,61 @@ static int rionet_probe(struct rio_dev *rdev, const struct rio_device_id *id)
+ 		list_add_tail(&peer->node, &nets[netid].peers);
+ 	}
  
-@@ -266,7 +309,36 @@ method's module initialization routine calls rio_register_scan() to attach
- an enumerator to a specified mport device (or devices). The basic enumerator
- implementation demonstrates this process.
+-	rio_set_drvdata(rdev, nets[netid].ndev);
+-
+-      out:
++	return 0;
++out:
+ 	return rc;
+ }
  
--5. References
-+4.6 Using Loadable RapidIO Switch Drivers
-+-----------------------------------------
-+
-+In the case when RapidIO switch drivers are built as loadable modules a user
-+must ensure that they are loaded before the enumeration/discovery starts.
-+This process can be automated by specifying pre- or post- dependencies in the
-+RapidIO-specific modprobe configuration file as shown in the example below.
-+
-+  File /etc/modprobe.d/rapidio.conf:
-+  ----------------------------------
-+
-+  # Configure RapidIO subsystem modules
-+
-+  # Set enumerator host destination ID (overrides kernel command line option)
-+  options rapidio hdid=-1,2
-+
-+  # Load RapidIO switch drivers immediately after rapidio core module was loaded
-+  softdep rapidio post: idt_gen2 idtcps tsi57x
-+
-+  # OR :
-+
-+  # Load RapidIO switch drivers just before rio-scan enumerator module is loaded
-+  softdep rio-scan pre: idt_gen2 idtcps tsi57x
-+
-+  --------------------------
-+
-+NOTE: In the example above, one of "softdep" commands must be removed or
-+commented out to keep required module loading sequence.
-+
-+A. References
- -------------
++#ifdef MODULE
+ static struct rio_device_id rionet_id_table[] = {
+-	{RIO_DEVICE(RIO_ANY_ID, RIO_ANY_ID)}
++	{RIO_DEVICE(RIO_ANY_ID, RIO_ANY_ID)},
++	{ 0, }	/* terminate list */
+ };
  
- [1] RapidIO Trade Association. RapidIO Interconnect Specifications.
-diff --git a/Documentation/rapidio/sysfs.txt b/Documentation/rapidio/sysfs.txt
-index 1987817..271438c 100644
---- a/Documentation/rapidio/sysfs.txt
-+++ b/Documentation/rapidio/sysfs.txt
-@@ -40,6 +40,7 @@ device_rev - returns the device revision level
-              (see 4.1 for switch specific details)
-    lprev   - returns name of previous device (switch) on the path to the device
-              that that owns this attribute
-+  modalias - returns the device modalias
+-static struct rio_driver rionet_driver = {
+-	.name = "rionet",
+-	.id_table = rionet_id_table,
+-	.probe = rionet_probe,
+-	.remove = rionet_remove,
++MODULE_DEVICE_TABLE(rapidio, rionet_id_table);
++#endif
++
++static struct subsys_interface rionet_interface = {
++	.name		= "rionet",
++	.subsys		= &rio_bus_type,
++	.add_dev	= rionet_add_dev,
++	.remove_dev	= rionet_remove_dev,
+ };
  
- In addition to the files listed above, each device has a binary attribute file
- that allows read/write access to the device configuration registers using
+ static int __init rionet_init(void)
+ {
+-	return rio_register_driver(&rionet_driver);
++	return subsys_interface_register(&rionet_interface);
+ }
+ 
+ static void __exit rionet_exit(void)
+ {
+-	rio_unregister_driver(&rionet_driver);
++	struct rionet_private *rnet;
++	struct net_device *ndev;
++	struct rionet_peer *peer, *tmp;
++	int i;
++
++	for (i = 0; i < RIONET_MAX_NETS; i++) {
++		if (nets[i].ndev != NULL) {
++			ndev = nets[i].ndev;
++			rnet = netdev_priv(ndev);
++			unregister_netdev(ndev);
++
++			list_for_each_entry_safe(peer,
++						 tmp, &nets[i].peers, node) {
++				list_del(&peer->node);
++				kfree(peer);
++			}
++
++			free_pages((unsigned long)nets[i].active,
++				 get_order(sizeof(void *) *
++				 RIO_MAX_ROUTE_ENTRIES(rnet->mport->sys_size)));
++			nets[i].active = NULL;
++
++			free_netdev(ndev);
++		}
++	}
++
++	subsys_interface_unregister(&rionet_interface);
+ }
+ 
+ late_initcall(rionet_init);
 -- 
 1.7.8.4
 
