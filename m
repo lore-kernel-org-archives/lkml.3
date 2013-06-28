@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab3F1Jaf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 05:30:35 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:51612 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab3F1Jad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 05:30:33 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVJmUYFVOLTzkSqzw7+CW0TwK2S+vq=To8Cu2EpcNSxcQ@mail.gmail.com>
-References: <CA+icZUUsDoJHDk0Ug7FRc652CJvmcNdvhT1x44+8LOA2OSU3Hg@mail.gmail.com>
-	<CAPM=9tySnq0SDJEy0qvhhqjTnsSNTMuYzaMgOoi44SBRhuTF2Q@mail.gmail.com>
-	<CA+icZUVDX+rGMHaO3Pi+jRmHVs_QtdBOYcO++ugHPy4CmFurZA@mail.gmail.com>
-	<CA+icZUVJmUYFVOLTzkSqzw7+CW0TwK2S+vq=To8Cu2EpcNSxcQ@mail.gmail.com>
-Date: Fri, 28 Jun 2013 11:30:32 +0200
-Message-ID: <CA+icZUXLMGeHom=8Gye8nBZoRxm7KTxy0ofXQsw4nfCayx5b_w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 28 [ call-trace: workqueue | drm
- releated? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755240Ab3F1Jat (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 05:30:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53474 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755138Ab3F1Jar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 05:30:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,958,1363158000"; 
+   d="scan'208";a="360980185"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        John Ronciak <john.ronciak@intel.com>,
+        Miles J Penner <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+In-Reply-To: <CAE9FiQVt4gCiz20SmJVP6d7tXOior5Ehg+-c_fG7wFsDUj7H4Q@mail.gmail.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-5-git-send-email-mika.westerberg@linux.intel.com>
+ <CAE9FiQVt4gCiz20SmJVP6d7tXOior5Ehg+-c_fG7wFsDUj7H4Q@mail.gmail.com>
+Subject: Re: [PATCH 4/6] PCI: acpiphp: check for new devices on enabled host
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130628093319.D4DE6E0090@blue.fi.intel.com>
+Date: Fri, 28 Jun 2013 12:33:19 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 11:21 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Jun 28, 2013 at 10:31 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Fri, Jun 28, 2013 at 10:29 AM, Dave Airlie <airlied@gmail.com> wrote:
->>>>
->>>> [ CC wq and drm(-intel) folks ]
->>>>
->>>
->>> Already know the commit which caused it, mentioned on dri-devel,
->>> waiting for danvet to wake up and look, before I revert it later.
->>>
->>
->> Thanks, I like fast responses.
->>
->> For followers... See "workqueue warnings in helper code"
->>
->> - Sedat -
->>
->> http://lists.freedesktop.org/archives/dri-devel/2013-June/040707.html
->>
->
-> Just FYI:
->
-> Daniel decided to revert [2] (see [1]).
->
-> commit 160954b7bca43da7cd3cfbce310e6df919a8216e
-> "drm: kms_helper: don't lose hotplug event"
->
+Yinghai Lu wrote:
+> On Tue, Jun 25, 2013 at 9:22 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >
+> > Current acpiphp_check_bridge() implementation is pretty dumb:
+> >  - it enables the slot if it's not enabled and the slot status is
+> >    ACPI_STA_ALL;
+> >  - it disables the slot if it's enabled and slot is not in ACPI_STA_ALL
+> >    state.
+> >
+> > This behavior is not enough to handle Thunderbolt chaining case
+> > properly. We need to actually rescan for new devices even if a device
+> > has already in the slot.
+> >
+> > The new implementation disables and stops the slot if it's not in
+> > ACPI_STA_ALL state.
+> >
+> > For ACPI_STA_ALL state we first trim devices which don't respond and
+> > look for the ones after that. We do that even if slot already enabled
+> > (SLOT_ENABLED).
+> 
+> that is not right, some time BUS_CHECK is even sent root bus.
+> in that case, stop all devices in slots and load driver again.
+> 
+> like you put one card in one slots, but all devices in other slots get stop
+> and enable again.
 
-I have tested that with my -2 build and the call-traces are gone.
+We don't stop enabled devices, we only stop and remove devices which don't
+respond.  See patch 3/6.
 
-Feel free to add my Reported-by/Tested-by.
+I don't see how it's harmful. Do you?
 
-- Sedat -
-
-> - Sedat -
->
-> [1] http://lists.freedesktop.org/archives/dri-devel/2013-June/040721.html
-> [2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=160954b7bca43da7cd3cfbce310e6df919a8216e
->
->>> Dave.
+-- 
+ Kirill A. Shutemov
