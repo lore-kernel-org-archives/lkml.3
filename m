@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3F1THC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:07:02 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57122 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753787Ab3F1TG6 (ORCPT
+	id S1753534Ab3F1S46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 14:56:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41836 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab3F1S44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:06:58 -0400
-Date: Fri, 28 Jun 2013 15:06:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: balbi@ti.com, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-In-Reply-To: <51CD7FA1.3020005@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1306281346430.1047-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 28 Jun 2013 14:56:56 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sage Weil <sage@inktank.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 035/105] libceph: fix authorizer invalidation
+Date: Fri, 28 Jun 2013 11:50:57 -0700
+Message-Id: <1372445527-24414-36-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jun 2013, Roger Quadros wrote:
+3.8.13.4 -stable review patch.  If anyone has any objections, please let me know.
 
-> > That's not what I meant.  Never mind the pinctrl; I was asking about
-> > the EHCI controller itself.  Under what circumstances does the
-> > controller assert its wakeup signal?  And how do you tell it to stop
-> > asserting that signal?
-> 
-> I believe this would be through the EHCI Interrupt enable register (USBINTR).
-> I'm not aware of any other mechanism.
+------------------
 
-That's strange, because ehci_suspend() sets the intr_enable register to 
-0.  So how do you ever get any wakeup interrupts at all?
+From: Sage Weil <sage@inktank.com>
 
-> Right. It seems the external hub has signaled remote wakeup but the kernel doesn't
-> resume the root hub's port it is connected to.
-> 
-> By observing the detailed logs below you can see that the root hub does not generate
-> an INTerrupt transaction to notify the port status change event. I've captured the pstatus
-> and GetPortStatus info as well.
+commit 4b8e8b5d78b8322351d44487c1b76f7e9d3412bc upstream.
 
-We don't need an interrupt.  The driver is supposed to detect the
-remote wakeup sent by the external hub all by itself.
+We were invalidating the authorizer by removing the ticket handler
+entirely.  This was effective in inducing us to request a new authorizer,
+but in the meantime it mean that any authorizer we generated would get a
+new and initialized handler with secret_id=0, which would always be
+rejected by the server side with a confusing error message:
 
-> Failing case
-> ------------
-> 
-> [   16.108032] usb usb1: usb auto-resume
-> [   16.108062] ehci-omap 48064800.ehci: resume root hub
-> [   16.108154] hub 1-0:1.0: hub_resume
-> [   16.108398] ehci_hub_control GetPortStatus, port 1 temp = 0x1000
-> [   16.108459] ehci_hub_control GetPortStatus, port 2 temp = 0x14c5
+ auth: could not find secret_id=0
+ cephx: verify_authorizer could not get service secret for service osd secret_id=0
 
-Here's where we should detect it.  Look at the GetPortStatus case in
-ehci_hub_control(); the PORT_RESUME bit (0x0040) is set in temp, so the
-"Remote Wakeup received?" code should run.  In particular, these lines
-should run:
+Instead, simply clear the validity field.  This will still induce the auth
+code to request a new secret, but will let us continue to use the old
+ticket in the meantime.  The messenger code will probably continue to fail,
+but the exponential backoff will kick in, and eventually the we will get a
+new (hopefully more valid) ticket from the mon and be able to continue.
 
-			/* resume signaling for 20 msec */
-			ehci->reset_done[wIndex] = jiffies
-					+ msecs_to_jiffies(20);
-			usb_hcd_start_port_resume(&hcd->self, wIndex);
-			/* check the port again */
-			mod_timer(&ehci_to_hcd(ehci)->rh_timer,
-					ehci->reset_done[wIndex]);
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/ceph/auth_x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Therefore 20 ms later, around timestamp 16.128459,
-ehci_hub_status_data() should have been called.  At that time, the
-root-hub port should have been fully resumed.
-
-> [   16.108551] hub 1-0:1.0: port 2: status 0507 change 0000
-> [   16.108612] ehci_hub_control GetPortStatus, port 3 temp = 0x1000
-> [   16.108642] hub 1-0:1.0: hub_activate submitting urb
-> [   16.109222] ehci_irq port 3 pstatus 0x1000
-> [   16.109222] ehci_irq port 2 pstatus 0x14c5
-> [   16.109252] ehci_irq port 1 pstatus 0x1000
-> [   16.109374] hub 1-0:1.0: state 7 ports 3 chg 0000 evt 0000
-
-But apparently nothing happened.  Why not?  Did the rh_timer get reset?  
-Maybe you can find out what went wrong.
-
-(Hmmm, we seem to be missing a
-
-			set_bit(wIndex, &ehci->resuming_ports);
-
-line in there...)
-
-> > Also, why do you need omap->initialized?  Do you think you might get a 
-> > wakeup interrupt before the controller has been fully set up?  I don't 
-> > see how you could, given the pm_runtime_get_sync() call in the probe 
-> > routine.
-> > 
-> 
-> During probe we need to runtime_resume the device before usb_add_hcd() since the
-> controller clocks must be enabled before any registers are accessed.
-> However, we cannot call ehci_resume() before usb_add_hcd(). So to prevent this
-> chicken & egg situation, I've used the omap->initialized flag. It only indicates that
-> the ehci structures are initialized and we can call ehci_resume/suspend().
-
-Ah, yes.  Other subsystems, such as PCI, face exactly the same problem.
-
-You probably shouldn't call it "initialized", though, because the same
-issue arises in ehci_hcd_omap_remove() -- the pm_runtime_put_sync()  
-there would end up calling ehci_suspend() after usb_remove_hcd().  
-"bound" or "started" would be better names.
-
-Alan Stern
+diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
+index a16bf14..bd8758d 100644
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -630,7 +630,7 @@ static void ceph_x_invalidate_authorizer(struct ceph_auth_client *ac,
+ 
+ 	th = get_ticket_handler(ac, peer_type);
+ 	if (!IS_ERR(th))
+-		remove_ticket_handler(ac, th);
++		memset(&th->validity, 0, sizeof(th->validity));
+ }
+ 
+ 
+-- 
+1.8.1.2
 
