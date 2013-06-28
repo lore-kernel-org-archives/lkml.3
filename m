@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab3F1XrJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 19:47:09 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.198]:18691 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750818Ab3F1XrI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 19:47:08 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-132.messagelabs.com!1372463224!11555205!7
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.9; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: <linux-mmc@vger.kernel.org>
-Subject: Q: mmc au size
-Date: Fri, 28 Jun 2013 16:46:21 -0700
-User-Agent: KMail/1.9.9
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, <cjb@laptop.org>,
-        <hsweeten@visionengravers.com>
+	id S1753015Ab3F1XxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 19:53:12 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:39852 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab3F1XxK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 19:53:10 -0400
+Date: Sat, 29 Jun 2013 00:53:07 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH 095/105] ARM: 7762/1: kernel: fix arm_dt_init_cpu_maps()
+ to skip non-cpu nodes
+Message-ID: <20130628235307.GB15316@e102568-lin.cambridge.arm.com>
+References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
+ <1372445527-24414-96-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1372445527-24414-96-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 28 Jun 2013 23:53:07.0913 (UTC) FILETIME=[A37DC390:01CE745A]
+X-MC-Unique: 113062900530800201
+Content-Type: text/plain; charset=WINDOWS-1252
 Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Message-ID: <201306281646.21319.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On Fri, Jun 28, 2013 at 07:51:57PM +0100, Kamal Mostafa wrote:
+> 3.8.13.4 -stable review patch.  If anyone has any objections, please let me know.
 
-I have a question concerning the "au" size of a SD Card.
+Owing to dependencies on other patches getting upstreamed but not
+necessarily backported to stable, waiting for a decision on how to solve
+dependencies to be made asap, please drop this patch from the queue since
+it can trigger regressions.
 
-I have an old Kingston 64MB SD-Card and lately I have noticed this
-kernel message when I use the card:
+Thanks and apologies,
+Lorenzo
 
-mmc0: SD Status: Invalid Allocation Unit size.
+> 
+> ------------------
+> 
+> From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> 
+> commit 1ba9bf0a9ae779c1a2b3eb64951e4161d9bad7a9 upstream.
+> 
+> The introduction of the cpu-map topology node in the cpus node implies
+> that cpus node might have children that are not cpu nodes. The DT
+> parsing code needs updating otherwise it would check for cpu nodes
+> properties in nodes that are not required to contain them, resulting
+> in warnings that have no bearing on bindings defined in the dts source file.
+> 
+> Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Acked-by: Nicolas Pitre <nico@linaro.org>
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> ---
+>  arch/arm/kernel/devtree.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+> index 70f1bde..93fde23 100644
+> --- a/arch/arm/kernel/devtree.c
+> +++ b/arch/arm/kernel/devtree.c
+> @@ -92,6 +92,9 @@ void __init arm_dt_init_cpu_maps(void)
+>  	for_each_child_of_node(cpus, cpu) {
+>  		u32 hwid;
+>  
+> +		if (of_node_cmp(cpu->type, "cpu"))
+> +			continue;
+> +
+>  		pr_debug(" * %s...\n", cpu->full_name);
+>  		/*
+>  		 * A device tree containing CPU nodes with missing "reg"
+> -- 
+> 1.8.1.2
+> 
+> 
 
-This is due to the following commit:
-
-commit b63b5e819d5b21ae493c17c356018ffa98d3ee1c
-Author: Alan Cox <alan@linux.intel.com>
-Date:   Mon Jul 2 18:55:13 2012 +0100
-
-    mmc: core: correct invalid error checking
-
-
->From the "SD Specifications, Part 1, Physical Layer Specification",
-
-* AU_SIZE
-This 4-bit field indicates AU Size and the value can be selected from
-16 KB.
-        
-  AU_SIZE  Value Definition
-  -------  ----------------
-    0h     Not Defined
-    1h     16 KB
-    2h     32 KB
-    3h     64 KB
-    4h     128 KB
-    5h     256 KB
-    6h     512 KB
-    7h     1 MB
-    8h     2 MB
-    9h     4 MB
-    Ah     8 MB
-    Bh     12 MB
-    Ch     16 MB
-    Dh     24 MB
-    Eh     32 MB
-    Fh     64 MB
-
-Also in the specification is this note:
-
-Sector: is the unit that is related to the erase commands. Its size
-is the number of blocks that will be erased in one portion. The size
-of a sector is fixed for each device. The information about the sector
-size (in blocks) is stored in the CSD. Note that if the card specifies
-AU size, sector size should be ignored.
-
-And this:
-
-* SECTOR_SIZE
-This field is fixed to 7Fh, which indicates 64 KBytes. This value does
-not relate to erase operations. High Capacity and Extended Capacity
-cards indicate memory boundary by AU size and this field should not
-be used.
-
-
-So, if an au size of 0 is reported wouldn't the erase size be the
-sector size? If nothing else I think the test needs to be adjusted to
-not report the error for an au size of 0.
-
-Regards,
-Hartley
