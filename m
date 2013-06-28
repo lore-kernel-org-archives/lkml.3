@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3F1UlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 16:41:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48270 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab3F1UlG (ORCPT
+	id S1752768Ab3F1Uox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 16:44:53 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:49868 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab3F1Uow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 16:41:06 -0400
-Date: Fri, 28 Jun 2013 22:41:03 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Vrabel <david.vrabel@citrix.com>
-cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH 5/5] x86/xen: sync the CMOS RTC as well as the Xen
- wallclock
-In-Reply-To: <51CDBF05.5070502@citrix.com>
-Message-ID: <alpine.DEB.2.02.1306282240010.4013@ionos.tec.linutronix.de>
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <1372329348-20841-6-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306281727240.4013@ionos.tec.linutronix.de> <51CDB0A1.6080409@citrix.com> <alpine.DEB.2.02.1306281805430.4013@ionos.tec.linutronix.de>
- <51CDBF05.5070502@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 28 Jun 2013 16:44:52 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1372450451-8790-3-git-send-email-lszubowi@redhat.com>
+References: <1372450451-8790-1-git-send-email-lszubowi@redhat.com>
+	<1372450451-8790-3-git-send-email-lszubowi@redhat.com>
+Date: Fri, 28 Jun 2013 13:44:51 -0700
+Message-ID: <CA+8MBbJrU51R5TMV6m4nhAiz2kZQBOcmkeAkEcg-erJhDwrChA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] acpi: Eliminate console msg if pstore.backend
+ excludes ERST
+From: Tony Luck <tony.luck@gmail.com>
+To: Lenny Szubowicz <lszubowi@redhat.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        n.hamaguchi@jp.fujitsu.com, Don Zickus <dzickus@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jun 2013, David Vrabel wrote:
-> On 28/06/13 17:09, Thomas Gleixner wrote:
-> > Yep. I'll pick that up.
-> 
-> If it helps, I've made this change as well as splitting the xen part of
-> the hrtimers patch out into a separate commit.
+On Fri, Jun 28, 2013 at 1:14 PM, Lenny Szubowicz <lszubowi@redhat.com> wrote:
 
-Fun. I already have that same split in my pending queue :)
+> -               if (pstore_register(&erst_info)) {
+> -                       pr_info(ERST_PFX "Could not register with persistent store\n");
+> +               rc = pstore_register(&erst_info);
+> +               if (rc) {
+> +                       if (rc != -EPERM)
+> +                               pr_info(ERST_PFX
+> +                               "Could not register with persistent store\n");
+> +                       erst_info.buf = NULL;
+> +                       erst_info.bufsize = 0;
 
-Thanks,
+Mismatch between part 1 and part 2 here ... we return -EINVAL if
+our name doesn't match the desired backend ... but you only suppress
+the "Could not register" message for -EPERM
 
-	tglx
+Or am I confused while just looking at patch fragments?
+
+-Tony
