@@ -1,156 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab3F1F7x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 01:59:53 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:50083 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab3F1F7w (ORCPT
+	id S1754556Ab3F1GAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 02:00:21 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58606 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267Ab3F1GAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 01:59:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130628035437.GB29338@dastard>
-References: <20130623160452.GA11740@redhat.com>
-	<20130624155758.GA5993@redhat.com>
-	<20130624173510.GA1321@redhat.com>
-	<20130625153520.GA7784@redhat.com>
-	<20130626191853.GA29049@redhat.com>
-	<20130627002255.GA16553@redhat.com>
-	<20130627075543.GA32195@dastard>
-	<20130627143055.GA1000@redhat.com>
-	<20130628011843.GD32195@dastard>
-	<CA+55aFze-=6e_P1syCs=3b6-xj-itVyZKvpejqBR83gA5tV+4w@mail.gmail.com>
-	<20130628035437.GB29338@dastard>
-Date: Thu, 27 Jun 2013 19:59:50 -1000
-X-Google-Sender-Auth: nx3LJOyyjsu9ipWz93ga34ClwBU
-Message-ID: <CA+55aFyZYsbMpP+6dkdkhdDn9gpTx0dkv25MUtcnswer_a2x9w@mail.gmail.com>
-Subject: Re: frequent softlockups with 3.10rc6.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Jan Kara <jack@suse.cz>
-Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Content-Type: multipart/mixed; boundary=047d7b342e5e4f63bb04e03096ca
+	Fri, 28 Jun 2013 02:00:19 -0400
+Message-ID: <1372399204.5989.166.camel@marge.simpson.net>
+Subject: Re: cgroup: status-quo and userland efforts
+From: Mike Galbraith <bitbucket@online.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tim Hockin <thockin@hockin.org>, Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 28 Jun 2013 08:00:04 +0200
+In-Reply-To: <20130628050138.GD2500@htj.dyndns.org>
+References: <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
+	 <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+	 <20130625000118.GT1918@mtj.dyndns.org>
+	 <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+	 <20130626212047.GB4536@htj.dyndns.org>
+	 <1372311907.5871.78.camel@marge.simpson.net>
+	 <20130627180143.GD5599@mtj.dyndns.org>
+	 <1372391198.5989.110.camel@marge.simpson.net>
+	 <20130628040930.GC2500@htj.dyndns.org>
+	 <1372394950.5989.128.camel@marge.simpson.net>
+	 <20130628050138.GD2500@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:6q38eHmuI37AFlvd7DjrM1+U5kdkciCo+R8Nkb9Wyy3
+ qKhOopENPkhTEPdwmRTFCUHonplDQ/8Hq0/MbdqdPnlF3csblb
+ vWXPlnyUH4wtwzSkXEu25wI16nr8f6BDU4mgkFVAr/2DsOXkOy
+ 67xhwhvNaRDsLR5mFupvxTLZMJ6a57bujqdY/BZiuYeD7QBe2k
+ SXDDbfitPghWRKvQ+pB1PXIhtzUSGyvgmV+iWtHz9z+lB8HLTJ
+ V7x8OqFzb6nL1PhbQB07NgI5JZD+ojcRU64AsLEtxR4F/N67AU
+ Gt5QoBI6V5hRU5lk4UAQTE3BZqmTEfsH7BoFYYc1NBQKkJ+WJB
+ dQaMm4glP6RNAHYYKg0UvOsXVUa+R22eajbYVDJ/9xbO8kLdLy
+ uXDiR2aRbVRSg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b342e5e4f63bb04e03096ca
-Content-Type: text/plain; charset=UTF-8
+On Thu, 2013-06-27 at 22:01 -0700, Tejun Heo wrote:
 
-On Thu, Jun 27, 2013 at 5:54 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Jun 27, 2013 at 04:54:53PM -1000, Linus Torvalds wrote:
->>
->> So what made it all start happening now? I don't recall us having had
->> these kinds of issues before..
->
-> Not sure - it's a sudden surprise for me, too. Then again, I haven't
-> been looking at sync from a performance or lock contention point of
-> view any time recently.  The algorithm that wait_sb_inodes() is
-> effectively unchanged since at least 2009, so it's probably a case
-> of it having been protected from contention by some external factor
-> we've fixed/removed recently.  Perhaps the bdi-flusher thread
-> replacement in -rc1 has changed the timing sufficiently that it no
-> longer serialises concurrent sync calls as much....
->
-> However, the inode_sb_list_lock is known to be a badly contended
-> lock from a create/unlink fastpath for XFS, so it's not like this sort
-> of thing is completely unexpected.
+> Anyways, if you're root, you can keep doing whatever you want.  You
+> could be stepping on the centralized agent's toes a bit and vice-versa
 
-That whole inode_sb_list_lock seems moronic. Why isn't it a per-sb
-one? No, that won't fix all problems, but it might at least help a
-*bit*.
+Keep on truckn' sounds good, that vice-versa toe stomping not so good,
+but yeah, until systemd or ilk grows the ability to shut me down, I
+shouldn't feel any burning need to introduce it to my machete.
 
-Also, looking some more now at that wait_sb_inodes logic, I have to
-say that if the problem is primarily the inode->i_lock, then that's
-just crazy. We normally shouldn't even *need* that lock, since we
-could do a totally unlocked iget() as long as the count is non-zero.
+> but I don't think that's gonna be disastrous.  What I'm trying to
+> stamp out is direct usages from !root domains and !system-management
+> binaries / scripts.  They absolutely have to go.  There's no question
+> about it and I'll take totalitarian userland agent anyday over the
+> current mess.
 
-And no, I don't think really need the i_lock for checking
-"mapping->nrpages == 0" or the magical "inode is being freed" bits
-either. Or at least we could easily do some of this optimistically for
-the common cases.
+I get some of the why.. and yeah, it's the dirt simple usage that I care
+about most, not the big hairy problem cases you're trying to address. 
 
-So instead of doing
+> Eventually, I think we'll be able to reach an equilibrium where most
+> things are reasonable and we'll be exploring the acceptable limits of
+> flexibility again, but right now, please bear with the brutality.
+> We're way over the line and I can't see a way back which isn't gonna
+> sting a bit.  I'm and will keep trying to make it as painless as
+> possible.
 
-                struct address_space *mapping = inode->i_mapping;
+Keep on driving, and thanks for listening.  Aaaooooo ;-)
 
-                spin_lock(&inode->i_lock);
-                if ((inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) ||
-                    (mapping->nrpages == 0)) {
-                        spin_unlock(&inode->i_lock);
-                        continue;
-                }
-                __iget(inode);
-                spin_unlock(&inode->i_lock);
+-Mike
 
-I really think we could do that without getting the inode lock at
-*all* in the common case.
-
-I'm attaching a pretty trivial patch, which may obviously be trivially
-totally flawed. I have not tested this in any way, but half the new
-lines are comments about why it's doing what it is doing.  And I
-really think that it should make the "actually take the inode lock" be
-something quite rare.
-
-And quite frankly, I'd much rather get *rid* of crazy i_lock accesses,
-than try to be clever and use a whole different list at this point.
-Not that I disagree that it wouldn't be much nicer to use a separate
-list in the long run, but for a short-term solution I'd much rather
-keep the old logic and just tweak it to be much more usable..
-
-Hmm? Al? Jan? Comments?
-
-                             Linus
-
---047d7b342e5e4f63bb04e03096ca
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_higz1dbg0
-
-IGZzL2ZzLXdyaXRlYmFjay5jIHwgNTggKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKysrKysrLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDQ4IGluc2VydGlvbnMoKyks
-IDEwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL2ZzLXdyaXRlYmFjay5jIGIvZnMvZnMt
-d3JpdGViYWNrLmMKaW5kZXggM2JlNTcxODllZmQ1Li4zZGNjOGIyMDJhNDAgMTAwNjQ0Ci0tLSBh
-L2ZzL2ZzLXdyaXRlYmFjay5jCisrKyBiL2ZzL2ZzLXdyaXRlYmFjay5jCkBAIC0xMjA2LDYgKzEy
-MDYsNTIgQEAgb3V0X3VubG9ja19pbm9kZToKIH0KIEVYUE9SVF9TWU1CT0woX19tYXJrX2lub2Rl
-X2RpcnR5KTsKIAorLyoKKyAqIERvIHdlIHdhbnQgdG8gZ2V0IHRoZSBpbm9kZSBmb3Igd3JpdGVi
-YWNrPworICovCitzdGF0aWMgaW50IGdldF9pbm9kZV9mb3Jfd3JpdGViYWNrKHN0cnVjdCBpbm9k
-ZSAqaW5vZGUpCit7CisJc3RydWN0IGFkZHJlc3Nfc3BhY2UgKm1hcHBpbmcgPSBpbm9kZS0+aV9t
-YXBwaW5nOworCisJLyoKKwkgKiBJdCdzIGEgZGF0YSBpbnRlZ3JpdHkgc3luYywgYnV0IHdlIGRv
-bid0IGNhcmUgYWJvdXQKKwkgKiByYWNpbmcgd2l0aCBuZXcgcGFnZXMgLSB3ZSdyZSBhYm91dCBk
-YXRhIGludGVncml0eQorCSAqIG9mIHRoaW5ncyBpbiB0aGUgcGFzdCwgbm90IHRoZSBmdXR1cmUK
-KwkgKi8KKwlpZiAoIUFDQ0VTU19PTkNFKG1hcHBpbmctPm5ycGFnZXMpKQorCQlyZXR1cm4gMDsK
-KworCS8qIFNpbWlsYXIgbG9naWMgd3J0IHRoZSBJX05FVyBiaXQgKi8KKwlpZiAoQUNDRVNTX09O
-Q0UoaW5vZGUtPmlfc3RhdGUpICYgSV9ORVcpCisJCXJldHVybiAwOworCisJLyoKKwkgKiBXaGVu
-IHRoZSBpbm9kZSBjb3VudCBnb2VzIGRvd24gdG8gemVybywgdGhlCisJICogSV9XSUxMX0ZSRUUg
-YW5kIElfRlJFRUlORyBiaXRzIG1pZ2h0IGdldCBzZXQuCisJICogQnV0IG5vdCBiZWZvcmUuCisJ
-ICoKKwkgKiBTbyBpZiB3ZSBnZXQgdGhpcywgd2Uga25vdyB0aG9zZSBiaXRzIGFyZQorCSAqIGNs
-ZWFyLCBhbmQgdGhlIGlub2RlIGlzIHN0aWxsIGludGVyZXN0aW5nLgorCSAqLworCWlmIChhdG9t
-aWNfaW5jX25vdF96ZXJvKCZpbm9kZS0+aV9jb3VudCkpCisJCXJldHVybiAxOworCisJLyoKKwkg
-KiBTbG93IHBhdGggbmV2ZXIgaGFwcGVucyBub3JtYWxseSwgc2luY2UgYW55CisJICogYWN0aXZl
-IGlub2RlIHdpbGwgYmUgcmVmZXJlbmNlZCBieSBhIGRlbnRyeQorCSAqIGFuZCB0aHVzIGNhdWdo
-dCBhYm92ZQorCSAqLworCXNwaW5fbG9jaygmaW5vZGUtPmlfbG9jayk7CisJaWYgKChpbm9kZS0+
-aV9zdGF0ZSAmIChJX0ZSRUVJTkd8SV9XSUxMX0ZSRUV8SV9ORVcpKSB8fAorCSAgICAobWFwcGlu
-Zy0+bnJwYWdlcyA9PSAwKSkgeworCQlzcGluX3VubG9jaygmaW5vZGUtPmlfbG9jayk7CisJCXJl
-dHVybiAwOworCX0KKwlfX2lnZXQoaW5vZGUpOworCXNwaW5fdW5sb2NrKCZpbm9kZS0+aV9sb2Nr
-KTsKKwlyZXR1cm4gMTsKK30KKwogc3RhdGljIHZvaWQgd2FpdF9zYl9pbm9kZXMoc3RydWN0IHN1
-cGVyX2Jsb2NrICpzYikKIHsKIAlzdHJ1Y3QgaW5vZGUgKmlub2RlLCAqb2xkX2lub2RlID0gTlVM
-TDsKQEAgLTEyMjYsMTYgKzEyNzIsOCBAQCBzdGF0aWMgdm9pZCB3YWl0X3NiX2lub2RlcyhzdHJ1
-Y3Qgc3VwZXJfYmxvY2sgKnNiKQogCSAqIHdlIHN0aWxsIGhhdmUgdG8gd2FpdCBmb3IgdGhhdCB3
-cml0ZW91dC4KIAkgKi8KIAlsaXN0X2Zvcl9lYWNoX2VudHJ5KGlub2RlLCAmc2ItPnNfaW5vZGVz
-LCBpX3NiX2xpc3QpIHsKLQkJc3RydWN0IGFkZHJlc3Nfc3BhY2UgKm1hcHBpbmcgPSBpbm9kZS0+
-aV9tYXBwaW5nOwotCi0JCXNwaW5fbG9jaygmaW5vZGUtPmlfbG9jayk7Ci0JCWlmICgoaW5vZGUt
-Pmlfc3RhdGUgJiAoSV9GUkVFSU5HfElfV0lMTF9GUkVFfElfTkVXKSkgfHwKLQkJICAgIChtYXBw
-aW5nLT5ucnBhZ2VzID09IDApKSB7Ci0JCQlzcGluX3VubG9jaygmaW5vZGUtPmlfbG9jayk7CisJ
-CWlmICghZ2V0X2lub2RlX2Zvcl93cml0ZWJhY2soaW5vZGUpKQogCQkJY29udGludWU7Ci0JCX0K
-LQkJX19pZ2V0KGlub2RlKTsKLQkJc3Bpbl91bmxvY2soJmlub2RlLT5pX2xvY2spOwogCQlzcGlu
-X3VubG9jaygmaW5vZGVfc2JfbGlzdF9sb2NrKTsKIAogCQkvKgpAQCAtMTI0OSw3ICsxMjg3LDcg
-QEAgc3RhdGljIHZvaWQgd2FpdF9zYl9pbm9kZXMoc3RydWN0IHN1cGVyX2Jsb2NrICpzYikKIAkJ
-aXB1dChvbGRfaW5vZGUpOwogCQlvbGRfaW5vZGUgPSBpbm9kZTsKIAotCQlmaWxlbWFwX2ZkYXRh
-d2FpdChtYXBwaW5nKTsKKwkJZmlsZW1hcF9mZGF0YXdhaXQoaW5vZGUtPmlfbWFwcGluZyk7CiAK
-IAkJY29uZF9yZXNjaGVkKCk7CiAK
---047d7b342e5e4f63bb04e03096ca--
