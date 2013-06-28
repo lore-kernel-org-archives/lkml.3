@@ -1,103 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab3F1P0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 11:26:23 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:43783 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab3F1P0V (ORCPT
+	id S1755424Ab3F1P15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 11:27:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53790 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755159Ab3F1P14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 11:26:21 -0400
-Date: Fri, 28 Jun 2013 08:26:17 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Sven-Thorsten Dietrich <sven@vyatta.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Mike Davison <Mike.Davison@vyatta.com>
-Subject: Re: [PATCH] Set the correct RTNL family for multicast netconf
- messages
-Message-ID: <20130628082617.42a802a4@nehalam.linuxnetplumber.net>
-In-Reply-To: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com>
-References: <1372376687.21767.10.camel@imac-linux.luckyscavenger.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Jun 2013 11:27:56 -0400
+Date: Fri, 28 Jun 2013 17:27:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/5] perf: add two new features
+Message-ID: <20130628152745.GH6626@twins.programming.kicks-ass.net>
+References: <1372425741-1676-1-git-send-email-adrian.hunter@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372425741-1676-1-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013 16:44:47 -0700
-Sven-Thorsten Dietrich <sven@vyatta.com> wrote:
+On Fri, Jun 28, 2013 at 04:22:16PM +0300, Adrian Hunter wrote:
+> Hi
+> 
+> Please consider these two new perf features:
+>       x86: add ability to calculate TSC from perf sample timestamps
+>       perf: add 'keep tracking' flag to PERF_EVENT_IOC_DISABLE
 
-> There may be other cases that require a special case, so I chose the switch approach.
-> 
-> Please note, that all other messages from ipmr[6].c correctly set the family, while these do not.
-> 
-> Thanks
-> 
-> Sven
-> 
-> 
-> 
-> Subject: Set correct RTNL family for multicast netconf messages
-> From: Sven-Thorsten Dietrich sven@vyatta.com Thu Jun 27 16:40:17 2013 -0700
-> Date: Thu Jun 27 16:40:17 2013 -0700:
-> 
-> 
-> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-> index dfc39d4..695858b 100644
-> --- a/net/ipv4/devinet.c
-> +++ b/net/ipv4/devinet.c
-> @@ -1705,7 +1705,16 @@ static int inet_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
->  		return -EMSGSIZE;
->  
->  	ncm = nlmsg_data(nlh);
-> -	ncm->ncm_family = AF_INET;
-> +
-> +	switch (type) {
-> +		case NETCONFA_MC_FORWARDING:
-> +			ncm->ncm_family = RTNL_FAMILY_IPMR;
-> +			break;
-> +
-> +		default:
-> +			ncm->ncm_family = AF_INET;
-> +			break;
-> +	}
->  
->  	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
->  		goto nla_put_failure;
-> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-> index 4ab4c38..a177da4 100644
-> --- a/net/ipv6/addrconf.c
-> +++ b/net/ipv6/addrconf.c
-> @@ -492,7 +492,16 @@ static int inet6_netconf_fill_devconf(struct sk_buff *skb, int ifindex,
->  		return -EMSGSIZE;
->  
->  	ncm = nlmsg_data(nlh);
-> -	ncm->ncm_family = AF_INET6;
-> +
-> +	switch (type) {
-> +		case NETCONFA_MC_FORWARDING:
-> +			ncm->ncm_family = RTNL_FAMILY_IP6MR;
-> +			break;
-> +
-> +		default:
-> +			ncm->ncm_family = AF_INET6;
-> +			break;
-> +	}
->  
->  	if (nla_put_s32(skb, NETCONFA_IFINDEX, ifindex) < 0)
->  		goto nla_put_failure;
-> 
-
-Found another issue that needs some thought.
-If type == ALL, in that case the family comes up as AF_INET.
-That means that if application is doing a request to get netconf
-it will receive a different answer than if it is montoring for netconf
-changes.
-
-One way to solve would be to split fill_devconf into two parts, one
-for unicast, and one for multicast.
-
+Please explain to us why you'd like to do this..
