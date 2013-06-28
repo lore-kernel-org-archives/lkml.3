@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab3F1QJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 12:09:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46972 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521Ab3F1QJR (ORCPT
+	id S1755862Ab3F1QJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 12:09:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44871 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755521Ab3F1QJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 12:09:17 -0400
-Date: Fri, 28 Jun 2013 18:09:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Vrabel <david.vrabel@citrix.com>
-cc: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH 5/5] x86/xen: sync the CMOS RTC as well as the Xen
- wallclock
-In-Reply-To: <51CDB0A1.6080409@citrix.com>
-Message-ID: <alpine.DEB.2.02.1306281805430.4013@ionos.tec.linutronix.de>
-References: <1372329348-20841-1-git-send-email-david.vrabel@citrix.com> <1372329348-20841-6-git-send-email-david.vrabel@citrix.com> <alpine.DEB.2.02.1306281727240.4013@ionos.tec.linutronix.de> <51CDB0A1.6080409@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 28 Jun 2013 12:09:58 -0400
+Date: Fri, 28 Jun 2013 09:09:41 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-4f4319a02a6108be3e65b9d44d1b7f5e8f520535@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1372369996-20556-1-git-send-email-bp@alien8.de>
+References: <1372369996-20556-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/ioremap: Correct function name output
+Git-Commit-ID: 4f4319a02a6108be3e65b9d44d1b7f5e8f520535
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 28 Jun 2013 09:09:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jun 2013, David Vrabel wrote:
-> 
-> Before:
-> 
-> Xen wallclock set when time is stepped.
-> Xen wallclock set every 11 minutes (by sync_cmos_clock()).
-> Hardware RTC never set.
-> 
-> After:
-> 
-> Xen wallclock set when time is stepped.
-> Xen wallclock set every 11 minutes (in pvclock gtod notifier).
+Commit-ID:  4f4319a02a6108be3e65b9d44d1b7f5e8f520535
+Gitweb:     http://git.kernel.org/tip/4f4319a02a6108be3e65b9d44d1b7f5e8f520535
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Thu, 27 Jun 2013 23:53:16 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 28 Jun 2013 11:11:58 +0200
 
-Ah, you are emulating the sync_cmos_clock() behaviour for the xen
-wallclock via the periodic pvclock_gtod notifier call.
+x86/ioremap: Correct function name output
 
-> Hardware RTC set every 11 minutes (by sync_cmos_clock()).
-> 
-> I'll update the changelog to be more descriptive:
-> 
->   Adjustments to Xen's persistent clock via update_persistent_clock()
->   don't actually persist, as the Xen wallclock is a software only clock
->   and modifications to it do not modify the underlying CMOS RTC.
-> 
->   The x86_platform.set_wallclock hook can be used to keep the hardware
->   RTC synchronized (as on bare metal).  If (in dom0) we make the Xen
->   wallclock periodically synchronized by the pvclock_gtod notifier, the
->   set_wallclock hook need not update the Xen wallclock and the native
->   implementation can be used.
+Infact, let the compiler enter the function name so that there
+are no discrepancies.
 
-Yep. I'll pick that up.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1372369996-20556-1-git-send-email-bp@alien8.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/ioremap.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Thanks,
-
-	tglx
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 9a1e658..0215e2c 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -501,15 +501,15 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
+ 	}
+ 
+ 	if (slot < 0) {
+-		printk(KERN_INFO "early_iomap(%08llx, %08lx) not found slot\n",
+-			 (u64)phys_addr, size);
++		printk(KERN_INFO "%s(%08llx, %08lx) not found slot\n",
++		       __func__, (u64)phys_addr, size);
+ 		WARN_ON(1);
+ 		return NULL;
+ 	}
+ 
+ 	if (early_ioremap_debug) {
+-		printk(KERN_INFO "early_ioremap(%08llx, %08lx) [%d] => ",
+-		       (u64)phys_addr, size, slot);
++		printk(KERN_INFO "%s(%08llx, %08lx) [%d] => ",
++		       __func__, (u64)phys_addr, size, slot);
+ 		dump_stack();
+ 	}
+ 
