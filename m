@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab3F1TCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:02:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41971 "EHLO
+	id S1754152Ab3F1TCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:02:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41961 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab3F1S6S (ORCPT
+	with ESMTP id S1753997Ab3F1S6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 14:58:18 -0400
+	Fri, 28 Jun 2013 14:58:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Kubecek <mkubecek@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 076/105] ipv4: fix redirect handling for TCP packets
-Date: Fri, 28 Jun 2013 11:51:38 -0700
-Message-Id: <1372445527-24414-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 084/105] tuntap: set SOCK_ZEROCOPY flag during open
+Date: Fri, 28 Jun 2013 11:51:46 -0700
+Message-Id: <1372445527-24414-85-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372445527-24414-1-git-send-email-kamal@canonical.com>
 References: <1372445527-24414-1-git-send-email-kamal@canonical.com>
@@ -27,48 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Kubecek <mkubecek@suse.cz>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit f96ef988cc603487c03a6de07807b06cbe641829 ]
+[ Upstream commit 19a6afb23e5d323e1245baa4e62755492b2f1200 ]
 
-Unlike ipv4_redirect() and ipv4_sk_redirect(), ip_do_redirect()
-doesn't call __build_flow_key() directly but via
-ip_rt_build_flow_key() wrapper. This leads to __build_flow_key()
-getting pointer to IPv4 header of the ICMP redirect packet
-rather than pointer to the embedded IPv4 header of the packet
-initiating the redirect.
+Commit 54f968d6efdbf7dec36faa44fc11f01b0e4d1990
+(tuntap: move socket to tun_file) forgets to set SOCK_ZEROCOPY flag, which will
+prevent vhost_net from doing zercopy w/ tap. This patch fixes this by setting
+it during file open.
 
-As a result, handling of ICMP redirects initiated by TCP packets
-is broken. Issue was introduced by
-
-	4895c771c ("ipv4: Add FIB nexthop exceptions.")
-
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/route.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/tun.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index a0fcc47..70da494 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -741,10 +741,15 @@ static void ip_do_redirect(struct dst_entry *dst, struct sock *sk, struct sk_buf
- {
- 	struct rtable *rt;
- 	struct flowi4 fl4;
-+	const struct iphdr *iph = (const struct iphdr *) skb->data;
-+	int oif = skb->dev->ifindex;
-+	u8 tos = RT_TOS(iph->tos);
-+	u8 prot = iph->protocol;
-+	u32 mark = skb->mark;
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 2129cf90..2a56317 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -2154,6 +2154,8 @@ static int tun_chr_open(struct inode *inode, struct file * file)
+ 	set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
+ 	INIT_LIST_HEAD(&tfile->next);
  
- 	rt = (struct rtable *) dst;
- 
--	ip_rt_build_flow_key(&fl4, sk, skb);
-+	__build_flow_key(&fl4, sk, iph, oif, tos, prot, mark, 0);
- 	__ip_do_redirect(rt, skb, &fl4, true);
++	sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
++
+ 	return 0;
  }
  
 -- 
