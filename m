@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab3F1MWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 08:22:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35430 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab3F1MWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 08:22:50 -0400
-Date: Fri, 28 Jun 2013 13:22:45 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/8] sched: Track NUMA hinting faults on per-node basis
-Message-ID: <20130628122245.GS1875@suse.de>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-3-git-send-email-mgorman@suse.de>
- <20130627155748.GX28407@twins.programming.kicks-ass.net>
+	id S1754452Ab3F1M3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 08:29:52 -0400
+Received: from cns1-135.icoremail.net ([120.31.129.135]:48064 "HELO
+	cns1-7.icoremail.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with SMTP id S1753571Ab3F1M3v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 08:29:51 -0400
+Date: Fri, 28 Jun 2013 20:19:24 +0800
+From: "Bqxz" <sales6@chinamiaoji.com>
+Reply-To: swt@swtindustry.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: A4 paper here
+Message-ID: <201306282019240311425@chinamiaoji.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130627155748.GX28407@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="GB2312"
+X-CM-TRANSID: SwGowHDrX7EFf81R_yASAA--.502S4
+X-Coremail-Antispam: 1UD129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
+	VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UUUFj7k042IEc7kJM7k042IE4IxYO2xFxVAq
+	jxCEw4Av424lb7IF0VCFIxCj07C26xAqzxv262kKe7AKxwAYjxAI6xCI4x8I1I0E4c8EcI
+	0Ec7CjxVAaw2AFwI1lb7Iv0xC_Cr1lb4IE77IF4wAFF20E14v26r1j6r4UM7CY07I20VC2
+	zVCF04k26cxKx2IYs7xG6rWj6s0DM7CIcVAFz4kK6r1j6r18M28lY4IEw2IIxxk0rwA2F7
+	IY1VAKz4vEj48ve4kI8wA2z4x0Y4vE2Ix0cI8IcVAFwI0_Xr0_Ar1l84ACjcxK6xIIjxv2
+	0xvEc7CjxVAFwI0_Gr0_Cr1l84ACjcxK6I8E87Iv67AKxVWxJr0_GcWl84ACjcxK6I8E87
+	Iv6xkF7I0E14v26F4UJVW0owAawVACjsI_Ar4v6c8GOVW06r1DJrWUAwAS0I0E0xvYzxvE
+	52x082IY62kv0487Mc804VCqF7xvr2I5Mc02F40EFcxC0VAKzVAqx4xG6I80ewAv7VC0I7
+	IYx2IY67AKxVWUAVWUtwAv7VC2z280aVAFwI0_Gr1j6F4UJwAm72CE4IkC6x0Yz7v_Jr0_
+	Gr1lF7xvr2IYc2Ij64vIr41lFcxC0VAYjxAxZF0Ew4CEw7xC0wACY4xI67k04243AVC20s
+	07MxkIecxEwVAFwVW5JwCF04k20xvY0x0EwIxGrwCF54CYxVAaw2AFwI0_GFyj6rW5JwCF
+	54CYxVCY1x0262kKe7AKxVW8Zr0_WryUMxC20s026xCaFVCjc4AY6r1j6r4UMxCIbckI1I
+	0E14v26Fy26r43JwCFI7vE0wC20s026c02F40E14v26r1j6r18MI8I3I0E7480Y4vE14v2
+	6r106r1rMI8E67AF67kF1VAFwI0_Jr0_JrylIxkGc2Ij64vIr41lIxAIcVC0I7IYx2IY67
+	AKxVWUJVWUCwCI42IY6xIIjxv20xvEc7CjxVAFwI0_Jr0_Gr1lIxAIcVCF04k26cxKx2IY
+	s7xG6Fyj6rWUJwCI42IY6I8E87Iv67AKxVW8Jr0_Cr1UMIIF0xvEx4A2jsIEc7CjxVAFwI
+	0_Gr1j6F4UJwCE64xvF2IEb7IF0Fy7YxBIdaVFxhVjvjDU0xZFpf9x07bnHUgUUUUU=
+X-Originating-IP: [110.240.232.31]
+X-CM-SenderInfo: 5vdov2uw6fxx5qdpxtxrmlhudrp/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5SCTxnc020764
 
-On Thu, Jun 27, 2013 at 05:57:48PM +0200, Peter Zijlstra wrote:
-> On Wed, Jun 26, 2013 at 03:38:01PM +0100, Mel Gorman wrote:
-> > @@ -503,6 +503,18 @@ DECLARE_PER_CPU(struct rq, runqueues);
-> >  #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
-> >  #define raw_rq()		(&__raw_get_cpu_var(runqueues))
-> >  
-> > +#ifdef CONFIG_NUMA_BALANCING
-> > +extern void sched_setnuma(struct task_struct *p, int node, int shared);
-> 
-> Stray line; you're introducing that function later with a different
-> signature.
-> 
+Dear Purchasing manager:
+Nice time to you
 
-Fixed, thanks.
+It is my big pleasure to hear you need A4 paper
+If you still need that pls tell me
 
--- 
-Mel Gorman
-SUSE Labs
+Then i can send you our best price
+Best wishes
+Ida
+
+Ida Chen
+
+SALES MANAGER
+
+East Siweite industry Co., Ltd
+www.dfswtpaper.com
+
+SKYPE: siweite
+
+Email:swt@swtindustry.comˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
