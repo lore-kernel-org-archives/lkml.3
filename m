@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3F1Ufg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 16:35:36 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:57088 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3F1Uff (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 16:35:35 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, John Stultz <john.stultz@linaro.org>,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        kevin@allwinnertech.com
-Subject: Re: [PATCHv2 4/8] clocksource: sun4i: Fix the next event code
-Date: Fri, 28 Jun 2013 22:35:29 +0200
-Message-ID: <7300725.devmrYGi4t@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.7-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.02.1306282204220.4013@ionos.tec.linutronix.de>
-References: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com> <1372449386-1334-5-git-send-email-maxime.ripard@free-electrons.com> <alpine.DEB.2.02.1306282204220.4013@ionos.tec.linutronix.de>
+	id S1752353Ab3F1Uhp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 16:37:45 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:53730 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751017Ab3F1Uhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 16:37:43 -0400
+Message-ID: <51CDF417.3050406@sgi.com>
+Date: Fri, 28 Jun 2013 15:37:43 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Daniel J Blueman <daniel@numascale-asia.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mike Travis <travis@sgi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <holt@sgi.com>, <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        <x86@kernel.org>, <linux-doc@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steffen Persvold <sp@numascale.com>
+Subject: Re: [RFC] Transparent on-demand memory setup initialization embedded
+ in the (GFP) buddy allocator
+References: <51CBB2F7.3050604@numascale-asia.com>
+In-Reply-To: <51CBB2F7.3050604@numascale-asia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.140]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 of June 2013 22:13:08 Thomas Gleixner wrote:
-> On Fri, 28 Jun 2013, Maxime Ripard wrote:
-> > The next_event logic was setting the next interval to fire in the
-> > current timer value instead of the interval value register, which is
-> > obviously wrong.
-> 
-> Ok.
-> 
-> > Plus the logic to set the actual value was wrong as well, so this
-> > code has always been broken.
-> 
-> This lacks an explanation why the logic is wrong and what the actual
-> fix is.
-> 
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > ---
-> > 
-> >  drivers/clocksource/sun4i_timer.c | 12 +++++++++---
-> >  1 file changed, 9 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/clocksource/sun4i_timer.c
-> > b/drivers/clocksource/sun4i_timer.c index 84ace76..695c8c8 100644
-> > --- a/drivers/clocksource/sun4i_timer.c
-> > +++ b/drivers/clocksource/sun4i_timer.c
-> > @@ -16,6 +16,7 @@
-> > 
-> >  #include <linux/clk.h>
-> >  #include <linux/clockchips.h>
-> > 
-> > +#include <linux/delay.h>
-> > 
-> >  #include <linux/interrupt.h>
-> >  #include <linux/irq.h>
-> >  #include <linux/irqreturn.h>
-> > 
-> > @@ -61,9 +62,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode
-> > mode,> 
-> >  static int sun4i_clkevt_next_event(unsigned long evt,
-> >  
-> >  				   struct clock_event_device *unused)
-> >  
-> >  {
-> > 
-> > -	u32 u = readl(timer_base + TIMER_CTL_REG(0));
-> > -	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
-> > -	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
-> > +	u32 val = readl(timer_base + TIMER_CTL_REG(0));
-> > +	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
-> > +	udelay(1);
-> 
-> That udelay() is more than suspicious.
+On 06/26/2013 10:35 PM, Daniel J Blueman wrote:
+> On Wednesday, June 26, 2013 9:30:02 PM UTC+8, Andrew Morton wrote:
+> >
+> > On Wed, 26 Jun 2013 11:22:48 +0200 Ingo Molnar <mi...@kernel.org> 
+> wrote:
+> >
+> > > except that on 32 TB
+> > > systems we don't spend ~2 hours initializing 8,589,934,592 page 
+> heads.
+> >
+> > That's about a million a second which is crazy slow - even my 
+> prehistoric desktop
+> > is 100x faster than that.
+> >
+> > Where's all this time actually being spent?
+>
+> The complexity of a directory-lookup architecture to make the 
+> (intrinsically unscalable) cache-coherency protocol scalable gives you 
+> a ~1us roundtrip to remote NUMA nodes.
+>
+> Probably a lot of time is spent in some memsets, and RMW cycles which 
+> are setting page bits, which are intrinsically synchronous, so the 
+> initialising core can't get to 12 or so outstanding memory transactions.
+>
+> Since EFI memory ranges have a flag to state if they are zerod (which 
+> may be a fair assumption for memory on non-bootstrap processor NUMA 
+> nodes), we can probably collapse the RMWs to just writes.
+>
+> A normal write will require a coherency cycle, then a fetch and a 
+> writeback when it's evicted from the cache. For this purpose, 
+> non-temporal writes would eliminate the cache line fetch and give a 
+> massive increase in bandwidth. We wouldn't even need a store-fence as 
+> the initialising core is the only one online.
+>
+> Daniel
 
-Not only it is suspicious, but also delays the event by 1 microsecond. Not 
-much, given usual usage of clock events, but still.
+Could you elaborate a bit more? or suggest a specific area to look at?
 
->From what I understand from this code, you keep this timer running and 
-just stop it to set new event. Can you simply disable autoreload and just 
-program this timer to start counting from evt down to 0 when it generates 
-interrupt and just stops itself?
+After some experiments with trying to just set some fields in the struct 
+page directly I haven't been able to produce any improvements.  Of 
+course there is lots about the area which I don't have much experience with.
 
-I believe this would simplify the logic a bit, but is it possible with 
-this hardware?
-
-Best regards,
-Tomasz
+Nate
 
