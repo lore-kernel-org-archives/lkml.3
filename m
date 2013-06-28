@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3F1TbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 15:31:05 -0400
+	id S1751527Ab3F1TbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 15:31:15 -0400
 Received: from mxout1.idt.com ([157.165.5.25]:42267 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752469Ab3F1TbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 15:31:01 -0400
+	id S1752469Ab3F1TbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 15:31:11 -0400
 X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jun 2013 15:30:57 EDT
 From: Alexandre Bounine <alexandre.bounine@idt.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
         Andre van Herk <andre.van.herk@Prodrive.nl>,
         Micha Nelissen <micha.nelissen@Prodrive.nl>,
         Stef van Os <stef.van.os@Prodrive.nl>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 5/7] rapidio: add modular build option for the subsystem core
-Date: Fri, 28 Jun 2013 15:18:54 -0400
-Message-Id: <1372447136-5751-6-git-send-email-alexandre.bounine@idt.com>
+Subject: [PATCH 3/7] rapidio: update enumerator registration mechanism
+Date: Fri, 28 Jun 2013 15:18:52 -0400
+Message-Id: <1372447136-5751-4-git-send-email-alexandre.bounine@idt.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
 References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
@@ -26,13 +26,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a configuration option to build RapidIO subsystem core code as a loadable
-kernel module. Currently this option is available only for x86-based platforms,
-with the additional patch for PowerPC planned to be provided later.
+Update enumeration/discovery method registration mechanism to allow loading
+enumeration/discovery methods before all mports are registered.
 
-This patch replaces kernel command line parameter "riohdid=" with its
-module-specific analog "rapidio.hdid=".  
+Existing statically linked RapidIO subsystem expects that all available RapidIO
+mport devices are initialized and registered before the enumeration/discovery
+method is registered. Switching to loadable mport device drivers creates
+situation when mport device driver can be loaded after enumeration/discovery
+method is attached (e.g., loadable mport driver in a system with statically
+linked RapidIO core and enumerator). This also will happen in a system with
+hot-pluggable RapidIO controllers.
 
+To remove the dependency on the initialization/registration order this patch
+introduces enumeration/discovery registration mechanism that supports arbitrary
+registration order of mports and enumerator/discovery methods.
+
+The following registration rules are implemented:
+- only one enumeration/discovery method can be registered for given mport ID
+  (including RIO_MPORT_ANY);
+- when new enumeration/discovery methods tries to attach to the registered mport
+  device, method with matching mport ID will replace a default method previously
+  registered for given mport (if any);
+- enumeration/discovery method with target ID=RIO_MPORT_ANY will be attached
+  only to mports that do not have another enumerator attached to them;
+- when new mport device is registered with RapidIO subsystem, registration
+  routine searches for the enumeration/discovery method with the best matching
+  mport ID;
+  
 Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: Matt Porter <mporter@kernel.crashing.org>
 Cc: Li Yang <leoli@freescale.com>
@@ -42,102 +62,384 @@ Cc: Micha Nelissen <micha.nelissen@Prodrive.nl>
 Cc: Stef van Os <stef.van.os@Prodrive.nl>
 Cc: Jean Delvare <jdelvare@suse.de>
 ---
- arch/x86/Kconfig         |    4 ++--
- drivers/rapidio/Makefile |    4 +++-
- drivers/rapidio/rio.c    |   27 ++++++++++++++-------------
- 3 files changed, 19 insertions(+), 16 deletions(-)
+ drivers/rapidio/rio-scan.c  |    1 +
+ drivers/rapidio/rio-sysfs.c |   17 +----
+ drivers/rapidio/rio.c       |  176 +++++++++++++++++++++++++++++++++++--------
+ drivers/rapidio/rio.h       |    3 +-
+ include/linux/rio.h         |   15 ++++
+ 5 files changed, 164 insertions(+), 48 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index fe120da..583ac42 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2246,11 +2246,11 @@ source "drivers/pcmcia/Kconfig"
- source "drivers/pci/hotplug/Kconfig"
+diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
+index 61c913f..0e86569 100644
+--- a/drivers/rapidio/rio-scan.c
++++ b/drivers/rapidio/rio-scan.c
+@@ -1162,6 +1162,7 @@ bail:
+ }
  
- config RAPIDIO
--	bool "RapidIO support"
-+	tristate "RapidIO support"
- 	depends on PCI
- 	default n
- 	help
--	  If you say Y here, the kernel will include drivers and
-+	  If enabled this option will include drivers and the core
- 	  infrastructure code to support RapidIO interconnect devices.
+ static struct rio_scan rio_scan_ops = {
++	.owner = THIS_MODULE,
+ 	.enumerate = rio_enum_mport,
+ 	.discover = rio_disc_mport,
+ };
+diff --git a/drivers/rapidio/rio-sysfs.c b/drivers/rapidio/rio-sysfs.c
+index 864e52f..0c4473e 100644
+--- a/drivers/rapidio/rio-sysfs.c
++++ b/drivers/rapidio/rio-sysfs.c
+@@ -286,7 +286,6 @@ static ssize_t bus_scan_store(struct bus_type *bus, const char *buf,
+ 				size_t count)
+ {
+ 	long val;
+-	struct rio_mport *port = NULL;
+ 	int rc;
  
- source "drivers/rapidio/Kconfig"
-diff --git a/drivers/rapidio/Makefile b/drivers/rapidio/Makefile
-index 3036702..6271ada 100644
---- a/drivers/rapidio/Makefile
-+++ b/drivers/rapidio/Makefile
-@@ -1,7 +1,9 @@
- #
- # Makefile for RapidIO interconnect services
- #
--obj-y += rio.o rio-access.o rio-driver.o rio-sysfs.o
-+obj-$(CONFIG_RAPIDIO) += rapidio.o
-+rapidio-y := rio.o rio-access.o rio-driver.o rio-sysfs.o
-+
- obj-$(CONFIG_RAPIDIO_ENUM_BASIC) += rio-scan.o
+ 	if (kstrtol(buf, 0, &val) < 0)
+@@ -300,21 +299,7 @@ static ssize_t bus_scan_store(struct bus_type *bus, const char *buf,
+ 	if (val < 0 || val >= RIO_MAX_MPORTS)
+ 		return -EINVAL;
  
- obj-$(CONFIG_RAPIDIO)		+= switches/
+-	port = rio_find_mport((int)val);
+-
+-	if (!port) {
+-		pr_debug("RIO: %s: mport_%d not available\n",
+-			 __func__, (int)val);
+-		return -EINVAL;
+-	}
+-
+-	if (!port->nscan)
+-		return -EINVAL;
+-
+-	if (port->host_deviceid >= 0)
+-		rc = port->nscan->enumerate(port, 0);
+-	else
+-		rc = port->nscan->discover(port, RIO_SCAN_ENUM_NO_WAIT);
++	rc = rio_mport_scan((int)val);
+ exit:
+ 	if (!rc)
+ 		rc = count;
 diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
-index 2054b62..f4f30af 100644
+index b17d521..5eb727c 100644
 --- a/drivers/rapidio/rio.c
 +++ b/drivers/rapidio/rio.c
-@@ -5,7 +5,7 @@
-  * Copyright 2005 MontaVista Software, Inc.
-  * Matt Porter <mporter@kernel.crashing.org>
-  *
-- * Copyright 2009 Integrated Device Technology, Inc.
-+ * Copyright 2009 - 2013 Integrated Device Technology, Inc.
-  * Alex Bounine <alexandre.bounine@idt.com>
-  *
-  * This program is free software; you can redistribute  it and/or modify it
-@@ -30,6 +30,17 @@
- 
- #include "rio.h"
- 
-+MODULE_DESCRIPTION("RapidIO Subsystem Core");
-+MODULE_AUTHOR("Matt Porter <mporter@kernel.crashing.org>");
-+MODULE_AUTHOR("Alexandre Bounine <alexandre.bounine@idt.com>");
-+MODULE_LICENSE("GPL");
-+
-+static int hdid[RIO_MAX_MPORTS];
-+static int ids_num;
-+module_param_array(hdid, int, &ids_num, 0);
-+MODULE_PARM_DESC(hdid,
-+	"Destination ID assignment to local RapidIO controllers");
-+
- static LIST_HEAD(rio_devices);
+@@ -34,6 +34,7 @@ static LIST_HEAD(rio_devices);
  static DEFINE_SPINLOCK(rio_global_list_lock);
  
-@@ -1860,24 +1871,14 @@ no_disc:
+ static LIST_HEAD(rio_mports);
++static LIST_HEAD(rio_scans);
+ static DEFINE_MUTEX(rio_mport_list_lock);
+ static unsigned char next_portid;
+ static DEFINE_SPINLOCK(rio_mmap_lock);
+@@ -1602,34 +1603,73 @@ found:
+  * rio_register_scan - enumeration/discovery method registration interface
+  * @mport_id: mport device ID for which fabric scan routine has to be set
+  *            (RIO_MPORT_ANY = set for all available mports)
+- * @scan_ops: enumeration/discovery control structure
++ * @scan_ops: enumeration/discovery operations structure
++ *
++ * Registers enumeration/discovery operations with RapidIO subsystem and
++ * attaches it to the specified mport device (or all available mports
++ * if RIO_MPORT_ANY is specified).
+  *
+- * Assigns enumeration or discovery method to the specified mport device (or all
+- * available mports if RIO_MPORT_ANY is specified).
+  * Returns error if the mport already has an enumerator attached to it.
+- * In case of RIO_MPORT_ANY ignores ports with valid scan routines and returns
+- * an error if was unable to find at least one available mport.
++ * In case of RIO_MPORT_ANY skips mports with valid scan routines (no error).
+  */
+ int rio_register_scan(int mport_id, struct rio_scan *scan_ops)
+ {
+ 	struct rio_mport *port;
+-	int rc = -EBUSY;
++	struct rio_scan_node *scan;
++	int rc = 0;
+ 
+-	mutex_lock(&rio_mport_list_lock);
+-	list_for_each_entry(port, &rio_mports, node) {
+-		if (port->id == mport_id || mport_id == RIO_MPORT_ANY) {
+-			if (port->nscan && mport_id == RIO_MPORT_ANY)
+-				continue;
+-			else if (port->nscan)
+-				break;
++	pr_debug("RIO: %s for mport_id=%d\n", __func__, mport_id);
+ 
+-			port->nscan = scan_ops;
+-			rc = 0;
++	if ((mport_id != RIO_MPORT_ANY && mport_id >= RIO_MAX_MPORTS) ||
++	    !scan_ops)
++		return -EINVAL;
+ 
+-			if (mport_id != RIO_MPORT_ANY)
+-				break;
++	mutex_lock(&rio_mport_list_lock);
++
++	/*
++	 * Check if there is another enumerator already registered for
++	 * the same mport ID (including RIO_MPORT_ANY). Multiple enumerators
++	 * for the same mport ID are not supported.
++	 */
++	list_for_each_entry(scan, &rio_scans, node) {
++		if (scan->mport_id == mport_id) {
++			rc = -EBUSY;
++			goto err_out;
+ 		}
+ 	}
++
++	/*
++	 * Allocate and initialize new scan registration node.
++	 */
++	scan = kzalloc(sizeof(*scan), GFP_KERNEL);
++	if (!scan) {
++		rc = -ENOMEM;
++		goto err_out;
++	}
++
++	scan->mport_id = mport_id;
++	scan->ops = scan_ops;
++
++	/*
++	 * Traverse the list of registered mports to attach this new scan.
++	 *
++	 * The new scan with matching mport ID overrides any previously attached
++	 * scan assuming that old scan (if any) is the default one (based on the
++	 * enumerator registration check above).
++	 * If the new scan is the global one, it will be attached only to mports
++	 * that do not have their own individual operations already attached.
++	 */
++	list_for_each_entry(port, &rio_mports, node) {
++		if (port->id == mport_id) {
++			port->nscan = scan_ops;
++			break;
++		} else if (mport_id == RIO_MPORT_ANY && !port->nscan)
++			port->nscan = scan_ops;
++	}
++
++	list_add_tail(&scan->node, &rio_scans);
++
++err_out:
+ 	mutex_unlock(&rio_mport_list_lock);
+ 
+ 	return rc;
+@@ -1639,30 +1679,81 @@ EXPORT_SYMBOL_GPL(rio_register_scan);
+ /**
+  * rio_unregister_scan - removes enumeration/discovery method from mport
+  * @mport_id: mport device ID for which fabric scan routine has to be
+- *            unregistered (RIO_MPORT_ANY = set for all available mports)
++ *            unregistered (RIO_MPORT_ANY = apply to all mports that use
++ *            the specified scan_ops)
++ * @scan_ops: enumeration/discovery operations structure
+  *
+  * Removes enumeration or discovery method assigned to the specified mport
+- * device (or all available mports if RIO_MPORT_ANY is specified).
++ * device. If RIO_MPORT_ANY is specified, removes the specified operations from
++ * all mports that have them attached.
+  */
+-int rio_unregister_scan(int mport_id)
++int rio_unregister_scan(int mport_id, struct rio_scan *scan_ops)
+ {
+ 	struct rio_mport *port;
++	struct rio_scan_node *scan;
++
++	pr_debug("RIO: %s for mport_id=%d\n", __func__, mport_id);
++
++	if (mport_id != RIO_MPORT_ANY && mport_id >= RIO_MAX_MPORTS)
++		return -EINVAL;
+ 
+ 	mutex_lock(&rio_mport_list_lock);
+-	list_for_each_entry(port, &rio_mports, node) {
+-		if (port->id == mport_id || mport_id == RIO_MPORT_ANY) {
+-			if (port->nscan)
+-				port->nscan = NULL;
+-			if (mport_id != RIO_MPORT_ANY)
+-				break;
++
++	list_for_each_entry(port, &rio_mports, node)
++		if (port->id == mport_id ||
++		    (mport_id == RIO_MPORT_ANY && port->nscan == scan_ops))
++			port->nscan = NULL;
++
++	list_for_each_entry(scan, &rio_scans, node)
++		if (scan->mport_id == mport_id) {
++			list_del(&scan->node);
++			kfree(scan);
+ 		}
+-	}
++
+ 	mutex_unlock(&rio_mport_list_lock);
+ 
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(rio_unregister_scan);
+ 
++/**
++ * rio_mport_scan - execute enumeration/discovery on the specified mport
++ * @mport_id: number (ID) of mport device
++ */
++int rio_mport_scan(int mport_id)
++{
++	struct rio_mport *port = NULL;
++	int rc;
++
++	mutex_lock(&rio_mport_list_lock);
++	list_for_each_entry(port, &rio_mports, node) {
++		if (port->id == mport_id)
++			goto found;
++	}
++	mutex_unlock(&rio_mport_list_lock);
++	return -ENODEV;
++found:
++	if (!port->nscan) {
++		mutex_unlock(&rio_mport_list_lock);
++		return -EINVAL;
++	}
++
++	if (!try_module_get(port->nscan->owner)) {
++		mutex_unlock(&rio_mport_list_lock);
++		return -ENODEV;
++	}
++
++	mutex_unlock(&rio_mport_list_lock);
++
++	if (port->host_deviceid >= 0)
++		rc = port->nscan->enumerate(port, 0);
++	else
++		rc = port->nscan->discover(port, RIO_SCAN_ENUM_NO_WAIT);
++
++	module_put(port->nscan->owner);
++	return rc;
++}
++
+ static void rio_fixup_device(struct rio_dev *dev)
+ {
+ }
+@@ -1691,7 +1782,10 @@ static void disc_work_handler(struct work_struct *_work)
+ 	work = container_of(_work, struct rio_disc_work, work);
+ 	pr_debug("RIO: discovery work for mport %d %s\n",
+ 		 work->mport->id, work->mport->name);
+-	work->mport->nscan->discover(work->mport, 0);
++	if (try_module_get(work->mport->nscan->owner)) {
++		work->mport->nscan->discover(work->mport, 0);
++		module_put(work->mport->nscan->owner);
++	}
+ }
+ 
+ int rio_init_mports(void)
+@@ -1710,8 +1804,10 @@ int rio_init_mports(void)
+ 	mutex_lock(&rio_mport_list_lock);
+ 	list_for_each_entry(port, &rio_mports, node) {
+ 		if (port->host_deviceid >= 0) {
+-			if (port->nscan)
++			if (port->nscan && try_module_get(port->nscan->owner)) {
+ 				port->nscan->enumerate(port, 0);
++				module_put(port->nscan->owner);
++			}
+ 		} else
+ 			n++;
+ 	}
+@@ -1725,7 +1821,7 @@ int rio_init_mports(void)
+ 	 * for each of them. If the code below fails to allocate needed
+ 	 * resources, exit without error to keep results of enumeration
+ 	 * process (if any).
+-	 * TODO: Implement restart of dicovery process for all or
++	 * TODO: Implement restart of discovery process for all or
+ 	 * individual discovering mports.
+ 	 */
+ 	rio_wq = alloc_workqueue("riodisc", 0, 0);
+@@ -1751,9 +1847,9 @@ int rio_init_mports(void)
+ 			n++;
+ 		}
+ 	}
+-	mutex_unlock(&rio_mport_list_lock);
+ 
+ 	flush_workqueue(rio_wq);
++	mutex_unlock(&rio_mport_list_lock);
+ 	pr_debug("RIO: destroy discovery workqueue\n");
+ 	destroy_workqueue(rio_wq);
+ 	kfree(work);
+@@ -1784,6 +1880,8 @@ __setup("riohdid=", rio_hdid_setup);
+ 
+ int rio_register_mport(struct rio_mport *port)
+ {
++	struct rio_scan_node *scan = NULL;
++
+ 	if (next_portid >= RIO_MAX_MPORTS) {
+ 		pr_err("RIO: reached specified max number of mports\n");
+ 		return 1;
+@@ -1792,9 +1890,25 @@ int rio_register_mport(struct rio_mport *port)
+ 	port->id = next_portid++;
+ 	port->host_deviceid = rio_get_hdid(port->id);
+ 	port->nscan = NULL;
++
+ 	mutex_lock(&rio_mport_list_lock);
+ 	list_add_tail(&port->node, &rio_mports);
++
++	/*
++	 * Check if there are any registered enumeration/discovery operations
++	 * that have to be attached to the added mport.
++	 */
++	list_for_each_entry(scan, &rio_scans, node) {
++		if (port->id == scan->mport_id ||
++		    scan->mport_id == RIO_MPORT_ANY) {
++			port->nscan = scan->ops;
++			if (port->id == scan->mport_id)
++				break;
++		}
++	}
+ 	mutex_unlock(&rio_mport_list_lock);
++
++	pr_debug("RIO: %s %s id=%d\n", __func__, port->name, port->id);
  	return 0;
  }
  
--static int hdids[RIO_MAX_MPORTS + 1];
--
- static int rio_get_hdid(int index)
- {
--	if (!hdids[0] || hdids[0] <= index || index >= RIO_MAX_MPORTS)
-+	if (ids_num == 0 || ids_num <= index || index >= RIO_MAX_MPORTS)
- 		return -1;
+diff --git a/drivers/rapidio/rio.h b/drivers/rapidio/rio.h
+index d595877..085215c 100644
+--- a/drivers/rapidio/rio.h
++++ b/drivers/rapidio/rio.h
+@@ -42,9 +42,10 @@ extern int rio_add_device(struct rio_dev *rdev);
+ extern int rio_enable_rx_tx_port(struct rio_mport *port, int local, u16 destid,
+ 				 u8 hopcount, u8 port_num);
+ extern int rio_register_scan(int mport_id, struct rio_scan *scan_ops);
+-extern int rio_unregister_scan(int mport_id);
++extern int rio_unregister_scan(int mport_id, struct rio_scan *scan_ops);
+ extern void rio_attach_device(struct rio_dev *rdev);
+ extern struct rio_mport *rio_find_mport(int mport_id);
++extern int rio_mport_scan(int mport_id);
  
--	return hdids[index + 1];
-+	return hdid[index];
- }
+ /* Structures internal to the RIO core code */
+ extern struct device_attribute rio_dev_attrs[];
+diff --git a/include/linux/rio.h b/include/linux/rio.h
+index fcd492e..8d3db1b 100644
+--- a/include/linux/rio.h
++++ b/include/linux/rio.h
+@@ -465,14 +465,29 @@ static inline struct rio_mport *dma_to_mport(struct dma_device *ddev)
  
--static int rio_hdid_setup(char *str)
--{
--	(void)get_options(str, ARRAY_SIZE(hdids), hdids);
--	return 1;
--}
--
--__setup("riohdid=", rio_hdid_setup);
--
- int rio_register_mport(struct rio_mport *port)
- {
- 	struct rio_scan_node *scan = NULL;
+ /**
+  * struct rio_scan - RIO enumeration and discovery operations
++ * @owner: The module owner of this structure
+  * @enumerate: Callback to perform RapidIO fabric enumeration.
+  * @discover: Callback to perform RapidIO fabric discovery.
+  */
+ struct rio_scan {
++	struct module *owner;
+ 	int (*enumerate)(struct rio_mport *mport, u32 flags);
+ 	int (*discover)(struct rio_mport *mport, u32 flags);
+ };
+ 
++/**
++ * struct rio_scan_node - list node to register RapidIO enumeration and
++ * discovery methods with RapidIO core.
++ * @mport_id: ID of an mport (net) serviced by this enumerator
++ * @node: node in global list of registered enumerators
++ * @ops: RIO enumeration and discovery operations
++ */
++struct rio_scan_node {
++	int mport_id;
++	struct list_head node;
++	struct rio_scan *ops;
++};
++
+ /* Architecture and hardware-specific functions */
+ extern int rio_register_mport(struct rio_mport *);
+ extern int rio_open_inb_mbox(struct rio_mport *, void *, int, int);
 -- 
 1.7.8.4
 
