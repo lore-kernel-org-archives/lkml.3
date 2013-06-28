@@ -1,103 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab3F1UiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 16:38:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5547 "EHLO mx1.redhat.com"
+	id S1752718Ab3F1UjZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 16:39:25 -0400
+Received: from mout2.freenet.de ([195.4.92.92]:47047 "EHLO mout2.freenet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006Ab3F1UiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 16:38:05 -0400
-Date: Fri, 28 Jun 2013 17:37:39 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: kvm-devel <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Karen Noel <knoel@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: watchdog: print stolen time increment at softlockup detection
-Message-ID: <20130628203739.GA25847@amt.cnet>
-References: <20130628025723.GA12719@amt.cnet>
- <20130628141215.GF126784@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130628141215.GF126784@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752006Ab3F1UjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 16:39:24 -0400
+Date: Fri, 28 Jun 2013 22:37:01 +0200
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ 102/127] iommu/amd: Workaround for ERBT1312
+Message-ID: <20130628223701.78d17df2@dualc.maya.org>
+In-Reply-To: <1372441744.30572.765.camel@ul30vt.home>
+References: <lhtAZ-q1-5@gated-at.bofh.it> <lhtB1-q1-53@gated-at.bofh.it>  <20130628181136.52d00e9c@dualc.maya.org> <1372441744.30572.765.camel@ul30vt.home>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 10:12:15AM -0400, Don Zickus wrote:
-> On Thu, Jun 27, 2013 at 11:57:23PM -0300, Marcelo Tosatti wrote:
-> > 
-> > One possibility for a softlockup report in a Linux VM, is that the host
-> > system is overcommitted to the point where the watchdog task is unable
-> > to make progress (unable to touch the watchdog).
+Alex Williamson wrote:
+> On Fri, 2013-06-28 at 18:11 +0200, Andreas Hartmann wrote:
+>> Hello Joerg, hello Alex,
+>>
+>> the subsequent patch and the patch "iommu/amd: Re-enable IOMMU event log
+>> interrupt after handling." 925fe08bce38d1ff052fe2209b9e2b8d5fbb7f98
+>> spread /var/log/messages with the following line (> 700 lines/second)
+>> right after loading vfio:
+>>
+>> AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.0 domain=0x0000 address=0x000000fdf9103300 flags=0x0600]
 > 
-> I think I am confused on the VM/host stuff.  How does an overcommitted
-> host prevent a high priority task like the watchdog from running?
-> 
-> Or is it the watchdog task on the VM that is being blocked from running
-> because the host is overcommitted and can't run the VM frequent enough?
+> That's interesting, I PXE boot my system from one NIC then use a
+> different NIC for the iSCSI root.  The PXE boot NIC now screams like
+> this, _until_ I attach it to vfio, then it quiets down.
 
-Yes, thats the case.
+Hmm, I just remembered an active workaround I implemented to "resolve"
+an error like this when starting my VM to passthrough my intel pci
+ethernet device since I applied a new kvm version:
 
-> The latter would make sense, though I thought you solved that with the
-> other kvm splat in the watchdog code a while ago.  So I would be
-> interested in understanding why the previous solution isn't working.
 
-That functionality is for a notification so the guest ignores the time
-jump induced by a vm pause. This problem is similar to the kgdb case.
+qemu-kvm: -device vfio-pci,host=06:06.0: vfio: failed to set iommu for
+container: Device or resource busy
 
-> Second, I am still curious how this problem differs from say kgdb or
-> suspend-hibernate/resume.  Doesn't both of those scenarios deal with a
-> clock that suddenly jumps forward without the watchdog task running?
+qemu-kvm: -device vfio-pci,host=06:06.0: vfio: failed to setup container
+for group 12
 
-The difference is this:
+qemu-kvm: -device vfio-pci,host=06:06.0: vfio: failed to get group 12
 
-The present functionality in watchdog.c allows the hypervisor to notify
-the guest that it should ignore the large delta seen via clock reads
-(at the watchdog timer interrupt).
-This notification is used for the case where the vm has been paused for
-a period of time.
+qemu-kvm: -device vfio-pci,host=06:06.0: Device 'vfio-pci' could not be
+initialized
 
-Are you suggesting the host should silence the guest watchdog, also in
-the overcommitment case? Issues i see with that:
 
-1) The host is not aware of the variable softlockup threshold in
-the guest.
+The workaround was to bind the individual multifunction devices during
+boot one time to vfio and release them after 2 seconds again and rebind
+them to the original drivers as they where bound before (if it was bound
+to any).
 
-2) Whatever the threshold of overcommitment for sending the ignore
-softlockup notification to the guest, genuine softlockup detections in
-the guest could be silenced, given proper conditioning.
+I did this with a script beginning like this:
 
-And why overcommitment is not a valid reason to generate a softlockup in
-the first place ?
+#!/bin/sh
+modprobe vfio-pci
 
-> For some reason I had the impression that when a VM starts running again,
-> one of the first things it does it sync up its clock again (which leads to
-> a softlockup shortly thereafter in the case of paused/overcommitted VMs)?
+echo "1002 4385" > /sys/bus/pci/drivers/vfio-pci/new_id
+echo 0000:00:14.0 > /sys/bus/pci/devices/0000:00:14.0/driver/unbind
+echo 0000:00:14.0 > /sys/bus/pci/drivers/vfio-pci/bind
+...
 
-Sort of, the kvmclock counts while the VM is running (whether is
-overcommitted or not).
+sleep 2
 
-> At that time I would have thought that the code could detect a large jump
-> in time and touch_softlockup_watchdog_sync() or something to delay the
-> check until the next cycle.
+echo 0000:00:14.0 > /sys/bus/pci/drivers/vfio-pci/unbind
+echo "1002 4385" > /sys/bus/pci/drivers/vfio-pci/remove_id
+...
 
-But this would silence any softlockups that are due to delays
-in the host causing the watchdog task to make progress (eg:
-https://lkml.org/lkml/2013/6/20/633, in that case if 1 operation took
-longer than expected your suggestion would silence the report).
+The logs in messages:
 
-> That would make the watchdog code alot less messier than having custom
-> kvm/paravirt splat all over it.  Generic solutions are always nice. :-)
+Jun 28 15:54:12 . kernel: [   48.860147] VFIO - User Level meta-driver version: 0.3
+Jun 28 15:54:12 . kernel: [   48.875243] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.0 domain=0x0000 address=0x000000fdf9103300 flags=0x0600]
+...
 
-Can you give more detail on what the suggestion is and how can you deal
-with points 1 and 2 above?
+Therefore, the logoutput most probably started after device 14.0 was
+bound to vfio. If it would have started after removing vfio, I would
+have expected 2 seconds between the start messages of vfio and the first
+occurrence of the IO_PAGE_FAULT.
 
-> Or feel free to correct any of my above assumptions as I am kinda ignorant
-> on how all this time code works for VMs.
+Today, I'm using kvm 1.3.1 and it isn't necessary to use the complete
+workaround anymore. It is enough to bind / unbind the pci bridge
+as described above before starting the VM with the passed through pci
+ethernet device.
+Because I now don't touch the 14.0 device any more, the IO_PAGE_FAULT
+messages disappeared completely.
 
-I am afraid that silencing the softlockup watchdog can inhibit genuine 
-softlockup cases from being reported.
+@Joerg:
+Anyway, I'm going to test your provided patch tomorrow!
 
+BTW: what does it mean: IO_PAGE_FAULT - what do I have to expect if I
+see this message?
+
+
+
+Thanks,
+regards,
+Andreas
