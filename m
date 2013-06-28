@@ -1,171 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab3F1MEO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 08:04:14 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43947 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab3F1MEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 08:04:12 -0400
-Subject: Re: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-To: tony.luck@intel.com, bp@alien8.de
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: ananth@in.ibm.com, masbock@linux.vnet.ibm.com, lcm@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        ying.huang@intel.com
-Date: Fri, 28 Jun 2013 17:34:02 +0530
-Message-ID: <20130628120224.7781.45438.stgit@localhost.localdomain>
-In-Reply-To: <20130621072725.GB22006@pd.tnic>
-References: <20130621072725.GB22006@pd.tnic>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13062811-8256-0000-0000-0000081F5363
+	id S1753756Ab3F1MFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 08:05:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813Ab3F1MFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 08:05:47 -0400
+From: Daniel Borkmann <dborkman@redhat.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH net-next v3 1/2] lib: vsprintf: add IPv4/v6 generic %p[Ii]S[pfs] format specifier
+Date: Fri, 28 Jun 2013 14:05:30 +0200
+Message-Id: <1372421131-1672-2-git-send-email-dborkman@redhat.com>
+In-Reply-To: <1372421131-1672-1-git-send-email-dborkman@redhat.com>
+References: <1372421131-1672-1-git-send-email-dborkman@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony, Boris,
-Here is a patch which implements this technique. Kindly take a look and let me
-know what you think.
+In order to avoid making code that deals with printing both, IPv4 and
+IPv6 addresses, unnecessary complicated as for example ...
 
-Thanks,
-Naveen
+  if (sa.sa_family == AF_INET6)
+    printk("... %pI6 ...", ..sin6_addr);
+  else
+    printk("... %pI4 ...", ..sin_addr.s_addr);
 
---
-If the firmware indicates in GHES error data entry that the error threshold
-has exceeded for a corrected error event, then we try to soft-offline the
-page.
+... it would be better to introduce a format specifier that can deal
+with those kind of situations internally; just as we have a "struct
+sockaddr" for generic mapping into "struct sockaddr_in" or "struct
+sockaddr_in6" as e.g. done in "union sctp_addr". Then, we could
+reduce the above statement into something like:
 
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+  printk("... %pIS ..", &sockaddr);
+
+In case our pointer is NULL, pointer() then deals with that already at
+an earlier point in time internally. While we're at it, support for both
+%piS/%pIS, where 'S' stands for sockaddr, comes (almost) for free.
+
+Additionally to that, postfix specifiers 'p', 'f' and 's' are supported
+as suggested and initially implemented in 2009 by Joe Perches [1].
+Handling of those additional specifiers orientate on the initial RFC that
+was proposed. Also we support IPv6 compressed format specified by 'c' and
+various other IPv4 extensions as stated in the documentation part.
+
+Likely, there are many other areas than just SCTP in the kernel to make
+use of this extension as well.
+
+ [1] http://patchwork.ozlabs.org/patch/31480/
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+CC: Joe Perches <joe@perches.com>
+CC: linux-kernel@vger.kernel.org
 ---
- drivers/acpi/apei/ghes.c |    7 ++++++
- include/linux/mm.h       |    1 +
- mm/memory-failure.c      |   53 ++++++++++++++++++++++++++++++----------------
- 3 files changed, 43 insertions(+), 18 deletions(-)
+ v1->v2:
+  - Added documentation into printk-formats.txt
+  - Changed %pig/%pIg into %piS/%pIS
+  - Changed braces/indent in pointer()
+  - Also CC lkml
+ v2->v3:
+  - Reworked entire patch to include port, flowinfo, scope and others
+  - Various printk tests with these new specifiers
+  - Improved documentation
 
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index fcd7d91..17137cf 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -422,6 +422,13 @@ static void ghes_do_proc(struct ghes *ghes,
- 				 CPER_SEC_PLATFORM_MEM)) {
- 			struct cper_sec_mem_err *mem_err;
- 			mem_err = (struct cper_sec_mem_err *)(gdata+1);
-+			if (sec_sev == GHES_SEV_CORRECTED &&
-+			    (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
-+			    (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
-+				unsigned long pfn;
-+				pfn = mem_err->physical_addr >> PAGE_SHIFT;
-+				soft_memory_failure_queue(pfn, 0, 0);
-+			}
- 			ghes_edac_report_mem_error(ghes, sev, mem_err);
+ Documentation/printk-formats.txt |  32 ++++++++++++
+ lib/vsprintf.c                   | 108 ++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 138 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 3af5ae6..3d4b76f 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -121,6 +121,38 @@ IPv6 addresses:
+ 	print a compressed IPv6 address as described by
+ 	http://tools.ietf.org/html/rfc5952
  
- #ifdef CONFIG_X86_MCE
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e0c8528..f9907d2 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1787,6 +1787,7 @@ enum mf_flags {
- };
- extern int memory_failure(unsigned long pfn, int trapno, int flags);
- extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
-+extern void soft_memory_failure_queue(unsigned long pfn, int trapno, int flags);
- extern int unpoison_memory(unsigned long pfn);
- extern int sysctl_memory_failure_early_kill;
- extern int sysctl_memory_failure_recovery;
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index ceb0c7f..50caefd 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1222,6 +1222,7 @@ struct memory_failure_entry {
- 	unsigned long pfn;
- 	int trapno;
- 	int flags;
-+	bool soft_offline;
- };
- 
- struct memory_failure_cpu {
-@@ -1233,6 +1234,28 @@ struct memory_failure_cpu {
- 
- static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
- 
-+void __memory_failure_queue(unsigned long pfn, int trapno, int flags, int soft_offline)
-+{
-+	struct memory_failure_cpu *mf_cpu;
-+	unsigned long proc_flags;
-+	struct memory_failure_entry entry = {
-+		.pfn =		pfn,
-+		.trapno =	trapno,
-+		.flags =	flags,
-+		.soft_offline = soft_offline
-+	};
++IPv4/IPv6 addresses (generic, with port, flowinfo, scope):
 +
-+	mf_cpu = &get_cpu_var(memory_failure_cpu);
-+	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
-+	if (kfifo_put(&mf_cpu->fifo, &entry))
-+		schedule_work_on(smp_processor_id(), &mf_cpu->work);
++	%pIS	1.2.3.4		or 0001:0002:0003:0004:0005:0006:0007:0008
++	%piS	001.002.003.004	or 00010002000300040005000600070008
++	%pISc	1.2.3.4		or 1:2:3:4:5:6:7:8
++	%pISpc	1.2.3.4:12345	or [1:2:3:4:5:6:7:8]:12345
++	%p[Ii]S[p][hnblcfs]
++
++	For printing an IP address without the need to distinguish whether it's
++	of type AF_INET or AF_INET6, a pointer to a valid 'struct sockaddr',
++	specified through 'IS' or 'iS', can be passed to this format specifier.
++
++	The additional 'p', 'f', and 's' specifiers are used to specify port
++	(IPv4, IPv6), flowinfo (IPv6) and scope (IPv6). Ports have a ':' prefix,
++	flowinfo a '/' and scope a '%', each followed by the actual value.
++
++	In case of an IPv6 address the compressed IPv6 address as described by
++	http://tools.ietf.org/html/rfc5952 is being used if the additional
++	specifier 'c' is given. The IPv6 address is surrounded by '[', ']' in
++	case of additional specifiers 'p', 'f' or 's' as suggested by
++	https://tools.ietf.org/html/draft-ietf-6man-text-addr-representation-07
++
++	In case of IPv4 addresses, the additional 'h', 'n', 'b', and 'l'
++	specifiers can be used as well and are ignored in case of an IPv6
++	address.
++
++	Further examples:
++
++	%pISfc		1.2.3.4		or [1:2:3:4:5:6:7:8]/123456789
++	%pISsc		1.2.3.4		or [1:2:3:4:5:6:7:8]%1234567890
++	%pISpfc		1.2.3.4:12345	or [1:2:3:4:5:6:7:8]:12345/123456789
++
+ UUID/GUID addresses:
+ 
+ 	%pUb	00010203-0405-0607-0809-0a0b0c0d0e0f
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index e149c64..da2a4d5 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -923,6 +923,87 @@ char *ip4_addr_string(char *buf, char *end, const u8 *addr,
+ }
+ 
+ static noinline_for_stack
++char *ip6_addr_string_sa(char *buf, char *end, const struct sockaddr_in6 *sa,
++			 struct printf_spec spec, const char *fmt)
++{
++	bool have_p = false, have_s = false, have_f = false, have_c = false;
++	char ip6_addr[sizeof("[xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:255.255.255.255]") +
++		      sizeof(":12345") + sizeof("/123456789") +
++		      sizeof("%1234567890")];
++	char *p = ip6_addr, *pend = ip6_addr + sizeof(ip6_addr);
++	const u8 *addr = (const u8 *) &sa->sin6_addr;
++	char fmt6[2] = { fmt[0], '6'};
++	u8 off = 0;
++
++	fmt++;
++	while (isalpha(*++fmt)) {
++		switch (*fmt) {
++		case 'p':
++			have_p = true;
++			break;
++		case 'f':
++			have_f = true;
++			break;
++		case 's':
++			have_s = true;
++			break;
++		case 'c':
++			have_c = true;
++			break;
++		}
++	}
++
++	if (have_p || have_s || have_f) {
++		*p = '[';
++		off = 1;
++	}
++
++	if (fmt6[0] == 'I' && have_c)
++		p = ip6_compressed_string(ip6_addr + off, addr);
 +	else
-+		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
-+		       pfn);
-+	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
-+	put_cpu_var(memory_failure_cpu);
++		p = ip6_string(ip6_addr + off, addr, fmt6);
++
++	if (have_p || have_s || have_f)
++		*p++ = ']';
++
++	if (have_p) {
++		*p++ = ':';
++		p = number(p, pend, ntohs(sa->sin6_port), spec);
++	}
++	if (have_f) {
++		*p++ = '/';
++		p = number(p, pend, ntohl(sa->sin6_flowinfo &
++					  IPV6_FLOWINFO_MASK), spec);
++	}
++	if (have_s) {
++		*p++ = '%';
++		p = number(p, pend, sa->sin6_scope_id, spec);
++	}
++	*p = '\0';
++
++	return string(buf, end, ip6_addr, spec);
 +}
 +
- /**
-  * memory_failure_queue - Schedule handling memory failure of a page.
-  * @pfn: Page Number of the corrupted page
-@@ -1250,28 +1273,19 @@ static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
-  *
-  * Can run in IRQ context.
-  */
-+
- void memory_failure_queue(unsigned long pfn, int trapno, int flags)
- {
--	struct memory_failure_cpu *mf_cpu;
--	unsigned long proc_flags;
--	struct memory_failure_entry entry = {
--		.pfn =		pfn,
--		.trapno =	trapno,
--		.flags =	flags,
--	};
--
--	mf_cpu = &get_cpu_var(memory_failure_cpu);
--	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
--	if (kfifo_put(&mf_cpu->fifo, &entry))
--		schedule_work_on(smp_processor_id(), &mf_cpu->work);
--	else
--		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
--		       pfn);
--	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
--	put_cpu_var(memory_failure_cpu);
-+	__memory_failure_queue(pfn, trapno, flags, false);
- }
- EXPORT_SYMBOL_GPL(memory_failure_queue);
- 
-+void soft_memory_failure_queue(unsigned long pfn, int trapno, int flags)
++static noinline_for_stack
++char *ip4_addr_string_sa(char *buf, char *end, const struct sockaddr_in *sa,
++			 struct printf_spec spec, const char *fmt)
 +{
-+	__memory_failure_queue(pfn, trapno, flags, true);
-+}
-+EXPORT_SYMBOL_GPL(soft_memory_failure_queue);
++	bool have_p = (fmt[2] && fmt[2] == 'p');
++	char *p, ip4_addr[sizeof("255.255.255.255") + sizeof(":12345")];
++	char *pend = ip4_addr + sizeof(ip4_addr);
++	char fmt4[3] = { fmt[0], '4', have_p ? (fmt[3] ? : 0) : fmt[2] };
 +
- static void memory_failure_work_func(struct work_struct *work)
++	p = ip4_string(ip4_addr, (const u8 *) &sa->sin_addr.s_addr, fmt4);
++	if (have_p) {
++		*p++ = ':';
++		p = number(p, pend, ntohs(sa->sin_port), spec);
++	}
++	*p = '\0';
++
++	return string(buf, end, ip4_addr, spec);
++}
++
++static noinline_for_stack
+ char *uuid_string(char *buf, char *end, const u8 *addr,
+ 		  struct printf_spec spec, const char *fmt)
  {
- 	struct memory_failure_cpu *mf_cpu;
-@@ -1286,7 +1300,10 @@ static void memory_failure_work_func(struct work_struct *work)
- 		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
- 		if (!gotten)
- 			break;
--		memory_failure(entry.pfn, entry.trapno, entry.flags);
-+		if (entry.soft_offline)
-+			soft_offline_page(pfn_to_page(entry.pfn), entry.flags);
-+		else
-+			memory_failure(entry.pfn, entry.trapno, entry.flags);
- 	}
- }
- 
+@@ -1007,11 +1088,17 @@ int kptr_restrict __read_mostly;
+  * - 'I' [46] for IPv4/IPv6 addresses printed in the usual way
+  *       IPv4 uses dot-separated decimal without leading 0's (1.2.3.4)
+  *       IPv6 uses colon separated network-order 16 bit hex with leading 0's
++ *       [S][pfs]
++ *       Generic IPv4/IPv6 address (struct sockaddr *) that falls back to
++ *       [4] or [6] and is able to print port [p], flowinfo [f], scope [s]
+  * - 'i' [46] for 'raw' IPv4/IPv6 addresses
+  *       IPv6 omits the colons (01020304...0f)
+  *       IPv4 uses dot-separated decimal with leading 0's (010.123.045.006)
+- * - '[Ii]4[hnbl]' IPv4 addresses in host, network, big or little endian order
+- * - 'I6c' for IPv6 addresses printed as specified by
++ *       [S][pfs]
++ *       Generic IPv4/IPv6 address (struct sockaddr *) that falls back to
++ *       [4] or [6] and is able to print port [p], flowinfo [f], scope [s]
++ * - '[Ii][4S][hnbl]' IPv4 addresses in host, network, big or little endian order
++ * - 'I[6S]c' for IPv6 addresses printed as specified by
+  *       http://tools.ietf.org/html/rfc5952
+  * - 'U' For a 16 byte UUID/GUID, it prints the UUID/GUID in the form
+  *       "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+@@ -1093,6 +1180,21 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 			return ip6_addr_string(buf, end, ptr, spec, fmt);
+ 		case '4':
+ 			return ip4_addr_string(buf, end, ptr, spec, fmt);
++		case 'S': {
++			const union {
++				struct sockaddr		raw;
++				struct sockaddr_in	v4;
++				struct sockaddr_in6	v6;
++			} *sa = ptr;
++
++			switch (sa->raw.sa_family) {
++			case AF_INET:
++				return ip4_addr_string_sa(buf, end, &sa->v4, spec, fmt);
++			case AF_INET6:
++				return ip6_addr_string_sa(buf, end, &sa->v6, spec, fmt);
++			default:
++				return string(buf, end, "(invalid address)", spec);
++			}}
+ 		}
+ 		break;
+ 	case 'U':
+@@ -1370,6 +1472,8 @@ qualifier:
+  * %pI6 print an IPv6 address with colons
+  * %pi6 print an IPv6 address without colons
+  * %pI6c print an IPv6 address as specified by RFC 5952
++ * %pIS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
++ * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
+  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
+  *   case.
+  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
+-- 
+1.7.11.7
 
