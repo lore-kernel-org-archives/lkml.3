@@ -1,119 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3F2DGH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 23:06:07 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43751 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab3F2DGE (ORCPT
+	id S1753523Ab3F2DMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 23:12:44 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:58886 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753428Ab3F2DMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 23:06:04 -0400
+	Fri, 28 Jun 2013 23:12:42 -0400
+X-Originating-IP: 108.223.40.66
+Date: Fri, 28 Jun 2013 20:12:47 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, festevam@gmail.com, linux-kernel@vger.kernel.org,
+        Frank.Li@freescale.com, jim_baxter@mentor.com
+Subject: Re: [PATCH v3] net: fec: Fix build for MCF5272
+Message-ID: <20130629031247.GA21068@roeck-us.net>
+References: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
+ <20130619.170018.1690166635385887009.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <51CE3CE0.9010506@redhat.com>
-References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
- <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
- <20130626212047.GB4536@htj.dyndns.org> <1372311907.5871.78.camel@marge.simpson.net>
- <20130627180143.GD5599@mtj.dyndns.org> <1372391198.5989.110.camel@marge.simpson.net>
- <20130628040930.GC2500@htj.dyndns.org> <1372394950.5989.128.camel@marge.simpson.net>
- <20130628050138.GD2500@htj.dyndns.org> <20130628150513.GD5125@dhcp22.suse.cz>
- <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com> <51CE3CE0.9010506@redhat.com>
-From: Tim Hockin <thockin@hockin.org>
-Date: Fri, 28 Jun 2013 20:05:43 -0700
-X-Google-Sender-Auth: d8tkwtPdgLiumjvnt3FgAZlrwkI
-Message-ID: <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com>
-Subject: Re: cgroup: status-quo and userland efforts
-To: Lennart Poettering <lpoetter@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Mike Galbraith <bitbucket@online.de>, Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619.170018.1690166635385887009.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Come on, now, Lennart.  You put a lot of words in my mouth.
+On Wed, Jun 19, 2013 at 05:00:18PM -0700, David Miller wrote:
+> From: Guenter Roeck <linux@roeck-us.net>
+> Date: Tue, 18 Jun 2013 10:04:59 -0700
+> 
+> > Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
+> > baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
+> > network) introduced functionality into the FEC driver which is not
+> > supported on MCF5272. The registers used to implement this functionality
+> > do not exist on MCF5272. Since register defines for MCF5272 are separate
+> > from register defines for other chips, building images for MCF5272 fails
+> > as follows.
+> > 
+> > fec_main.c: In function 'fec_restart':
+> > fec_main.c:520:8: error: 'FEC_RACC' undeclared (first use in this function)
+> > fec_main.c:585:3: error: 'FEC_R_FIFO_RSEM' undeclared (first use in this function)
+> > fec_main.c:586:3: error: 'FEC_R_FIFO_RSFL' undeclared (first use in this function)
+> > fec_main.c:587:3: error: 'FEC_R_FIFO_RAEM' undeclared (first use in this function)
+> > fec_main.c:588:3: error: 'FEC_R_FIFO_RAFL' undeclared (first use in this function)
+> > fec_main.c:591:3: error: 'FEC_OPD' undeclared (first use in this function)
+> > 
+> > Adding the missing register defines is not an option, since the registers
+> > do not exist on MCF5272. Disable the added functionality for MCF5272 builds.
+> > 
+> > Cc: Frank Li <Frank.Li@freescale.com>
+> > Cc: Jim Baxter <jim_baxter@mentor.com>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> 
+> Applied, thanks.
+> 
+> > This problem exists in 3.9 as well, though only due to commit baa70a5c. The
+> > patch does therefore not cleanly apply to 3.9. Options I can see are to ignore
+> > the build error in 3.9, to back-port the patch manually, or to split it into
+> > two separate patches. David, let me know which approach you prefer. 
+> 
+> You can feel free to send me a backport for v3.9-stable, thanks.
+> 
 
-On Fri, Jun 28, 2013 at 6:48 PM, Lennart Poettering <lpoetter@redhat.com> wrote:
-> On 28.06.2013 20:53, Tim Hockin wrote:
->
->> a single-agent, we should make a kick-ass implementation that is
->> flexible and scalable, and full-featured enough to not require
->> divergence at the lowest layer of the stack.  Then build systemd on
->> top of that. Let systemd offer more features and policies and
->> "semantic" APIs.
->
->
-> Well, what if systemd is already kick-ass? I mean, if you have a problem
-> with systemd, then that's your own problem, but I really don't think why I
-> should bother?
+Here it is.
 
-I didn't say it wasn't.  I said that we can build a common substrate
-that systemd can build on *and* non-systemd systems can use *and*
-Google can participate in.
+Guenter
 
-> I for sure am not going to make the PID 1 a client of another daemon. That's
-> just wrong. If you have a daemon that is both conceptually the manager of
-> another service and the client of that other service, then that's bad design
-> and you will easily run into deadlocks and such. Just think about it: if you
-> have some external daemon for managing cgroups, and you need cgroups for
-> running external daemons, how are you going to start the external daemon for
-> managing cgroups? Sure, you can hack around this, make that daemon special,
-> and magic, and stuff -- or you can just not do such nonsense. There's no
-> reason to repeat the fuckup that cgroup became in kernelspace a second time,
-> but this time in userspace, with multiple manager daemons all with different
-> and slightly incompatible definitions what a unit to manage actualy is...
+---
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Tue, 18 Jun 2013 10:04:59 -0700
+Subject: [PATCH] net: fec: Fix build for MCF5272
 
-I forgot about the tautology of systemd.  systemd is monolithic.
-Therefore it can not have any external dependencies.  Therefore it
-must absorb anything it depends on.  Therefore systemd continues to
-grow in size and scope.  Up next: systemd manages your X sessions!
+Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
+baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
+network) introduced functionality into the FEC driver which is not
+supported on MCF5272. The registers used to implement this functionality
+do not exist on MCF5272. Since register defines for MCF5272 are separate
+from register defines for other chips, building images for MCF5272 fails
+as follows.
 
-But that's not my point.  It seems pretty easy to make this cgroup
-management (in "native mode") a library that can have either a thin
-veneer of a main() function, while also being usable by systemd.  The
-point is to solve all of the problems ONCE.  I'm trying to make the
-case that systemd itself should be focusing on features and policies
-and awesome APIs.
+fec_main.c: In function 'fec_restart':
+fec_main.c:520:8: error: 'FEC_RACC' undeclared (first use in this function)
+fec_main.c:585:3: error: 'FEC_R_FIFO_RSEM' undeclared (first use in this function)
+fec_main.c:586:3: error: 'FEC_R_FIFO_RSFL' undeclared (first use in this function)
+fec_main.c:587:3: error: 'FEC_R_FIFO_RAEM' undeclared (first use in this function)
+fec_main.c:588:3: error: 'FEC_R_FIFO_RAFL' undeclared (first use in this function)
+fec_main.c:591:3: error: 'FEC_OPD' undeclared (first use in this function)
 
-> We want to run fewer, simpler things on our systems, we want to reuse as
+Adding the missing register defines is not an option, since the registers
+do not exist on MCF5272. Disable the added functionality for MCF5272 builds.
 
-Fewer and simpler are not compatible, unless you are losing
-functionality.  Systemd is fewer, but NOT simpler.
+Backport to v3.9. Upstream commit d13919301d9a34cd4d3cc5ac73b89012c48cad71.
 
-> much of the code as we can. You don't achieve that by running yet another
-> daemon that does worse what systemd can anyway do simpler, easier and
-> better.
+Cc: Frank Li <Frank.Li@freescale.com>
+Cc: Jim Baxter <jim_baxter@mentor.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/fec.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Considering this is all hypothetical, I find this to be a funny
-debate.  My hypothetical idea is better than your hypothetical idea.
+diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
+index ef5b595..49af0174 100644
+--- a/drivers/net/ethernet/freescale/fec.c
++++ b/drivers/net/ethernet/freescale/fec.c
+@@ -527,6 +527,7 @@ fec_restart(struct net_device *ndev, int duplex)
+ #endif
+ 	}
+ 
++#if !defined(CONFIG_M5272)
+ 	/* enable pause frame*/
+ 	if ((fep->pause_flag & FEC_PAUSE_FLAG_ENABLE) ||
+ 	    ((fep->pause_flag & FEC_PAUSE_FLAG_AUTONEG) &&
+@@ -544,6 +545,7 @@ fec_restart(struct net_device *ndev, int duplex)
+ 	} else {
+ 		rcntl &= ~FEC_ENET_FCE;
+ 	}
++#endif /* !defined(CONFIG_M5272) */
+ 
+ 	writel(rcntl, fep->hwp + FEC_R_CNTRL);
+ 
+@@ -1139,7 +1141,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
+ 	/* mask with MAC supported features */
+ 	if (id_entry->driver_data & FEC_QUIRK_HAS_GBIT) {
+ 		phy_dev->supported &= PHY_GBIT_FEATURES;
++#if !defined(CONFIG_M5272)
+ 		phy_dev->supported |= SUPPORTED_Pause;
++#endif
+ 	}
+ 	else
+ 		phy_dev->supported &= PHY_BASIC_FEATURES;
+@@ -1326,6 +1330,8 @@ static int fec_enet_get_ts_info(struct net_device *ndev,
+ 	}
+ }
+ 
++#if !defined(CONFIG_M5272)
++
+ static void fec_enet_get_pauseparam(struct net_device *ndev,
+ 				    struct ethtool_pauseparam *pause)
+ {
+@@ -1372,9 +1378,13 @@ static int fec_enet_set_pauseparam(struct net_device *ndev,
+ 	return 0;
+ }
+ 
++#endif /* !defined(CONFIG_M5272) */
++
+ static const struct ethtool_ops fec_enet_ethtool_ops = {
++#if !defined(CONFIG_M5272)
+ 	.get_pauseparam		= fec_enet_get_pauseparam,
+ 	.set_pauseparam		= fec_enet_set_pauseparam,
++#endif
+ 	.get_settings		= fec_enet_get_settings,
+ 	.set_settings		= fec_enet_set_settings,
+ 	.get_drvinfo		= fec_enet_get_drvinfo,
+@@ -1794,10 +1804,12 @@ fec_probe(struct platform_device *pdev)
+ 	/* setup board info structure */
+ 	fep = netdev_priv(ndev);
+ 
++#if !defined(CONFIG_M5272)
+ 	/* default enable pause frame auto negotiation */
+ 	if (pdev->id_entry &&
+ 	    (pdev->id_entry->driver_data & FEC_QUIRK_HAS_GBIT))
+ 		fep->pause_flag |= FEC_PAUSE_FLAG_AUTONEG;
++#endif
+ 
+ 	fep->hwp = ioremap(r->start, resource_size(r));
+ 	fep->pdev = pdev;
+-- 
+1.7.9.7
 
-> The least you could grant us is to have a look at the final APIs we will
-> have to offer before you already imply that systemd cannot be a valid
-> implementation of any API people could ever agree on.
-
-Whoah, don't get defensive.  I said nothing of the sort.  The fact of
-the matter is that we do not run systemd, at least in part because of
-the monolithic nature.  That's unlikely to change in this timescale.
-What I said was that it would be a shame if we had to invent our own
-low-level cgroup daemon just because the "upstream" daemons was too
-tightly coupled with systemd.
-
-I think we have a lot of experience to offer to this project, and a
-vested interest in seeing it done well.  But if it is purely
-targetting systemd, we have little incentive to devote resources to
-it.
-
-Please note that I am strictly talking about the lowest layer of the
-API.  Just the thing that guards cgroupfs against mere mortals.  The
-higher layers - where abstractions exist, that are actually USEFUL to
-end users - are not really in scope right now.  We already have our
-own higher level APIs.
-
-This is supposed to be collaborative, not combative.
-
-Tim
