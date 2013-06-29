@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3F2BrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 21:47:21 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60439 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab3F2BrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 21:47:20 -0400
-Date: Fri, 28 Jun 2013 18:42:53 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: dwmw2@infradead.org, khilman@linaro.org, andrii.tseglytskyi@ti.com,
-        nm@ti.com, jean.pihet@newoldbits.com, tony@atomide.com,
-        yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] PM / AVS: SmartReflex: remove redundant dev_err
- call in omap_sr_probe()
-Message-ID: <20130629014252.GC20924@lizard>
-References: <CAPgLHd_K37Uf420FRiEkiCZQiL9bAdiE2_qG4dp7WmQRaCnDqQ@mail.gmail.com>
+	id S1753396Ab3F2Bsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 21:48:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752802Ab3F2Bsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jun 2013 21:48:38 -0400
+Message-ID: <51CE3CE0.9010506@redhat.com>
+Date: Sat, 29 Jun 2013 03:48:16 +0200
+From: Lennart Poettering <lpoetter@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd_K37Uf420FRiEkiCZQiL9bAdiE2_qG4dp7WmQRaCnDqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tim Hockin <thockin@hockin.org>
+CC: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Mike Galbraith <bitbucket@online.de>, Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com> <20130626212047.GB4536@htj.dyndns.org> <1372311907.5871.78.camel@marge.simpson.net> <20130627180143.GD5599@mtj.dyndns.org> <1372391198.5989.110.camel@marge.simpson.net> <20130628040930.GC2500@htj.dyndns.org> <1372394950.5989.128.camel@marge.simpson.net> <20130628050138.GD2500@htj.dyndns.org> <20130628150513.GD5125@dhcp22.suse.cz> <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com>
+In-Reply-To: <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 09:57:14AM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> There is a error message within devm_ioremap_resource
-> already, so remove the dev_err call to avoid redundant
-> error message.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
+On 28.06.2013 20:53, Tim Hockin wrote:
 
-The patch does not apply to the battery-2.6.git tree... :-/
+> a single-agent, we should make a kick-ass implementation that is
+> flexible and scalable, and full-featured enough to not require
+> divergence at the lowest layer of the stack.  Then build systemd on
+> top of that. Let systemd offer more features and policies and
+> "semantic" APIs.
 
-(In the patch I see "sr_info", but in the current driver there is just
-"sr".)
+Well, what if systemd is already kick-ass? I mean, if you have a problem 
+with systemd, then that's your own problem, but I really don't think why 
+I should bother?
 
->  drivers/power/avs/smartreflex.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
-> index db9973b..c26acfc 100644
-> --- a/drivers/power/avs/smartreflex.c
-> +++ b/drivers/power/avs/smartreflex.c
-> @@ -871,10 +871,8 @@ static int __init omap_sr_probe(struct platform_device *pdev)
->  
->  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	sr_info->base = devm_ioremap_resource(&pdev->dev, mem);
-> -	if (IS_ERR(sr_info->base)) {
-> -		dev_err(&pdev->dev, "%s: ioremap fail\n", __func__);
-> +	if (IS_ERR(sr_info->base))
->  		return PTR_ERR(sr_info->base);
-> -	}
->  
->  	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
->  
-> 
+I for sure am not going to make the PID 1 a client of another daemon. 
+That's just wrong. If you have a daemon that is both conceptually the 
+manager of another service and the client of that other service, then 
+that's bad design and you will easily run into deadlocks and such. Just 
+think about it: if you have some external daemon for managing cgroups, 
+and you need cgroups for running external daemons, how are you going to 
+start the external daemon for managing cgroups? Sure, you can hack 
+around this, make that daemon special, and magic, and stuff -- or you 
+can just not do such nonsense. There's no reason to repeat the fuckup 
+that cgroup became in kernelspace a second time, but this time in 
+userspace, with multiple manager daemons all with different and slightly 
+incompatible definitions what a unit to manage actualy is...
+
+We want to run fewer, simpler things on our systems, we want to reuse as 
+much of the code as we can. You don't achieve that by running yet 
+another daemon that does worse what systemd can anyway do simpler, 
+easier and better.
+
+The least you could grant us is to have a look at the final APIs we will 
+have to offer before you already imply that systemd cannot be a valid 
+implementation of any API people could ever agree on.
+
+Lennart
