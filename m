@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab3F2HUe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 03:20:34 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:45272 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab3F2HUc (ORCPT
+	id S1753486Ab3F2HYr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 03:24:47 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:32867 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab3F2HYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 03:20:32 -0400
-Message-ID: <1372490428.3301.300.camel@edumazet-glaptop>
-Subject: Re: kernel panic in skb_copy_bits
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "zheng.x.li@oracle.com" <zheng.x.li@oracle.com>,
-        Xen Devel <xen-devel@lists.xen.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Date: Sat, 29 Jun 2013 00:20:28 -0700
-In-Reply-To: <51CE1E19.3020108@oracle.com>
-References: <51CBAA48.3080802@oracle.com>
-	  <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
-	  <1372402340.3301.229.camel@edumazet-glaptop>
-	 <1372412262.3301.251.camel@edumazet-glaptop> <51CE1E19.3020108@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 29 Jun 2013 03:24:45 -0400
+Date: Sat, 29 Jun 2013 09:24:41 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Travis <travis@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        holt@sgi.com, rob@landley.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, yinghai@kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-doc@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steffen Persvold <sp@numascale.com>
+Subject: Re: [RFC] Transparent on-demand memory setup initialization embedded
+ in the (GFP) buddy allocator
+Message-ID: <20130629072441.GA15394@gmail.com>
+References: <51CBB2F7.3050604@numascale-asia.com>
+ <51CDF417.3050406@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51CDF417.3050406@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-29 at 07:36 +0800, Joe Jin wrote:
-> Hi Eric,
+
+* Nathan Zimmer <nzimmer@sgi.com> wrote:
+
+> On 06/26/2013 10:35 PM, Daniel J Blueman wrote:
+> >On Wednesday, June 26, 2013 9:30:02 PM UTC+8, Andrew Morton wrote:
+> >>
+> >> On Wed, 26 Jun 2013 11:22:48 +0200 Ingo Molnar
+> ><mi...@kernel.org> wrote:
+> >>
+> >> > except that on 32 TB
+> >> > systems we don't spend ~2 hours initializing 8,589,934,592
+> >page heads.
+> >>
+> >> That's about a million a second which is crazy slow - even my
+> >prehistoric desktop
+> >> is 100x faster than that.
+> >>
+> >> Where's all this time actually being spent?
+> >
+> > The complexity of a directory-lookup architecture to make the 
+> > (intrinsically unscalable) cache-coherency protocol scalable gives you 
+> > a ~1us roundtrip to remote NUMA nodes.
+> >
+> > Probably a lot of time is spent in some memsets, and RMW cycles which 
+> > are setting page bits, which are intrinsically synchronous, so the 
+> > initialising core can't get to 12 or so outstanding memory 
+> > transactions.
+> >
+> > Since EFI memory ranges have a flag to state if they are zerod (which 
+> > may be a fair assumption for memory on non-bootstrap processor NUMA 
+> > nodes), we can probably collapse the RMWs to just writes.
+> >
+> > A normal write will require a coherency cycle, then a fetch and a 
+> > writeback when it's evicted from the cache. For this purpose, 
+> > non-temporal writes would eliminate the cache line fetch and give a 
+> > massive increase in bandwidth. We wouldn't even need a store-fence as 
+> > the initialising core is the only one online.
 > 
-> The patch not fix the issue and panic as same as early I posted:
-> > BUG: unable to handle kernel paging request at ffff88006d9e8d48
-> > IP: [<ffffffff812605bb>] memcpy+0xb/0x120
-> > PGD 1798067 PUD 1fd2067 PMD 213f067 PTE 0
-> > Oops: 0000 [#1] SMP 
-> > CPU 7 
-> > Modules linked in: dm_nfs tun nfs fscache auth_rpcgss nfs_acl xen_blkback xen_netback xen_gntdev xen_evtchn lockd sunrpc bridge stp llc bonding be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3 mdio dm_round_robin dm_multipath libiscsi_tcp libiscsi scsi_transport_iscsi xenfs xen_privcmd video sbs sbshc acpi_memhotplug acpi_ipmi ipmi_msghandler parport_pc lp parport ixgbe dca sr_mod cdrom bnx2 radeon ttm drm_kms_helper drm snd_seq_dummy i2c_algo_bit i2c_core snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss serio_raw snd_pcm snd_timer snd soundcore snd_page_alloc iTCO_wdt pcspkr iTCO_vendor_support pata_acpi dcdbas i5k_amb ata_generic hwmon floppy ghes i5000_edac edac_core hed dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage lpfc scsi_transport_fc scsi_tgt ata_piix sg shpchp mptsas mptscsih mptbase scsi_transport_sas sd_mod crc_t10dif ext3!
->   jbd mbcac
-> he
-> >
-> >
-> > Pid: 0, comm: swapper Tainted: G        W   2.6.39-300.32.1.el5uek #1 Dell Inc. PowerEdge 2950/0DP246
+> Could you elaborate a bit more? or suggest a specific area to look at?
+> 
+> After some experiments with trying to just set some fields in the struct 
+> page directly I haven't been able to produce any improvements.  Of 
+> course there is lots about the area which I don't have much experience 
+> with.
 
+Any such improvement will at most be in the 10-20% range.
 
-By the way my patch was for current kernels, not for 2.6.39
+I'd suggest first concentrating on the 1000-fold boot time initialization 
+speedup that the buddy allocator delayed initialization can offer, and 
+speeding up whatever remains after that stage - in a much more 
+development-friendly environment. (You'll be able to run 'perf record 
+./calloc-1TB' after bootup and get meaningful results, etc.)
 
-For instance, I was not able to reproduce the crash with 3.3
+Thanks,
 
-RCU in neighbour code was added in 2.6.37, but it looks like this code
-is a bit fragile because all the kfree_skb() are done while neighbour
-locks are held.
-
-So if a skb destructor triggers a new call to neighbour code, I presume
-some bad things can happen. LOCKDEP could eventually help to detect
-this.
-
-You could try to replace these kfree_skb() calls to dev_kfree_skb_irq()
-just in case.
-
-(Do not forget the __skb_queue_purge() ones)
-
-Try a LOCKDEP build as well.
-
-
+	Ingo
