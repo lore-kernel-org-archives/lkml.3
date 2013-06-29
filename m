@@ -1,53 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3F2RWM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 13:22:12 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35047 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab3F2RWJ (ORCPT
+	id S1752655Ab3F2RmE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 13:42:04 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51134 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929Ab3F2RmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 13:22:09 -0400
-Date: Sat, 29 Jun 2013 18:21:24 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tejun Heo <tj@kernel.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
-Message-ID: <20130629172123.GA3353@n2100.arm.linux.org.uk>
-References: <1372467663-31425-1-git-send-email-santosh.shilimkar@ti.com> <20130629152959.GB31339@mtj.dyndns.org>
+	Sat, 29 Jun 2013 13:42:01 -0400
+Subject: [PATCH v5 00/16] fuse: An attempt to implement a write-back cache
+ policy
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: riel@redhat.com, dev@parallels.com, xemul@parallels.com,
+        fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        linux-mm@kvack.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, devel@openvz.org, mgorman@suse.de
+Date: Sat, 29 Jun 2013 21:41:45 +0400
+Message-ID: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130629152959.GB31339@mtj.dyndns.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 08:29:59AM -0700, Tejun Heo wrote:
-> I suppose LPAE on arm is analogous to PAE on x86, IOW, high memory?
-> This does affect memory initilization as you need to register memory
-> areas which aren't addressable directly; however, why does it affect
-> generic code which is just allocating memory?  Note that x86 already
-> does highmem and the existing code works fine.  Once all bootmem users
-> are gone, we can remove the bootmem wrappers but I don't what the
-> point is with introducing yet another wrapper.
+Hi,
 
-The reason is actually quite simple: on x86 you always have memory
-starting at physical address zero.
+This is the fifth iteration of Pavel Emelyanov's patch-set implementing
+write-back policy for FUSE page cache. Initial patch-set description was
+the following:
 
-Unfortunately, that has not been true on ARM - it's very common for
-there to be an offset on physical memory, sometimes of the order of
-3GB or more.  This is because on reset, ARMs start executing the code
-at physical address zero, which therefore can't be RAM - and there's
-a desire to avoid complex switching games in hardware to temporarily
-map ROM there instead of RAM.
+One of the problems with the existing FUSE implementation is that it uses the
+write-through cache policy which results in performance problems on certain
+workloads. E.g. when copying a big file into a FUSE file the cp pushes every
+128k to the userspace synchronously. This becomes a problem when the userspace
+back-end uses networking for storing the data.
 
-On these SoCs which Santosh is working on, the main physical memory
-mapping is above 4GB, with just a small alias below 4GB to allow the
-system to boot without the MMU being on, as they may have more than
-4GB of RAM.  As I understand it, the small alias below 4GB is not
-suitable for use as a "lowmem" mapping.
+A good solution of this is switching the FUSE page cache into a write-back policy.
+With this file data are pushed to the userspace with big chunks (depending on the
+dirty memory limits, but this is much more than 128k) which lets the FUSE daemons
+handle the size updates in a more efficient manner.
+
+The writeback feature is per-connection and is explicitly configurable at the
+init stage (is it worth making it CAP_SOMETHING protected?) When the writeback is
+turned ON:
+
+* still copy writeback pages to temporary buffer when sending a writeback request
+  and finish the page writeback immediately
+
+* make kernel maintain the inode's i_size to avoid frequent i_size synchronization
+  with the user space
+
+* take NR_WRITEBACK_TEMP into account when makeing balance_dirty_pages decision.
+  This protects us from having too many dirty pages on FUSE
+
+The provided patchset survives the fsx test. Performance measurements are not yet
+all finished, but the mentioned copying of a huge file becomes noticeably faster
+even on machines with few RAM and doesn't make the system stuck (the dirty pages
+balancer does its work OK). Applies on top of v3.5-rc4.
+
+We are currently exploring this with our own distributed storage implementation
+which is heavily oriented on storing big blobs of data with extremely rare meta-data
+updates (virtual machines' and containers' disk images). With the existing cache
+policy a typical usage scenario -- copying a big VM disk into a cloud -- takes way
+too much time to proceed, much longer than if it was simply scp-ed over the same
+network. The write-back policy (as I mentioned) noticeably improves this scenario.
+Kirill (in Cc) can share more details about the performance and the storage concepts
+details if required.
+
+Changed in v2:
+ - numerous bugfixes:
+   - fuse_write_begin and fuse_writepages_fill and fuse_writepage_locked must wait
+     on page writeback because page writeback can extend beyond the lifetime of
+     the page-cache page
+   - fuse_send_writepages can end_page_writeback on original page only after adding
+     request to fi->writepages list; otherwise another writeback may happen inside
+     the gap between end_page_writeback and adding to the list
+   - fuse_direct_io must wait on page writeback; otherwise data corruption is possible
+     due to reordering requests
+   - fuse_flush must flush dirty memory and wait for all writeback on given inode
+     before sending FUSE_FLUSH to userspace; otherwise FUSE_FLUSH is not reliable
+   - fuse_file_fallocate must hold i_mutex around FUSE_FALLOCATE and i_size update;
+     otherwise a race with a writer extending i_size is possible
+   - fix handling errors in fuse_writepages and fuse_send_writepages
+ - handle i_mtime intelligently if writeback cache is on (see patch #7 (update i_mtime
+   on buffered writes) for details.
+ - put enabling writeback cache under fusermount control; (see mount option
+   'allow_wbcache' introduced by patch #13 (turn writeback cache on))
+ - rebased on v3.7-rc5
+
+Changed in v3:
+ - rebased on for-next branch of the fuse tree (fb05f41f5f96f7423c53da4d87913fb44fd0565d)
+
+Changed in v4:
+ - rebased on for-next branch of the fuse tree (634734b63ac39e137a1c623ba74f3e062b6577db)
+ - fixed fuse_fillattr() for non-writeback_chace case
+ - added comments explaining why we cannot trust size from server
+ - rewrote patch handling i_mtime; it's titled Trust-kernel-i_mtime-only now
+ - simplified patch titled Flush-files-on-wb-close
+ - eliminated code duplications from fuse_readpage() ans fuse_prepare_write()
+ - added comment about "disk full" errors to fuse_write_begin()
+
+Changed in v5:
+ - rebased on for-next branch of the fuse tree (e5c5f05dca0cf90f0f3bb1aea85dcf658baff185)
+   with "hold i_mutex in fuse_file_fallocate() - v2" patch applied manually
+ - updated patch descriptions according to Miklos' demand (using From: for
+   patches initially developed by someone else)
+ - moved ->writepages() to a separate patch and enabled it unconditionally
+   for mmaped writeback
+ - moved restructuring fuse_readpage to a separate patch
+ - avoided use of union for fuse_fill_data
+ - grabbed a ref to the request in fuse_send_writepages
+
+Thanks,
+Maxim
+
+---
+
+Maxim Patlasov (10):
+      fuse: Connection bit for enabling writeback
+      fuse: Trust kernel i_mtime only
+      fuse: Flush files on wb close
+      fuse: restructure fuse_readpage()
+      fuse: Implement write_begin/write_end callbacks
+      fuse: fuse_writepage_locked() should wait on writeback
+      fuse: fuse_flush() should wait on writeback
+      fuse: Fix O_DIRECT operations vs cached writeback misorder - v2
+      fuse: Turn writeback cache on
+      mm: strictlimit feature
+
+Pavel Emelyanov (6):
+      fuse: Linking file to inode helper
+      fuse: Getting file for writeback helper
+      fuse: Prepare to handle short reads
+      fuse: Prepare to handle multiple pages in writeback
+      fuse: Trust kernel i_size only - v4
+      fuse: Implement writepages callback
+
+
+ fs/fs-writeback.c           |    2 
+ fs/fuse/cuse.c              |    5 
+ fs/fuse/dir.c               |  127 +++++++++-
+ fs/fuse/file.c              |  572 ++++++++++++++++++++++++++++++++++++++-----
+ fs/fuse/fuse_i.h            |   26 ++
+ fs/fuse/inode.c             |   38 ++-
+ include/linux/backing-dev.h |    5 
+ include/linux/pagemap.h     |    1 
+ include/linux/writeback.h   |    3 
+ include/uapi/linux/fuse.h   |    2 
+ mm/backing-dev.c            |    3 
+ mm/page-writeback.c         |  131 ++++++++--
+ 12 files changed, 794 insertions(+), 121 deletions(-)
+
+-- 
+Signature
