@@ -1,136 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab3F2Rpd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 13:45:33 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51766 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab3F2Rpa (ORCPT
+	id S1753247Ab3F2RpW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 13:45:22 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:38199 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab3F2RpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 13:45:30 -0400
-Subject: [PATCH 09/16] fuse: restructure fuse_readpage()
-To: miklos@szeredi.hu
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: riel@redhat.com, dev@parallels.com, xemul@parallels.com,
-        fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
-        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        linux-mm@kvack.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, devel@openvz.org, mgorman@suse.de
-Date: Sat, 29 Jun 2013 21:45:19 +0400
-Message-ID: <20130629174509.20175.7283.stgit@maximpc.sw.ru>
-In-Reply-To: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
-References: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
+	Sat, 29 Jun 2013 13:45:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1372268603-46748-2-git-send-email-Waiman.Long@hp.com>
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com>
+	<1372268603-46748-2-git-send-email-Waiman.Long@hp.com>
+Date: Sat, 29 Jun 2013 10:45:16 -0700
+X-Google-Sender-Auth: A9QdSNr6MgH4BexxSbmT3IvMNKY
+Message-ID: <CA+55aFzo5Jy064pbvEZh5cg_RJiSxe1R+tSgByQTs4rc=4SN3Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the code filling and sending read request to a separate function. Future
-patches will use it for .write_begin -- partial modification of a page
-requires reading the page from the storage very similarly to what fuse_readpage
-does.
+Sorry for not commenting earlier, I was traveling and keeping email to
+a minimum..
 
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
----
- fs/fuse/file.c |   55 +++++++++++++++++++++++++++++++++++++------------------
- 1 files changed, 37 insertions(+), 18 deletions(-)
+On Wed, Jun 26, 2013 at 10:43 AM, Waiman Long <Waiman.Long@hp.com> wrote:
+> This patch introduces a new spinlock_refcount.h header file to be
+> included by kernel code that want to do a lockless update of reference
+> count protected by a spinlock.
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 799bf46..e693e35 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -702,21 +702,14 @@ static void fuse_short_read(struct fuse_req *req, struct inode *inode,
- 	}
- }
- 
--static int fuse_readpage(struct file *file, struct page *page)
-+static int __fuse_readpage(struct file *file, struct page *page, size_t count,
-+			   int *err, struct fuse_req **req_pp, u64 *attr_ver_p)
- {
- 	struct fuse_io_priv io = { .async = 0, .file = file };
- 	struct inode *inode = page->mapping->host;
- 	struct fuse_conn *fc = get_fuse_conn(inode);
- 	struct fuse_req *req;
- 	size_t num_read;
--	loff_t pos = page_offset(page);
--	size_t count = PAGE_CACHE_SIZE;
--	u64 attr_ver;
--	int err;
--
--	err = -EIO;
--	if (is_bad_inode(inode))
--		goto out;
- 
- 	/*
- 	 * Page writeback can extend beyond the lifetime of the
-@@ -726,20 +719,45 @@ static int fuse_readpage(struct file *file, struct page *page)
- 	fuse_wait_on_page_writeback(inode, page->index);
- 
- 	req = fuse_get_req(fc, 1);
--	err = PTR_ERR(req);
-+	*err = PTR_ERR(req);
- 	if (IS_ERR(req))
--		goto out;
-+		return 0;
- 
--	attr_ver = fuse_get_attr_version(fc);
-+	if (attr_ver_p)
-+		*attr_ver_p = fuse_get_attr_version(fc);
- 
- 	req->out.page_zeroing = 1;
- 	req->out.argpages = 1;
- 	req->num_pages = 1;
- 	req->pages[0] = page;
- 	req->page_descs[0].length = count;
--	num_read = fuse_send_read(req, &io, pos, count, NULL);
--	err = req->out.h.error;
- 
-+	num_read = fuse_send_read(req, &io, page_offset(page), count, NULL);
-+	*err = req->out.h.error;
-+
-+	if (*err)
-+		fuse_put_request(fc, req);
-+	else
-+		*req_pp = req;
-+
-+	return num_read;
-+}
-+
-+static int fuse_readpage(struct file *file, struct page *page)
-+{
-+	struct inode *inode = page->mapping->host;
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_req *req = NULL;
-+	size_t num_read;
-+	size_t count = PAGE_CACHE_SIZE;
-+	u64 attr_ver = 0;
-+	int err;
-+
-+	err = -EIO;
-+	if (is_bad_inode(inode))
-+		goto out;
-+
-+	num_read = __fuse_readpage(file, page, count, &err, &req, &attr_ver);
- 	if (!err) {
- 		/*
- 		 * Short read means EOF.  If file size is larger, truncate it
-@@ -749,10 +767,11 @@ static int fuse_readpage(struct file *file, struct page *page)
- 
- 		SetPageUptodate(page);
- 	}
--
--	fuse_put_request(fc, req);
--	fuse_invalidate_attr(inode); /* atime changed */
-- out:
-+	if (req) {
-+		fuse_put_request(fc, req);
-+		fuse_invalidate_attr(inode); /* atime changed */
-+	}
-+out:
- 	unlock_page(page);
- 	return err;
- }
+So I really like the concept, but the implementation is a mess, and
+tries to do too much, while actually achieving too little.
 
+I do not believe you should care about debug spinlocks at all, and
+just leave them be. Have a simple fallback code that defaults to
+regular counts and spinlocks, and have any debug cases just use that.
+
+But more importantly, I think this needs to be architecture-specific,
+and using <linux/spinlock_refcount.h> to try to do some generic 64-bit
+cmpxchg() version is a bad bad idea.
+
+We have several architectures coming up that have memory transaction
+support, and the "spinlock with refcount" is a perfect candidate for a
+transactional memory implementation. So when introducing a new atomic
+like this that is very performance-critical and used for some very
+core code, I really think architectures would want to make their own
+optimized versions.
+
+These things should also not be inlined, I think.
+
+So I think the concept is good, but I think the implementation needs
+more thought.
+
+                       Linus
