@@ -1,214 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3F2DAZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 23:00:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14608 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab3F2DAY (ORCPT
+	id S1753467Ab3F2DBl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 23:01:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37882 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753406Ab3F2DBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 23:00:24 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=K-hHAvmzDjYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=lVSx7YhZmtMA:10 a=X7Ea-ya5AAAA:8 a=VPW9pYw8AAAA:8 a=oousBsYe7VwN5ef7N9IA:9 a=QEXdDO2ut3YA:10 a=EMEU_Dz8dBsA:10 a=nTicbzAlsOkA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372474821.18733.344.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/3] static_keys: Add a
- static_key_slow_set_true()/false() interface
-From: Steven Rostedt <rostedt@goodmis.org>
-To: jbaron@akamai.com
-Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        peterz@infradead.org
-Date: Fri, 28 Jun 2013 23:00:21 -0400
-In-Reply-To: <4cd4ed35e383e64af7e482f2d2827703ec943c75.1372457176.git.jbaron@akamai.com>
-References: <cover.1372457176.git.jbaron@akamai.com>
-	 <4cd4ed35e383e64af7e482f2d2827703ec943c75.1372457176.git.jbaron@akamai.com>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 28 Jun 2013 23:01:39 -0400
+Message-ID: <1372474889.23847.56.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [04/26] ARM: 7755/1: handle user space mapped pages in
+ flush_kernel_dcache_page
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Simon Baatz <gmbnomis@gmail.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Date: Sat, 29 Jun 2013 04:01:29 +0100
+In-Reply-To: <20130626223554.GB25104@schnuecks.de>
+References: <lsq.1372214158.657310117@decadent.org.uk>
+	 <878v1x4510.fsf@canonical.com> <20130626223554.GB25104@schnuecks.de>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ExQq2BQEVTrVykx4pbsI"
 X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-28 at 22:30 +0000, jbaron@akamai.com wrote:
-> As pointed out by Andi Kleen, some static key users can be racy because they
-> check the value of the key->enabled, and then subsequently update the branch
-> direction. A number of call sites have 'higher' level locking that avoids this
-> race, but the usage in the scheduler features does not. See:
-> http://lkml.indiana.edu/hypermail/linux/kernel/1304.2/01655.html
-> 
-> Thus, introduce a new API that does the check and set under the
-> 'jump_label_mutex'. This should also allow to simplify call sites a bit.
-> 
-> Users of static keys should use either the inc/dec or the set_true/set_false
-> API.
-> 
-> Signed-off-by: Jason Baron <jbaron@akamai.com>
-> ---
->  Documentation/static-keys.txt |    8 ++++++++
->  include/linux/jump_label.h    |   30 ++++++++++++++++++++++++++++++
->  kernel/jump_label.c           |   40 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 78 insertions(+)
-> 
-> diff --git a/Documentation/static-keys.txt b/Documentation/static-keys.txt
-> index 9f5263d..4cca941 100644
-> --- a/Documentation/static-keys.txt
-> +++ b/Documentation/static-keys.txt
-> @@ -134,6 +134,14 @@ An example usage in the kernel is the implementation of tracepoints:
->                                  TP_CONDITION(cond));                    \
->          }
->  
-> +Keys can also be updated with the following calls:
 
-I would explain this a bit more. Something like:
+--=-ExQq2BQEVTrVykx4pbsI
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-When dealing with a simple on/off switch, where there's not a usage
-counter involved with the static_key, the
-static_key_slow_set_true/false() methods should be used.
+On Thu, 2013-06-27 at 00:35 +0200, Simon Baatz wrote:
+> Hi Ben, Luis,
+>=20
+> On Wed, Jun 26, 2013 at 10:04:11AM +0100, Luis Henriques wrote:
+> > Ben Hutchings <ben@decadent.org.uk> writes:
+> >=20
+> > > 3.2.48-rc1 review patch.  If anyone has any objections, please let me=
+ know.
+> > >
+> > > ------------------
+> > >
+> > > From: Simon Baatz <gmbnomis@gmail.com>
+> > >
+> > > commit 1bc39742aab09248169ef9d3727c9def3528b3f3 upstream.
+> >=20
+> > Simon suggested Greg not to queue this patch for stable kernels as it
+> > breaks no-MMU ARM configs.  He will provide a follow-up patch that
+> > should go together with this one.
+>=20
+> Fortunately, the follow-up patch is upstream now. It is commit
+> 63384fd0b1509acf522a8a8fcede09087eedb7df (ARM: 7772/1: Fix missing
+> flush_kernel_dcache_page() for noMMU).
+>=20
+> Thus, please add that patch as well. If it is too late to do this, my
+> suggestion would be to queue both of them together for the next cycle.
 
+I'm including the noMMU fix in 3.2.48, thanks.
 
-> +
-> +	static_key_slow_set_true(struct static_key *key);
-> +	static_key_slow_set_false(struct static_key *key);
-> +
-> +Users should of the API should not mix the inc/dec with usages
-> +of set_true/set_false. That is, users should choose one or the other.
+Ben.
 
-Fix the above comment.
+--=20
+Ben Hutchings
+Knowledge is power.  France is bacon.
 
--- Steve
+--=-ExQq2BQEVTrVykx4pbsI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> +
->  Tracepoints are disabled by default, and can be placed in performance critical
->  pieces of the kernel. Thus, by using a static key, the tracepoints can have
->  absolutely minimal impact when not in use.
-> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> index 0976fc4..787ab73 100644
-> --- a/include/linux/jump_label.h
-> +++ b/include/linux/jump_label.h
-> @@ -67,6 +67,11 @@ struct static_key_deferred {
->  	struct delayed_work work;
->  };
->  
-> +/* for use with set_true/set_false API */
-> +struct static_key_boolean {
-> +	struct static_key key;
-> +};
-> +
->  # include <asm/jump_label.h>
->  # define HAVE_JUMP_LABEL
->  #endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
-> @@ -120,6 +125,8 @@ extern int jump_label_text_reserved(void *start, void *end);
->  extern void static_key_slow_inc(struct static_key *key);
->  extern void static_key_slow_dec(struct static_key *key);
->  extern void static_key_slow_dec_deferred(struct static_key_deferred *key);
-> +extern void static_key_slow_set_true(struct static_key_boolean *key);
-> +extern void static_key_slow_set_false(struct static_key_boolean *key);
->  extern void jump_label_apply_nops(struct module *mod);
->  extern void
->  jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
-> @@ -128,6 +135,10 @@ jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
->  	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
->  #define STATIC_KEY_INIT_FALSE ((struct static_key) \
->  	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
-> +#define STATIC_KEY_BOOLEAN_INIT_TRUE ((struct static_key_boolean) \
-> +	{ .key.enabled = ATOMIC_INIT(1), .key.entries = (void *)1 })
-> +#define STATIC_KEY_BOOLEAN_INIT_FALSE ((struct static_key_boolean) \
-> +	{ .key.enabled = ATOMIC_INIT(0), .key.entries = (void *)0 })
->  
->  #else  /* !HAVE_JUMP_LABEL */
->  
-> @@ -137,6 +148,11 @@ struct static_key {
->  	atomic_t enabled;
->  };
->  
-> +/* for use with set_true/set_false API */
-> +struct static_key_boolean {
-> +	struct static_key key;
-> +};
-> +
->  static __always_inline void jump_label_init(void)
->  {
->  }
-> @@ -174,6 +190,16 @@ static inline void static_key_slow_dec_deferred(struct static_key_deferred *key)
->  	static_key_slow_dec(&key->key);
->  }
->  
-> +static inline void static_key_slow_set_true(struct static_key_boolean *key)
-> +{
-> +	atomic_set(&key->key.enabled, 1);
-> +}
-> +
-> +static inline void static_key_slow_set_false(struct static_key_boolean *key)
-> +{
-> +	atomic_set(&key->key.enabled, 0);
-> +}
-> +
->  static inline int jump_label_text_reserved(void *start, void *end)
->  {
->  	return 0;
-> @@ -197,6 +223,10 @@ jump_label_rate_limit(struct static_key_deferred *key,
->  		{ .enabled = ATOMIC_INIT(1) })
->  #define STATIC_KEY_INIT_FALSE ((struct static_key) \
->  		{ .enabled = ATOMIC_INIT(0) })
-> +#define STATIC_KEY_BOOLEAN_INIT_TRUE ((struct static_key_boolean) \
-> +		{ .key.enabled = ATOMIC_INIT(1) })
-> +#define STATIC_KEY_BOOLEAN_INIT_FALSE ((struct static_key_boolean) \
-> +		{ .key.enabled = ATOMIC_INIT(0) })
->  
->  #endif	/* HAVE_JUMP_LABEL */
->  
-> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> index 60f48fa..2234a4c 100644
-> --- a/kernel/jump_label.c
-> +++ b/kernel/jump_label.c
-> @@ -120,6 +120,46 @@ void jump_label_rate_limit(struct static_key_deferred *key,
->  }
->  EXPORT_SYMBOL_GPL(jump_label_rate_limit);
->  
-> +void static_key_slow_set_true(struct static_key_boolean *key_boolean)
-> +{
-> +	struct static_key *key = (struct static_key *)key_boolean;
-> +	int enabled;
-> +
-> +	jump_label_lock();
-> +	enabled = atomic_read(&key->enabled);
-> +	if (enabled == 1)
-> +		goto out;
-> +	WARN(enabled != 0, "%s: key->enabled: %d\n", __func__, enabled);
-> +	if (!jump_label_get_branch_default(key))
-> +		jump_label_update(key, JUMP_LABEL_ENABLE);
-> +	else
-> +		jump_label_update(key, JUMP_LABEL_DISABLE);
-> +	atomic_set(&key->enabled, 1);
-> +out:
-> +	jump_label_unlock();
-> +}
-> +EXPORT_SYMBOL_GPL(static_key_slow_set_true);
-> +
-> +void static_key_slow_set_false(struct static_key_boolean *key_boolean)
-> +{
-> +	struct static_key *key = (struct static_key *)key_boolean;
-> +	int enabled;
-> +
-> +	jump_label_lock();
-> +	enabled = atomic_read(&key->enabled);
-> +	if (enabled == 0)
-> +		goto out;
-> +	WARN(enabled != 1, "%s: key->enabled: %d\n", __func__, enabled);
-> +	if (!jump_label_get_branch_default(key))
-> +		jump_label_update(key, JUMP_LABEL_DISABLE);
-> +	else
-> +		jump_label_update(key, JUMP_LABEL_ENABLE);
-> +	atomic_set(&key->enabled, 0);
-> +out:
-> +	jump_label_unlock();
-> +}
-> +EXPORT_SYMBOL_GPL(static_key_slow_set_false);
-> +
->  static int addr_conflict(struct jump_entry *entry, void *start, void *end)
->  {
->  	if (entry->code <= (unsigned long)end &&
+iQIVAwUAUc5OCee/yOyVhhEJAQow/BAAjO8Nv8UFHMMckifUrKMnItb0urURV0ku
+3Gb+uX1YGZdxcDQSM3TgkYv+XAq4yXt7NhGBo4Oo85c7frY0NyuF2HrQqk51GL0S
+F3oU2BCkM53D1Iy5tUHZrsKTPjP52Iv3tTwDEsQlrWriSQzfbL/MdG3OrCG70Lzt
+ZFfEUS1u1RUdjLMlPbTWIHVVtnw37VNz97ijYgV813Eiyx4NK8NLeE9tPIjFSZ3y
+g4j7eqk6fvAiQSgsBPh1yCbxn4OUOBhuEKTkPaG74wGM0S/RYR/Ij92LaMUQOn3V
+nXx02w3tjrukqbjsOqCDulqX7QYWrLnBVHXbl4rD9T0qUKokzQs0RMNLINbL5dTE
+6aYD5mG4NSwVzksLBdQNJYpOAGzsxEHWHtI+VLoxnyyCuG2MUOsZB7B5rX1PavTl
+ktcyz3tb8WXQ/puXuqTbK5J1g09MwgAXI6pycVbbTdii/LHQyyeSWfNfTtmaLaQ4
+Eam+yqyH9+k5kUm+c+JDrfllsynfEaY3nvIcYhcarEEmsJ6p7v48voFKcok9Rt9q
+Pn82Bqg/w4bjI8ZT6gCUfCIBOU8zZIDNQobZnesdvoPlwzGYSmoq3CnA02YoTJu5
+LXlj/VS23IusSJdPFIGl56bfYuaLLIGpOUf0rq4Md+85lNIzw280jUM1QIjSssyI
+n5e6s2Ihm4A=
+=nhQx
+-----END PGP SIGNATURE-----
 
-
+--=-ExQq2BQEVTrVykx4pbsI--
