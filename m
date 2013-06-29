@@ -1,92 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab3F2HYr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 03:24:47 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:32867 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab3F2HYp (ORCPT
+	id S1753074Ab3F2HgX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 03:36:23 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:44124 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab3F2HgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 03:24:45 -0400
-Date: Sat, 29 Jun 2013 09:24:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Travis <travis@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        holt@sgi.com, rob@landley.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, yinghai@kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-doc@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [RFC] Transparent on-demand memory setup initialization embedded
- in the (GFP) buddy allocator
-Message-ID: <20130629072441.GA15394@gmail.com>
-References: <51CBB2F7.3050604@numascale-asia.com>
- <51CDF417.3050406@sgi.com>
+	Sat, 29 Jun 2013 03:36:21 -0400
+Date: Sat, 29 Jun 2013 10:35:39 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [RFC PATCH] cpu hotplug: rework cpu_hotplug locking (was
+ [LOCKDEP] cpufreq: possible circular locking dependency detected)
+Message-ID: <20130629073539.GA2227@swordfish>
+References: <20130625211544.GA2270@swordfish>
+ <CAKohpo=ij+LTB80FtVFQZa_4uh-fceG80GBhGnhbxKio7N-Zuw@mail.gmail.com>
+ <20130628074403.GA2201@swordfish>
+ <51CD9A1A.1060908@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51CDF417.3050406@sgi.com>
+In-Reply-To: <51CD9A1A.1060908@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Nathan Zimmer <nzimmer@sgi.com> wrote:
-
-> On 06/26/2013 10:35 PM, Daniel J Blueman wrote:
-> >On Wednesday, June 26, 2013 9:30:02 PM UTC+8, Andrew Morton wrote:
-> >>
-> >> On Wed, 26 Jun 2013 11:22:48 +0200 Ingo Molnar
-> ><mi...@kernel.org> wrote:
-> >>
-> >> > except that on 32 TB
-> >> > systems we don't spend ~2 hours initializing 8,589,934,592
-> >page heads.
-> >>
-> >> That's about a million a second which is crazy slow - even my
-> >prehistoric desktop
-> >> is 100x faster than that.
-> >>
-> >> Where's all this time actually being spent?
-> >
-> > The complexity of a directory-lookup architecture to make the 
-> > (intrinsically unscalable) cache-coherency protocol scalable gives you 
-> > a ~1us roundtrip to remote NUMA nodes.
-> >
-> > Probably a lot of time is spent in some memsets, and RMW cycles which 
-> > are setting page bits, which are intrinsically synchronous, so the 
-> > initialising core can't get to 12 or so outstanding memory 
-> > transactions.
-> >
-> > Since EFI memory ranges have a flag to state if they are zerod (which 
-> > may be a fair assumption for memory on non-bootstrap processor NUMA 
-> > nodes), we can probably collapse the RMWs to just writes.
-> >
-> > A normal write will require a coherency cycle, then a fetch and a 
-> > writeback when it's evicted from the cache. For this purpose, 
-> > non-temporal writes would eliminate the cache line fetch and give a 
-> > massive increase in bandwidth. We wouldn't even need a store-fence as 
-> > the initialising core is the only one online.
+On (06/28/13 19:43), Srivatsa S. Bhat wrote:
+> On 06/28/2013 01:14 PM, Sergey Senozhatsky wrote:
+> > Hello,
+> > Yes, this helps, of course, but at the same time it returns the previous
+> > problem -- preventing cpu_hotplug in some places.
+> > 
+> > 
+> > I have a bit different (perhaps naive) RFC patch and would like to hear
+> > comments.
+> > 
+> > 
+> > 
+> > The idead is to brake existing lock dependency chain by not holding
+> > cpu_hotplug lock mutex across the calls. In order to detect active
+> > refcount readers or active writer, refcount now may have the following
+> > values:
+> > 
+> > -1: active writer -- only one writer may be active, readers are blocked
+> >  0: no readers/writer
+> >> 0: active readers -- many readers may be active, writer is blocked
+> > 
+> > "blocked" reader or writer goes to wait_queue. as soon as writer finishes
+> > (refcount becomes 0), it wakeups all existing processes in a wait_queue.
+> > reader perform wakeup call only when it sees that pending writer is present
+> > (active_writer is not NULL).
+> > 
+> > cpu_hotplug lock now only required to protect refcount cmp, inc, dec
+> > operations so it can be changed to spinlock.
+> > 
 > 
-> Could you elaborate a bit more? or suggest a specific area to look at?
+> Hmm, now that I actually looked at your patch, I see that it is completely
+> wrong! I'm sure you intended to fix the *bug*, but instead you ended
+> up merely silencing the *warning* (and also left lockdep blind), leaving
+> the actual bug as it is!
+>
+
+Thank you for your time and review.
+
+
+> So let me summarize what the actual bug is and what is it that actually
+> needs fixing:
 > 
-> After some experiments with trying to just set some fields in the struct 
-> page directly I haven't been able to produce any improvements.  Of 
-> course there is lots about the area which I don't have much experience 
-> with.
+> Basically you have 2 things -
+> 1. A worker item (cs_dbs_timer in this case) that can re-arm itself
+>    using gov_queue_work(). And gov_queue_work() uses get/put_online_cpus().
+> 
+> 2. In the cpu_down() path, you want to cancel the worker item and destroy
+>    and cleanup its resources (the timer_mutex).
+> 
+> So the problem is that you can deadlock like this:
+> 
+>     CPU 3                                  CPU 4
+> 
+>    cpu_down()
+>    -> acquire hotplug.lock
+> 
+> 				      cs_dbs_timer()
+> 				        -> get_online_cpus()
+> 					   //wait on hotplug.lock
+> 
+> 
+>    try to cancel cs_dbs_timer()
+>    synchronously.
+> 
+> That leads to a deadlock, because, cs_dbs_timer() is waiting to
+> get the hotplug lock which CPU 3 is holding, whereas CPU 3 is
+> waiting for cs_dbs_timer() to finish. So they can end up mutually
+> waiting for each other, forever. (Yeah, the lockdep splat might have
+> been a bit cryptic to decode this, but here it is).
+> 
+> So to fix the *bug*, you need to avoid waiting synchronously while
+> holding the hotplug lock. Possibly by using cancel_delayed_work_sync()
+> under CPU_POST_DEAD or something like that. That would remove the deadlock
+> possibility.
 
-Any such improvement will at most be in the 10-20% range.
+will take a look. Thank you!
 
-I'd suggest first concentrating on the 1000-fold boot time initialization 
-speedup that the buddy allocator delayed initialization can offer, and 
-speeding up whatever remains after that stage - in a much more 
-development-friendly environment. (You'll be able to run 'perf record 
-./calloc-1TB' after bootup and get meaningful results, etc.)
+	-ss
 
-Thanks,
-
-	Ingo
+> Your patch, on the other hand, doesn't remove the deadlock possibility:
+> just because you don't hold the lock throughout the hotplug operation
+> doesn't mean that the task calling get_online_cpus() can sneak in and
+> finish its work in-between a hotplug operation (because the refcount
+> won't allow it to). Also, it should *not* be allowed to sneak in like
+> that, since that constitutes *racing* with CPU hotplug, which it was
+> meant to avoid!.
+> 
+> Also, as a side effect of not holding the lock throughout the hotplug
+> operation, lockdep goes blind, and doesn't complain, even though the
+> actual bug is still there! Effectively, this is nothing but papering
+> over the bug and silencing the warning, which we should never do.
+> 
+> So, please, fix the _cpufreq_ code to resolve the deadlock.
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
