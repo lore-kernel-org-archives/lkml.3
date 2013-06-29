@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab3F2RmE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 13:42:04 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51134 "EHLO
+	id S1752944Ab3F2Rmk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 13:42:40 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51407 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab3F2RmB (ORCPT
+	with ESMTP id S1752795Ab3F2Rma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 13:42:01 -0400
-Subject: [PATCH v5 00/16] fuse: An attempt to implement a write-back cache
- policy
+	Sat, 29 Jun 2013 13:42:30 -0400
+Subject: [PATCH 02/16] fuse: Getting file for writeback helper
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: riel@redhat.com, dev@parallels.com, xemul@parallels.com,
@@ -17,8 +16,10 @@ Cc: riel@redhat.com, dev@parallels.com, xemul@parallels.com,
         linux-mm@kvack.org, viro@zeniv.linux.org.uk,
         linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
         fengguang.wu@intel.com, devel@openvz.org, mgorman@suse.de
-Date: Sat, 29 Jun 2013 21:41:45 +0400
-Message-ID: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
+Date: Sat, 29 Jun 2013 21:42:20 +0400
+Message-ID: <20130629174215.20175.22933.stgit@maximpc.sw.ru>
+In-Reply-To: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
+References: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,133 +28,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Pavel Emelyanov <xemul@openvz.org>
 
-This is the fifth iteration of Pavel Emelyanov's patch-set implementing
-write-back policy for FUSE page cache. Initial patch-set description was
-the following:
+There will be a .writepageS callback implementation which will need to
+get a fuse_file out of a fuse_inode, thus make a helper for this.
 
-One of the problems with the existing FUSE implementation is that it uses the
-write-through cache policy which results in performance problems on certain
-workloads. E.g. when copying a big file into a FUSE file the cp pushes every
-128k to the userspace synchronously. This becomes a problem when the userspace
-back-end uses networking for storing the data.
-
-A good solution of this is switching the FUSE page cache into a write-back policy.
-With this file data are pushed to the userspace with big chunks (depending on the
-dirty memory limits, but this is much more than 128k) which lets the FUSE daemons
-handle the size updates in a more efficient manner.
-
-The writeback feature is per-connection and is explicitly configurable at the
-init stage (is it worth making it CAP_SOMETHING protected?) When the writeback is
-turned ON:
-
-* still copy writeback pages to temporary buffer when sending a writeback request
-  and finish the page writeback immediately
-
-* make kernel maintain the inode's i_size to avoid frequent i_size synchronization
-  with the user space
-
-* take NR_WRITEBACK_TEMP into account when makeing balance_dirty_pages decision.
-  This protects us from having too many dirty pages on FUSE
-
-The provided patchset survives the fsx test. Performance measurements are not yet
-all finished, but the mentioned copying of a huge file becomes noticeably faster
-even on machines with few RAM and doesn't make the system stuck (the dirty pages
-balancer does its work OK). Applies on top of v3.5-rc4.
-
-We are currently exploring this with our own distributed storage implementation
-which is heavily oriented on storing big blobs of data with extremely rare meta-data
-updates (virtual machines' and containers' disk images). With the existing cache
-policy a typical usage scenario -- copying a big VM disk into a cloud -- takes way
-too much time to proceed, much longer than if it was simply scp-ed over the same
-network. The write-back policy (as I mentioned) noticeably improves this scenario.
-Kirill (in Cc) can share more details about the performance and the storage concepts
-details if required.
-
-Changed in v2:
- - numerous bugfixes:
-   - fuse_write_begin and fuse_writepages_fill and fuse_writepage_locked must wait
-     on page writeback because page writeback can extend beyond the lifetime of
-     the page-cache page
-   - fuse_send_writepages can end_page_writeback on original page only after adding
-     request to fi->writepages list; otherwise another writeback may happen inside
-     the gap between end_page_writeback and adding to the list
-   - fuse_direct_io must wait on page writeback; otherwise data corruption is possible
-     due to reordering requests
-   - fuse_flush must flush dirty memory and wait for all writeback on given inode
-     before sending FUSE_FLUSH to userspace; otherwise FUSE_FLUSH is not reliable
-   - fuse_file_fallocate must hold i_mutex around FUSE_FALLOCATE and i_size update;
-     otherwise a race with a writer extending i_size is possible
-   - fix handling errors in fuse_writepages and fuse_send_writepages
- - handle i_mtime intelligently if writeback cache is on (see patch #7 (update i_mtime
-   on buffered writes) for details.
- - put enabling writeback cache under fusermount control; (see mount option
-   'allow_wbcache' introduced by patch #13 (turn writeback cache on))
- - rebased on v3.7-rc5
-
-Changed in v3:
- - rebased on for-next branch of the fuse tree (fb05f41f5f96f7423c53da4d87913fb44fd0565d)
-
-Changed in v4:
- - rebased on for-next branch of the fuse tree (634734b63ac39e137a1c623ba74f3e062b6577db)
- - fixed fuse_fillattr() for non-writeback_chace case
- - added comments explaining why we cannot trust size from server
- - rewrote patch handling i_mtime; it's titled Trust-kernel-i_mtime-only now
- - simplified patch titled Flush-files-on-wb-close
- - eliminated code duplications from fuse_readpage() ans fuse_prepare_write()
- - added comment about "disk full" errors to fuse_write_begin()
-
-Changed in v5:
- - rebased on for-next branch of the fuse tree (e5c5f05dca0cf90f0f3bb1aea85dcf658baff185)
-   with "hold i_mutex in fuse_file_fallocate() - v2" patch applied manually
- - updated patch descriptions according to Miklos' demand (using From: for
-   patches initially developed by someone else)
- - moved ->writepages() to a separate patch and enabled it unconditionally
-   for mmaped writeback
- - moved restructuring fuse_readpage to a separate patch
- - avoided use of union for fuse_fill_data
- - grabbed a ref to the request in fuse_send_writepages
-
-Thanks,
-Maxim
-
+Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
+Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
 ---
+ fs/fuse/file.c |   24 ++++++++++++++++--------
+ 1 files changed, 16 insertions(+), 8 deletions(-)
 
-Maxim Patlasov (10):
-      fuse: Connection bit for enabling writeback
-      fuse: Trust kernel i_mtime only
-      fuse: Flush files on wb close
-      fuse: restructure fuse_readpage()
-      fuse: Implement write_begin/write_end callbacks
-      fuse: fuse_writepage_locked() should wait on writeback
-      fuse: fuse_flush() should wait on writeback
-      fuse: Fix O_DIRECT operations vs cached writeback misorder - v2
-      fuse: Turn writeback cache on
-      mm: strictlimit feature
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index cc858ee..6b6d307 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1505,6 +1505,20 @@ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
+ 	fuse_writepage_free(fc, req);
+ }
+ 
++static struct fuse_file *fuse_write_file(struct fuse_conn *fc,
++					 struct fuse_inode *fi)
++{
++	struct fuse_file *ff;
++
++	spin_lock(&fc->lock);
++	BUG_ON(list_empty(&fi->write_files));
++	ff = list_entry(fi->write_files.next, struct fuse_file, write_entry);
++	fuse_file_get(ff);
++	spin_unlock(&fc->lock);
++
++	return ff;
++}
++
+ static int fuse_writepage_locked(struct page *page)
+ {
+ 	struct address_space *mapping = page->mapping;
+@@ -1512,7 +1526,6 @@ static int fuse_writepage_locked(struct page *page)
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
+ 	struct fuse_inode *fi = get_fuse_inode(inode);
+ 	struct fuse_req *req;
+-	struct fuse_file *ff;
+ 	struct page *tmp_page;
+ 
+ 	set_page_writeback(page);
+@@ -1526,13 +1539,8 @@ static int fuse_writepage_locked(struct page *page)
+ 	if (!tmp_page)
+ 		goto err_free;
+ 
+-	spin_lock(&fc->lock);
+-	BUG_ON(list_empty(&fi->write_files));
+-	ff = list_entry(fi->write_files.next, struct fuse_file, write_entry);
+-	req->ff = fuse_file_get(ff);
+-	spin_unlock(&fc->lock);
+-
+-	fuse_write_fill(req, ff, page_offset(page), 0);
++	req->ff = fuse_write_file(fc, fi);
++	fuse_write_fill(req, req->ff, page_offset(page), 0);
+ 
+ 	copy_highpage(tmp_page, page);
+ 	req->misc.write.in.write_flags |= FUSE_WRITE_CACHE;
 
-Pavel Emelyanov (6):
-      fuse: Linking file to inode helper
-      fuse: Getting file for writeback helper
-      fuse: Prepare to handle short reads
-      fuse: Prepare to handle multiple pages in writeback
-      fuse: Trust kernel i_size only - v4
-      fuse: Implement writepages callback
-
-
- fs/fs-writeback.c           |    2 
- fs/fuse/cuse.c              |    5 
- fs/fuse/dir.c               |  127 +++++++++-
- fs/fuse/file.c              |  572 ++++++++++++++++++++++++++++++++++++++-----
- fs/fuse/fuse_i.h            |   26 ++
- fs/fuse/inode.c             |   38 ++-
- include/linux/backing-dev.h |    5 
- include/linux/pagemap.h     |    1 
- include/linux/writeback.h   |    3 
- include/uapi/linux/fuse.h   |    2 
- mm/backing-dev.c            |    3 
- mm/page-writeback.c         |  131 ++++++++--
- 12 files changed, 794 insertions(+), 121 deletions(-)
-
--- 
-Signature
