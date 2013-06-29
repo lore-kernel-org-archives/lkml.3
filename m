@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab3F2FMO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 01:12:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46383 "EHLO
+	id S1753648Ab3F2FMl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 01:12:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46379 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab3F2FMK (ORCPT
+	with ESMTP id S1752758Ab3F2FMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 01:12:10 -0400
-Date: Fri, 28 Jun 2013 22:12:09 -0700 (PDT)
-Message-Id: <20130628.221209.720726659697001242.davem@davemloft.net>
+	Sat, 29 Jun 2013 01:12:05 -0400
+Date: Fri, 28 Jun 2013 22:12:04 -0700 (PDT)
+Message-Id: <20130628.221204.1514195012349670066.davem@davemloft.net>
 To: wangyijing@huawei.com
-Cc: m@bues.ch, trivial@kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, guohanjun@huawei.com
-Subject: Re: [PATCH 6/6] ssb/trivial: replace numeric with standard PM
+Cc: linux-kernel@vger.kernel.org, guohanjun@huawei.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/6] net/trivial: replace numeric with standard PM
  state macros
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1372338011-29248-1-git-send-email-wangyijing@huawei.com>
-References: <1372338011-29248-1-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1372337622-26076-1-git-send-email-wangyijing@huawei.com>
+References: <1372337622-26076-1-git-send-email-wangyijing@huawei.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,7 +25,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yijing Wang <wangyijing@huawei.com>
-Date: Thu, 27 Jun 2013 21:00:11 +0800
+Date: Thu, 27 Jun 2013 20:53:42 +0800
 
 > Use standard PM state macros PCI_Dx instead of numeric 0/1/2..
 > 
