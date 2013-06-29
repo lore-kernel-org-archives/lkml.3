@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab3F2UIQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 16:08:16 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:65370 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab3F2UIN (ORCPT
+	id S1753211Ab3F2ULl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 16:11:41 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:56468 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373Ab3F2ULj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 16:08:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130629195549.GE3353@n2100.arm.linux.org.uk>
-References: <1372467663-31425-1-git-send-email-santosh.shilimkar@ti.com>
-	<20130629152959.GB31339@mtj.dyndns.org>
-	<20130629172123.GA3353@n2100.arm.linux.org.uk>
-	<20130629175743.GA382@mtj.dyndns.org>
-	<CAE9FiQXHuP-n0eZ9wN73V4nSvE+XEExDsx1t50_=YaW+V=LGLg@mail.gmail.com>
-	<20130629195549.GE3353@n2100.arm.linux.org.uk>
-Date: Sat, 29 Jun 2013 13:08:13 -0700
-X-Google-Sender-Auth: 85uezcf1EK-hN8eDvXLbLj53b1k
-Message-ID: <CAE9FiQUoVNvWmmTV2+ZkU_nMxFToTHw6QLwp_Z_EjwMzqdLwuA@mail.gmail.com>
-Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
-From: Yinghai Lu <yinghai@kernel.org>
+	Sat, 29 Jun 2013 16:11:39 -0400
+Date: Sat, 29 Jun 2013 21:11:32 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tejun Heo <tj@kernel.org>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Olof Johansson <olof@lixom.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Emilio Lopez <emilio@elopez.com.ar>
+Subject: Re: [PATCH 0/2] ARM: sunxi: Convert DTSI to new CPU bindings
+Message-ID: <20130629201132.GA9375@e102568-lin.cambridge.arm.com>
+References: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20130628171532.GD30603@e102568-lin.cambridge.arm.com>
+ <20130628200333.GA2756@lukather>
+ <CAOesGMgsD+tK4+ywvLzsWd+mngrP7zGgSFn0naWjSsQLGaUn2Q@mail.gmail.com>
+ <20130629193819.GD3353@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+In-Reply-To: <20130629193819.GD3353@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 29 Jun 2013 20:11:35.0835 (UTC) FILETIME=[DB355EB0:01CE7504]
+X-MC-Unique: 113062921113701201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 12:55 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, Jun 29, 2013 at 12:29:55PM -0700, Yinghai Lu wrote:
->> >> On these SoCs which Santosh is working on, the main physical memory
->> >> mapping is above 4GB, with just a small alias below 4GB to allow the
->> >> system to boot without the MMU being on, as they may have more than
->> >> 4GB of RAM.  As I understand it, the small alias below 4GB is not
->> >> suitable for use as a "lowmem" mapping.
->>
->> is that 32bit ARM or 64bit ARM?
->
-> Only 32-bit has LPAE.  Such things don't make sense on 64-bit CPUs.
+On Sat, Jun 29, 2013 at 08:38:19PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Jun 28, 2013 at 01:05:42PM -0700, Olof Johansson wrote:
+> > On Fri, Jun 28, 2013 at 1:03 PM, Maxime Ripard
+> > <maxime.ripard@free-electrons.com> wrote:
+> > > On Fri, Jun 28, 2013 at 06:15:32PM +0100, Lorenzo Pieralisi wrote:
+> > >> The patch above should already be queued in next/dt right ?
+> > >
+> > > Indeed.
+> > >
+> > > Then why the latest patch of your patchset got in 3.10, while the
+> > > patches actually fixing the DT it would have impacted were delayed to
+> > > 3.11?
+> > >
+> > > (And why was it merged so late in the development cycle?)
+> > 
+> > This. So now we have to scramble because some device trees will
+> > produce warnings at boot.
+> > 
+> > Russell, the alternative is to revert Lorenzo's patch for 3.10 (and
+> > re-introduce it for 3.11). Do you have a preference?
+> 
+> Sorry but I really don't understand what all the fuss in this thread
+> is about.
+> 
+> This thread seems to be saying that two development patches were
+> merged, which were 7762/1 and 7763/1, and that 7764/1 is a fix?
+> Are you sure about that, because that's not how they're described,
+> and not how they look either.
 
-32bit ARM does not support NO_BOOTMEM yet.
+Russell, technically speaking what are you saying is correct, but the
+problem is that the 7762/1, 7763/1 and 7764/1 were part of a series
+to update DT cpu/cpus bindings, topology, bring dts files up to standard
+and update kernel code to comply. The problem is the following: if
+7762/1 is merged but dts updates in the arm-soc tree (that can be
+considered fixes, but as I said it is hard to draw a line between fixes
+and dev since this series is meant to redefine the DT bindings themselves
+to make them as compliant as possible with ePAPR) are not merged at the same
+time, the kernel triggers warnings for boards with non-compliant dts.
 
-arch/arc/Kconfig:       select NO_BOOTMEM
-arch/arm64/Kconfig:     select NO_BOOTMEM
-arch/sparc/Kconfig:     select NO_BOOTMEM
-arch/x86/Kconfig:config NO_BOOTMEM
+That's the same reason why I asked to drop 7762/1 from stable queues,
+since if it gets there all dts updates should get there at the same
+time.
 
+Please let me know if that's unclear and how I can help you fix the
+problem, I am just trying to syncronize all the changes the best I can.
 
-so may need to
-1. make 32bit ARM to use NO_BOOTMEM at first.
+Apologies and thanks,
+Lorenzo
 
-2 .we can add alloc_memblock as MACRO or inline for bootmem arches,
-
-3. NO_BOOTMEM arches will have alloc_memblock in nobootmem.c
-
-4. replace alloc_bootmem calling with alloc_memblock calling in core code.
-
-Thanks
-
-Yinghai
