@@ -1,153 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab3F2VEM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 17:04:12 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:25590 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab3F2VEK (ORCPT
+	id S1753411Ab3F2VIN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 17:08:13 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:34001 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307Ab3F2VII convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 17:04:10 -0400
-Message-ID: <51CF4BBF.30608@hp.com>
-Date: Sat, 29 Jun 2013 17:03:59 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Sat, 29 Jun 2013 17:08:08 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
- update of refcount
-References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com> <1372268603-46748-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1306262307020.4013@ionos.tec.linutronix.de> <51CB8472.1040502@hp.com> <alpine.DEB.2.02.1306271501220.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306271501220.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFy8XfmbhaEFUvy5ToLuSSxw5dhw5vXbJ28QpA0sBZgYoQ@mail.gmail.com>
+References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
+ <CA+QCeVR=+2vpFdW_LcjZUdNd+udY4dZEWXxevONTnbs8Y6oECQ@mail.gmail.com> <CA+55aFy8XfmbhaEFUvy5ToLuSSxw5dhw5vXbJ28QpA0sBZgYoQ@mail.gmail.com>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Sun, 30 Jun 2013 00:07:46 +0300
+Message-ID: <CA+QCeVTOQks+s7YEK1Sd-aKdg2ce=Jxchb5ATqW0fiZVebFMBw@mail.gmail.com>
+Subject: Re: Linux 3.10-rc7
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 10:44 AM, Thomas Gleixner wrote:
-> On Wed, 26 Jun 2013, Waiman Long wrote:
->> On 06/26/2013 07:06 PM, Thomas Gleixner wrote:
->>> On Wed, 26 Jun 2013, Waiman Long wrote:
->>> This is a complete design disaster. You are violating every single
->>> rule of proper layering. The differentiation of spinlock, raw_spinlock
->>> and arch_spinlock is there for a reason and you just take the current
->>> implementation and map your desired function to it. If we take this,
->>> then we fundamentally ruled out a change to the mappings of spinlock,
->>> raw_spinlock and arch_spinlock. This layering is on purpose and it
->>> took a lot of effort to make it as clean as it is now. Your proposed
->>> change undoes that and completely wreckages preempt-rt.
->> Would you mind enlighten me how this change will break preempt-rt?
-> The whole spinlock layering was done for RT. In mainline spinlock is
-> mapped to raw_spinlock. On RT spinlock is mapped to a PI aware
-> rtmutex.
->
-> So your mixing of the various layers and the assumption of lock plus
-> count being adjacent, does not work on RT at all.
+Hi Linus,
 
-Thank for the explanation. I had downloaded and looked at the RT patch. 
-My code won't work for the full RT kernel. I guess that is no way to 
-work around this and only logical choice is to disable it for the full 
-RT kernel.
+On 29 June 2013 21:11, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Sat, Jun 29, 2013 at 8:05 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
+>>
+>> 3.10-rc7 doesn't compile for me
+>>
+>> rathamahata@piledriver /usr/local/src/linux-3.10-rc7 $ make -j1 bzImage modules
+>> make[1]: Nothing to be done for `all'.
+>> make[1]: Nothing to be done for `relocs'.
+>>   CHK     include/generated/uapi/linux/version.h
+>>   CHK     include/generated/utsrelease.h
+>>   CALL    scripts/checksyscalls.sh
+>>   CC      scripts/mod/devicetable-offsets.s
+>>   GEN     scripts/mod/devicetable-offsets.h
+>>   HOSTCC  scripts/mod/file2alias.o
+>>   HOSTLD  scripts/mod/modpost
+>>   CHK     include/generated/compile.h
+>> make[3]: `arch/x86/realmode/rm/realmode.bin' is up to date.
+>>   CC      drivers/gpu/drm/radeon/r200.o
+>> drivers/gpu/drm/radeon/r200.c: In function ‘r200_set_safe_registers’:
+>> drivers/gpu/drm/radeon/r200.c:546:34: error: ‘r200_reg_safe_bm’
+>> undeclared (first use in this function)
+>>   rdev->config.r100.reg_safe_bm = r200_reg_safe_bm;
+>>                                   ^
+>> drivers/gpu/drm/radeon/r200.c:546:34: note: each undeclared identifier
+>
+> Hmm. Your config builds here fine.
+>
+> What does your
+>
+>    drivers/gpu/drm/radeon/r200_reg_safe.h
+>
+> file look like?
 
->> The only architecture that will break, according to data in the
->> respectively arch/*/include/asm/spinlock_types.h files is PA-RISC
->> 1.x (it is OK in PA-RISC 2.0) whose arch_spinlock type has a size of
->> 16 bytes. I am not sure if 32-bit PA-RISC 1.x is still supported or
->> not, but we can always disable the optimization for this case.
-> You have to do that right from the beginning with a proper data
-> structure and proper accessor functions. Introducing wreckage and then
-> retroactivly fixing it, is not a really good idea.
+This file is empty:
+rathamahata@piledriver /usr/local/src/linux-3.10-rc7 $ cat
+drivers/gpu/drm/radeon/r200_reg_safe.h
+rathamahata@piledriver /usr/local/src/linux-3.10-rc7 $
 
-For architecture that needs a larger than 32-bit arch_spin_lock type, 
-the optimization code will be disabled just like the non-SMP and full RT 
-cases.
+> It's a generated file, and it sounds like it got
+> mis-generated. There is possibly a broken Makefile rule that leaves it
+> empty on errors or ^C: the rule is
+>
+>   quiet_cmd_mkregtable = MKREGTABLE $@
+>         cmd_mkregtable = $(obj)/mkregtable $< > $@
+>
+> and if the 'mkregtable' binary is buggered, the above will leave an
+> empty file around. And maybe your mkregtable failed to build earlier,
+> leaving that empty file around and it will never fix itself up because
+> of the "up-to-date" empty r200_reg_safe.h file.
+>
+> So removing the generated r200_reg_safe.h file
 
->>> So what you really want is a new data structure, e.g. something like
->>> struct spinlock_refcount() and a proper set of new accessor functions
->>> instead of an adhoc interface which is designed solely for the needs
->>> of dcache improvements.
->> I had thought about that. The only downside is we need more code changes to
->> make existing code to use the new infrastructure. One of the drivers in my
-> That's not a downside. It makes the usage of the infrastructure more
-> obvious and not hidden behind macro magic. And the changes are trivial
-> to script.
+Removing just it doesn't change a lot.
 
-Making the code from d_lock to lockref.lock, for example, is trivial. 
-However, there are about 40 different files that need to be changed with 
-different maintainers. Do I need to get an ACK from all of them or can I 
-just go ahead with such trivial changes without their ACK? You know it 
-can be hard to get responses from so many maintainers in a timely 
-manner. This is actually my main concern.
+> (and possibly the
+> mkregtable binary) and trying again might fix it.
 
->> design is to minimize change to existing code. Personally, I have no
->> objection of doing that if others think this is the right way to go.
-> Definitely. Something like this would be ok:
->
-> struct lock_refcnt {
->         int                 refcnt;
->         struct spinlock     lock;
-> };
->
-> It does not require a gazillion of ifdefs and works for
-> UP,SMP,DEBUG....
->
-> extern bool lock_refcnt_mod(struct lock_refcnt *lr, int mod, int cond);
->
-> You also want something like:
->
-> extern void lock_refcnt_disable(void);
->
-> So we can runtime disable it e.g. when lock elision is detected and
-> active. So you can force lock_refcnt_mod() to return false.
->
-> static inline bool lock_refcnt_inc(struct lock_refcnt *sr)
-> {
-> #ifdef CONFIG_HAVE_LOCK_REFCNT
-> 	return lock_refcnt_mod(sr, 1, INTMAX);
-> #else
-> 	return false;
-> #endif
-> }
->
-> That does not break any code as long as CONFIG_HAVE_SPINLOCK_REFCNT=n.
->
-> So we can enable it per architecture and make it depend on SMP. For RT
-> we simply can force this switch to n.
->
-> The other question is the semantic of these refcount functions. From
-> your description the usage pattern is:
->
->       if (refcnt_xxx())
-> 	   return;
->       /* Slow path */
->       spin_lock();
->       ...
->       spin_unlock();
->
-> So it might be sensible to make this explicit:
->
-> static inline bool refcnt_inc_or_lock(struct lock_refcnt *lr))
-> {
-> #ifdef CONFIG_HAVE_SPINLOCK_REFCNT
-> 	if (lock_refcnt_mod(lr, 1, INTMAX))
-> 	   return true;
-> #endif
-> 	spin_lock(&lr->lock);
-> 	return false;
-> }
+Removing mkregtable  has indeed the compile issue for me. Thanks!
 
-Yes, it is a good idea to have a config variable to enable/disable it as 
-long as the default is "y". Of course, an full RT kernel or an non-SMP 
-kernel will have it disabled.
-
-Regards,
-Longman
+> Which still leaves
+> us with the question of how this happened, and a potentially fragile
+> Makefile.
+>
+>                 Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
