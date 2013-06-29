@@ -1,98 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab3F2Sxf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 14:53:35 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38921 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab3F2Sxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 14:53:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,967,1363158000"; 
-   d="scan'208";a="261798926"
-Message-ID: <51CF2C88.4030900@linux.intel.com>
-Date: Sat, 29 Jun 2013 21:50:48 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752897Ab3F2TDR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 15:03:17 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40669 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3F2TDQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jun 2013 15:03:16 -0400
+Date: Sat, 29 Jun 2013 20:03:06 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 0/2] ARM: sunxi: Convert DTSI to new CPU bindings
+Message-ID: <20130629190306.GA7533@e102568-lin.cambridge.arm.com>
+References: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20130628171532.GD30603@e102568-lin.cambridge.arm.com>
+ <20130628200333.GA2756@lukather>
+ <CAOesGMgsD+tK4+ywvLzsWd+mngrP7zGgSFn0naWjSsQLGaUn2Q@mail.gmail.com>
+ <20130628214512.GA11985@e102568-lin.cambridge.arm.com>
+ <20130629180730.GI2593@lukather>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        HPA <hpa@zytor.com>, Cody P Schafer <devel-lists@codyps.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: Using sched_clock() for polling time limit
-References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>  <20130628125926.14419.89905.stgit@ladj378.jer.intel.com> <1372438309.1937.9.camel@bwh-desktop.uk.level5networks.com>
-In-Reply-To: <1372438309.1937.9.camel@bwh-desktop.uk.level5networks.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130629180730.GI2593@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 29 Jun 2013 19:03:10.0862 (UTC) FILETIME=[4C7432E0:01CE74FB]
+X-MC-Unique: 113062920031300201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/2013 19:51, Ben Hutchings wrote:
-> On Fri, 2013-06-28 at 15:59 +0300, Eliezer Tamir wrote:
->> Our use of sched_clock is OK because we don't mind the side effects
->> of calling it and occasionally waking up on a different CPU.
->
-> Sure about that?  Jitter matters too.
->
-Pretty sure, this is a limit on how long we poll, it's for fairness to
-the rest of the system not for performance of this code.
+On Sat, Jun 29, 2013 at 07:07:30PM +0100, Maxime Ripard wrote:
+> On Fri, Jun 28, 2013 at 10:45:12PM +0100, Lorenzo Pieralisi wrote:
+> > On Fri, Jun 28, 2013 at 09:05:42PM +0100, Olof Johansson wrote:
+> > > On Fri, Jun 28, 2013 at 1:03 PM, Maxime Ripard
+> > > <maxime.ripard@free-electrons.com> wrote:
+> > > > On Fri, Jun 28, 2013 at 06:15:32PM +0100, Lorenzo Pieralisi wrote:
+> > > >> On Fri, Jun 28, 2013 at 05:44:02PM +0100, Maxime Ripard wrote:
+> > > >> > Hi Arnd, Olof,
+> > > >> >
+> > > >> > Sorry for steping in so late, but these two patches fixes a warning
+> > > >> > introduced by the commit 1ba9bf0a (ARM: 7762/1: kernel: fix
+> > > >> > arm_dt_init_cpu_maps() to skip non-cpu nodes) after 3.10-rc7.
+> > > >> >
+> > > >> > These two patches solve the situation for sunxi. The first one by
+> > > >> > Lorenzo is to be applied for 3.10 if it's still possible, and the
+> > > >> > second one on top of arm-soc/for-next. Tell me if you prefer a more
+> > > >> > formal pull request for these patches
+> > > >> >
+> > > >> > Thanks!
+> > > >> > Maxime
+> > > >> >
+> > > >> > Lorenzo Pieralisi (1):
+> > > >> >   ARM: dts: sunxi: cpus/cpu nodes dts updates
+> > > >>
+> > > >> The patch above should already be queued in next/dt right ?
+> > > >
+> > > > Indeed.
+> > > >
+> > > > Then why the latest patch of your patchset got in 3.10, while the
+> > > > patches actually fixing the DT it would have impacted were delayed to
+> > > > 3.11?
+> > > >
+> > > > (And why was it merged so late in the development cycle?)
+> > > 
+> > > This. So now we have to scramble because some device trees will
+> > > produce warnings at boot.
+> > > 
+> > > Russell, the alternative is to revert Lorenzo's patch for 3.10 (and
+> > > re-introduce it for 3.11). Do you have a preference?
+> > 
+> > Ok, sorry about this guys. Technically speaking the DT bindings updates
+> > (cpu/cpus nodes), dts updates and the ARM 7762/1 merged through Russell's
+> > tree all are fixes, but probably we should not get them in as such.
+> > 
+> > ARM: 7762/1 was implemented to fix the warnings caused by new dts with
+> > topology nodes (cpu-map node), and should go to stable kernels as well
+> > since we want those kernels to boot with new DTs.
+> > 
+> > I should have prevented it from getting in as a fix, I really apologize.
+> > I should also ask to drop the patch from the stable kernel queues, since this
+> > would cause further issues (basically we should send all dts updates to
+> > stable kernels as well, and unfortunately that's something we will have
+> > to do anyway, when it has to be decided, if 7762/1 goes in 3.11 or later with
+> > CC'ed stable we should send the dts updates to stable as well at the same
+> > time).
+> > 
+> > I think the best solution is to revert ARM 7762/1 now and re-introduce it as
+> > a fix after 3.11, when the dust has settled, I will drop it from stable
+> > kernels queue as well if we all agree.
+> > 
+> > If we drop ARM 7762/1, 7764/1 needs rebasing since those patches order
+> > unfortunately matters.
+> 
+> Ok, so you're saying we need to revert 1ba9bf0a and 7764/1. I couldn't
+> find a commit corresponding to this one, however there is a commit
+> labelled 7763/1 from you that touch the same area (18d7f152). Are these
+> the commits that need to be reverted (and then reapplied for 3.11) ?
 
-What matters is that on average you are bounded by something close to
-what the user specified. If once in a while you run less because of
-clock jitter, or even twice the specified time, it's no big deal.
+7764/1 is in Russell's patch system and has not been applied yet.
+7763/1 can stay in since it is a fix that cleans-up cpu_logical_map
+initialization.
 
-So I don't see how jitter would matter.
+1ba9bf0a (7762/1) is the patch that should be reverted (or we merge all
+dts updates, since as I said, after all dts updates are fixes as well,
+the warning is caused by the check for /cpu device_type to be == "cpu".
+Those dts in the kernel are non-compliant, and have never been).
 
-And if your workload is jitter sensitive, you should probably be
-pinning tasks to CPUs anyway.
+If 7762/1 is reverted, 7764/1 in Russell's patch system does not apply
+cleanly anymore. Hence, if 7762/1 is reverted, we also have to drop 7764/1
+from the patch system and I have to update it.
 
+I asked to remove 7762/1 from stable kernels queues, the question is
+still open if we want to backport all dts updates to stable kernels or
+not. I would say no for now, hence 7762/1 can just be dropped (it was
+meant to deal with the cpus node having children that are != /cpu. This
+can happen with the new topology bindings, but let me say we will cross
+that bridge when we come to it, 7762/1 has already caused too much
+trouble for what it is worth).
 
->> When CONFIG_DEBUG_PREEMPT is on, disable preempt before calling
->> sched_clock() so we don't trigger a debug_smp_processor_id() warning.
-> [...]
->
-> I think this is papering over a problem.  The warning is there for a
-> good reason.
+On top of that there are bindings updates that I asked Grant to get them
+merged for 3.11.
 
-I think we understand the warning, and that we are OK with the effects.
+I am really really sorry for taking your time for this, but it has not been
+easy to clean all dts up and define a proper standard, it is a necessary
+evil.
 
-looking at how other users in the kernel solved this issue
-It seems like this is what they do.
-for example trace/ring_buffer.c:ring_buffer_time_Stamp()
+Thanks a lot guys, please let me know how I can help, apologies.
+Lorenzo
 
-Also kvm_clock_read() and xen_clokcsource_read() seem to disable preempt
-just to silence this warning.
-
-If they really cared about reading the value on one CPU, then being
-scheduled on another they should have disabled interrupts.
-or am I missing something?
-
-> Would functions like these make it possible to use sched_clock() safely
-> for polling?  (I didn't spend much time thinking about the names.)
->
-> struct sched_timestamp {
-> 	int cpu;
-> 	unsigned long long clock;
-> };
->
-> static inline struct sched_timestamp sched_get_timestamp(void)
-> {
-> 	struct sched_timestamp ret;
->
-> 	preempt_disable_notrace();
-> 	ret.cpu = smp_processor_id();
-> 	ret.clock = sched_clock();
-> 	preempt_enable_no_resched_notrace();
->
-> 	return ret;
-> }
-
-I don't understand, preempt_disable() only makes prevents preempt
-from taking the CPU away from you, you could still lose it for
-other reasons.
-You would really need to disable interrupts in this region to be
-sure that it all executed on the same CPU.
-
--Eliezer
