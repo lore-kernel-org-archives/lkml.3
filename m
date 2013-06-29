@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab3F2Rmk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 13:42:40 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51407 "EHLO
+	id S1753028Ab3F2Rmr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 13:42:47 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51448 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab3F2Rma (ORCPT
+	with ESMTP id S1752471Ab3F2Rmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 13:42:30 -0400
-Subject: [PATCH 02/16] fuse: Getting file for writeback helper
+	Sat, 29 Jun 2013 13:42:43 -0400
+Subject: [PATCH 03/16] fuse: Prepare to handle short reads
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: riel@redhat.com, dev@parallels.com, xemul@parallels.com,
@@ -16,8 +16,8 @@ Cc: riel@redhat.com, dev@parallels.com, xemul@parallels.com,
         linux-mm@kvack.org, viro@zeniv.linux.org.uk,
         linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
         fengguang.wu@intel.com, devel@openvz.org, mgorman@suse.de
-Date: Sat, 29 Jun 2013 21:42:20 +0400
-Message-ID: <20130629174215.20175.22933.stgit@maximpc.sw.ru>
+Date: Sat, 29 Jun 2013 21:42:33 +0400
+Message-ID: <20130629174225.20175.28402.stgit@maximpc.sw.ru>
 In-Reply-To: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
 References: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
 User-Agent: StGit/0.15
@@ -30,62 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavel Emelyanov <xemul@openvz.org>
 
-There will be a .writepageS callback implementation which will need to
-get a fuse_file out of a fuse_inode, thus make a helper for this.
+A helper which gets called when read reports less bytes than was requested.
+See patch #6 (trust kernel i_size only) for details.
 
 Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
 ---
- fs/fuse/file.c |   24 ++++++++++++++++--------
- 1 files changed, 16 insertions(+), 8 deletions(-)
+ fs/fuse/file.c |   21 +++++++++++++--------
+ 1 files changed, 13 insertions(+), 8 deletions(-)
 
 diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index cc858ee..6b6d307 100644
+index 6b6d307..ea70814 100644
 --- a/fs/fuse/file.c
 +++ b/fs/fuse/file.c
-@@ -1505,6 +1505,20 @@ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
- 	fuse_writepage_free(fc, req);
+@@ -653,6 +653,15 @@ static void fuse_read_update_size(struct inode *inode, loff_t size,
+ 	spin_unlock(&fc->lock);
  }
  
-+static struct fuse_file *fuse_write_file(struct fuse_conn *fc,
-+					 struct fuse_inode *fi)
++static void fuse_short_read(struct fuse_req *req, struct inode *inode,
++			    u64 attr_ver)
 +{
-+	struct fuse_file *ff;
++	size_t num_read = req->out.args[0].size;
 +
-+	spin_lock(&fc->lock);
-+	BUG_ON(list_empty(&fi->write_files));
-+	ff = list_entry(fi->write_files.next, struct fuse_file, write_entry);
-+	fuse_file_get(ff);
-+	spin_unlock(&fc->lock);
-+
-+	return ff;
++	loff_t pos = page_offset(req->pages[0]) + num_read;
++	fuse_read_update_size(inode, pos, attr_ver);
 +}
 +
- static int fuse_writepage_locked(struct page *page)
+ static int fuse_readpage(struct file *file, struct page *page)
  {
- 	struct address_space *mapping = page->mapping;
-@@ -1512,7 +1526,6 @@ static int fuse_writepage_locked(struct page *page)
- 	struct fuse_conn *fc = get_fuse_conn(inode);
- 	struct fuse_inode *fi = get_fuse_inode(inode);
- 	struct fuse_req *req;
--	struct fuse_file *ff;
- 	struct page *tmp_page;
+ 	struct fuse_io_priv io = { .async = 0, .file = file };
+@@ -690,18 +699,18 @@ static int fuse_readpage(struct file *file, struct page *page)
+ 	req->page_descs[0].length = count;
+ 	num_read = fuse_send_read(req, &io, pos, count, NULL);
+ 	err = req->out.h.error;
+-	fuse_put_request(fc, req);
  
- 	set_page_writeback(page);
-@@ -1526,13 +1539,8 @@ static int fuse_writepage_locked(struct page *page)
- 	if (!tmp_page)
- 		goto err_free;
+ 	if (!err) {
+ 		/*
+ 		 * Short read means EOF.  If file size is larger, truncate it
+ 		 */
+ 		if (num_read < count)
+-			fuse_read_update_size(inode, pos + num_read, attr_ver);
++			fuse_short_read(req, inode, attr_ver);
  
--	spin_lock(&fc->lock);
--	BUG_ON(list_empty(&fi->write_files));
--	ff = list_entry(fi->write_files.next, struct fuse_file, write_entry);
--	req->ff = fuse_file_get(ff);
--	spin_unlock(&fc->lock);
--
--	fuse_write_fill(req, ff, page_offset(page), 0);
-+	req->ff = fuse_write_file(fc, fi);
-+	fuse_write_fill(req, req->ff, page_offset(page), 0);
+ 		SetPageUptodate(page);
+ 	}
  
- 	copy_highpage(tmp_page, page);
- 	req->misc.write.in.write_flags |= FUSE_WRITE_CACHE;
++	fuse_put_request(fc, req);
+ 	fuse_invalidate_attr(inode); /* atime changed */
+  out:
+ 	unlock_page(page);
+@@ -724,13 +733,9 @@ static void fuse_readpages_end(struct fuse_conn *fc, struct fuse_req *req)
+ 		/*
+ 		 * Short read means EOF. If file size is larger, truncate it
+ 		 */
+-		if (!req->out.h.error && num_read < count) {
+-			loff_t pos;
++		if (!req->out.h.error && num_read < count)
++			fuse_short_read(req, inode, req->misc.read.attr_ver);
+ 
+-			pos = page_offset(req->pages[0]) + num_read;
+-			fuse_read_update_size(inode, pos,
+-					      req->misc.read.attr_ver);
+-		}
+ 		fuse_invalidate_attr(inode); /* atime changed */
+ 	}
+ 
 
