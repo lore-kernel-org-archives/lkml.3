@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3F2UM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 16:12:26 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:53434 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab3F2UMV (ORCPT
+	id S1753436Ab3F2UNC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 16:13:02 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:50022 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab3F2UMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 16:12:21 -0400
-Date: Sat, 29 Jun 2013 13:12:20 -0700 (PDT)
+	Sat, 29 Jun 2013 16:12:17 -0400
+Date: Sat, 29 Jun 2013 13:12:16 -0700 (PDT)
 From: Rob Landley <rob@landley.net>
-Cc: linux-mm@kvack.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Stephen Warren <swarren@nvidia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
 To: linux-kernel@vger.kernel.org
 In-Reply-To: <1372536729.850447@landley.net>
-Message-Id: <1372536729.851443@landley.net>
-Subject: [PATCH 4/5] initmpfs: Make rootfs use tmpfs when CONFIG_TMPFS enabled.
+Message-Id: <1372536729.850833@landley.net>
+Subject: [PATCH 2/5] initmpfs: Move bdi setup from init_rootfs to init_ramfs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Landley <rob@landley.net>
 
-Conditionally call the appropriate fs_init function and fill_super functions.
-Add a use once guard to shmem_init() to simply succeed on a second call.
+Even though ramfs hasn't got a backing device, commit e0bf68ddec4f added one
+anyway, and put the initialization in init_rootfs() since that's the first
+user, leaving it out of init_ramfs() to avoid duplication.
 
-(Note that IS_ENABLED() is a compile time constant so dead code elimination
-removes unused function calls when CONFIG_TMPFS is disabled.)
+But initmpfs uses init_tmpfs() instead, so move the init into the filesystem's
+init function, add a "once" guard to prevent duplicate initialization, and
+call the filesystem init from rootfs init.
+
+This goes part of the way to allowing ramfs to be built as a module.
 
 Signed-off-by: Rob Landley <rob@landley.net>
 ---
 
- init/do_mounts.c |   10 ++++++++--
- mm/shmem.c       |    4 ++++
- 2 files changed, 12 insertions(+), 2 deletions(-)
+ fs/ramfs/inode.c |   25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
 
---- initold/init/do_mounts.c	2013-06-27 00:02:26.283442977 -0500
-+++ initwork/init/do_mounts.c	2013-06-27 00:45:21.599550312 -0500
-@@ -27,6 +27,7 @@
- #include <linux/fs_struct.h>
- #include <linux/slab.h>
- #include <linux/ramfs.h>
-+#include <linux/shmem_fs.h>
+--- initold/fs/ramfs/inode.c	2013-06-28 15:12:03.205879730 -0500
++++ initold2/fs/ramfs/inode.c	2013-06-28 15:12:12.425880115 -0500
+@@ -277,21 +277,36 @@
  
- #include <linux/nfs_fs.h>
- #include <linux/nfs_fs_sb.h>
-@@ -600,7 +599,8 @@
- 	else
- 		once++;
- 
--	return mount_nodev(fs_type, flags, data, ramfs_fill_super);
-+	return mount_nodev(fs_type, flags, data,
-+		IS_ENABLED(CONFIG_TMPFS) ? shmem_fill_super : ramfs_fill_super);
+ static int __init init_ramfs_fs(void)
+ {
+-	return register_filesystem(&ramfs_fs_type);
++	static int once;
++	int err;
++
++	if (once)
++		return 0;
++	else
++		once++;
++
++	err = bdi_init(&ramfs_backing_dev_info);
++	if (err)
++		return err;
++
++	err = register_filesystem(&ramfs_fs_type);
++	if (err)
++		bdi_destroy(&ramfs_backing_dev_info);
++
++	return err;
  }
+ module_init(init_ramfs_fs)
  
- static struct file_system_type rootfs_fs_type = {
-@@ -616,7 +616,11 @@
+ int __init init_rootfs(void)
+ {
+-	int err;
++	int err = register_filesystem(&rootfs_fs_type);
+ 
+-	err = bdi_init(&ramfs_backing_dev_info);
  	if (err)
  		return err;
  
--	err = init_ramfs_fs();
-+	if (IS_ENABLED(CONFIG_TMPFS))
-+		err = shmem_init();
-+	else
-+		err = init_ramfs_fs();
-+
+-	err = register_filesystem(&rootfs_fs_type);
++	err = init_ramfs_fs();
  	if (err)
- 		unregister_filesystem(&rootfs_fs_type);
+-		bdi_destroy(&ramfs_backing_dev_info);
++		unregister_filesystem(&rootfs_fs_type);
  
---- initold/mm/shmem.c	2013-06-25 13:09:22.215743137 -0500
-+++ initwork/mm/shmem.c	2013-06-27 00:16:58.195479317 -0500
-@@ -2787,6 +2787,10 @@
- {
- 	int error;
- 
-+	/* If rootfs called this, don't re-init */
-+	if (shmem_inode_cachep)
-+		return 0;
-+
- 	error = bdi_init(&shmem_backing_dev_info);
- 	if (error)
- 		goto out4;
+ 	return err;
+ }
