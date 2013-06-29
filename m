@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab3F2R5u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 13:57:50 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:35529 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3F2R5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 13:57:48 -0400
-Date: Sat, 29 Jun 2013 10:57:43 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>,
+	id S1752797Ab3F2SDW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 14:03:22 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:41243 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752009Ab3F2SDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jun 2013 14:03:21 -0400
+Date: Sat, 29 Jun 2013 13:03:18 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Nathan Zimmer <nzimmer@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Sam Ravnborg <sam@ravnborg.org>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
-Message-ID: <20130629175743.GA382@mtj.dyndns.org>
-References: <1372467663-31425-1-git-send-email-santosh.shilimkar@ti.com>
- <20130629152959.GB31339@mtj.dyndns.org>
- <20130629172123.GA3353@n2100.arm.linux.org.uk>
+        Mike Travis <travis@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        holt@sgi.com, rob@landley.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, yinghai@kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-doc@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steffen Persvold <sp@numascale.com>
+Subject: Re: [RFC] Transparent on-demand memory setup initialization
+	embedded in the (GFP) buddy allocator
+Message-ID: <20130629180318.GA83854@asylum.americas.sgi.com>
+References: <51CBB2F7.3050604@numascale-asia.com> <51CDF417.3050406@sgi.com> <20130629072441.GA15394@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130629172123.GA3353@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130629072441.GA15394@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-( Expanding cc list, original thread is at
-  http://thread.gmane.org/gmane.linux.kernel/1518046 )
-
-Hello,
-
-On Sat, Jun 29, 2013 at 06:21:24PM +0100, Russell King - ARM Linux wrote:
-> Unfortunately, that has not been true on ARM - it's very common for
-> there to be an offset on physical memory, sometimes of the order of
-> 3GB or more.  This is because on reset, ARMs start executing the code
-> at physical address zero, which therefore can't be RAM - and there's
-> a desire to avoid complex switching games in hardware to temporarily
-> map ROM there instead of RAM.
+On Sat, Jun 29, 2013 at 09:24:41AM +0200, Ingo Molnar wrote:
 > 
-> On these SoCs which Santosh is working on, the main physical memory
-> mapping is above 4GB, with just a small alias below 4GB to allow the
-> system to boot without the MMU being on, as they may have more than
-> 4GB of RAM.  As I understand it, the small alias below 4GB is not
-> suitable for use as a "lowmem" mapping.
+> * Nathan Zimmer <nzimmer@sgi.com> wrote:
+> 
+> > On 06/26/2013 10:35 PM, Daniel J Blueman wrote:
+> > >On Wednesday, June 26, 2013 9:30:02 PM UTC+8, Andrew Morton wrote:
+> > >>
+> > >> On Wed, 26 Jun 2013 11:22:48 +0200 Ingo Molnar
+> > ><mi...@kernel.org> wrote:
+> > >>
+> > >> > except that on 32 TB
+> > >> > systems we don't spend ~2 hours initializing 8,589,934,592
+> > >page heads.
+> > >>
+> > >> That's about a million a second which is crazy slow - even my
+> > >prehistoric desktop
+> > >> is 100x faster than that.
+> > >>
+> > >> Where's all this time actually being spent?
+> > >
+> > > The complexity of a directory-lookup architecture to make the 
+> > > (intrinsically unscalable) cache-coherency protocol scalable gives you 
+> > > a ~1us roundtrip to remote NUMA nodes.
+> > >
+> > > Probably a lot of time is spent in some memsets, and RMW cycles which 
+> > > are setting page bits, which are intrinsically synchronous, so the 
+> > > initialising core can't get to 12 or so outstanding memory 
+> > > transactions.
+> > >
+> > > Since EFI memory ranges have a flag to state if they are zerod (which 
+> > > may be a fair assumption for memory on non-bootstrap processor NUMA 
+> > > nodes), we can probably collapse the RMWs to just writes.
+> > >
+> > > A normal write will require a coherency cycle, then a fetch and a 
+> > > writeback when it's evicted from the cache. For this purpose, 
+> > > non-temporal writes would eliminate the cache line fetch and give a 
+> > > massive increase in bandwidth. We wouldn't even need a store-fence as 
+> > > the initialising core is the only one online.
+> > 
+> > Could you elaborate a bit more? or suggest a specific area to look at?
+> > 
+> > After some experiments with trying to just set some fields in the struct 
+> > page directly I haven't been able to produce any improvements.  Of 
+> > course there is lots about the area which I don't have much experience 
+> > with.
+> 
+> Any such improvement will at most be in the 10-20% range.
+> 
+> I'd suggest first concentrating on the 1000-fold boot time initialization 
+> speedup that the buddy allocator delayed initialization can offer, and 
+> speeding up whatever remains after that stage - in a much more 
+> development-friendly environment. (You'll be able to run 'perf record 
+> ./calloc-1TB' after bootup and get meaningful results, etc.)
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Ah, okay, so the @limit which is in physical address can be over 4GB
-even for lowmem mappings and alloc_bootmem takes them in ulongs,
-urghhh....
+I had been focusing on the bigger gains but my attention had been diverted by
+hope of an easy, alibiet smaller, win.
 
-Given that still about half of the archs aren't using memblock yet, I
-think there are three options.
 
-1. Converting all bootmem interface to use physaddr_t.  But that's
-   what memblock is.
+I have been experimenting with the patch proper, I am just doing 2MB pages for
+the moment.  The improvement is vast,  I'll worry about proper numbers once I
+think I have a fully working patch.
 
-2. Introducing new interface.  Easier right now but the danger there
-   is that it might end up duplicating most of alloc_bootmem()
-   interface anyway and we'll have yet another variant of early mem
-   allocator to enjoy.
+Some progress is being made on the real patch.  I think the memory is
+being set up correctly, On aligned pages setting the up the page as normal
+plus setting new PG_ flag. 
 
-3. Make all generic code use memblock interface instead of bootmem and
-   implement memblock wrapper on archs which don't use memblock yet.
-   We'll probably need to sort out different combinations of
-   HAVE_MEMBLOCK and NO_BOOTMEM.  If this is doable, it probably is
-   the most future proof way.  While it adds new memblock interface
-   built on top of bootmem, it would also allow removing the bootmem
-   interface built on top of memblock - ie. nobootmem.c, which
-   probably is what we should have done from the beginning.
+Right now I am trying to sort out free_pages_prepare and free_pages_check.
 
-What do you guys think?
+Thanks,
+Nate
 
-Thanks.
 
--- 
-tejun
+
