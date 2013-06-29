@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab3F2GsT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 02:48:19 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:34948 "EHLO
+	id S1752188Ab3F2G7U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 02:59:20 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:34970 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab3F2GsS (ORCPT
+	with ESMTP id S1751892Ab3F2G7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 02:48:18 -0400
-Date: Sat, 29 Jun 2013 08:48:15 +0200
+	Sat, 29 Jun 2013 02:59:19 -0400
+Date: Sat, 29 Jun 2013 08:59:15 +0200
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Emilio Lopez <emilio@elopez.com.ar>,
-        kevin@allwinnertech.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, linux-sunxi@googlegroups.com
-Subject: Re: [PATCHv2 4/8] clocksource: sun4i: Fix the next event code
-Message-ID: <20130629064815.GA2593@lukather>
-References: <1372449386-1334-1-git-send-email-maxime.ripard@free-electrons.com>
- <1372449386-1334-5-git-send-email-maxime.ripard@free-electrons.com>
- <alpine.DEB.2.02.1306282204220.4013@ionos.tec.linutronix.de>
- <20130628210853.GB2756@lukather>
- <alpine.DEB.2.02.1306282322480.4013@ionos.tec.linutronix.de>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Russell King <linux@arm.linux.org.uk>,
+        jimwall@q.com, brian@crystalfontz.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 3/8] ARM: mxs: dt: Add Crystalfontz CFA-10058 device
+ tree
+Message-ID: <20130629065915.GB2593@lukather>
+References: <1372424577-8279-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1372424577-8279-4-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
+	protocol="application/pgp-signature"; boundary="z6Eq5LdranGa6ru8"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306282322480.4013@ionos.tec.linutronix.de>
+In-Reply-To: <1372424577-8279-4-git-send-email-alexandre.belloni@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---9amGYk9869ThD9tj
+--z6Eq5LdranGa6ru8
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jun 28, 2013 at 11:27:25PM +0200, Thomas Gleixner wrote:
-> On Fri, 28 Jun 2013, Maxime Ripard wrote:
-> > On Fri, Jun 28, 2013 at 10:13:08PM +0200, Thomas Gleixner wrote:
-> > > On Fri, 28 Jun 2013, Maxime Ripard wrote:
-> > > > @@ -61,9 +62,14 @@ static void sun4i_clkevt_mode(enum clock_event_m=
-ode mode,
-> > > >  static int sun4i_clkevt_next_event(unsigned long evt,
-> > > >  				   struct clock_event_device *unused)
-> > > >  {
-> > > > -	u32 u =3D readl(timer_base + TIMER_CTL_REG(0));
-> > > > -	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
-> > > > -	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
-> > > > +	u32 val =3D readl(timer_base + TIMER_CTL_REG(0));
-> > > > +	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
-> > > > +	udelay(1);
-> > >=20
-> > > That udelay() is more than suspicious. Is there really no other way to
-> > > deal with that hardware?
-> > >=20
-> > > If no, you really need to put a proper explanation for that into the =
-code.
-> >=20
-> > The datasheet states that you have to wait for two ticks of the timer
-> > clock source (in that case, 24MHz, which makes it around 80-85ns) before
-> > you can actually enable it back.
-> >=20
-> > I didn't came up with a better solution.
+Hi Alexandre,
+
+On Fri, Jun 28, 2013 at 03:02:52PM +0200, Alexandre Belloni wrote:
+> From: Brian Lilly <brian@crystalfontz.com>
 >=20
-> 80-85ns is definitely way less than 1us.
+> The CFA-10058 is a breakout board for the CFA-10036 that has Ethernet, US=
+B and a
+> 5" LCD screen on it.
 >=20
-> Why not reading the counter register and wait for 2 or 3 cycles to
-> elapse instead of wasting a full microsecond evertime ?
+> Signed-off-by: Brian Lilly <brian@crystalfontz.com>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-Yes, but then we fall back to the discussion we had in the v1 about the
-latch needed to read the counter, which would already take more time
-than what we have to wait for.
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Maybe we can use the second timer that we use for the clocksource
-though: it's always running, already set up, work at the same rate and
-we will only read it, so we won't change its monotonic nature.
-
+Thanks!
 Maxime
 
 --=20
@@ -85,26 +56,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---9amGYk9869ThD9tj
+--z6Eq5LdranGa6ru8
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRzoMvAAoJEBx+YmzsjxAgdIEP/RWXulISbfds5WRvf796Wk+Q
-x1WJM1gymJDjiLpyyavj12PwuO18OQG5oSgzOEEwamxlWZcLqmGlu8ulqiaxzKqp
-aM5pjJX/RL7Dtp+avCaE1KBvnGWPEqC4HrgtQwViWIRN0S8sAqN4K/Svjgd0X6i0
-eEnqjAQERm04xnSgMXjEkxoHAWRKfE33txFY78Yz1OQq6z/6xzIdpd+F7ZX1qWnG
-i0NlO229Rwt3F7mGNZNg9ySDiXTNQpxQu/432qkxsLdHXXwfo45jcBsuxRs/kk71
-EC311Wm3E8RGq5UyV1XgeLcTe4ghDVCEyXushSN9aR7Hh58O/7iM4odI5CNjI/mR
-h7uB+SRW+ThC8BjkySpNSUQ12isiy1Br308e3RZNKdEENQKvfVechS00NlkrC4Od
-i5Go0CT6BNzCmsKUP4KTJRoPiPEGCdlIpi8ewg0bwPXnz04FLeWaJhRDuup6oMdp
-gjJwS2l3pF6wSLgpYEfwll+7osQYtlC9c0R6TX4vsSI2Mg9bpayQb1HCrLFi579N
-ns6QGKKW1LuP2HqTXweyG/Y7yi9Fhq7dUoPlcLRHYY/TdKAevOo1FmLnU4zk4dVu
-/Xp0rBuhYMdQV4tB2yiz8K+BGf3yGZteVqGAI82ozu3qzSVynqW+WxLLRkKPs/W0
-zaijkj0tLB4qZxbF3OZx
-=PFNa
+iQIcBAEBAgAGBQJRzoXDAAoJEBx+YmzsjxAgpqQP/j6a0/mQhra9qt97exS8OwZX
+PcFma6OpZtOarI603VTl1cU82RiszRleLpBPX8DUBrSUoKaintx8hJ/eGqu/VHm9
+S1D3O099XaC5uvfoZ5Vmv4NK/Gft3EzeX+Lu+8EVrCV8lw1iEwPbZAq1EuogWc2J
+xYSWBPq9Xxsc8tp8wKOKBTFI/Q9QxStoz0yJzQ+3PlQHAT4xF+ksEWcKK+mu8QIi
+f5BpG55n7X9kPFgBBa6fz5iGL8bdEKYHNPRdEih3vHhKkAdC+Ny0TCEbQBegDfH3
+x+gCmRHdMgaq6ECEMmk1IrWATwkaLMkL6857NeMGmmeaW0HYA4M8cSnvktgSKhys
+xmLuZN4UD7HBE04zUal7GnTtjf71cxadAfdFWZr3ypCEXOnAx8mSmxWoi865YNHS
+ss/svksRrQ3fzcj3WY82YlO1anLRbp0fUiIPRDb4EaBNUVy6KY6o8D/wpQwoq29M
+3RI2hJGK3D6GKZ5pIyangewnRJpE/HyUUEpw9Qz+b+xhhKOrHQF/wHixqWB5ZT2Q
+X4CtoUjWokHHe4JpJ2Bvp16x8qBwh5E/FPP9c12nHLAxgIBnqXRp7TAzQ0Jp+C5C
+hpKlv+lTPcdhCZlUUq+OitJU0b5lKanSS0+iZBctccSD/mgBRgWE7dHIzDl1NxHo
+MFPKWoM6oHYahjGZOdCH
+=uOau
 -----END PGP SIGNATURE-----
 
---9amGYk9869ThD9tj--
+--z6Eq5LdranGa6ru8--
