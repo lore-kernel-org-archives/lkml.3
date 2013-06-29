@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3F2V6P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 17:58:15 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:47034 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab3F2V6N (ORCPT
+	id S1753371Ab3F2WLO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 18:11:14 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:34827 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab3F2WLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 17:58:13 -0400
+	Sat, 29 Jun 2013 18:11:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <51CF422E.7030803@hp.com>
+In-Reply-To: <51CF52D1.1080406@hp.com>
 References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com>
 	<1372268603-46748-2-git-send-email-Waiman.Long@hp.com>
 	<CA+55aFzo5Jy064pbvEZh5cg_RJiSxe1R+tSgByQTs4rc=4SN3Q@mail.gmail.com>
 	<51CF422E.7030803@hp.com>
-Date: Sat, 29 Jun 2013 14:58:11 -0700
-X-Google-Sender-Auth: 7qJnwQXfX9kibxbGHPSCpi1z-H8
-Message-ID: <CA+55aFyVOSa7gOVuBVQqK+wQkgc_2+KZ3Ejx9gPYF=o_Lc3sqg@mail.gmail.com>
+	<51CF52D1.1080406@hp.com>
+Date: Sat, 29 Jun 2013 15:11:11 -0700
+X-Google-Sender-Auth: alG1jgSpm5g1NXn7xdOpuWRYzv8
+Message-ID: <CA+55aFxrT4i7QBX71QfEsopW1Vj4K0gG7zFR2VMhWmD1Zj8Bng@mail.gmail.com>
 Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
  update of refcount
 From: Linus Torvalds <torvalds@linux-foundation.org>
@@ -36,90 +37,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 1:23 PM, Waiman Long <waiman.long@hp.com> wrote:
->>
->> But more importantly, I think this needs to be architecture-specific,
->> and using<linux/spinlock_refcount.h>  to try to do some generic 64-bit
->> cmpxchg() version is a bad bad idea.
+On Sat, Jun 29, 2013 at 2:34 PM, Waiman Long <waiman.long@hp.com> wrote:
 >
-> Yes, I can put the current implementation into
-> asm-generic/spinlock_refcount.h. Now I need to put an
-> asm/spinlock_refcount.h into every arch's include/asm directory. Right?
+> I think I got it now. For architecture with transactional memory support to
+> use an alternative implementation, we will need to use some kind of dynamic
+> patching at kernel boot up time as not all CPUs in that architecture will
+> have that support. In that case the helper functions have to be real
+> functions and cannot be inlined. That means I need to put the implementation
+> into a spinlock_refcount.c file with the header file contains structure
+> definitions and function prototypes only. Is that what you are looking for?
 
-No, I'd suggest something slightly different: we did something fairly
-similar to this with the per-arch optimized version of the
-word-at-a-time filename hashing/lookup.
+Yes. Except even more complex: I want the generic fallbacks in a
+lib/*.c files too.
 
-So the sanest approach is something like this:
+So we basically have multiple "levels" of specialization:
 
-STEP 1:
+ (a) the purely lock-based model that doesn't do any optimization at
+all, because we have lockdep enabled etc, so we *want* things to fall
+back to real spinlocks.
 
- - create a new set of config option (say
-"CONFIG_[ARCH_]SPINLOCK_REFCOUNT") that defaults to 'y' and isn't
-actually asked about anywhere. Just a simple
+ (b) the generic cmpxchg approach for the case when that works
 
-    config ARCH_SPINLOCK_REFCOUNT
-        bool
+ (c) the capability for an architecture to make up its own very
+specialized version
 
-    config SPINLOCK_REFCOUNT
-        depends on ARCH_SPINLOCK_REFCOUNT
-        depends on !GENERIC_LOCKBREAK
-        depends on !DEBUG_SPINLOCK
-        depends on !DEBUG_LOCK_ALLOC
-        bool
+and while I think in all cases the actual functions are big enough
+that you don't ever want to inline them, at least in the case of (c)
+it is entirely possible that the architecture actually wants a
+particular layout for the spinlock and refcount, so we do want the
+architecture to be able to specify the exact data structure in its own
+<asm/spinlock-refcount.h> file. In fact, that may well be true of case
+(b) too, as Andi already pointed out that on x86-32, an "u64" is not
+necessarily sufficiently aligned for efficient cmpxchg (it may *work*,
+but cacheline-crossing atomics are very very slow).
 
-   in init/Kconfig will do that.
+Other architectures may have other issues - even with a "generic"
+cmpxchg-based library version, they may well want to specify exactly
+how to take the lock. So while (a) would be 100% generic, (b) might
+need small architecture-specific tweaks, and (c) would be a full
+custom implementation.
 
- - create a <linux/spinlock-refcount.h> that looks something like this
+See how we do <asm/word-at-a-time.h> and CONFIG_DCACHE_WORD_ACCESS.
+Notice how there is a "generic" <asm-generic/word-at-a-time.h> file
+(actually, big-endian only) for reference implementations (used by
+sparc, m68k and parisc, for example), and then you have "full custom"
+implementations for x86, powerpc, alpha and ARM.
 
-    #ifdef CONFIG_SPINLOCK_REFCOUNT
-    #include <asm/spinlock-refcount.h>
-    #else
-     .. fallback implementation with normal spinlocks that works for
-all cases, including lockdep etc ..
-    #endif
+See also lib/strnlen_user.c and CONFIG_GENERIC_STRNLEN_USER as an
+example of how architectures may choose to opt in to using generic
+library versions - if those work sufficiently well for that
+architecture. Again, some architecture may decide to write their own
+fully custome strlen_user() function.
 
-and now you should have something that should already work, it just
-doesn't actually do the optimized cases for any architecture. Equally
-importantly, it already self-disables itself if any of the complicated
-debug options are set that means that a spinlock is anything but the
-raw architecture spinlock.
+Very similar concept.
 
-STEP 2:
-
- - Now, step #2 is *not* to do per-architecture version, but to do the
-generic cmpxchg version, and make that in
-<asm-generic/spinlock-refcount.h>
-
-At this point, any architecture can decide to hook into the generic
-version with something like this in their own architecture Kconfig
-file:
-
-    select CONFIG_ARCH_SPINLOCK_REFCOUNT
-
-and adding the line
-
-    generic-y += spinlock-refcount.h
-
-to their architecture Kbuild file. So after step two, you basically
-have an easy way for architectures to step in one by one with the
-cmpxchg version, after they have verified that their spinlocks work
-for it. And notice how little the architecture actually needed to do?
-
-STEP 3:
-
- - This is the "architecture decides to not use the
-<asm-generic/spinlock-refcount.h> file, and instead creates its own
-optimized version of it.
-
-All these steps are nice and easy and can be tested on their own.  And
-make sense on their own. Even that first step is important, since
-that's when you create the logic, and that's the code that will be
-used when spinlock debugging is enabled etc. The third step may not
-ever happen for all architectures. Even the second step might be
-something that some architecture decides is not worth it (ie slow and
-complex atomics, but fast spinlocks).
-
-And all three steps should be fairly small and logical, I think.
-
-                  Linus
+                 Linus
