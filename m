@@ -1,172 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab3F2DMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 23:12:44 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58886 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab3F2DMm (ORCPT
+	id S1753535Ab3F2DNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 23:13:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23326 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab3F2DNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 23:12:42 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 28 Jun 2013 20:12:47 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, festevam@gmail.com, linux-kernel@vger.kernel.org,
-        Frank.Li@freescale.com, jim_baxter@mentor.com
-Subject: Re: [PATCH v3] net: fec: Fix build for MCF5272
-Message-ID: <20130629031247.GA21068@roeck-us.net>
-References: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
- <20130619.170018.1690166635385887009.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619.170018.1690166635385887009.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Jun 2013 23:13:42 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=oIEZGPuJLxwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=CR7bNRtPQ3kA:10 a=X7Ea-ya5AAAA:8 a=SfZXjHT2VGqY63shVNsA:9 a=QEXdDO2ut3YA:10 a=nTicbzAlsOkA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372475620.18733.353.camel@gandalf.local.home>
+Subject: Re: [PATCH 3/3] udp: make use of static_key_slow_set_true()
+ interface
+From: Steven Rostedt <rostedt@goodmis.org>
+To: jbaron@akamai.com
+Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mingo@kernel.org, peterz@infradead.org, davem@davemloft.net
+Date: Fri, 28 Jun 2013 23:13:40 -0400
+In-Reply-To: <7fe0eaba62a8529b387ddb3205713d8bb6156ec1.1372457176.git.jbaron@akamai.com>
+References: <cover.1372457176.git.jbaron@akamai.com>
+	 <7fe0eaba62a8529b387ddb3205713d8bb6156ec1.1372457176.git.jbaron@akamai.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 05:00:18PM -0700, David Miller wrote:
-> From: Guenter Roeck <linux@roeck-us.net>
-> Date: Tue, 18 Jun 2013 10:04:59 -0700
+On Fri, 2013-06-28 at 22:30 +0000, jbaron@akamai.com wrote:
+> Make use of the simpler API.
+
+Need to make the change log much more descriptive. Never assume someone
+in the future that looks up a change to this file will know about other
+commits that led to this. Each change log should be sufficient to stand
+on its own.
+
+Explain why this patch is needed. And it's not about the use of a
+simpler API.
+
+It actually fixes a real bug.
+
+
 > 
-> > Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
-> > baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
-> > network) introduced functionality into the FEC driver which is not
-> > supported on MCF5272. The registers used to implement this functionality
-> > do not exist on MCF5272. Since register defines for MCF5272 are separate
-> > from register defines for other chips, building images for MCF5272 fails
-> > as follows.
-> > 
-> > fec_main.c: In function 'fec_restart':
-> > fec_main.c:520:8: error: 'FEC_RACC' undeclared (first use in this function)
-> > fec_main.c:585:3: error: 'FEC_R_FIFO_RSEM' undeclared (first use in this function)
-> > fec_main.c:586:3: error: 'FEC_R_FIFO_RSFL' undeclared (first use in this function)
-> > fec_main.c:587:3: error: 'FEC_R_FIFO_RAEM' undeclared (first use in this function)
-> > fec_main.c:588:3: error: 'FEC_R_FIFO_RAFL' undeclared (first use in this function)
-> > fec_main.c:591:3: error: 'FEC_OPD' undeclared (first use in this function)
-> > 
-> > Adding the missing register defines is not an option, since the registers
-> > do not exist on MCF5272. Disable the added functionality for MCF5272 builds.
-> > 
-> > Cc: Frank Li <Frank.Li@freescale.com>
-> > Cc: Jim Baxter <jim_baxter@mentor.com>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> Signed-off-by: Jason Baron <jbaron@akamai.com>
+> ---
+>  net/ipv4/udp.c |    9 ++++-----
+>  net/ipv6/udp.c |    9 ++++-----
+>  2 files changed, 8 insertions(+), 10 deletions(-)
 > 
-> Applied, thanks.
-> 
-> > This problem exists in 3.9 as well, though only due to commit baa70a5c. The
-> > patch does therefore not cleanly apply to 3.9. Options I can see are to ignore
-> > the build error in 3.9, to back-port the patch manually, or to split it into
-> > two separate patches. David, let me know which approach you prefer. 
-> 
-> You can feel free to send me a backport for v3.9-stable, thanks.
-> 
+> diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+> index 0bf5d39..b8d0029 100644
+> --- a/net/ipv4/udp.c
+> +++ b/net/ipv4/udp.c
+> @@ -1421,11 +1421,10 @@ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+>  
+>  }
+>  
+> -static struct static_key udp_encap_needed __read_mostly;
+> +static struct static_key_boolean udp_encap_needed __read_mostly;
+>  void udp_encap_enable(void)
+>  {
+> -	if (!static_key_enabled(&udp_encap_needed))
+> -		static_key_slow_inc(&udp_encap_needed);
+> +	static_key_slow_set_true(&udp_encap_needed);
+>  }
+>  EXPORT_SYMBOL(udp_encap_enable);
+>  
+> @@ -1450,7 +1449,7 @@ int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+>  		goto drop;
+>  	nf_reset(skb);
+>  
+> -	if (static_key_false(&udp_encap_needed) && up->encap_type) {
+> +	if (static_key_false(&udp_encap_needed.key) && up->encap_type) {
 
-Here it is.
+I wonder if we should add a static_bool_key_false(), because that added
+".key" is a bit confusing.
 
-Guenter
+-- Steve
 
----
-From: Guenter Roeck <linux@roeck-us.net>
-Date: Tue, 18 Jun 2013 10:04:59 -0700
-Subject: [PATCH] net: fec: Fix build for MCF5272
 
-Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
-baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
-network) introduced functionality into the FEC driver which is not
-supported on MCF5272. The registers used to implement this functionality
-do not exist on MCF5272. Since register defines for MCF5272 are separate
-from register defines for other chips, building images for MCF5272 fails
-as follows.
+>  		int (*encap_rcv)(struct sock *sk, struct sk_buff *skb);
+>  
+>  		/*
+> @@ -1773,7 +1772,7 @@ void udp_destroy_sock(struct sock *sk)
+>  	bool slow = lock_sock_fast(sk);
+>  	udp_flush_pending_frames(sk);
+>  	unlock_sock_fast(sk, slow);
+> -	if (static_key_false(&udp_encap_needed) && up->encap_type) {
+> +	if (static_key_false(&udp_encap_needed.key) && up->encap_type) {
+>  		void (*encap_destroy)(struct sock *sk);
+>  		encap_destroy = ACCESS_ONCE(up->encap_destroy);
+>  		if (encap_destroy)
+> diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+> index 42923b1..94a4091 100644
+> --- a/net/ipv6/udp.c
+> +++ b/net/ipv6/udp.c
+> @@ -573,11 +573,10 @@ static __inline__ void udpv6_err(struct sk_buff *skb,
+>  	__udp6_lib_err(skb, opt, type, code, offset, info, &udp_table);
+>  }
+>  
+> -static struct static_key udpv6_encap_needed __read_mostly;
+> +static struct static_key_boolean udpv6_encap_needed __read_mostly;
+>  void udpv6_encap_enable(void)
+>  {
+> -	if (!static_key_enabled(&udpv6_encap_needed))
+> -		static_key_slow_inc(&udpv6_encap_needed);
+> +	static_key_slow_set_true(&udpv6_encap_needed);
+>  }
+>  EXPORT_SYMBOL(udpv6_encap_enable);
+>  
+> @@ -590,7 +589,7 @@ int udpv6_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+>  	if (!xfrm6_policy_check(sk, XFRM_POLICY_IN, skb))
+>  		goto drop;
+>  
+> -	if (static_key_false(&udpv6_encap_needed) && up->encap_type) {
+> +	if (static_key_false(&udpv6_encap_needed.key) && up->encap_type) {
+>  		int (*encap_rcv)(struct sock *sk, struct sk_buff *skb);
+>  
+>  		/*
+> @@ -1300,7 +1299,7 @@ void udpv6_destroy_sock(struct sock *sk)
+>  	udp_v6_flush_pending_frames(sk);
+>  	release_sock(sk);
+>  
+> -	if (static_key_false(&udpv6_encap_needed) && up->encap_type) {
+> +	if (static_key_false(&udpv6_encap_needed.key) && up->encap_type) {
+>  		void (*encap_destroy)(struct sock *sk);
+>  		encap_destroy = ACCESS_ONCE(up->encap_destroy);
+>  		if (encap_destroy)
 
-fec_main.c: In function 'fec_restart':
-fec_main.c:520:8: error: 'FEC_RACC' undeclared (first use in this function)
-fec_main.c:585:3: error: 'FEC_R_FIFO_RSEM' undeclared (first use in this function)
-fec_main.c:586:3: error: 'FEC_R_FIFO_RSFL' undeclared (first use in this function)
-fec_main.c:587:3: error: 'FEC_R_FIFO_RAEM' undeclared (first use in this function)
-fec_main.c:588:3: error: 'FEC_R_FIFO_RAFL' undeclared (first use in this function)
-fec_main.c:591:3: error: 'FEC_OPD' undeclared (first use in this function)
-
-Adding the missing register defines is not an option, since the registers
-do not exist on MCF5272. Disable the added functionality for MCF5272 builds.
-
-Backport to v3.9. Upstream commit d13919301d9a34cd4d3cc5ac73b89012c48cad71.
-
-Cc: Frank Li <Frank.Li@freescale.com>
-Cc: Jim Baxter <jim_baxter@mentor.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/ethernet/freescale/fec.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
-index ef5b595..49af0174 100644
---- a/drivers/net/ethernet/freescale/fec.c
-+++ b/drivers/net/ethernet/freescale/fec.c
-@@ -527,6 +527,7 @@ fec_restart(struct net_device *ndev, int duplex)
- #endif
- 	}
- 
-+#if !defined(CONFIG_M5272)
- 	/* enable pause frame*/
- 	if ((fep->pause_flag & FEC_PAUSE_FLAG_ENABLE) ||
- 	    ((fep->pause_flag & FEC_PAUSE_FLAG_AUTONEG) &&
-@@ -544,6 +545,7 @@ fec_restart(struct net_device *ndev, int duplex)
- 	} else {
- 		rcntl &= ~FEC_ENET_FCE;
- 	}
-+#endif /* !defined(CONFIG_M5272) */
- 
- 	writel(rcntl, fep->hwp + FEC_R_CNTRL);
- 
-@@ -1139,7 +1141,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
- 	/* mask with MAC supported features */
- 	if (id_entry->driver_data & FEC_QUIRK_HAS_GBIT) {
- 		phy_dev->supported &= PHY_GBIT_FEATURES;
-+#if !defined(CONFIG_M5272)
- 		phy_dev->supported |= SUPPORTED_Pause;
-+#endif
- 	}
- 	else
- 		phy_dev->supported &= PHY_BASIC_FEATURES;
-@@ -1326,6 +1330,8 @@ static int fec_enet_get_ts_info(struct net_device *ndev,
- 	}
- }
- 
-+#if !defined(CONFIG_M5272)
-+
- static void fec_enet_get_pauseparam(struct net_device *ndev,
- 				    struct ethtool_pauseparam *pause)
- {
-@@ -1372,9 +1378,13 @@ static int fec_enet_set_pauseparam(struct net_device *ndev,
- 	return 0;
- }
- 
-+#endif /* !defined(CONFIG_M5272) */
-+
- static const struct ethtool_ops fec_enet_ethtool_ops = {
-+#if !defined(CONFIG_M5272)
- 	.get_pauseparam		= fec_enet_get_pauseparam,
- 	.set_pauseparam		= fec_enet_set_pauseparam,
-+#endif
- 	.get_settings		= fec_enet_get_settings,
- 	.set_settings		= fec_enet_set_settings,
- 	.get_drvinfo		= fec_enet_get_drvinfo,
-@@ -1794,10 +1804,12 @@ fec_probe(struct platform_device *pdev)
- 	/* setup board info structure */
- 	fep = netdev_priv(ndev);
- 
-+#if !defined(CONFIG_M5272)
- 	/* default enable pause frame auto negotiation */
- 	if (pdev->id_entry &&
- 	    (pdev->id_entry->driver_data & FEC_QUIRK_HAS_GBIT))
- 		fep->pause_flag |= FEC_PAUSE_FLAG_AUTONEG;
-+#endif
- 
- 	fep->hwp = ioremap(r->start, resource_size(r));
- 	fep->pdev = pdev;
--- 
-1.7.9.7
 
