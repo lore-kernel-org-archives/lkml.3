@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab3F2CiS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 22:38:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63962 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab3F2CiQ (ORCPT
+	id S1753455Ab3F2CzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 22:55:24 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:63349 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752817Ab3F2CzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 22:38:16 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 28 Jun 2013 19:38:23 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Introducing Device Tree Overlays
-Message-ID: <20130629023703.GA12849@roeck-us.net>
-References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
+	Fri, 28 Jun 2013 22:55:23 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnwMAE1KzlF5LB/8/2dsb2JhbABbgwmDGbdMhR8EAYEKF3SCIwEBBTocIxAIAw4KCSUPBSUDIROIDrpZFo18J4EdB4NnA5dEih+HJ4MjKoEs
+Date: Sat, 29 Jun 2013 12:55:09 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130629025509.GG9047@dastard>
+References: <20130617223004.GB2538@localhost.localdomain>
+ <20130618024623.GP29338@dastard>
+ <20130618063104.GB20528@localhost.localdomain>
+ <20130618082414.GC13677@dhcp22.suse.cz>
+ <20130618104443.GH13677@dhcp22.suse.cz>
+ <20130618135025.GK13677@dhcp22.suse.cz>
+ <20130625022754.GP29376@dastard>
+ <20130626081509.GF28748@dhcp22.suse.cz>
+ <20130626232426.GA29034@dastard>
+ <20130627145411.GA24206@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
+In-Reply-To: <20130627145411.GA24206@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 09:31:04PM +0200, Pantelis Antoniou wrote:
-> The following patchset introduces Device Tree overlays, a method
-> of dynamically altering the kernel's live Device Tree.
+On Thu, Jun 27, 2013 at 04:54:11PM +0200, Michal Hocko wrote:
+> On Thu 27-06-13 09:24:26, Dave Chinner wrote:
+> > On Wed, Jun 26, 2013 at 10:15:09AM +0200, Michal Hocko wrote:
+> > > On Tue 25-06-13 12:27:54, Dave Chinner wrote:
+> > > > On Tue, Jun 18, 2013 at 03:50:25PM +0200, Michal Hocko wrote:
+> > > > > And again, another hang. It looks like the inode deletion never
+> > > > > finishes. The good thing is that I do not see any LRU related BUG_ONs
+> > > > > anymore. I am going to test with the other patch in the thread.
+> > > > > 
+> > > > > 2476 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0	<<< waiting for an inode to go away
+> > > > > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+> > > > > [<ffffffff8118525f>] iget_locked+0x4f/0x180
+> > > > > [<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
+> > > > > [<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
+> > > > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
+> > > > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
+> > > > > [<ffffffff8117815e>] do_last+0x2de/0x780			<<< holds i_mutex
+> > > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > > > > [<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+> > > > > [<ffffffffffffffff>] 0xffffffffffffffff
+> > > > 
+> > > > I don't think this has anything to do with LRUs.
+> > > 
+> > > I am not claiming that. It might be a timing issue which never mattered
+> > > but it is strange I can reproduce this so easily and repeatedly with the
+> > > shrinkers patchset applied.
+> > > As I said earlier, this might be breakage in my -mm tree as well
+> > > (missing some patch which didn't go via Andrew or misapplied patch). The
+> > > situation is worsen by the state of linux-next which has some unrelated
+> > > issues.
+> > > 
+> > > I really do not want to delay the whole patchset just because of some
+> > > problem on my side. Do you have any tree that I should try to test?
+> > 
+> > No, I've just been testing Glauber's tree and sending patches for
+> > problems back to him based on it.
+> > 
+> > > > I won't have seen this on XFS stress testing, because it doesn't use
+> > > > the VFS inode hashes for inode lookups. Given that XFS is not
+> > > > triggering either problem you are seeing, that makes me think
+> > > 
+> > > I haven't tested with xfs.
+> > 
+> > That might be worthwhile if you can easily do that - another data
+> > point indicating a hang or absence of a hang will help point us in
+> > the right direction here...
 > 
-> This patchset is against mainline as of Friday Jan 4 2013.
-> (4956964 Merge tag 'driver-core-3.8-rc2' of \
->  	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core)
-> 
-> Note that a separate patch for the DTC compiler has been posted and
-> is required to compile the DTS files according to the documentation.
-> The patch is "dtc: Dynamic symbols & fixup support"
-> 
-> An implementation patchset for a beaglebone cape loader will follow,
-> but if you want to check out a working kernel for the beaglebone please
-> pull from:
-> 
-> git://github.com/pantoniou/linux-bbxm.git branch not-capebus-v8
-> 
-> Pantelis Antoniou (6):
->   OF: Introduce device tree node flag helpers.
->   OF: export of_property_notify
->   OF: Export all DT proc update functions
->   OF: Introduce utility helper functions
->   OF: Introduce Device Tree resolve support.
->   OF: Introduce DT overlay support.
-> 
-Hi Pantelis,
+> OK, still hanging (with inode_lru_isolate-fix.patch). It is not the same
+> thing, though, as xfs seem to do lookup slightly differently.
+> 12467 [<ffffffffa02ca03e>] xfs_iget+0xbe/0x190 [xfs]
+> [<ffffffffa02d6e98>] xfs_lookup+0xe8/0x110 [xfs]
+> [<ffffffffa02cdad9>] xfs_vn_lookup+0x49/0x90 [xfs]
+> [<ffffffff81174ad0>] lookup_real+0x20/0x60
+> [<ffffffff81177e25>] lookup_open+0x175/0x1d0
+> [<ffffffff8117815e>] do_last+0x2de/0x780
+> [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> [<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
+> [<ffffffffffffffff>] 0xffffffffffffffff
 
-do you have an update of this patchset ? I want to seriously start testing it.
-Digging through your tree on github is a bit cumbersome, and I am not sure
-if I got all patches. It would also be nice to get an update with all the
-comments addressed.
+What are the full traces? This could be blocking on IO or locks
+here if it's a cache miss and we are reading an inode....
 
-Thanks,
-Guenter
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
