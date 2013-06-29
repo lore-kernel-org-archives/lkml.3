@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab3F2CUH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 22:20:07 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:61829 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab3F2CUG (ORCPT
+	id S1753435Ab3F2CiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 22:38:18 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63962 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336Ab3F2CiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 22:20:06 -0400
-Message-ID: <51CE4451.4060708@gmail.com>
-Date: Sat, 29 Jun 2013 10:20:01 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 28 Jun 2013 22:38:16 -0400
+X-Originating-IP: 108.223.40.66
+Date: Fri, 28 Jun 2013 19:38:23 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] Introducing Device Tree Overlays
+Message-ID: <20130629023703.GA12849@roeck-us.net>
+References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] mm: madvise: MADV_POPULATE for quick pre-faulting
-References: <20130627231605.8F9F12E6@viggo.jf.intel.com> <20130628054757.GA10429@gmail.com> <51CDB056.5090308@sr71.net>
-In-Reply-To: <51CDB056.5090308@sr71.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 11:48 PM, Dave Hansen wrote:
-> On 06/27/2013 10:47 PM, Zheng Liu wrote:
->>> I've been doing some testing involving large amounts of
->>> page cache.  It's quite painful to get hundreds of GB
->>> of page cache mapped in, especially when I am trying to
->>> do it in parallel threads.  This is true even when the
->>> page cache is already allocated and I only need to map
->>> it in.  The test:
->>>
->>> 1. take 160 16MB files
->>> 2. clone 160 threads, mmap the 16MB files, and either
->>>   a. walk through the file touching each page
->>
->> Why not change MAP_POPULATE flag in mmap(2)?  Now it is only for private
->> mappings.  But maybe we could let it support shared mapping.
+On Fri, Jan 04, 2013 at 09:31:04PM +0200, Pantelis Antoniou wrote:
+> The following patchset introduces Device Tree overlays, a method
+> of dynamically altering the kernel's live Device Tree.
 > 
-> Adding that support to mmap() will certainly _help_ some folks.  But,
-> anything that mmap()s something is taking mmap_sem for write.  That
-> means that threaded apps doing mmap()/munmap() frequently are _not_
-> scalable.
+> This patchset is against mainline as of Friday Jan 4 2013.
+> (4956964 Merge tag 'driver-core-3.8-rc2' of \
+>  	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core)
 > 
-> IOW, a process needing to do a bunch of MAP_POPULATEs isn't
-> parallelizable, but one using this mechanism would be.
+> Note that a separate patch for the DTC compiler has been posted and
+> is required to compile the DTS files according to the documentation.
+> The patch is "dtc: Dynamic symbols & fixup support"
+> 
+> An implementation patchset for a beaglebone cape loader will follow,
+> but if you want to check out a working kernel for the beaglebone please
+> pull from:
+> 
+> git://github.com/pantoniou/linux-bbxm.git branch not-capebus-v8
+> 
+> Pantelis Antoniou (6):
+>   OF: Introduce device tree node flag helpers.
+>   OF: export of_property_notify
+>   OF: Export all DT proc update functions
+>   OF: Introduce utility helper functions
+>   OF: Introduce Device Tree resolve support.
+>   OF: Introduce DT overlay support.
+> 
+Hi Pantelis,
 
-I look at the code, and it seems that we will handle MAP_POPULATE flag
-after we release mmap_sem locking in vm_mmap_pgoff():
+do you have an update of this patchset ? I want to seriously start testing it.
+Digging through your tree on github is a bit cumbersome, and I am not sure
+if I got all patches. It would also be nice to get an update with all the
+comments addressed.
 
-                down_write(&mm->mmap_sem);
-                ret = do_mmap_pgoff(file, addr, len, prot, flag, pgoff,
-                                    &populate);
-                up_write(&mm->mmap_sem);
-                if (populate)
-                        mm_populate(ret, populate);
-
-Am I missing something?
-
-Regards,
-						- Zheng
-
+Thanks,
+Guenter
