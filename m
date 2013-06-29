@@ -1,131 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab3F2HgX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 03:36:23 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:44124 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab3F2HgV (ORCPT
+	id S1752039Ab3F2HwN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 03:52:13 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:49975 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab3F2HwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 03:36:21 -0400
-Date: Sat, 29 Jun 2013 10:35:39 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCH] cpu hotplug: rework cpu_hotplug locking (was
- [LOCKDEP] cpufreq: possible circular locking dependency detected)
-Message-ID: <20130629073539.GA2227@swordfish>
-References: <20130625211544.GA2270@swordfish>
- <CAKohpo=ij+LTB80FtVFQZa_4uh-fceG80GBhGnhbxKio7N-Zuw@mail.gmail.com>
- <20130628074403.GA2201@swordfish>
- <51CD9A1A.1060908@linux.vnet.ibm.com>
+	Sat, 29 Jun 2013 03:52:11 -0400
+Message-ID: <51CE920C.5020001@huawei.com>
+Date: Sat, 29 Jun 2013 15:51:40 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CD9A1A.1060908@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4] tracing/uprobes: Support ftrace_event_file base multibuffer
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (06/28/13 19:43), Srivatsa S. Bhat wrote:
-> On 06/28/2013 01:14 PM, Sergey Senozhatsky wrote:
-> > Hello,
-> > Yes, this helps, of course, but at the same time it returns the previous
-> > problem -- preventing cpu_hotplug in some places.
-> > 
-> > 
-> > I have a bit different (perhaps naive) RFC patch and would like to hear
-> > comments.
-> > 
-> > 
-> > 
-> > The idead is to brake existing lock dependency chain by not holding
-> > cpu_hotplug lock mutex across the calls. In order to detect active
-> > refcount readers or active writer, refcount now may have the following
-> > values:
-> > 
-> > -1: active writer -- only one writer may be active, readers are blocked
-> >  0: no readers/writer
-> >> 0: active readers -- many readers may be active, writer is blocked
-> > 
-> > "blocked" reader or writer goes to wait_queue. as soon as writer finishes
-> > (refcount becomes 0), it wakeups all existing processes in a wait_queue.
-> > reader perform wakeup call only when it sees that pending writer is present
-> > (active_writer is not NULL).
-> > 
-> > cpu_hotplug lock now only required to protect refcount cmp, inc, dec
-> > operations so it can be changed to spinlock.
-> > 
-> 
-> Hmm, now that I actually looked at your patch, I see that it is completely
-> wrong! I'm sure you intended to fix the *bug*, but instead you ended
-> up merely silencing the *warning* (and also left lockdep blind), leaving
-> the actual bug as it is!
->
+[v3->v4]:
+1. use "bool enabled = is_trace_uprobe_enabled(tu);", suggested by Oleg.
+2. use list_add_tail_rcu instead of list_add_rcu, suggested by Masami.
+3. fix the error handling in probe_event_enable, found by Srikar.
 
-Thank you for your time and review.
+-------------------
+
+Support multi-buffer on uprobe-based dynamic events by
+using ftrace_event_file.
+
+This patch is based kprobe-based dynamic events multibuffer
+support work initially, commited by Masami(commit 41a7dd420c),
+but revised as below:
+
+Oleg changed the kprobe-based multibuffer design from
+array-pointers of ftrace_event_file into simple list,
+so this patch also change to the list degisn.
+
+rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
+to synchronize with ftrace_event_file list add and delete.
+
+Even though we allow multi-uprobes instances now,
+but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive
+in probe_event_enable currently, this means we cannot allow
+one user is using uprobe-tracer, and another user is using
+perf-probe on same uprobe concurrently.
+(Perhaps this will be fix in future, kprobe dont't have this
+limitation now)
+
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ kernel/trace/trace_uprobe.c |  123 +++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 101 insertions(+), 22 deletions(-)
+
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 32494fb0..760d4ed 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -53,6 +53,7 @@ struct trace_uprobe {
+ 	struct list_head		list;
+ 	struct ftrace_event_class	class;
+ 	struct ftrace_event_call	call;
++	struct list_head		files;
+ 	struct trace_uprobe_filter	filter;
+ 	struct uprobe_consumer		consumer;
+ 	struct inode			*inode;
+@@ -65,6 +66,11 @@ struct trace_uprobe {
+ 	struct probe_arg		args[];
+ };
+
++struct event_file_link {
++	struct ftrace_event_file	*file;
++	struct list_head		list;
++};
++
+ #define SIZEOF_TRACE_UPROBE(n)			\
+ 	(offsetof(struct trace_uprobe, args) +	\
+ 	(sizeof(struct probe_arg) * (n)))
+@@ -124,6 +130,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
+ 		goto error;
+
+ 	INIT_LIST_HEAD(&tu->list);
++	INIT_LIST_HEAD(&tu->files);
+ 	tu->consumer.handler = uprobe_dispatcher;
+ 	if (is_ret)
+ 		tu->consumer.ret_handler = uretprobe_dispatcher;
+@@ -511,7 +518,8 @@ static const struct file_operations uprobe_profile_ops = {
+ };
+
+ static void uprobe_trace_print(struct trace_uprobe *tu,
+-				unsigned long func, struct pt_regs *regs)
++				unsigned long func, struct pt_regs *regs,
++				struct ftrace_event_file *ftrace_file)
+ {
+ 	struct uprobe_trace_entry_head *entry;
+ 	struct ring_buffer_event *event;
+@@ -520,9 +528,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ 	int size, i;
+ 	struct ftrace_event_call *call = &tu->call;
+
++	WARN_ON(call != ftrace_file->event_call);
++
+ 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+-	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+-						  size + tu->size, 0, 0);
++	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
++						call->event.type,
++						size + tu->size, 0, 0);
+ 	if (!event)
+ 		return;
+
+@@ -546,15 +557,28 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ /* uprobe handler */
+ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+ {
+-	if (!is_ret_probe(tu))
+-		uprobe_trace_print(tu, 0, regs);
++	struct event_file_link *link;
++
++	if (is_ret_probe(tu))
++		return 0;
++
++	rcu_read_lock();
++	list_for_each_entry(link, &tu->files, list)
++		uprobe_trace_print(tu, 0, regs, link->file);
++	rcu_read_unlock();
++
+ 	return 0;
+ }
+
+ static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
+ 				struct pt_regs *regs)
+ {
+-	uprobe_trace_print(tu, func, regs);
++	struct event_file_link *link;
++
++	rcu_read_lock();
++	list_for_each_entry(link, &tu->files, list)
++		uprobe_trace_print(tu, func, regs, link->file);
++	rcu_read_unlock();
+ }
+
+ /* Event entry printers */
+@@ -605,33 +629,87 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
+ 				struct mm_struct *mm);
+
+ static int
+-probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
++probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
++		   filter_func_t filter)
+ {
++	bool enabled = is_trace_uprobe_enabled(tu);
++	struct event_file_link *link;
+ 	int ret = 0;
+
+-	if (is_trace_uprobe_enabled(tu))
+-		return -EINTR;
++	if (file) {
++		if (tu->flags & TP_FLAG_PROFILE)
++			return -EINTR;
++
++		link = kmalloc(sizeof(*link), GFP_KERNEL);
++		if (!link)
++			return -ENOMEM;
++
++		link->file = file;
++		list_add_tail_rcu(&link->list, &tu->files);
++
++		tu->flags |= TP_FLAG_TRACE;
++	} else {
++		if (tu->flags & TP_FLAG_TRACE)
++			return -EINTR;
++
++		tu->flags |= TP_FLAG_PROFILE;
++	}
+
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+
+-	tu->flags |= flag;
+-	tu->consumer.filter = filter;
+-	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+-	if (ret)
+-		tu->flags &= ~flag;
++	/* we cannot call uprobe_register twice for same tu */
++	if (!enabled) {
++		tu->consumer.filter = filter;
++		ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
++	}
++
++	if (ret) {
++		if (file) {
++			list_del_rcu(&link->list);
++			kfree(link);
++			tu->flags &= ~TP_FLAG_TRACE;
++		} else
++			tu->flags &= ~TP_FLAG_PROFILE;
++	}
+
+ 	return ret;
+ }
+
+-static void probe_event_disable(struct trace_uprobe *tu, int flag)
++static struct event_file_link *
++find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
+ {
+-	if (!is_trace_uprobe_enabled(tu))
+-		return;
++	struct event_file_link *link;
++
++	list_for_each_entry(link, &tu->files, list)
++		if (link->file == file)
++			return link;
++
++	return NULL;
++}
++
++static void
++probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
++{
++	if (file) {
++		struct event_file_link *link;
++
++		link = find_event_file_link(tu, file);
++		if (!link)
++			return;
++
++		list_del_rcu(&link->list);
++		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
++		synchronize_sched();
++		kfree(link);
++
++		if (!list_empty(&tu->files))
++			return;
++	}
+
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+
+ 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+-	tu->flags &= ~flag;
++	tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
+ }
+
+ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
+@@ -867,21 +945,22 @@ static
+ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
+ {
+ 	struct trace_uprobe *tu = event->data;
++	struct ftrace_event_file *file = data;
+
+ 	switch (type) {
+ 	case TRACE_REG_REGISTER:
+-		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
++		return probe_event_enable(tu, file, NULL);
+
+ 	case TRACE_REG_UNREGISTER:
+-		probe_event_disable(tu, TP_FLAG_TRACE);
++		probe_event_disable(tu, file);
+ 		return 0;
+
+ #ifdef CONFIG_PERF_EVENTS
+ 	case TRACE_REG_PERF_REGISTER:
+-		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
++		return probe_event_enable(tu, NULL, uprobe_perf_filter);
+
+ 	case TRACE_REG_PERF_UNREGISTER:
+-		probe_event_disable(tu, TP_FLAG_PROFILE);
++		probe_event_disable(tu, NULL);
+ 		return 0;
+
+ 	case TRACE_REG_PERF_OPEN:
+-- 
+1.7.9.7
 
 
-> So let me summarize what the actual bug is and what is it that actually
-> needs fixing:
-> 
-> Basically you have 2 things -
-> 1. A worker item (cs_dbs_timer in this case) that can re-arm itself
->    using gov_queue_work(). And gov_queue_work() uses get/put_online_cpus().
-> 
-> 2. In the cpu_down() path, you want to cancel the worker item and destroy
->    and cleanup its resources (the timer_mutex).
-> 
-> So the problem is that you can deadlock like this:
-> 
->     CPU 3                                  CPU 4
-> 
->    cpu_down()
->    -> acquire hotplug.lock
-> 
-> 				      cs_dbs_timer()
-> 				        -> get_online_cpus()
-> 					   //wait on hotplug.lock
-> 
-> 
->    try to cancel cs_dbs_timer()
->    synchronously.
-> 
-> That leads to a deadlock, because, cs_dbs_timer() is waiting to
-> get the hotplug lock which CPU 3 is holding, whereas CPU 3 is
-> waiting for cs_dbs_timer() to finish. So they can end up mutually
-> waiting for each other, forever. (Yeah, the lockdep splat might have
-> been a bit cryptic to decode this, but here it is).
-> 
-> So to fix the *bug*, you need to avoid waiting synchronously while
-> holding the hotplug lock. Possibly by using cancel_delayed_work_sync()
-> under CPU_POST_DEAD or something like that. That would remove the deadlock
-> possibility.
-
-will take a look. Thank you!
-
-	-ss
-
-> Your patch, on the other hand, doesn't remove the deadlock possibility:
-> just because you don't hold the lock throughout the hotplug operation
-> doesn't mean that the task calling get_online_cpus() can sneak in and
-> finish its work in-between a hotplug operation (because the refcount
-> won't allow it to). Also, it should *not* be allowed to sneak in like
-> that, since that constitutes *racing* with CPU hotplug, which it was
-> meant to avoid!.
-> 
-> Also, as a side effect of not holding the lock throughout the hotplug
-> operation, lockdep goes blind, and doesn't complain, even though the
-> actual bug is still there! Effectively, this is nothing but papering
-> over the bug and silencing the warning, which we should never do.
-> 
-> So, please, fix the _cpufreq_ code to resolve the deadlock.
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
