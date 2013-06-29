@@ -1,112 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab3F2CzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jun 2013 22:55:24 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:63349 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752817Ab3F2CzX (ORCPT
+	id S1753458Ab3F2DAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jun 2013 23:00:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14608 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab3F2DAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jun 2013 22:55:23 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnwMAE1KzlF5LB/8/2dsb2JhbABbgwmDGbdMhR8EAYEKF3SCIwEBBTocIxAIAw4KCSUPBSUDIROIDrpZFo18J4EdB4NnA5dEih+HJ4MjKoEs
-Date: Sat, 29 Jun 2013 12:55:09 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130629025509.GG9047@dastard>
-References: <20130617223004.GB2538@localhost.localdomain>
- <20130618024623.GP29338@dastard>
- <20130618063104.GB20528@localhost.localdomain>
- <20130618082414.GC13677@dhcp22.suse.cz>
- <20130618104443.GH13677@dhcp22.suse.cz>
- <20130618135025.GK13677@dhcp22.suse.cz>
- <20130625022754.GP29376@dastard>
- <20130626081509.GF28748@dhcp22.suse.cz>
- <20130626232426.GA29034@dastard>
- <20130627145411.GA24206@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627145411.GA24206@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Jun 2013 23:00:24 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=K-hHAvmzDjYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=lVSx7YhZmtMA:10 a=X7Ea-ya5AAAA:8 a=VPW9pYw8AAAA:8 a=oousBsYe7VwN5ef7N9IA:9 a=QEXdDO2ut3YA:10 a=EMEU_Dz8dBsA:10 a=nTicbzAlsOkA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372474821.18733.344.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/3] static_keys: Add a
+ static_key_slow_set_true()/false() interface
+From: Steven Rostedt <rostedt@goodmis.org>
+To: jbaron@akamai.com
+Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        peterz@infradead.org
+Date: Fri, 28 Jun 2013 23:00:21 -0400
+In-Reply-To: <4cd4ed35e383e64af7e482f2d2827703ec943c75.1372457176.git.jbaron@akamai.com>
+References: <cover.1372457176.git.jbaron@akamai.com>
+	 <4cd4ed35e383e64af7e482f2d2827703ec943c75.1372457176.git.jbaron@akamai.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 04:54:11PM +0200, Michal Hocko wrote:
-> On Thu 27-06-13 09:24:26, Dave Chinner wrote:
-> > On Wed, Jun 26, 2013 at 10:15:09AM +0200, Michal Hocko wrote:
-> > > On Tue 25-06-13 12:27:54, Dave Chinner wrote:
-> > > > On Tue, Jun 18, 2013 at 03:50:25PM +0200, Michal Hocko wrote:
-> > > > > And again, another hang. It looks like the inode deletion never
-> > > > > finishes. The good thing is that I do not see any LRU related BUG_ONs
-> > > > > anymore. I am going to test with the other patch in the thread.
-> > > > > 
-> > > > > 2476 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0	<<< waiting for an inode to go away
-> > > > > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> > > > > [<ffffffff8118525f>] iget_locked+0x4f/0x180
-> > > > > [<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-> > > > > [<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-> > > > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > > > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > > > > [<ffffffff8117815e>] do_last+0x2de/0x780			<<< holds i_mutex
-> > > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > > > > [<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-> > > > > [<ffffffffffffffff>] 0xffffffffffffffff
-> > > > 
-> > > > I don't think this has anything to do with LRUs.
-> > > 
-> > > I am not claiming that. It might be a timing issue which never mattered
-> > > but it is strange I can reproduce this so easily and repeatedly with the
-> > > shrinkers patchset applied.
-> > > As I said earlier, this might be breakage in my -mm tree as well
-> > > (missing some patch which didn't go via Andrew or misapplied patch). The
-> > > situation is worsen by the state of linux-next which has some unrelated
-> > > issues.
-> > > 
-> > > I really do not want to delay the whole patchset just because of some
-> > > problem on my side. Do you have any tree that I should try to test?
-> > 
-> > No, I've just been testing Glauber's tree and sending patches for
-> > problems back to him based on it.
-> > 
-> > > > I won't have seen this on XFS stress testing, because it doesn't use
-> > > > the VFS inode hashes for inode lookups. Given that XFS is not
-> > > > triggering either problem you are seeing, that makes me think
-> > > 
-> > > I haven't tested with xfs.
-> > 
-> > That might be worthwhile if you can easily do that - another data
-> > point indicating a hang or absence of a hang will help point us in
-> > the right direction here...
+On Fri, 2013-06-28 at 22:30 +0000, jbaron@akamai.com wrote:
+> As pointed out by Andi Kleen, some static key users can be racy because they
+> check the value of the key->enabled, and then subsequently update the branch
+> direction. A number of call sites have 'higher' level locking that avoids this
+> race, but the usage in the scheduler features does not. See:
+> http://lkml.indiana.edu/hypermail/linux/kernel/1304.2/01655.html
 > 
-> OK, still hanging (with inode_lru_isolate-fix.patch). It is not the same
-> thing, though, as xfs seem to do lookup slightly differently.
-> 12467 [<ffffffffa02ca03e>] xfs_iget+0xbe/0x190 [xfs]
-> [<ffffffffa02d6e98>] xfs_lookup+0xe8/0x110 [xfs]
-> [<ffffffffa02cdad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-> [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> [<ffffffff8117815e>] do_last+0x2de/0x780
-> [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> [<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
+> Thus, introduce a new API that does the check and set under the
+> 'jump_label_mutex'. This should also allow to simplify call sites a bit.
+> 
+> Users of static keys should use either the inc/dec or the set_true/set_false
+> API.
+> 
+> Signed-off-by: Jason Baron <jbaron@akamai.com>
+> ---
+>  Documentation/static-keys.txt |    8 ++++++++
+>  include/linux/jump_label.h    |   30 ++++++++++++++++++++++++++++++
+>  kernel/jump_label.c           |   40 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 78 insertions(+)
+> 
+> diff --git a/Documentation/static-keys.txt b/Documentation/static-keys.txt
+> index 9f5263d..4cca941 100644
+> --- a/Documentation/static-keys.txt
+> +++ b/Documentation/static-keys.txt
+> @@ -134,6 +134,14 @@ An example usage in the kernel is the implementation of tracepoints:
+>                                  TP_CONDITION(cond));                    \
+>          }
+>  
+> +Keys can also be updated with the following calls:
 
-What are the full traces? This could be blocking on IO or locks
-here if it's a cache miss and we are reading an inode....
+I would explain this a bit more. Something like:
 
-Cheers,
+When dealing with a simple on/off switch, where there's not a usage
+counter involved with the static_key, the
+static_key_slow_set_true/false() methods should be used.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
+> +
+> +	static_key_slow_set_true(struct static_key *key);
+> +	static_key_slow_set_false(struct static_key *key);
+> +
+> +Users should of the API should not mix the inc/dec with usages
+> +of set_true/set_false. That is, users should choose one or the other.
+
+Fix the above comment.
+
+-- Steve
+
+
+> +
+>  Tracepoints are disabled by default, and can be placed in performance critical
+>  pieces of the kernel. Thus, by using a static key, the tracepoints can have
+>  absolutely minimal impact when not in use.
+> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> index 0976fc4..787ab73 100644
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -67,6 +67,11 @@ struct static_key_deferred {
+>  	struct delayed_work work;
+>  };
+>  
+> +/* for use with set_true/set_false API */
+> +struct static_key_boolean {
+> +	struct static_key key;
+> +};
+> +
+>  # include <asm/jump_label.h>
+>  # define HAVE_JUMP_LABEL
+>  #endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
+> @@ -120,6 +125,8 @@ extern int jump_label_text_reserved(void *start, void *end);
+>  extern void static_key_slow_inc(struct static_key *key);
+>  extern void static_key_slow_dec(struct static_key *key);
+>  extern void static_key_slow_dec_deferred(struct static_key_deferred *key);
+> +extern void static_key_slow_set_true(struct static_key_boolean *key);
+> +extern void static_key_slow_set_false(struct static_key_boolean *key);
+>  extern void jump_label_apply_nops(struct module *mod);
+>  extern void
+>  jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
+> @@ -128,6 +135,10 @@ jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
+>  	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
+>  #define STATIC_KEY_INIT_FALSE ((struct static_key) \
+>  	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
+> +#define STATIC_KEY_BOOLEAN_INIT_TRUE ((struct static_key_boolean) \
+> +	{ .key.enabled = ATOMIC_INIT(1), .key.entries = (void *)1 })
+> +#define STATIC_KEY_BOOLEAN_INIT_FALSE ((struct static_key_boolean) \
+> +	{ .key.enabled = ATOMIC_INIT(0), .key.entries = (void *)0 })
+>  
+>  #else  /* !HAVE_JUMP_LABEL */
+>  
+> @@ -137,6 +148,11 @@ struct static_key {
+>  	atomic_t enabled;
+>  };
+>  
+> +/* for use with set_true/set_false API */
+> +struct static_key_boolean {
+> +	struct static_key key;
+> +};
+> +
+>  static __always_inline void jump_label_init(void)
+>  {
+>  }
+> @@ -174,6 +190,16 @@ static inline void static_key_slow_dec_deferred(struct static_key_deferred *key)
+>  	static_key_slow_dec(&key->key);
+>  }
+>  
+> +static inline void static_key_slow_set_true(struct static_key_boolean *key)
+> +{
+> +	atomic_set(&key->key.enabled, 1);
+> +}
+> +
+> +static inline void static_key_slow_set_false(struct static_key_boolean *key)
+> +{
+> +	atomic_set(&key->key.enabled, 0);
+> +}
+> +
+>  static inline int jump_label_text_reserved(void *start, void *end)
+>  {
+>  	return 0;
+> @@ -197,6 +223,10 @@ jump_label_rate_limit(struct static_key_deferred *key,
+>  		{ .enabled = ATOMIC_INIT(1) })
+>  #define STATIC_KEY_INIT_FALSE ((struct static_key) \
+>  		{ .enabled = ATOMIC_INIT(0) })
+> +#define STATIC_KEY_BOOLEAN_INIT_TRUE ((struct static_key_boolean) \
+> +		{ .key.enabled = ATOMIC_INIT(1) })
+> +#define STATIC_KEY_BOOLEAN_INIT_FALSE ((struct static_key_boolean) \
+> +		{ .key.enabled = ATOMIC_INIT(0) })
+>  
+>  #endif	/* HAVE_JUMP_LABEL */
+>  
+> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> index 60f48fa..2234a4c 100644
+> --- a/kernel/jump_label.c
+> +++ b/kernel/jump_label.c
+> @@ -120,6 +120,46 @@ void jump_label_rate_limit(struct static_key_deferred *key,
+>  }
+>  EXPORT_SYMBOL_GPL(jump_label_rate_limit);
+>  
+> +void static_key_slow_set_true(struct static_key_boolean *key_boolean)
+> +{
+> +	struct static_key *key = (struct static_key *)key_boolean;
+> +	int enabled;
+> +
+> +	jump_label_lock();
+> +	enabled = atomic_read(&key->enabled);
+> +	if (enabled == 1)
+> +		goto out;
+> +	WARN(enabled != 0, "%s: key->enabled: %d\n", __func__, enabled);
+> +	if (!jump_label_get_branch_default(key))
+> +		jump_label_update(key, JUMP_LABEL_ENABLE);
+> +	else
+> +		jump_label_update(key, JUMP_LABEL_DISABLE);
+> +	atomic_set(&key->enabled, 1);
+> +out:
+> +	jump_label_unlock();
+> +}
+> +EXPORT_SYMBOL_GPL(static_key_slow_set_true);
+> +
+> +void static_key_slow_set_false(struct static_key_boolean *key_boolean)
+> +{
+> +	struct static_key *key = (struct static_key *)key_boolean;
+> +	int enabled;
+> +
+> +	jump_label_lock();
+> +	enabled = atomic_read(&key->enabled);
+> +	if (enabled == 0)
+> +		goto out;
+> +	WARN(enabled != 1, "%s: key->enabled: %d\n", __func__, enabled);
+> +	if (!jump_label_get_branch_default(key))
+> +		jump_label_update(key, JUMP_LABEL_DISABLE);
+> +	else
+> +		jump_label_update(key, JUMP_LABEL_ENABLE);
+> +	atomic_set(&key->enabled, 0);
+> +out:
+> +	jump_label_unlock();
+> +}
+> +EXPORT_SYMBOL_GPL(static_key_slow_set_false);
+> +
+>  static int addr_conflict(struct jump_entry *entry, void *start, void *end)
+>  {
+>  	if (entry->code <= (unsigned long)end &&
+
+
