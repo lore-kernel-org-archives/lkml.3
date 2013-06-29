@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab3F2QLt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 12:11:49 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:40053 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab3F2QLq (ORCPT
+	id S1752612Ab3F2QNB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 12:13:01 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:33540 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3F2QNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 12:11:46 -0400
-Message-ID: <51CF0723.9020604@candelatech.com>
-Date: Sat, 29 Jun 2013 09:11:15 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Sat, 29 Jun 2013 12:13:00 -0400
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Joe Jin <joe.jin@oracle.com>, Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "zheng.x.li@oracle.com" <zheng.x.li@oracle.com>,
-        Xen Devel <xen-devel@lists.xen.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: kernel panic in skb_copy_bits
-References: <51CBAA48.3080802@oracle.com>   <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>   <1372402340.3301.229.camel@edumazet-glaptop>  <1372412262.3301.251.camel@edumazet-glaptop> <51CE1E19.3020108@oracle.com> <1372490428.3301.300.camel@edumazet-glaptop>
-In-Reply-To: <1372490428.3301.300.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <2193112.vKUrhiifXu@vostro.rjw.lan>
+References: <1640211.P0jyS5muX2@vostro.rjw.lan>
+	<1771749.8rDXNf8giR@vostro.rjw.lan>
+	<CAE9FiQU8Zwm+8nrT4Sg9h7_P-YVNamg+udLjVaZ0PyNmm-t7bg@mail.gmail.com>
+	<2193112.vKUrhiifXu@vostro.rjw.lan>
+Date: Sat, 29 Jun 2013 09:12:59 -0700
+X-Google-Sender-Auth: xj2XYTUVU49VLIfTST-ayz3gbWs
+Message-ID: <CAE9FiQXc9WKDZdABOB8p0soT+OTcRbJb7JTgrPz6ffd2dyPEHA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ACPI / dock: Rework the handling of notifications
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        "Alexander E. Patrakov" <patrakov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2013 12:20 AM, Eric Dumazet wrote:
-> On Sat, 2013-06-29 at 07:36 +0800, Joe Jin wrote:
->> Hi Eric,
+On Sat, Jun 29, 2013 at 4:16 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, June 28, 2013 04:34:21 PM Yinghai Lu wrote:
+>> On Fri, Jun 28, 2013 at 3:53 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> >
+>> > The ACPI dock driver uses register_acpi_bus_notifier() which
+>> > installs a notifier triggered globally for all system notifications.
+>> > That first of all is inefficient, because the dock driver is only
+>> > interested in notifications associated with the devices it handles,
+>> > but it has to handle all system notifies for all devices.  Moreover,
+>> > it does that even if no docking stations are present in the system
+>> > (CONFIG_ACPI_DOCK set is sufficient for that to happen).  Besides,
+>> > that is inconvenient, because it requires the driver to do extra work
+>> > for each notification to find the target dock station object.
+>> >
+>> > For these reasons, rework the dock driver to install a notify
+>> > handler individually for each dock station in the system using
+>> > acpi_install_notify_handler().  This allows the dock station
+>> > object to be passed directly to the notify handler and makes it
+>> > possible to simplify the dock driver quite a bit.  It also
+>> > reduces the overhead related to the handling of all system
+>> > notifies when CONFIG_ACPI_DOCK is set.
 >>
->> The patch not fix the issue and panic as same as early I posted:
->>> BUG: unable to handle kernel paging request at ffff88006d9e8d48
->>> IP: [<ffffffff812605bb>] memcpy+0xb/0x120
->>> PGD 1798067 PUD 1fd2067 PMD 213f067 PTE 0
->>> Oops: 0000 [#1] SMP
->>> CPU 7
->>> Modules linked in: dm_nfs tun nfs fscache auth_rpcgss nfs_acl xen_blkback xen_netback xen_gntdev xen_evtchn lockd sunrpc bridge stp llc bonding be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3 mdio dm_round_robin dm_multipath libiscsi_tcp libiscsi scsi_transport_iscsi xenfs xen_privcmd video sbs sbshc acpi_memhotplug acpi_ipmi ipmi_msghandler parport_pc lp parport ixgbe dca sr_mod cdrom bnx2 radeon ttm drm_kms_helper drm snd_seq_dummy i2c_algo_bit i2c_core snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss serio_raw snd_pcm snd_timer snd soundcore snd_page_alloc iTCO_wdt pcspkr iTCO_vendor_support pata_acpi dcdbas i5k_amb ata_generic hwmon floppy ghes i5000_edac edac_core hed dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage lpfc scsi_transport_fc scsi_tgt ata_piix sg shpchp mptsas mptscsih mptbase scsi_transport_sas sd_mod crc_t10dif ex!
- t3!
->>    jbd mbcac
->> he
->>>
->>>
->>> Pid: 0, comm: swapper Tainted: G        W   2.6.39-300.32.1.el5uek #1 Dell Inc. PowerEdge 2950/0DP246
+>> original change to use register_acpi_bus_notifier, have two assumption
+>> 1.  two dock_station will have same handle.
 >
+> Well, that would mean that dock_add() might be called twice for the same handle
+> and I don't see how that's possible.
 >
-> By the way my patch was for current kernels, not for 2.6.39
+> Moreover, even if that were possible, the loop in acpi_dock_notifier_call()
+> would break after finding the *first* matching handle anyway, so
+> acpi_dock_deferred_cb() wouldn't be called for the second dock station with
+> the same handle, if there were two.
 
-Do you know if your patch should go in 3.9?
+related commit:
+commit 6bd00a61ab63d4ceb635ae0316353c11c900b8d8
+Author: Shaohua Li <shaohua.li@intel.com>
+Date:   Thu Aug 28 10:04:29 2008 +0800
 
-Your test case sounds a bit like what gives us the rare crash in tcp_collapse
-(we have lots of bouncing wifi interfaces running slow-speed TCP trafic).  But,
-it takes days for us to hit the problem most of the time.
+    ACPI: introduce notifier change to avoid duplicates
 
-Thanks,
-Ben
+    The battery driver already registers notification handler.
+    To avoid registering notification handler again,
+    introduce a notifier chain in global system notifier handler
+    and use it in dock driver.
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+so it is not two dock station have same handle. it is battery acpi driver.
 
+but notitifer installing is changed
+
+commit d94066910943837558d2a461c6766da981260bf0
+Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Date:   Thu Apr 30 09:35:47 2009 -0600
+
+    ACPI: battery: use .notify method instead of installing handler directly
+
+    This patch adds a .notify() method.  The presence of .notify() causes
+    Linux/ACPI to manage event handlers and notify handlers on our behalf,
+    so we don't have to install and remove them ourselves.
+
+    This driver apparently relies on seeing ALL notify events, not just
+    device-specific ones (because it used ACPI_ALL_NOTIFY).  We use the
+    ACPI_DRIVER_ALL_NOTIFY_EVENTS driver flag to request all events.
+
+    Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+    CC: Alexey Starikovskiy <alexey.y.starikovskiy@linux.intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+
+>
+>> 2. acpi subsystem: non root acpi device only can have one system
+>> notifier installed.
+>
+> No, that limitation is long gone.  We removed it when we were working on ACPI
+> wakeup support for runtime PM.
+
+looks like i misread that...
+
+ * NOTES:       The Root namespace object may have only one handler for each
+ *              type of notify (System/Device). Device/Thermal/Processor objects
+ *              may have one device notify handler, and multiple system notify
+ *              handlers.
+
+device could have multiple system notify handlers.
+
+So
+
+Acked-by: Yinghai Lu <yinghai@kernel.org>
