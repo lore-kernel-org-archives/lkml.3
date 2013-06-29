@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab3GHNAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:00:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:64421 "EHLO
+	id S1752169Ab3GHNAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:00:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64425 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab3GHM74 (ORCPT
+	with ESMTP id S1752106Ab3GHNAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 08:59:56 -0400
-X-AuditID: cbfee68e-b7f276d000002279-ef-51dab7cbbf38
+	Mon, 8 Jul 2013 09:00:00 -0400
+X-AuditID: cbfee68e-b7f276d000002279-01-51dab7ce1540
 From: Yadwinder Singh Brar <yadi.brar@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: sbkim73@samsung.com, broonie@kernel.org, lgirdwood@gmail.com,
         sameo@linux.intel.com, rob.herring@calxeda.com,
         grant.likely@linaro.org, sachin.kamat@linaro.org,
         yadi.brar01@gmail.com, Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [v2 PATCH 4/6] regulator: s2mps11: Convert driver completely to use
- set_ramp_delay callback
-Date: Sat, 29 Jun 2013 18:21:18 +0530
-Message-id: <1372510280-31931-5-git-send-email-yadi.brar@samsung.com>
+Subject: [v2 PATCH 5/6] regulator: core: Remove redundant checks
+Date: Sat, 29 Jun 2013 18:21:19 +0530
+Message-id: <1372510280-31931-6-git-send-email-yadi.brar@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
 In-reply-to: <1372510280-31931-1-git-send-email-yadi.brar@samsung.com>
 References: <1372510280-31931-1-git-send-email-yadi.brar@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSo3t6+61Ag9UTVS2mPnzCZnHgzw5G
-	i29XOpgsLu+aw2ZxeMUBJouTf3oZLU53s1pcXPGFyWLu70ZWiznT3zE5cHks+HyF3WPnrLvs
-	HptWdbJ53Lm2h81j3slAj74tqxg9Pm+SC2CP4rJJSc3JLEst0rdL4Mr4sfkSe8FGuYpjP2ew
-	NzB2SXYxcnJICJhInD3bwQhhi0lcuLeerYuRi0NIYCmjxLmDP1lgilYcvMoEkVjEKDGhZycz
-	hNPGJHHx5EEgh4ODTcBI4tUxO5AGEQEFic29z1hBapgF3jJKLF16A2ySsECaxNmfa8DWsQio
-	SrRe72IE6eUVcJV48zoLYpmCROuyQ+wgNqeAm0TX5OtMILYQUMnHPe1gR0gIHGKXmLd4EzvE
-	HAGJb5MPsYDMkRCQldh0gBlijqTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKRXnJhbXJqXrpec
-	n7uJERgVp/8969vBePOA9SHGZKBxE5mlRJPzgVGVVxJvaGxmZGFqYmpsZG5pRpqwkjivWot1
-	oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGBPHK4soXqxuc3m7be1/ltck9ll6vbU1JdfaH
-	dm/bcdvUQuLNGmbnJXvmal3Rk3fLVZ6qqRiq1Br50Tn2xaEJoTVxphXFfoxJnn5HWy42br/T
-	YWh7b//9t1ndCx87XVDqT3/hkyZ4/aziQqOjR6PaDerT/M4UL12UK5XQwGAwZ7qYE/v/nE4l
-	luKMREMt5qLiRADecK9ToAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t9jAd3T228FGtz4Im0x9eETNosDf3Yw
-	Wny70sFkcXnXHDaLwysOMFmc/NPLaHG6m9Xi4oovTBZzfzeyWsyZ/o7Jgctjwecr7B47Z91l
-	99i0qpPN4861PWwe804GevRtWcXo8XmTXAB7VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7yp
-	mYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QeUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC
-	4HqMDNBAwhrGjB+bL7EXbJSrOPZzBnsDY5dkFyMnh4SAicSKg1eZIGwxiQv31rN1MXJxCAks
-	YpSY0LOTGcJpY5K4ePIgkMPBwSZgJPHqmB1Ig4iAgsTm3mesIDXMAm8ZJZYuvcECkhAWSJM4
-	+3MNI4jNIqAq0Xq9ixGkl1fAVeLN6yyIZQoSrcsOsYPYnAJuEl2Tr4MdIQRU8nFPO9MERt4F
-	jAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYJj7pn0DsZVDRaHGAU4GJV4eCVO3wwUYk0s
-	K67MPcQowcGsJMIrznorUIg3JbGyKrUoP76oNCe1+BBjMtBRE5mlRJPzgekgryTe0NjE3NTY
-	1NLEwsTMkjRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoY4xu9+88zaE2oFzhi+SqqwzU2
-	eI7R1FPsh7wOZydftFzk1zzhudLiRetjU+ZNSDxx8PbSGt6/vxNcFnw8tMx0i/FnpTppfpuq
-	ctFVWdOOynfYMezlk+N6wRTefctIybFjekh1sqNJscusAv3EkCyn2/1VzY171UNObpy9PTub
-	qTqpcfpcCQklluKMREMt5qLiRADNLZLy/QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42JZI2JSrXt++61AgzU5FlMfPmGzOPBnB6PF
+	tysdTBaXd81hszi84gCTxck/vYwWp7tZLS6u+MJkMfd3I6vFnOnvmBy4PBZ8vsLusXPWXXaP
+	Tas62TzuXNvD5jHvZKBH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZcx6cICt4AJXxZLmPawN
+	jA2cXYycHBICJhJfZ09hgbDFJC7cW8/WxcjFISSwlFFiztZ7bDBFf/89YYZILGKUODZnFztI
+	QkigjUniyOfSLkYODjYBI4lXx+xAwiICChKbe5+xgtQzC7xllFi69AbYBmEBB4nHrYvAelkE
+	VCVmfL4MZvMKuEocWHmHFWKZgkTrskNgcU4BN4muydeZIHa5Snzc084EMlRC4BC7xNbd59gg
+	BglIfJt8iAXkCAkBWYlNB5gh5khKHFxxg2UCo/ACRoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ
+	+bmbGIExcfrfs74djDcPWB9iTAYaN5FZSjQ5HxhTeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVY
+	BwoJpCeWpGanphakFsUXleakFh9iZOLglGpg1OjMX3V7B8ODsu/5VYbb0jgNju9/F1iieKRv
+	i9m5+t3ds+cZyTvFGgkVSjEY7Iyr8VKuP/sy+8nyP6J2Npm3ZoSntMrz8RYJ1flu19v39Y+a
+	241VOlnuhtubVpT7W0mbrz9yd9qGdfYGpr/zhc2FyzRe2WmwSL39/MW/RadFwpWr6z5nySol
+	luKMREMt5qLiRACcDuHGnwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t9jAd1z228FGvSdNbWY+vAJm8WBPzsY
+	Lb5d6WCyuLxrDpvF4RUHmCxO/ulltDjdzWpxccUXJou5vxtZLeZMf8fkwOWx4PMVdo+ds+6y
+	e2xa1cnmcefaHjaPeScDPfq2rGL0+LxJLoA9qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7U
+	zMBQ19DSwlxJIS8xN9VWycUnQNctMwfoPCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFB
+	cD1GBmggYQ1jxqwHB9gKLnBVLGnew9rA2MDZxcjJISFgIvH33xNmCFtM4sK99WxdjFwcQgKL
+	GCWOzdnFDpIQEmhjkjjyubSLkYODTcBI4tUxO5CwiICCxObeZ6wg9cwCbxklli69wQKSEBZw
+	kHjcugisl0VAVWLG58tgNq+Aq8SBlXdYIZYpSLQuOwQW5xRwk+iafJ0JYperxMc97UwTGHkX
+	MDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOuWdSOxhXNlgcYhTgYFTi4ZU4fTNQiDWx
+	rLgy9xCjBAezkgivOOutQCHelMTKqtSi/Pii0pzU4kOMyUBXTWSWEk3OB6aDvJJ4Q2MTc1Nj
+	U0sTCxMzS9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgPNLyUEpHQeTZ7XOvOlZuXtp/
+	X9Oby8rHXu5Tcalk8KzjvV/F511P2VATKzRdVe2VZON03V3yCSfyd836v1XYovC/8dO3WSWv
+	L7K0xE9ttNjy+MkEq0X7RStWPgm6W1hzfKeg9ye3Y9/5A59Oet6y2Pnm5PKSrkexRvVMhxcG
+	aEdzJbpFsfr2KbEUZyQaajEXFScCAGXkm/H9AgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,128 +52,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since now we have ramp_delay and ramp_disable as standard regulator
-constraints and DT part using it so this patch removes legacy part i.e. getting
-ramp_delayxx and ramp_enable from pdata since it can be passed as
-standard regulator constraints.
+In function _regulator_do_set_voltage(), old_selector gets intialised only
+if (_regulator_is_enabled(rdev) && rdev->desc->ops->set_voltage_time_sel &&
+rdev->desc->ops->get_voltage_sel)) is true.
+
+Before calling set_voltage_time_sel() we checks if (old_selector >= 0) and it
+will true if it got intialised properly. so we don't need to check again
+_regulator_is_enabled(rdev) && rdev->desc->ops->set_voltage_time_sel before
+calling set_voltage_time_sel().
 
 Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
 ---
- drivers/regulator/s2mps11.c |   62 ++++++------------------------------------
- 1 files changed, 9 insertions(+), 53 deletions(-)
+ drivers/regulator/core.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index 4157759..e1aadbd 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -35,11 +35,6 @@ struct s2mps11_info {
- 	int ramp_delay16;
- 	int ramp_delay7810;
- 	int ramp_delay9;
--
--	bool buck6_ramp;
--	bool buck2_ramp;
--	bool buck3_ramp;
--	bool buck4_ramp;
- };
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 6e6371c..15368f3 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2439,9 +2439,8 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
+ 	}
  
- static int get_ramp_delay(int ramp_delay)
-@@ -67,26 +62,18 @@ static int s2mps11_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
+ 	/* Call set_voltage_time_sel if successfully obtained old_selector */
+-	if (ret == 0 && !rdev->constraints->ramp_disable &&
+-	    _regulator_is_enabled(rdev) && old_selector >= 0 &&
+-	    old_selector != selector && rdev->desc->ops->set_voltage_time_sel) {
++	if (ret == 0 && !rdev->constraints->ramp_disable && old_selector >= 0
++		&& old_selector != selector) {
  
- 	switch (rdev->desc->id) {
- 	case S2MPS11_BUCK2:
--		if (!s2mps11->buck2_ramp)
--			return 0;
- 		ramp_delay = s2mps11->ramp_delay2;
- 		break;
- 	case S2MPS11_BUCK3:
--		if (!s2mps11->buck3_ramp)
--			return 0;
- 		ramp_delay = s2mps11->ramp_delay34;
- 		break;
- 	case S2MPS11_BUCK4:
--		if (!s2mps11->buck4_ramp)
--			return 0;
- 		ramp_delay = s2mps11->ramp_delay34;
- 		break;
- 	case S2MPS11_BUCK5:
- 		ramp_delay = s2mps11->ramp_delay5;
- 		break;
- 	case S2MPS11_BUCK6:
--		if (!s2mps11->buck6_ramp)
--			return 0;
- 	case S2MPS11_BUCK1:
- 		ramp_delay = s2mps11->ramp_delay16;
- 		break;
-@@ -415,15 +402,21 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 	struct regulator_config config = { };
- 	struct s2mps11_info *s2mps11;
- 	int i, ret;
--	unsigned char ramp_enable, ramp_reg = 0;
- 
- 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
- 				GFP_KERNEL);
- 	if (!s2mps11)
- 		return -ENOMEM;
- 
--	if (!iodev->dev->of_node)
--		goto p_data;
-+	if (!iodev->dev->of_node) {
-+		if (pdata) {
-+			goto common_reg;
-+		} else {
-+			dev_err(pdev->dev.parent,
-+				"Platform data or DT node not supplied\n");
-+			return -ENODEV;
-+		}
-+	}
- 
- 	for (i = 0; i < S2MPS11_REGULATOR_CNT; i++)
- 		rdata[i].name = regulators[i].name;
-@@ -436,43 +429,6 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 
- 	of_regulator_match(&pdev->dev, reg_np, rdata, S2MPS11_REGULATOR_MAX);
- 
--	goto common_reg;
--p_data:
--	if (!pdata) {
--		dev_err(pdev->dev.parent, "Platform data not supplied\n");
--		return -ENODEV;
--	}
--
--	s2mps11->ramp_delay2 = pdata->buck2_ramp_delay;
--	s2mps11->ramp_delay34 = pdata->buck34_ramp_delay;
--	s2mps11->ramp_delay5 = pdata->buck5_ramp_delay;
--	s2mps11->ramp_delay16 = pdata->buck16_ramp_delay;
--	s2mps11->ramp_delay7810 = pdata->buck7810_ramp_delay;
--	s2mps11->ramp_delay9 = pdata->buck9_ramp_delay;
--
--	s2mps11->buck6_ramp = pdata->buck6_ramp_enable;
--	s2mps11->buck2_ramp = pdata->buck2_ramp_enable;
--	s2mps11->buck3_ramp = pdata->buck3_ramp_enable;
--	s2mps11->buck4_ramp = pdata->buck4_ramp_enable;
--
--	ramp_enable = (s2mps11->buck2_ramp << 3) | (s2mps11->buck3_ramp << 2) |
--		(s2mps11->buck4_ramp << 1) | s2mps11->buck6_ramp ;
--
--	if (ramp_enable) {
--		if (s2mps11->buck2_ramp)
--			ramp_reg |= get_ramp_delay(s2mps11->ramp_delay2) << 6;
--		if (s2mps11->buck3_ramp || s2mps11->buck4_ramp)
--			ramp_reg |= get_ramp_delay(s2mps11->ramp_delay34) << 4;
--		sec_reg_write(iodev, S2MPS11_REG_RAMP, ramp_reg | ramp_enable);
--	}
--
--	ramp_reg &= 0x00;
--	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay5) << 6;
--	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay16) << 4;
--	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay7810) << 2;
--	ramp_reg |= get_ramp_delay(s2mps11->ramp_delay9);
--	sec_reg_write(iodev, S2MPS11_REG_RAMP_BUCK, ramp_reg);
--
- common_reg:
- 	platform_set_drvdata(pdev, s2mps11);
- 
+ 		delay = rdev->desc->ops->set_voltage_time_sel(rdev,
+ 						old_selector, selector);
 -- 
 1.7.0.4
 
