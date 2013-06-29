@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab3F2JJW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 05:09:22 -0400
-Received: from mout2.freenet.de ([195.4.92.92]:35402 "EHLO mout2.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892Ab3F2JJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 05:09:21 -0400
-Message-ID: <51CEA389.9070901@01019freenet.de>
-Date: Sat, 29 Jun 2013 11:06:17 +0200
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:22.0) Gecko/20100101 Firefox/22.0 SeaMonkey/2.19
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ 102/127] iommu/amd: Workaround for ERBT1312
-References: <lhtAZ-q1-5@gated-at.bofh.it> <lhtB1-q1-53@gated-at.bofh.it> <20130628181136.52d00e9c@dualc.maya.org> <20130628182533.GT11309@8bytes.org> <51CDD8FD.808@01019freenet.de> <20130628192319.GV11309@8bytes.org> <51CE768C.3030102@01019freenet.de> <20130629080447.GX11309@8bytes.org>
-In-Reply-To: <20130629080447.GX11309@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753321Ab3F2JLo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 05:11:44 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:61836 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892Ab3F2JLl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jun 2013 05:11:41 -0400
+From: Jiaxing Wang <hello.wjx@gmail.com>
+To: viro@zeniv.linux.org.uk
+Cc: Jiaxing Wang <hello.wjx@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] seq_file:update file->f_pos when lseek() to m->read_pos
+Date: Sat, 29 Jun 2013 17:11:35 +0800
+Message-Id: <1372497096-15914-1-git-send-email-hello.wjx@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg Roedel schrieb:
-> On Sat, Jun 29, 2013 at 07:54:20AM +0200, Andreas Hartmann wrote:
->> Sorry, but it doesn't work for me at all :-(. Behaviour is unchanged. It
->> is exactly as described in the other mail: at the moment of binding vfio
->> to 14.0, the fire begins.
->
-> Hmm, VFIO attaches the device to a new domain. That clears the bit, how
-> about this patch:
+After pread(), file->f_pos and m->read_pos get different,
+and lseek() to m->read_pos did not update file->f_pos, then
+a subsequent read may read from a wrong position, the following
+program shows the problem:
 
-Didn't help, too :-(
+    char str1[32] = { 0 };
+    char str2[32] = { 0 };
+    int poffset = 10;
+    int count = 20;
 
+    /*open any seq file*/
+    int fd = open("/proc/modules", O_RDONLY);
 
-Regards,
-Andreas
+    pread(fd, str1, count, poffset);
+    printf("pread:%s\n", str1);
+
+    /*seek to where m->read_pos is*/
+    lseek(fd, poffset+count, SEEK_SET);
+
+    /*supposed to read from poffset+count, but this read from position 0*/
+    read(fd, str2, count);
+    printf("read:%s\n", str2);
+
+Signed-off-by: Jiaxing Wang <hello.wjx@gmail.com>
+---
+ fs/seq_file.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 774c1eb..4b22b26 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -328,7 +328,8 @@ loff_t seq_lseek(struct file *file, loff_t offset, int whence)
+ 				m->read_pos = offset;
+ 				retval = file->f_pos = offset;
+ 			}
+-		}
++		} else
++			file->f_pos = offset;
+ 	}
+ 	file->f_version = m->version;
+ 	mutex_unlock(&m->lock);
+-- 
+1.8.1.2
+
