@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab3F2IEy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 04:04:54 -0400
-Received: from 8bytes.org ([85.214.48.195]:47766 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751605Ab3F2IEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 04:04:50 -0400
-Date: Sat, 29 Jun 2013 10:04:47 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Andreas Hartmann <andihartmann@01019freenet.de>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ 102/127] iommu/amd: Workaround for ERBT1312
-Message-ID: <20130629080447.GX11309@8bytes.org>
-References: <lhtAZ-q1-5@gated-at.bofh.it>
- <lhtB1-q1-53@gated-at.bofh.it>
- <20130628181136.52d00e9c@dualc.maya.org>
- <20130628182533.GT11309@8bytes.org>
- <51CDD8FD.808@01019freenet.de>
- <20130628192319.GV11309@8bytes.org>
- <51CE768C.3030102@01019freenet.de>
+	id S1752508Ab3F2I0H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 04:26:07 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:61567 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab3F2I0D convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jun 2013 04:26:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CE768C.3030102@01019freenet.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sat Jun 29 10:04:48 2013
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51ce952020869695614606
+In-Reply-To: <51CE9442.2020105@gmail.com>
+References: <51C548E2.1060104@asianux.com>
+	<51C54A9B.9060009@asianux.com>
+	<51CE9442.2020105@gmail.com>
+Date: Sat, 29 Jun 2013 10:26:02 +0200
+X-Google-Sender-Auth: xYSzcTvvNOk6URrTmhaZCI3hH3I
+Message-ID: <CAMuHMdVAQJWDem0=uMnH7iVrckxPJ9cPn=8pYOusNov+wW5VeA@mail.gmail.com>
+Subject: Re: [PATCH] arch: m68k: include: asm: define 'VM_DATA_DEFAULT_FLAGS'
+ no matter whether has 'NOMMU' or not.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michael Schmitz <schmitzmic@gmail.com>
+Cc: Chen Gang <gang.chen@asianux.com>, linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        uClinux development list <uclinux-dev@uclinux.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 07:54:20AM +0200, Andreas Hartmann wrote:
-> Sorry, but it doesn't work for me at all :-(. Behaviour is unchanged. It
-> is exactly as described in the other mail: at the moment of binding vfio
-> to 14.0, the fire begins.
+On Sat, Jun 29, 2013 at 10:01 AM, Michael Schmitz <schmitzmic@gmail.com> wrote:
+>> The same .config file, also report the compiling error below:
+>>
+>> drivers/i2c/busses/i2c-ocores.c:81:2: error: implicit declaration of
+>> function ‘iowrite8’ [-Werror=implicit-function-declaration]
+>> drivers/i2c/busses/i2c-ocores.c:86:2: error: implicit declaration of
+>> function ‘iowrite16’ [-Werror=implicit-function-declaration]
+>> drivers/i2c/busses/i2c-ocores.c:91:2: error: implicit declaration of
+>> function ‘iowrite32’ [-Werror=implicit-function-declaration]
+>> drivers/i2c/busses/i2c-ocores.c:96:2: error: implicit declaration of
+>> function ‘ioread8’ [-Werror=implicit-function-declaration]
+>> drivers/i2c/busses/i2c-ocores.c:101:2: error: implicit declaration of
+>> function ‘ioread16’ [-Werror=implicit-function-declaration]
+>> drivers/i2c/busses/i2c-ocores.c:106:2: error: implicit declaration of
+>> function ‘ioread32’ [-Werror=implicit-function-declaration]
+>>
+>> Excuse me, I am not quite familiar with the related hardware and m68k,
+>> I guess under m68k architecture, we need not this drivers, is it correct ?
 
-Hmm, VFIO attaches the device to a new domain. That clears the bit, how
-about this patch:
+Until someone synthesizes the OpenCores i2c core together with the
+OpenCores 68000 core (they seem to have one), and tries to run uClinux
+on it...
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 1a5285b..cdf346f 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -2111,6 +2111,8 @@ static void set_dte_entry(u16 devid, struct protection_domain *domain, bool ats)
- 
- 		tmp = DTE_GCR3_VAL_C(gcr3) << DTE_GCR3_SHIFT_C;
- 		flags    |= tmp;
-+
-+		flags	 |= DTE_FLAG_SE;
- 	}
- 
- 	flags &= ~(0xffffUL);
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index e3c2d74..74e1d1c 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1431,6 +1431,7 @@ static void init_device_table_dma(void)
- 	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
- 		set_dev_entry_bit(devid, DEV_ENTRY_VALID);
- 		set_dev_entry_bit(devid, DEV_ENTRY_TRANSLATION);
-+		set_dev_entry_bit(devid, DEV_ENTRY_ONE_FAULT);
- 	}
- }
- 
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index 083f98c..2104ca4 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -173,6 +173,7 @@
- #define DEV_ENTRY_TRANSLATION   0x01
- #define DEV_ENTRY_IR            0x3d
- #define DEV_ENTRY_IW            0x3e
-+#define DEV_ENTRY_ONE_FAULT	0x61
- #define DEV_ENTRY_NO_PAGE_FAULT	0x62
- #define DEV_ENTRY_EX            0x67
- #define DEV_ENTRY_SYSMGT1       0x68
-@@ -282,6 +283,7 @@
- #define IOMMU_PTE_IW (1ULL << 62)
- 
- #define DTE_FLAG_IOTLB	(0x01UL << 32)
-+#define DTE_FLAG_SE	(0x01UL << 33)
- #define DTE_FLAG_GV	(0x01ULL << 55)
- #define DTE_GLX_SHIFT	(56)
- #define DTE_GLX_MASK	(3)
+> That would be correct, yes. Perhaps add appropriate dependencies in
+> drivers/i2c/Kconfig to allow building I2C drivers
+> only on hardware that supports it?
 
+We still want it for compile-coverage.
+
+Now, the issue is that m68knommu doesn't implement ioread8() and
+friends, so I'm adding the uClinux list.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
