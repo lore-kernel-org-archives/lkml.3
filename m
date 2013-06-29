@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab3F2SHg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 14:07:36 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:35843 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab3F2SHd (ORCPT
+	id S1752926Ab3F2SLi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 14:11:38 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:57302 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab3F2SLf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 14:07:33 -0400
-Date: Sat, 29 Jun 2013 20:07:30 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 0/2] ARM: sunxi: Convert DTSI to new CPU bindings
-Message-ID: <20130629180730.GI2593@lukather>
-References: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
- <20130628171532.GD30603@e102568-lin.cambridge.arm.com>
- <20130628200333.GA2756@lukather>
- <CAOesGMgsD+tK4+ywvLzsWd+mngrP7zGgSFn0naWjSsQLGaUn2Q@mail.gmail.com>
- <20130628214512.GA11985@e102568-lin.cambridge.arm.com>
+	Sat, 29 Jun 2013 14:11:35 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J+eNKFoVC4T1DV3f"
-Content-Disposition: inline
-In-Reply-To: <20130628214512.GA11985@e102568-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+QCeVR=+2vpFdW_LcjZUdNd+udY4dZEWXxevONTnbs8Y6oECQ@mail.gmail.com>
+References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
+	<CA+QCeVR=+2vpFdW_LcjZUdNd+udY4dZEWXxevONTnbs8Y6oECQ@mail.gmail.com>
+Date: Sat, 29 Jun 2013 11:11:34 -0700
+X-Google-Sender-Auth: gmTCuRLdoeE2GPKz5Fht-oVxjVM
+Message-ID: <CA+55aFy8XfmbhaEFUvy5ToLuSSxw5dhw5vXbJ28QpA0sBZgYoQ@mail.gmail.com>
+Subject: Re: Linux 3.10-rc7
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sergey Meirovich <rathamahata@gmail.com>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jun 29, 2013 at 8:05 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
+>
+> 3.10-rc7 doesn't compile for me
+>
+> rathamahata@piledriver /usr/local/src/linux-3.10-rc7 $ make -j1 bzImage modules
+> make[1]: Nothing to be done for `all'.
+> make[1]: Nothing to be done for `relocs'.
+>   CHK     include/generated/uapi/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CC      scripts/mod/devicetable-offsets.s
+>   GEN     scripts/mod/devicetable-offsets.h
+>   HOSTCC  scripts/mod/file2alias.o
+>   HOSTLD  scripts/mod/modpost
+>   CHK     include/generated/compile.h
+> make[3]: `arch/x86/realmode/rm/realmode.bin' is up to date.
+>   CC      drivers/gpu/drm/radeon/r200.o
+> drivers/gpu/drm/radeon/r200.c: In function ‘r200_set_safe_registers’:
+> drivers/gpu/drm/radeon/r200.c:546:34: error: ‘r200_reg_safe_bm’
+> undeclared (first use in this function)
+>   rdev->config.r100.reg_safe_bm = r200_reg_safe_bm;
+>                                   ^
+> drivers/gpu/drm/radeon/r200.c:546:34: note: each undeclared identifier
 
---J+eNKFoVC4T1DV3f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hmm. Your config builds here fine.
 
-On Fri, Jun 28, 2013 at 10:45:12PM +0100, Lorenzo Pieralisi wrote:
-> On Fri, Jun 28, 2013 at 09:05:42PM +0100, Olof Johansson wrote:
-> > On Fri, Jun 28, 2013 at 1:03 PM, Maxime Ripard
-> > <maxime.ripard@free-electrons.com> wrote:
-> > > On Fri, Jun 28, 2013 at 06:15:32PM +0100, Lorenzo Pieralisi wrote:
-> > >> On Fri, Jun 28, 2013 at 05:44:02PM +0100, Maxime Ripard wrote:
-> > >> > Hi Arnd, Olof,
-> > >> >
-> > >> > Sorry for steping in so late, but these two patches fixes a warning
-> > >> > introduced by the commit 1ba9bf0a (ARM: 7762/1: kernel: fix
-> > >> > arm_dt_init_cpu_maps() to skip non-cpu nodes) after 3.10-rc7.
-> > >> >
-> > >> > These two patches solve the situation for sunxi. The first one by
-> > >> > Lorenzo is to be applied for 3.10 if it's still possible, and the
-> > >> > second one on top of arm-soc/for-next. Tell me if you prefer a more
-> > >> > formal pull request for these patches
-> > >> >
-> > >> > Thanks!
-> > >> > Maxime
-> > >> >
-> > >> > Lorenzo Pieralisi (1):
-> > >> >   ARM: dts: sunxi: cpus/cpu nodes dts updates
-> > >>
-> > >> The patch above should already be queued in next/dt right ?
-> > >
-> > > Indeed.
-> > >
-> > > Then why the latest patch of your patchset got in 3.10, while the
-> > > patches actually fixing the DT it would have impacted were delayed to
-> > > 3.11?
-> > >
-> > > (And why was it merged so late in the development cycle?)
-> >=20
-> > This. So now we have to scramble because some device trees will
-> > produce warnings at boot.
-> >=20
-> > Russell, the alternative is to revert Lorenzo's patch for 3.10 (and
-> > re-introduce it for 3.11). Do you have a preference?
->=20
-> Ok, sorry about this guys. Technically speaking the DT bindings updates
-> (cpu/cpus nodes), dts updates and the ARM 7762/1 merged through Russell's
-> tree all are fixes, but probably we should not get them in as such.
->=20
-> ARM: 7762/1 was implemented to fix the warnings caused by new dts with
-> topology nodes (cpu-map node), and should go to stable kernels as well
-> since we want those kernels to boot with new DTs.
->=20
-> I should have prevented it from getting in as a fix, I really apologize.
-> I should also ask to drop the patch from the stable kernel queues, since =
-this
-> would cause further issues (basically we should send all dts updates to
-> stable kernels as well, and unfortunately that's something we will have
-> to do anyway, when it has to be decided, if 7762/1 goes in 3.11 or later =
-with
-> CC'ed stable we should send the dts updates to stable as well at the same
-> time).
->=20
-> I think the best solution is to revert ARM 7762/1 now and re-introduce it=
- as
-> a fix after 3.11, when the dust has settled, I will drop it from stable
-> kernels queue as well if we all agree.
->=20
-> If we drop ARM 7762/1, 7764/1 needs rebasing since those patches order
-> unfortunately matters.
+What does your
 
-Ok, so you're saying we need to revert 1ba9bf0a and 7764/1. I couldn't
-find a commit corresponding to this one, however there is a commit
-labelled 7763/1 from you that touch the same area (18d7f152). Are these
-the commits that need to be reverted (and then reapplied for 3.11) ?
+   drivers/gpu/drm/radeon/r200_reg_safe.h
 
-Russell, Arnd, Olof, who should revert this patch, and through which
-tree?
+file look like? It's a generated file, and it sounds like it got
+mis-generated. There is possibly a broken Makefile rule that leaves it
+empty on errors or ^C: the rule is
 
-Thanks,
-Maxime
+  quiet_cmd_mkregtable = MKREGTABLE $@
+        cmd_mkregtable = $(obj)/mkregtable $< > $@
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+and if the 'mkregtable' binary is buggered, the above will leave an
+empty file around. And maybe your mkregtable failed to build earlier,
+leaving that empty file around and it will never fix itself up because
+of the "up-to-date" empty r200_reg_safe.h file.
 
---J+eNKFoVC4T1DV3f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So removing the generated r200_reg_safe.h file (and possibly the
+mkregtable binary) and trying again might fix it. Which still leaves
+us with the question of how this happened, and a potentially fragile
+Makefile.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRzyJiAAoJEBx+YmzsjxAgosAQAI7cYE+Tw+vbB+cZa+n4zJJQ
-ZqkJTGAmjqTKS+4acJ0zrpO0udxZw91csXTdi327udR91L0bqpGHBQBKypYcuKhL
-ZS5jG6QIs8qZSjzwrMfrvV9aMqt+zSfDfJgrYuPdW78tXEmS/8tKHVil91yevqZA
-dkS4JE3q5LnDQaFoYvZq3mJ4+vOSgBEEUtlFjYZgd6gM2CvFAasNK7NTatTl8uH9
-Xaor+CI81JYfCHVQ6Ajgeccgbn0nk6EzosTtLCXCtRxooArWJsy04F9xCYKVYezE
-Qs7Ga5mg4CuugMGcuUvQ+kzGPS7ZYsRisC5LfFat5jX9cvufgg89Zdc9uGlfi7ng
-HUkPAMTSnHUT37wEhttjNeuz97oTJgaj8Fsvzf+IKQMSi5wunxGsnbi0h1kSpvcQ
-4sC3AbdgrWLU6q/4Wr/dx0ZekDh5p6hVsZ3qbWO3FJAsU7DCQ199V8u2sEdPs5aF
-euP2SA0bvS/zUal9TickNm2qTK8QPrOwsP0Wri/PJp1sMiZiNrKBRjsj1CVVsRhP
-n+6pJtcO+pzPzDm+mcmQxnohVgNkoEVP6WqNT9HUYnCR+IVOA9wLd3CK9ylEy+JU
-41T1KzrsUKJABe/bBVhqqhWDOl5vD5j+OwOP7q0VXDNR99BZ8Q+cBwRyXOp7RCaY
-iiqoK7TVQNDIlcu3dqbc
-=5KgB
------END PGP SIGNATURE-----
-
---J+eNKFoVC4T1DV3f--
+                Linus
