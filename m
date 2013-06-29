@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab3F2PaH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 11:30:07 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:59928 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab3F2PaD (ORCPT
+	id S1752462Ab3F2QLt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 12:11:49 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:40053 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab3F2QLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 11:30:03 -0400
-Date: Sat, 29 Jun 2013 08:29:59 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
-Message-ID: <20130629152959.GB31339@mtj.dyndns.org>
-References: <1372467663-31425-1-git-send-email-santosh.shilimkar@ti.com>
+	Sat, 29 Jun 2013 12:11:46 -0400
+Message-ID: <51CF0723.9020604@candelatech.com>
+Date: Sat, 29 Jun 2013 09:11:15 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372467663-31425-1-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Joe Jin <joe.jin@oracle.com>, Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "zheng.x.li@oracle.com" <zheng.x.li@oracle.com>,
+        Xen Devel <xen-devel@lists.xen.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: kernel panic in skb_copy_bits
+References: <51CBAA48.3080802@oracle.com>   <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>   <1372402340.3301.229.camel@edumazet-glaptop>  <1372412262.3301.251.camel@edumazet-glaptop> <51CE1E19.3020108@oracle.com> <1372490428.3301.300.camel@edumazet-glaptop>
+In-Reply-To: <1372490428.3301.300.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 06/29/2013 12:20 AM, Eric Dumazet wrote:
+> On Sat, 2013-06-29 at 07:36 +0800, Joe Jin wrote:
+>> Hi Eric,
+>>
+>> The patch not fix the issue and panic as same as early I posted:
+>>> BUG: unable to handle kernel paging request at ffff88006d9e8d48
+>>> IP: [<ffffffff812605bb>] memcpy+0xb/0x120
+>>> PGD 1798067 PUD 1fd2067 PMD 213f067 PTE 0
+>>> Oops: 0000 [#1] SMP
+>>> CPU 7
+>>> Modules linked in: dm_nfs tun nfs fscache auth_rpcgss nfs_acl xen_blkback xen_netback xen_gntdev xen_evtchn lockd sunrpc bridge stp llc bonding be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3 mdio dm_round_robin dm_multipath libiscsi_tcp libiscsi scsi_transport_iscsi xenfs xen_privcmd video sbs sbshc acpi_memhotplug acpi_ipmi ipmi_msghandler parport_pc lp parport ixgbe dca sr_mod cdrom bnx2 radeon ttm drm_kms_helper drm snd_seq_dummy i2c_algo_bit i2c_core snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss serio_raw snd_pcm snd_timer snd soundcore snd_page_alloc iTCO_wdt pcspkr iTCO_vendor_support pata_acpi dcdbas i5k_amb ata_generic hwmon floppy ghes i5000_edac edac_core hed dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage lpfc scsi_transport_fc scsi_tgt ata_piix sg shpchp mptsas mptscsih mptbase scsi_transport_sas sd_mod crc_t10dif ex!
+ t3!
+>>    jbd mbcac
+>> he
+>>>
+>>>
+>>> Pid: 0, comm: swapper Tainted: G        W   2.6.39-300.32.1.el5uek #1 Dell Inc. PowerEdge 2950/0DP246
+>
+>
+> By the way my patch was for current kernels, not for 2.6.39
 
-I haven't looked at bootmem for a while so could be a bit out of touch
-but a couple questions.
+Do you know if your patch should go in 3.9?
 
-On Fri, Jun 28, 2013 at 09:01:03PM -0400, Santosh Shilimkar wrote:
-> - Started replacing bootmem_* usage with dirty hacked memblock based API.
-> This can be letter wrapped with only needed parameter export.
+Your test case sounds a bit like what gives us the rare crash in tcp_collapse
+(we have lots of bouncing wifi interfaces running slow-speed TCP trafic).  But,
+it takes days for us to hit the problem most of the time.
 
-You can't use memblock directly?
-
-> - Couple of ARM related patch-ups were fine but soon realized that we need
-> to patch generic kernel multiple places .. So decided to stop and check again
-> These changes are becoming too much...
-
-I suppose LPAE on arm is analogous to PAE on x86, IOW, high memory?
-This does affect memory initilization as you need to register memory
-areas which aren't addressable directly; however, why does it affect
-generic code which is just allocating memory?  Note that x86 already
-does highmem and the existing code works fine.  Once all bootmem users
-are gone, we can remove the bootmem wrappers but I don't what the
-point is with introducing yet another wrapper.
-
-Thanks.
+Thanks,
+Ben
 
 -- 
-tejun
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
