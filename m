@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab3F2WXv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 18:23:51 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:36022 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab3F2WXu (ORCPT
+	id S1753271Ab3F2WfJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 18:35:09 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:35473 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab3F2WfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 18:23:50 -0400
+	Sat, 29 Jun 2013 18:35:05 -0400
+Message-ID: <51CF610B.7090709@hp.com>
+Date: Sat, 29 Jun 2013 18:34:51 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <20130629201311.GA23838@redhat.com>
-References: <20130624173510.GA1321@redhat.com>
-	<20130625153520.GA7784@redhat.com>
-	<20130626191853.GA29049@redhat.com>
-	<20130627002255.GA16553@redhat.com>
-	<20130627075543.GA32195@dastard>
-	<20130627100612.GA29338@dastard>
-	<20130627125218.GB32195@dastard>
-	<20130627152151.GA11551@redhat.com>
-	<20130628011301.GC32195@dastard>
-	<20130628035825.GC29338@dastard>
-	<20130629201311.GA23838@redhat.com>
-Date: Sat, 29 Jun 2013 15:23:48 -0700
-X-Google-Sender-Auth: xMCG-TV_P72Ay5TtKC48wqzWyFU
-Message-ID: <CA+55aFz8rz=c8DsNHpBJW1K=FH-ztuPAMNOoGfM6HQyZByQ9mQ@mail.gmail.com>
-Subject: Re: frequent softlockups with 3.10rc6.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2 1/2] spinlock: New spinlock_refcount.h for lockless
+ update of refcount
+References: <1372268603-46748-1-git-send-email-Waiman.Long@hp.com> <1372268603-46748-2-git-send-email-Waiman.Long@hp.com> <CA+55aFzo5Jy064pbvEZh5cg_RJiSxe1R+tSgByQTs4rc=4SN3Q@mail.gmail.com> <51CF422E.7030803@hp.com> <51CF52D1.1080406@hp.com> <CA+55aFxrT4i7QBX71QfEsopW1Vj4K0gG7zFR2VMhWmD1Zj8Bng@mail.gmail.com>
+In-Reply-To: <CA+55aFxrT4i7QBX71QfEsopW1Vj4K0gG7zFR2VMhWmD1Zj8Bng@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 1:13 PM, Dave Jones <davej@redhat.com> wrote:
+On 06/29/2013 06:11 PM, Linus Torvalds wrote:
+> On Sat, Jun 29, 2013 at 2:34 PM, Waiman Long<waiman.long@hp.com>  wrote:
+>> I think I got it now. For architecture with transactional memory support to
+>> use an alternative implementation, we will need to use some kind of dynamic
+>> patching at kernel boot up time as not all CPUs in that architecture will
+>> have that support. In that case the helper functions have to be real
+>> functions and cannot be inlined. That means I need to put the implementation
+>> into a spinlock_refcount.c file with the header file contains structure
+>> definitions and function prototypes only. Is that what you are looking for?
+> Yes. Except even more complex: I want the generic fallbacks in a
+> lib/*.c files too.
 >
-> So with that patch, those two boxes have now been fuzzing away for
-> over 24hrs without seeing that specific sync related bug.
+> So we basically have multiple "levels" of specialization:
+>
+>   (a) the purely lock-based model that doesn't do any optimization at
+> all, because we have lockdep enabled etc, so we *want* things to fall
+> back to real spinlocks.
+>
+>   (b) the generic cmpxchg approach for the case when that works
+>
+>   (c) the capability for an architecture to make up its own very
+> specialized version
+>
+> and while I think in all cases the actual functions are big enough
+> that you don't ever want to inline them, at least in the case of (c)
+> it is entirely possible that the architecture actually wants a
+> particular layout for the spinlock and refcount, so we do want the
+> architecture to be able to specify the exact data structure in its own
+> <asm/spinlock-refcount.h>  file. In fact, that may well be true of case
+> (b) too, as Andi already pointed out that on x86-32, an "u64" is not
+> necessarily sufficiently aligned for efficient cmpxchg (it may *work*,
+> but cacheline-crossing atomics are very very slow).
+>
+> Other architectures may have other issues - even with a "generic"
+> cmpxchg-based library version, they may well want to specify exactly
+> how to take the lock. So while (a) would be 100% generic, (b) might
+> need small architecture-specific tweaks, and (c) would be a full
+> custom implementation.
+>
+> See how we do<asm/word-at-a-time.h>  and CONFIG_DCACHE_WORD_ACCESS.
+> Notice how there is a "generic"<asm-generic/word-at-a-time.h>  file
+> (actually, big-endian only) for reference implementations (used by
+> sparc, m68k and parisc, for example), and then you have "full custom"
+> implementations for x86, powerpc, alpha and ARM.
+>
+> See also lib/strnlen_user.c and CONFIG_GENERIC_STRNLEN_USER as an
+> example of how architectures may choose to opt in to using generic
+> library versions - if those work sufficiently well for that
+> architecture. Again, some architecture may decide to write their own
+> fully custome strlen_user() function.
+>
+> Very similar concept.
+>
+>                   Linus
 
-Ok, so at least that confirms that yes, the problem is the excessive
-contention on inode_sb_list_lock.
+Thank for the quick response. I now have a much better idea of what I 
+need to do. I will send out a new patch for review once the code is ready.
 
-Ugh. There's no way we can do that patch by DaveC for 3.10. Not only
-is it scary, Andi pointed out that it's actively buggy and will miss
-inodes that need writeback due to moving things to private lists.
-
-So I suspect we'll have to do 3.10 with this starvation issue in
-place, and mark for stable backporting whatever eventual fix we find.
-
-> I did see the trace below, but I think that's a different problem..
-> Not sure who to point at for that one though. Linus?
-
-Hmm.
-
-> [ 1583.293952] RIP: 0010:[<ffffffff810dd856>]  [<ffffffff810dd856>] stop_machine_cpu_stop+0x86/0x110
-
-I'm not sure how sane the watchdog is over stop_machine situations. I
-think we disable the watchdog for suspend/resume exactly because
-stop-machine can take almost arbitrarily long. I'm assuming you're
-stress-testing (perhaps unintentionally) the cpu offlining/onlining
-and/or memory migration, which is just fundamentally big expensive
-things.
-
-Does the machine recover? Because if it does, I'd be inclined to just
-ignore it. Although it would be interesting to hear what triggers this
-- normal users - and I'm assuming you're still running trinity as
-non-root - generally should not be able to trigger stop-machine
-events..
-
-                  Linus
+Regards,
+Longman
