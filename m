@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3F2S3m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 14:29:42 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:43750 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab3F2S3l (ORCPT
+	id S1752990Ab3F2SrY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 14:47:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39675 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752383Ab3F2SrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 14:29:41 -0400
+	Sat, 29 Jun 2013 14:47:20 -0400
+X-Sasl-enc: 8UmEEG/jSpQZcfxBno4j7LgdFpjPVRrslVvU2DsvR6zy 1372531639
+Date: Sat, 29 Jun 2013 15:47:16 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Mark Lord <mlord@pobox.com>,
+        Marcus Overhagen <marcus.overhagen@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        tj@kernel.org
+Subject: Re: SATA hdd refuses to reallocate a sector?
+Message-ID: <20130629184716.GA9330@khazad-dum.debian.net>
+References: <20130623101940.GA4448@amd.pavel.ucw.cz>
+ <51C76858.4060906@pobox.com>
+ <20130623215100.GA7414@amd.pavel.ucw.cz>
+ <201306240914.29502.linux@rainbow-software.org>
 MIME-Version: 1.0
-In-Reply-To: <20130628134946.GA19422@Krystal>
-References: <20130628134946.GA19422@Krystal>
-Date: Sat, 29 Jun 2013 11:29:40 -0700
-X-Google-Sender-Auth: nw9hZJQSvfyXyN8M5Efbbjij2yY
-Message-ID: <CA+55aFzLcFAp+grCmD_6JvAwsE7Y4-4jTH=XNJqQ39STPOEsaw@mail.gmail.com>
-Subject: Re: [PATCH 3.10-rc7] Fix: kernel/ptrace.c: ptrace_peek_siginfo()
- missing __put_user() validation
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Andrey Vagin <avagin@openvz.org>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Pedro Alves <palves@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201306240914.29502.linux@rainbow-software.org>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 6:49 AM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
-> This __put_user() could be used by unprivileged processes to write into
-> kernel memory. The issue here is that even if copy_siginfo_to_user()
-> fails, the error code is not checked before __put_user() is executed.
-> Luckily, ptrace_peek_siginfo() has been added within the 3.10-rc cycle,
-> so it has not hit a stable release yet.
+You know, either the "long" or the "offline" SMART test routines do exactly
+that on any spinning rust device with a firmware that is not utterly broken.
 
-Why do those stupid
+The HDD's firmware will rewrite, and even reallocate any "weak" sectors
+found by the surface scan.
 
-    __put_user(info.si_code, &uinfo->si_code))
-
-things exist at all?
-
-As far as I can tell, copy_siginfo_to_user[32]() already copies
-si_code. Is the field really so important that it has to be copied
-twice, just to make sure the write makes it?
-
-Ok, ok, I see the explanation in the commit message that introduced
-this, but it sure as hell isn't obvious from actually looking at the
-code. I'm applying the patch, but I think this should have been a
-comment in the code as well.
-
-                 Linus
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
