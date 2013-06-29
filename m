@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700Ab3F2Xpj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 19:45:39 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:48225 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab3F2Xp1 (ORCPT
+	id S1753560Ab3F2XxW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 19:53:22 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46992 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3F2XxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 19:45:27 -0400
+	Sat, 29 Jun 2013 19:53:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <1372435836.6153.0.camel@phoenix>
-References: <1372435836.6153.0.camel@phoenix>
-Date: Sun, 30 Jun 2013 01:45:26 +0200
-Message-ID: <CACRpkdaHJ9fQpJVBxtdtk3=3qYjJ-ncE+OM8-R3MgrqJiRzg3A@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: st: Remove unnecessary use of of_match_ptr macro
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@kernel.org>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CA+55aFx54EDTS0R7E8JpPzqfx8M5c-0Q5Q_z0ybnM1mmBvA=ig@mail.gmail.com>
+References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
+ <CA+QCeVR=+2vpFdW_LcjZUdNd+udY4dZEWXxevONTnbs8Y6oECQ@mail.gmail.com>
+ <CA+55aFy8XfmbhaEFUvy5ToLuSSxw5dhw5vXbJ28QpA0sBZgYoQ@mail.gmail.com>
+ <CA+QCeVTOQks+s7YEK1Sd-aKdg2ce=Jxchb5ATqW0fiZVebFMBw@mail.gmail.com> <CA+55aFx54EDTS0R7E8JpPzqfx8M5c-0Q5Q_z0ybnM1mmBvA=ig@mail.gmail.com>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Sun, 30 Jun 2013 02:52:59 +0300
+Message-ID: <CA+QCeVSA+hAzoxXMcEVaUAaqsMpDoe22AGpKg538mytQXQgyEg@mail.gmail.com>
+Subject: Re: Linux 3.10-rc7
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 6:10 PM, Axel Lin <axel.lin@ingics.com> wrote:
-
-> This is a DT only driver and st_pctl_of_match is always compiled
-> in. Hence of_match_ptr is unnecessary.
+On 30 June 2013 01:13, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Sat, Jun 29, 2013 at 2:07 PM, Sergey Meirovich <rathamahata@gmail.com> wrote:
+>>> (and possibly the
+>>> mkregtable binary) and trying again might fix it.
+>>
+>> Removing mkregtable  has indeed the compile issue for me. Thanks!
 >
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> Ok, so something failed at an earlier build. That error is probably
+> long gone, though, since the subsequent build failure ends up being
+> just a symptom rather than the underlying cause.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+There was overheating issue, that caused forced power off in the
+middle of the first compile.
 
-This driver is merged in Mark Brown's regmap tree, please
-resend it with my ACK and hos name on To:
-
-Yours,
-Linus Walleij
+>
+>>> Which still leaves
+>>> us with the question of how this happened, and a potentially fragile
+>>> Makefile.
+>
+> Radeon/drm people - any ideas how that mkregtable failure happened?
+>
+>                    Linus
