@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab3F2XPK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 19:15:10 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35130 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab3F2XPJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 19:15:09 -0400
-Date: Sun, 30 Jun 2013 00:14:26 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Olof Johansson <olof@lixom.net>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, torvalds@linux-foundation.org
-Subject: Re: [PATCH 0/2] ARM: sunxi: Convert DTSI to new CPU bindings
-Message-ID: <20130629231425.GG3353@n2100.arm.linux.org.uk>
-References: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com> <20130628171532.GD30603@e102568-lin.cambridge.arm.com> <20130628200333.GA2756@lukather> <CAOesGMgsD+tK4+ywvLzsWd+mngrP7zGgSFn0naWjSsQLGaUn2Q@mail.gmail.com> <20130629193819.GD3353@n2100.arm.linux.org.uk> <20130629225426.GA12221@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130629225426.GA12221@quad.lixom.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753447Ab3F2XRE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 19:17:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:50884 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555Ab3F2XRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jun 2013 19:17:02 -0400
+Message-ID: <1372547811.18612.82.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Date: Sun, 30 Jun 2013 09:16:51 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 03:54:26PM -0700, Olof Johansson wrote:
-> Most of this ruffle seems to be about the fact that booting a kernel
-> with a device tree that doesn't conform to the brand spanking new,
-> and never previously enforced, binding for the cpu nodes will produce
-> a WARN_ON(). Lots of our in-tree device trees fall into this category.
-> 
-> And while I think it was a bad idea for Lorenzo to ask for this to be
-> merged as a fix this late (and most in particular for stable), as far
-> as I can tell nothing (new) is broken by it -- just the alarming warning
-> is being printed.
-> 
-> I think it probably makes sense to downgrade the WARN to just a printk, and
-> people will be a lot less worried. How about the below?
-> 
-> If you're OK with it, Russell, can we get your ack so Linus can apply
-> directly given the imminence of final 3.10? Or, if you prefer, you can of
-> course apply and send it on instead.
+Hi Linus !
 
-You can have my usual rmk+kernel ack for it with one change...
+We discovered some breakage in our "EEH" (PCI Error Handling) code while
+doing error injection, due to a couple of regressions. One of them is
+due to a patch (37f02195b) that, in hindsight, I shouldn't have merged
+considering that it caused more problems than it solved.
 
-> +	if (!bootcpu_valid) {
-> +		pr_warn("DT missing boot CPU MPIDR[23:0], fall back to "
-> +			"default cpu_logical_map\n");
+Please pull those two fixes. One for a simple EEH address cache
+initialization issue. The other one is a patch from Guenter that I had
+originally planned to put in 3.11 but which happens to also fix that
+other regression (a kernel oops during EEH error handling and possibly
+hotplug).
 
-Don't wrap messages kernel messages inspite of what checkpatch says.
-Always keep messages like that on a single line so they're greppable.
-Checkpatch is far from perfect and does get stuff wrong, and this is
-one of its common mistakes.
+With those two, the couple of test machines I've hammered with error
+injection are remaining up now. EEH appears to still fail to recover on
+some devices, so there is another problem that Gavin is looking into but
+at least it's no longer crashing the kernel.
 
-Incidentally, here's a few of fun ones I found today which illustrates
-why checkpatch can be bad news if everything it spits out is believed
-by the user:
+Cheers,
+Ben.
 
-WARNING: simple_strtoul is obsolete, use kstrtoul instead
-#1424: FILE: drivers/gpu/drm/armada/armada_debugfs.c:90:
-+       reg = simple_strtoul(buf, &p, 16);
+The following changes since commit b37e161388ac3980d5dfb73050e85874b84253eb:
 
-Umm yes, and to use kstrtoul(), I'd have to:
-- copy the string _safely_ to avoid any buffer overflow
-- find the first non-value character
-- terminate the string with a \0 or a \n\0
-- remember where in the string I'd got to to parse the next argument
-And pushing that complexity into drivers, which if it's wrong causes
-security problems, is better than using simple_strtoul() because ...?
+  powerpc/pci: Fix boot panic on mpc83xx (regression) (2013-06-24 16:54:09 -0500)
 
-ERROR: Macros with multiple statements should be enclosed in a do - while loop
-#2122: FILE: drivers/gpu/drm/armada/armada_fb.c:45:
-+#define FMT(drm, fmt, mod)             \
-+       case DRM_FORMAT_##drm:          \
-+               format = CFG_##fmt;     \
-+               config = mod;           \
-+               break
+are available in the git repository at:
 
-Oh yea, that's really going to work for that isn't it!
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
-WARNING: externs should be avoided in .c files
-#2126: FILE: drivers/gpu/drm/armada/armada_fb.c:49:
-+               break
+for you to fetch changes up to 7846de406f43df98ac9864212dcfe3f2816bdb04:
 
-Err, what extern? :)
+  powerpc/pci: Improve device hotplug initialization (2013-06-30 08:46:46 +1000)
+
+----------------------------------------------------------------
+Guenter Roeck (1):
+      powerpc/pci: Improve device hotplug initialization
+
+Thadeu Lima de Souza Cascardo (1):
+      powerpc/eeh: Add eeh_dev to the cache during boot
+
+ arch/powerpc/kernel/pci-common.c           |   17 ++++++++++++-----
+ arch/powerpc/platforms/pseries/eeh_cache.c |    4 ++--
+ 2 files changed, 14 insertions(+), 7 deletions(-)
+
+
