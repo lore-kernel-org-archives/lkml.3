@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab3F2OCA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 10:02:00 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:56323 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab3F2OB6 (ORCPT
+	id S1752404Ab3F2OVa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 10:21:30 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:32811 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab3F2OV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 10:01:58 -0400
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: mmotm 2013-06-27-16-36 uploaded (wait event common)
-In-Reply-To: Your message of "Thu, 27 Jun 2013 22:30:41 -0700."
-             <51CD1F81.4040202@infradead.org>
-From: Valdis.Kletnieks@vt.edu
-References: <20130627233733.BAEB131C3BE@corp2gmr1-1.hot.corp.google.com>
-            <51CD1F81.4040202@infradead.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1372514416_2179P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sat, 29 Jun 2013 10:00:16 -0400
-Message-ID: <65029.1372514416@turing-police.cc.vt.edu>
+	Sat, 29 Jun 2013 10:21:27 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Kees Cook <keescook@chromium.org>
+Subject: [pull request] Pull request for branch yem-kconfig-for-next
+Date: Sat, 29 Jun 2013 16:21:11 +0200
+Message-Id: <cover.1372515621.git.yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1372514416_2179P
-Content-Type: text/plain; charset=us-ascii
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-On Thu, 27 Jun 2013 22:30:41 -0700, Randy Dunlap said:
+Hello Michal, All,
 
-> +		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;
+Please pull this kconfig fix from Kees that enables 64-bit-wide
+(ie. signed long) [int,hex] ranges.
 
-Was this trying to do a  wait_ho_timeout(!!tout)  or something?
+Regards,
+Yann E. MORIN.
 
---==_Exmh_1372514416_2179P
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+The following changes since commit 490f16171119a16e05d670306c105f3b45c38837:
 
-iQIVAwUBUc7ocAdmEQWDXROgAQJnsw/9GIls2RIxjfNdU10UXmU5XtVGWfAu2IkZ
-lO5FqDzA9b+g49K1HLAxQ3RVNz+TrtmI44gx6qjzsMYqVzz4KU5KRzgd+yAp5M83
-WK2oI7ez0djtOLst6NnPddBZN6Li8x6h8UaW6CltpR2qRcCyZvF22SqAzVDWXClo
-kc3sYTIWDrfPnAvpBEpJpTPl64i7G5nLIri+Vx4UnsmXVeRUKhKk1og3ekdZJ6os
-BtkKU55WlJEidalOV5NeyZ9SVPlGTptc1GhbYnB7dGuMWzpdNtqQec+VnQRLQNOz
-FnTTzWNI5vSEYB4sSLwawa3JE3l/Xq+ZMwI2/G6cVjH1kc4hEw+gD8Si3+wdj8rA
-mg/ski9wqSMLOirXduqOxzNsdvSR92bLKMz8ZBKXirtb1EWyxhs7tyA1HDYN9gfi
-VTpdtYbI4THRCKTB6z/2ToCqEEeXmfBl3TE8DYzervaz1fHxbHjIGpEstWyOdBLj
-ZqUCPQ60BsQrqT2Xdg5opi0yKMFbDL6Hfce4Wk/hXE50AkInFtRqg10HwgQaPj2U
-UXW+A/lBt0UyjUnvcg4y8fiUt25xcIPojn1stwi4Vm4fpMwCS7OmZ6RkCiyB5wXH
-It2s71pSzAifn0OUdI/ZlDxkdUYBHGpz87aU39ze5ZazUiCIP+D7N3ywmKOnsCmD
-ryOFZ7EiecU=
-=6+DB
------END PGP SIGNATURE-----
+  Revert "kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG" (2013-06-26 15:49:00 +0200)
 
---==_Exmh_1372514416_2179P--
+are available in the git repository at:
+
+  git://gitorious.org/linux-kconfig/linux-kconfig.git yem-kconfig-for-next
+
+for you to fetch changes up to b57caaaed2bd127fe656e6c145970ed6a05c0125:
+
+  kconfig: allow "hex" and "range" to support longs (2013-06-29 15:30:17 +0200)
+
+----------------------------------------------------------------
+Kees Cook (1):
+      kconfig: allow "hex" and "range" to support longs
+
+ scripts/kconfig/symbol.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
