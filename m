@@ -1,287 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab3F2HwN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 03:52:13 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:49975 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984Ab3F2HwL (ORCPT
+	id S1752188Ab3F2IBT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 04:01:19 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:48629 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab3F2IBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 03:52:11 -0400
-Message-ID: <51CE920C.5020001@huawei.com>
-Date: Sat, 29 Jun 2013 15:51:40 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 29 Jun 2013 04:01:18 -0400
+Message-ID: <51CE9442.2020105@gmail.com>
+Date: Sat, 29 Jun 2013 20:01:06 +1200
+From: Michael Schmitz <schmitzmic@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+To: Chen Gang <gang.chen@asianux.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4] tracing/uprobes: Support ftrace_event_file base multibuffer
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Subject: Re: [PATCH] arch: m68k: include: asm: define 'VM_DATA_DEFAULT_FLAGS'
+ no matter whether has 'NOMMU' or not.
+References: <51C548E2.1060104@asianux.com> <51C54A9B.9060009@asianux.com>
+In-Reply-To: <51C54A9B.9060009@asianux.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[v3->v4]:
-1. use "bool enabled = is_trace_uprobe_enabled(tu);", suggested by Oleg.
-2. use list_add_tail_rcu instead of list_add_rcu, suggested by Masami.
-3. fix the error handling in probe_event_enable, found by Srikar.
+Hi,
 
--------------------
+> The same .config file, also report the compiling error below:
+>
+> drivers/i2c/busses/i2c-ocores.c:81:2: error: implicit declaration of function ‘iowrite8’ [-Werror=implicit-function-declaration]
+> drivers/i2c/busses/i2c-ocores.c:86:2: error: implicit declaration of function ‘iowrite16’ [-Werror=implicit-function-declaration]
+> drivers/i2c/busses/i2c-ocores.c:91:2: error: implicit declaration of function ‘iowrite32’ [-Werror=implicit-function-declaration]
+> drivers/i2c/busses/i2c-ocores.c:96:2: error: implicit declaration of function ‘ioread8’ [-Werror=implicit-function-declaration]
+> drivers/i2c/busses/i2c-ocores.c:101:2: error: implicit declaration of function ‘ioread16’ [-Werror=implicit-function-declaration]
+> drivers/i2c/busses/i2c-ocores.c:106:2: error: implicit declaration of function ‘ioread32’ [-Werror=implicit-function-declaration]
+>
+> Excuse me, I am not quite familiar with the related hardware and m68k,
+> I guess under m68k architecture, we need not this drivers, is it correct ?
 
-Support multi-buffer on uprobe-based dynamic events by
-using ftrace_event_file.
+That would be correct, yes. Perhaps add appropriate dependencies in 
+drivers/i2c/Kconfig to allow building I2C drivers
+only on hardware that supports it?
 
-This patch is based kprobe-based dynamic events multibuffer
-support work initially, commited by Masami(commit 41a7dd420c),
-but revised as below:
+(Joking - some fallout would be expected when using make randconfig)
 
-Oleg changed the kprobe-based multibuffer design from
-array-pointers of ftrace_event_file into simple list,
-so this patch also change to the list degisn.
+Cheers,
 
-rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
-to synchronize with ftrace_event_file list add and delete.
+     Michael
 
-Even though we allow multi-uprobes instances now,
-but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive
-in probe_event_enable currently, this means we cannot allow
-one user is using uprobe-tracer, and another user is using
-perf-probe on same uprobe concurrently.
-(Perhaps this will be fix in future, kprobe dont't have this
-limitation now)
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- kernel/trace/trace_uprobe.c |  123 +++++++++++++++++++++++++++++++++++--------
- 1 file changed, 101 insertions(+), 22 deletions(-)
-
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 32494fb0..760d4ed 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -53,6 +53,7 @@ struct trace_uprobe {
- 	struct list_head		list;
- 	struct ftrace_event_class	class;
- 	struct ftrace_event_call	call;
-+	struct list_head		files;
- 	struct trace_uprobe_filter	filter;
- 	struct uprobe_consumer		consumer;
- 	struct inode			*inode;
-@@ -65,6 +66,11 @@ struct trace_uprobe {
- 	struct probe_arg		args[];
- };
-
-+struct event_file_link {
-+	struct ftrace_event_file	*file;
-+	struct list_head		list;
-+};
-+
- #define SIZEOF_TRACE_UPROBE(n)			\
- 	(offsetof(struct trace_uprobe, args) +	\
- 	(sizeof(struct probe_arg) * (n)))
-@@ -124,6 +130,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
- 		goto error;
-
- 	INIT_LIST_HEAD(&tu->list);
-+	INIT_LIST_HEAD(&tu->files);
- 	tu->consumer.handler = uprobe_dispatcher;
- 	if (is_ret)
- 		tu->consumer.ret_handler = uretprobe_dispatcher;
-@@ -511,7 +518,8 @@ static const struct file_operations uprobe_profile_ops = {
- };
-
- static void uprobe_trace_print(struct trace_uprobe *tu,
--				unsigned long func, struct pt_regs *regs)
-+				unsigned long func, struct pt_regs *regs,
-+				struct ftrace_event_file *ftrace_file)
- {
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
-@@ -520,9 +528,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 	int size, i;
- 	struct ftrace_event_call *call = &tu->call;
-
-+	WARN_ON(call != ftrace_file->event_call);
-+
- 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
--	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
--						  size + tu->size, 0, 0);
-+	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
-+						call->event.type,
-+						size + tu->size, 0, 0);
- 	if (!event)
- 		return;
-
-@@ -546,15 +557,28 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- /* uprobe handler */
- static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- {
--	if (!is_ret_probe(tu))
--		uprobe_trace_print(tu, 0, regs);
-+	struct event_file_link *link;
-+
-+	if (is_ret_probe(tu))
-+		return 0;
-+
-+	rcu_read_lock();
-+	list_for_each_entry(link, &tu->files, list)
-+		uprobe_trace_print(tu, 0, regs, link->file);
-+	rcu_read_unlock();
-+
- 	return 0;
- }
-
- static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
- 				struct pt_regs *regs)
- {
--	uprobe_trace_print(tu, func, regs);
-+	struct event_file_link *link;
-+
-+	rcu_read_lock();
-+	list_for_each_entry(link, &tu->files, list)
-+		uprobe_trace_print(tu, func, regs, link->file);
-+	rcu_read_unlock();
- }
-
- /* Event entry printers */
-@@ -605,33 +629,87 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
- 				struct mm_struct *mm);
-
- static int
--probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
-+probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
-+		   filter_func_t filter)
- {
-+	bool enabled = is_trace_uprobe_enabled(tu);
-+	struct event_file_link *link;
- 	int ret = 0;
-
--	if (is_trace_uprobe_enabled(tu))
--		return -EINTR;
-+	if (file) {
-+		if (tu->flags & TP_FLAG_PROFILE)
-+			return -EINTR;
-+
-+		link = kmalloc(sizeof(*link), GFP_KERNEL);
-+		if (!link)
-+			return -ENOMEM;
-+
-+		link->file = file;
-+		list_add_tail_rcu(&link->list, &tu->files);
-+
-+		tu->flags |= TP_FLAG_TRACE;
-+	} else {
-+		if (tu->flags & TP_FLAG_TRACE)
-+			return -EINTR;
-+
-+		tu->flags |= TP_FLAG_PROFILE;
-+	}
-
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
-
--	tu->flags |= flag;
--	tu->consumer.filter = filter;
--	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
--	if (ret)
--		tu->flags &= ~flag;
-+	/* we cannot call uprobe_register twice for same tu */
-+	if (!enabled) {
-+		tu->consumer.filter = filter;
-+		ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-+	}
-+
-+	if (ret) {
-+		if (file) {
-+			list_del_rcu(&link->list);
-+			kfree(link);
-+			tu->flags &= ~TP_FLAG_TRACE;
-+		} else
-+			tu->flags &= ~TP_FLAG_PROFILE;
-+	}
-
- 	return ret;
- }
-
--static void probe_event_disable(struct trace_uprobe *tu, int flag)
-+static struct event_file_link *
-+find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
- {
--	if (!is_trace_uprobe_enabled(tu))
--		return;
-+	struct event_file_link *link;
-+
-+	list_for_each_entry(link, &tu->files, list)
-+		if (link->file == file)
-+			return link;
-+
-+	return NULL;
-+}
-+
-+static void
-+probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
-+{
-+	if (file) {
-+		struct event_file_link *link;
-+
-+		link = find_event_file_link(tu, file);
-+		if (!link)
-+			return;
-+
-+		list_del_rcu(&link->list);
-+		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
-+		synchronize_sched();
-+		kfree(link);
-+
-+		if (!list_empty(&tu->files))
-+			return;
-+	}
-
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
-
- 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
--	tu->flags &= ~flag;
-+	tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
- }
-
- static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
-@@ -867,21 +945,22 @@ static
- int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
- {
- 	struct trace_uprobe *tu = event->data;
-+	struct ftrace_event_file *file = data;
-
- 	switch (type) {
- 	case TRACE_REG_REGISTER:
--		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
-+		return probe_event_enable(tu, file, NULL);
-
- 	case TRACE_REG_UNREGISTER:
--		probe_event_disable(tu, TP_FLAG_TRACE);
-+		probe_event_disable(tu, file);
- 		return 0;
-
- #ifdef CONFIG_PERF_EVENTS
- 	case TRACE_REG_PERF_REGISTER:
--		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
-+		return probe_event_enable(tu, NULL, uprobe_perf_filter);
-
- 	case TRACE_REG_PERF_UNREGISTER:
--		probe_event_disable(tu, TP_FLAG_PROFILE);
-+		probe_event_disable(tu, NULL);
- 		return 0;
-
- 	case TRACE_REG_PERF_OPEN:
--- 
-1.7.9.7
-
+> Thanks.
+>
+>
+> On 06/22/2013 02:49 PM, Chen Gang wrote:
+>> Define 'VM_DATA_DEFAULT_FLAGS' when 'NOMMU' to pass compiling.
+>>
+>> So move it from "include/asm/page_mm.h to "include/asm/page.h"
+>>
+>> The related make:
+>>
+>>    make ARCH=m68k randconfig
+>>    make ARCH=m68k menuconfig
+>>      choose cross compiler
+>>      disable MMU support
+>>    make ARCH=m68k V=1 EXTRA_CFLAGS=-W
+>>
+>> The related error:
+>>
+>>    security/selinux/hooks.c: In function �selinux_init�:
+>>    security/selinux/hooks.c:5821:21: error: �VM_DATA_DEFAULT_FLAGS� undeclared (first use in this function)
+>>
+>> (the attachment is the related .config file)
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>   arch/m68k/include/asm/page.h    |    3 +++
+>>   arch/m68k/include/asm/page_mm.h |    3 ---
+>>   2 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/m68k/include/asm/page.h b/arch/m68k/include/asm/page.h
+>> index 7c360da..38b024a 100644
+>> --- a/arch/m68k/include/asm/page.h
+>> +++ b/arch/m68k/include/asm/page.h
+>> @@ -48,6 +48,9 @@ extern unsigned long _ramend;
+>>   #include <asm/page_no.h>
+>>   #endif
+>>   
+>> +#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
+>> +				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+>> +
+>>   #include <asm-generic/getorder.h>
+>>   
+>>   #endif /* _M68K_PAGE_H */
+>> diff --git a/arch/m68k/include/asm/page_mm.h b/arch/m68k/include/asm/page_mm.h
+>> index 89f2014..5029f73 100644
+>> --- a/arch/m68k/include/asm/page_mm.h
+>> +++ b/arch/m68k/include/asm/page_mm.h
+>> @@ -173,7 +173,4 @@ static inline __attribute_const__ int __virt_to_node_shift(void)
+>>   
+>>   #endif /* __ASSEMBLY__ */
+>>   
+>> -#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
+>> -				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+>> -
+>>   #endif /* _M68K_PAGE_MM_H */
+>>
+>
 
