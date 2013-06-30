@@ -1,130 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab3F3TkD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 15:40:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65177 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab3F3TkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 15:40:00 -0400
-Message-ID: <51D08976.6040005@redhat.com>
-Date: Sun, 30 Jun 2013 21:39:34 +0200
-From: Lennart Poettering <lpoetter@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Tim Hockin <thockin@hockin.org>
-CC: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Mike Galbraith <bitbucket@online.de>, Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com> <20130626212047.GB4536@htj.dyndns.org> <1372311907.5871.78.camel@marge.simpson.net> <20130627180143.GD5599@mtj.dyndns.org> <1372391198.5989.110.camel@marge.simpson.net> <20130628040930.GC2500@htj.dyndns.org> <1372394950.5989.128.camel@marge.simpson.net> <20130628050138.GD2500@htj.dyndns.org> <20130628150513.GD5125@dhcp22.suse.cz> <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com> <51CE3CE0.9010506@redhat.com> <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com>
-In-Reply-To: <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752410Ab3F3UXp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 16:23:45 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:46808 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab3F3UXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 16:23:41 -0400
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Imre Deak <imre.deak@intel.com>, Lukas Czerner <lczerner@redhat.com>,
+        Samuel Ortiz <samuel@sortiz.org>, Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: linux-next: Tree for Jun 28 [ BISECTED: rsyslog/imklog: High CPU usage ]
+In-Reply-To: Your message of "Sun, 30 Jun 2013 20:19:45 +0200."
+             <20130630181945.GA5171@redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <CA+icZUXo=Z4gDfCMvLqRQDq_fpNAq+UqtUw=jrU=3=kVZP-2+A@mail.gmail.com>
+            <20130630181945.GA5171@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1372623427_4671P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Sun, 30 Jun 2013 16:17:07 -0400
+Message-ID: <4823.1372623427@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heya,
+--==_Exmh_1372623427_4671P
+Content-Type: text/plain; charset=us-ascii
 
-On 29.06.2013 05:05, Tim Hockin wrote:
-> Come on, now, Lennart.  You put a lot of words in my mouth.
-
->> I for sure am not going to make the PID 1 a client of another daemon. That's
->> just wrong. If you have a daemon that is both conceptually the manager of
->> another service and the client of that other service, then that's bad design
->> and you will easily run into deadlocks and such. Just think about it: if you
->> have some external daemon for managing cgroups, and you need cgroups for
->> running external daemons, how are you going to start the external daemon for
->> managing cgroups? Sure, you can hack around this, make that daemon special,
->> and magic, and stuff -- or you can just not do such nonsense. There's no
->> reason to repeat the fuckup that cgroup became in kernelspace a second time,
->> but this time in userspace, with multiple manager daemons all with different
->> and slightly incompatible definitions what a unit to manage actualy is...
+On Sun, 30 Jun 2013 20:19:45 +0200, Oleg Nesterov said:
 >
-> I forgot about the tautology of systemd.  systemd is monolithic.
-
-systemd is certainly not monolithic for almost any definition of that 
-term. I am not sure where you are taking that from, and I am not sure I 
-want to discuss on that level. This just sounds like FUD you picked up 
-somewhere and are repeating carelessly...
-
-> But that's not my point.  It seems pretty easy to make this cgroup
-> management (in "native mode") a library that can have either a thin
-> veneer of a main() function, while also being usable by systemd.  The
-> point is to solve all of the problems ONCE.  I'm trying to make the
-> case that systemd itself should be focusing on features and policies
-> and awesome APIs.
-
-You know, getting this all right isn't easy. If you want to do things 
-properly, then you need to propagate attribute changes between the units 
-you manage. You also need something like a scheduler, since a number of 
-controllers can only be configured under certain external conditions 
-(for example: the blkio or devices controller use major/minor parameters 
-for configuring per-device limits. Since major/minor assignments are 
-pretty much unpredictable these days -- and users probably want to 
-configure things with friendly and stable /dev/disk/by-id/* symlinks 
-anyway -- this requires us to wait for devices to show up before we can 
-configure the parameters.) Soo... you need a graph of units, where you 
-can propagate things, and schedule things based on some execution/event 
-queue. And the propagation and scheduling are closely intermingled.
-
-Now, that's pretty much exactly what systemd actually *is*. It 
-implements a graph of units with a scheduler. And if you rip that part 
-out of systemd to make this an "easy cgroup management library", then 
-you simply turn what systemd is into a library without leaving anything. 
-Which is just bogus.
-
-So no, if you say "seems pretty easy to make this cgroup management a 
-library" then well, I have to disagree with you.
-
->> We want to run fewer, simpler things on our systems, we want to reuse as
+> Not only "__wait_no_timeout(tout) ?:" was wrong, I didn't bother
+> to recheck this logic even after I got the "warning: the omitted
+> middle operand in ?:" reports.
 >
-> Fewer and simpler are not compatible, unless you are losing
-> functionality.  Systemd is fewer, but NOT simpler.
+> Sedat, thanks you very much! Any chance you can try the patch below?
 
-Oh, certainly it is. If we'd split up the cgroup fs access into 
-separate daemon of some kind, then we'd need some kind of IPC for that, 
-and so you have more daemons and you have some complex IPC between the 
-processes. So yeah, the systemd approach is certainly both simpler and 
-uses fewer daemons then your hypothetical one.
+I'm not Sedat, but I had the same problem with rsyslog going nuts,
+and I can confirm that the patch fixes the problem.  (Had to hand-apply
+it, there was some difference of opinion regarding { } on an else)
 
->> much of the code as we can. You don't achieve that by running yet another
->> daemon that does worse what systemd can anyway do simpler, easier and
->> better.
->
-> Considering this is all hypothetical, I find this to be a funny
-> debate.  My hypothetical idea is better than your hypothetical idea.
+Feel free to toss on a Tested-By: if this becomes a separate commit...
 
-Well, systemd is pretty real, and the code to do the unified cgroup 
-management within systemd is pretty complete. systemd is certainly not 
-hypothetical.
 
->> The least you could grant us is to have a look at the final APIs we will
->> have to offer before you already imply that systemd cannot be a valid
->> implementation of any API people could ever agree on.
->
-> Whoah, don't get defensive.  I said nothing of the sort.  The fact of
-> the matter is that we do not run systemd, at least in part because of
-> the monolithic nature.  That's unlikely to change in this timescale.
+--==_Exmh_1372623427_4671P
+Content-Type: application/pgp-signature
 
-Oh, my. I am not sure what makes you think it is monolithic.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-> What I said was that it would be a shame if we had to invent our own
-> low-level cgroup daemon just because the "upstream" daemons was too
-> tightly coupled with systemd.
+iQIVAwUBUdCSQwdmEQWDXROgAQL5lBAAjtbkNdBAVuKWbG0wP6Nskb2L85CBvY5G
+zCmv7o7Fyb4ZyWufDl6cLVi26PsQnv2nZFxy3k1Ivh/0l5s+YPngjKplgUMl+mXD
+0X0zuwDx4J2868/rqqIVh91aKMo/wYMAg8Bf6NUAI4hpdOAaj6jo2kfDWzKA/FsR
+h24/cPL40aHzwUwxW2QAB0HEp02jxEXxExmTpjWrCGT5fVgM+AXaTTuPDga5KzRp
+b5kgsbIg5pqR6sR4jrNKxWiyU+uWIL0aNwD/duI85v7wk/oWDFTe7YF21BpX787H
+OjySotC5I+Zj3fxQb773fB4iexhuPz1HcnCo3PJqpRam4JDnjNhGe+NeO+AiKn+d
+zMyUBzvb4ruuKzk/zeiEysFlGvz6mhPjUqpRqL4DilqDGvBs5qE/MTtseNh0jEJa
+0vou3m7GfxoKob3LSYb+hQugvJOVbJgS+jyVD5YewVJOeyvcCVaGFVe/snzmHYy/
+Wu+C4/cVQYKMjv2fem5Y7h2ZFvWEaylqeDKwwtrDzXs3CX08YdbV90gXRF5TkPmK
+8nKV+n2qUiG1qvDN3lwfWyxRBVEADEbkRfXHlsQcsx2A8zugbc+Rh/mFyW5zTIS7
+l880+R8CKQIUaJMuQswoMd/cy2n9L26n2ZdMSa7Ef36NnMv3R/hLFEUwSaLHkBIT
+Xh1Dw+ee9m8=
+=8fz0
+-----END PGP SIGNATURE-----
 
-I have no interest to reimplement systemd as a library, just to make you 
-happy... I am quite happy with what we already have....
-
-> This is supposed to be collaborative, not combative.
-
-It certainly sounds *very* differently in what you are writing.
-
-Lennart
+--==_Exmh_1372623427_4671P--
