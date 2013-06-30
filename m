@@ -1,116 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3F3QSp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 12:18:45 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:50640 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab3F3QSo (ORCPT
+	id S1752174Ab3F3QVK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 12:21:10 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:56449 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab3F3QVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 12:18:44 -0400
-Date: Sun, 30 Jun 2013 19:17:48 +0300
+	Sun, 30 Jun 2013 12:21:07 -0400
+Date: Sun, 30 Jun 2013 19:20:09 +0300
 From: Mika Westerberg <mika.westerberg@iki.fi>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net, broonie@kernel.org,
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net,
+        Ryan Mallon <rmallon@gmail.com>, broonie@kernel.org,
         grant.likely@linaro.org
-Subject: Re: [PATCH 4/8] spi: spi-ep93xx: remove bits_per_word() helper
-Message-ID: <20130630161748.GB786@mwesterb-mobl.lan>
-References: <201306281144.04549.hartleys@visionengravers.com>
- <51CE1A8C.7070703@gmail.com>
+Subject: Re: [PATCH 5/8] spi: spi-ep93xx: remove 'dss' from per chip private
+ data
+Message-ID: <20130630162009.GC786@mwesterb-mobl.lan>
+References: <201306281144.34074.hartleys@visionengravers.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51CE1A8C.7070703@gmail.com>
+In-Reply-To: <201306281144.34074.hartleys@visionengravers.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 09:21:48AM +1000, Ryan Mallon wrote:
-> On 29/06/13 04:44, H Hartley Sweeten wrote:
+On Fri, Jun 28, 2013 at 11:44:33AM -0700, H Hartley Sweeten wrote:
+> This value is only needed to set the bits per word for each transfer
+> of a message. There is no reason to set the value in ep93xx_spi_enable()
+> because ep93xx_spi_process_transfer() sets it again for each transfer.
 > 
-> > This inline helper function is only used to determine the bus width
-> > of the current transfer (8 or 16 bit). Add a bool flag to the private
-> > structure and set it appropriately for each transfer.
-> > 
-> > Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> > Cc: Ryan Mallon <rmallon@gmail.com>
-> > Cc: Mika Westerberg <mika.westerberg@iki.fi>
-> > Cc: Mark Brown <broonie@kernel.org>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > ---
-> >  drivers/spi/spi-ep93xx.c | 16 +++++-----------
-> >  1 file changed, 5 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
-> > index bcfd35a..4fab3bb 100644
-> > --- a/drivers/spi/spi-ep93xx.c
-> > +++ b/drivers/spi/spi-ep93xx.c
-> > @@ -116,6 +116,7 @@ struct ep93xx_spi {
-> >  	unsigned long			min_rate;
-> >  	unsigned long			max_rate;
-> >  	bool				running;
-> > +	bool				word_xfer;
+> Just pass the t->bits_per_word directly to ep93xx_spi_chip_setup() in
+> ep93xx_spi_process_transfer() and remove 'dss' from the per chip private
+> data.
 > 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ryan Mallon <rmallon@gmail.com>
+> Cc: Mika Westerberg <mika.westerberg@iki.fi>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> ---
+>  drivers/spi/spi-ep93xx.c | 20 +++++++-------------
+>  1 file changed, 7 insertions(+), 13 deletions(-)
 > 
-> I think this is a slightly confusing name. Maybe something like
-> is_16bit_xfer would be better?
-> 
-> >  	struct workqueue_struct		*wq;
-> >  	struct work_struct		msg_work;
-> >  	struct completion		wait;
-> > @@ -407,17 +408,9 @@ static void ep93xx_spi_chip_setup(const struct ep93xx_spi *espi,
-> >  	writew(cr0, espi->regs_base + SSPCR0);
-> >  }
-> >  
-> > -static inline int bits_per_word(const struct ep93xx_spi *espi)
-> > -{
-> > -	struct spi_message *msg = espi->current_msg;
-> > -	struct spi_transfer *t = msg->state;
-> > -
-> > -	return t->bits_per_word;
-> > -}
-> > -
-> >  static void ep93xx_do_write(struct ep93xx_spi *espi, struct spi_transfer *t)
-> >  {
-> > -	if (bits_per_word(espi) > 8) {
-> > +	if (espi->word_xfer) {
-> >  		u16 tx_val = 0;
-> >  
-> >  		if (t->tx_buf)
-> > @@ -436,7 +429,7 @@ static void ep93xx_do_write(struct ep93xx_spi *espi, struct spi_transfer *t)
-> >  
-> >  static void ep93xx_do_read(struct ep93xx_spi *espi, struct spi_transfer *t)
-> >  {
-> > -	if (bits_per_word(espi) > 8) {
-> > +	if (espi->word_xfer) {
-> >  		u16 rx_val;
-> >  
-> >  		rx_val = readw(espi->regs_base + SSPDR);
-> > @@ -522,7 +515,7 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_transfer_direction dir)
-> >  	size_t len = t->len;
-> >  	int i, ret, nents;
-> >  
-> > -	if (bits_per_word(espi) > 8)
-> > +	if (espi->word_xfer)
-> >  		buswidth = DMA_SLAVE_BUSWIDTH_2_BYTES;
-> >  	else
-> >  		buswidth = DMA_SLAVE_BUSWIDTH_1_BYTE;
-> > @@ -699,6 +692,7 @@ static void ep93xx_spi_process_transfer(struct ep93xx_spi *espi,
-> >  
-> >  	ep93xx_spi_chip_setup(espi, chip);
-> >  
-> > +	espi->word_xfer = (t->bits_per_word > 8) ? true : false;
-> 
-> 
-> 	espi->word_xfer = (t->bits_per_word > 8);
+> diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+> index 4fab3bb..cb22c89 100644
+> --- a/drivers/spi/spi-ep93xx.c
+> +++ b/drivers/spi/spi-ep93xx.c
+> @@ -140,7 +140,6 @@ struct ep93xx_spi {
+>   * @rate: max rate in hz this chip supports
+>   * @div_cpsr: cpsr (pre-scaler) divider
+>   * @div_scr: scr divider
+> - * @dss: bits per word (4 - 16 bits)
+>   * @ops: private chip operations
+>   *
+>   * This structure is used to store hardware register specific settings for each
+> @@ -152,13 +151,9 @@ struct ep93xx_spi_chip {
+>  	unsigned long			rate;
+>  	u8				div_cpsr;
+>  	u8				div_scr;
+> -	u8				dss;
+>  	struct ep93xx_spi_chip_ops	*ops;
+>  };
+>  
+> -/* converts bits per word to CR0.DSS value */
+> -#define bits_per_word_to_dss(bpw)	((bpw) - 1)
 
-Or even
-	espi->word_xfer = t->bits_per_word > 8;
+I think you should keep this macro...
 
-> This patch is fine, but not sure it is entirely worth it. The
-> information is already stored in t->bits_per_word and the cost
-> of retrieving it is pretty minimal.
+> -
+>  static int ep93xx_spi_enable(const struct ep93xx_spi *espi)
+>  {
+>  	u8 regval;
+> @@ -308,8 +303,6 @@ static int ep93xx_spi_setup(struct spi_device *spi)
+>  		chip->rate = spi->max_speed_hz;
+>  	}
+>  
+> -	chip->dss = bits_per_word_to_dss(spi->bits_per_word);
+> -
+>  	ep93xx_spi_cs_control(spi, false);
+>  	return 0;
+>  }
+> @@ -386,22 +379,25 @@ static void ep93xx_spi_cleanup(struct spi_device *spi)
+>   * ep93xx_spi_chip_setup() - configures hardware according to given @chip
+>   * @espi: ep93xx SPI controller struct
+>   * @chip: chip specific settings
+> + * @bits_per_word: transfer bits_per_word
+>   *
+>   * This function sets up the actual hardware registers with settings given in
+>   * @chip. Note that no validation is done so make sure that callers validate
+>   * settings before calling this.
+>   */
+>  static void ep93xx_spi_chip_setup(const struct ep93xx_spi *espi,
+> -				  const struct ep93xx_spi_chip *chip)
+> +				  const struct ep93xx_spi_chip *chip,
+> +				  u8 bits_per_word)
+>  {
+>  	u16 cr0;
+>  
+>  	cr0 = chip->div_scr << SSPCR0_SCR_SHIFT;
+>  	cr0 |= (chip->spi->mode & (SPI_CPHA|SPI_CPOL)) << SSPCR0_MODE_SHIFT;
+> -	cr0 |= chip->dss;
+> +	cr0 |= (bits_per_word - 1);
 
-I agree.
+... and use it here. It makes things less confusing, at least to me.
