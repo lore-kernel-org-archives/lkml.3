@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab3F3VwW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 17:52:22 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44572 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3F3VwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 17:52:20 -0400
+	id S1751991Ab3F3WAO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 18:00:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35664 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751320Ab3F3WAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 18:00:12 -0400
+Date: Mon, 1 Jul 2013 00:00:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Wedson Almeida Filho <wedsonaf@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
+Message-ID: <20130630220004.GA23124@pd.tnic>
+References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
+ <20130628111948.GA31065@gmail.com>
+ <20130628140938.GA24819@pd.tnic>
+ <CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <4823.1372623427@turing-police.cc.vt.edu>
-References: <CA+icZUXo=Z4gDfCMvLqRQDq_fpNAq+UqtUw=jrU=3=kVZP-2+A@mail.gmail.com>
-	<20130630181945.GA5171@redhat.com>
-	<4823.1372623427@turing-police.cc.vt.edu>
-Date: Sun, 30 Jun 2013 23:52:19 +0200
-Message-ID: <CA+icZUUHXq-ZBYqgwitrC9Ek8LJZoK=bZQ8CbWppd8zJWx=F9w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 28 [ BISECTED: rsyslog/imklog: High CPU
- usage ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Lukas Czerner <lczerner@redhat.com>,
-        Samuel Ortiz <samuel@sortiz.org>, Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
-        Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 30, 2013 at 10:17 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Sun, 30 Jun 2013 20:19:45 +0200, Oleg Nesterov said:
->>
->> Not only "__wait_no_timeout(tout) ?:" was wrong, I didn't bother
->> to recheck this logic even after I got the "warning: the omitted
->> middle operand in ?:" reports.
->>
->> Sedat, thanks you very much! Any chance you can try the patch below?
->
-> I'm not Sedat, but I had the same problem with rsyslog going nuts,
-> and I can confirm that the patch fixes the problem.  (Had to hand-apply
-> it, there was some difference of opinion regarding { } on an else)
->
+On Sat, Jun 29, 2013 at 04:56:30PM -0700, Wedson Almeida Filho wrote:
+> On Fri, Jun 28, 2013 at 7:09 AM, Borislav Petkov <bp@alien8.de> wrote:
+> 
+> > Btw, do we have any perf data showing any improvements from this patch?
+> 
+> I wrote a simple test the measures the time it takes to acquire and
+> release  an uncontended mutex (i.e., we always take the fast path)
+> 100k times. I ran it a few times, the original code averages
+> 2.743436ms, and the new code averages 2.101098ms, so it's about 23% improvement.
 
-I am... Legend :-).
-Thanks for confirmation!
+Microbenchmark results tend to be misleading in such situations. Rather,
+it would be much closer to reality if you traced a real workload like a
+simple kernel build, for example, with and without your patch.
 
-- Yes, it's you (every day Gmail says this to me) "Sedat" -
+I.e., something like
 
-> Feel free to toss on a Tested-By: if this becomes a separate commit...
->
+perf stat --repeat 5 ./build-kernel.sh
+
+and take a look at what the perfcouters are saying in both cases.
+
+> I also think the code looks cleaner this way.
+
+No doubt.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
