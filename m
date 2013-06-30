@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab3F3ALh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 20:11:37 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:57367 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab3F3ALf (ORCPT
+	id S1753551Ab3F3ARN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 20:17:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2502 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3F3ARM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 20:11:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+QCeVSA+hAzoxXMcEVaUAaqsMpDoe22AGpKg538mytQXQgyEg@mail.gmail.com>
-References: <CA+55aFz1yMZ1q5daHdTA91pW5QtQ1Yids1dLD9b2JC-ruicNQw@mail.gmail.com>
-	<CA+QCeVR=+2vpFdW_LcjZUdNd+udY4dZEWXxevONTnbs8Y6oECQ@mail.gmail.com>
-	<CA+55aFy8XfmbhaEFUvy5ToLuSSxw5dhw5vXbJ28QpA0sBZgYoQ@mail.gmail.com>
-	<CA+QCeVTOQks+s7YEK1Sd-aKdg2ce=Jxchb5ATqW0fiZVebFMBw@mail.gmail.com>
-	<CA+55aFx54EDTS0R7E8JpPzqfx8M5c-0Q5Q_z0ybnM1mmBvA=ig@mail.gmail.com>
-	<CA+QCeVSA+hAzoxXMcEVaUAaqsMpDoe22AGpKg538mytQXQgyEg@mail.gmail.com>
-Date: Sat, 29 Jun 2013 17:11:34 -0700
-X-Google-Sender-Auth: Il5KvkIBXglNfwD13ackLq_TgMk
-Message-ID: <CA+55aFx9zHkCPUujYMaFUCbRhX5w3LeUL7UrVtMEz7W60Sz3FQ@mail.gmail.com>
-Subject: Re: Linux 3.10-rc7
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sergey Meirovich <rathamahata@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 29 Jun 2013 20:17:12 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=XqNnylozy48A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pkicDPhlfI0A:10 a=UGEXCrDjMHA6Ouco5OoA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372551429.18733.363.camel@gandalf.local.home>
+Subject: Re: frequent softlockups with 3.10rc6.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Date: Sat, 29 Jun 2013 20:17:09 -0400
+In-Reply-To: <CA+55aFz8rz=c8DsNHpBJW1K=FH-ztuPAMNOoGfM6HQyZByQ9mQ@mail.gmail.com>
+References: <20130624173510.GA1321@redhat.com>
+	 <20130625153520.GA7784@redhat.com> <20130626191853.GA29049@redhat.com>
+	 <20130627002255.GA16553@redhat.com> <20130627075543.GA32195@dastard>
+	 <20130627100612.GA29338@dastard> <20130627125218.GB32195@dastard>
+	 <20130627152151.GA11551@redhat.com> <20130628011301.GC32195@dastard>
+	 <20130628035825.GC29338@dastard> <20130629201311.GA23838@redhat.com>
+	 <CA+55aFz8rz=c8DsNHpBJW1K=FH-ztuPAMNOoGfM6HQyZByQ9mQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 4:52 PM, Sergey Meirovich <rathamahata@gmail.com> wrote:
->
-> There was overheating issue, that caused forced power off in the
-> middle of the first compile.
+On Sat, 2013-06-29 at 15:23 -0700, Linus Torvalds wrote:
 
-Ok, then the thing is easily explained by simply the filesystem being
-shut down in an incomplete state. Sounds like the mkregtable binary
-had been created but not written out, and the kernel (or rather,
-shell) considers an empty executable to the same as "true", so after
-the machine came back, that counts as a "successful" binary, it just
-obviously doesn't write anything to stdout, which in turn then
-explains the empty r200_reg_safe.h file.
+> Does the machine recover? Because if it does, I'd be inclined to just
+> ignore it. Although it would be interesting to hear what triggers this
+> - normal users - and I'm assuming you're still running trinity as
+> non-root - generally should not be able to trigger stop-machine
+> events..
 
-So basically it boils down to: if the machine shuts down in the middle
-of a build, without "make" having time to clean up partially built
-files etc, you can get into strange inconsistent build trees and you
-might want to do a "git clean -dqfx" to get rid of everything
-generated.
+It may be that we are live locking the system. If you enable too much
+debug (I see lockdep is on as well), when the system is stressed, it
+starts doing too much debugging and stops forward progress.
 
-But in your case it was probably just that one file. Might be a good
-idea to do a clean rebuild anyway.
+Dave, can you reproduce these hangs when you disable lockdep?
 
-(Side note: I've seen 'ccache' have odd stale caches too after unclean
-shutdowns, and then it's not sufficient to clean the build tree, you
-need to do "ccache -C" too).
+-- Steve
 
-            Linus
+
