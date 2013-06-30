@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab3F3UXp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 16:23:45 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:46808 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295Ab3F3UXl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 16:23:41 -0400
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Lukas Czerner <lczerner@redhat.com>,
-        Samuel Ortiz <samuel@sortiz.org>, Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: linux-next: Tree for Jun 28 [ BISECTED: rsyslog/imklog: High CPU usage ]
-In-Reply-To: Your message of "Sun, 30 Jun 2013 20:19:45 +0200."
-             <20130630181945.GA5171@redhat.com>
-From: Valdis.Kletnieks@vt.edu
-References: <CA+icZUXo=Z4gDfCMvLqRQDq_fpNAq+UqtUw=jrU=3=kVZP-2+A@mail.gmail.com>
-            <20130630181945.GA5171@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1372623427_4671P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sun, 30 Jun 2013 16:17:07 -0400
-Message-ID: <4823.1372623427@turing-police.cc.vt.edu>
+	id S1752474Ab3F3VAd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 17:00:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:44847 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752398Ab3F3VAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 17:00:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,969,1363158000"; 
+   d="scan'208";a="324681842"
+Date: Sun, 30 Jun 2013 14:00:28 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: George Cherian <george.cherian@ti.com>
+Cc: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] usb: host: xhci-plat: Enable XHCI_SPURIOUS_SUCCESS quirk
+ for xhci-plat
+Message-ID: <20130630210028.GB4946@xanatos>
+References: <1372237137-17351-1-git-send-email-george.cherian@ti.com>
+ <20130626165334.GA19462@xanatos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130626165334.GA19462@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1372623427_4671P
-Content-Type: text/plain; charset=us-ascii
+On Wed, Jun 26, 2013 at 09:53:34AM -0700, Sarah Sharp wrote:
+> On Wed, Jun 26, 2013 at 02:28:57PM +0530, George Cherian wrote:
+> > Synopsis xhci controllers with hci_version > 0.96 gives spurious success
+> > events on short packet completion. During webcam capture the
+> > "ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+> > The same application works fine with synopsis controllers hci_version 0.96.
+> 
+> It's a known issue.  The xHCI 1.0 spec changed how hardware handles
+> short packets.  The HW will notify SW of the TRB where the short packet,
+> and it will also give a successful status for the last TRB in a TD (the
+> one with the IOC flag set).  On the second successful status, that
+> warning will be triggered in the driver.
+> 
+> Software is now supposed to not assume the TD as done until it gets that
+> last successful status.  That means we have a slight race condition,
+> although it should have little practical impact.  This patch papers over
+> that issue.
+> 
+> I will take this patch, but will add the note that is on my long-term
+> to-do list to fix this issue.
 
-On Sun, 30 Jun 2013 20:19:45 +0200, Oleg Nesterov said:
->
-> Not only "__wait_no_timeout(tout) ?:" was wrong, I didn't bother
-> to recheck this logic even after I got the "warning: the omitted
-> middle operand in ?:" reports.
->
-> Sedat, thanks you very much! Any chance you can try the patch below?
+Actually, since it applies to both xhci-plat and xhci-pci hosts, can you
+move setting this quirk into xhci_gen_setup?
 
-I'm not Sedat, but I had the same problem with rsyslog going nuts,
-and I can confirm that the patch fixes the problem.  (Had to hand-apply
-it, there was some difference of opinion regarding { } on an else)
+Sarah Sharp
 
-Feel free to toss on a Tested-By: if this becomes a separate commit...
-
-
---==_Exmh_1372623427_4671P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUdCSQwdmEQWDXROgAQL5lBAAjtbkNdBAVuKWbG0wP6Nskb2L85CBvY5G
-zCmv7o7Fyb4ZyWufDl6cLVi26PsQnv2nZFxy3k1Ivh/0l5s+YPngjKplgUMl+mXD
-0X0zuwDx4J2868/rqqIVh91aKMo/wYMAg8Bf6NUAI4hpdOAaj6jo2kfDWzKA/FsR
-h24/cPL40aHzwUwxW2QAB0HEp02jxEXxExmTpjWrCGT5fVgM+AXaTTuPDga5KzRp
-b5kgsbIg5pqR6sR4jrNKxWiyU+uWIL0aNwD/duI85v7wk/oWDFTe7YF21BpX787H
-OjySotC5I+Zj3fxQb773fB4iexhuPz1HcnCo3PJqpRam4JDnjNhGe+NeO+AiKn+d
-zMyUBzvb4ruuKzk/zeiEysFlGvz6mhPjUqpRqL4DilqDGvBs5qE/MTtseNh0jEJa
-0vou3m7GfxoKob3LSYb+hQugvJOVbJgS+jyVD5YewVJOeyvcCVaGFVe/snzmHYy/
-Wu+C4/cVQYKMjv2fem5Y7h2ZFvWEaylqeDKwwtrDzXs3CX08YdbV90gXRF5TkPmK
-8nKV+n2qUiG1qvDN3lwfWyxRBVEADEbkRfXHlsQcsx2A8zugbc+Rh/mFyW5zTIS7
-l880+R8CKQIUaJMuQswoMd/cy2n9L26n2ZdMSa7Ef36NnMv3R/hLFEUwSaLHkBIT
-Xh1Dw+ee9m8=
-=8fz0
------END PGP SIGNATURE-----
-
---==_Exmh_1372623427_4671P--
+> > Signed-off-by: George Cherian <george.cherian@ti.com>
+> > ---
+> >  drivers/usb/host/xhci-plat.c | 10 ++++++++++
+> >  1 file changed, 10 insertions(+)
+> > 
+> > diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+> > index 93ad67e..e63c6d3 100644
+> > --- a/drivers/usb/host/xhci-plat.c
+> > +++ b/drivers/usb/host/xhci-plat.c
+> > @@ -25,6 +25,16 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
+> >  	 * dev struct in order to setup MSI
+> >  	 */
+> >  	xhci->quirks |= XHCI_BROKEN_MSI;
+> > +
+> > +	/*
+> > +	 * In some xhci controllers which follows xhci 1.0 spec gives a spurious
+> > +	 * success event after a short transfer. This quirk will ignore such
+> > +	 * spurious event. Hit this issue in synopsis xhci controllers with
+> > +	 * hci_version > 0.96
+> > +	 */
+> > +
+> > +	if (xhci->hci_version > 0x96)
+> > +		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+> >  }
+> >  
+> >  /* called during probe() after chip reset completes */
+> > -- 
+> > 1.8.1.4
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
