@@ -1,89 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3F3S4V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 14:56:21 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:42393 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab3F3S4S (ORCPT
+	id S1752303Ab3F3TFU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 15:05:20 -0400
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:60582 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab3F3TFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 14:56:18 -0400
-Message-ID: <51D07E7F.2030709@linux.vnet.ibm.com>
-Date: Mon, 01 Jul 2013 00:22:47 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpufreq: Fix cpufreq regression after suspend/resume
-References: <51C08370.4050906@gmx.de> <CAKohpok1gThXL925Yz5UgC54vTVQgymBA1cLGER_g-dgZu0JLA@mail.gmail.com> <51CF1E53.6060902@gmx.de> <8029836.CFiJCXmRQ0@vostro.rjw.lan> <51D05DF4.50704@linux.vnet.ibm.com> <51D06556.7080204@gmx.de>
-In-Reply-To: <51D06556.7080204@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13063018-0260-0000-0000-0000033DB5E1
+	Sun, 30 Jun 2013 15:05:17 -0400
+X-SENDER-IP: [85.230.171.181]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlF1ALeA0FFV5qu1PGdsb2JhbABagwmDGYUjt08EAX0XAwEBAQE4NYIkAQUnLxMBDxAISSEYChQGARKHfQMTshgNiFIWjF+BTIEdB4NnA5VhiBeFcIg4Og
+X-IronPort-AV: E=Sophos;i="4.87,969,1363129200"; 
+   d="scan'208";a="574688875"
+From: rydberg@euromail.se
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>, stable@vger.kernel.org
+Subject: [PATCH 2/2] Input: bcm5974 - Add support for the 2013 MacBook Air
+Date: Sun, 30 Jun 2013 21:04:46 +0200
+Message-Id: <1372619086-3532-3-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1372619086-3532-1-git-send-email-rydberg@euromail.se>
+References: <1372619086-3532-1-git-send-email-rydberg@euromail.se>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2013 10:35 PM, Toralf Förster wrote:
-> On 06/30/2013 06:33 PM, Srivatsa S. Bhat wrote:
->> Toralf, can you please
->> try out the below patch and see if it improves anything? (Don't revert anything,
->> just apply the below diff on a problematic kernel and see if it solves your
->> issue).
-> 
-> applied on top of a66b2e5 - issue went away (either fixed or hidden now)
-> 
+The June 2013 Macbook Air (13'') has a new trackpad protocol; four new
+values are inserted in the header, and the mode switch is no longer
+needed. This patch adds support for the new devices.
 
-Cool! So here is the proper patch, with changelog added.
-
-Regards,
-Srivatsa S. Bhat
-
-
------------------------------------------------------------------------------
-
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] cpufreq: Fix cpufreq regression after suspend/resume
-
-Toralf Förster reported that the cpufreq ondemand governor behaves erratically
-(doesn't scale well) after a suspend/resume cycle. The problem was that the
-cpufreq subsystem's idea of the cpu frequencies differed from the actual
-frequencies set in the hardware after a suspend/resume cycle. Toralf bisected
-the problem to commit a66b2e5 (cpufreq: Preserve sysfs files across
-suspend/resume).
-
-Among other (harmless) things, that commit skipped the call to
-cpufreq_update_policy() in the resume path. But cpufreq_update_policy() plays
-an important role during resume, because it is responsible for checking if
-the BIOS changed the cpu frequencies behind our back and resynchronize the
-cpufreq subsystem's knowledge of the cpu frequencies, and update them
-accordingly.
-
-So, restore the call to cpufreq_update_policy() in the resume path to fix
-the cpufreq regression.
-
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: stable@vger.kernel.org
+Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
+ drivers/input/mouse/bcm5974.c | 36 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 34 insertions(+), 2 deletions(-)
 
- drivers/cpufreq/cpufreq_stats.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index fb65dec..591b6fb 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -349,6 +349,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
+index 2baff1b..4ef4d5e 100644
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -88,6 +88,10 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI	0x0259
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
++/* MacbookAir6,2 (unibody, June 2013) */
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
  
- 	switch (action) {
- 	case CPU_ONLINE:
-+	case CPU_ONLINE_FROZEN:
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-
+ #define BCM5974_DEVICE(prod) {					\
+ 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
+@@ -145,6 +149,10 @@ static const struct usb_device_id bcm5974_table[] = {
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
++	/* MacbookAir6,2 */
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
+ 	/* Terminating entry */
+ 	{}
+ };
+@@ -172,15 +180,18 @@ struct bt_data {
+ /* trackpad header types */
+ enum tp_type {
+ 	TYPE1,			/* plain trackpad */
+-	TYPE2			/* button integrated in trackpad */
++	TYPE2,			/* button integrated in trackpad */
++	TYPE3			/* additional header fields since June 2013 */
+ };
+ 
+ /* trackpad finger data offsets, le16-aligned */
+ #define FINGER_TYPE1		(13 * sizeof(__le16))
+ #define FINGER_TYPE2		(15 * sizeof(__le16))
++#define FINGER_TYPE3		(19 * sizeof(__le16))
+ 
+ /* trackpad button data offsets */
+ #define BUTTON_TYPE2		15
++#define BUTTON_TYPE3		23
+ 
+ /* list of device capability bits */
+ #define HAS_INTEGRATED_BUTTON	1
+@@ -400,6 +411,19 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		{ SN_COORD, -150, 6730 },
+ 		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
++	{
++		USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI,
++		USB_DEVICE_ID_APPLE_WELLSPRING8_ISO,
++		USB_DEVICE_ID_APPLE_WELLSPRING8_JIS,
++		HAS_INTEGRATED_BUTTON,
++		0, sizeof(struct bt_data),
++		0x83, TYPE3, FINGER_TYPE3, FINGER_TYPE3 + SIZEOF_ALL_FINGERS,
++		{ SN_PRESSURE, 0, 300 },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4620, 5140 },
++		{ SN_COORD, -150, 6600 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
++	},
+ 	{}
+ };
+ 
+@@ -557,6 +581,9 @@ static int report_tp_state(struct bcm5974 *dev, int size)
+ 		input_report_key(input, BTN_LEFT, ibt);
+ 	}
+ 
++	if (c->tp_type == TYPE3)
++		input_report_key(input, BTN_LEFT, dev->tp_data[BUTTON_TYPE3]);
++
+ 	input_sync(input);
+ 
+ 	return 0;
+@@ -572,9 +599,14 @@ static int report_tp_state(struct bcm5974 *dev, int size)
+ 
+ static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
+ {
+-	char *data = kmalloc(8, GFP_KERNEL);
+ 	int retval = 0, size;
++	char *data;
++
++	/* Type 3 does not require a mode switch */
++	if (dev->cfg.tp_type == TYPE3)
++		return 0;
+ 
++	data = kmalloc(8, GFP_KERNEL);
+ 	if (!data) {
+ 		dev_err(&dev->intf->dev, "out of memory\n");
+ 		retval = -ENOMEM;
+-- 
+1.8.3.1
 
