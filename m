@@ -1,180 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3F3ISJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 04:18:09 -0400
-Received: from toccata.ens-lyon.fr ([140.77.166.68]:43011 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab3F3ISE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 04:18:04 -0400
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Jun 2013 04:18:03 EDT
-Date: Sun, 30 Jun 2013 10:11:30 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: "Raphael S. Carvalho" <raphael.scarv@gmail.com>
-Cc: William Hubbs <w.d.hubbs@gmail.com>,
-        Chris Brannon <chris@the-brannons.com>,
-        Kirk Reiser <kirk@braille.uwo.ca>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lijo Antony <lijo.kernel@gmail.com>, speakup@braille.uwo.ca,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] staging/speakup/kobjects.c: Code improvement.
-Message-ID: <20130630081130.GM5735@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	"Raphael S. Carvalho" <raphael.scarv@gmail.com>,
-	William Hubbs <w.d.hubbs@gmail.com>,
-	Chris Brannon <chris@the-brannons.com>,
-	Kirk Reiser <kirk@braille.uwo.ca>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Lijo Antony <lijo.kernel@gmail.com>, speakup@braille.uwo.ca,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1371866080-13752-1-git-send-email-raphael.scarv@gmail.com>
+	id S1751828Ab3F3IVL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 04:21:11 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49967 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273Ab3F3IVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 04:21:06 -0400
+Date: Sun, 30 Jun 2013 11:20:54 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Michael Grzeschik <mgr@pengutronix.de>
+CC: Felipe Balbi <balbi@ti.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        George Cherian <george.cherian@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] usb: dwc3: core: continue probe even if usb3 phy is not
+ available
+Message-ID: <20130630082054.GA2634@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130626101647.GT12640@arwen.pp.htv.fi>
+ <51CAD977.6040309@ti.com>
+ <20130626121210.GA12640@arwen.pp.htv.fi>
+ <874nclghu2.fsf@ashishki-desk.ger.corp.intel.com>
+ <20130627061416.GI3523@pengutronix.de>
+ <20130627063526.GG15455@arwen.pp.htv.fi>
+ <20130627072408.GJ3523@pengutronix.de>
+ <20130627073033.GN15455@arwen.pp.htv.fi>
+ <20130628180000.GF25498@arwen.pp.htv.fi>
+ <20130628200601.GK3523@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1371866080-13752-1-git-send-email-raphael.scarv@gmail.com>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <20130628200601.GK3523@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Raphael S. Carvalho, le Fri 21 Jun 2013 22:54:40 -0300, a écrit :
-> Well, there is no need to use strcmp since we can make a test of similar semantic by using the var_id field of param.
-> I moved the test into the VAR_NUM:VAR_TIME case since VAR_STRING will never be "voice".
-> 
-> spk_xlate isn't used anymore (in line 608), then there is no difference between using cp and buf in VAR_STRING case.
-> Besides, buf is a const char and those changes remove one uneeded line.
-> 
-> I created the function spk_reset_default_value because it clarifies the code and allows code reusing.
-> 
-> Signed-off-by: Raphael S. Carvalho <raphael.scarv@gmail.com>
+--AhhlLboLdkugWU4S
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Hi,
 
-> ---
->  drivers/staging/speakup/kobjects.c |   73 +++++++++++++++++++----------------
->  1 files changed, 40 insertions(+), 33 deletions(-)
-> 
-> diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
-> index 943b6c1..4660ce3 100644
-> --- a/drivers/staging/speakup/kobjects.c
-> +++ b/drivers/staging/speakup/kobjects.c
-> @@ -585,6 +585,25 @@ ssize_t spk_var_show(struct kobject *kobj, struct kobj_attribute *attr,
->  }
->  EXPORT_SYMBOL_GPL(spk_var_show);
->  
-> +/*
-> + * Used to reset either default_pitch or default_vol.
-> + */
-> +static inline void spk_reset_default_value(char *header_name,
-> +					int *synth_default_value, int idx)
-> +{
-> +	struct st_var_header *param;
-> +
-> +	if (synth && synth_default_value) {
-> +		param = spk_var_header_by_name(header_name);
-> +		if (param)  {
-> +			spk_set_num_var(synth_default_value[idx],
-> +					param, E_NEW_DEFAULT);
-> +			spk_set_num_var(0, param, E_DEFAULT);
-> +			pr_info("%s reset to default value\n", param->name);
-> +		}
-> +	}
-> +}
-> +
->  /*
->   * This function is called when a user echos a value to one of the
->   * variable parameters.
-> @@ -624,56 +643,44 @@ ssize_t spk_var_store(struct kobject *kobj, struct kobj_attribute *attr,
->  		if (ret == -ERANGE) {
->  			var_data = param->data;
->  			pr_warn("value for %s out of range, expect %d to %d\n",
-> -				attr->attr.name,
-> +				param->name,
->  				var_data->u.n.low, var_data->u.n.high);
->  		}
-> +
-> +	       /*
-> +		* If voice was just changed, we might need to reset our default
-> +		* pitch and volume.
-> +		*/
-> +		if (param->var_id == VOICE) {
-> +			spk_reset_default_value("pitch", synth->default_pitch,
-> +				value);
-> +			spk_reset_default_value("vol", synth->default_vol,
-> +				value);
-> +		}
->  		break;
->  	case VAR_STRING:
-> -		len = strlen(buf);
-> -		if ((len >= 1) && (buf[len - 1] == '\n'))
-> +		len = strlen(cp);
-> +		if ((len >= 1) && (cp[len - 1] == '\n'))
->  			--len;
-> -		if ((len >= 2) && (buf[0] == '"') && (buf[len - 1] == '"')) {
-> -			++buf;
-> +		if ((len >= 2) && (cp[0] == '"') && (cp[len - 1] == '"')) {
-> +			++cp;
->  			len -= 2;
->  		}
-> -		cp = (char *) buf;
->  		cp[len] = '\0';
-> -		ret = spk_set_string_var(buf, param, len);
-> +		ret = spk_set_string_var(cp, param, len);
->  		if (ret == -E2BIG)
->  			pr_warn("value too long for %s\n",
-> -					attr->attr.name);
-> +					param->name);
->  		break;
->  	default:
->  		pr_warn("%s unknown type %d\n",
->  			param->name, (int)param->var_type);
-> -	break;
-> -	}
-> -	/*
-> -	 * If voice was just changed, we might need to reset our default
-> -	 * pitch and volume.
-> -	 */
-> -	if (strcmp(attr->attr.name, "voice") == 0) {
-> -		if (synth && synth->default_pitch) {
-> -			param = spk_var_header_by_name("pitch");
-> -			if (param)  {
-> -				spk_set_num_var(synth->default_pitch[value],
-> -						param, E_NEW_DEFAULT);
-> -				spk_set_num_var(0, param, E_DEFAULT);
-> -			}
-> -		}
-> -		if (synth && synth->default_vol) {
-> -			param = spk_var_header_by_name("vol");
-> -			if (param)  {
-> -				spk_set_num_var(synth->default_vol[value],
-> -						param, E_NEW_DEFAULT);
-> -				spk_set_num_var(0, param, E_DEFAULT);
-> -			}
-> -		}
-> -	}
-> +		break;
-> +	}
->  	spk_unlock(flags);
->  
->  	if (ret == -ERESTART)
-> -		pr_info("%s reset to default value\n", attr->attr.name);
-> +		pr_info("%s reset to default value\n", param->name);
->  	return count;
->  }
->  EXPORT_SYMBOL_GPL(spk_var_store);
-> -- 
-> 1.7.2.5
-> 
+On Fri, Jun 28, 2013 at 10:06:01PM +0200, Michael Grzeschik wrote:
+> > > > > > > > right, but in DT you will define both instances and each in=
+stance will
+> > > > > > > > have a seaparate snps,maximum_speed attribute :-)
+> > > > > > > >
+> > > > > > > > I'm now considering if we should make maximum_speed a gener=
+ic attribute,
+> > > > > > > > Kishon ? Alex ? Alan ?
+> > > > > > > >
+> > > > > > > > anyone else needs such thing ?
+> > > > > > >=20
+> > > > > > > We have a force-full-speed attibute for chipidea on the way. =
+This
+> > > > > > > maximum_speed looks like a more generic alternative. Michael,=
+ what say
+> > > > > > > you?
+> > > > > >=20
+> > > > > > The maximum_speed attribute sounds more reasonable. I will chan=
+ge my
+> > > > > > patch to it.
+> > > > >=20
+> > > > > thanks, perhaps we can add a generic helper in udc-core or usb-co=
+mmon ?
+> > > >=20
+> > > > As this function is not only udc specific, this should go into usb-=
+common.
+> > > > But right, we should go with a helper here. I will write one in add=
+ition
+> > > > to my full-speed patch as first user of it.
+> > >=20
+> > > alright, thanks :-)
+> >=20
+> > Michael, if you need any help with patching in maximum_speed attribute,
+> > let me know as I have some time to work on that part.
+>=20
+> Feel free to begin with anything. I am currently short on time.
+> Do you need some pointers?
 
--- 
-Samuel
-$ du temp.iso 
-2,0T    temp.iso
-$ ls temp.iso -l
--r-xr-xr-x    1 samy     thibault      16E 2003-03-22 14:44 temp.iso*
- -+- je vous dirai pas la marque de mon disque dur, na :p -+- 
+not, really v1 will come on monday.
+
+--=20
+balbi
+
+--AhhlLboLdkugWU4S
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRz+plAAoJEIaOsuA1yqREzY8QAJBVfr+9xHIGhPF4GJOADpJk
+bRkjLZu/HRbq9Z9UT5elWmufWMuf6DygVzaiEgTA/JJLExLEp80SZKVNS/PPDSYP
+xn80hE0TiEGulLF8xZMvd0JWrZqrvnxVcr1TV3uposDDHqCW7EfKMgnUv/IA6JrH
+2MeeTk+VaPA626kPIVfZXTK/XURhAJXBPoMH2/kybrKE9gaU3UkrG2RRNOWEQCGh
+EO/S+y/4qWX1U0TBmAcZxFN+yN4PyX7J6DtlnB2Hcdcx/bO6HWALFbBJu51qJv3N
+wzt5fs4Qak2ip4a8+FZmBMq6tkov13X0w7u32IXot+riJF3craVygxZKy+HfoOxr
+TpxZz5IMHYm3ov2TmN5QdhOxJ6w6v+moApkodwrlLGglMqN43rZKdQI04MEvmghu
+HQtJyABQ9kjCGFW+OZIQIuE3nLgj+xg+rycMX8xJSC5gSj6HUpsxvFtR/KUYQ2us
+YpNfPJu2OLxROX0cz4hhtJL7Fj6pX/NYlH8wUXoiwgGl2aPD1fvfxDUe0+Mnralv
+eqIUX+PINlsgmXzCi0WcVNEE+4J5SUNJwv7IRaiVxb+nB+W1PQWSOG+ZH3xZzM0y
+ibtcCsfkVfDo4XXoshQEMScB9iKT8WBygCTOsdvX7hQoYtad/vTPZ4s+5nhTTpyD
+TqriesaHiaJB5vlM1f0L
+=Pjbb
+-----END PGP SIGNATURE-----
+
+--AhhlLboLdkugWU4S--
