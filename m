@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab3F3Oef (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 10:34:35 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35430 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751652Ab3F3Oec (ORCPT
+	id S1752051Ab3F3PK5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 11:10:57 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:44175 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab3F3PK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 10:34:32 -0400
-X-Sasl-enc: jbA7TvsjPcaK/9XJ4YsaxAl8TpNmhUhWlwcAaMICxil+ 1372602870
-Date: Sun, 30 Jun 2013 11:34:27 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Mark Lord <kernel@start.ca>
-Cc: Ondrej Zary <linux@rainbow-software.org>, Pavel Machek <pavel@ucw.cz>,
-        Mark Lord <mlord@pobox.com>,
-        Marcus Overhagen <marcus.overhagen@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        tj@kernel.org
-Subject: Re: SATA hdd refuses to reallocate a sector?
-Message-ID: <20130630143427.GA10035@khazad-dum.debian.net>
-References: <20130623101940.GA4448@amd.pavel.ucw.cz>
- <51C76858.4060906@pobox.com>
- <20130623215100.GA7414@amd.pavel.ucw.cz>
- <201306240914.29502.linux@rainbow-software.org>
- <20130629184716.GA9330@khazad-dum.debian.net>
- <51CF6776.7090206@start.ca>
+	Sun, 30 Jun 2013 11:10:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51CF6776.7090206@start.ca>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAG27Bk1SZ9txdKrH4DMKZtb=GuuxPZg_12Gi5E3i0hUYQd+WVg@mail.gmail.com>
+References: <1372511678-2726-1-git-send-email-kerolasa@iki.fi>
+ <8761wxxafc.fsf@xmission.com> <CAG27Bk1SZ9txdKrH4DMKZtb=GuuxPZg_12Gi5E3i0hUYQd+WVg@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Sun, 30 Jun 2013 17:10:34 +0200
+Message-ID: <CAPXgP13VjmMuHjBoWzGQjn5doamTgQk_xg=0Vobr8thHNHsPig@mail.gmail.com>
+Subject: Re: [PATCH] proc: make high precision system boot time available
+To: kerolasa@gmail.com
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Karel Zak <kzak@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Jun 2013, Mark Lord wrote:
-> On 13-06-29 02:47 PM, Henrique de Moraes Holschuh wrote:
-> > You know, either the "long" or the "offline" SMART test routines do exactly
-> > that on any spinning rust device with a firmware that is not utterly broken.
-> > 
-> > The HDD's firmware will rewrite, and even reallocate any "weak" sectors
-> > found by the surface scan.
-> > 
-> 
-> The drives I have tried this on (smartctl -t long),
-> abort at the first bad sector.  Not useful.
+On Sat, Jun 29, 2013 at 10:53 PM, Sami Kerola <kerolasa@iki.fi> wrote:
 
-Which vendor?  The Seagates I have on hand are not that crappy, for example
-(their issues are subpar mechanics and the resulting high rate of failure,
-but the firmware at least is not a piece of crap)...
+> BTW having a way to measure effect of suspend/resume could lead to a
+> way to fix time time distortion.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> Perhaps there is better alternative to fix user space programs.
+> Unfortunately I do not have either knowledge, or imagination, to come
+> up with any. Fix hints, ideas, and other proposal are most welcome.
+
+Stuff should just use:
+  clock_gettime(CLOCK_BOOTTIME, &ts);
+
+to get the time in better resolution, and with suspend time taken into account?
+
+As a general note, the kmsg/printk() time in the raw kernel log is the
+time of the CPU it runs on, especially during early init this time
+might not be in sync across CPUs and stuff jumps event in the very
+same stream on events from the kernel itself:
+  http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/kernel/sched/clock.c#n329
+
+Kay
