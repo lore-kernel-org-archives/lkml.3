@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab3F3Hqc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 03:46:32 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:59163 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab3F3Hqb (ORCPT
+	id S1751665Ab3F3Hu5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 03:50:57 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:34379 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab3F3Huz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 03:46:31 -0400
-Message-ID: <51CFE255.6050003@hitachi.com>
-Date: Sun, 30 Jun 2013 16:46:29 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH] tracing/kprobe: Recover old array if fails to
- enable kprobe
-References: <51CD25A6.2030907@hitachi.com> <20130628130452.1132.85665.stgit@mhiramat-M0-7522> <20130628142744.GA19278@redhat.com> <1372430586.18733.332.camel@gandalf.local.home> <20130628184325.GA21822@redhat.com>
-In-Reply-To: <20130628184325.GA21822@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 30 Jun 2013 03:50:55 -0400
+Message-ID: <1372578650.3301.305.camel@edumazet-glaptop>
+Subject: Re: kernel panic in skb_copy_bits
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "zheng.x.li@oracle.com" <zheng.x.li@oracle.com>,
+        Xen Devel <xen-devel@lists.xen.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Date: Sun, 30 Jun 2013 00:50:50 -0700
+In-Reply-To: <51CF7B31.8050408@oracle.com>
+References: <51CBAA48.3080802@oracle.com>
+	   <1372311118.3301.214.camel@edumazet-glaptop>
+	 <51CD0E67.4000008@oracle.com>
+	   <1372402340.3301.229.camel@edumazet-glaptop>
+	  <1372412262.3301.251.camel@edumazet-glaptop> <51CE1E19.3020108@oracle.com>
+	 <1372490428.3301.300.camel@edumazet-glaptop> <51CF7B31.8050408@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/29 3:43), Oleg Nesterov wrote:
-> On 06/28, Steven Rostedt wrote:
->>
->> On Fri, 2013-06-28 at 16:27 +0200, Oleg Nesterov wrote:
->>>
->>> Ah, but this conflicts with the other changes I sent. They have
->>> your acks, and iiuc Steven is going to apply them.
->>
->> I'll see if I can solve any conflicts. I need to get my -rt versions out
->> and start on the new 3.6 stable today. Then after that, I plan on going
->> though and getting all the tracing patches settled.
-> 
-> Thanks!
-> 
->>> Besides, this fix is not complete afaics, we should also clear
->>> TP_FLAG_TRACE/PROFILE if __enable_trace_probe() fails.
-> 
-> Yes.
-> 
-> And I forgot to mention, until we fix the races we discuss in another
-> thread, this WARN_ON() doesn't look right. So perhaps it would be
-> really better to delay this change a bit.
+On Sun, 2013-06-30 at 08:26 +0800, Joe Jin wrote:
 
-Agreed, this fix is not a critical one. The racing problem of
-dynamic events is what we have to solve at first.
+> So far we suspected it caused by iscsi called sendpage(), and later page
+> be unmapped but still trying copy skb. We'll try to disable sg to see if
+> help or no.
 
-Thank you!
+sendpage() should increment page refcounts for every page frag of an
+skb, therefore page should not be unmapped.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Of course userland can either rewrite the content, or unmap() the page,
+but the underlying page cannot be freed as long skb is not freed.
+
 
 
