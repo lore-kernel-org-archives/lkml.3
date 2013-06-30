@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab3F3QLU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 12:11:20 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:37466 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab3F3QLT (ORCPT
+	id S1752160Ab3F3QOz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 12:14:55 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:43330 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab3F3QOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 12:11:19 -0400
-Message-ID: <51D058A4.7020101@free-electrons.com>
-Date: Sun, 30 Jun 2013 18:11:16 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Sun, 30 Jun 2013 12:14:54 -0400
+Date: Sun, 30 Jun 2013 19:13:58 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net,
+        Ryan Mallon <rmallon@gmail.com>, broonie@kernel.org,
+        grant.likely@linaro.org
+Subject: Re: [PATCH 2/8] spi: spi-ep93xx: use bits_per_word_mask
+Message-ID: <20130630161358.GA786@mwesterb-mobl.lan>
+References: <201306281143.07615.hartleys@visionengravers.com>
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, jimwall@q.com,
-        brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 5/8] ARM: mxs: dt: cfa10037: make hogpins grabbed by
- respective drivers
-References: <1372424577-8279-1-git-send-email-alexandre.belloni@free-electrons.com> <1372424577-8279-6-git-send-email-alexandre.belloni@free-electrons.com> <20130629070529.GD2593@lukather>
-In-Reply-To: <20130629070529.GD2593@lukather>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201306281143.07615.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 28, 2013 at 11:43:07AM -0700, H Hartley Sweeten wrote:
+> This driver supports 16 to 4 bits per work. Set the bits_per_word_mask
+> to allows the spi core to handle validation.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ryan Mallon <rmallon@gmail.com>
+> Cc: Mika Westerberg <mika.westerberg@iki.fi>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> ---
+>  drivers/spi/spi-ep93xx.c | 11 +----------
+>  1 file changed, 1 insertion(+), 10 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+> index c633cd0..93ae7b6 100644
+> --- a/drivers/spi/spi-ep93xx.c
+> +++ b/drivers/spi/spi-ep93xx.c
+> @@ -272,12 +272,6 @@ static int ep93xx_spi_setup(struct spi_device *spi)
+>  	struct ep93xx_spi *espi = spi_master_get_devdata(spi->master);
+>  	struct ep93xx_spi_chip *chip;
+>  
+> -	if (spi->bits_per_word < 4 || spi->bits_per_word > 16) {
+> -		dev_err(&espi->pdev->dev, "invalid bits per word %d\n",
+> -			spi->bits_per_word);
+> -		return -EINVAL;
+> -	}
+> -
+>  	chip = spi_get_ctldata(spi);
+>  	if (!chip) {
+>  		dev_dbg(&espi->pdev->dev, "initial setup for %s\n",
+> @@ -341,10 +335,6 @@ static int ep93xx_spi_transfer(struct spi_device *spi, struct spi_message *msg)
+>  
+>  	/* first validate each transfer */
+>  	list_for_each_entry(t, &msg->transfers, transfer_list) {
+> -		if (t->bits_per_word) {
+> -			if (t->bits_per_word < 4 || t->bits_per_word > 16)
+> -				return -EINVAL;
+> -		}
+>  		if (t->speed_hz && t->speed_hz < espi->min_rate)
+>  				return -EINVAL;
+>  	}
+> @@ -1022,6 +1012,7 @@ static int ep93xx_spi_probe(struct platform_device *pdev)
+>  	master->bus_num = pdev->id;
+>  	master->num_chipselect = info->num_chipselect;
+>  	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
+> +	master->bits_per_word_mask = 0xfff8;	/* 16 to 4 bits per word */
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
-
-Hi Shawn,
-
-On 29/06/2013 09:05, Maxime Ripard wrote:
->> ---
->>  arch/arm/boot/dts/imx28-cfa10037.dts | 19 ++++++++++++++-----
->>  1 file changed, 14 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/imx28-cfa10037.dts
-b/arch/arm/boot/dts/imx28-cfa10037.dts
->> index c2ef3a3..182b99f 100644
->> --- a/arch/arm/boot/dts/imx28-cfa10037.dts
->> +++ b/arch/arm/boot/dts/imx28-cfa10037.dts
->> @@ -22,13 +22,19 @@
->>      apb@80000000 {
->>          apbh@80000000 {
->>              pinctrl@80018000 {
->> -                pinctrl-names = "default", "default";
->> -                pinctrl-1 = <&hog_pins_cfa10037>;
->
-> The pinctrl-name property isn't relevant since the 10036 patch. You
-> should probably have ordered them the other way around: first the
-> breakout board, then the 10036.
-
-Do you want me to send a reordered serie or will you do it when applying
-the patches ? You can just apply patch 4/8 last.
-
-thanks,
-
-- -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR0FikAAoJEKbNnwlvZCyz40UQAMwmqHS1p0tY6MJ6fPy6rBK8
-SH/a1afzKxudNxT5JzM4k5YR1V9TjJXnq658jcu0p5HiYpvCpgXDbde1QKJwf5Hg
-lZMw8hg2ogEvCOvaiOGbXc4qEReVWPV5xKw26ur7S8rwNg1AenDJw0tBZIjHzOUp
-yo1ZaGC5mV3MDzOcbZ1sfrMXCB2Alwa0zS5Mc1cKIj9d2uVp0U6feWAZ2+1iVcK8
-Js23PEpMaagwAWxVjfMH2LThj/vxnM7lkOisaAsbnTyalW7ztdqUhzL4qqFQ7WrC
-D8gKgEo9cFTNJrfuwB09eVZmCW8/OqBC0uTH4StgneOwWsiRAn2UZPqwxW2BChik
-LeQI+1W67GzVFyuxwmipQyNOCU8iJOKST4a2wIgCiZ27iWPRX5TFOqSr2E1L/lzX
-Fdmjjjr9ezxbyFx/hOOvYxZtfCpeyFo0nHfnSU4JnAncC5pQqzgo2ZvvmoGFJE92
-jVvhThOGh+glDk85/7Dt5PhXCPQWdwDxu8V6QlWD4RXfAAixq1vCo2odKjaC6P5W
-2aEaBaT0oe1YKCKL7s/62gLNwwUtasZyJChhJikhV06aQt8qYdVyP7MYRZaXC8EZ
-LcRSAhj+IZUqykqW6VhBlxjxq5Q/HdzgUcwn0EKdhQ2blHhB5cdfQxFLXZpGPsoi
-b0+7VLLSM9VeofjhDB2Z
-=/A5s
------END PGP SIGNATURE-----
-
+Please use SPI_BPW_RANGE_MASK(4, 16) here.
