@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab3F3Siq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 14:38:46 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:38852 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3F3Sim (ORCPT
+	id S1752207Ab3F3S4V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 14:56:21 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:42393 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab3F3S4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 14:38:42 -0400
-Date: Sun, 30 Jun 2013 20:38:38 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Tim Hockin <thockin@hockin.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>
-Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
-Message-ID: <20130630183838.GB23731@dhcp22.suse.cz>
-References: <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
- <20130626212047.GB4536@htj.dyndns.org>
- <1372311907.5871.78.camel@marge.simpson.net>
- <20130627180143.GD5599@mtj.dyndns.org>
- <1372391198.5989.110.camel@marge.simpson.net>
- <20130628040930.GC2500@htj.dyndns.org>
- <1372394950.5989.128.camel@marge.simpson.net>
- <20130628050138.GD2500@htj.dyndns.org>
- <20130628150513.GD5125@dhcp22.suse.cz>
- <20130628180155.GD16483@redhat.com>
+	Sun, 30 Jun 2013 14:56:18 -0400
+Message-ID: <51D07E7F.2030709@linux.vnet.ibm.com>
+Date: Mon, 01 Jul 2013 00:22:47 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130628180155.GD16483@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
+        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpufreq: Fix cpufreq regression after suspend/resume
+References: <51C08370.4050906@gmx.de> <CAKohpok1gThXL925Yz5UgC54vTVQgymBA1cLGER_g-dgZu0JLA@mail.gmail.com> <51CF1E53.6060902@gmx.de> <8029836.CFiJCXmRQ0@vostro.rjw.lan> <51D05DF4.50704@linux.vnet.ibm.com> <51D06556.7080204@gmx.de>
+In-Reply-To: <51D06556.7080204@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13063018-0260-0000-0000-0000033DB5E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 28-06-13 14:01:55, Vivek Goyal wrote:
-> On Fri, Jun 28, 2013 at 05:05:13PM +0200, Michal Hocko wrote:
-[...]
-> > OK, so libcgroup's rules daemon will still work and place my tasks in
-> > appropriate cgroups?
+On 06/30/2013 10:35 PM, Toralf Förster wrote:
+> On 06/30/2013 06:33 PM, Srivatsa S. Bhat wrote:
+>> Toralf, can you please
+>> try out the below patch and see if it improves anything? (Don't revert anything,
+>> just apply the below diff on a problematic kernel and see if it solves your
+>> issue).
 > 
-> Do you use that daemon in practice?
-
-I am not but my users do. And that is why I care.
-
-> For user session logins, I think systemd has plans to put user
-> sessions in a cgroup (kind of making pam_cgroup redundant).
+> applied on top of a66b2e5 - issue went away (either fixed or hidden now)
 > 
-> Other functionality rulesengined was providing moving tasks automatically
-> in a cgroup based on executable name. I think that was racy and not
-> many people had liked it.
 
-It doesn't make sense for short lived processes, all right, but it can
-be useful for those that live for a long time.
+Cool! So here is the proper patch, with changelog added.
+
+Regards,
+Srivatsa S. Bhat
+
+
+-----------------------------------------------------------------------------
+
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] cpufreq: Fix cpufreq regression after suspend/resume
+
+Toralf Förster reported that the cpufreq ondemand governor behaves erratically
+(doesn't scale well) after a suspend/resume cycle. The problem was that the
+cpufreq subsystem's idea of the cpu frequencies differed from the actual
+frequencies set in the hardware after a suspend/resume cycle. Toralf bisected
+the problem to commit a66b2e5 (cpufreq: Preserve sysfs files across
+suspend/resume).
+
+Among other (harmless) things, that commit skipped the call to
+cpufreq_update_policy() in the resume path. But cpufreq_update_policy() plays
+an important role during resume, because it is responsible for checking if
+the BIOS changed the cpu frequencies behind our back and resynchronize the
+cpufreq subsystem's knowledge of the cpu frequencies, and update them
+accordingly.
+
+So, restore the call to cpufreq_update_policy() in the resume path to fix
+the cpufreq regression.
+
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ drivers/cpufreq/cpufreq_stats.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index fb65dec..591b6fb 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -349,6 +349,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
  
-> IIUC, systemd can't disable access to cgroupfs from other utilities.
+ 	switch (action) {
+ 	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
+ 		cpufreq_update_policy(cpu);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
 
-The previous messages read otherwise. And that is why this rised the red
-flag at many fronts.
 
-> So most likely rulesengined should contine to work. But having both
-> systemd and libcgroup might not make much sense though.
-> 
-> Thanks
-> Vivek
-
--- 
-Michal Hocko
-SUSE Labs
