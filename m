@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab3F3JgR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 05:36:17 -0400
-Received: from mail.avalus.com ([89.16.176.221]:49144 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798Ab3F3JgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 05:36:12 -0400
-Date: Sun, 30 Jun 2013 10:35:57 +0100
-From: Alex Bligh <alex@alex.org.uk>
-Reply-To: Alex Bligh <alex@alex.org.uk>
-To: Alex Bligh <alex@alex.org.uk>, Joe Jin <joe.jin@oracle.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-cc: Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, zheng.x.li@oracle.com,
-        Xen Devel <xen-devel@lists.xen.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Alex Bligh <alex@alex.org.uk>
-Subject: Re: kernel panic in skb_copy_bits
-Message-ID: <BADA533A15AA8D67FC64EFAA@nimrod.local>
-In-Reply-To: <6BFD5AF235F72F13CE646A0D@nimrod.local>
-References: <51CBAA48.3080802@oracle.com>
- <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
- <6BFD5AF235F72F13CE646A0D@nimrod.local>
-X-Mailer: Mulberry/4.0.8 (Mac OS X)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+	id S1751672Ab3F3JsT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 05:48:19 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:53724 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3F3JsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 05:48:15 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k/setup: Use pr_*() instead of plain printk()
+Date: Sun, 30 Jun 2013 11:48:09 +0200
+Message-Id: <1372585689-29492-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/kernel/setup_mm.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-
---On 30 June 2013 10:13:35 +0100 Alex Bligh <alex@alex.org.uk> wrote:
-
-> The nature of the bug
-> is extensively discussed in that thread - you'll also find
-> a reference to a thread on linux-nfs which concludes it
-> isn't an nfs problem, and even some patches to fix it in the
-> kernel adding reference counting.
-
-Some more links for anyone interested in fixing the kernel bug:
-
- http://lists.xen.org/archives/html/xen-devel/2013-01/msg01618.html
- http://www.spinics.net/lists/linux-nfs/msg34913.html
- http://www.spinics.net/lists/netdev/msg224106.html
-
+diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
+index e67e531..a2c2c0c 100644
+--- a/arch/m68k/kernel/setup_mm.c
++++ b/arch/m68k/kernel/setup_mm.c
+@@ -161,7 +161,7 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
+ 				m68k_memory[m68k_num_memory].size = data[1];
+ 				m68k_num_memory++;
+ 			} else
+-				printk("m68k_parse_bootinfo: too many memory chunks\n");
++				pr_warn("m68k_parse_bootinfo: too many memory chunks\n");
+ 			break;
+ 
+ 		case BI_RAMDISK:
+@@ -197,8 +197,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
+ 				unknown = 1;
+ 		}
+ 		if (unknown)
+-			printk("m68k_parse_bootinfo: unknown tag 0x%04x ignored\n",
+-			       record->tag);
++			pr_warn("m68k_parse_bootinfo: unknown tag 0x%04x ignored\n",
++				   record->tag);
+ 		record = (struct bi_record *)((unsigned long)record +
+ 					      record->size);
+ 	}
+@@ -206,8 +206,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
+ 	m68k_realnum_memory = m68k_num_memory;
+ #ifdef CONFIG_SINGLE_MEMORY_CHUNK
+ 	if (m68k_num_memory > 1) {
+-		printk("Ignoring last %i chunks of physical memory\n",
+-		       (m68k_num_memory - 1));
++		pr_warn("Ignoring last %i chunks of physical memory\n",
++			(m68k_num_memory - 1));
+ 		m68k_num_memory = 1;
+ 	}
+ #endif
+@@ -247,7 +247,7 @@ void __init setup_arch(char **cmdline_p)
+ 		asm (".chip 68060; movec %%pcr,%0; .chip 68k"
+ 		     : "=d" (pcr));
+ 		if (((pcr >> 8) & 0xff) <= 5) {
+-			printk("Enabling workaround for errata I14\n");
++			pr_warn("Enabling workaround for errata I14\n");
+ 			asm (".chip 68060; movec %0,%%pcr; .chip 68k"
+ 			     : : "d" (pcr | 0x20));
+ 		}
+@@ -353,7 +353,7 @@ void __init setup_arch(char **cmdline_p)
+ 				     BOOTMEM_DEFAULT);
+ 		initrd_start = (unsigned long)phys_to_virt(m68k_ramdisk.addr);
+ 		initrd_end = initrd_start + m68k_ramdisk.size;
+-		printk("initrd: %08lx - %08lx\n", initrd_start, initrd_end);
++		pr_info("initrd: %08lx - %08lx\n", initrd_start, initrd_end);
+ 	}
+ #endif
+ 
+@@ -538,9 +538,9 @@ void check_bugs(void)
+ {
+ #ifndef CONFIG_M68KFPU_EMU
+ 	if (m68k_fputype == 0) {
+-		printk(KERN_EMERG "*** YOU DO NOT HAVE A FLOATING POINT UNIT, "
++		pr_emerg("*** YOU DO NOT HAVE A FLOATING POINT UNIT, "
+ 			"WHICH IS REQUIRED BY LINUX/M68K ***\n");
+-		printk(KERN_EMERG "Upgrade your hardware or join the FPU "
++		pr_emerg("Upgrade your hardware or join the FPU "
+ 			"emulation project\n");
+ 		panic("no FPU");
+ 	}
 -- 
-Alex Bligh
+1.7.9.5
+
