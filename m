@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab3F3JKr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 05:10:47 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:53480 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab3F3JKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 05:10:42 -0400
-From: =?UTF-8?q?=E5=BC=A0=E5=BF=A0=E5=B1=B1?= <zzs0213@gmail.com>
-To: <mmarek@suse.cz>
-Cc: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        =?UTF-8?q?=E5=BC=A0=E5=BF=A0=E5=B1=B1?= <zzs0213@gmail.com>
-Subject: [PATCH] let kbuild mkdir for dir/file.o
-Date: Sun, 30 Jun 2013 17:09:28 +0800
-Message-Id: <1372583368-32618-1-git-send-email-zzs0213@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <51CE11C2.5020406@suse.cz>
-References: <51CE11C2.5020406@suse.cz>
+	id S1752065Ab3F3JYC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 05:24:02 -0400
+Received: from mail.avalus.com ([89.16.176.221]:39799 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249Ab3F3JX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 05:23:58 -0400
+X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Jun 2013 05:23:58 EDT
+Date: Sun, 30 Jun 2013 10:13:35 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: Joe Jin <joe.jin@oracle.com>, Eric Dumazet <eric.dumazet@gmail.com>
+cc: Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, zheng.x.li@oracle.com,
+        Xen Devel <xen-devel@lists.xen.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Alex Bligh <alex@alex.org.uk>
+Subject: Re: kernel panic in skb_copy_bits
+Message-ID: <6BFD5AF235F72F13CE646A0D@nimrod.local>
+In-Reply-To: <51CD0E67.4000008@oracle.com>
+References: <51CBAA48.3080802@oracle.com>
+ <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When add a obj with dir to obj-y, like this
 
-    obj-y += dir/file.o
 
-The $(obj)/dir not created, this patch fix this.
+--On 28 June 2013 12:17:43 +0800 Joe Jin <joe.jin@oracle.com> wrote:
 
-When try to add a file(which in a subdir) to my board's obj-y, the build
-progress crashed.
+> Find a similar issue
+> http://www.gossamer-threads.com/lists/xen/devel/265611 So copied to Xen
+> developer as well.
 
-For example, I use at91rm9200ek board, and in kernel dir run:
+I thought this sounded familiar. I haven't got the start of this
+thread, but what version of Xen are you running and what device
+model? If before 4.3, there is a page lifetime bug in the kernel
+(not the xen code) which can affect anything where the guest accesses
+the host's block stack and that in turn accesses the networking
+stack (it may in fact be wider than that). So, e.g. domU on
+iCSSI will do it. It tends to get triggered by a TCP retransmit
+or (on NFS) the RPC equivalent. Essentially block operation
+is considered complete, returning through xen and freeing the
+grant table entry, and yet something in the kernel (e.g. tcp
+retransmit) can still access the data. The nature of the bug
+is extensively discussed in that thread - you'll also find
+a reference to a thread on linux-nfs which concludes it
+isn't an nfs problem, and even some patches to fix it in the
+kernel adding reference counting.
 
-  mkdir objtree
-  make O=objtree at91rm9200_defconfig
-  mkdir arch/arm/mach-at91/dir
-  touch arch/arm/mach-at91/dir/file.c
+A workaround is to turn off O_DIRECT use by Xen as that ensures
+the pages are copied. Xen 4.3 does this by default.
 
-and edit arch/arm/mach-at91/dir/file.c to add some code.
-then edit arch/arm/mach-at91/Makefile, change the following line:
+I believe fixes for this are in 4.3 and 4.2.2 if using the
+qemu upstream DM. Note these aren't real fixes, just a workaround
+of a kernel bug.
 
-  obj-$(CONFIG_MACH_AT91RM9200EK) += board-rm9200ek.o
+To fix on a local build of xen you will need something like this:
+https://github.com/abligh/qemu-upstream-4.2-testing/commit/9a97c011e1a682eed9bc7195a25349eaf23ff3f9
+and something like this (NB: obviously insert your own git
+repo and commit numbers)
+https://github.com/abligh/xen/commit/f5c344afac96ced8b980b9659fb3e81c4a0db5ca
 
-to:
+Also note those fixes are (technically) unsafe for live migration
+unless there is an ordering change made in qemu's block open
+call.
 
-  obj-$(CONFIG_MACH_AT91RM9200EK) += board-rm9200ek.o dir/file.o
+Of course this might be something completely different.
 
-Now build it:
-
-  make O=objtree
-
-Then the error appears:
-  ...
-  CC      arch/arm/mach-at91/board-rm9200dk.o
-  CC      arch/arm/mach-at91/board-rm9200ek.o
-  CC      arch/arm/mach-at91/dir/file.o
-  linux-2.6/arch/arm/mach-at91/dir/file.c:5:
-    fatal error: opening dependency file
-    arch/arm/mach-at91/dir/.file.o.d: No such file or directory
-
-Check the objtree:
-  LANG=en ls objtree/arch/arm/mach-at91/dir
-  ls: cannot access objtree/arch/arm/mach-at91/dir: No such file or directory
-
-It's apparently that the target dir not created for file.o
-
-Check kbuild source code. It seems that kbuild create dirs for that in
-$(obj-dirs).  But if the dir need not to create a built-in.o, It should
-never in  $(obj-dirs).
-
-So I make this patch to make sure It in  $(obj-dirs)
-
-this bug caused by commit
-   f5fb976520a53f45f8bbf2e851f16b3b5558d485
----
- scripts/Makefile.lib |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 51bb3de..cddd2c9 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -63,7 +63,7 @@ multi-objs   := $(multi-objs-y) $(multi-objs-m)
- subdir-obj-y := $(filter %/built-in.o, $(obj-y))
- 
- # $(obj-dirs) is a list of directories that contain object files
--obj-dirs := $(dir $(multi-objs) $(subdir-obj-y))
-+obj-dirs := $(dir $(multi-objs) $(obj-y))
- 
- # Replace multi-part objects by their individual parts, look at local dir only
- real-objs-y := $(foreach m, $(filter-out $(subdir-obj-y), $(obj-y)), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))),$($(m:.o=-objs)) $($(m:.o=-y)),$(m))) $(extra-y)
 -- 
-1.7.9.5
-
+Alex Bligh
