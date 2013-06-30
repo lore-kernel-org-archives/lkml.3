@@ -1,124 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525Ab3F3DVi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 23:21:38 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:65085 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3F3DVg convert rfc822-to-8bit (ORCPT
+	id S1751647Ab3F3DlZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 23:41:25 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:50037 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981Ab3F3DlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 23:21:36 -0400
-Date: Sat, 29 Jun 2013 22:21:32 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, hpa@linux.intel.com, tglx@linutronix.de,
-        matt.fleming@intel.com, Leif Lindholm <leif.lindholm@linaro.org>
-In-Reply-To: <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
-	(from leif.lindholm@linaro.org on Tue Jun 25 13:11:00 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1372562492.2776.163@driftwood>
+	Sat, 29 Jun 2013 23:41:20 -0400
+Date: Sun, 30 Jun 2013 05:41:18 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] pmu-tools for Intel specific profiling on top of perf
+Message-ID: <20130630034117.GI6123@two.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 01:11:00 PM, Leif Lindholm wrote:
-> This patch provides documentation of the [U]EFI runtime services and
-> configuration features.
-> 
-> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> ---
->  Documentation/arm/00-INDEX |    3 +++
->  Documentation/arm/uefi.txt |   39  
-> +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 42 insertions(+)
->  create mode 100644 Documentation/arm/uefi.txt
-> 
-> diff --git a/Documentation/arm/00-INDEX b/Documentation/arm/00-INDEX
-> index 4978456..87e01d1 100644
-> --- a/Documentation/arm/00-INDEX
-> +++ b/Documentation/arm/00-INDEX
-> @@ -36,3 +36,6 @@ nwfpe/
->  	- NWFPE floating point emulator documentation
->  swp_emulation
->  	- SWP/SWPB emulation handler/logging description
-> +
-> +uefi.txt
-> +	- [U]EFI configuration and runtime services documentation
-> diff --git a/Documentation/arm/uefi.txt b/Documentation/arm/uefi.txt
-> new file mode 100644
-> index 0000000..5c48271
-> --- /dev/null
-> +++ b/Documentation/arm/uefi.txt
-> @@ -0,0 +1,39 @@
-> +The nomenclature EFI and UEFI are used interchangeably in this  
-> document.
-> +
 
-And the acronym expands to...?
+pmu-tools is a toolkit to provide various Intel specific profiling
+functionality on top of perf.  
 
-> +The implementation depends on receiving pointers to the UEFI memory  
-> map
-> +and System Table in a Flattened Device Tree - so is only available  
-> with
-> +CONFIG_OF.
-> +
-> +It (early) parses the FDT for the following parameters:
-> +- 'efi-system-table':
-> +  Physical address of the system table. (required)
-> +- 'efi-runtime-mmap':
-> +  Physical address of an EFI memory map, containing at least
-> +  the regions to be preserved. (required)
-> +- 'efi-runtime-mmap-size':
-> +  Size in bytes of the provided memory map. (required)
-> +- 'efi-mmap-desc-size':
-> +  Size of each descriptor in the memory map. (override default)
-> +- 'efi-mmap-desc-ver':
-> +  Memory descriptor format version. (override default)
-> +
-> +Since UEFI firmware on ARM systems are required to use a 1:1 memory  
-> map
-> +even on LPAE-capable systems, the above fields are 32-bit regardless.
-> +
-> +It also depends on early_ioremap to parse the memory map and preserve
-> +the regions required for runtime services.
-> +
-> +For actually enabling [U]EFI support, enable:
-> +- CONFIG_EFI=y
-> +- CONFIG_EFI_VARS=y or m
-> +
-> +After the kernel has mapped the required regions into its address  
-> space,
-> +a SetVirtualAddressMap() call is made into UEFI in order to update
-> +relocations. This call must be performed with all the code in a 1:1
-> +mapping. This implementation achieves this by temporarily disabling  
-> the
-> +MMU for the duration of this call. This can only be done safely:
-> +- before secondary CPUs are brought online.
-> +- after early_initcalls have completed, sinze it uses  
-> setup_mm_for_reboot().
+It does not aim to replace traditional perf, just extend it with 
+some (more or less) experimental features, or provide easy wrappers
+to use them in a straight forward way. Some of the functionality
+may move into normal perf over time.
 
-Typo: since
+pmu-tols is developed as a rolling release on github.
 
-> +
-> +For verbose debug messages, specify 'uefi_debug' on the kernel  
-> command
-> +line.
+http://github.com/andikleen/pmu-tools
 
-At a wild guess, this parses a memory descriptor table to find out  
-where the physical and device memory on an arm board live, according to  
-some standard? I'm guessing because the file never quite says what this  
-mechanism is _for_, just describes knobs on a black box...
+Current features:
 
-(I can google, but it's a touch newbie-unfriendly. I tend to prefer  
-documentation that's aimed at people who _don't_ already know whatever  
-it is. Personal idiosyncrasy.)
+- A wrapper to "perf" that provides a full core event list for 
+common Intel CPUs. This allows to use all the Intel events,
+not just the builtin events of perf.
+- Support for Intel "offcore" events on older systems that
+do not have support for  this in the Intel. Offcore events
+allow to profile the location of a memory access outside the
+CPU's caches.
+- Implement a workaround for some issues with offcore events 
+on Sandy Bridge EP (Intel Xeon E5 first generation)
+This is automatically enabled for the respective events, and also
+available as a standalone program.
+- A "toplev.py" tool to do cycle composition for a workload, that is 
+measure where in the CPU pipe line it bottle necks.
+- Some utility programs to access pci space or msrs on
+the command line
+- A utility program to program the PMU directly from user space
+(pmumon.py) for counting. This is mainly useful for testing
+and experimental purposes.
+- A library for self profiling with Linux since Linux 3.3
+Note for self-profiling on older kernels you can use
+[simple-pmu] http://halobates.de/simple-pmu
+- An example program for address profiling on Nehalem and later
+Intel CPUs (addr)
+- A program to print the currently running events (event-rmap)
+- Support for analyzing the raw PEBS records with perf.
 
-Acked-by: Rob Landley <rob@landley.net>
+## ocperf:
 
-Rob
+Copy all the files to a directory (or run from the source)
+Run ocperf.py from that directory
+ocperf.py searches for the data files in the same directory
+as the binary
+
+ocperf.py list
+List all the events perf and ocperf supports on the current CPU
+
+	ocperf.py stat -e eventname ... 
+
+	ocperf.py record -e eventname ...
+
+	ocperf.py report --stdio
+
+The translation back from the raw event name for report is only supported
+for the --stdio mode. The interactive browser can be also used, but will
+display raw perf event names.
+
+When a older kernel is used with offcore events,
+that does not support offcore events natively, ocperf has to run
+as root and only one such profiling can be active on a machine.
+
+tester provides a simple test suite.
+
+The latego.py, msr.py, pci.py modules can be also used as standalone programs
+to enable the offcore workaround, change MSRs or change PCI config space respectively.
+
+## toplev.py:
+
+Do cycle decomposition on a workload: estimate on which part of the
+CPU pipeline it bottlenecks. The bottlenecks are expressed as a tree
+with different levels (max 4).
+
+This only supports counting, that is it cannot tell you where in
+the program the problem occurred.
+
+Requires an Intel Sandy, Ivy Bridge, Haswell CPU.
+It works best on Ivy Bridge currently, the others only support
+a basic (but reliable) model.
+
+Usage:
+	./toplev.py [-lX] [-v] [-d] [-o logfile] program
+	measure program
+	./toplev.py [-lX] [-v] [-d] [-o logfile] -a sleep X
+	measure whole system for X seconds
+	./toplev.py [-lX] [-v] [-d] [-o logfile] -p PID
+	measure pid PID
+
+Options:
+	-o set output file
+	-v print everything
+	-d use detailed model if available (only Ivy Bridge currently)
+	-lLEVEL only use events upto max level (max 4)
+
+Other perf arguments allowed (see the perf documentation)
+After -- perf arguments conflicting with toplevel can be used.
+
+Some caveats:
+The lower levels of the measurement tree are much less reliable
+than the higher levels.  They also rely on counter multi-plexing
+and cannot use groups, which can cause larger measurement errors
+with non steady state workloads.
+(If you don't understand this terminology; it means measurements
+are much less accurate and it works best with programs that primarily
+do the same thing over and over)
+
+In this case it's recommended to measure the program only after
+the startup phase by profiling globally or attaching later.
+level 1 or running without -d is generally the most reliable.
+
+One of the events (even used by level 1) requires a recent enough
+kernel that understands its counter constraints.  3.10+ is safe.
+
+The tool cannot distinguish perf failing from the program failing.
+If the program returns an error code, and you still want to measure
+it wrap it with a sh -c.
+
+## self: 
+
+Self is a simple library to support self-profiling of programs, that is programs
+that measure their own execution.
+
+cd self
+make
+
+Read the documentation. 
+
+[rdpmc] (http://htmlpreview.github.com/?https://github.com/andikleen/pmu-tools/blob/master/self/rdpmc.html) is the basic facility to access raw counters.
+
+ocperf can be used to generate raw perf numbers for your CPU to pass to rdpmc_open()
+	ocperf list | less
+<look for intended event>
+	DIRECT_MSR=1 ./ocperf.py stat -e eventname true
+<look for perf stat -e rXXXX in output>
+
+XXX is the needed event number in hex. Note that self does not support
+offcore or uncore events.
+
+Also the event numbers are CPU specific, so you may need a /proc/cpuinfo model check for portable programs (see the ocperf source for example)
+
+Example (replace EVENTNUMBER with your intended event from above or a perf
+event like PERF_COUNT_HW_CPU_CYCLES)
+This is very simplified, for a real benchmark you almost certainly want
+some warmup, multiple iterations, possibly context switch filtering and
+some filler code to avoid cache effects.
+
+	#include "rdpmc.h"
+
+	struct rdpmc_ctx ctx;
+	unsigned long long start, end;
+
+	if (rdpmc_open(EVENTNUMBER, &ctx) < 0) ... error ...
+	start = rdpmc_read(&ctx);
+	... your workload ...
+	end = rdpmc_read(&ctx);
+
+[measure] (http://htmlpreview.github.com/?https://github.com/andikleen/pmu-tools/blob/master/self/measure.html) supports event group profiling.
+[interrupts] (http://htmlpreview.github.com/?https://github.com/andikleen/pmu-tools/blob/master/self/interrupts.html) provides functions for a common use
+case of filtering out context switches and interrupts from micro benchmarks. These only work 
+on Intel Ivy and Sandy Bridge CPUs.
+
+Link the object files and include the header files in your program
+
+/sys/devices/cpu/rdpmc must be 1.
+
+rtest.c and test2.c provide examples.
+http://halobates.de/modern-pmus-yokohama.pdf provides some additional
+general information on cycle counting. The techniques used with simple-pmu described there can be used with self too.
+
+## pebs-grabber:
+
+Perf doesn't export the raw PEBS output, which contains a lot of useful
+information. PEBS is a sampling format generated by Intel CPUs for
+some events.
+
+pebs-grabber gabs PEBS data from perf. This assumes the perf pebs
+handler is running, we just also do trace points with the raw data.
+
+May need some minor tweaks as kernel interface change, and will also
+not likely work on very old kernels.
+
+This will create two new trace points trace_pebs_v1 and trace_pebs_v2
+that log the complete PEBS record. When the CPU supports PEBSv2
+(Haswell) the additional fields will be logged in pebs_v2.
+
+	  make [KDIR=/my/kernel/build/dir]
+	  insmod pebs-grabber.ko 
+	  # needs to record as root
+	  perf record -e cycles:p,pebs_v1,pebs_v2 [command, -a for all etc.]
+	  perf report
+	  perf script to display pebs data
+	  # alternatively trace-cmd and kernelshark can be also used to dump
+   	  # the pebs data
+
+See http://download.intel.com/products/processor/manual/253669.pdf
+18.10.2 for a description of the PEBS fields.
+
+Note this doesn't work with standard FC18 kernels, as they broke
+trace points in modules. It works with later and earlier kernels.
+
+## addr:
+
+addr is a basic frame work for self profiling of memory addresses accessed
+by the program.  Requires a Linux 3.10+ kernel and a supported CPU.
+
+## event-rmap
+
+event-rmap [cpu] prints the currently running events.
+This provides an easier answer to Q2j in Vince Weaver's perf FAQ.
+
+# Licenses
+
+ocperf is under GPLv2, self and addr under the modified BSD license.
+
+Andi Kleen
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
