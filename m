@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab3F3JsT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 05:48:19 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:53724 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab3F3JsP (ORCPT
+	id S1752005Ab3F3Js6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 05:48:58 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55931 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab3F3Jsz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 05:48:15 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] m68k/setup: Use pr_*() instead of plain printk()
-Date: Sun, 30 Jun 2013 11:48:09 +0200
-Message-Id: <1372585689-29492-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 30 Jun 2013 05:48:55 -0400
+Date: Sun, 30 Jun 2013 10:48:46 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Emilio Lopez <emilio@elopez.com.ar>
+Subject: Re: [PATCH 0/2] ARM: sunxi: Convert DTSI to new CPU bindings
+Message-ID: <20130630094846.GA27559@e102568-lin.cambridge.arm.com>
+References: <1372437844-16325-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20130628171532.GD30603@e102568-lin.cambridge.arm.com>
+ <20130628200333.GA2756@lukather>
+ <CAOesGMgsD+tK4+ywvLzsWd+mngrP7zGgSFn0naWjSsQLGaUn2Q@mail.gmail.com>
+ <20130629193819.GD3353@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+In-Reply-To: <20130629193819.GD3353@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 30 Jun 2013 09:48:50.0603 (UTC) FILETIME=[06352FB0:01CE7577]
+X-MC-Unique: 113063010485301101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/kernel/setup_mm.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+On Sat, Jun 29, 2013 at 08:38:19PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Jun 28, 2013 at 01:05:42PM -0700, Olof Johansson wrote:
+> > On Fri, Jun 28, 2013 at 1:03 PM, Maxime Ripard
+> > <maxime.ripard@free-electrons.com> wrote:
+> > > On Fri, Jun 28, 2013 at 06:15:32PM +0100, Lorenzo Pieralisi wrote:
+> > >> The patch above should already be queued in next/dt right ?
+> > >
+> > > Indeed.
+> > >
+> > > Then why the latest patch of your patchset got in 3.10, while the
+> > > patches actually fixing the DT it would have impacted were delayed to
+> > > 3.11?
+> > >
+> > > (And why was it merged so late in the development cycle?)
+> > 
+> > This. So now we have to scramble because some device trees will
+> > produce warnings at boot.
+> > 
+> > Russell, the alternative is to revert Lorenzo's patch for 3.10 (and
+> > re-introduce it for 3.11). Do you have a preference?
+> 
+> Sorry but I really don't understand what all the fuss in this thread
+> is about.
+> 
+> This thread seems to be saying that two development patches were
+> merged, which were 7762/1 and 7763/1, and that 7764/1 is a fix?
+> Are you sure about that, because that's not how they're described,
+> and not how they look either.
 
-diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
-index e67e531..a2c2c0c 100644
---- a/arch/m68k/kernel/setup_mm.c
-+++ b/arch/m68k/kernel/setup_mm.c
-@@ -161,7 +161,7 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
- 				m68k_memory[m68k_num_memory].size = data[1];
- 				m68k_num_memory++;
- 			} else
--				printk("m68k_parse_bootinfo: too many memory chunks\n");
-+				pr_warn("m68k_parse_bootinfo: too many memory chunks\n");
- 			break;
- 
- 		case BI_RAMDISK:
-@@ -197,8 +197,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
- 				unknown = 1;
- 		}
- 		if (unknown)
--			printk("m68k_parse_bootinfo: unknown tag 0x%04x ignored\n",
--			       record->tag);
-+			pr_warn("m68k_parse_bootinfo: unknown tag 0x%04x ignored\n",
-+				   record->tag);
- 		record = (struct bi_record *)((unsigned long)record +
- 					      record->size);
- 	}
-@@ -206,8 +206,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
- 	m68k_realnum_memory = m68k_num_memory;
- #ifdef CONFIG_SINGLE_MEMORY_CHUNK
- 	if (m68k_num_memory > 1) {
--		printk("Ignoring last %i chunks of physical memory\n",
--		       (m68k_num_memory - 1));
-+		pr_warn("Ignoring last %i chunks of physical memory\n",
-+			(m68k_num_memory - 1));
- 		m68k_num_memory = 1;
- 	}
- #endif
-@@ -247,7 +247,7 @@ void __init setup_arch(char **cmdline_p)
- 		asm (".chip 68060; movec %%pcr,%0; .chip 68k"
- 		     : "=d" (pcr));
- 		if (((pcr >> 8) & 0xff) <= 5) {
--			printk("Enabling workaround for errata I14\n");
-+			pr_warn("Enabling workaround for errata I14\n");
- 			asm (".chip 68060; movec %0,%%pcr; .chip 68k"
- 			     : : "d" (pcr | 0x20));
- 		}
-@@ -353,7 +353,7 @@ void __init setup_arch(char **cmdline_p)
- 				     BOOTMEM_DEFAULT);
- 		initrd_start = (unsigned long)phys_to_virt(m68k_ramdisk.addr);
- 		initrd_end = initrd_start + m68k_ramdisk.size;
--		printk("initrd: %08lx - %08lx\n", initrd_start, initrd_end);
-+		pr_info("initrd: %08lx - %08lx\n", initrd_start, initrd_end);
- 	}
- #endif
- 
-@@ -538,9 +538,9 @@ void check_bugs(void)
- {
- #ifndef CONFIG_M68KFPU_EMU
- 	if (m68k_fputype == 0) {
--		printk(KERN_EMERG "*** YOU DO NOT HAVE A FLOATING POINT UNIT, "
-+		pr_emerg("*** YOU DO NOT HAVE A FLOATING POINT UNIT, "
- 			"WHICH IS REQUIRED BY LINUX/M68K ***\n");
--		printk(KERN_EMERG "Upgrade your hardware or join the FPU "
-+		pr_emerg("Upgrade your hardware or join the FPU "
- 			"emulation project\n");
- 		panic("no FPU");
- 	}
--- 
-1.7.9.5
+As Olof's warning downgrade is being merged (thanks for that and apologies for
+failing to explain patches dependencies properly and stable related issues),
+7764/1 won't apply cleanly anymore. Can you please drop it from the patch
+system, I will update it and test it first thing tomorrow and send a
+final version to the patch system.
+
+Thank you very much,
+Lorenzo
 
