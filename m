@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3F3DOQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 23:14:16 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:34908 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3F3DOO convert rfc822-to-8bit (ORCPT
+	id S1751525Ab3F3DVi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 23:21:38 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:65085 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab3F3DVg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 23:14:14 -0400
-Date: Sat, 29 Jun 2013 22:14:11 -0500
+	Sat, 29 Jun 2013 23:21:36 -0400
+Date: Sat, 29 Jun 2013 22:21:32 -0500
 From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 1/2] Documentation: arm: early_ioremap
+Subject: Re: [PATCH 1/4] Documentation: arm: [U]EFI runtime services
 To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org, nico@linaro.org,
-        Leif Lindholm <leif.lindholm@linaro.org>
-In-Reply-To: <1372182401-11029-2-git-send-email-leif.lindholm@linaro.org>
-	(from leif.lindholm@linaro.org on Tue Jun 25 12:46:40 2013)
+Cc: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, hpa@linux.intel.com, tglx@linutronix.de,
+        matt.fleming@intel.com, Leif Lindholm <leif.lindholm@linaro.org>
+In-Reply-To: <1372183863-11333-2-git-send-email-leif.lindholm@linaro.org>
+	(from leif.lindholm@linaro.org on Tue Jun 25 13:11:00 2013)
 X-Mailer: Balsa 2.4.11
-Message-Id: <1372562051.2776.162@driftwood>
+Message-Id: <1372562492.2776.163@driftwood>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
@@ -26,68 +27,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2013 12:46:40 PM, Leif Lindholm wrote:
-> This patch provides documentation of the early_ioremap()  
-> functionality,
-> including its implementation and usage instructions.
+On 06/25/2013 01:11:00 PM, Leif Lindholm wrote:
+> This patch provides documentation of the [U]EFI runtime services and
+> configuration features.
 > 
 > Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
 > ---
->  Documentation/arm/00-INDEX          |    2 ++
->  Documentation/arm/early_ioremap.txt |   12 ++++++++++++
->  2 files changed, 14 insertions(+)
->  create mode 100644 Documentation/arm/early_ioremap.txt
+>  Documentation/arm/00-INDEX |    3 +++
+>  Documentation/arm/uefi.txt |   39  
+> +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 42 insertions(+)
+>  create mode 100644 Documentation/arm/uefi.txt
 > 
 > diff --git a/Documentation/arm/00-INDEX b/Documentation/arm/00-INDEX
-> index 36420e1..4978456 100644
+> index 4978456..87e01d1 100644
 > --- a/Documentation/arm/00-INDEX
 > +++ b/Documentation/arm/00-INDEX
-> @@ -24,6 +24,8 @@ SPEAr
->  	- ST SPEAr platform Linux Overview
->  VFP/
->  	- Release notes for Linux Kernel Vector Floating Point support  
-> code
-> +early_ioremap.txt
-> +	- documentation of the early_ioremap() functionality
->  empeg/
->  	- Ltd's Empeg MP3 Car Audio Player
->  mem_alignment
-> diff --git a/Documentation/arm/early_ioremap.txt  
-> b/Documentation/arm/early_ioremap.txt
+> @@ -36,3 +36,6 @@ nwfpe/
+>  	- NWFPE floating point emulator documentation
+>  swp_emulation
+>  	- SWP/SWPB emulation handler/logging description
+> +
+> +uefi.txt
+> +	- [U]EFI configuration and runtime services documentation
+> diff --git a/Documentation/arm/uefi.txt b/Documentation/arm/uefi.txt
 > new file mode 100644
-> index 0000000..178f791
+> index 0000000..5c48271
 > --- /dev/null
-> +++ b/Documentation/arm/early_ioremap.txt
-> @@ -0,0 +1,12 @@
-> +early_ioremap() and early_iounmap() rovide a mechanism for  
-> temporarily mapping
-
-Typo: provide
-
-> +in small blocks of memory, identified by their physical address,  
-> into the
-> +fixmap virtual address block before paging_init() has been called  
-> and more
-> +flexible mapping functions are available.
+> +++ b/Documentation/arm/uefi.txt
+> @@ -0,0 +1,39 @@
+> +The nomenclature EFI and UEFI are used interchangeably in this  
+> document.
 > +
-> +Due to its direct method, it also gets around potential need for  
-> special
-> +handling of regions that end up in highmem.
-> +
-> +It supports up to 7 simultaneously mapped regions of up to 128KB  
-> each.
-> +All regions are mapped as non-shareable device memory.
-> +
-> +Specify 'early_ioremap_debug' on the kernel commandline for verbose  
-> output.
-> --
-> 1.7.10.4
 
-Minor quibble: this explains what it does, but nothing about how to use  
-it. Do these mappings persist if you don't unmap them, or does  
-paging_init() clear them?
+And the acronym expands to...?
 
-Oh well:
+> +The implementation depends on receiving pointers to the UEFI memory  
+> map
+> +and System Table in a Flattened Device Tree - so is only available  
+> with
+> +CONFIG_OF.
+> +
+> +It (early) parses the FDT for the following parameters:
+> +- 'efi-system-table':
+> +  Physical address of the system table. (required)
+> +- 'efi-runtime-mmap':
+> +  Physical address of an EFI memory map, containing at least
+> +  the regions to be preserved. (required)
+> +- 'efi-runtime-mmap-size':
+> +  Size in bytes of the provided memory map. (required)
+> +- 'efi-mmap-desc-size':
+> +  Size of each descriptor in the memory map. (override default)
+> +- 'efi-mmap-desc-ver':
+> +  Memory descriptor format version. (override default)
+> +
+> +Since UEFI firmware on ARM systems are required to use a 1:1 memory  
+> map
+> +even on LPAE-capable systems, the above fields are 32-bit regardless.
+> +
+> +It also depends on early_ioremap to parse the memory map and preserve
+> +the regions required for runtime services.
+> +
+> +For actually enabling [U]EFI support, enable:
+> +- CONFIG_EFI=y
+> +- CONFIG_EFI_VARS=y or m
+> +
+> +After the kernel has mapped the required regions into its address  
+> space,
+> +a SetVirtualAddressMap() call is made into UEFI in order to update
+> +relocations. This call must be performed with all the code in a 1:1
+> +mapping. This implementation achieves this by temporarily disabling  
+> the
+> +MMU for the duration of this call. This can only be done safely:
+> +- before secondary CPUs are brought online.
+> +- after early_initcalls have completed, sinze it uses  
+> setup_mm_for_reboot().
+
+Typo: since
+
+> +
+> +For verbose debug messages, specify 'uefi_debug' on the kernel  
+> command
+> +line.
+
+At a wild guess, this parses a memory descriptor table to find out  
+where the physical and device memory on an arm board live, according to  
+some standard? I'm guessing because the file never quite says what this  
+mechanism is _for_, just describes knobs on a black box...
+
+(I can google, but it's a touch newbie-unfriendly. I tend to prefer  
+documentation that's aimed at people who _don't_ already know whatever  
+it is. Personal idiosyncrasy.)
 
 Acked-by: Rob Landley <rob@landley.net>
 
