@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab3F3WAO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 18:00:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35664 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320Ab3F3WAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 18:00:12 -0400
-Date: Mon, 1 Jul 2013 00:00:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Wedson Almeida Filho <wedsonaf@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
-Message-ID: <20130630220004.GA23124@pd.tnic>
-References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
- <20130628111948.GA31065@gmail.com>
- <20130628140938.GA24819@pd.tnic>
- <CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751769Ab3F3WWb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 18:22:31 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59457 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751394Ab3F3WW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 18:22:29 -0400
+Message-ID: <1372630948.2083.3.camel@joe-AO722>
+Subject: Re: [PATCH] m68k/setup: Use pr_*() instead of plain printk()
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 30 Jun 2013 15:22:28 -0700
+In-Reply-To: <1372585689-29492-1-git-send-email-geert@linux-m68k.org>
+References: <1372585689-29492-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 04:56:30PM -0700, Wedson Almeida Filho wrote:
-> On Fri, Jun 28, 2013 at 7:09 AM, Borislav Petkov <bp@alien8.de> wrote:
-> 
-> > Btw, do we have any perf data showing any improvements from this patch?
-> 
-> I wrote a simple test the measures the time it takes to acquire and
-> release  an uncontended mutex (i.e., we always take the fast path)
-> 100k times. I ran it a few times, the original code averages
-> 2.743436ms, and the new code averages 2.101098ms, so it's about 23% improvement.
+On Sun, 2013-06-30 at 11:48 +0200, Geert Uytterhoeven wrote:
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Microbenchmark results tend to be misleading in such situations. Rather,
-it would be much closer to reality if you traced a real workload like a
-simple kernel build, for example, with and without your patch.
+Hi Geert, just trivial comments...
 
-I.e., something like
+> diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
 
-perf stat --repeat 5 ./build-kernel.sh
+> @@ -161,7 +161,7 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
+[]
+> -				printk("m68k_parse_bootinfo: too many memory chunks\n");
+> +				pr_warn("m68k_parse_bootinfo: too many memory chunks\n");
 
-and take a look at what the perfcouters are saying in both cases.
+These are generally better written by
+removing the hand-written function name
+and using "%s: ", __func__
 
-> I also think the code looks cleaner this way.
+				pr_warn("%s: too many memory chunks\n",
+					__func__);
 
-No doubt.
+> @@ -197,8 +197,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
 
--- 
-Regards/Gruss,
-    Boris.
+> -			printk("m68k_parse_bootinfo: unknown tag 0x%04x ignored\n",
+> -			       record->tag);
+> +			pr_warn("m68k_parse_bootinfo: unknown tag 0x%04x ignored\n",
+> +				   record->tag);
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+etc.
+
+> @@ -538,9 +538,9 @@ void check_bugs(void)
+>  {
+>  #ifndef CONFIG_M68KFPU_EMU
+>  	if (m68k_fputype == 0) {
+> -		printk(KERN_EMERG "*** YOU DO NOT HAVE A FLOATING POINT UNIT, "
+> +		pr_emerg("*** YOU DO NOT HAVE A FLOATING POINT UNIT, "
+>  			"WHICH IS REQUIRED BY LINUX/M68K ***\n");
+> -		printk(KERN_EMERG "Upgrade your hardware or join the FPU "
+> +		pr_emerg("Upgrade your hardware or join the FPU "
+>  			"emulation project\n");
+
+It would be nicer to coalesce the formats
+into a single line.
+
