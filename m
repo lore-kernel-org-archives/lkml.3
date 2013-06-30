@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab3F3JCO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 05:02:14 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:38143 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab3F3JCK (ORCPT
+	id S1752025Ab3F3JFg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 05:05:36 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:40757 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab3F3JFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 05:02:10 -0400
-Date: Sun, 30 Jun 2013 17:02:03 +0800
-From: =?utf-8?B?5byg5b+g5bGx?= <zzs0213@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] let kbuild mkdir for dir/file.o
-Message-ID: <20130630090203.GA6557@greatfirst.com>
-Mail-Followup-To: Michal Marek <mmarek@suse.cz>,
-	linux-kbuild <linux-kbuild@vger.kernel.org>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <1370335532-17891-1-git-send-email-zzs0213@gmail.com>
- <1370335532-17891-2-git-send-email-zzs0213@gmail.com>
- <51CE11C2.5020406@suse.cz>
+	Sun, 30 Jun 2013 05:05:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51CE11C2.5020406@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130630003348.GA23378@kroah.com>
+References: <20130627175936.GA8732@kroah.com> <CA+QCeVTdiGNz05_L0MWVnY6W88tgt_gy4Duk5MoUR7Xi6KpRsg@mail.gmail.com>
+ <20130630003348.GA23378@kroah.com>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Sun, 30 Jun 2013 12:05:11 +0300
+Message-ID: <CA+QCeVTkpr2XxzyqswJcTpWiOWRR5QyMjbeDubih7CqZotmGXw@mail.gmail.com>
+Subject: Re: Linux 3.9.8
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
+        lwn <lwn@lwn.net>, Jiri Slaby <jslaby@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  # $(obj-dirs) is a list of directories that contain object files
-> > -obj-dirs := $(dir $(multi-objs) $(subdir-obj-y))
-> > +__subdir-obj-y := $(foreach o,$(obj-y),$(if $(filter-out $(o),$(notdir $(o))),$(o)))
+On 30 June 2013 03:33, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sat, Jun 29, 2013 at 11:58:04PM +0300, Sergey Meirovich wrote:
+>> Hi,
+>>
+>> On 27 June 2013 20:59, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > I'm announcing the release of the 3.9.8 kernel.
+>> >
+>> > All users of the 3.9 kernel series must upgrade.
+>>
+>> I've got issues with my radeon ("01:00.0 VGA compatible controller:
+>> Advanced Micro Devices, Inc. [AMD/ATI] Thames [Radeon HD 7500M/7600M
+>> Series]") APU on 3.9.8
 >
-> This complicated filter returns entries from $(obj-y) that contain a
-> slash, is that correct? If so, is it really necessary? Why not simply
-> add whole $(obj-y) to $(obj-dirs) and be done? $(multi-objs) is also
-> added without any filtering.
+> But 3.9.7 worked?  Can you run 'git bisect' to track down the offending
+> commit?
+
+The last previous  3.9.X kernel I checked was 3.9.5 will try 3.9.7 a
+bit later as well as git bisect stuff
+
+
+> Does 3.10-rc7 also have this problem?
+
+3.10-rc7 doesn't have this problem
+
+
 >
-> > +obj-dirs := $(dir $(multi-objs) $(__subdir-obj-y))
-
-Yes, You are right.
-It is enough that just add $(obj-y) to $(obj-dirs) directly.
-I will resend the patch.
-
--- 
-Best Regards,
-zzs
-
+> thanks,
+>
+> greg k-h
