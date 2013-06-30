@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250Ab3F3Cuj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jun 2013 22:50:39 -0400
-Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:33990 "EHLO
-	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750729Ab3F3Cuh (ORCPT
+	id S1751397Ab3F3DJY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jun 2013 23:09:24 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:63552 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab3F3DJW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jun 2013 22:50:37 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAHSZz1HYNY97/2dsb2JhbAANTIcLvAyBFYMXAQEBBCMVQRALGAICBSECAg8CRgYNAQUCAQGxH3OQSYEmjjgHglGBFgOhZopK
-X-IronPort-AV: E=Sophos;i="4.87,967,1363104000"; 
-   d="scan'208";a="109384846"
-X-WN-REMOTEIP: 216.53.143.123
-X-WN-ENVELOPESENDER: gerg@uclinux.org
-X-WN-MID: 109384846
-X-WN-SMTPAUTHID: gregungerer@westnet.com.au
-Message-ID: <51CF9CEB.20800@uclinux.org>
-Date: Sun, 30 Jun 2013 12:50:19 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sat, 29 Jun 2013 23:09:22 -0400
+Date: Sat, 29 Jun 2013 22:09:20 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 1/5] initmpfs: replace MS_NOUSER in initramfs
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+References: <1372536729.850656@landley.net> <87y59swg8z.fsf@xmission.com>
+In-Reply-To: <87y59swg8z.fsf@xmission.com> (from ebiederm@xmission.com on
+	Sat Jun 29 20:15:40 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1372561760.2776.161@driftwood>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: uClinux development list <uclinux-dev@uclinux.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] m68knommu: Mark config_BSP() __init
-References: <1372189212-12136-1-git-send-email-geert@linux-m68k.org> <51CB745B.4060604@uclinux.org> <CAMuHMdV2XakPGZP5gYygBPgg+DeSRj7qP6hF7T6nN-OQKTodtA@mail.gmail.com>
-In-Reply-To: <CAMuHMdV2XakPGZP5gYygBPgg+DeSRj7qP6hF7T6nN-OQKTodtA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On 06/29/2013 08:15:40 PM, Eric W. Biederman wrote:
+> Rob Landley <rob@landley.net> writes:
+> 
+> > From: Rob Landley <rob@landley.net>
+> >
+> > Mounting MS_NOUSER prevents --bind mounts from rootfs. Prevent new  
+> rootfs
+> > mounts with a different mechanism that doesn't affect bind mounts.
+> 
+> I don't see patches 4 and 5 so I don't know if you have covered this
+> elsewhere but a very important part of the reason for MS_NOUSER is to
+> prevent unmounting of rootfs.
+> 
+> The entire vfs breaks if you are allowed to unmount rootfs, and it
+> appears this patch is allowing that.
 
-On 27/06/13 16:49, Geert Uytterhoeven wrote:
-> On Thu, Jun 27, 2013 at 1:08 AM, Greg Ungerer <gerg@uclinux.org> wrote:
->> On 26/06/13 05:40, Geert Uytterhoeven wrote:
->>>
->>> Some instances of config_BSP() lack an __init annotation.
->>>
->>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->>
->>
->> Acked-by: Greg Ungerer <gerg@uclinux.org>
->>
->> Looks good. Are you going to push it via your tree, or do you want
->> me too?
->
-> As it's m68nommu, perhaps through your tree? Unless you don't have time to
-> handle it.
+I mean I tried "mount --move / home". (--bind worked.)
 
-I can take care of it. Though I may be a little slower than usual,
-I am traveling at the moment.
+Long day...
 
-Regards
-Greg
-
-
-
+Rob
