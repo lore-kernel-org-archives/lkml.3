@@ -1,53 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab3F3Tcs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 15:32:48 -0400
-Received: from smtprelay-h31.telenor.se ([213.150.131.4]:51186 "EHLO
-	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab3F3Tco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 15:32:44 -0400
-X-Greylist: delayed 1673 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Jun 2013 15:32:44 EDT
-X-SENDER-IP: [85.230.171.181]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsitALeA0FFV5qu1PGdsb2JhbABagwgBAYMYI4UAsFSGewQBfRcDAQEBATg1gwAjGIECChoBiCW6dxaOK4Edg24DnXiOKDo
-X-IronPort-AV: E=Sophos;i="4.87,969,1363129200"; 
-   d="scan'208";a="356403425"
-From: rydberg@euromail.se
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 0/2] Support for 2013 Macbook Air
-Date: Sun, 30 Jun 2013 21:04:44 +0200
-Message-Id: <1372619086-3532-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752368Ab3F3TkD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 15:40:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751980Ab3F3TkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 15:40:00 -0400
+Message-ID: <51D08976.6040005@redhat.com>
+Date: Sun, 30 Jun 2013 21:39:34 +0200
+From: Lennart Poettering <lpoetter@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Tim Hockin <thockin@hockin.org>
+CC: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Mike Galbraith <bitbucket@online.de>, Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com> <20130626212047.GB4536@htj.dyndns.org> <1372311907.5871.78.camel@marge.simpson.net> <20130627180143.GD5599@mtj.dyndns.org> <1372391198.5989.110.camel@marge.simpson.net> <20130628040930.GC2500@htj.dyndns.org> <1372394950.5989.128.camel@marge.simpson.net> <20130628050138.GD2500@htj.dyndns.org> <20130628150513.GD5125@dhcp22.suse.cz> <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com> <51CE3CE0.9010506@redhat.com> <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com>
+In-Reply-To: <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry, Jiri,
+Heya,
 
-Please find enclosed two patches yielding support for the
-MacbookAir6,2. As usual, there is one HID and one Input patch. Given
-the closeness to the merge window, I suppose we could backport this to
-3.10, unless Linus decides to wait another week. Backports should be
-fine back to v3.7, inclusive. Dmitry, would you care to take the
-patches, if Jiri is ok with that?
+On 29.06.2013 05:05, Tim Hockin wrote:
+> Come on, now, Lennart.  You put a lot of words in my mouth.
 
-Thanks,
-Henrik
+>> I for sure am not going to make the PID 1 a client of another daemon. That's
+>> just wrong. If you have a daemon that is both conceptually the manager of
+>> another service and the client of that other service, then that's bad design
+>> and you will easily run into deadlocks and such. Just think about it: if you
+>> have some external daemon for managing cgroups, and you need cgroups for
+>> running external daemons, how are you going to start the external daemon for
+>> managing cgroups? Sure, you can hack around this, make that daemon special,
+>> and magic, and stuff -- or you can just not do such nonsense. There's no
+>> reason to repeat the fuckup that cgroup became in kernelspace a second time,
+>> but this time in userspace, with multiple manager daemons all with different
+>> and slightly incompatible definitions what a unit to manage actualy is...
+>
+> I forgot about the tautology of systemd.  systemd is monolithic.
 
-Henrik Rydberg (2):
-  HID: apple: Add support for the 2013 Macbook Air
-  Input: bcm5974 - Add support for the 2013 MacBook Air
+systemd is certainly not monolithic for almost any definition of that 
+term. I am not sure where you are taking that from, and I am not sure I 
+want to discuss on that level. This just sounds like FUD you picked up 
+somewhere and are repeating carelessly...
 
- drivers/hid/hid-apple.c       |  6 ++++++
- drivers/hid/hid-core.c        |  6 ++++++
- drivers/hid/hid-ids.h         |  3 +++
- drivers/input/mouse/bcm5974.c | 36 ++++++++++++++++++++++++++++++++++--
- 4 files changed, 49 insertions(+), 2 deletions(-)
+> But that's not my point.  It seems pretty easy to make this cgroup
+> management (in "native mode") a library that can have either a thin
+> veneer of a main() function, while also being usable by systemd.  The
+> point is to solve all of the problems ONCE.  I'm trying to make the
+> case that systemd itself should be focusing on features and policies
+> and awesome APIs.
 
--- 
-1.8.3.1
+You know, getting this all right isn't easy. If you want to do things 
+properly, then you need to propagate attribute changes between the units 
+you manage. You also need something like a scheduler, since a number of 
+controllers can only be configured under certain external conditions 
+(for example: the blkio or devices controller use major/minor parameters 
+for configuring per-device limits. Since major/minor assignments are 
+pretty much unpredictable these days -- and users probably want to 
+configure things with friendly and stable /dev/disk/by-id/* symlinks 
+anyway -- this requires us to wait for devices to show up before we can 
+configure the parameters.) Soo... you need a graph of units, where you 
+can propagate things, and schedule things based on some execution/event 
+queue. And the propagation and scheduling are closely intermingled.
 
+Now, that's pretty much exactly what systemd actually *is*. It 
+implements a graph of units with a scheduler. And if you rip that part 
+out of systemd to make this an "easy cgroup management library", then 
+you simply turn what systemd is into a library without leaving anything. 
+Which is just bogus.
+
+So no, if you say "seems pretty easy to make this cgroup management a 
+library" then well, I have to disagree with you.
+
+>> We want to run fewer, simpler things on our systems, we want to reuse as
+>
+> Fewer and simpler are not compatible, unless you are losing
+> functionality.  Systemd is fewer, but NOT simpler.
+
+Oh, certainly it is. If we'd split up the cgroup fs access into 
+separate daemon of some kind, then we'd need some kind of IPC for that, 
+and so you have more daemons and you have some complex IPC between the 
+processes. So yeah, the systemd approach is certainly both simpler and 
+uses fewer daemons then your hypothetical one.
+
+>> much of the code as we can. You don't achieve that by running yet another
+>> daemon that does worse what systemd can anyway do simpler, easier and
+>> better.
+>
+> Considering this is all hypothetical, I find this to be a funny
+> debate.  My hypothetical idea is better than your hypothetical idea.
+
+Well, systemd is pretty real, and the code to do the unified cgroup 
+management within systemd is pretty complete. systemd is certainly not 
+hypothetical.
+
+>> The least you could grant us is to have a look at the final APIs we will
+>> have to offer before you already imply that systemd cannot be a valid
+>> implementation of any API people could ever agree on.
+>
+> Whoah, don't get defensive.  I said nothing of the sort.  The fact of
+> the matter is that we do not run systemd, at least in part because of
+> the monolithic nature.  That's unlikely to change in this timescale.
+
+Oh, my. I am not sure what makes you think it is monolithic.
+
+> What I said was that it would be a shame if we had to invent our own
+> low-level cgroup daemon just because the "upstream" daemons was too
+> tightly coupled with systemd.
+
+I have no interest to reimplement systemd as a library, just to make you 
+happy... I am quite happy with what we already have....
+
+> This is supposed to be collaborative, not combative.
+
+It certainly sounds *very* differently in what you are writing.
+
+Lennart
