@@ -1,177 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3GARR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 13:17:28 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:42446 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab3GARRJ (ORCPT
+	id S1754785Ab3GARRi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 13:17:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47108 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab3GARRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 13:17:09 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
-        brian@crystalfontz.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [RFC] iio: mxs-lradc: compute temperature from channel 8 and 9
-Date: Mon,  1 Jul 2013 19:16:58 +0200
-Message-Id: <1372699018-17436-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 1 Jul 2013 13:17:35 -0400
+Date: Mon, 1 Jul 2013 10:17:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/Serial patches for 3.11-rc1
+Message-ID: <20130701171734.GA25726@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mxs LRADC is able to read an internal die temperature sensor. The
-temperature has to be calculated from the value read on channel 8 and channel 9.
-To be able to expose the result to hwmon, implement iio channel 8 as
-(channel 9 - channel 8). Then, implement IIO_CHAN_INFO_SCALE and
-IIO_CHAN_INFO_OFFSET so that it can be processed by hwmon through the in kernel
-provider/consumer mechanism.
+The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/staging/iio/adc/mxs-lradc.c | 99 ++++++++++++++++++++++++++++++-------
- 1 file changed, 82 insertions(+), 17 deletions(-)
+  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
 
-diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-index 163c638..df1d81e 100644
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -225,26 +225,14 @@ struct mxs_lradc {
- #define	LRADC_CTRL4_LRADCSELECT_MASK(n)		(0xf << ((n) * 4))
- #define	LRADC_CTRL4_LRADCSELECT_OFFSET(n)	((n) * 4)
- 
--/*
-- * Raw I/O operations
-- */
--static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
--			const struct iio_chan_spec *chan,
--			int *val, int *val2, long m)
-+static int mxs_lradc_read_single(struct iio_dev *iio_dev, int chan, int *val)
- {
- 	struct mxs_lradc *lradc = iio_priv(iio_dev);
- 	int ret;
- 	unsigned long mask;
- 
--	if (m != IIO_CHAN_INFO_RAW)
--		return -EINVAL;
--
--	/* Check for invalid channel */
--	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
--		return -EINVAL;
--
- 	/* Validate the channel if it doesn't intersect with reserved chans. */
--	bitmap_set(&mask, chan->channel, 1);
-+	bitmap_set(&mask, chan, 1);
- 	ret = iio_validate_scan_mask_onehot(iio_dev, &mask);
- 	if (ret)
- 		return -EINVAL;
-@@ -273,7 +261,7 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
- 	/* Clean the slot's previous content, then set new one. */
- 	writel(LRADC_CTRL4_LRADCSELECT_MASK(0),
- 		lradc->base + LRADC_CTRL4 + STMP_OFFSET_REG_CLR);
--	writel(chan->channel, lradc->base + LRADC_CTRL4 + STMP_OFFSET_REG_SET);
-+	writel(chan, lradc->base + LRADC_CTRL4 + STMP_OFFSET_REG_SET);
- 
- 	writel(0, lradc->base + LRADC_CH(0));
- 
-@@ -302,6 +290,74 @@ err:
- 	return ret;
- }
- 
-+static int mxs_lradc_read_temp(struct iio_dev *iio_dev, int *val)
-+{
-+	int ret, min, max;
-+
-+	ret = mxs_lradc_read_single(iio_dev, 8, &min);
-+	if (ret != IIO_VAL_INT)
-+		return ret;
-+
-+	ret = mxs_lradc_read_single(iio_dev, 9, &max);
-+	if (ret != IIO_VAL_INT)
-+		return ret;
-+
-+	*val = max - min;
-+
-+	return IIO_VAL_INT;
-+}
-+
-+/*
-+ * Raw I/O operations
-+ */
-+static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
-+			const struct iio_chan_spec *chan,
-+			int *val, int *val2, long m)
-+{
-+	/* Check for invalid channel */
-+	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
-+		return -EINVAL;
-+
-+	switch (m) {
-+	case IIO_CHAN_INFO_RAW:
-+		if (chan->type == IIO_TEMP)
-+			return mxs_lradc_read_temp(iio_dev, val);
-+
-+		return mxs_lradc_read_single(iio_dev, chan->channel, val);
-+
-+	case IIO_CHAN_INFO_SCALE:
-+		if (chan->type == IIO_TEMP) {
-+			/* From the datasheet, we have to multiply by 1.012 and
-+			 * divide by 4
-+			 */
-+			*val = 0;
-+			*val2 = 253000;
-+			return IIO_VAL_INT_PLUS_MICRO;
-+		}
-+
-+		return -EINVAL;
-+
-+	case IIO_CHAN_INFO_OFFSET:
-+		if (chan->type == IIO_TEMP) {
-+			/* The calculated value from the ADC is in Kelvin, we
-+			 * want Celsius for hwmon so the offset is
-+			 * -272.15 * scale
-+			 */
-+			*val = -1075;
-+			*val2 = 691699;
-+
-+			return IIO_VAL_INT_PLUS_MICRO;
-+		}
-+
-+		return -EINVAL;
-+
-+	default:
-+		break;
-+	}
-+
-+	return -EINVAL;
-+}
-+
- static const struct iio_info mxs_lradc_iio_info = {
- 	.driver_module		= THIS_MODULE,
- 	.read_raw		= mxs_lradc_read_raw,
-@@ -836,8 +892,17 @@ static const struct iio_chan_spec mxs_lradc_chan_spec[] = {
- 	MXS_ADC_CHAN(5, IIO_VOLTAGE),
- 	MXS_ADC_CHAN(6, IIO_VOLTAGE),
- 	MXS_ADC_CHAN(7, IIO_VOLTAGE),	/* VBATT */
--	MXS_ADC_CHAN(8, IIO_TEMP),	/* Temp sense 0 */
--	MXS_ADC_CHAN(9, IIO_TEMP),	/* Temp sense 1 */
-+	/* Combined Temperature sensors */
-+	{
-+		.type = IIO_TEMP,
-+		.indexed = 1,
-+		.scan_index = 8,
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
-+				      BIT(IIO_CHAN_INFO_OFFSET) |
-+				      BIT(IIO_CHAN_INFO_SCALE),
-+		.channel = 8,
-+		.scan_type = {.sign = 'u', .realbits = 18, .storagebits = 32,},
-+	},
- 	MXS_ADC_CHAN(10, IIO_VOLTAGE),	/* VDDIO */
- 	MXS_ADC_CHAN(11, IIO_VOLTAGE),	/* VTH */
- 	MXS_ADC_CHAN(12, IIO_VOLTAGE),	/* VDDA */
--- 
-1.8.1.2
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.11-rc1
+
+for you to fetch changes up to 828c6a102b1f2b8583fadc0e779c46b31d448f0b:
+
+  Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller" (2013-06-30 09:03:06 -0700)
+
+----------------------------------------------------------------
+TTY/Serial merge for 3.11-rc1
+
+Here is the big TTY / Serial driver merge for 3.11-rc1.
+
+It's not all that big, nothing major changed in the tty api, which is a
+nice change, just a number of serial driver fixes and updates and new
+drivers, along with some n_tty fixes to help resolve some reported
+issues.
+
+All of these have been in the linux-next releases for a while, with the
+exception of the last revert patch, which was reported this past weekend
+by two different people as being needed.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alexander Stein (1):
+      serial: imx: Add Rx Fifo overrun error message
+
+Alexey Khoroshilov (1):
+      tty/serial/sirf: fix error propagation in sirfsoc_uart_probe()
+
+Arnd Bergmann (1):
+      serial: omap: repair building without PM_SLEEP
+
+Boris BREZILLON (1):
+      tty: atmel_serial: prepare clk before calling enable
+
+Darren Hart (1):
+      pch_uart: Add uart_clk selection for the MinnowBoard
+
+Fabio Estevam (4):
+      serial: imx: Fix warning when !CONFIG_SERIAL_IMX_CONSOLE
+      serial: imx: Allow module build
+      serial: imx: Improve Kconfig text
+      serial: imx: Fix serial clock unbalance
+
+Feng Tang (1):
+      serial: mfd: Add sysrq support
+
+Greg Kroah-Hartman (5):
+      Merge 3.10-rc3 into tty-next
+      Merge 3.10-rc5 into tty-next
+      Merge 3.10-rc6 into tty-next
+      Merge 3.10-rc7 into tty-next
+      Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller"
+
+Huang Shijie (3):
+      serial: imx: add support for DTE mode
+      serial: imx: enable the clocks only when the uart is used
+      serial: imx: enable the clocks for console
+
+Jingchang Lu (1):
+      tty: serial: add Freescale lpuart driver support
+
+Jingoo Han (3):
+      serial: altera: remove unnecessary platform_set_drvdata()
+      serial: use platform_{get,set}_drvdata()
+      tty: replace strict_strtoul() with kstrtoul()
+
+Jongsung Kim (1):
+      tty: serial: amba-pl011: revise to use amba_rev macro
+
+Libo Chen (1):
+      driver: tty: add missing unregister in err case
+
+Matteo Facchinetti (3):
+      serial/mpc52xx_uart: prepare for adding MPC5125 PSC UART support
+      serial/mpc52xx_uart: add MPC5125 PSC support
+      serial/mpc52xx_uart: fix kernel panic when system reboot
+
+Michal Simek (1):
+      tty: serial: Enable uartlite for ARM zynq
+
+Paul Bolle (1):
+      stallion: final cleanup
+
+Peter Hurley (7):
+      tty: Remove TTY_HW_COOK_IN/OUT
+      tty: Add timed, writer-prioritized rw semaphore
+      n_tty: Encapsulate minimum_to_wake within N_TTY
+      n_tty: Untangle read completion variables
+      n_tty: Fix unsafe update of available buffer space
+      n_tty: Buffer work should not reschedule itself
+      tty: Reset itty for other pty
+
+Sachin Kamat (1):
+      serial: vt8500: Remove redundant use of of_match_ptr macro
+
+Soren Brinkmann (1):
+      tty: xuartps: Remove suspend/resume functions
+
+Sourav Poddar (2):
+      serial: Move "uart_console" def to core header file.
+      serial: omap: prevent runtime PM for "no_console_suspend"
+
+Thadeu Lima de Souza Cascardo (1):
+      serial/JSM: change maintainer to myself
+
+Tony Lindgren (1):
+      serial: omap: Fix device tree based PM runtime
+
+Wang YanQing (11):
+      fbcon: convert last fbcon_takeover call to do_fbcon_takeover
+      fbcon: delete unneeded function fbcon_takeover
+      vt: delete unneeded functions register_con_driver|take_over_console
+      vt: convert last unbind_con_driver call to do_unbind_con_driver
+      vt: delete unneeded function unbind_con_driver
+      vt: convert last bind_con_driver call to do_bind_con_driver
+      vt: delete unneeded function bind_con_driver
+      fbcon: convert last two unregister_con_driver call to do_unregister_con_driver
+      vt: delete unneeded function unregister_con_driver
+      TTY:vt: convert remain take_over_console's users to do_take_over_console
+      TTY:console: update document console.txt
+
+Wei Yongjun (2):
+      serial: samsung: missing uart_unregister_driver() on error in s3c24xx_serial_modinit()
+      serial: omap: fix potential NULL pointer dereference in serial_omap_runtime_suspend()
+
+ Documentation/console/console.txt                  |  28 +-
+ .../bindings/tty/serial/fsl-imx-uart.txt           |   3 +
+ .../devicetree/bindings/tty/serial/fsl-lpuart.txt  |  14 +
+ Documentation/serial/00-INDEX                      |   2 -
+ Documentation/serial/stallion.txt                  | 392 ---------
+ MAINTAINERS                                        |   2 +-
+ arch/alpha/kernel/console.c                        |   4 +-
+ arch/alpha/kernel/process.c                        |   4 +-
+ arch/mips/pci/pci-bcm1480.c                        |   4 +-
+ arch/mips/pci/pci-sb1250.c                         |   4 +-
+ arch/parisc/kernel/setup.c                         |   2 +-
+ arch/powerpc/include/asm/mpc52xx_psc.h             |  49 ++
+ drivers/char/Kconfig                               |  12 -
+ drivers/tty/Makefile                               |   2 +-
+ drivers/tty/hvc/hvc_iucv.c                         |   2 +-
+ drivers/tty/n_tty.c                                |  88 ++-
+ drivers/tty/serial/8250/8250_pci.c                 |   4 -
+ drivers/tty/serial/8250/Kconfig                    |   5 +-
+ drivers/tty/serial/Kconfig                         |  27 +-
+ drivers/tty/serial/Makefile                        |   1 +
+ drivers/tty/serial/altera_uart.c                   |   1 -
+ drivers/tty/serial/amba-pl011.c                    |  11 +-
+ drivers/tty/serial/atmel_serial.c                  |  41 +-
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c        |   4 +-
+ drivers/tty/serial/fsl_lpuart.c                    | 874 +++++++++++++++++++++
+ drivers/tty/serial/imx.c                           |  47 +-
+ drivers/tty/serial/mfd.c                           |   4 +
+ drivers/tty/serial/mpc52xx_uart.c                  | 424 ++++++++--
+ drivers/tty/serial/of_serial.c                     |   4 +-
+ drivers/tty/serial/omap-serial.c                   |  43 +-
+ drivers/tty/serial/pch_uart.c                      |   5 +
+ drivers/tty/serial/samsung.c                       |   8 +-
+ drivers/tty/serial/sc26xx.c                        |   5 +-
+ drivers/tty/serial/serial_core.c                   |   6 -
+ drivers/tty/serial/sirfsoc_uart.c                  |   5 +-
+ drivers/tty/serial/sunhv.c                         |   6 +-
+ drivers/tty/serial/sunsab.c                        |   6 +-
+ drivers/tty/serial/sunsu.c                         |   8 +-
+ drivers/tty/serial/sunzilog.c                      |   6 +-
+ drivers/tty/serial/ucc_uart.c                      |   9 +-
+ drivers/tty/serial/vt8500_serial.c                 |   2 +-
+ drivers/tty/serial/xilinx_uartps.c                 |  36 +-
+ drivers/tty/sysrq.c                                |   2 +-
+ drivers/tty/tty_io.c                               |  19 +-
+ drivers/tty/tty_ldsem.c                            | 453 +++++++++++
+ drivers/tty/vt/vt.c                                | 117 +--
+ drivers/usb/misc/sisusbvga/sisusb_con.c            |  18 +-
+ drivers/video/console/fbcon.c                      |  35 +-
+ drivers/video/console/mdacon.c                     |   8 +-
+ drivers/video/console/newport_con.c                |   9 +-
+ drivers/video/console/sticon.c                     |   6 +-
+ include/linux/console.h                            |   3 -
+ include/linux/serial_core.h                        |   7 +
+ include/linux/tty.h                                |   3 -
+ include/linux/tty_ldisc.h                          |  52 ++
+ include/linux/vt_kern.h                            |   2 -
+ include/uapi/linux/serial_core.h                   |   3 +
+ 57 files changed, 2144 insertions(+), 797 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/fsl-lpuart.txt
+ delete mode 100644 Documentation/serial/stallion.txt
+ create mode 100644 drivers/tty/serial/fsl_lpuart.c
+ create mode 100644 drivers/tty/tty_ldsem.c
