@@ -1,133 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab3GADoy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 23:44:54 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:37396 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab3GADow (ORCPT
+	id S1752556Ab3GADqi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 23:46:38 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:54916
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751864Ab3GADqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 23:44:52 -0400
-X-Spam-Score: -106.8
-Message-ID: <51D0FAFE.5010500@asianux.com>
-Date: Mon, 01 Jul 2013 11:43:58 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 30 Jun 2013 23:46:36 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <vinod.koul@intel.com>, <djbw@fb.com>
+CC: <scottwood@freescale.com>, <vakul@freescale.com>, <leoLi@freescale.com>,
+        <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH 2/2] DMA: Freescale: update driver to support 8-channel DMA engine
+Date: Mon, 1 Jul 2013 11:46:18 +0800
+Message-ID: <1372650378-2936-2-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372650378-2936-1-git-send-email-hongbo.zhang@freescale.com>
+References: <1372650378-2936-1-git-send-email-hongbo.zhang@freescale.com>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
-        David Sharp <dhsharp@google.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
-References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at> <51CAA78C.5040900@asianux.com> <51CAA8D6.9000505@nod.at> <51CAAD1D.8050801@asianux.com> <51CAAE7C.9090003@nod.at> <51CAB556.4070700@asianux.com> <51CAB689.70008@nod.at> <CAMuHMdXw6VYhnNWcVfWc9ssxKTqKFcDbN4WXL5i=eNGy+gXcRA@mail.gmail.com> <51CABBDD.403@asianux.com> <51CABFAC.1040505@nod.at> <51CAC0D0.60505@asianux.com> <51D0DE09.4090702@asianux.com>
-In-Reply-To: <51D0DE09.4090702@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2013 09:40 AM, Chen Gang wrote:
-> On 06/26/2013 06:22 PM, Chen Gang wrote:
->> > On 06/26/2013 06:17 PM, Richard Weinberger wrote:
->>> >> Am 26.06.2013 12:01, schrieb Chen Gang:
->>>>> >>>> On 06/26/2013 05:48 PM, Geert Uytterhoeven wrote:
->>>>>>> >>>>>> On Wed, Jun 26, 2013 at 11:38 AM, Richard Weinberger <richard@nod.at> wrote:
->>>>>>>>>>>>>>> >>>>>>>>>>>>>> Since the API itself already contents the meaning: "return NULL means
->>>>>>>>>>>>>>> >>>>>>>>>>>>>> the arch has no related io memory",
->>>>>>> >>>>>> No, NULL means it could not map the I/O memory.
->>>>>>> >>>>>>
->>>>> >>>>
->>>>> >>>> "it could not map the I/O memory" includes "has no related io memory".
->>>>> >>>> So it is enough for our case.
->>>>> >>>>
->>>>>>>>>>>>>>> >>>>>>>>>>>>>> Why not define a generic dummy one in "include/asm-generic/io.h" instead
->>>>>>>>>>>>>>> >>>>>>>>>>>>>> of "HAS_IOMEM" (which has already spread many various places, and also,
->>>>>>>>>>>>>>> >>>>>>>>>>>>>> most of new drivers have to know about it).
->>>>>>>>>>>>>>> >>>>>>>>>>>>>>
->>>>>>>>>>>>>>> >>>>>>>>>>>>>> e.g: in "include/asm-generic/io.h", if "CONFIG_HAS_IOMEM=n", define a
->>>>>>>>>>>>>>> >>>>>>>>>>>>>> dummy ioremap() which return NULL ... (also need consider more details).
->>>>>>>>>>> >>>>>>>>>>
->>>>>>>>>>> >>>>>>>>>> Because we don't even want to build these drivers and not make them fail while
->>>>>>>>>>> >>>>>>>>>> executing io memory related functions.
->>>>>>> >>>>>> Indeed, it doesn't make sense to build drivers that cannot work.
->>>>>>> >>>>>> And they may fail in a very bad way.
->>>>> >>>>
->>>>> >>>> That is our 'platform' guys feeling, not the 'module' guys, as
->>>>> >>>> 'platform' guys, it is better to provide the choice to 'module' guys,
->>>>> >>>> and let them decide by themselves, not forced by us.
->>> >> FYI, this is my last reply to this thread.
->>> >>
->>> >> As Geert and I said, drivers which need io memory have to depend on HAS_IOMEM=y.
->>> >> If an arch does not have io memory these drivers cannot work and therefore we don't
->>> >> want them built.
->> > 
-> Hmm, if the modules select 'COMPILE_TEST', it is better to let asm-generic
-> support this features (at least, not forbid it)
-> 
-> So how about the diff below ?  ;-)
-> 
-> ---------------------------diff begin-----------------------------------
-> 
-> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-> index d5afe96..ede3775 100644
-> --- a/include/asm-generic/io.h
-> +++ b/include/asm-generic/io.h
-> @@ -303,13 +303,17 @@ static inline void *phys_to_virt(unsigned long address)
->  /*
->   * Change "struct page" to physical address.
->   *
-> - * This implementation is for the no-MMU case only... if you have an MMU
-> - * you'll need to provide your own definitions.
-> + * This for the no-MMU, or no-IOMEM but still try to COMPILE_TEST cases.
-> + * if you have an MMU and IOMEM, you'll need to provide your own definitions.
->   */
-> -#ifndef CONFIG_MMU
-> +#if !defined(CONFIG_MMU) || \
-> +	(!defined(CONFIG_HAS_IOMEM) && defined(COMPILE_TEST))
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-Need use 'CONFIG_COMPILE_TEST' instead of 'COMPILE_TEST'.
+This patch adds support to 8-channel DMA engine, thus the driver works for both
+the new 8-channel and the legacy 4-channel DMA engines.
 
->  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
->  {
-> +#if !defined(CONFIG_MMU)
->  	return (void __iomem*) (unsigned long)offset;
-> +#else
-> +	return NULL;
->  }
->  
->  #define __ioremap(offset, size, flags)	ioremap(offset, size)
-> @@ -325,7 +329,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
->  static inline void iounmap(void __iomem *addr)
->  {
->  }
-> -#endif /* CONFIG_MMU */
-> +#endif /* !MMU || (!HAS_IOMEM && COMPILE_TEST) */
->  
->  #ifdef CONFIG_HAS_IOPORT
->  #ifndef CONFIG_GENERIC_IOMAP
-> 
-> ---------------------------diff end-------------------------------------
-> 
->> > It is really the time for stopping discussion, and thank you all for
->> > spending your time resources on this discussion.
->> > 
->> > Next, I will send related patch for it (also cc to you all).
->> > 
->> > 
->> > Thanks.
->> > 
-> 
-> -- Chen Gang
-> 
+Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+---
+ drivers/dma/fsldma.c |   48 ++++++++++++++++++++++++++++++++++--------------
+ drivers/dma/fsldma.h |    4 ++--
+ 2 files changed, 36 insertions(+), 16 deletions(-)
 
-
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 4fc2980..0f453ea 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1119,27 +1119,33 @@ static irqreturn_t fsldma_ctrl_irq(int irq, void *data)
+ 	struct fsldma_device *fdev = data;
+ 	struct fsldma_chan *chan;
+ 	unsigned int handled = 0;
+-	u32 gsr, mask;
++	u8 chan_sr[round_up(FSL_DMA_MAX_CHANS_PER_DEVICE, 4)];
++	u32 gsr;
+ 	int i;
+ 
+-	gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ? in_be32(fdev->regs)
+-						   : in_le32(fdev->regs);
+-	mask = 0xff000000;
+-	dev_dbg(fdev->dev, "IRQ: gsr 0x%.8x\n", gsr);
++	memset(&chan_sr, 0, sizeof(chan_sr));
++	gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ? in_be32(fdev->regs0)
++						   : in_le32(fdev->regs0);
++	memcpy(&chan_sr[0], &gsr, 4);
++	dev_dbg(fdev->dev, "IRQ: gsr0 0x%.8x\n", gsr);
++
++	if (of_device_is_compatible(fdev->dev->of_node, "fsl,eloplus-dma2")) {
++		gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ?
++			in_be32(fdev->regs1) : in_le32(fdev->regs1);
++		memcpy(&chan_sr[4], &gsr, 4);
++		dev_dbg(fdev->dev, "IRQ: gsr1 0x%.8x\n", gsr);
++	}
+ 
+ 	for (i = 0; i < FSL_DMA_MAX_CHANS_PER_DEVICE; i++) {
+ 		chan = fdev->chan[i];
+ 		if (!chan)
+ 			continue;
+ 
+-		if (gsr & mask) {
++		if (chan_sr[i]) {
+ 			dev_dbg(fdev->dev, "IRQ: chan %d\n", chan->id);
+ 			fsldma_chan_irq(irq, chan);
+ 			handled++;
+ 		}
+-
+-		gsr &= ~mask;
+-		mask >>= 8;
+ 	}
+ 
+ 	return IRQ_RETVAL(handled);
+@@ -1261,7 +1267,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
+ 	WARN_ON(fdev->feature != chan->feature);
+ 
+ 	chan->dev = fdev->dev;
+-	chan->id = ((res.start - 0x100) & 0xfff) >> 7;
++	chan->id = (res.start & 0xfff) < 0x300 ?
++		   ((res.start - 0x100) & 0xfff) >> 7 :
++		   ((res.start - 0x200) & 0xfff) >> 7;
+ 	if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
+ 		dev_err(fdev->dev, "too many channels for device\n");
+ 		err = -EINVAL;
+@@ -1341,13 +1349,22 @@ static int fsldma_of_probe(struct platform_device *op)
+ 	INIT_LIST_HEAD(&fdev->common.channels);
+ 
+ 	/* ioremap the registers for use */
+-	fdev->regs = of_iomap(op->dev.of_node, 0);
+-	if (!fdev->regs) {
+-		dev_err(&op->dev, "unable to ioremap registers\n");
++	fdev->regs0 = of_iomap(op->dev.of_node, 0);
++	if (!fdev->regs0) {
++		dev_err(&op->dev, "unable to ioremap register0\n");
+ 		err = -ENOMEM;
+ 		goto out_free_fdev;
+ 	}
+ 
++	if (of_device_is_compatible(op->dev.of_node, "fsl,eloplus-dma2")) {
++		fdev->regs1 = of_iomap(op->dev.of_node, 1);
++		if (!fdev->regs1) {
++			dev_err(&op->dev, "unable to ioremap register1\n");
++			err = -ENOMEM;
++			goto out_free_fdev;
++		}
++	}
++
+ 	/* map the channel IRQ if it exists, but don't hookup the handler yet */
+ 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ 
+@@ -1427,7 +1444,9 @@ static int fsldma_of_remove(struct platform_device *op)
+ 			fsl_dma_chan_remove(fdev->chan[i]);
+ 	}
+ 
+-	iounmap(fdev->regs);
++	iounmap(fdev->regs0);
++	if (of_device_is_compatible(op->dev.of_node, "fsl,eloplus-dma2"))
++		iounmap(fdev->regs1);
+ 	dev_set_drvdata(&op->dev, NULL);
+ 	kfree(fdev);
+ 
+@@ -1436,6 +1455,7 @@ static int fsldma_of_remove(struct platform_device *op)
+ 
+ static const struct of_device_id fsldma_of_ids[] = {
+ 	{ .compatible = "fsl,eloplus-dma", },
++	{ .compatible = "fsl,eloplus-dma2", },
+ 	{ .compatible = "fsl,elo-dma", },
+ 	{}
+ };
+diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
+index f5c3879..880664d 100644
+--- a/drivers/dma/fsldma.h
++++ b/drivers/dma/fsldma.h
+@@ -112,10 +112,10 @@ struct fsldma_chan_regs {
+ };
+ 
+ struct fsldma_chan;
+-#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
++#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
+ 
+ struct fsldma_device {
+-	void __iomem *regs;	/* DGSR register base */
++	void __iomem *regs0, *regs1;	/* DGSR registers */
+ 	struct device *dev;
+ 	struct dma_device common;
+ 	struct fsldma_chan *chan[FSL_DMA_MAX_CHANS_PER_DEVICE];
 -- 
-Chen Gang
+1.7.9.5
+
+
+
