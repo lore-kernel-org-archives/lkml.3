@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab3GAV7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:59:39 -0400
-Received: from cynthia.allandria.com ([76.245.85.235]:33014 "EHLO
-	cynthia.pants.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873Ab3GAV7i (ORCPT
+	id S1755456Ab3GAWCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:02:05 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:62952 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab3GAWCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:59:38 -0400
-Date: Mon, 1 Jul 2013 14:59:32 -0700
-From: Brad Boyer <flar@cynthia.pants.nu>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k/mac: Allocate IOP message pool and queues
- dynamically
-Message-ID: <20130701215932.GA12663@cynthia.pants.nu>
-References: <1372586542-1318-1-git-send-email-geert@linux-m68k.org>
- <alpine.LNX.2.00.1307011325520.9968@nippy.intranet>
+	Mon, 1 Jul 2013 18:02:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1307011325520.9968@nippy.intranet>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [212.159.75.221]
+In-Reply-To: <alpine.DEB.2.02.1307012342500.4013@ionos.tec.linutronix.de>
+References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com>
+	<1372694659-30176-4-git-send-email-james.hogan@imgtec.com>
+	<alpine.DEB.2.02.1307012342500.4013@ionos.tec.linutronix.de>
+Date: Mon, 1 Jul 2013 23:02:01 +0100
+X-Google-Sender-Auth: KCr_dUx5DU0SxcKE2P6loZDvSCY
+Message-ID: <CAAG0J98-mWk6p5hph14ttzBXbZmtDsQtoh8FF2DgoUA1MXv2VA@mail.gmail.com>
+Subject: Re: [PATCH 3/5] metag: smp: don't spin waiting for CPU to start
+From: James Hogan <james.hogan@imgtec.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 05:46:48PM +1000, Finn Thain wrote:
-> 
-> On Sun, 30 Jun 2013, Geert Uytterhoeven wrote:
-> 
-> > -
-> > -/*
-> > - * Register the interrupt handler for the IOPs.
-> > - * TODO: might be wrong for non-OSS machines. Anyone?
-> > - */
-> > -
-> > -void __init iop_register_interrupts(void)
-> > -{
-> > -	if (iop_ism_present) {
-> > +		/*
-> > +		 * Register the interrupt handler for the IOPs.
-> > +		 * TODO: might be wrong for non-OSS machines. Anyone?
-> 
-> My testing with a non-OSS machine (Quadra 950) indicates that the TODO is 
-> obsolete. And the comment "register the interrupt handler for the IOPs" is 
-> a bit silly. It merely re-phrases the code. Otherwise, this patch looks 
-> good to me. Thanks.
+On 1 July 2013 22:46, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 1 Jul 2013, James Hogan wrote:
+>> Use a completion to block until a secondary CPU has started up, like ARM
+>> do, instead of a loop of udelays.
+>>
+>> On Meta, SMP is really SMT, with each "CPU" being a different hardware
+>> thread on the same Meta processor core, so as well as being more
+>> efficient and latency friendly, using a completion prevents the bogomips
+>> of the secondary CPU from being drastically skewed every time by the
+>> execution of the tight in-cache udelay loop on the other CPU.
+>
+> The least of our worries is the correctness of bogomips. But if that
+> patch makes bogomips less bogus while fixing a real issue, please add
+> my
+>
+> Acked-by: Thomas Gleixner <tglx@linutronix.de>
 
-The code was all originally written and tested only on the IIfx. That's
-all JMT had, and at the time it was all I had as well. I have since
-acquired a Quadra 950. Lots of these comments are just out of date. I
-know it got tested on either a Quadra 900 or Quadra 950 after that
-comment was put in the source.
+Yes, it's not so much the absolute value, but that secondary cpus will
+have a bogomips around 25% higher than the boot cpu, even though they
+should be about equal (ignoring the effects of other cpus). If I
+understand correctly, all else being equal this would make udelay
+block for a different amount of time on different cpus (although I
+haven't tried measuring it).
 
-	Brad Boyer
-	flar@allandria.com
-
+James
