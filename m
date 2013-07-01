@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab3GAVBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:01:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38619 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754901Ab3GAVB2 (ORCPT
+	id S1755421Ab3GAVCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 17:02:10 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:44735 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998Ab3GAVCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:01:28 -0400
-Date: Mon, 1 Jul 2013 17:01:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-In-Reply-To: <20130701164920.GA31370@arwen.pp.htv.fi>
-Message-ID: <Pine.LNX.4.44L0.1307011655580.1547-100000@iolanthe.rowland.org>
+	Mon, 1 Jul 2013 17:02:07 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1372630948.2083.3.camel@joe-AO722>
+References: <1372585689-29492-1-git-send-email-geert@linux-m68k.org>
+	<1372630948.2083.3.camel@joe-AO722>
+Date: Mon, 1 Jul 2013 23:02:06 +0200
+X-Google-Sender-Auth: D0AGZ4vkRgTfxN9PaFd3IdUmCxc
+Message-ID: <CAMuHMdUA3+gLi00Tvik2SjZaRYSC2sMMmP9TMH=Vb1dAubXx3Q@mail.gmail.com>
+Subject: Re: [PATCH] m68k/setup: Use pr_*() instead of plain printk()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Felipe Balbi wrote:
+On Mon, Jul 1, 2013 at 12:22 AM, Joe Perches <joe@perches.com> wrote:
+>> diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
+>
+>> @@ -161,7 +161,7 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
+> []
+>> -                             printk("m68k_parse_bootinfo: too many memory chunks\n");
+>> +                             pr_warn("m68k_parse_bootinfo: too many memory chunks\n");
+>
+> These are generally better written by
+> removing the hand-written function name
+> and using "%s: ", __func__
+>
+>                                 pr_warn("%s: too many memory chunks\n",
+>                                         __func__);
 
-> > I don't know what Pad wakeup is.  The wakeup signal has to originate 
-> > from the EHCI controller, doesn't it?  If not, how does the Pad know 
-> > when a wakeup is needed?
-> 
-> That's really an OMAP thing, I guess. Pad wakeup sits in the PRCM (IIRC)
-> inside and always on power domain. EHCI sits in another power domain
-> which be turned off. When it's turned off (power gated and clock gated)
-> the EHCI block has no means to wakeup whatsoever. That's when pad wakeup
-> comes into play. It is generated when PRCM sees a change in the actual
-> pad of the die. To check who should 'own' the wakeup, it checks the
-> muxing settings to verify whose pad is that.
+I had tried that, too. But surprisingly (although the same function
+name was in two
+messages), it increased the size of the kernel image.
 
-How does the PRCM know which changes should generate wakeup events?  
-In the EHCI controller, this is managed by the settings of the WKOC_E,
-WKDSCNNT_E, and WKCNNT_E bits in the PORTSC registers.  But if EHCI is
-powered off, those bits can't be used.
+Gr{oetje,eeting}s,
 
-Also, once the wakeup signal has been turned on, how does it get turned 
-off again?
+                        Geert
 
-Alan Stern
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
