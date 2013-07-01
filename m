@@ -1,73 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab3GAIre (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:47:34 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34389 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253Ab3GAIrc (ORCPT
+	id S1753125Ab3GAItZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:49:25 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:64018 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab3GAItY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:47:32 -0400
-Date: Mon, 1 Jul 2013 09:46:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chao Xie <cxie4@marvell.com>
-Cc: Axel Lin <axel.lin@ingics.com>, Yi Zhang <yizhang@marvell.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20130701084645.GV27646@sirena.org.uk>
-References: <1372426354.28529.1.camel@phoenix>
- <20130628135022.GJ27646@sirena.org.uk>
- <AAD1C6EB06EE3649B35B7E026785068D2581736992@SC-VEXCH2.marvell.com>
+	Mon, 1 Jul 2013 04:49:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5EvMn61FFmGeM4LH"
-Content-Disposition: inline
-In-Reply-To: <AAD1C6EB06EE3649B35B7E026785068D2581736992@SC-VEXCH2.marvell.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: 88pm800: Add missing config.of_node
- setting for regulator register
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <51D13887.7000606@intel.com>
+References: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
+	<51D13887.7000606@intel.com>
+Date: Mon, 1 Jul 2013 16:49:22 +0800
+Message-ID: <CALZhoSQzcPmzLj33OBdpZ9zwupxbyA1Q7UBs612ki54GPsJQSA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] sched: add trace event for per-entity tracking
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Lei Wen <leiwen@marvell.com>, Paul Turner <pjt@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        mingo@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alex,
 
---5EvMn61FFmGeM4LH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Jul 1, 2013 at 4:06 PM, Alex Shi <alex.shi@intel.com> wrote:
+> On 07/01/2013 03:10 PM, Lei Wen wrote:
+>> Thanks for the per-entity tracking feature, we could know the details of
+>> each task by its help.
+>> This patch add its trace support, so that we could quickly know the system
+>> status in a large time scale, like now we may get each runqueue's usage ratio by:
+>>
+>> cfs_rq's usage ratio = cfs_rq->runnable_load_avg/cfs_rq->load.weight
+>>
+>
+> the direct usage ratio is rq.avg.runnable_avg_sum / rq.avg.runnable_avg_period.
 
-On Sun, Jun 30, 2013 at 07:14:55PM -0700, Chao Xie wrote:
 
-> I have seen that mfd: 88pm800: add regulator sub device is already
-> merged into Linux-next. So you mean that I need wait for 3.11 to
-> release, then resubmit the regulator patch?
+>From the parsed data diagram, seem more pretty than my previous use
+load as the calculation one. :)
+BTW, do you think there is some meaning for doing below calculation?
+cfs_rq->runnable_load_avg/cfs_rq->load.weight
 
-Sorry, just realised you said v3.11 - waiting till the merge window is
-over is enough.
+I think by this calculation from the
+runnable_avg_load/blocked_avg_load trace result,
+we may catch some abnormal load distribution when debugging.
 
---5EvMn61FFmGeM4LH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+>
+> one patch from obsolete power-scheduling could be reference for this:
+> git@github.com:alexshi/power-scheduling.git power-scheduling
+>
+> From 081cd4bcbccfaa1930b031e4dfbf9d23b8c0d5ab Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Fri, 7 Dec 2012 21:37:58 +0800
+> Subject: [PATCH 02/23] sched: log the cpu utilization at rq
+>
+> The cpu's utilization is to measure how busy is the cpu.
+>         util = cpu_rq(cpu)->avg.runnable_avg_sum * SCHED_POEWR_SCALE
+>                 / cpu_rq(cpu)->avg.runnable_avg_period;
+>
+> Since the util is no more than 1, we scale its value with 1024, same as
+> SCHED_POWER_SCALE and set the FULL_UTIL as 1024.
+>
+> In later power aware scheduling, we are sensitive for how busy of the
+> cpu. Since as to power consuming, it is tight related with cpu busy
+> time.
+>
+> BTW, rq->util can be used for any purposes if needed, not only power
+> scheduling.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
 
-iQIcBAEBAgAGBQJR0UHxAAoJELSic+t+oim9O3MP/2J3Iat37+yzK4UID4w+sx3I
-zeQ2v1/xSJ1JvsaMj5SQG/+FmUB9IAqDcJNDtCSHePlbQnkPQ4LKVxLqBsijwtNE
-oMzqjJgw+TfqmsPPSQndPMzvYp327StWCYLRkPE9k5OAx58Nn9D6w3CQskZemxp+
-lLZhv/mAQgC2IiSiVkEHuQSIXRGDzJHhHnBariMcrdJtVn3ngrceHeUg8iw6SHnm
-N/w7CHpiZoyyTB6zlujz55K1YOM3H2jhwYeXsGhIITRQU04secC2pGCiyizQ3Ru9
-aT3jX692zro8/S4S+tvqTv1ON5Owrecbga9jY+mqBgrDAHvD3fZz9+wumTfultLZ
-GW2ic/Nzu+2u28O6/m06MszySnPm9uLcXrK3BdGh5LOXq13zSb11l6ritobT4Njg
-iz1okcBV6N7muiE0/LoRXEa9JQaBEQazA1zHIjBqGObC9P83R8uPXWZsL4AqjQ7z
-FKVNlElCu7nQ79sXrohGFo0JcpJVyIwJXFv19Do5Hdm4Jgsapub+2IzHA6KfC5z5
-xw5IyIl/B9YhiRIDL0yqW1Vf0Uhpv5rP3dVd3P2zjFkblnGPrgUKp8cvSRGrbEE8
-zSyn5XQpW8D7axR4ekq3LZV26xehHwVeBb8O2dn9r8bGIvxV+b+b5f9mIDzftOwB
-hV2/Zr58TpNwCJU1AYE1
-=zArM
------END PGP SIGNATURE-----
 
---5EvMn61FFmGeM4LH--
+Nice patch, would it be merged? :)
+
+Thanks,
+Lei
+> ---
+>  include/linux/sched.h | 2 +-
+>  kernel/sched/debug.c  | 1 +
+>  kernel/sched/fair.c   | 5 +++++
+>  kernel/sched/sched.h  | 4 ++++
+>  4 files changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 9539597..4e4d9ee 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -794,7 +794,7 @@ enum cpu_idle_type {
+>  #define SCHED_LOAD_SCALE       (1L << SCHED_LOAD_SHIFT)
+>
+>  /*
+> - * Increase resolution of cpu_power calculations
+> + * Increase resolution of cpu_power and rq->util calculations
+>   */
+>  #define SCHED_POWER_SHIFT      10
+>  #define SCHED_POWER_SCALE      (1L << SCHED_POWER_SHIFT)
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index 75024a6..f5db759 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -311,6 +311,7 @@ do {                                                                        \
+>
+>         P(ttwu_count);
+>         P(ttwu_local);
+> +       P(util);
+>
+>  #undef P
+>  #undef P64
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 2e49c3f..7124244 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1495,8 +1495,13 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+>
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>  {
+> +       u32 period;
+>         __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+>         __update_tg_runnable_avg(&rq->avg, &rq->cfs);
+> +
+> +       period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
+> +       rq->util = (u64)(rq->avg.runnable_avg_sum << SCHED_POWER_SHIFT)
+> +                               / period;
+>  }
+>
+>  /* Add the load generated by se into cfs_rq's child load-average */
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 804ee41..8682110 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -351,6 +351,9 @@ extern struct root_domain def_root_domain;
+>
+>  #endif /* CONFIG_SMP */
+>
+> +/* full cpu utilization */
+> +#define FULL_UTIL      SCHED_POWER_SCALE
+> +
+>  /*
+>   * This is the main, per-CPU runqueue data structure.
+>   *
+> @@ -482,6 +485,7 @@ struct rq {
+>  #endif
+>
+>         struct sched_avg avg;
+> +       unsigned int util;
+>  };
+>
+>  static inline int cpu_of(struct rq *rq)
+> --
+> 1.7.12
+>
+> --
+> Thanks
+>     Alex
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
