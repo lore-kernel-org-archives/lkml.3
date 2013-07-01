@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab3GAUlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:41:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38596 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754776Ab3GAUlS (ORCPT
+	id S1755376Ab3GAUnW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:43:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57079 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754818Ab3GAUnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:41:18 -0400
-Date: Mon, 1 Jul 2013 16:41:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: William Gulland <wgulland@google.com>
-cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Ming Lei <ming.lei@canonical.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: Clear both buffers when clearing a control transfer
- TT buffer.
-In-Reply-To: <1372374620-11790-1-git-send-email-wgulland@google.com>
-Message-ID: <Pine.LNX.4.44L0.1307011636530.1547-100000@iolanthe.rowland.org>
+	Mon, 1 Jul 2013 16:43:21 -0400
+Date: Mon, 1 Jul 2013 22:43:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christoph Lameter <cl@linux.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 0/7] v2 Provide infrastructure for full-system
+ idle
+In-Reply-To: <0000013f9be88da8-acabdf49-cbac-482b-a4bb-b490f1b5a06a-000000@email.amazonses.com>
+Message-ID: <alpine.DEB.2.02.1307012234210.4013@ionos.tec.linutronix.de>
+References: <20130628200949.GA17458@linux.vnet.ibm.com> <0000013f9bc32a5e-258db1be-840b-4b2f-9b3f-e1e3d5253cfc-000000@email.amazonses.com> <20130701195603.GT3773@linux.vnet.ibm.com>
+ <0000013f9be88da8-acabdf49-cbac-482b-a4bb-b490f1b5a06a-000000@email.amazonses.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013, William Gulland wrote:
+On Mon, 1 Jul 2013, Christoph Lameter wrote:
 
->     Control transfers have both IN and OUT (or SETUP) packets, so when
->     clearing TT buffers for a control transfer it's necessary to send
->     two HUB_CLEAR_TT_BUFFER requests to the hub.
+> On Mon, 1 Jul 2013, Paul E. McKenney wrote:
 > 
-> Signed-off-by: William Gulland <wgulland@google.com>
-> ---
->  drivers/usb/core/hub.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
+> > On Mon, Jul 01, 2013 at 07:43:47PM +0000, Christoph Lameter wrote:
+> > > On Fri, 28 Jun 2013, Paul E. McKenney wrote:
+> > >
+> > > > Unfortunately, timekeeping CPU continues taking scheduling-clock
+> > > > interrupts even when all other CPUs are completely idle, which is
+> > > > not so good for energy efficiency and battery lifetime.  Clearly, it
+> > > > would be good to turn off the timekeeping CPU's scheduling-clock tick
+> > > > when all CPUs are completely idle.  This is conceptually simple, but
+> > > > we also need good performance and scalability on large systems, which
+> > > > rules out implementations based on frequently updated global counts of
+> > > > non-idle CPUs as well as implementations that frequently scan all CPUs.
+> > > > Nevertheless, we need a single global indicator in order to keep the
+> > > > overhead of checking acceptably low.
+> > >
+> > > Can we turn off timekeeping when no cpu needs time in adaptive mode?
+> > > Setting breakpoints in the VDSO could force timekeeping on again whenever
+> > > something needs time. Would this not be simpler?
+> >
+> > Might be.  But what causes the breakpoints to be set on a system where
+> > there is one CPU-bound nohz_full user-mode task with all other CPUs idle?
+> > Or are you suggesting taking a breakpoint trap on each timekeeping access
+> > to VDSO?
 > 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index feef935..868ad74 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -668,6 +668,15 @@ resubmit:
->  static inline int
->  hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
->  {
-> +	/* Need to clear both directions for control ep */
-> +	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
-> +			USB_ENDPOINT_XFER_CONTROL) {
-> +		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
-> +				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
-> +				devinfo ^ 0x8000, tt, NULL, 0, 1000);
-> +		if (status)
-> +			return status;
-> +	}
->  	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
->  			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
->  			       tt, NULL, 0, 1000);
+> Well when a tick notices that it is the last one still enabled on the
+> system and it could disable itself then it would set the breakpoint and
+> then turn the tick on the last processor off. The code invoked by the
+> breakpoint would reenable tick processing, update time and then use that
+> new info to return the correct time.
 
-Well, this won't hurt much.  And since it does seem to fix a hardware
-problem,
+Do we really care about that corner case? Not really. 
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Also if there is one CPU which runs that tight loop in userspace and
+timekeeping gets shut down after X seconds wants to have a fast and
+bound look at the current time every X*N seconds. It's going to take a
+trap and spend unbound time in the kernel. That's quite contrary to
+the goal we wanted to achieve in the first place.
 
+Though if ALL cpus are idle, i.e. none of the tickless cpus is running
+any workload there is a point in switching off the time(house)keeping
+CPU as well in order to save power. But that's not a problem we solve
+with a breakpoint in the VDSO.
+
+Thanks,
+
+	tglx
