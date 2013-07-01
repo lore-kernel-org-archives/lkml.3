@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab3GAWdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:33:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25210 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab3GAWdt (ORCPT
+	id S1755933Ab3GAWeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:34:21 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:33395 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755652Ab3GAWeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:33:49 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: sage@inktank.com
-Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] ceph: avoid accessing invalid memory
-Date: Mon,  1 Jul 2013 18:33:39 -0400
-Message-Id: <1372718019-16549-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 1 Jul 2013 18:34:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANiYik6PbwRkH1vK4B4cFhY0MEJAoF=MBggkvgBYGfyCw2ny-w@mail.gmail.com>
+References: <CANiYik6PbwRkH1vK4B4cFhY0MEJAoF=MBggkvgBYGfyCw2ny-w@mail.gmail.com>
+From: Alexander Lam <azl@google.com>
+Date: Mon, 1 Jul 2013 15:33:58 -0700
+Message-ID: <CANiYik6h0_xnUYqCRHZU75az9YS=ySUHaqgMayW-Ffj5Jey6_g@mail.gmail.com>
+Subject: Fwd: [draft] Tracing multibuffer support concurrency issues
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Cc: David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Alexander Lam <lambchop468@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when mounting ceph with a dev name that starts with a slash, ceph
-would attempt to access the character before that slash. Since we
-don't actually own that byte of memory, we would trigger an
-invalid access:
+Hi all,
 
-[   43.499934] BUG: unable to handle kernel paging request at ffff880fa3a97fff
-[   43.500984] IP: [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
-[   43.501491] PGD 743b067 PUD 10283c4067 PMD 10282a6067 PTE 8000000fa3a97060
-[   43.502301] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   43.503006] Dumping ftrace buffer:
-[   43.503596]    (ftrace buffer empty)
-[   43.504046] CPU: 0 PID: 10879 Comm: mount Tainted: G        W    3.10.0-sasha #1129
-[   43.504851] task: ffff880fa625b000 ti: ffff880fa3412000 task.ti: ffff880fa3412000
-[   43.505608] RIP: 0010:[<ffffffff818f3884>]  [<ffffffff818f3884>] parse_mount_options$
-[   43.506552] RSP: 0018:ffff880fa3413d08  EFLAGS: 00010286
-[   43.507133] RAX: ffff880fa3a98000 RBX: ffff880fa3a98000 RCX: 0000000000000000
-[   43.507893] RDX: ffff880fa3a98001 RSI: 000000000000002f RDI: ffff880fa3a98000
-[   43.508610] RBP: ffff880fa3413d58 R08: 0000000000001f99 R09: ffff880fa3fe64c0
-[   43.509426] R10: ffff880fa3413d98 R11: ffff880fa38710d8 R12: ffff880fa3413da0
-[   43.509792] R13: ffff880fa3a97fff R14: 0000000000000000 R15: ffff880fa3413d90
-[   43.509792] FS:  00007fa9c48757e0(0000) GS:ffff880fd2600000(0000) knlGS:000000000000$
-[   43.509792] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   43.509792] CR2: ffff880fa3a97fff CR3: 0000000fa3bb9000 CR4: 00000000000006b0
-[   43.509792] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   43.509792] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   43.509792] Stack:
-[   43.509792]  0000e5180000000e ffffffff85ca1900 ffff880fa38710d8 ffff880fa3413d98
-[   43.509792]  0000000000000120 0000000000000000 ffff880fa3a98000 0000000000000000
-[   43.509792]  ffffffff85cf32a0 0000000000000000 ffff880fa3413dc8 ffffffff818f3c72
-[   43.509792] Call Trace:
-[   43.509792]  [<ffffffff818f3c72>] ceph_mount+0xa2/0x390
-[   43.509792]  [<ffffffff81226314>] ? pcpu_alloc+0x334/0x3c0
-[   43.509792]  [<ffffffff81282f8d>] mount_fs+0x8d/0x1a0
-[   43.509792]  [<ffffffff812263d0>] ? __alloc_percpu+0x10/0x20
-[   43.509792]  [<ffffffff8129f799>] vfs_kern_mount+0x79/0x100
-[   43.509792]  [<ffffffff812a224d>] do_new_mount+0xcd/0x1c0
-[   43.509792]  [<ffffffff812a2e8d>] do_mount+0x15d/0x210
-[   43.509792]  [<ffffffff81220e55>] ? strndup_user+0x45/0x60
-[   43.509792]  [<ffffffff812a2fdd>] SyS_mount+0x9d/0xe0
-[   43.509792]  [<ffffffff83fd816c>] tracesys+0xdd/0xe2
-[   43.509792] Code: 4c 8b 5d c0 74 0a 48 8d 50 01 49 89 14 24 eb 17 31 c0 48 83 c9 ff $
-[   43.509792] RIP  [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
-[   43.509792]  RSP <ffff880fa3413d08>
-[   43.509792] CR2: ffff880fa3a97fff
-[   43.509792] ---[ end trace 22469cd81e93af51 ]---
+I noticed that a695cb58 "tracing: Prevent deleting instances when they
+are being read" [1] still leaves open the possibility of the
+trace_array being deleted before the reference counter is incremented.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- fs/ceph/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thread A creates a new instance "foo", then tries to open "foo/trace"
+for writing, which invokes tracing_open() and __tracing_open()
+Thread B removes the "foo" instance. Since Thread A has not
+incremented the reference counter for the trace_array representing
+"foo," its trace_array and associated structures are freed in
+instance_delete().
+Thread A now attempts to dereference the trace_cpu pointer it has to
+obtain the now deleted trace_array. By now, both the trace_cpu and
+trace_array are deleted.
 
-diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-index 7d377c9..6627b26 100644
---- a/fs/ceph/super.c
-+++ b/fs/ceph/super.c
-@@ -357,7 +357,7 @@ static int parse_mount_options(struct ceph_mount_options **pfsopt,
- 	}
- 	err = -EINVAL;
- 	dev_name_end--;		/* back up to ':' separator */
--	if (*dev_name_end != ':') {
-+	if (dev_name_end < dev_name || *dev_name_end != ':') {
- 		pr_err("device name is missing path (no : separator in %s)\n",
- 				dev_name);
- 		goto out;
--- 
-1.7.10.4
+Here's a short bash script to run on a kernel to make it crash like this:
+   $ cd /sys/kernel/debug/tracing/instances/
+   $ ( while true; do mkdir foo; rmdir foo; done ) &
+   $ ( while true; do cat foo/trace &> /dev/null; done) &
 
+To fix this we could go through the ftrace_trace_arrays list and use
+addresses to check if a particular pointer to a trace_array is still
+valid, but this is vulnerable to the ABA problem if a trace_array is
+freed and another is reallocated at the same address. This method is
+used by subsystem_open() in trace_events.c
+
+An ugly way to get around the ABA issue is to use a monotonically
+increasing ID # for each trace_array instance. Those IDs could be used
+instead of pointers when creating debugfs files.
+
+Is there a better way to fix this problem?
+
+Also unaddressed are all of the other files which use a trace_array,
+trace_cpu, or ftrace_event_file in their operation - these would need
+the same fix.
+
+- Alex
+
+[1] https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/kernel/trace/trace.c?id=a695cb5816228f86576f5f5c6809fdf8ed382ece
