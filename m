@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab3GAKCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 06:02:08 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58821 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555Ab3GAKCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 06:02:06 -0400
-Date: Mon, 1 Jul 2013 11:01:36 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: lgirdwood@gmail.com, ldewangan@nvidia.com, gg@slimlogic.co.uk,
-        sameo@linux.intel.com, j-keerthy@ti.com, linux-kernel@vger.kernel.org
-Message-ID: <20130701100136.GA27646@sirena.org.uk>
-References: <1372672182-14778-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qcz4xfO8nvR/PV7q"
-Content-Disposition: inline
-In-Reply-To: <1372672182-14778-1-git-send-email-kishon@ti.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] regulator: palmas: model SMPS10 as two regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1753693Ab3GAJ7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 05:59:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8611 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753646Ab3GAJ7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 05:59:48 -0400
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Cc: Benjamin Marzinski <bmarzins@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 01/12] GFS2: Sort buffer lists by inplace block number
+Date: Mon,  1 Jul 2013 10:33:04 +0100
+Message-Id: <1372671195-3472-2-git-send-email-swhiteho@redhat.com>
+In-Reply-To: <1372671195-3472-1-git-send-email-swhiteho@redhat.com>
+References: <1372671195-3472-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Benjamin Marzinski <bmarzins@redhat.com>
 
---Qcz4xfO8nvR/PV7q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch simply sort the data and metadata buffer lists by their
+inplace block number.  This makes gfs2_log_flush issue the inplace IO
+in sequential order, which will hopefully speed up writing the IO
+out to disk.
 
-On Mon, Jul 01, 2013 at 03:19:42PM +0530, Kishon Vijay Abraham I wrote:
-> SMPS10 has two outputs OUT1 and OUT2 and have one input IN1.
-> SMPS10-OUT2 is connected to SMPS10-IN1 and can be configured either
-> in BOOST mode or BYPASS mode. regulator_enable of SMPS10-OUT2 configures
-> it in BOOST mode. For BYPASS mode regulator_allow_bypass() API can be
-> used. SMPS10-OUT1 is connected to SMPS10-OUT2 and can be enabled using
-> regulator_enable().
+Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-This doesn't apply...
+diff --git a/fs/gfs2/lops.c b/fs/gfs2/lops.c
+index 6c33d7b..cb017a6 100644
+--- a/fs/gfs2/lops.c
++++ b/fs/gfs2/lops.c
+@@ -16,6 +16,7 @@
+ #include <linux/gfs2_ondisk.h>
+ #include <linux/bio.h>
+ #include <linux/fs.h>
++#include <linux/list_sort.h>
+ 
+ #include "gfs2.h"
+ #include "incore.h"
+@@ -401,6 +402,20 @@ static void gfs2_check_magic(struct buffer_head *bh)
+ 	kunmap_atomic(kaddr);
+ }
+ 
++static int blocknr_cmp(void *priv, struct list_head *a, struct list_head *b)
++{
++	struct gfs2_bufdata *bda, *bdb;
++
++	bda = list_entry(a, struct gfs2_bufdata, bd_list);
++	bdb = list_entry(b, struct gfs2_bufdata, bd_list);
++
++	if (bda->bd_bh->b_blocknr < bdb->bd_bh->b_blocknr)
++		return -1;
++	if (bda->bd_bh->b_blocknr > bdb->bd_bh->b_blocknr)
++		return 1;
++	return 0;
++}
++
+ static void gfs2_before_commit(struct gfs2_sbd *sdp, unsigned int limit,
+ 				unsigned int total, struct list_head *blist,
+ 				bool is_databuf)
+@@ -413,6 +428,7 @@ static void gfs2_before_commit(struct gfs2_sbd *sdp, unsigned int limit,
+ 	__be64 *ptr;
+ 
+ 	gfs2_log_lock(sdp);
++	list_sort(NULL, blist, blocknr_cmp);
+ 	bd1 = bd2 = list_prepare_entry(bd1, blist, bd_list);
+ 	while(total) {
+ 		num = total;
+-- 
+1.7.4
 
---Qcz4xfO8nvR/PV7q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR0VN9AAoJELSic+t+oim9HQkQAIXtf0/KycQfAEjh37ha8eAy
-/wPVtYX+sRpOnn+g8J2pfBqgaK8EvgxPnIDHHRN6zRRmdlj9FzpRuxGkIBQ1/8SW
-q64bEgY2zp4BDx+FlL6Jyalsqp6XXxVTeEmUMXuQWTZP0MjrtFomoCSsp5sAWoFe
-DFlbm9H+3eDlbFeGoRumAiw0qKobofVTqK0SKL7fpGFjrZahmFBmYAv3NoYVnc4P
-vOWUZk0ytZsaebFNCWJTCXEmiscbnjzpGi+UHRgzcDTR1eM5Qxk5r9/XXZMk/ydn
-NgJ2ZnuTqWmF9OqRfxSmGfZ0V42EgYe0RpYOrNLZELJAuJJ3ukhEtk+0JByFEzS5
-nTbI23SOrMZO7r2tdvmW23MSmH250/iCKB5uUFGTWM1yxd7G5SOL1nnI01GnlXcr
-ATNEJsYbPSZFmYFXGy89e/J7lD9xw/HU0idXA9NAQzynWUa9q2r4FgexoUbVyUsY
-jFvuDvhzMbqUfNgnzIuwGk+PWrsZxX0dSSeWXEFi8M2dFGEr29Ptsg0SDjqcXLa3
-YgVEJH3DbloRh+8uohemc6gsqWateiPHGXt+913hG+Xzxn2vm2KwozH9e7hpTSQs
-Fin6FquCsCCBmbI0paQU/Pq+wGUD7Oy8khkfPSJz+DxEJHYAsTrBcnQjOsrwNt25
-GdJLHrJYEjRyzluKuRv9
-=E13x
------END PGP SIGNATURE-----
-
---Qcz4xfO8nvR/PV7q--
