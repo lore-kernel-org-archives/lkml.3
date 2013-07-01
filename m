@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab3GAPlo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:41:44 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:43137 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab3GAPlm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:41:42 -0400
-Message-ID: <51D1A32C.5060905@linux.vnet.ibm.com>
-Date: Mon, 01 Jul 2013 21:11:32 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754467Ab3GAPmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:42:24 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:32883 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751665Ab3GAPmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 11:42:23 -0400
+Date: Mon, 1 Jul 2013 08:41:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, athorlton@sgi.com,
+        CAI Qian <caiqian@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: BUG: tick device NULL pointer during system initialization and
+ shutdown
+Message-ID: <20130701154109.GK3773@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <51C0AB09.2090605@redhat.com>
+ <alpine.DEB.2.02.1306241551020.4013@ionos.tec.linutronix.de>
+ <51CA2CBF.70404@redhat.com>
+ <alpine.DEB.2.02.1306261303260.4013@ionos.tec.linutronix.de>
+ <51CC708B.7040605@redhat.com>
+ <alpine.DEB.2.02.1306281250270.4013@ionos.tec.linutronix.de>
+ <51D17F2B.7000300@redhat.com>
+ <alpine.DEB.2.02.1307011518350.4013@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Tony Luck <tony.luck@gmail.com>, ananth@in.ibm.com,
-        masbock@linux.vnet.ibm.com, lcm@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>
-Subject: Re: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-References: <20130621072725.GB22006@pd.tnic> <20130628120224.7781.45438.stgit@localhost.localdomain> <CA+8MBbJNY7G+q=kBgOA=+jVtugrfteoMvwLtfwvCno5xg+dm-Q@mail.gmail.com> <51D19B3F.3060405@linux.vnet.ibm.com> <20130701153805.GB23539@pd.tnic>
-In-Reply-To: <20130701153805.GB23539@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1307011518350.4013@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070115-1396-0000-0000-00000332B4D5
+x-cbid: 13070115-7182-0000-0000-00000797CF93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2013 09:08 PM, Borislav Petkov wrote:
-> On Mon, Jul 01, 2013 at 08:37:43PM +0530, Naveen N. Rao wrote:
->> On 06/28/2013 11:01 PM, Tony Luck wrote:
->>>> +                       if (sec_sev == GHES_SEV_CORRECTED &&
->>>> +                           (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
->>>> +                           (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
->>>> +                               unsigned long pfn;
->>>> +                               pfn = mem_err->physical_addr >> PAGE_SHIFT;
->>>
->>> As Reagan said "Trust ... but verify" ... we should make sure BIOS
->>> gave us a good pfn
->>>                                      if (pfn_valid(pfn))
->>>                                           soft_memory_failure_queue(pfn, 0, 0);
->>>                                      else
->>>                                           printk( ...something about
->>> BIOS giving us bad pfn = %lu\n", pfn);
->>
->> Ah, nice catch - I thought soft_offline_page() takes care of this,
->> but it sure is good to point a finger at the firmware.
->
-> While at it maybe make it pr_warning(FW_BUG or FW_WARN...
+On Mon, Jul 01, 2013 at 03:30:47PM +0200, Thomas Gleixner wrote:
+> On Mon, 1 Jul 2013, Prarit Bhargava wrote:
+> > On 06/28/2013 06:52 AM, Thomas Gleixner wrote:
+> > > Huch. Did the warning in the broadcast code trigger before that?
+> > 
+> > tglx,
+> > 
+> > AFAICT it does not.  Log below on the system I'm testing on.  The test on the
+> > system is system boots, sleeps for 30 seconds and then reboots.
+> 
+> > [  270.563197] INFO: rcu_sched detected stalls on CPUs/tasks: { 51} (detected by
+> > 63, t=217205 jiffies, g=3583, c=3582, q=578)
+> 
+> So the stall is on CPU51, but we do not get a backtrace for CPU51. 
+> 
+> The backtrace trigger is only sent to online cpus. So CPU51 is offline
+> already. Which makes sense as we are in the process of bringing CPUs
+> down and the CPUs with backtrace are 0 and 53-63.
+> 
+> I'm pretty sure, that the patch which clears the stale flag is
+> unrelated to this and it cures the NULL pointer dereference (the
+> reason why this can happen is clear).
+> 
+> So now you do not longer trip over the NULL pointer dereference, but
+> you see a weird RCU stall on an already DEAD cpu. Note, it's dead
+> because we already took CPU52 offline as well.
+> 
+> Paul???
 
-Yup - I've made it a pr_warning(FW_WARN... I just sent out a new version 
-with these changes.
+Odd.  The force-quiescent-state machinery should notice that the
+dead CPU gets a false return from cpu_is_offline(), at which point it
+should not a quiescent state on behalf of that CPU and get on with the
+grace period.
 
-Thanks,
-Naveen
+In the meantime, here are my guesses as to what might be causing this bug:
+
+o	RCU's grace-period kthreads got stuck somehow.  One way that
+	this could happen is if you don't have commit #971394f3 (Fix
+	deadlock with CPU hotplug, RCU GP init, and timer migration)
+	but do have CONFIG_PROVE_RCU_DELAY=y.
+
+o	The handling of CPU-hotplug bitmaps has changed so that RCU
+	needs to do something other than cpu_offline().  I have been
+	expecting that RCU would be needing to keep its own mask of
+	online CPUs at some point, but didn't think that time had
+	arrived.
+
+If neither of those help, then it is time for me to add more information
+to CONFIG_RCU_CPU_STALL_INFO.  ;-)
+
+							Thanx, Paul
+
+> Thanks,
+> 
+> 	tglx
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
