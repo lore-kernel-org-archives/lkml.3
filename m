@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab3GAPZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:25:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61255 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752222Ab3GAPZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:25:22 -0400
-Date: Mon, 01 Jul 2013 11:25:03 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: gong.chen@linux.intel.com
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Message-ID: <1372692303-56f0gltk-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130701091355.GA14444@gchen.bj.intel.com>
-References: <1368807482-11153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130701091355.GA14444@gchen.bj.intel.com>
-Subject: Re: [PATCH] mm/memory-failure.c: fix memory leak in successful soft
- offlining
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130701091355.GA14444@gchen.bj.intel.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1754413Ab3GAP2v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:28:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48139 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab3GAP2s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 11:28:48 -0400
+From: Sujit Reddy Thumma <sthumma@codeaurora.org>
+To: Aaron Lu <aaron.lu@intel.com>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        stable@vger.kernel.org, Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] block: Fix possible sleep in invalid context
+Date: Mon,  1 Jul 2013 20:58:35 +0530
+Message-Id: <1372692515-31969-1-git-send-email-sthumma@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 05:13:55AM -0400, Chen Gong wrote:
-> On Fri, May 17, 2013 at 12:18:02PM -0400, Naoya Horiguchi wrote:
-> > Date: Fri, 17 May 2013 12:18:02 -0400
-> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > To: linux-mm@kvack.org
-> > Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen
-> >  <andi@firstfloor.org>, linux-kernel@vger.kernel.org, Naoya Horiguchi
-> >  <n-horiguchi@ah.jp.nec.com>
-> > Subject: [PATCH] mm/memory-failure.c: fix memory leak in successful soft
-> >  offlining
-> > 
-> > After a successful page migration by soft offlining, the source page is
-> > not properly freed and it's never reusable even if we unpoison it afterward.
-> > 
-> > This is caused by the race between freeing page and setting PG_hwpoison.
-> > In successful soft offlining, the source page is put (and the refcount
-> > becomes 0) by putback_lru_page() in unmap_and_move(), where it's linked to
-> > pagevec and actual freeing back to buddy is delayed. So if PG_hwpoison is
-> > set for the page before freeing, the freeing does not functions as expected
-> > (in such case freeing aborts in free_pages_prepare() check.)
-> > 
-> > This patch tries to make sure to free the source page before setting
-> > PG_hwpoison on it. To avoid reallocating, the page keeps MIGRATE_ISOLATE
-> > until after setting PG_hwpoison.
-> > 
-> > This patch also removes obsolete comments about "keeping elevated refcount"
-> > because what they say is not true. Unlike memory_failure(), soft_offline_page()
-> > uses no special page isolation code, and the soft-offlined pages have no
-> > difference from buddy pages except PG_hwpoison. So no need to keep refcount
-> > elevated.
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-...
-> Hi, Naoya
-> 
-> What happens about this patch? It looks find to me but not merged yet.
-> If something I missed, would you please tell me again?
+When block runtime PM is enabled following warning is seen
+while resuming the device.
 
-Hello Gong,
+BUG: sleeping function called from invalid context at
+.../drivers/base/power/runtime.c:923
+in_atomic(): 1, irqs_disabled(): 128, pid: 12, name: kworker/0:1
+[<c0014448>] (unwind_backtrace+0x0/0x120) from
+[<c03120e4>] (__pm_runtime_suspend+0x34/0xa0) from
+[<c021c33c>] (blk_post_runtime_resume+0x4c/0x5c) from
+[<c03297cc>] (scsi_runtime_resume+0x90/0xb4) from
+[<c0310940>] (__rpm_callback+0x30/0x58) from
+[<c0310980>] (rpm_callback+0x18/0x28) from
+[<c0311ab0>] (rpm_resume+0x3dc/0x540) from
+[<c03120a4>] (pm_runtime_work+0x8c/0x98) from
+[<c007767c>] (process_one_work+0x238/0x3e4) from
+[<c0077b90>] (worker_thread+0x1ac/0x2ac) from
+[<c007cfdc>] (kthread+0x88/0x94) from
+[<c000ece0>] (kernel_thread_exit+0x0/0x8)
 
-It's already on mmotm, so I hope Andrew will push it in this merge window
-(just opened yesterday.)
+Fix this by releasing spin_lock_irq() before calling
+pm_runtime_autosuspend() in blk_post_runtime_resume().
 
-Thanks,
-Naoya Horiguchi
+Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
+Cc: stable@vger.kernel.org
+---
+ block/blk-core.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 33c33bc..2456116 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -3159,16 +3159,18 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
+  */
+ void blk_post_runtime_resume(struct request_queue *q, int err)
+ {
+-	spin_lock_irq(q->queue_lock);
+ 	if (!err) {
++		spin_lock_irq(q->queue_lock);
+ 		q->rpm_status = RPM_ACTIVE;
+ 		__blk_run_queue(q);
+ 		pm_runtime_mark_last_busy(q->dev);
++		spin_unlock_irq(q->queue_lock);
+ 		pm_runtime_autosuspend(q->dev);
+ 	} else {
++		spin_lock_irq(q->queue_lock);
+ 		q->rpm_status = RPM_SUSPENDED;
++		spin_unlock_irq(q->queue_lock);
+ 	}
+-	spin_unlock_irq(q->queue_lock);
+ }
+ EXPORT_SYMBOL(blk_post_runtime_resume);
+ #endif
+-- 
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation.
+
