@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3GATud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 15:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab3GATuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 15:50:32 -0400
-Date: Mon, 1 Jul 2013 21:45:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] tracing/kprobes: Don't pass addr=ip to
-	perf_trace_buf_submit()
-Message-ID: <20130701194555.GA31476@redhat.com>
-References: <20130620173811.GA13161@redhat.com> <1372704916.22688.12.camel@gandalf.local.home>
+	id S1755231Ab3GATwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 15:52:00 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60844 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776Ab3GATv6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 15:51:58 -0400
+Date: Mon, 1 Jul 2013 21:51:56 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCH] N900: fix operation on emulator
+Message-ID: <20130701195147.GA22174@amd.pavel.ucw.cz>
+References: <20130613142809.GA3775@amd.pavel.ucw.cz>
+ <20130613145724.GH8164@atomide.com>
+ <20130613155240.GB3775@amd.pavel.ucw.cz>
+ <20130613161418.GJ8164@atomide.com>
+ <20130613230808.GA14876@amd.pavel.ucw.cz>
+ <20130614055629.GM8164@atomide.com>
+ <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
+ <20130617111031.GQ20992@atomide.com>
+ <20130701140315.GA15318@amd.pavel.ucw.cz>
+ <51D1C8DD.6040409@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1372704916.22688.12.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51D1C8DD.6040409@cogentembedded.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01, Steven Rostedt wrote:
->
-> On Thu, 2013-06-20 at 19:38 +0200, Oleg Nesterov wrote:
-> > kprobe_perf_func() and kretprobe_perf_func() pass addr=ip to
-> > perf_trace_buf_submit() for no reason.
+On Mon 2013-07-01 22:22:21, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 07/01/2013 06:03 PM, Pavel Machek wrote:
+> 
+> >Errata workarounds for N900 hardware actually break operation on
+> >emulator. Fix it.
+> 
+> >This approach was suggested by Pali Rohár <pali.rohar@gmail.com>
+> >(thanks!).
+> 
+> >(Also explain what "sleep_ind" led actually does).
+> 
+>    Looks like unrelated change and probably worth another patch?
+
+Separate patch for adding single-line comment?
+
+> >--- a/arch/arm/mach-omap2/board-rx51.c
+> >+++ b/arch/arm/mach-omap2/board-rx51.c
+> >@@ -33,9 +33,12 @@
+> >  #include "pm.h"
+> >  #include "sdram-nokia.h"
+> >  #include "board-rx51-secure.h"
+> >+#include "soc.h"
 > >
-> > This sets perf_sample_data->addr for PERF_SAMPLE_ADDR, we already
-> > have perf_sample_data->ip initialized if PERF_SAMPLE_IP.
->
-> This change log is confusing. I have no idea what this is trying to fix.
-> Can you explain what is the issue here and what this change fixes.
-
-Sorry for confusion, this fixes nothing.
-
-Just there is no reason to pass "addr = kp.addr", we report it in entry.
-
-Note also that kprobes is the last user perf_trace_buf_submit(addr != 0),
-perhaps we can kill this arg and __perf_addr().
-
-See also 32520b2c6 "Don't pass addr=ip to perf_trace_buf_submit()".
-
-> Thanks,
+> >  #define RX51_GPIO_SLEEP_IND 162
+> >
+> >+/* This lights up left part of keyboard */
+> >+
+> >  static struct gpio_led gpio_leds[] = {
+...
+> >  #ifdef CONFIG_ARM_ERRATA_430973
+> >-	printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
+> >-	/* set IBE to 1 */
+> >-	rx51_secure_update_aux_cr(1 << 6, 0);
+> >+	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
+> >+		printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
 > 
-> -- Steve
-> 
-> > 
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> > ---
-> >  kernel/trace/trace_kprobe.c |    6 ++----
-> >  1 files changed, 2 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> > index 3432652..141c682 100644
-> > --- a/kernel/trace/trace_kprobe.c
-> > +++ b/kernel/trace/trace_kprobe.c
-> > @@ -1163,8 +1163,7 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
-> >  	entry->ip = (unsigned long)tp->rp.kp.addr;
-> >  	memset(&entry[1], 0, dsize);
-> >  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-> > -	perf_trace_buf_submit(entry, size, rctx,
-> > -					entry->ip, 1, regs, head, NULL);
-> > +	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
-> >  }
-> >  
-> >  /* Kretprobe profile handler */
-> > @@ -1197,8 +1196,7 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
-> >  	entry->func = (unsigned long)tp->rp.kp.addr;
-> >  	entry->ret_ip = (unsigned long)ri->ret_addr;
-> >  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-> > -	perf_trace_buf_submit(entry, size, rctx,
-> > -					entry->ret_ip, 1, regs, head, NULL);
-> > +	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
-> >  }
-> >  #endif	/* CONFIG_PERF_EVENTS */
-> >  
-> 
-> 
+>    How about pr_info() instead?
 
+<sarcasm>Would not that be unrelated change and worth of separate
+patch?</sarcasm>
+
+:-).
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
