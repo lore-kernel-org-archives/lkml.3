@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab3GAQBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:01:55 -0400
-Received: from a10-63.smtp-out.amazonses.com ([54.240.10.63]:51677 "EHLO
-	a10-63.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750977Ab3GAQBy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:01:54 -0400
-X-Greylist: delayed 718 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Jul 2013 12:01:53 EDT
-Date: Mon, 1 Jul 2013 15:49:54 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mm/slab: Fix /proc/slabinfo unwriteable for slab
-In-Reply-To: <1372069394-26167-3-git-send-email-liwanp@linux.vnet.ibm.com>
-Message-ID: <0000013f9aed0ce5-ff542635-3074-4f9b-842e-d04492ed3e90-000000@email.amazonses.com>
-References: <1372069394-26167-1-git-send-email-liwanp@linux.vnet.ibm.com> <1372069394-26167-3-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753213Ab3GAQEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 12:04:42 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:10408 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123Ab3GAQEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 12:04:41 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, James Hogan <james.hogan@imgtec.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kirill Tkhai <tkhai@yandex.ru>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 0/5] metag: smp/hotplug fixes
+Date: Mon, 1 Jul 2013 17:04:14 +0100
+Message-ID: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.07.01-54.240.10.63
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_07_01_17_04_39
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jun 2013, Wanpeng Li wrote:
+Kirill Tkhai kindly pointed out a bug in the metag SMP code, prompting
+me to give it a bashing and weed out the hotplug bugs that have crept in
+(or been around for a while). This patchset fixes various issues noticed
+that I intend to apply for v3.11.
 
->  1 file changed, 10 insertions(+)
->
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index d161b81..7fdde79 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -631,10 +631,20 @@ static const struct file_operations proc_slabinfo_operations = {
->  	.release	= seq_release,
->  };
->
-> +#ifdef CONFIG_SLAB
-> +static int __init slab_proc_init(void)
-> +{
-> +	proc_create("slabinfo", S_IWUSR | S_IRUSR, NULL, &proc_slabinfo_operations);
-> +	return 0;
-> +}
-> +#endif
-> +#ifdef CONFIG_SLUB
->  static int __init slab_proc_init(void)
->  {
->  	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
->  	return 0;
->  }
+They're all short patches so please do give them a glance over in case
+I've misunderstood anything.
 
-It may be easier to define a macro SLABINFO_RIGHTS and use #ifdefs to
-assign the correct one. That way we have only one slab_proc_init().
+James Hogan (5):
+  metag: use clear_tasks_mm_cpumask()
+  metag: smp: enable irqs after set_cpu_online
+  metag: smp: don't spin waiting for CPU to start
+  metag: kick: prevent nested kick handlers
+  metag: cpu hotplug: route_irq: preserve irq mask
+
+ arch/metag/kernel/irq.c  |  5 +++--
+ arch/metag/kernel/kick.c |  9 +++++++++
+ arch/metag/kernel/smp.c  | 35 +++++++++++++----------------------
+ 3 files changed, 25 insertions(+), 24 deletions(-)
+
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+-- 
+1.8.1.2
+
+
