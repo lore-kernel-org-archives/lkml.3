@@ -1,114 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab3GALnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:43:51 -0400
-Received: from mout.gmx.net ([212.227.17.22]:54733 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753973Ab3GALnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:43:49 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+mHT4RedemwZAeogeemfnURoyZuPZ6ab12VPzFwt
-	+SI8KiYpn7EFTi
-Message-ID: <1372679017.7678.129.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: fix cpu utilization account error
-From: Mike Galbraith <efault@gmx.de>
-To: Xie XiuQi <xiexiuqi@huawei.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Zhang Hang <bob.zhanghang@huawei.com>,
-        Li Bin <huawei.libin@huawei.com>
-Date: Mon, 01 Jul 2013 13:43:37 +0200
-In-Reply-To: <51D16777.5000703@huawei.com>
-References: <51D12570.9070100@huawei.com>
-	 <1372664187.7678.45.camel@marge.simpson.net> <51D16777.5000703@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1754019Ab3GALtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:49:10 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:14022 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab3GALtH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 07:49:07 -0400
+X-IronPort-AV: E=Sophos;i="4.87,974,1363132800"; 
+   d="scan'208";a="32763353"
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <xen-devel@lists.xen.org>
+CC: Ben Guthro <benjamin.guthro@citrix.com>,
+        <tboot-devel@lists.sourceforge.net>, Gang Wei <gang.wei@intel.com>
+Subject: [PATCH v6 4/5] x86/tboot: Fail extended mode reduced hardware sleep
+Date: Mon, 1 Jul 2013 07:48:52 -0400
+Message-ID: <1372679333-8473-5-git-send-email-benjamin.guthro@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
+References: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-01 at 19:26 +0800, Xie XiuQi wrote: 
-> On 2013/7/1 15:36, Mike Galbraith wrote:
-> > On Mon, 2013-07-01 at 14:45 +0800, Xie XiuQi wrote: 
-> >> We setting clock_skip_update = 1 based on the assumption that the
-> >> next call to update_rq_clock() will come nearly immediately
-> >> after being set. However, it is not always true especially on
-> >> non-preempt mode. In this case we may miss some clock update, which
-> >> would cause an error curr->sum_exec_runtime account.
-> >>
-> >> The test result show that test_kthread's exec_runtime has been
-> >> added to watchdog.
-> >>
-> >>   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+   P COMMAND
-> >>    28 root      RT   0     0    0    0 S  100  0.0   0:05.39  5 watchdog/5
-> >>     7 root      RT   0     0    0    0 S   95  0.0   0:05.83  0 watchdog/0
-> >>    12 root      RT   0     0    0    0 S   94  0.0   0:05.79  1 watchdog/1
-> >>    16 root      RT   0     0    0    0 S   92  0.0   0:05.74  2 watchdog/2
-> >>    20 root      RT   0     0    0    0 S   91  0.0   0:05.71  3 watchdog/3
-> >>    24 root      RT   0     0    0    0 S   82  0.0   0:05.42  4 watchdog/4
-> >>    32 root      RT   0     0    0    0 S   79  0.0   0:05.35  6 watchdog/6
-> >>  5200 root      20   0     0    0    0 R   21  0.0   0:08.88  6 test_kthread/6
-> >>  5194 root      20   0     0    0    0 R   20  0.0   0:08.41  0 test_kthread/0
-> >>  5195 root      20   0     0    0    0 R   20  0.0   0:08.44  1 test_kthread/1
-> >>  5196 root      20   0     0    0    0 R   20  0.0   0:08.49  2 test_kthread/2
-> >>  5197 root      20   0     0    0    0 R   20  0.0   0:08.53  3 test_kthread/3
-> >>  5198 root      20   0     0    0    0 R   19  0.0   0:08.81  4 test_kthread/4
-> >>  5199 root      20   0     0    0    0 R    2  0.0   0:08.66  5 test_kthread/5
-> >>
-> >> "test_kthread/i" is a kernel thread which has a infinity loop and it calls
-> >> schedule() every 1s. It's main process as below:
-> > 
-> > It'd be a shame to lose the cycle savings (we could use more) due to
-> > such horrible behavior.  Where are you seeing this in real life?
-> > 
-> 
-> Thank you for your comments, Mike.
-> 
-> This issue was reported by a driver related pcie in which a kthread send
-> huge amounts of data. In non-preempt mode, it would take a cpu for a long
-> time. But, in preempt mode, I haven't found this issue yet.
-> 
-> Here is the kthread main logic. Although it's not a good idea, but it does
-> exist:
-> while (!kthread_should_stop()) {
-> 	/* call schedule every 1 sec */
-> 	if (HZ <= jiffies - last) {
-> 		last = jiffies;
-> 		schedule();
-> 	}
-> 
-> 	/* get data and sent it */
-> 	get_msg();
-> 	send_msg();
-> 
-> 	if (kthread_should_stop())
-> 		break;
-> }
-> 
-> > That said, accounting funnies induced by skipped update are possible,
-> > which could trump the cycle savings I suppose, so maybe savings (sniff)
-> > should just go away?
-> 
-> Indeed, removing the skip_clock_update could resolve the issue, but I found
-> there is no this issue in preempt mode. However, if remove skip_clock_update
-> we'll get more precise time account.
-> 
-> So, what's your opinion, Mike.
+As tboot currently does not support the reduced hardware sleep
+interface, fail this extended call.
 
-Other than take that thing out and shoot it?  ;-)
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+Cc: tboot-devel@lists.sourceforge.net
+Cc: Gang Wei <gang.wei@intel.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/kernel/tboot.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-It's definitely bad to hand off cycles expended to some other innocent
-bystander, especially an rt task that can then trip over the throttle,
-so in the safety first light, I'd say go with your fix I suppose, and
-hope that other things like contention won't show up doing the same
-thing.  The cycle savings are nice to have, so I'd rather not just kill
-that entirely, but...
-
-Maybe Peter has a better idea.
-
--Mike
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index d578c9c..76c284f 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -285,6 +285,12 @@ static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control,
+ 	if (!tboot_enabled())
+ 		return 0;
+ 
++	if (extended)
++	if (WARN(extended,"tboot is not able to suspend on platforms with"
++	    " reduced hardware sleep (ACPIv5). Please contact"
++	    " tboot-devel@lists.sourceforge.net mailing list."))
++		return -1;
++
+ 	tboot_copy_fadt(&acpi_gbl_FADT);
+ 	tboot->acpi_sinfo.pm1a_cnt_val = pm1a_control;
+ 	tboot->acpi_sinfo.pm1b_cnt_val = pm1b_control;
+-- 
+1.7.9.5
 
