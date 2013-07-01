@@ -1,73 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab3GAESj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 00:18:39 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48277 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab3GAESi (ORCPT
+	id S1752218Ab3GAEUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 00:20:37 -0400
+Received: from prod-mail-xrelay01.akamai.com ([72.246.2.12]:22301 "EHLO
+	prod-mail-xrelay01.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750833Ab3GAEUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 00:18:38 -0400
-Date: Mon, 1 Jul 2013 14:18:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: linux-next: build failure after merge of the regulator tree
-Message-Id: <20130701141827.8f9122f0b6ca860fa5fd11a5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__1_Jul_2013_14_18_27_+1000_v1AEq6aERCMb=MX7"
+	Mon, 1 Jul 2013 00:20:36 -0400
+Message-ID: <51D10390.4060905@akamai.com>
+Date: Mon, 01 Jul 2013 00:20:32 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH 3/3] udp: make use of static_key_slow_set_true() interface
+References: <cover.1372457176.git.jbaron@akamai.com>  <7fe0eaba62a8529b387ddb3205713d8bb6156ec1.1372457176.git.jbaron@akamai.com> <1372475620.18733.353.camel@gandalf.local.home>
+In-Reply-To: <1372475620.18733.353.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__1_Jul_2013_14_18_27_+1000_v1AEq6aERCMb=MX7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/28/2013 11:13 PM, Steven Rostedt wrote:
+> On Fri, 2013-06-28 at 22:30 +0000, jbaron@akamai.com wrote:
+>> Make use of the simpler API.
+> Need to make the change log much more descriptive. Never assume someone
+> in the future that looks up a change to this file will know about other
+> commits that led to this. Each change log should be sufficient to stand
+> on its own.
+>
+> Explain why this patch is needed. And it's not about the use of a
+> simpler API.
+>
+> It actually fixes a real bug.
+>
+>
+>> Signed-off-by: Jason Baron <jbaron@akamai.com>
+>> ---
+>>   net/ipv4/udp.c |    9 ++++-----
+>>   net/ipv6/udp.c |    9 ++++-----
+>>   2 files changed, 8 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+>> index 0bf5d39..b8d0029 100644
+>> --- a/net/ipv4/udp.c
+>> +++ b/net/ipv4/udp.c
+>> @@ -1421,11 +1421,10 @@ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+>>   
+>>   }
+>>   
+>> -static struct static_key udp_encap_needed __read_mostly;
+>> +static struct static_key_boolean udp_encap_needed __read_mostly;
+>>   void udp_encap_enable(void)
+>>   {
+>> -	if (!static_key_enabled(&udp_encap_needed))
+>> -		static_key_slow_inc(&udp_encap_needed);
+>> +	static_key_slow_set_true(&udp_encap_needed);
+>>   }
+>>   EXPORT_SYMBOL(udp_encap_enable);
+>>   
+>> @@ -1450,7 +1449,7 @@ int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+>>   		goto drop;
+>>   	nf_reset(skb);
+>>   
+>> -	if (static_key_false(&udp_encap_needed) && up->encap_type) {
+>> +	if (static_key_false(&udp_encap_needed.key) && up->encap_type) {
+> I wonder if we should add a static_bool_key_false(), because that added
+> ".key" is a bit confusing.
+>
+> -- Steve
+>
 
-Hi all,
+Yeah - that is sort of ugly, but it avoids introducing a new branch API 
+call. That said, a 'static_bool_key_false()' would probably be a simple 
+wrapper function.
 
-After merging the regulator tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+-Jason
 
-drivers/regulator/palmas-regulator.c: In function 'palmas_regulators_probe':
-drivers/regulator/palmas-regulator.c:850:8: error: 'PALMAS_REG_SMPS10' unde=
-clared (first use in this function)
-   case PALMAS_REG_SMPS10:
-        ^
 
-Caused by commit 07a02e0b1a4f ("regulator: palmas: model SMPS10 as two
-regulators").  Clearly not build tested at all :-(  Grep is your
-friend ...
+>>   		int (*encap_rcv)(struct sock *sk, struct sk_buff *skb);
+>>   
+>>   		/*
+>> @@ -1773,7 +1772,7 @@ void udp_destroy_sock(struct sock *sk)
+>>   	bool slow = lock_sock_fast(sk);
+>>   	udp_flush_pending_frames(sk);
+>>   	unlock_sock_fast(sk, slow);
+>> -	if (static_key_false(&udp_encap_needed) && up->encap_type) {
+>> +	if (static_key_false(&udp_encap_needed.key) && up->encap_type) {
+>>   		void (*encap_destroy)(struct sock *sk);
+>>   		encap_destroy = ACCESS_ONCE(up->encap_destroy);
+>>   		if (encap_destroy)
+>> diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+>> index 42923b1..94a4091 100644
+>> --- a/net/ipv6/udp.c
+>> +++ b/net/ipv6/udp.c
+>> @@ -573,11 +573,10 @@ static __inline__ void udpv6_err(struct sk_buff *skb,
+>>   	__udp6_lib_err(skb, opt, type, code, offset, info, &udp_table);
+>>   }
+>>   
+>> -static struct static_key udpv6_encap_needed __read_mostly;
+>> +static struct static_key_boolean udpv6_encap_needed __read_mostly;
+>>   void udpv6_encap_enable(void)
+>>   {
+>> -	if (!static_key_enabled(&udpv6_encap_needed))
+>> -		static_key_slow_inc(&udpv6_encap_needed);
+>> +	static_key_slow_set_true(&udpv6_encap_needed);
+>>   }
+>>   EXPORT_SYMBOL(udpv6_encap_enable);
+>>   
+>> @@ -590,7 +589,7 @@ int udpv6_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+>>   	if (!xfrm6_policy_check(sk, XFRM_POLICY_IN, skb))
+>>   		goto drop;
+>>   
+>> -	if (static_key_false(&udpv6_encap_needed) && up->encap_type) {
+>> +	if (static_key_false(&udpv6_encap_needed.key) && up->encap_type) {
+>>   		int (*encap_rcv)(struct sock *sk, struct sk_buff *skb);
+>>   
+>>   		/*
+>> @@ -1300,7 +1299,7 @@ void udpv6_destroy_sock(struct sock *sk)
+>>   	udp_v6_flush_pending_frames(sk);
+>>   	release_sock(sk);
+>>   
+>> -	if (static_key_false(&udpv6_encap_needed) && up->encap_type) {
+>> +	if (static_key_false(&udpv6_encap_needed.key) && up->encap_type) {
+>>   		void (*encap_destroy)(struct sock *sk);
+>>   		encap_destroy = ACCESS_ONCE(up->encap_destroy);
+>>   		if (encap_destroy)
+>
 
-I have used the regulator tree from next-20130628 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__1_Jul_2013_14_18_27_+1000_v1AEq6aERCMb=MX7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR0QMYAAoJEECxmPOUX5FEgckP/025sTKkAeAghOMSxMXU0GQi
-HkgeKHd+eBEIhKOOzKtrOF/frOjT+iLvVpbyVnHddUlG78Lrvl9wIZhoDqpH/cKe
-2ikIA3Xc6Lk3o0tsM3j3YNWnaxDu2bmwRrWFW03mHE9PFTk5bv0mcKKZ+iVGiJ3O
-L5quoW3Mrr+r0oFYb6fOdrnCp/5sK5p4ds8vj9V7KceqLDNWvPGlPdA9te14NvEv
-VyP4YbwHCxgEkhhp82p86A2oZgX0FAYaqdBEveGAySL0PIBEKcidfY+MzYOfJ2Xr
-Acnm/la4x+ogo3Po+A1Q/VYEV9xuVfufpMPb38/RaXxu34xQcDilWS06BuGNN2AR
-us2fK/TOFEpeTmwrisD7PZQ8wXsVOWRaRqR8ar4cP+/mB/27UyZKYhdwenBAFxmf
-Wj979olEAstdmWOOLhnE4QMkfDoSw2tDwDdbdp9blz4M9It9/iYW09D8T7kghyUG
-GiVUsIi26kcYEHJ4Bzl7Gs7i+ikOL4yJcLO3qyrM3ETm+y+ZY83klpoLanPkcwX/
-3M/wku9QTK8Fs3y1hV8y9kOQmOfv0+93iU1kHNEdee69vn4JseXiRiWUcl1099pD
-W27Uybi+K5YqJVqb3ITRYMQwK1UY+//LrngUp3XHJpeuFpbP6DDXVUH/K/dHcppr
-RDbb2rYNfNhBwyh5gOHG
-=yfgN
------END PGP SIGNATURE-----
-
---Signature=_Mon__1_Jul_2013_14_18_27_+1000_v1AEq6aERCMb=MX7--
