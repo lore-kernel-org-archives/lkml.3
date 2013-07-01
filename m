@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab3GAWW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:22:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57492 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218Ab3GAWWZ (ORCPT
+	id S1755885Ab3GAWYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:24:15 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34435 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753553Ab3GAWYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:22:25 -0400
-Date: Tue, 2 Jul 2013 00:22:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Stehle Vincent-B46079 <B46079@freescale.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: next-20130627 breaks i.MX6 sabre sd UART console
-In-Reply-To: <51D1FF40.2030805@codeaurora.org>
-Message-ID: <alpine.DEB.2.02.1307020016580.4013@ionos.tec.linutronix.de>
-References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de> <51CDB26A.9060500@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net>
- <51CDC2B3.1030907@codeaurora.org> <20130629020738.GG11625@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2EF29@039-SN2MPN1-011.039d.mgd.msft.net> <alpine.DEB.2.02.1307011425500.4013@ionos.tec.linutronix.de> <F7C43F8B2814514CA05F3436BC68046EF2F708@039-SN2MPN1-011.039d.mgd.msft.net>
- <alpine.DEB.2.02.1307011531210.4013@ionos.tec.linutronix.de> <51D1DD6D.8050805@codeaurora.org> <alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de> <51D1EC8C.4050101@codeaurora.org> <alpine.DEB.2.02.1307012259460.4013@ionos.tec.linutronix.de>
- <51D1FF40.2030805@codeaurora.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 1 Jul 2013 18:24:14 -0400
+Message-ID: <1372717451.2385.58.camel@dabdike>
+Subject: Re: [PATCH] block: Fix possible sleep in invalid context
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sujit Reddy Thumma <sthumma@codeaurora.org>, Aaron Lu <aaron.lu@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, stable@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 01 Jul 2013 15:24:11 -0700
+In-Reply-To: <20130701151712.f453745bc0c587f449cc3214@linux-foundation.org>
+References: <1372692515-31969-1-git-send-email-sthumma@codeaurora.org>
+	 <20130701151712.f453745bc0c587f449cc3214@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Stephen Boyd wrote:
-> On 07/01/13 14:24, Thomas Gleixner wrote:
-> > On Mon, 1 Jul 2013, Stephen Boyd wrote:
-> >> On 07/01/13 13:14, Thomas Gleixner wrote:
-> >>> The issue is very subtle. What happens is:
-> >>>
-> >>> CPU0						CPU1
-> >>>
-> >>> Switch to oneshot mode
-> >>>
-> >>>  Copy the bits from tick_broadcast_mask to
-> >>>  tick_broadcast_oneshot_mask. We need to do
-> >>>  that so the other cpus reach the timer irq
-> >>>  and the softirq which switches them to
-> >>>  oneshot.
-> >>>
-> >>>  Kick the broadcast device into oneshot.
-> >>>
-> >>> 						Timer interrupt fires
-> >>> 						
-> >>> 						irq_enter sees the cpu in
-> >>> 						tick_broadcast_oneshot_mask and
-> >>> 						sets the device to oneshot mode
-> >>> 						
-> >>> 						handle_periodic:
-> >>> 						 Sees oneshot mode and adds
-> >>> 						 period to
-> >>> 						 dev->next_event(KTIME_MAX)
-> >>> 			
-> >> Yep. It is also racing with the timer interrupt so having more than two
-> >> CPUs must help widen the window (which is why we see it on the higher
-> >> numbered CPUs).
-> > The race above is about the timer interrupt. You mean the broadcast
-> > one which is still enabled due to the dummy -> functional transition
-> > issue, right? That helps a lot to make this more visible, because we
-> > double the number of events.
+On Mon, 2013-07-01 at 15:17 -0700, Andrew Morton wrote:
+> On Mon,  1 Jul 2013 20:58:35 +0530 Sujit Reddy Thumma <sthumma@codeaurora.org> wrote:
 > 
-> I was thinking that tick_check_oneshot_broadcast() is racing with
-> tick_switch_to_oneshot() and because we have more CPUs we're more likely
-> to have a CPU fix up the handler in tick_switch_to_oneshot() after
-> tick_check_oneshot_broadcast() forces that CPU to oneshot mode and the
-> periodic handler runs. I wonder if I can reproduce it locally by making
-> tick_switch_to_oneshot() spin for a jiffy or two on CPU1.
+> > When block runtime PM is enabled following warning is seen
+> > while resuming the device.
+> > 
+> > BUG: sleeping function called from invalid context at
+> > .../drivers/base/power/runtime.c:923
+> > in_atomic(): 1, irqs_disabled(): 128, pid: 12, name: kworker/0:1
+> > [<c0014448>] (unwind_backtrace+0x0/0x120) from
+> > [<c03120e4>] (__pm_runtime_suspend+0x34/0xa0) from
+> > [<c021c33c>] (blk_post_runtime_resume+0x4c/0x5c) from
+> > [<c03297cc>] (scsi_runtime_resume+0x90/0xb4) from
+> > [<c0310940>] (__rpm_callback+0x30/0x58) from
+> > [<c0310980>] (rpm_callback+0x18/0x28) from
+> > [<c0311ab0>] (rpm_resume+0x3dc/0x540) from
+> > [<c03120a4>] (pm_runtime_work+0x8c/0x98) from
+> > [<c007767c>] (process_one_work+0x238/0x3e4) from
+> > [<c0077b90>] (worker_thread+0x1ac/0x2ac) from
+> > [<c007cfdc>] (kthread+0x88/0x94) from
+> > [<c000ece0>] (kernel_thread_exit+0x0/0x8)
+> > 
+> > Fix this by releasing spin_lock_irq() before calling
+> > pm_runtime_autosuspend() in blk_post_runtime_resume().
+> > 
+> > --- a/block/blk-core.c
+> > +++ b/block/blk-core.c
+> > @@ -3159,16 +3159,18 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
+> >   */
+> >  void blk_post_runtime_resume(struct request_queue *q, int err)
+> >  {
+> > -	spin_lock_irq(q->queue_lock);
+> >  	if (!err) {
+> > +		spin_lock_irq(q->queue_lock);
+> >  		q->rpm_status = RPM_ACTIVE;
+> >  		__blk_run_queue(q);
+> >  		pm_runtime_mark_last_busy(q->dev);
+> > +		spin_unlock_irq(q->queue_lock);
+> >  		pm_runtime_autosuspend(q->dev);
+> >  	} else {
+> > +		spin_lock_irq(q->queue_lock);
+> >  		q->rpm_status = RPM_SUSPENDED;
+> > +		spin_unlock_irq(q->queue_lock);
+> >  	}
+> > -	spin_unlock_irq(q->queue_lock);
+> >  }
+> >  EXPORT_SYMBOL(blk_post_runtime_resume);
+> >  #endif
+> 
+> I suppose we can do this cleanly enough:
+> 
+> --- a/block/blk-core.c~block-fix-possible-sleep-in-invalid-context-fix
+> +++ a/block/blk-core.c
+> @@ -3159,15 +3159,14 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
+>   */
+>  void blk_post_runtime_resume(struct request_queue *q, int err)
+>  {
+> +	spin_lock_irq(q->queue_lock);
+>  	if (!err) {
+> -		spin_lock_irq(q->queue_lock);
+>  		q->rpm_status = RPM_ACTIVE;
+>  		__blk_run_queue(q);
+>  		pm_runtime_mark_last_busy(q->dev);
+>  		spin_unlock_irq(q->queue_lock);
+>  		pm_request_autosuspend(q->dev);
+>  	} else {
+> -		spin_lock_irq(q->queue_lock);
+>  		q->rpm_status = RPM_SUSPENDED;
+>  		spin_unlock_irq(q->queue_lock);
+>  	}
+> _
+> 
+> 
+> I wonder if we actually need locking around that second write to
+> q->rpm_status.
 
-tick_switch_to_oneshot() is invoked with interrupts disabled, so that
-wont help. 
+Shouldn't: it's an int, which makes it a 32 bit quantity we believe to
+have atomic write properties on every platform.
+
+James
+
 
