@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab3GAWyK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:54:10 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.112]:12598 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755100Ab3GAWyI (ORCPT
+	id S1755970Ab3GAWyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:54:07 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.205]:56713 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755572Ab3GAWyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:54:08 -0400
+	Mon, 1 Jul 2013 18:54:05 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-209.messagelabs.com!1372719247!5804240!3
-X-Originating-IP: [216.166.12.32]
+X-Msg-Ref: server-5.tower-131.messagelabs.com!1372719243!22535440!2
+X-Originating-IP: [216.166.12.72]
 X-StarScan-Received: 
 X-StarScan-Version: 6.9.9; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/4] usb: ohci-ep93xx: use platform_get_irq()
-Date: Mon, 1 Jul 2013 15:52:51 -0700
+Subject: [PATCH v2 3/4] usb: ohci-ep93xx: use devm_clk_get()
+Date: Mon, 1 Jul 2013 15:52:59 -0700
 User-Agent: KMail/1.9.9
 CC: <stern@rowland.harvard.edu>, <kernel@wantstofly.org>,
         <gregkh@linuxfoundation.org>, <hsweeten@visionengravers.com>
@@ -24,51 +24,46 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201307011552.51592.hartleys@visionengravers.com>
+Message-ID: <201307011552.59385.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use platform_get_irq() instead of accessing the platform_device
-resources directly.
+Use devm_clk_get() to make the code a bit cleaner and simpler.
+
+This also fixes a bug where a clk_put() is not done if usb_add_hcd()
+fails.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Cc: Lennert Buytenhek <kernel@wantstofly.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/usb/host/ohci-ep93xx.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/usb/host/ohci-ep93xx.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/drivers/usb/host/ohci-ep93xx.c b/drivers/usb/host/ohci-ep93xx.c
-index 4e12f67..b4f5e64 100644
+index b4f5e64..28fa6b8 100644
 --- a/drivers/usb/host/ohci-ep93xx.c
 +++ b/drivers/usb/host/ohci-ep93xx.c
-@@ -45,12 +45,12 @@ static int usb_hcd_ep93xx_probe(const struct hc_driver *driver,
+@@ -69,9 +69,8 @@ static int usb_hcd_ep93xx_probe(const struct hc_driver *driver,
+ 		goto err_put_hcd;
+ 	}
+ 
+-	usb_host_clock = clk_get(&pdev->dev, NULL);
++	usb_host_clock = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(usb_host_clock)) {
+-		dev_dbg(&pdev->dev, "clk_get failed\n");
+ 		retval = PTR_ERR(usb_host_clock);
+ 		goto err_put_hcd;
+ 	}
+@@ -96,7 +95,6 @@ static void usb_hcd_ep93xx_remove(struct usb_hcd *hcd,
  {
- 	struct usb_hcd *hcd;
- 	struct resource *res;
-+	int irq;
- 	int retval;
- 
--	if (pdev->resource[1].flags != IORESOURCE_IRQ) {
--		dev_dbg(&pdev->dev, "resource[1] is not IORESOURCE_IRQ\n");
--		return -ENOMEM;
--	}
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0)
-+		return irq;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
-@@ -80,7 +80,7 @@ static int usb_hcd_ep93xx_probe(const struct hc_driver *driver,
- 
- 	ohci_hcd_init(hcd_to_ohci(hcd));
- 
--	retval = usb_add_hcd(hcd, pdev->resource[1].start, 0);
-+	retval = usb_add_hcd(hcd, irq, 0);
- 	if (retval == 0)
- 		return retval;
+ 	usb_remove_hcd(hcd);
+ 	ep93xx_stop_hc(&pdev->dev);
+-	clk_put(usb_host_clock);
+ 	usb_put_hcd(hcd);
+ }
  
 -- 
 1.8.1.4
