@@ -1,136 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab3GARh7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 13:37:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46539 "EHLO mx1.redhat.com"
+	id S1754825Ab3GARmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 13:42:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417Ab3GARh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 13:37:58 -0400
-Date: Mon, 1 Jul 2013 13:37:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v5 1/5] vmcore: Introduce ELF header in new memory feature
-Message-ID: <20130701173727.GD9840@redhat.com>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
- <1370624161-2298-2-git-send-email-holzheu@linux.vnet.ibm.com>
- <20130614185401.GL12023@redhat.com>
- <20130621161703.751b5f23@holzheu>
- <20130627193202.GK4899@redhat.com>
- <20130627202334.GL4899@redhat.com>
- <20130628101552.68aab404@holzheu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130628101552.68aab404@holzheu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751417Ab3GARme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 13:42:34 -0400
+Date: Mon, 1 Jul 2013 14:42:19 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Manu Abraham <abraham.manu@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zoran Turalija <zoran.turalija@gmail.com>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Nicolas THERY <nicolas.thery@st.com>,
+        Divneil Rai WADHAWAN <divneil.wadhawan@st.com>,
+        Vincent ABRIOU <vincent.abriou@st.com>,
+        Alain VOLMAT <alain.volmat@st.com>
+Subject: Re: [GIT PULL for v3.11] media patches for v3.11
+Message-ID: <20130701144219.2ce56054.mchehab@redhat.com>
+In-Reply-To: <CAHFNz9JJ1kOehY+3R6=c3MNvs0WN+hOXUDbKpG7yD6m=7mwkgw@mail.gmail.com>
+References: <20130701075856.6e8daa98.mchehab@redhat.com>
+	<CAHFNz9J_FJP4YcCd3-_3x6d5iNDoqpYMMtX1Xd+OFJX4H7so0A@mail.gmail.com>
+	<20130701123512.04e0ab62.mchehab@redhat.com>
+	<CAHFNz9JJ1kOehY+3R6=c3MNvs0WN+hOXUDbKpG7yD6m=7mwkgw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2013 at 10:15:52AM +0200, Michael Holzheu wrote:
-> On Thu, 27 Jun 2013 16:23:34 -0400
-> Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> > On Thu, Jun 27, 2013 at 03:32:02PM -0400, Vivek Goyal wrote:
-> > > On Fri, Jun 21, 2013 at 04:17:03PM +0200, Michael Holzheu wrote:
-> > > > On Fri, 14 Jun 2013 14:54:02 -0400
-> > > > Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> [snip]
-> 
-> > Thinking more about it, I think let us cleanup with this little ugly
-> > bit too so that future changes become easy.
-> > 
-> > Current convention is that elfcorehdr_addr and elfcorehdr_size are
-> > already set by arch code by the time vmcore.c starts reading it. Can't
-> > s390 allocate elf headers in early boot code and elfcorehdr_addr? Then
-> > we don't have to call elfcorehdr_alloc().
-> > 
-> > And once we are done with reading headers, we can call elfcorehdr_free()
-> > and s390 could free memory and set elfcorehdr_addr to ELFCORE_ADDR_ERR
-> > and elfcorehdr_size=0. That would signify that one can not try to read
-> > elf headers now and it must have been freed.
-> > 
-> > is_kdump_kernel() will continue to work as elfcorehdr_addr is
-> > ELFCORE_ADDR_ERR. And that will mean that either elfcorehdr were not
-> > readable/usable to begin with or they have been freed now.
-> 
-> Hello Vivek,
-> 
-> We would like to keep the alloc/free symmetry as you have suggested in a
-> previous mail. This also has the advantage that we do not have to rely
-> on the ordering of init calls.
-> 
-> Wouldn't it be sufficient to just set elfcorehdr_addr to ELFCORE_ADDR_ERR
-> after elfcorehdr_free() and remove the comment?
-> 
+Em Mon, 1 Jul 2013 21:17:58 +0530
+Manu Abraham <abraham.manu@gmail.com> escreveu:
 
-Hi Michael,
-
-This has only one problem and that is what's the initialization semantics
-of elfcorehdr_addr. 
-
-So far we expected it to be initialized very early in boot process and
-once this is set, any component in the system could figure out if it
-is kdump kernel (is_kdump_kernel()) and do kdump specific things.
-
-But if we move initialization of this variable little late, then it
-might be a problem for early users of is_kdump_kernel(). Though right
-now I don't see drivers making use of it and only arch specific early
-boot up code seems to have it.
-
-So either we can stick to existing semantics of initializing headers
-early or we could create a separate variable for is_kdump_kernel() which
-is set in early boot and then one can delay initialization of
-elfcorehdr_addr() in vmcore_init().
-
-Given the fact that I don't see any users of is_kdump_kernel() in arch
-independent directory, and I am assuming that you will tackle all early
-users of is_kdump_kernel() in s390, I will be fine even with your patch
-below.
-
-Thanks
-Vivek
-
-
-> So the code would look like the following:
+> On Mon, Jul 1, 2013 at 9:05 PM, Mauro Carvalho Chehab
+> <mchehab@redhat.com> wrote:
+> > Em Mon, 1 Jul 2013 16:37:58 +0530
+> > Manu Abraham <abraham.manu@gmail.com> escreveu:
+> >
+> >> Mauro,
+> >>
+> >> On Mon, Jul 1, 2013 at 4:28 PM, Mauro Carvalho Chehab
+> >> <mchehab@redhat.com> wrote:
+> >> > Hi Linus,
+> >> >
+> >> > Please pull from:
+> >> >   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+> >> >
+> >> > For the media patches for Kernel v3.11.
+> >> >
+> >>
+> >> >
+> >> > Zoran Turalija (2):
+> >> >       [media] stb0899: allow minimum symbol rate of 1000000
+> >> >       [media] stb0899: allow minimum symbol rate of 2000000
+> >>
+> >>
+> >> Somehow, I missed these patches; These are incorrect. Please revert
+> >> these changes.
+> >> Simply changing the advertized minima values don't change the search algorithm
+> >> behaviour, it simply leads to broken behaviour.
+> >>
+> >> NACK for these changes.
+> >
+> > While this patch came from a sub-maintainer's tree, looking at its
+> > history, the patch was proposed here:
+> >         https://linuxtv.org/patch/18341/
+> >
 > 
-> static int __init vmcore_init(void)
-> {
->         int rc = 0;
 > 
->         /* Allow architectures to allocate ELF header in 2nd kernel */
->         rc = elfcorehdr_alloc(&elfcorehdr_addr, &elfcorehdr_size);
->         if (rc)
->                 return rc;
->         /*
->          * If elfcorehdr= has been passed in cmdline or created in 2nd kernel,
->          * then capture the dump.
->          */
->         if (!(is_vmcore_usable()))
->                 return rc;
+> Wherever it came from, the patch is incorrect. Anyone can throw in
+> any patch as they want.
+> 
+> 
+> > From what it is said there, with this patch, 6 additional channels
+> > were discovered when using with Eutelsat 16A, that uses a symbol
+> > rate between 2MS/s to 5 MS/s. Without this patch, those channels won't
+> > be discovered, as the core won't try to use a symbol rate outside
+> > the range.
+> 
+> What you are stating is a hit and miss scenario, sometimes it might lock
+> and sometimes it wouldn't.
 
->         rc = parse_crash_elf_headers();
->         if (rc) {
->                 pr_warn("Kdump: vmcore not initialized\n");
->                 return rc;
->         }
->         elfcorehdr_free(elfcorehdr_addr);
-> 	elfcorehdr_addr = ELFCORE_ADDR_ERR;
+Well, before this change, it was a full miss scenario, as it will 
+never lock on low symbol rate channels.
+
+> The scanning algorithm that I implemented for the demodulator works
+> with a symbol rate as low as 5 MSPS alone. Anything lower than that
+> is hit and miss.
+
+Ok, so latter patches need to improve the algorithm to improve it
+for lower symbol rates. By getting feedback about this patch, we'll
+know more about how bad is the current algorithm, as people may now
+report and work on improve it.
+
+> > Of course, transponders with a symbol rate equal or upper than 5MS/s
+> > won't be affected by this patch.
+> >
 > 
->         proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &proc_vmcore_operations);
->         if (proc_vmcore)
->                 proc_vmcore->size = vmcore_size;
->         return 0;
-> }
 > 
-> This looks clean for me.  > 
-> What do you think?
+> How can you be sure ? I myself am not very sure. While we worked on
+> the demodulator in the early days, we had different situations where a
+> previous failed state could cause lockup of the demodulator, eventually
+> resulting tuning failures.
+
+If that happens, that would be a firmware or hardware issue.
+As I said before, ST can provide us an answer if the hardware has
+such bug.
+
+> > Even if this is not a perfect patch and some changes would be
+> > needed to improve tuning for those low symbol rate transponders,
+> > it seems better than before, as at least now some channels are tuned.
+> >
+> > The only reason I can see to reverse this patch is that if setting
+> > the frontend to low bit ranges could damage the frontend or could
+> > hit some bug on the hardware (or internal firmware).
+> >
+> > Yet, from the datasheet pointed by the patch author, it seems that
+> > this frontend allows such low symbol rates:
+> >         http://comtech.sg1002.myweb.hinet.net/pdf/dvbs2-6899.pdf
 > 
-> Best Regards,
-> Michael
+> 
+> The frontend allows a different lower symbol rate with a different
+> scanning algorithm, not with this existing current one.
+> 
+> I am pretty sure, that author saw some specifications written some
+> place and simply copied those numbers in here. Also sure that he
+> has no idea about the algorithm in use.
+> 
+> According to ST itself, a 2MSPS algorithm was created for a very
+> specific customer requirement, which is not applicable to the existing
+> algorithm in use with the Linux STB0899 demodulator driver.
+
+Ok, so let's wait for ST to provide us some feedback on this public
+thread, in order to be sure that we need to reverse it because of
+some hardware bug, or to get an improved algorithm that will better 
+work with low symbol rates.
+
+Regards,
+Mauro
