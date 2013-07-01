@@ -1,140 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab3GAOJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 10:09:27 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52500 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab3GAOJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 10:09:25 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 1 Jul 2013 07:09:25 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon updates for 3.11
-Message-ID: <20130701140925.GA30297@roeck-us.net>
+	id S1753968Ab3GAOK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 10:10:57 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53208 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754159Ab3GAOKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 10:10:54 -0400
+Message-ID: <51D18DBA.6090608@ti.com>
+Date: Mon, 1 Jul 2013 10:10:02 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>, <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
+References: <1372467663-31425-1-git-send-email-santosh.shilimkar@ti.com> <20130629152959.GB31339@mtj.dyndns.org> <20130629172123.GA3353@n2100.arm.linux.org.uk> <20130629175743.GA382@mtj.dyndns.org> <CAE9FiQXHuP-n0eZ9wN73V4nSvE+XEExDsx1t50_=YaW+V=LGLg@mail.gmail.com> <20130629195549.GE3353@n2100.arm.linux.org.uk> <CAE9FiQUoVNvWmmTV2+ZkU_nMxFToTHw6QLwp_Z_EjwMzqdLwuA@mail.gmail.com>
+In-Reply-To: <CAE9FiQUoVNvWmmTV2+ZkU_nMxFToTHw6QLwp_Z_EjwMzqdLwuA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 29 June 2013 04:08 PM, Yinghai Lu wrote:
+> On Sat, Jun 29, 2013 at 12:55 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> On Sat, Jun 29, 2013 at 12:29:55PM -0700, Yinghai Lu wrote:
+>>>>> On these SoCs which Santosh is working on, the main physical memory
+>>>>> mapping is above 4GB, with just a small alias below 4GB to allow the
+>>>>> system to boot without the MMU being on, as they may have more than
+>>>>> 4GB of RAM.  As I understand it, the small alias below 4GB is not
+>>>>> suitable for use as a "lowmem" mapping.
+>>>
+>>> is that 32bit ARM or 64bit ARM?
+>>
+>> Only 32-bit has LPAE.  Such things don't make sense on 64-bit CPUs.
+> 
+Thanks Russell for clarifying the issue on the thread. Another major
+reason of not being to use 32 bit alias address space for lowmem
+is that address space isn't coherent on the SOC am dealing with.
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> 32bit ARM does not support NO_BOOTMEM yet.
+> 
+> arch/arc/Kconfig:       select NO_BOOTMEM
+> arch/arm64/Kconfig:     select NO_BOOTMEM
+> arch/sparc/Kconfig:     select NO_BOOTMEM
+> arch/x86/Kconfig:config NO_BOOTMEM
+> 
+> 
+> so may need to
+> 1. make 32bit ARM to use NO_BOOTMEM at first.
+> 
+Sorry. I should have mentioned that in the change-log. 
+I have been carrying some WIP patches for ARM. Will post them
+on ARM list after finishing remainder of the testing.
 
-Hi Linus,
+> 2 .we can add alloc_memblock as MACRO or inline for bootmem arches,
+> 
+> 3. NO_BOOTMEM arches will have alloc_memblock in nobootmem.c
+> 
+> 4. replace alloc_bootmem calling with alloc_memblock calling in core code.
+> 
+Great that we all agree to see back of nobootmem.c and have a direct
+memblock API. Will be happy to help in conversion to proposed new interfaces
+if I can get the alloc_memblock API and core related changes.
 
-Please pull hwmon updates for Linux 3.11 from signed tag:
+Will be good to know who is going to create proposed memblock API
+so that we all can collaborate in conversion.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Thanks,
-Guenter
-------
-
-The following changes since commit 7d132055814ef17a6c7b69f342244c410a5e000f:
-
-  Linux 3.10-rc6 (2013-06-15 11:51:07 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to a50d9a4d9ad3c71341788099d733e4151b8a511b:
-
-  hwmon: (ds1621) Fix temperature rounding operations (2013-06-28 06:43:55 -0700)
-
-----------------------------------------------------------------
-New driver to support GMT G762/G763 pwm fan controllers
-Add support for DS1631, DS1721, and DS1731 to ds1621 driver
-Remove detect function from ds1621 driver as unreliable
-Bug fixes in nct6775, iio_hwmon, and adm1021 drivers
-Remove redundant platform_set_drvdata in various drivers
-Add device tree support to ina2xx driver
-
-----------------------------------------------------------------
-Arnaud Ebalard (1):
-      Add support for GMT G762/G763 PWM fan controllers
-
-Guenter Roeck (4):
-      hwmon: (adm1021) Do not create min sysfs attributes for LM84
-      hwmon: (nct6775) Fix temperature alarm attributes
-      hwmon: (nct6775) Drop unsupported fan alarm attributes for NCT6775
-      hwmon: (ds1621) Fix temperature rounding operations
-
-Robert Coulson (6):
-      hwmon: (ds1621) Add ds1721 chip support
-      hwmon: (ds1621) Add ds1721 update interval sysfs attribute
-      hwmon: (ds1621) Add ds1631 chip support to ds1621 driver and documentation
-      hwmon: (ds1621) Remove detect function
-      hwmon: (ds1621) Add DS1731 chip support to ds1621 driver
-      hwmon: (ds1621) Update documentation
-
-Sachin Kamat (5):
-      hwmon: (abituguru3) Remove redundant platform_set_drvdata()
-      hwmon: (coretemp) Remove redundant platform_set_drvdata()
-      hwmon: (i5k_amb) Remove redundant platform_set_drvdata()
-      hwmon: (ntc_thermistor) Remove redundant platform_set_drvdata()
-      hwmon: (w83627ehf) Remove redundant platform_set_drvdata()
-
-Sebastian Andrzej Siewior (1):
-      hwmon: (iio_hwmon) add alias table
-
-Tang Yuantian (1):
-      hwmon: (ina2xx) Add device tree support to pass the shunt resistor
-
- Documentation/devicetree/bindings/hwmon/g762.txt |   47 +
- Documentation/devicetree/bindings/i2c/ina2xx.txt |   22 +
- Documentation/hwmon/ds1621                       |  144 ++-
- Documentation/hwmon/g762                         |   65 ++
- Documentation/hwmon/ina2xx                       |    4 +-
- drivers/hwmon/Kconfig                            |   21 +-
- drivers/hwmon/Makefile                           |    1 +
- drivers/hwmon/abituguru3.c                       |    1 -
- drivers/hwmon/adm1021.c                          |   32 +-
- drivers/hwmon/coretemp.c                         |    2 -
- drivers/hwmon/ds1621.c                           |  226 ++++-
- drivers/hwmon/g762.c                             | 1149 ++++++++++++++++++++++
- drivers/hwmon/i5k_amb.c                          |    2 -
- drivers/hwmon/iio_hwmon.c                        |    1 +
- drivers/hwmon/ina2xx.c                           |    5 +
- drivers/hwmon/nct6775.c                          |   92 +-
- drivers/hwmon/ntc_thermistor.c                   |    1 -
- drivers/hwmon/w83627ehf.c                        |    2 -
- include/linux/platform_data/g762.h               |   37 +
- 19 files changed, 1743 insertions(+), 111 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/hwmon/g762.txt
- create mode 100644 Documentation/devicetree/bindings/i2c/ina2xx.txt
- create mode 100644 Documentation/hwmon/g762
- create mode 100644 drivers/hwmon/g762.c
- create mode 100644 include/linux/platform_data/g762.h
-
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR0Y2VAAoJEMsfJm/On5mBo48P/2NyHO5Bx4wFSB3O7m1/0rrr
-FWZOk+Z+PihPEE2KSq+xY05OsexUU6PVy24BVA1mlcrue4mcnRFNE26XCw41rjx9
-E8fVh3rwMGzis75dmFABtP3e3gytYA0jEL3Ygge8IEyfvYtGGxycah6pgTr2nBRN
-rZPmlerk/aZUuERGvQ+h/wYSPAijE5DBuHeKQQ9Mlo5aMGCFvEQZWc7bnSpkqWXV
-e8wUGFxYKU1gTUorRzaR6Nb+WQCz/aeiRvZZL3iQmb7VMPcjJK7x8yADgY3kUc5+
-LJVbj+yIhNPbFur+p4S3dD3Jdp9NgdN5bslMILM5F07oy3NvKQTPc7qnLaIT7/dQ
-y0gZ374ZIuUKMiFPSIaQJG8R4EdnDQAapiMSkmA4Qe9U4SjlcBqxCo7AYVrOI4vN
-2F7SO2ncy7nAQNnl3iCcFZXaTvGojUKFBYO3QLwWa2Ps2SLwIESXNXb2zNyvmfBt
-nU3c6167hpU8hB5GQhyOHCuOorp/+2lbBDr0MzLhPh5/u+ivHgMVgGbGFxnGqG5n
-o/1cK7UqZhYfWjTkSprwN78uEE6sQIk524PwYvHVmAIq22v2ZmzxiwF8VPb6R0iX
-VPTbObd+xY8MlIL792DVLhzd2WmvPU7qU09SvOVrxH8Jm/fxeUVd+OwQVGvGOjzT
-BxuMMET8EErSS16xDeBS
-=MJg0
------END PGP SIGNATURE-----
-
---y0ulUmNC+osPPQO6--
+Regards,
+Santosh 
