@@ -1,57 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab3GAIeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:34:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38194 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897Ab3GAIeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:34:18 -0400
-Message-ID: <51D13EF0.6030702@ti.com>
-Date: Mon, 1 Jul 2013 11:33:52 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752978Ab3GAIjo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:39:44 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:54694 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680Ab3GAIjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 04:39:43 -0400
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: <balbi@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-References: <Pine.LNX.4.44L0.1306281507020.1047-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1306281507020.1047-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Date: Mon, 1 Jul 2013 10:39:42 +0200
+Message-ID: <CACRpkdaLGwXYrtGDOEbYukL0y4QidR3E1i8CBx4jT++EykJhZg@mail.gmail.com>
+Subject: [GIT PULL] GPIO changes for v3.11
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 10:18 PM, Alan Stern wrote:
-> On Fri, 28 Jun 2013, Roger Quadros wrote:
-> 
->> Just found the problem. It seems that enabling the ehci_irq _after_ the root hub is resumed
->> is the root cause of the problem. Doing so will miss events from the root hub.
-> 
-> This sounds like a bug in the IRQ setup.  It's the sort of thing you 
-> see when a level-triggered IRQ is treated as though it were 
-> edge-triggered.
-> 
-> In any case, the wakeup should have worked whether the IRQ was issued 
-> or not.
-> 
-OK.
-> 
-> I appreciate the symmetry of putting the enable_irq call in ehci-hcd, 
-> seeing as how the disable_irq is there too.  On the other hand, every 
-> HCD using this mechanism is going to have to do the same thing, which 
-> argues for putting the enable call in the core.  Perhaps at the start 
+Hi Linus,
 
-OK.
+here is a batch of GPIO changes for v3.11. I have agreed with Grant to take
+care of the pull requests for this development cycle.
 
-> of hcd_resume_work() instead of the end.
-> 
+No special things are happening in the GPIO tree this time (nice with some
+calm) and I have been extra careful to do regression builds and it's well
+boiled in -next.
 
-We can't enable_irq at the start as the controller will only be resumed
-after usb_remote_wakeup().
+Please pull them in!
 
-cheers,
--roger
+Yours,
+Linus Walleij
+
+
+The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
+
+  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-for-v3.11-1
+
+for you to fetch changes up to 038f0babc98a16211959010d7cd48b4a14f108cc:
+
+  Gpio/trivial: replace numeric with standard PM state macros
+(2013-06-30 01:37:07 +0200)
+
+----------------------------------------------------------------
+GPIO changes for the v3.11 development cycle:
+- Incremental development for the Langwell (Atom SoC),
+  Xilinx, ICH and RCAR drivers.
+- Cleanups from Jingoo Han, Axel Lin, Wei Jongjun,
+  Wolfram Sang, Tushar Behera, Sachin Kamat and Yijing Wang.
+
+----------------------------------------------------------------
+Alexandre Courbot (1):
+      MAINTAINERS: add linux-gpio mailing list
+
+Andy Shevchenko (6):
+      gpio-langwell: initialize lock before usage
+      gpio-langwell: do not use direct access to iomapped memory
+      gpio-langwell: use managed functions pcim_* and devm_*
+      gpio-langwell: amend error messages
+      gpio-langwell: drop away explicit casting
+      gpio-langwell: remove Withney point support
+
+Arnd Bergmann (1):
+      gpio/omap: omap_gpio_init_context stub must be inline
+
+Axel Lin (2):
+      gpio: stmpe: Staticize non-exported symbols
+      gpio: max7300: Fix trivial typo in Kconfig help text
+
+Jingoo Han (7):
+      gpio: langwell: remove unnecessary platform_set_drvdata()
+      gpio: lynxpoint: remove unnecessary platform_set_drvdata()
+      gpio: rdc321x: remove unnecessary platform_set_drvdata()
+      gpio: stmpe: remove unnecessary platform_set_drvdata()
+      gpio: tc3589x: remove unnecessary platform_set_drvdata()
+      gpio: timberdale: remove unnecessary platform_set_drvdata()
+      gpio: vx855: remove unnecessary platform_set_drvdata()
+
+Magnus Damm (1):
+      gpio-rcar: Use OUTDT when reading GPIOs configured as output
+
+Michal Simek (6):
+      GPIO: xilinx: Simplify driver probe function
+      GPIO: xilinx: Add support for dual channel
+      GPIO: xilinx: Use __raw_readl/__raw_writel IO functions
+      GPIO: xilinx: Use BIT macro
+      DT: Add documentation for gpio-xilinx
+      GPIO: xilinx: Enable driver for Xilinx zynq
+
+Nikolay Balandin (1):
+      gpio: sx150x: convert to use devm_* functions
+
+Sachin Kamat (2):
+      gpio-sta2x11: Fix potential NULL pointer dereference
+      gpio: grgpio: Staticize local symbols
+
+Stephen Boyd (1):
+      gpio: msm-v1: Remove errant __devinit to fix compile
+
+Tushar Behera (2):
+      gpio_msm: Convert to use devm_ioremap_resource
+      gpio-sta2x11: Convert to use devm_ioremap_resource
+
+Vincent Donnefort (1):
+      gpio: ich: add GPO_BLINK support
+
+Wei Yongjun (1):
+      gpio-ml-ioh: fix error return code in ioh_gpio_probe()
+
+Wolfram Sang (1):
+      gpio: devres: make comments proper
+
+Yijing Wang (1):
+      Gpio/trivial: replace numeric with standard PM state macros
+
+Zhangfei Gao (1):
+      gpiolib: remove warnning of allocations with IRQs disabled
+
+ .../devicetree/bindings/gpio/gpio-xilinx.txt       |  48 ++++++
+ MAINTAINERS                                        |   1 +
+ drivers/gpio/Kconfig                               |   4 +-
+ drivers/gpio/devres.c                              |  14 +-
+ drivers/gpio/gpio-bt8xx.c                          |   2 +-
+ drivers/gpio/gpio-grgpio.c                         |   6 +-
+ drivers/gpio/gpio-ich.c                            |   8 +-
+ drivers/gpio/gpio-langwell.c                       | 164 ++++-----------------
+ drivers/gpio/gpio-lynxpoint.c                      |   1 -
+ drivers/gpio/gpio-ml-ioh.c                         |   1 +
+ drivers/gpio/gpio-msm-v1.c                         |  14 +-
+ drivers/gpio/gpio-omap.c                           |   2 +-
+ drivers/gpio/gpio-rcar.c                           |   9 +-
+ drivers/gpio/gpio-rdc321x.c                        |   7 +-
+ drivers/gpio/gpio-sta2x11.c                        |   6 +-
+ drivers/gpio/gpio-stmpe.c                          |   7 +-
+ drivers/gpio/gpio-sx150x.c                         |  18 +--
+ drivers/gpio/gpio-tc3589x.c                        |   1 -
+ drivers/gpio/gpio-timberdale.c                     |   2 -
+ drivers/gpio/gpio-vx855.c                          |   2 -
+ drivers/gpio/gpio-xilinx.c                         | 144 ++++++++++++++----
+ drivers/gpio/gpiolib.c                             |   8 +-
+ 22 files changed, 248 insertions(+), 221 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-xilinx.txt
