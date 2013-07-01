@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab3GAILa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:11:30 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:1980 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab3GAIL1 (ORCPT
+	id S1753180Ab3GAIM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:12:29 -0400
+Received: from kvm5.telegraphics.com.au ([98.124.60.144]:33622 "EHLO
+	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab3GAIM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:11:27 -0400
-X-IronPort-AV: E=Sophos;i="4.87,972,1363132800"; 
-   d="scan'208";a="6233852"
-Message-ID: <1372666283.14691.8.camel@zakaz.uk.xensource.com>
-Subject: Re: kernel panic in skb_copy_bits
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: Alex Bligh <alex@alex.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <zheng.x.li@oracle.com>, Xen Devel <xen-devel@lists.xen.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Mon, 1 Jul 2013 09:11:23 +0100
-In-Reply-To: <51D0F514.3070309@oracle.com>
-References: <51CBAA48.3080802@oracle.com>
-	 <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
-	 <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Mon, 1 Jul 2013 04:12:27 -0400
+Date: Mon, 1 Jul 2013 18:12:12 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k/mac: Fix comment about iop_*_present flags setup
+ timing
+In-Reply-To: <1372586362-1206-1-git-send-email-geert@linux-m68k.org>
+Message-ID: <alpine.LNX.2.00.1307011812050.9202@nippy.intranet>
+References: <1372586362-1206-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-01 at 11:18 +0800, Joe Jin wrote:
-> > A workaround is to turn off O_DIRECT use by Xen as that ensures
-> > the pages are copied. Xen 4.3 does this by default.
-> > 
-> > I believe fixes for this are in 4.3 and 4.2.2 if using the
-> > qemu upstream DM. Note these aren't real fixes, just a workaround
-> > of a kernel bug.
+
+On Sun, 30 Jun 2013, Geert Uytterhoeven wrote:
+
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  arch/m68k/mac/iop.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> The guest is pvm, and disk model is xvbd, guest config file as below:
+> diff --git a/arch/m68k/mac/iop.c b/arch/m68k/mac/iop.c
+> index 7d8d461..8a4c446 100644
+> --- a/arch/m68k/mac/iop.c
+> +++ b/arch/m68k/mac/iop.c
+> @@ -118,9 +118,9 @@
+>  
+>  /*#define DEBUG_IOP*/
+>  
+> -/* Set to non-zero if the IOPs are present. Set by iop_init() */
+> +/* Set to non-zero if the IOPs are present. Set by iop_preinit() */
 
-Do you know which disk backend? The workaround Alex refers to went into
-qdisk but I think blkback could still suffer from a variant of the
-retransmit issue if you run it over iSCSI.
+I would write,
 
-> > To fix on a local build of xen you will need something like this:
-> > https://github.com/abligh/qemu-upstream-4.2-testing/commit/9a97c011e1a682eed9bc7195a25349eaf23ff3f9
-> > and something like this (NB: obviously insert your own git
-> > repo and commit numbers)
-> > https://github.com/abligh/xen/commit/f5c344afac96ced8b980b9659fb3e81c4a0db5ca
-> > 
-> 
-> I think this only for pvhvm/hvm?
+-/* Set to non-zero if the IOPs are present. Set by iop_init() */
++/* Non-zero if the IOPs are present */
 
-No, the underlying issue affects any PV device which is run over a
-network protocol (NFS, iSCSI etc). In effect a delayed retransmit can
-cross over the deayed ack and cause I/O to be completed while
-retransmits are pending, such as is described in
-http://www.spinics.net/lists/linux-nfs/msg34913.html (the original NFS
-variant). The problem is that because Xen PV drivers often unmap the
-page on I/O completion you get a crash (page fault) on the retransmit.
-
-The issue also affects native but in that case the symptom is "just" a
-corrupt packet on the wire. I tried to address this with my "skb
-destructor" series but unfortunately I got bogged down on the details,
-then I had to take time out to look into some other stuff and never
-managed to get back into it. I'd be very grateful if there was someone
-who could pick up that work (Alex gave some useful references in another
-reply to this thread)
-
-Some PV disk backends (e.g. blktap2) have worked around this by using
-grant copy instead of grant map, others (e.g. qdisk) have disabled
-O_DIRECT so that the pages are copied into the dom0 page cache and
-transmitted from there.
-
-We were discussing recently the possibility of mapping all ballooned out
-pages to a single read-only scratch page instead of leaving them empty
-in the page tables, this would cause the Xen case to revert to the
-native case. I think Thanos was going to take a look into this.
-
-Ian.
+Finn
 
