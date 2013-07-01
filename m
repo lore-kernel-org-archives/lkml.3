@@ -1,206 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3GAMTc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:19:32 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51696 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab3GAMTb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 08:19:31 -0400
-From: Dong Fang <yp.fangdong@gmail.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dong Fang <yp.fangdong@gmail.com>
-Subject: [PATCH] vfs: remove the unnecessrary code of fs/inode.c
-Date: Mon,  1 Jul 2013 08:19:03 -0400
-Message-Id: <1372681143-23465-1-git-send-email-yp.fangdong@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754056Ab3GAMaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 08:30:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55702 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752841Ab3GAMaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 08:30:03 -0400
+Date: Mon, 1 Jul 2013 14:29:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Wedson Almeida Filho <wedsonaf@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
+Message-ID: <20130701122954.GD23515@pd.tnic>
+References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
+ <20130628111948.GA31065@gmail.com>
+ <20130628140938.GA24819@pd.tnic>
+ <CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
+ <20130630220004.GA23124@pd.tnic>
+ <20130701075046.GB1681@gmail.com>
+ <20130701102306.GC23515@pd.tnic>
+ <20130701111122.GA18772@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130701111122.GA18772@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions, such as find_inode_fast() and find_inode(), iget_lock() and
-iget5_lock(), insert_inode_locked() and insert_inode_locked4(), almost have
-the same code.
+On Mon, Jul 01, 2013 at 01:11:22PM +0200, Ingo Molnar wrote:
+> Hm, a 6 seconds win looks _way_ too much - we don't execute that much 
+> mutex code, let alone a portion of it.
+> 
+> This could perhaps be a bootup-to-bootup cache layout systematic jitter 
+> artifact, which isn't captured by stddev observations?
+> 
+> Doing something like this with a relatively fresh version of perf:
+> 
+>   perf stat --repeat 10 -a --sync \
+>    --pre 'make -s O=defconfig-build/ clean; echo 1 > /proc/sys/vm/drop_caches' \
+>    make -s -j64 O=defconfig-build/ bzImage
+> 
+> ... might do the trick (untested!). (Also note the use of -a: this should 
+> run on an otherwise quiescent system.)
 
-Signed-off-by: Dong Fang <yp.fangdong@gmail.com>
----
- fs/inode.c |  134 ++++++++++++------------------------------------------------
- 1 files changed, 26 insertions(+), 108 deletions(-)
+Yep, I didn't run -a since I wanted to trace only the build process.
+Btw, the build-kernel.sh script looks like this:
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 00d5fc3..847eee9 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -790,6 +790,22 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
- }
- 
- static void __wait_on_freeing_inode(struct inode *inode);
-+
-+
-+static int test_ino(struct inode *inode, void *data)
-+{
-+	unsigned long ino = *(unsigned long *) data;
-+	return inode->i_ino == ino;
-+}
-+
-+static int set_ino(struct inode *inode, void *data)
-+{
-+	inode->i_ino = *(unsigned long *) data;
-+	return 0;
-+}
-+
-+
-+
- /*
-  * Called with the inode lock held.
-  */
-@@ -829,28 +845,7 @@ repeat:
- static struct inode *find_inode_fast(struct super_block *sb,
- 				struct hlist_head *head, unsigned long ino)
- {
--	struct inode *inode = NULL;
--
--repeat:
--	hlist_for_each_entry(inode, head, i_hash) {
--		spin_lock(&inode->i_lock);
--		if (inode->i_ino != ino) {
--			spin_unlock(&inode->i_lock);
--			continue;
--		}
--		if (inode->i_sb != sb) {
--			spin_unlock(&inode->i_lock);
--			continue;
--		}
--		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
--			__wait_on_freeing_inode(inode);
--			goto repeat;
--		}
--		__iget(inode);
--		spin_unlock(&inode->i_lock);
--		return inode;
--	}
--	return NULL;
-+	return find_inode(sb, head, test_ino, (void *)&ino);
- }
- 
- /*
-@@ -1073,50 +1068,7 @@ EXPORT_SYMBOL(iget5_locked);
-  */
- struct inode *iget_locked(struct super_block *sb, unsigned long ino)
- {
--	struct hlist_head *head = inode_hashtable + hash(sb, ino);
--	struct inode *inode;
--
--	spin_lock(&inode_hash_lock);
--	inode = find_inode_fast(sb, head, ino);
--	spin_unlock(&inode_hash_lock);
--	if (inode) {
--		wait_on_inode(inode);
--		return inode;
--	}
--
--	inode = alloc_inode(sb);
--	if (inode) {
--		struct inode *old;
--
--		spin_lock(&inode_hash_lock);
--		/* We released the lock, so.. */
--		old = find_inode_fast(sb, head, ino);
--		if (!old) {
--			inode->i_ino = ino;
--			spin_lock(&inode->i_lock);
--			inode->i_state = I_NEW;
--			hlist_add_head(&inode->i_hash, head);
--			spin_unlock(&inode->i_lock);
--			inode_sb_list_add(inode);
--			spin_unlock(&inode_hash_lock);
--
--			/* Return the locked inode with I_NEW set, the
--			 * caller is responsible for filling in the contents
--			 */
--			return inode;
--		}
--
--		/*
--		 * Uhhuh, somebody else created the same inode under
--		 * us. Use the old inode instead of the one we just
--		 * allocated.
--		 */
--		spin_unlock(&inode_hash_lock);
--		destroy_inode(inode);
--		inode = old;
--		wait_on_inode(inode);
--	}
--	return inode;
-+	return iget5_locked(sb, ino, test_ino, set_ino, (void *)&ino);
- }
- EXPORT_SYMBOL(iget_locked);
- 
-@@ -1281,48 +1233,6 @@ struct inode *ilookup(struct super_block *sb, unsigned long ino)
- }
- EXPORT_SYMBOL(ilookup);
- 
--int insert_inode_locked(struct inode *inode)
--{
--	struct super_block *sb = inode->i_sb;
--	ino_t ino = inode->i_ino;
--	struct hlist_head *head = inode_hashtable + hash(sb, ino);
--
--	while (1) {
--		struct inode *old = NULL;
--		spin_lock(&inode_hash_lock);
--		hlist_for_each_entry(old, head, i_hash) {
--			if (old->i_ino != ino)
--				continue;
--			if (old->i_sb != sb)
--				continue;
--			spin_lock(&old->i_lock);
--			if (old->i_state & (I_FREEING|I_WILL_FREE)) {
--				spin_unlock(&old->i_lock);
--				continue;
--			}
--			break;
--		}
--		if (likely(!old)) {
--			spin_lock(&inode->i_lock);
--			inode->i_state |= I_NEW;
--			hlist_add_head(&inode->i_hash, head);
--			spin_unlock(&inode->i_lock);
--			spin_unlock(&inode_hash_lock);
--			return 0;
--		}
--		__iget(old);
--		spin_unlock(&old->i_lock);
--		spin_unlock(&inode_hash_lock);
--		wait_on_inode(old);
--		if (unlikely(!inode_unhashed(old))) {
--			iput(old);
--			return -EBUSY;
--		}
--		iput(old);
--	}
--}
--EXPORT_SYMBOL(insert_inode_locked);
--
- int insert_inode_locked4(struct inode *inode, unsigned long hashval,
- 		int (*test)(struct inode *, void *), void *data)
- {
-@@ -1366,6 +1276,14 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
- }
- EXPORT_SYMBOL(insert_inode_locked4);
- 
-+int insert_inode_locked(struct inode *inode)
-+{
-+	unsigned long ino = inode->i_ino;
-+	return insert_inode_locked4(inode, ino, test_ino, (void *)&ino);
-+}
-+EXPORT_SYMBOL(insert_inode_locked);
-+
-+
- 
- int generic_delete_inode(struct inode *inode)
- {
+#!/bin/bash
+
+NUM_CPUS=$(cat /proc/cpuinfo | grep processor | wc -l)
+MAKE_OPTS=-j$(($NUM_CPUS+1))
+
+echo 3 > /proc/sys/vm/drop_caches
+make $MAKE_OPTS mrproper
+make $MAKE_OPTS oldconfig
+make $MAKE_OPTS
+<EOF>
+
+Let me try your perf tracing variant.
+
+> As a sidenote, we could add this as a convenience feature, triggered via:
+> 
+>    perf stat --flush-vm-caches
+> 
+> ... or so, in addition to the already existing --sync option.
+
+Is this something which we want to use a lot? Also, there's 1, 2 and 3
+as arg to drop_caches:
+
+drop_caches
+
+Writing to this will cause the kernel to drop clean caches, dentries and
+inodes from memory, causing that memory to become free.
+
+To free pagecache:
+	echo 1 > /proc/sys/vm/drop_caches
+To free dentries and inodes:
+	echo 2 > /proc/sys/vm/drop_caches
+To free pagecache, dentries and inodes:
+	echo 3 > /proc/sys/vm/drop_caches
+
 -- 
-1.7.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
