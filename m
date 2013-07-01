@@ -1,159 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab3GAHYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:24:24 -0400
+	id S1752786Ab3GAHXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:23:12 -0400
 Received: from mga02.intel.com ([134.134.136.20]:6666 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab3GAHXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:23:15 -0400
+	id S1752140Ab3GAHXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:23:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,972,1363158000"; 
-   d="scan'208";a="362388518"
+   d="scan'208";a="362388499"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
         andi@firstfloor.org, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v2 3/7] perf, x86: Introduce x86 special perf event context
-Date: Mon,  1 Jul 2013 15:23:03 +0800
-Message-Id: <1372663387-11754-4-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v2 0/7] perf, x86: Haswell LBR call stack support
+Date: Mon,  1 Jul 2013 15:23:00 +0800
+Message-Id: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
-References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-The x86 special perf event context is named x86_perf_event_context,
-We can enlarge it later to store PMU special data.
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are executed
+the last captured branch record is popped from the on-chip LBR registers.
+The LBR call stack facility can help perf to get call chains of progam
+without frame pointer. When perf tool requests PERF_SAMPLE_CALLCHAIN +
+PERF_SAMPLE_BRANCH_USER, this feature is dynamically enabled by default.
+This feature can be disabled/enabled through an attribute file in the cpu
+pmu sysfs directory.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+The LBR call stack has following known limitations
+ 1. Zero length calls are not filtered out by hardware
+ 2. Exception handing such as setjmp/longjmp will have calls/returns
+    not match
+ 3. Pushing different return address onto the stack will have
+    calls/returns not match
+
+These patches are based upon tip/perf/core
+
+Regards
+Yan, Zheng
 ---
- arch/x86/kernel/cpu/perf_event.c | 12 ++++++++++++
- arch/x86/kernel/cpu/perf_event.h |  4 ++++
- include/linux/perf_event.h       |  5 +++++
- kernel/events/core.c             | 28 ++++++++++++++++++----------
- 4 files changed, 39 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 9e581c5..94dbe71 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1792,6 +1792,17 @@ static int x86_pmu_event_idx(struct perf_event *event)
- 	return idx + 1;
- }
- 
-+static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
-+{
-+	struct perf_event_context *ctx;
-+
-+	ctx = kzalloc(sizeof(struct x86_perf_event_context), GFP_KERNEL);
-+	if (!ctx)
-+		return ERR_PTR(-ENOMEM);
-+
-+	return ctx;
-+}
-+
- static ssize_t get_attr_rdpmc(struct device *cdev,
- 			      struct device_attribute *attr,
- 			      char *buf)
-@@ -1879,6 +1890,7 @@ static struct pmu pmu = {
- 
- 	.event_idx		= x86_pmu_event_idx,
- 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
-+	.event_context_alloc	= x86_pmu_event_context_alloc,
- };
- 
- void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 3f6172c..047ddc6 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -460,6 +460,10 @@ enum {
- 	PERF_SAMPLE_BRANCH_CALL_STACK = 1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
- };
- 
-+struct x86_perf_event_context {
-+	struct perf_event_context ctx;
-+};
-+
- #define x86_add_quirk(func_)						\
- do {									\
- 	static struct x86_pmu_quirk __quirk __initdata = {		\
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 50b3efd..f6d1d59 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -274,6 +274,11 @@ struct pmu {
- 	 * flush branch stack on context-switches (needed in cpu-wide mode)
- 	 */
- 	void (*flush_branch_stack)	(void);
-+
-+	/*
-+	 * Allocate PMU special perf event context
-+	 */
-+	void *(*event_context_alloc)	(struct perf_event_context *parent_ctx);
- };
- 
- /**
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 1db3af9..3aececc 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2961,13 +2961,20 @@ static void __perf_event_init_context(struct perf_event_context *ctx)
- }
- 
- static struct perf_event_context *
--alloc_perf_context(struct pmu *pmu, struct task_struct *task)
-+alloc_perf_context(struct pmu *pmu, struct task_struct *task,
-+		   struct perf_event_context *parent_ctx)
- {
- 	struct perf_event_context *ctx;
- 
--	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
--	if (!ctx)
--		return NULL;
-+	if (pmu->event_context_alloc) {
-+		ctx = pmu->event_context_alloc(parent_ctx);
-+		if (IS_ERR(ctx))
-+			return ctx;
-+	} else {
-+		ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
-+		if (!ctx)
-+			return ERR_PTR(-ENOMEM);
-+	}
- 
- 	__perf_event_init_context(ctx);
- 	if (task) {
-@@ -3053,10 +3060,11 @@ retry:
- 		++ctx->pin_count;
- 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
- 	} else {
--		ctx = alloc_perf_context(pmu, task);
--		err = -ENOMEM;
--		if (!ctx)
-+		ctx = alloc_perf_context(pmu, task, NULL);
-+		if (IS_ERR(ctx)) {
-+			err = PTR_ERR(ctx);
- 			goto errout;
-+		}
- 
- 		err = 0;
- 		mutex_lock(&task->perf_event_mutex);
-@@ -7465,9 +7473,9 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
- 		 * child.
- 		 */
- 
--		child_ctx = alloc_perf_context(event->pmu, child);
--		if (!child_ctx)
--			return -ENOMEM;
-+		child_ctx = alloc_perf_context(event->pmu, child, parent_ctx);
-+		if (IS_ERR(child_ctx))
-+			return PTR_ERR(child_ctx);
- 
- 		child->perf_event_ctxp[ctxn] = child_ctx;
- 	}
--- 
-1.8.1.4
-
+Changes since v1
+ - more comments for why FREEZE_LBRS_ON_PMI does not work
+ - don't save/restore LBR during context switches if LBR are used by
+   CPU events
+ - change mode of /sys/devices/cpu/lbr_callstack to 0644
