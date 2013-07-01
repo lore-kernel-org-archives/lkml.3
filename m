@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab3GAK2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 06:28:06 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:63931 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab3GAK2B (ORCPT
+	id S1753373Ab3GAKeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 06:34:01 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:34418 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab3GAKeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 06:28:01 -0400
-Date: Mon, 1 Jul 2013 12:27:57 +0200
+	Mon, 1 Jul 2013 06:34:00 -0400
+Date: Mon, 1 Jul 2013 12:33:55 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/fpu changes for v3.11
-Message-ID: <20130701102757.GA17647@gmail.com>
+Subject: [GIT PULL] x86/microcode changes for v3.11
+Message-ID: <20130701103355.GA18138@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,620 +25,846 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-fpu-for-linus git tree from:
+Please pull the latest x86-microcode-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-fpu-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-microcode-for-linus
 
-   HEAD: 5f8c4218148822fde6eebbeefc34bd0a6061e031 x86, fpu: Use static_cpu_has_safe before alternatives
+   HEAD: 9608d33b8210c993af4430d661a6474946480c9b x86, microcode, amd: Another early loading fixup
 
-There are two bigger changes in this tree:
+Two main changes that improve microcode loading on AMD CPUs:
 
- - Add an [early-use-]safe static_cpu_has() variant and other robustness 
-   improvements, including the new CONFIG_X86_DEBUG_STATIC_CPU_HAS=y 
-   debugging facility, motivated by recent obscure FPU code bugs,
-   by Borislav Petkov
+ - Add support for all-in-one binary microcode files that concatenate the 
+   microcode images of multiple processor families, by Jacob Shin
 
- - Reimplement FPU detection code in C and drop the old asm code,
-   by H. Peter Anvin.
+ - Add early microcode loading (embedded in the initrd) support,
+   by Jacob Shin
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Borislav Petkov (4):
-      x86, cpu: Add a synthetic, always true, cpu feature
-      x86: Sanity-check static_cpu_has usage
-      x86: Add a static_cpu_has_safe variant
-      x86, fpu: Use static_cpu_has_safe before alternatives
+Borislav Petkov (1):
+      x86, microcode, intel: Correct typo in printk
 
-H. Peter Anvin (1):
-      x86: Get rid of ->hard_math and all the FPU asm fu
+Jacob Shin (7):
+      x86, microcode: Vendor abstract out save_microcode_in_initrd()
+      x86, microcode, amd: Refactor functions to prepare for early loading
+      x86, microcode, amd: Early microcode patch loading support for AMD
+      x86, microcode, amd: Fix warnings and errors on with CONFIG_MICROCODE=m
+      x86, microcode, amd: Make find_ucode_in_initrd() __init
+      x86, microcode, amd: Allow multiple families' bin files appended together
+      x86, microcode, amd: Another early loading fixup
 
 
- arch/x86/Kconfig.debug              |  10 +++
- arch/x86/include/asm/cpufeature.h   | 118 ++++++++++++++++++++++++++++++++++--
- arch/x86/include/asm/fpu-internal.h |   4 +-
- arch/x86/include/asm/processor.h    |   3 +-
- arch/x86/kernel/asm-offsets_32.c    |   1 -
- arch/x86/kernel/cpu/bugs.c          |  21 +------
- arch/x86/kernel/cpu/common.c        |  19 +++++-
- arch/x86/kernel/cpu/cyrix.c         |   2 +-
- arch/x86/kernel/cpu/proc.c          |   4 +-
- arch/x86/kernel/head_32.S           |  21 -------
- arch/x86/kernel/i387.c              |  59 ++++++++++++++----
- arch/x86/kernel/xsave.c             |   5 +-
- arch/x86/lguest/boot.c              |   2 +-
- arch/x86/xen/enlighten.c            |   2 +-
- 14 files changed, 201 insertions(+), 70 deletions(-)
+ Documentation/x86/early-microcode.txt   |  11 +-
+ arch/x86/Kconfig                        |  14 +-
+ arch/x86/include/asm/microcode_amd.h    |  78 +++++++++
+ arch/x86/include/asm/microcode_intel.h  |   2 +
+ arch/x86/kernel/Makefile                |   1 +
+ arch/x86/kernel/microcode_amd.c         | 133 +++++++-------
+ arch/x86/kernel/microcode_amd_early.c   | 302 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/microcode_core_early.c  |  49 +++++-
+ arch/x86/kernel/microcode_intel_early.c |   6 +-
+ 9 files changed, 509 insertions(+), 87 deletions(-)
+ create mode 100644 arch/x86/include/asm/microcode_amd.h
+ create mode 100644 arch/x86/kernel/microcode_amd_early.c
 
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index c198b7e..c6acdf7 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -304,4 +304,14 @@ config DEBUG_NMI_SELFTEST
+diff --git a/Documentation/x86/early-microcode.txt b/Documentation/x86/early-microcode.txt
+index 4aaf0df..d62bea6 100644
+--- a/Documentation/x86/early-microcode.txt
++++ b/Documentation/x86/early-microcode.txt
+@@ -11,7 +11,8 @@ file and loaded to CPUs during boot time.
+ The format of the combined initrd image is microcode in cpio format followed by
+ the initrd image (maybe compressed). Kernel parses the combined initrd image
+ during boot time. The microcode file in cpio name space is:
+-kernel/x86/microcode/GenuineIntel.bin
++on Intel: kernel/x86/microcode/GenuineIntel.bin
++on AMD  : kernel/x86/microcode/AuthenticAMD.bin
  
- 	  If unsure, say N.
+ During BSP boot (before SMP starts), if the kernel finds the microcode file in
+ the initrd file, it parses the microcode and saves matching microcode in memory.
+@@ -34,10 +35,8 @@ original initrd image /boot/initrd-3.5.0.img.
  
-+config X86_DEBUG_STATIC_CPU_HAS
-+	bool "Debug alternatives"
-+	depends on DEBUG_KERNEL
-+	---help---
-+	  This option causes additional code to be generated which
-+	  fails if static_cpu_has() is used before alternatives have
-+	  run.
-+
-+	  If unsure, say N.
-+
- endmenu
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index e99ac27..47538a6 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -92,7 +92,7 @@
- #define X86_FEATURE_LFENCE_RDTSC (3*32+18) /* "" Lfence synchronizes RDTSC */
- #define X86_FEATURE_11AP	(3*32+19) /* "" Bad local APIC aka 11AP */
- #define X86_FEATURE_NOPL	(3*32+20) /* The NOPL (0F 1F) instructions */
--					  /* 21 available, was AMD_C1E */
-+#define X86_FEATURE_ALWAYS	(3*32+21) /* "" Always-present feature */
- #define X86_FEATURE_XTOPOLOGY	(3*32+22) /* cpu topology enum extensions */
- #define X86_FEATURE_TSC_RELIABLE (3*32+23) /* TSC is known to be reliable */
- #define X86_FEATURE_NONSTOP_TSC	(3*32+24) /* TSC does not stop in C states */
-@@ -356,15 +356,36 @@ extern const char * const x86_power_flags[32];
- #endif /* CONFIG_X86_64 */
+ mkdir initrd
+ cd initrd
+-mkdir kernel
+-mkdir kernel/x86
+-mkdir kernel/x86/microcode
+-cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin
+-find .|cpio -oc >../ucode.cpio
++mkdir -p kernel/x86/microcode
++cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin (or AuthenticAMD.bin)
++find . | cpio -o -H newc >../ucode.cpio
+ cd ..
+ cat ucode.cpio /boot/initrd-3.5.0.img >/boot/initrd-3.5.0.ucode.img
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 685692c..2705532 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1058,8 +1058,16 @@ config MICROCODE_INTEL_LIB
+ 	depends on MICROCODE_INTEL
  
- #if __GNUC__ >= 4
-+extern void warn_pre_alternatives(void);
-+extern bool __static_cpu_has_safe(u16 bit);
+ config MICROCODE_INTEL_EARLY
++	def_bool n
 +
- /*
-  * Static testing of CPU features.  Used the same as boot_cpu_has().
-  * These are only valid after alternatives have run, but will statically
-  * patch the target code for additional performance.
-- *
-  */
- static __always_inline __pure bool __static_cpu_has(u16 bit)
- {
- #if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
++config MICROCODE_AMD_EARLY
++	def_bool n
 +
-+#ifdef CONFIG_X86_DEBUG_STATIC_CPU_HAS
-+		/*
-+		 * Catch too early usage of this before alternatives
-+		 * have run.
-+		 */
-+		asm goto("1: jmp %l[t_warn]\n"
-+			 "2:\n"
-+			 ".section .altinstructions,\"a\"\n"
-+			 " .long 1b - .\n"
-+			 " .long 0\n"		/* no replacement */
-+			 " .word %P0\n"		/* 1: do replace */
-+			 " .byte 2b - 1b\n"	/* source len */
-+			 " .byte 0\n"		/* replacement len */
-+			 ".previous\n"
-+			 /* skipping size check since replacement size = 0 */
-+			 : : "i" (X86_FEATURE_ALWAYS) : : t_warn);
-+#endif
++config MICROCODE_EARLY
+ 	bool "Early load microcode"
+-	depends on MICROCODE_INTEL && BLK_DEV_INITRD
++	depends on MICROCODE=y && BLK_DEV_INITRD
++	select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
++	select MICROCODE_AMD_EARLY if MICROCODE_AMD
+ 	default y
+ 	help
+ 	  This option provides functionality to read additional microcode data
+@@ -1067,10 +1075,6 @@ config MICROCODE_INTEL_EARLY
+ 	  microcode to CPU's as early as possible. No functional change if no
+ 	  microcode data is glued to the initrd, therefore it's safe to say Y.
+ 
+-config MICROCODE_EARLY
+-	def_bool y
+-	depends on MICROCODE_INTEL_EARLY
+-
+ config X86_MSR
+ 	tristate "/dev/cpu/*/msr - Model-specific register support"
+ 	---help---
+diff --git a/arch/x86/include/asm/microcode_amd.h b/arch/x86/include/asm/microcode_amd.h
+new file mode 100644
+index 0000000..c6b043f
+--- /dev/null
++++ b/arch/x86/include/asm/microcode_amd.h
+@@ -0,0 +1,78 @@
++#ifndef _ASM_X86_MICROCODE_AMD_H
++#define _ASM_X86_MICROCODE_AMD_H
 +
- 		asm goto("1: jmp %l[t_no]\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
-@@ -379,7 +400,13 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 		return true;
- 	t_no:
- 		return false;
--#else
++#include <asm/microcode.h>
 +
-+#ifdef CONFIG_X86_DEBUG_STATIC_CPU_HAS
-+	t_warn:
-+		warn_pre_alternatives();
-+		return false;
-+#endif
-+#else /* GCC_VERSION >= 40500 */
- 		u8 flag;
- 		/* Open-coded due to __stringify() in ALTERNATIVE() */
- 		asm volatile("1: movb $0,%0\n"
-@@ -411,11 +438,94 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 		__static_cpu_has(bit) :				\
- 		boot_cpu_has(bit)				\
- )
++#define UCODE_MAGIC			0x00414d44
++#define UCODE_EQUIV_CPU_TABLE_TYPE	0x00000000
++#define UCODE_UCODE_TYPE		0x00000001
 +
-+static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
++#define SECTION_HDR_SIZE		8
++#define CONTAINER_HDR_SZ		12
++
++struct equiv_cpu_entry {
++	u32	installed_cpu;
++	u32	fixed_errata_mask;
++	u32	fixed_errata_compare;
++	u16	equiv_cpu;
++	u16	res;
++} __attribute__((packed));
++
++struct microcode_header_amd {
++	u32	data_code;
++	u32	patch_id;
++	u16	mc_patch_data_id;
++	u8	mc_patch_data_len;
++	u8	init_flag;
++	u32	mc_patch_data_checksum;
++	u32	nb_dev_id;
++	u32	sb_dev_id;
++	u16	processor_rev_id;
++	u8	nb_rev_id;
++	u8	sb_rev_id;
++	u8	bios_api_rev;
++	u8	reserved1[3];
++	u32	match_reg[8];
++} __attribute__((packed));
++
++struct microcode_amd {
++	struct microcode_header_amd	hdr;
++	unsigned int			mpb[0];
++};
++
++static inline u16 find_equiv_id(struct equiv_cpu_entry *equiv_cpu_table,
++				unsigned int sig)
 +{
-+#if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
-+/*
-+ * We need to spell the jumps to the compiler because, depending on the offset,
-+ * the replacement jump can be bigger than the original jump, and this we cannot
-+ * have. Thus, we force the jump to the widest, 4-byte, signed relative
-+ * offset even though the last would often fit in less bytes.
-+ */
-+		asm goto("1: .byte 0xe9\n .long %l[t_dynamic] - 2f\n"
-+			 "2:\n"
-+			 ".section .altinstructions,\"a\"\n"
-+			 " .long 1b - .\n"		/* src offset */
-+			 " .long 3f - .\n"		/* repl offset */
-+			 " .word %P1\n"			/* always replace */
-+			 " .byte 2b - 1b\n"		/* src len */
-+			 " .byte 4f - 3f\n"		/* repl len */
-+			 ".previous\n"
-+			 ".section .altinstr_replacement,\"ax\"\n"
-+			 "3: .byte 0xe9\n .long %l[t_no] - 2b\n"
-+			 "4:\n"
-+			 ".previous\n"
-+			 ".section .altinstructions,\"a\"\n"
-+			 " .long 1b - .\n"		/* src offset */
-+			 " .long 0\n"			/* no replacement */
-+			 " .word %P0\n"			/* feature bit */
-+			 " .byte 2b - 1b\n"		/* src len */
-+			 " .byte 0\n"			/* repl len */
-+			 ".previous\n"
-+			 : : "i" (bit), "i" (X86_FEATURE_ALWAYS)
-+			 : : t_dynamic, t_no);
-+		return true;
-+	t_no:
-+		return false;
-+	t_dynamic:
-+		return __static_cpu_has_safe(bit);
-+#else /* GCC_VERSION >= 40500 */
-+		u8 flag;
-+		/* Open-coded due to __stringify() in ALTERNATIVE() */
-+		asm volatile("1: movb $2,%0\n"
-+			     "2:\n"
-+			     ".section .altinstructions,\"a\"\n"
-+			     " .long 1b - .\n"		/* src offset */
-+			     " .long 3f - .\n"		/* repl offset */
-+			     " .word %P2\n"		/* always replace */
-+			     " .byte 2b - 1b\n"		/* source len */
-+			     " .byte 4f - 3f\n"		/* replacement len */
-+			     ".previous\n"
-+			     ".section .discard,\"aw\",@progbits\n"
-+			     " .byte 0xff + (4f-3f) - (2b-1b)\n" /* size check */
-+			     ".previous\n"
-+			     ".section .altinstr_replacement,\"ax\"\n"
-+			     "3: movb $0,%0\n"
-+			     "4:\n"
-+			     ".previous\n"
-+			     ".section .altinstructions,\"a\"\n"
-+			     " .long 1b - .\n"		/* src offset */
-+			     " .long 5f - .\n"		/* repl offset */
-+			     " .word %P1\n"		/* feature bit */
-+			     " .byte 4b - 3b\n"		/* src len */
-+			     " .byte 6f - 5f\n"		/* repl len */
-+			     ".previous\n"
-+			     ".section .discard,\"aw\",@progbits\n"
-+			     " .byte 0xff + (6f-5f) - (4b-3b)\n" /* size check */
-+			     ".previous\n"
-+			     ".section .altinstr_replacement,\"ax\"\n"
-+			     "5: movb $1,%0\n"
-+			     "6:\n"
-+			     ".previous\n"
-+			     : "=qm" (flag)
-+			     : "i" (bit), "i" (X86_FEATURE_ALWAYS));
-+		return (flag == 2 ? __static_cpu_has_safe(bit) : flag);
-+#endif
++	int i = 0;
++
++	if (!equiv_cpu_table)
++		return 0;
++
++	while (equiv_cpu_table[i].installed_cpu != 0) {
++		if (sig == equiv_cpu_table[i].installed_cpu)
++			return equiv_cpu_table[i].equiv_cpu;
++
++		i++;
++	}
++	return 0;
 +}
 +
-+#define static_cpu_has_safe(bit)				\
-+(								\
-+	__builtin_constant_p(boot_cpu_has(bit)) ?		\
-+		boot_cpu_has(bit) :				\
-+		_static_cpu_has_safe(bit)			\
-+)
++extern int __apply_microcode_amd(struct microcode_amd *mc_amd);
++extern int apply_microcode_amd(int cpu);
++extern enum ucode_state load_microcode_amd(int cpu, const u8 *data, size_t size);
++
++#ifdef CONFIG_MICROCODE_AMD_EARLY
++#ifdef CONFIG_X86_32
++#define MPB_MAX_SIZE PAGE_SIZE
++extern u8 amd_bsp_mpb[MPB_MAX_SIZE];
++#endif
++extern void __init load_ucode_amd_bsp(void);
++extern void __cpuinit load_ucode_amd_ap(void);
++extern int __init save_microcode_in_initrd_amd(void);
++#else
++static inline void __init load_ucode_amd_bsp(void) {}
++static inline void __cpuinit load_ucode_amd_ap(void) {}
++static inline int __init save_microcode_in_initrd_amd(void) { return -EINVAL; }
++#endif
++
++#endif /* _ASM_X86_MICROCODE_AMD_H */
+diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
+index 5356f92..87a0853 100644
+--- a/arch/x86/include/asm/microcode_intel.h
++++ b/arch/x86/include/asm/microcode_intel.h
+@@ -67,10 +67,12 @@ update_match_revision(struct microcode_header_intel *mc_header, int rev);
+ extern void __init load_ucode_intel_bsp(void);
+ extern void __cpuinit load_ucode_intel_ap(void);
+ extern void show_ucode_info_early(void);
++extern int __init save_microcode_in_initrd_intel(void);
  #else
- /*
-  * gcc 3.x is too stupid to do the static test; fall back to dynamic.
-  */
--#define static_cpu_has(bit) boot_cpu_has(bit)
-+#define static_cpu_has(bit)		boot_cpu_has(bit)
-+#define static_cpu_has_safe(bit)	boot_cpu_has(bit)
+ static inline __init void load_ucode_intel_bsp(void) {}
+ static inline __cpuinit void load_ucode_intel_ap(void) {}
+ static inline void show_ucode_info_early(void) {}
++static inline int __init save_microcode_in_initrd_intel(void) { return -EINVAL; }
  #endif
  
- #define cpu_has_bug(c, bit)	cpu_has(c, (bit))
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index e25cc33..4d0bda7 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -62,10 +62,8 @@ extern user_regset_set_fn fpregs_set, xfpregs_set, fpregs_soft_set,
- #define xstateregs_active	fpregs_active
+ #if defined(CONFIG_MICROCODE_INTEL_EARLY) && defined(CONFIG_HOTPLUG_CPU)
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 7bd3bd3..6c3fcea 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -93,6 +93,7 @@ obj-$(CONFIG_MICROCODE_INTEL_LIB)	+= microcode_intel_lib.o
+ microcode-y				:= microcode_core.o
+ microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
+ microcode-$(CONFIG_MICROCODE_AMD)	+= microcode_amd.o
++obj-$(CONFIG_MICROCODE_AMD_EARLY)	+= microcode_amd_early.o
+ obj-$(CONFIG_MICROCODE)			+= microcode.o
  
- #ifdef CONFIG_MATH_EMULATION
--# define HAVE_HWFP		(boot_cpu_data.hard_math)
- extern void finit_soft_fpu(struct i387_soft_struct *soft);
- #else
--# define HAVE_HWFP		1
- static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
- #endif
+ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index efdec7c..47ebb1d 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -31,48 +31,12 @@
+ #include <asm/microcode.h>
+ #include <asm/processor.h>
+ #include <asm/msr.h>
++#include <asm/microcode_amd.h>
  
-@@ -345,7 +343,7 @@ static inline void __thread_fpu_end(struct task_struct *tsk)
+ MODULE_DESCRIPTION("AMD Microcode Update Driver");
+ MODULE_AUTHOR("Peter Oruba");
+ MODULE_LICENSE("GPL v2");
  
- static inline void __thread_fpu_begin(struct task_struct *tsk)
- {
--	if (!use_eager_fpu())
-+	if (!static_cpu_has_safe(X86_FEATURE_EAGER_FPU))
- 		clts();
- 	__thread_set_has_fpu(tsk);
- }
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 22224b3..578f8b1 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -89,9 +89,9 @@ struct cpuinfo_x86 {
- 	char			wp_works_ok;	/* It doesn't on 386's */
- 
- 	/* Problems on some 486Dx4's and old 386's: */
--	char			hard_math;
- 	char			rfu;
- 	char			pad0;
-+	char			pad1;
- #else
- 	/* Number of 4K pages in DTLB/ITLB combined(in pages): */
- 	int			x86_tlbsize;
-@@ -164,6 +164,7 @@ extern const struct seq_operations cpuinfo_op;
- #define cache_line_size()	(boot_cpu_data.x86_cache_alignment)
- 
- extern void cpu_detect(struct cpuinfo_x86 *c);
-+extern void __cpuinit fpu_detect(struct cpuinfo_x86 *c);
- 
- extern void early_cpu_init(void);
- extern void identify_boot_cpu(void);
-diff --git a/arch/x86/kernel/asm-offsets_32.c b/arch/x86/kernel/asm-offsets_32.c
-index 0ef4bba..d67c4be 100644
---- a/arch/x86/kernel/asm-offsets_32.c
-+++ b/arch/x86/kernel/asm-offsets_32.c
-@@ -28,7 +28,6 @@ void foo(void)
- 	OFFSET(CPUINFO_x86_vendor, cpuinfo_x86, x86_vendor);
- 	OFFSET(CPUINFO_x86_model, cpuinfo_x86, x86_model);
- 	OFFSET(CPUINFO_x86_mask, cpuinfo_x86, x86_mask);
--	OFFSET(CPUINFO_hard_math, cpuinfo_x86, hard_math);
- 	OFFSET(CPUINFO_cpuid_level, cpuinfo_x86, cpuid_level);
- 	OFFSET(CPUINFO_x86_capability, cpuinfo_x86, x86_capability);
- 	OFFSET(CPUINFO_x86_vendor_id, cpuinfo_x86, x86_vendor_id);
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index 4112be9..0344534 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -17,15 +17,6 @@
- #include <asm/paravirt.h>
- #include <asm/alternative.h>
- 
--static int __init no_387(char *s)
--{
--	boot_cpu_data.hard_math = 0;
--	write_cr0(X86_CR0_TS | X86_CR0_EM | X86_CR0_MP | read_cr0());
--	return 1;
--}
+-#define UCODE_MAGIC                0x00414d44
+-#define UCODE_EQUIV_CPU_TABLE_TYPE 0x00000000
+-#define UCODE_UCODE_TYPE           0x00000001
 -
--__setup("no387", no_387);
+-struct equiv_cpu_entry {
+-	u32	installed_cpu;
+-	u32	fixed_errata_mask;
+-	u32	fixed_errata_compare;
+-	u16	equiv_cpu;
+-	u16	res;
+-} __attribute__((packed));
 -
- static double __initdata x = 4195835.0;
- static double __initdata y = 3145727.0;
+-struct microcode_header_amd {
+-	u32	data_code;
+-	u32	patch_id;
+-	u16	mc_patch_data_id;
+-	u8	mc_patch_data_len;
+-	u8	init_flag;
+-	u32	mc_patch_data_checksum;
+-	u32	nb_dev_id;
+-	u32	sb_dev_id;
+-	u16	processor_rev_id;
+-	u8	nb_rev_id;
+-	u8	sb_rev_id;
+-	u8	bios_api_rev;
+-	u8	reserved1[3];
+-	u32	match_reg[8];
+-} __attribute__((packed));
+-
+-struct microcode_amd {
+-	struct microcode_header_amd	hdr;
+-	unsigned int			mpb[0];
+-};
+-
+-#define SECTION_HDR_SIZE	8
+-#define CONTAINER_HDR_SZ	12
+-
+ static struct equiv_cpu_entry *equiv_cpu_table;
  
-@@ -44,15 +35,6 @@ static void __init check_fpu(void)
+ struct ucode_patch {
+@@ -84,21 +48,10 @@ struct ucode_patch {
+ 
+ static LIST_HEAD(pcache);
+ 
+-static u16 find_equiv_id(unsigned int cpu)
++static u16 __find_equiv_id(unsigned int cpu)
  {
- 	s32 fdiv_bug;
- 
--	if (!boot_cpu_data.hard_math) {
--#ifndef CONFIG_MATH_EMULATION
--		pr_emerg("No coprocessor found and no math emulation present\n");
--		pr_emerg("Giving up\n");
--		for (;;) ;
--#endif
--		return;
+ 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+-	int i = 0;
+-
+-	if (!equiv_cpu_table)
+-		return 0;
+-
+-	while (equiv_cpu_table[i].installed_cpu != 0) {
+-		if (uci->cpu_sig.sig == equiv_cpu_table[i].installed_cpu)
+-			return equiv_cpu_table[i].equiv_cpu;
+-
+-		i++;
 -	}
--
- 	kernel_fpu_begin();
- 
- 	/*
-@@ -107,5 +89,6 @@ void __init check_bugs(void)
- 	 * kernel_fpu_begin/end() in check_fpu() relies on the patched
- 	 * alternative instructions.
- 	 */
--	check_fpu();
-+	if (cpu_has_fpu)
-+		check_fpu();
+-	return 0;
++	return find_equiv_id(equiv_cpu_table, uci->cpu_sig.sig);
  }
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 22018f7..a4a07c0 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -711,10 +711,9 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
- 		return;
  
- 	cpu_detect(c);
--
- 	get_cpu_vendor(c);
--
- 	get_cpu_cap(c);
-+	fpu_detect(c);
+ static u32 find_cpu_family_by_equiv_cpu(u16 equiv_cpu)
+@@ -163,7 +116,7 @@ static struct ucode_patch *find_patch(unsigned int cpu)
+ {
+ 	u16 equiv_id;
  
- 	if (this_cpu->c_early_init)
- 		this_cpu->c_early_init(c);
-@@ -724,6 +723,8 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+-	equiv_id = find_equiv_id(cpu);
++	equiv_id = __find_equiv_id(cpu);
+ 	if (!equiv_id)
+ 		return NULL;
  
- 	if (this_cpu->c_bsp_init)
- 		this_cpu->c_bsp_init(c);
+@@ -173,9 +126,20 @@ static struct ucode_patch *find_patch(unsigned int cpu)
+ static int collect_cpu_info_amd(int cpu, struct cpu_signature *csig)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++	struct ucode_patch *p;
+ 
+ 	csig->sig = cpuid_eax(0x00000001);
+ 	csig->rev = c->microcode;
 +
-+	setup_force_cpu_cap(X86_FEATURE_ALWAYS);
++	/*
++	 * a patch could have been loaded early, set uci->mc so that
++	 * mc_bp_resume() can call apply_microcode()
++	 */
++	p = find_patch(cpu);
++	if (p && (p->patch_id == csig->rev))
++		uci->mc = p->data;
++
+ 	pr_info("CPU%d: patch_level=0x%08x\n", cpu, csig->rev);
+ 
+ 	return 0;
+@@ -215,7 +179,21 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
+ 	return patch_size;
  }
  
- void __init early_cpu_init(void)
-@@ -1363,3 +1364,17 @@ void __cpuinit cpu_init(void)
- 	fpu_init();
- }
- #endif
-+
-+#ifdef CONFIG_X86_DEBUG_STATIC_CPU_HAS
-+void warn_pre_alternatives(void)
+-static int apply_microcode_amd(int cpu)
++int __apply_microcode_amd(struct microcode_amd *mc_amd)
 +{
-+	WARN(1, "You're using static_cpu_has before alternatives have run!\n");
-+}
-+EXPORT_SYMBOL_GPL(warn_pre_alternatives);
-+#endif
++	u32 rev, dummy;
 +
-+inline bool __static_cpu_has_safe(u16 bit)
-+{
-+	return boot_cpu_has(bit);
++	wrmsrl(MSR_AMD64_PATCH_LOADER, (u64)(long)&mc_amd->hdr.data_code);
++
++	/* verify patch application was successful */
++	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
++	if (rev != mc_amd->hdr.patch_id)
++		return -1;
++
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(__static_cpu_has_safe);
-diff --git a/arch/x86/kernel/cpu/cyrix.c b/arch/x86/kernel/cpu/cyrix.c
-index d048d5c..7582f47 100644
---- a/arch/x86/kernel/cpu/cyrix.c
-+++ b/arch/x86/kernel/cpu/cyrix.c
-@@ -333,7 +333,7 @@ static void __cpuinit init_cyrix(struct cpuinfo_x86 *c)
- 		switch (dir0_lsn) {
- 		case 0xd:  /* either a 486SLC or DLC w/o DEVID */
- 			dir0_msn = 0;
--			p = Cx486_name[(c->hard_math) ? 1 : 0];
-+			p = Cx486_name[(cpu_has_fpu ? 1 : 0)];
- 			break;
++
++int apply_microcode_amd(int cpu)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ 	struct microcode_amd *mc_amd;
+@@ -242,19 +220,15 @@ static int apply_microcode_amd(int cpu)
+ 		return 0;
+ 	}
  
- 		case 0xe:  /* a 486S A step */
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 37a198b..aee6317 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -37,8 +37,8 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
- 		   static_cpu_has_bug(X86_BUG_FDIV) ? "yes" : "no",
- 		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
- 		   static_cpu_has_bug(X86_BUG_COMA) ? "yes" : "no",
--		   c->hard_math ? "yes" : "no",
--		   c->hard_math ? "yes" : "no",
-+		   static_cpu_has(X86_FEATURE_FPU) ? "yes" : "no",
-+		   static_cpu_has(X86_FEATURE_FPU) ? "yes" : "no",
- 		   c->cpuid_level,
- 		   c->wp_works_ok ? "yes" : "no");
- }
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 73afd11..e65ddc6 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -444,7 +444,6 @@ is486:
- 	orl %ecx,%eax
- 	movl %eax,%cr0
- 
--	call check_x87
- 	lgdt early_gdt_descr
- 	lidt idt_descr
- 	ljmp $(__KERNEL_CS),$1f
-@@ -467,26 +466,6 @@ is486:
- 	pushl $0		# fake return address for unwinder
- 	jmp *(initial_code)
- 
--/*
-- * We depend on ET to be correct. This checks for 287/387.
-- */
--check_x87:
--	movb $0,X86_HARD_MATH
--	clts
--	fninit
--	fstsw %ax
--	cmpb $0,%al
--	je 1f
--	movl %cr0,%eax		/* no coprocessor: have to set bits */
--	xorl $4,%eax		/* set EM */
--	movl %eax,%cr0
--	ret
--	ALIGN
--1:	movb $1,X86_HARD_MATH
--	.byte 0xDB,0xE4		/* fsetpm for 287, ignored by 387 */
--	ret
+-	wrmsrl(MSR_AMD64_PATCH_LOADER, (u64)(long)&mc_amd->hdr.data_code);
 -
--	
- #include "verify_cpu.S"
+-	/* verify patch application was successful */
+-	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
+-	if (rev != mc_amd->hdr.patch_id) {
++	if (__apply_microcode_amd(mc_amd))
+ 		pr_err("CPU%d: update failed for patch_level=0x%08x\n",
+-		       cpu, mc_amd->hdr.patch_id);
+-		return -1;
+-	}
++			cpu, mc_amd->hdr.patch_id);
++	else
++		pr_info("CPU%d: new patch_level=0x%08x\n", cpu,
++			mc_amd->hdr.patch_id);
  
- /*
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index cb33909..b627746 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -131,7 +131,7 @@ static void __cpuinit init_thread_xstate(void)
- 	 * xsave_init().
- 	 */
+-	pr_info("CPU%d: new patch_level=0x%08x\n", cpu, rev);
+-	uci->cpu_sig.rev = rev;
+-	c->microcode = rev;
++	uci->cpu_sig.rev = mc_amd->hdr.patch_id;
++	c->microcode = mc_amd->hdr.patch_id;
  
--	if (!HAVE_HWFP) {
-+	if (!cpu_has_fpu) {
- 		/*
- 		 * Disable xsave as we do not support it if i387
- 		 * emulation is enabled.
-@@ -158,6 +158,14 @@ void __cpuinit fpu_init(void)
- 	unsigned long cr0;
- 	unsigned long cr4_mask = 0;
+ 	return 0;
+ }
+@@ -364,7 +338,7 @@ static int verify_and_add_patch(unsigned int cpu, u8 *fw, unsigned int leftover)
+ 	return crnt_size;
+ }
  
-+#ifndef CONFIG_MATH_EMULATION
-+	if (!cpu_has_fpu) {
-+		pr_emerg("No FPU found and no math emulation present\n");
-+		pr_emerg("Giving up\n");
-+		for (;;)
-+			asm volatile("hlt");
+-static enum ucode_state load_microcode_amd(int cpu, const u8 *data, size_t size)
++static enum ucode_state __load_microcode_amd(int cpu, const u8 *data, size_t size)
+ {
+ 	enum ucode_state ret = UCODE_ERROR;
+ 	unsigned int leftover;
+@@ -398,6 +372,32 @@ static enum ucode_state load_microcode_amd(int cpu, const u8 *data, size_t size)
+ 	return UCODE_OK;
+ }
+ 
++enum ucode_state load_microcode_amd(int cpu, const u8 *data, size_t size)
++{
++	enum ucode_state ret;
++
++	/* free old equiv table */
++	free_equiv_cpu_table();
++
++	ret = __load_microcode_amd(cpu, data, size);
++
++	if (ret != UCODE_OK)
++		cleanup();
++
++#if defined(CONFIG_MICROCODE_AMD_EARLY) && defined(CONFIG_X86_32)
++	/* save BSP's matching patch for early load */
++	if (cpu_data(cpu).cpu_index == boot_cpu_data.cpu_index) {
++		struct ucode_patch *p = find_patch(cpu);
++		if (p) {
++			memset(amd_bsp_mpb, 0, MPB_MAX_SIZE);
++			memcpy(amd_bsp_mpb, p->data, min_t(u32, ksize(p->data),
++							   MPB_MAX_SIZE));
++		}
 +	}
 +#endif
- 	if (cpu_has_fxsr)
- 		cr4_mask |= X86_CR4_OSFXSR;
- 	if (cpu_has_xmm)
-@@ -167,7 +175,7 @@ void __cpuinit fpu_init(void)
- 
- 	cr0 = read_cr0();
- 	cr0 &= ~(X86_CR0_TS|X86_CR0_EM); /* clear TS and EM */
--	if (!HAVE_HWFP)
-+	if (!cpu_has_fpu)
- 		cr0 |= X86_CR0_EM;
- 	write_cr0(cr0);
- 
-@@ -185,7 +193,7 @@ void __cpuinit fpu_init(void)
- 
- void fpu_finit(struct fpu *fpu)
- {
--	if (!HAVE_HWFP) {
-+	if (!cpu_has_fpu) {
- 		finit_soft_fpu(&fpu->state->soft);
- 		return;
++	return ret;
++}
++
+ /*
+  * AMD microcode firmware naming convention, up to family 15h they are in
+  * the legacy file:
+@@ -440,12 +440,7 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
+ 		goto fw_release;
  	}
-@@ -214,7 +222,7 @@ int init_fpu(struct task_struct *tsk)
- 	int ret;
  
- 	if (tsk_used_math(tsk)) {
--		if (HAVE_HWFP && tsk == current)
-+		if (cpu_has_fpu && tsk == current)
- 			unlazy_fpu(tsk);
- 		tsk->thread.fpu.last_cpu = ~0;
- 		return 0;
-@@ -511,14 +519,13 @@ int fpregs_get(struct task_struct *target, const struct user_regset *regset,
+-	/* free old equiv table */
+-	free_equiv_cpu_table();
+-
+ 	ret = load_microcode_amd(cpu, fw->data, fw->size);
+-	if (ret != UCODE_OK)
+-		cleanup();
+ 
+  fw_release:
+ 	release_firmware(fw);
+diff --git a/arch/x86/kernel/microcode_amd_early.c b/arch/x86/kernel/microcode_amd_early.c
+new file mode 100644
+index 0000000..1ac6e9a
+--- /dev/null
++++ b/arch/x86/kernel/microcode_amd_early.c
+@@ -0,0 +1,302 @@
++/*
++ * Copyright (C) 2013 Advanced Micro Devices, Inc.
++ *
++ * Author: Jacob Shin <jacob.shin@amd.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/earlycpio.h>
++#include <linux/initrd.h>
++
++#include <asm/cpu.h>
++#include <asm/setup.h>
++#include <asm/microcode_amd.h>
++
++static bool ucode_loaded;
++static u32 ucode_new_rev;
++static unsigned long ucode_offset;
++static size_t ucode_size;
++
++/*
++ * Microcode patch container file is prepended to the initrd in cpio format.
++ * See Documentation/x86/early-microcode.txt
++ */
++static __initdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
++
++static struct cpio_data __init find_ucode_in_initrd(void)
++{
++	long offset = 0;
++	char *path;
++	void *start;
++	size_t size;
++	unsigned long *uoffset;
++	size_t *usize;
++	struct cpio_data cd;
++
++#ifdef CONFIG_X86_32
++	struct boot_params *p;
++
++	/*
++	 * On 32-bit, early load occurs before paging is turned on so we need
++	 * to use physical addresses.
++	 */
++	p       = (struct boot_params *)__pa_nodebug(&boot_params);
++	path    = (char *)__pa_nodebug(ucode_path);
++	start   = (void *)p->hdr.ramdisk_image;
++	size    = p->hdr.ramdisk_size;
++	uoffset = (unsigned long *)__pa_nodebug(&ucode_offset);
++	usize   = (size_t *)__pa_nodebug(&ucode_size);
++#else
++	path    = ucode_path;
++	start   = (void *)(boot_params.hdr.ramdisk_image + PAGE_OFFSET);
++	size    = boot_params.hdr.ramdisk_size;
++	uoffset = &ucode_offset;
++	usize   = &ucode_size;
++#endif
++
++	cd = find_cpio_data(path, start, size, &offset);
++	if (!cd.data)
++		return cd;
++
++	if (*(u32 *)cd.data != UCODE_MAGIC) {
++		cd.data = NULL;
++		cd.size = 0;
++		return cd;
++	}
++
++	*uoffset = (u8 *)cd.data - (u8 *)start;
++	*usize   = cd.size;
++
++	return cd;
++}
++
++/*
++ * Early load occurs before we can vmalloc(). So we look for the microcode
++ * patch container file in initrd, traverse equivalent cpu table, look for a
++ * matching microcode patch, and update, all in initrd memory in place.
++ * When vmalloc() is available for use later -- on 64-bit during first AP load,
++ * and on 32-bit during save_microcode_in_initrd_amd() -- we can call
++ * load_microcode_amd() to save equivalent cpu table and microcode patches in
++ * kernel heap memory.
++ */
++static void __cpuinit apply_ucode_in_initrd(void *ucode, size_t size)
++{
++	struct equiv_cpu_entry *eq;
++	u32 *header;
++	u8  *data;
++	u16 eq_id = 0;
++	int offset, left;
++	u32 rev, eax;
++	u32 *new_rev;
++	unsigned long *uoffset;
++	size_t *usize;
++
++#ifdef CONFIG_X86_32
++	new_rev = (u32 *)__pa_nodebug(&ucode_new_rev);
++	uoffset = (unsigned long *)__pa_nodebug(&ucode_offset);
++	usize   = (size_t *)__pa_nodebug(&ucode_size);
++#else
++	new_rev = &ucode_new_rev;
++	uoffset = &ucode_offset;
++	usize   = &ucode_size;
++#endif
++
++	data   = ucode;
++	left   = size;
++	header = (u32 *)data;
++
++	/* find equiv cpu table */
++
++	if (header[1] != UCODE_EQUIV_CPU_TABLE_TYPE || /* type */
++	    header[2] == 0)                            /* size */
++		return;
++
++	eax = cpuid_eax(0x00000001);
++
++	while (left > 0) {
++		eq = (struct equiv_cpu_entry *)(data + CONTAINER_HDR_SZ);
++
++		offset = header[2] + CONTAINER_HDR_SZ;
++		data  += offset;
++		left  -= offset;
++
++		eq_id = find_equiv_id(eq, eax);
++		if (eq_id)
++			break;
++
++		/*
++		 * support multiple container files appended together. if this
++		 * one does not have a matching equivalent cpu entry, we fast
++		 * forward to the next container file.
++		 */
++		while (left > 0) {
++			header = (u32 *)data;
++			if (header[0] == UCODE_MAGIC &&
++			    header[1] == UCODE_EQUIV_CPU_TABLE_TYPE)
++				break;
++
++			offset = header[1] + SECTION_HDR_SIZE;
++			data  += offset;
++			left  -= offset;
++		}
++
++		/* mark where the next microcode container file starts */
++		offset    = data - (u8 *)ucode;
++		*uoffset += offset;
++		*usize   -= offset;
++		ucode     = data;
++	}
++
++	if (!eq_id) {
++		*usize = 0;
++		return;
++	}
++
++	/* find ucode and update if needed */
++
++	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, eax);
++
++	while (left > 0) {
++		struct microcode_amd *mc;
++
++		header = (u32 *)data;
++		if (header[0] != UCODE_UCODE_TYPE || /* type */
++		    header[1] == 0)                  /* size */
++			break;
++
++		mc = (struct microcode_amd *)(data + SECTION_HDR_SIZE);
++		if (eq_id == mc->hdr.processor_rev_id && rev < mc->hdr.patch_id)
++			if (__apply_microcode_amd(mc) == 0) {
++				rev = mc->hdr.patch_id;
++				*new_rev = rev;
++			}
++
++		offset  = header[1] + SECTION_HDR_SIZE;
++		data   += offset;
++		left   -= offset;
++	}
++
++	/* mark where this microcode container file ends */
++	offset  = *usize - (data - (u8 *)ucode);
++	*usize -= offset;
++
++	if (!(*new_rev))
++		*usize = 0;
++}
++
++void __init load_ucode_amd_bsp(void)
++{
++	struct cpio_data cd = find_ucode_in_initrd();
++	if (!cd.data)
++		return;
++
++	apply_ucode_in_initrd(cd.data, cd.size);
++}
++
++#ifdef CONFIG_X86_32
++u8 amd_bsp_mpb[MPB_MAX_SIZE];
++
++/*
++ * On 32-bit, since AP's early load occurs before paging is turned on, we
++ * cannot traverse cpu_equiv_table and pcache in kernel heap memory. So during
++ * cold boot, AP will apply_ucode_in_initrd() just like the BSP. During
++ * save_microcode_in_initrd_amd() BSP's patch is copied to amd_bsp_mpb, which
++ * is used upon resume from suspend.
++ */
++void __cpuinit load_ucode_amd_ap(void)
++{
++	struct microcode_amd *mc;
++	unsigned long *initrd;
++	unsigned long *uoffset;
++	size_t *usize;
++	void *ucode;
++
++	mc = (struct microcode_amd *)__pa(amd_bsp_mpb);
++	if (mc->hdr.patch_id && mc->hdr.processor_rev_id) {
++		__apply_microcode_amd(mc);
++		return;
++	}
++
++	initrd  = (unsigned long *)__pa(&initrd_start);
++	uoffset = (unsigned long *)__pa(&ucode_offset);
++	usize   = (size_t *)__pa(&ucode_size);
++
++	if (!*usize || !*initrd)
++		return;
++
++	ucode = (void *)((unsigned long)__pa(*initrd) + *uoffset);
++	apply_ucode_in_initrd(ucode, *usize);
++}
++
++static void __init collect_cpu_sig_on_bsp(void *arg)
++{
++	unsigned int cpu = smp_processor_id();
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++	uci->cpu_sig.sig = cpuid_eax(0x00000001);
++}
++#else
++static void __cpuinit collect_cpu_info_amd_early(struct cpuinfo_x86 *c,
++						 struct ucode_cpu_info *uci)
++{
++	u32 rev, eax;
++
++	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, eax);
++	eax = cpuid_eax(0x00000001);
++
++	uci->cpu_sig.sig = eax;
++	uci->cpu_sig.rev = rev;
++	c->microcode = rev;
++	c->x86 = ((eax >> 8) & 0xf) + ((eax >> 20) & 0xff);
++}
++
++void __cpuinit load_ucode_amd_ap(void)
++{
++	unsigned int cpu = smp_processor_id();
++
++	collect_cpu_info_amd_early(&cpu_data(cpu), ucode_cpu_info + cpu);
++
++	if (cpu && !ucode_loaded) {
++		void *ucode;
++
++		if (!ucode_size || !initrd_start)
++			return;
++
++		ucode = (void *)(initrd_start + ucode_offset);
++		if (load_microcode_amd(0, ucode, ucode_size) != UCODE_OK)
++			return;
++		ucode_loaded = true;
++	}
++
++	apply_microcode_amd(cpu);
++}
++#endif
++
++int __init save_microcode_in_initrd_amd(void)
++{
++	enum ucode_state ret;
++	void *ucode;
++#ifdef CONFIG_X86_32
++	unsigned int bsp = boot_cpu_data.cpu_index;
++	struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
++
++	if (!uci->cpu_sig.sig)
++		smp_call_function_single(bsp, collect_cpu_sig_on_bsp, NULL, 1);
++#endif
++	if (ucode_new_rev)
++		pr_info("microcode: updated early to new patch_level=0x%08x\n",
++			ucode_new_rev);
++
++	if (ucode_loaded || !ucode_size || !initrd_start)
++		return 0;
++
++	ucode = (void *)(initrd_start + ucode_offset);
++	ret = load_microcode_amd(0, ucode, ucode_size);
++	if (ret != UCODE_OK)
++		return -EINVAL;
++
++	ucode_loaded = true;
++	return 0;
++}
+diff --git a/arch/x86/kernel/microcode_core_early.c b/arch/x86/kernel/microcode_core_early.c
+index 833d51d..86119f6 100644
+--- a/arch/x86/kernel/microcode_core_early.c
++++ b/arch/x86/kernel/microcode_core_early.c
+@@ -18,6 +18,7 @@
+  */
+ #include <linux/module.h>
+ #include <asm/microcode_intel.h>
++#include <asm/microcode_amd.h>
+ #include <asm/processor.h>
+ 
+ #define QCHAR(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
+@@ -81,8 +82,18 @@ void __init load_ucode_bsp(void)
+ 	vendor = x86_vendor();
+ 	x86 = x86_family();
+ 
+-	if (vendor == X86_VENDOR_INTEL && x86 >= 6)
+-		load_ucode_intel_bsp();
++	switch (vendor) {
++	case X86_VENDOR_INTEL:
++		if (x86 >= 6)
++			load_ucode_intel_bsp();
++		break;
++	case X86_VENDOR_AMD:
++		if (x86 >= 0x10)
++			load_ucode_amd_bsp();
++		break;
++	default:
++		break;
++	}
+ }
+ 
+ void __cpuinit load_ucode_ap(void)
+@@ -95,6 +106,36 @@ void __cpuinit load_ucode_ap(void)
+ 	vendor = x86_vendor();
+ 	x86 = x86_family();
+ 
+-	if (vendor == X86_VENDOR_INTEL && x86 >= 6)
+-		load_ucode_intel_ap();
++	switch (vendor) {
++	case X86_VENDOR_INTEL:
++		if (x86 >= 6)
++			load_ucode_intel_ap();
++		break;
++	case X86_VENDOR_AMD:
++		if (x86 >= 0x10)
++			load_ucode_amd_ap();
++		break;
++	default:
++		break;
++	}
++}
++
++int __init save_microcode_in_initrd(void)
++{
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++
++	switch (c->x86_vendor) {
++	case X86_VENDOR_INTEL:
++		if (c->x86 >= 6)
++			save_microcode_in_initrd_intel();
++		break;
++	case X86_VENDOR_AMD:
++		if (c->x86 >= 0x10)
++			save_microcode_in_initrd_amd();
++		break;
++	default:
++		break;
++	}
++
++	return 0;
+ }
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+index 2e9e128..dabef95 100644
+--- a/arch/x86/kernel/microcode_intel_early.c
++++ b/arch/x86/kernel/microcode_intel_early.c
+@@ -529,7 +529,7 @@ int save_mc_for_early(u8 *mc)
+ 	 */
+ 	ret = save_microcode(&mc_saved_data, mc_saved_tmp, mc_saved_count);
+ 	if (ret) {
+-		pr_err("Can not save microcode patch.\n");
++		pr_err("Cannot save microcode patch.\n");
+ 		goto out;
+ 	}
+ 
+@@ -699,7 +699,7 @@ static int __cpuinit apply_microcode_early(struct mc_saved_data *mc_saved_data,
+  * This function converts microcode patch offsets previously stored in
+  * mc_saved_in_initrd to pointers and stores the pointers in mc_saved_data.
+  */
+-int __init save_microcode_in_initrd(void)
++int __init save_microcode_in_initrd_intel(void)
+ {
+ 	unsigned int count = mc_saved_data.mc_saved_count;
+ 	struct microcode_intel *mc_saved[MAX_UCODE_COUNT];
+@@ -711,7 +711,7 @@ int __init save_microcode_in_initrd(void)
+ 	microcode_pointer(mc_saved, mc_saved_in_initrd, initrd_start, count);
+ 	ret = save_microcode(&mc_saved_data, mc_saved, count);
  	if (ret)
- 		return ret;
+-		pr_err("Can not save microcod patches from initrd");
++		pr_err("Cannot save microcode patches from initrd.\n");
  
--	if (!HAVE_HWFP)
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		return fpregs_soft_get(target, regset, pos, count, kbuf, ubuf);
+ 	show_saved_mc();
  
--	if (!cpu_has_fxsr) {
-+	if (!cpu_has_fxsr)
- 		return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
- 					   &target->thread.fpu.state->fsave, 0,
- 					   -1);
--	}
- 
- 	sanitize_i387_state(target);
- 
-@@ -545,13 +552,13 @@ int fpregs_set(struct task_struct *target, const struct user_regset *regset,
- 
- 	sanitize_i387_state(target);
- 
--	if (!HAVE_HWFP)
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		return fpregs_soft_set(target, regset, pos, count, kbuf, ubuf);
- 
--	if (!cpu_has_fxsr) {
-+	if (!cpu_has_fxsr)
- 		return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
--					  &target->thread.fpu.state->fsave, 0, -1);
--	}
-+					  &target->thread.fpu.state->fsave, 0,
-+					  -1);
- 
- 	if (pos > 0 || count < sizeof(env))
- 		convert_from_fxsr(&env, target);
-@@ -592,3 +599,33 @@ int dump_fpu(struct pt_regs *regs, struct user_i387_struct *fpu)
- EXPORT_SYMBOL(dump_fpu);
- 
- #endif	/* CONFIG_X86_32 || CONFIG_IA32_EMULATION */
-+
-+static int __init no_387(char *s)
-+{
-+	setup_clear_cpu_cap(X86_FEATURE_FPU);
-+	return 1;
-+}
-+
-+__setup("no387", no_387);
-+
-+void __cpuinit fpu_detect(struct cpuinfo_x86 *c)
-+{
-+	unsigned long cr0;
-+	u16 fsw, fcw;
-+
-+	fsw = fcw = 0xffff;
-+
-+	cr0 = read_cr0();
-+	cr0 &= ~(X86_CR0_TS | X86_CR0_EM);
-+	write_cr0(cr0);
-+
-+	asm volatile("fninit ; fnstsw %0 ; fnstcw %1"
-+		     : "+m" (fsw), "+m" (fcw));
-+
-+	if (fsw == 0 && (fcw & 0x103f) == 0x003f)
-+		set_cpu_cap(c, X86_FEATURE_FPU);
-+	else
-+		clear_cpu_cap(c, X86_FEATURE_FPU);
-+
-+	/* The final cr0 value is set in fpu_init() */
-+}
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index ada87a3..d6c28ac 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -243,7 +243,7 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 	if (!access_ok(VERIFY_WRITE, buf, size))
- 		return -EACCES;
- 
--	if (!HAVE_HWFP)
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		return fpregs_soft_get(current, NULL, 0,
- 			sizeof(struct user_i387_ia32_struct), NULL,
- 			(struct _fpstate_ia32 __user *) buf) ? -1 : 1;
-@@ -350,11 +350,10 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 	if (!used_math() && init_fpu(tsk))
- 		return -1;
- 
--	if (!HAVE_HWFP) {
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		return fpregs_soft_set(current, NULL,
- 				       0, sizeof(struct user_i387_ia32_struct),
- 				       NULL, buf) != 0;
--	}
- 
- 	if (use_xsave()) {
- 		struct _fpx_sw_bytes fx_sw_user;
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index 7114c63..d482bca 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -1410,7 +1410,7 @@ __init void lguest_init(void)
- 	new_cpu_data.x86_capability[0] = cpuid_edx(1);
- 
- 	/* Math is always hard! */
--	new_cpu_data.hard_math = 1;
-+	set_cpu_cap(&new_cpu_data, X86_FEATURE_FPU);
- 
- 	/* We don't have features.  We have puppies!  Puppies! */
- #ifdef CONFIG_X86_MCE
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index a492be2..2fa02bc 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1557,7 +1557,7 @@ asmlinkage void __init xen_start_kernel(void)
- #ifdef CONFIG_X86_32
- 	/* set up basic CPUID stuff */
- 	cpu_detect(&new_cpu_data);
--	new_cpu_data.hard_math = 1;
-+	set_cpu_cap(&new_cpu_data, X86_FEATURE_FPU);
- 	new_cpu_data.wp_works_ok = 1;
- 	new_cpu_data.x86_capability[0] = cpuid_edx(1);
- #endif
